@@ -1,7 +1,7 @@
 {
-  "productName": "radicle-desktop",
+  "productName": "Radicle",
   "version": "0.0.0",
-  "identifier": "com.tauri.dev",
+  "identifier": "xyz.radicle.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "title": "radicle-desktop",
+        "title": "Radicle",
         "width": 800,
         "height": 600
       }
