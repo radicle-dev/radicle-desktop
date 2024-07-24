@@ -1,7 +1,7 @@
 {
   "extends": "@tsconfig/svelte/tsconfig.json",
   "include": ["src", "./*.js", "./*.ts"],
-  "exclude": ["node_modules/*"],
+  "exclude": ["node_modules/*", "isolation/*"],
   "compilerOptions": {
     "noEmit": true,
     "target": "es2021",

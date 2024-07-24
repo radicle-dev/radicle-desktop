@@ -18,6 +18,12 @@
     ],
     "security": {
       "csp": null
+      "pattern": {
+        "use": "isolation",
+        "options": {
+          "dir": "../isolation"
+        }
+      }
     }
   },
   "bundle": {

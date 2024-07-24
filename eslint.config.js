@@ -134,9 +134,9 @@ export default [
   },
   {
     ignores: [
+      "isolation/*",
       "node_modules/**/*",
       "src-tauri/**/*",
-      ".svelte-kit/**/*",
       "eslint.config.js",
     ],
   },
