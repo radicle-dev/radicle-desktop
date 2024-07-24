@@ -1,13 +1,13 @@
-node_modules
-/build
-/.svelte-kit
-/package
-/src-tauri/target
-/src-tauri/gen/schemas
+/build/
+node_modules/
+
+# Tauri
+src-tauri/target
+src-tauri/gen/schemas
+
+# Editor directories and files
+.vscode
+.idea
 
 # Mac OS
 .DS_Store
-
-# IDEs and Editors
-.idea
-.vscode

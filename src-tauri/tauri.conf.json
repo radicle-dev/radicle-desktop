@@ -1,9 +1,9 @@
 {
-  "productName": "Radicle",
-  "version": "0.0.0",
+  "productName": "radicle-desktop",
+  "version": "0.1.0",
   "identifier": "xyz.radicle.desktop",
   "build": {
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "npm start",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../build"

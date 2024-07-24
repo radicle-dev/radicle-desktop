@@ -1,41 +1,41 @@
 {
   "name": "radicle-desktop",
+  "private": true,
   "version": "0.0.0",
   "description": "",
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "svelte-kit sync && scripts/check",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "check": "scripts/check",
     "format": "npx prettier '**/*.@(ts|js|svelte|json|css|html|yml)' --write",
-    "tauri": "tauri"
+    "tauri": "npx tauri"
+  },
+  "engines": {
+    "node": "20.9.0"
   },
   "license": "MIT",
   "dependencies": {
-    "@tauri-apps/api": ">=2.0.0-beta.0",
-    "@tauri-apps/plugin-shell": ">=2.0.0-beta.0"
+    "@tauri-apps/api": "^2.0.0-beta.15",
+    "@tauri-apps/plugin-shell": "^2.0.0-beta.8"
   },
   "devDependencies": {
-    "@eslint/js": "^9.6.0",
-    "@sveltejs/adapter-static": "^3.0.1",
-    "@sveltejs/kit": "^2.0.0",
-    "@sveltejs/vite-plugin-svelte": "^3.0.0",
-    "@tauri-apps/cli": ">=2.0.0-beta.0",
-    "@typescript-eslint/parser": "^7.15.0",
+    "@eslint/js": "^9.7.0",
+    "@sveltejs/vite-plugin-svelte": "^3.1.1",
+    "@tauri-apps/cli": "^2.0.0-beta.22",
+    "@tsconfig/svelte": "^5.0.4",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-svelte": "^2.41.0",
-    "globals": "^15.8.0",
-    "prettier": "^3.3.2",
-    "prettier-plugin-svelte": "^3.2.5",
-    "svelte": "^4.2.7",
-    "svelte-check": "^3.6.0",
-    "svelte-eslint-parser": "^0.39.2",
-    "tslib": "^2.4.1",
-    "typescript": "^5.0.0",
-    "typescript-eslint": "^7.15.0",
-    "vite": "^5.0.3"
+    "eslint-plugin-svelte": "^2.43.0",
+    "prettier": "^3.3.3",
+    "prettier-plugin-svelte": "^3.2.6",
+    "svelte": "^4.2.18",
+    "svelte-check": "^3.8.4",
+    "svelte-eslint-parser": "^0.41.0",
+    "tslib": "^2.6.3",
+    "typescript": "^5.2.2",
+    "typescript-eslint": "^7.17.0",
+    "vite": "^5.3.4"
   }
 }
