@@ -54,6 +54,25 @@ pub enum Error {
     #[error(transparent)]
     Surf(#[from] radicle_surf::Error),
 
+    /// Crypto error.
+    #[error(transparent)]
+    Crypto(#[from] radicle::crypto::ssh::keystore::Error),
+
+    /// SSH Agent error.
+    #[error(transparent)]
+    Agent(#[from] radicle::crypto::ssh::agent::Error),
+
+    /// Memory Signer error.
+    #[error(transparent)]
+    MemorySigner(#[from] radicle::crypto::ssh::keystore::MemorySignerError),
+
+    /// An error with a hint.
+    #[error("{err} {hint}")]
+    WithHint {
+        err: anyhow::Error,
+        hint: &'static str,
+    },
+
     /// Storage error.
     #[error(transparent)]
     Storage(#[from] radicle::storage::Error),
@@ -63,11 +82,35 @@ pub enum Error {
     Node(#[from] radicle::node::Error),
 }
 
+#[derive(Serialize)]
+struct ErrorWrapperWithHint {
+    err: String,
+    hint: String,
+}
+
+#[derive(Serialize)]
+struct ErrorWrapper {
+    err: String,
+}
+
 impl Serialize for Error {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::ser::Serializer,
     {
-        serializer.serialize_str(self.to_string().as_ref())
+        if let Error::WithHint { err, hint } = self {
+            let error_wrapper = ErrorWrapperWithHint {
+                err: err.to_string(),
+                hint: hint.to_string(),
+            };
+
+            return error_wrapper.serialize(serializer);
+        }
+
+        let wrapper = ErrorWrapper {
+            err: self.to_string(),
+        };
+
+        wrapper.serialize(serializer)
     }
 }
