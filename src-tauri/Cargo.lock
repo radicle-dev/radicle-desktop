@@ -3183,6 +3183,7 @@ dependencies = [
 name = "radicle-desktop"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "radicle",
  "radicle-surf",
  "serde",
