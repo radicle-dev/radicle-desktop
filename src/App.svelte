@@ -1,5 +1,11 @@
 <script lang="ts">
-  import Startup from "./views/Startup.svelte";
+  import { Router, Route } from "svelte-routing";
+
+  import Startup from "@app/views/Startup.svelte";
+  import Repos from "@app/views/Repos.svelte";
 </script>
 
-<Startup />
+<Router>
+  <Route path="/" component={Startup} />
+  <Route path="/repos" component={Repos} />
+</Router>

@@ -1,6 +1,8 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
+  import { Link } from "svelte-routing";
+
   import warningIcon from "/images/warning.png";
 
   let loading = true;
@@ -35,5 +37,6 @@
     {/if}
   {:else if !loading}
     <p class="txt-medium">You are all set!</p>
+    <Link to="/repos">Repos</Link>
   {/if}
 </main>

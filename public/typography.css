@@ -29,6 +29,7 @@
   --font-size-small: 0.875rem; /* 14px */
   --font-size-regular: 1rem; /* 16px */
   --font-size-medium: 1.25rem; /* 20px */
+  --font-weight-semibold: 600;
 }
 
 html {
@@ -45,4 +46,8 @@ html {
 }
 .txt-medium {
   font-size: var(--font-size-medium);
+}
+
+.txt-semibold {
+  font-weight: var(--font-weight-semibold) !important;
 }

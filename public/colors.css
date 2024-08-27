@@ -1,4 +1,9 @@
 :root {
   --color-background-default: #0a0d10;
   --color-foreground-contrast: #f9f9fb;
+  --color-foreground-disabled: #6a6a81;
+  --color-border-default: #2e2f38;
+  --color-background-float: #14151a;
+  --color-fill-float-hover: #1b1c22;
+  --color-fill-ghost: #24252d;
 }
