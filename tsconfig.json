@@ -20,6 +20,7 @@
     "skipLibCheck": true,
     "paths": {
       "@app/*": ["./src/*"],
+      "@bindings/*": ["./src-tauri/bindings/*"],
       "@public/*": ["./public/*"]
     }
   }
