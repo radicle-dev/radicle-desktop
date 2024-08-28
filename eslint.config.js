@@ -134,6 +134,7 @@ export default [
   },
   {
     ignores: [
+      "build/*",
       "isolation/*",
       "node_modules/**/*",
       "src-tauri/**/*",

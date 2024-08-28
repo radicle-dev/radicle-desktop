@@ -3,7 +3,7 @@
   export let styleFillColor: string = "transparent";
   export let emptyPixels: 2 | 1 = 2;
 
-  let gridTemplate = `${"2px ".repeat(emptyPixels)}auto ${"2px ".repeat(emptyPixels)}`;
+  const gridTemplate = `${"2px ".repeat(emptyPixels)}auto ${"2px ".repeat(emptyPixels)}`;
 </script>
 
 <style>

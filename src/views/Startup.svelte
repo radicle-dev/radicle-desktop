@@ -11,6 +11,7 @@
   onMount(async () => {
     try {
       await invoke("authenticate");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       error = e;
     } finally {
