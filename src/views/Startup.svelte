@@ -1,8 +1,8 @@
 <script lang="ts">
   import { invoke } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
-  import { Link } from "svelte-routing";
 
+  import Repos from "@app/views/Repos.svelte";
   import Icon from "@app/components/Icon.svelte";
 
   let loading = true;
@@ -22,24 +22,26 @@
 
 <style>
   main {
-    padding-top: 7rem;
-    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
     width: 100%;
-    text-align: center;
+    row-gap: 0.5rem;
   }
 </style>
 
-<main>
-  {#if error}
-    <div style="display: flex; justify-content: center;">
-      <Icon name="warning" size="32" />
+{#if error}
+  <main>
+    <Icon name="warning" size="32" />
+    <div class="txt-medium txt-semibold">
+      {error.err}
     </div>
-    <p class="txt-medium">{error.err}</p>
     {#if error.hint}
-      <p class="txt-small">{@html error.hint}</p>
+      <div class="txt-small">{@html error.hint}</div>
     {/if}
-  {:else if !loading}
-    <p class="txt-medium">You are all set!</p>
-    <Link to="/repos">Repos</Link>
-  {/if}
-</main>
+  </main>
+{:else if !loading}
+  <Repos />
+{/if}
