@@ -1,7 +1,10 @@
 <script lang="ts">
   import Background from "./Header/Background.svelte";
+  import Border from "./Border.svelte";
+  import Fill from "./Fill.svelte";
   import Icon from "./Icon.svelte";
-  import Label from "./Label.svelte";
+  import Popover from "./Popover.svelte";
+  import ThemeSwitch from "./ThemeSwitch.svelte";
 </script>
 
 <style>
@@ -11,7 +14,7 @@
   }
   header {
     padding: 0 0.5rem;
-    gap: 1.5rem;
+    gap: 0.25rem;
     height: 3rem;
   }
   .wrapper {
@@ -32,20 +35,36 @@
         <Icon name="arrow-left" />
         <Icon name="arrow-right" />
       </div>
-      <Label
-        styleBorderColor="var(--color-fill-ghost)"
-        styleFillColor="var(--color-fill-ghost)">
+      <Fill variant="ghost" stylePadding="0 0.5rem" styleHeight="32px">
         Repositories
-      </Label>
-      <Label styleBorderColor="var(--color-fill-ghost)">
+      </Fill>
+      <Border variant="ghost" stylePadding="0 0.25rem" styleHeight="32px">
         <Icon name="plus" />
-      </Label>
+      </Border>
     </div>
-    <div class="flex-item">
-      <Label styleBorderColor="var(--color-fill-ghost)">
+
+    <div class="flex-item" style:gap="0.5rem">
+      <Border variant="ghost" stylePadding="0 0.5rem" styleHeight="32px">
         <Icon name="offline" /> Offline
-      </Label>
+      </Border>
+      <Popover popoverPositionRight="0" popoverPositionTop="3rem">
+        <Border
+          slot="toggle"
+          let:toggle
+          on:click={toggle}
+          variant="ghost"
+          stylePadding="0 0.25rem"
+          styleHeight="32px">
+          <Icon name="settings" />
+        </Border>
+        <Border variant="ghost" slot="popover" stylePadding="0.5rem 1rem">
+          <div style="display: flex; gap: 2rem; align-items: center;">
+            Theme <ThemeSwitch />
+          </div>
+        </Border>
+      </Popover>
     </div>
   </div>
+
   <Background />
 </header>

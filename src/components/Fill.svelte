@@ -1,6 +1,7 @@
 <script lang="ts">
   export let variant: "primary" | "secondary" | "ghost" | "transparent";
   export let stylePadding: string | undefined = undefined;
+  export let styleHeight: string | undefined = undefined;
 
   $: style =
     variant === "transparent"
@@ -71,7 +72,13 @@
 </style>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="container" on:click role="button" tabindex="0" {style}>
+<div
+  class="container"
+  on:click
+  role="button"
+  tabindex="0"
+  {style}
+  style:height={styleHeight}>
   <div class="pixel p1-1" />
   <div class="pixel p1-2" />
   <div class="pixel p1-3" />

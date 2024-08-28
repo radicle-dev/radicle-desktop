@@ -1,5 +1,7 @@
 <script lang="ts">
   export let variant: "primary" | "secondary" | "ghost";
+  export let stylePadding: string | undefined = undefined;
+  export let styleHeight: string | undefined = undefined;
 
   $: style = `--button-color-1: var(--color-fill-${variant});`;
 </script>
@@ -123,7 +125,13 @@
 </style>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="container" on:click role="button" tabindex="0" {style}>
+<div
+  class="container"
+  on:click
+  role="button"
+  tabindex="0"
+  {style}
+  style:height={styleHeight}>
   <div class="pixel p1-1" />
   <div class="pixel p1-2" />
   <div class="pixel p1-3" />
@@ -138,7 +146,9 @@
 
   <div class="pixel p3-1" />
   <div class="pixel p3-2" />
-  <div class="pixel p3-3 txt-semibold txt-small"><slot /></div>
+  <div class="pixel p3-3 txt-semibold txt-small" style:padding={stylePadding}>
+    <slot />
+  </div>
   <div class="pixel p3-4" />
   <div class="pixel p3-5" />
 

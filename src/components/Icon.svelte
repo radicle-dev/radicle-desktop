@@ -12,10 +12,13 @@
     | "diff"
     | "file"
     | "inbox"
+    | "moon"
     | "offline"
     | "plus"
     | "repo"
     | "seedling"
+    | "settings"
+    | "sun"
     | "warning";
 </script>
 
@@ -127,6 +130,30 @@
     <path d="M6 9H10L10 10H6L6 9Z" />
     <path d="M3 13H13V14H3L3 13Z" />
     <path d="M3 2H13V3H3L3 2Z" />
+  {:else if name === "moon"}
+    <path d="M4 3H6V4H4V3Z" />
+    <path d="M3 4L4 4L4 6H3V4Z" />
+    <path d="M2 6L3 6L3 10H2V6Z" />
+    <path d="M3 10H4V12H3L3 10Z" />
+    <path d="M4 12H6V13H4L4 12Z" />
+    <path d="M6 13H10V14H6L6 13Z" />
+    <path d="M6 13H10V14H6L6 13Z" />
+    <path d="M12 10H13V12H12V10Z" />
+    <path d="M8 9H10V10H8V9Z" />
+    <path d="M6 6H7V7H6V6Z" />
+    <path d="M6 7H7V8H6V7Z" />
+    <path d="M7 8H8V9H7V8Z" />
+    <path d="M10 10H12V11H10V10Z" />
+    <path d="M5 5H6V6H5V5Z" />
+    <path d="M10 12H12V13H10L10 12Z" />
+    <path d="M5 4H6L6 5H5L5 4Z" />
+    <path d="M13 9H14V11H13V9Z" />
+    <path d="M5 2H7V3H5V2Z" />
+    <path d="M5 2H7V3H5V2Z" />
+    <path d="M5 2H7V3H5V2Z" />
+    <path d="M11 4H12V7H11V4Z" />
+    <path d="M10 5H13V6H10V5Z" />
+    <path d="M9 3H10V4H9V3Z" />
   {:else if name === "offline"}
     <path d="M3 6L3 8H2L2 6H3Z" />
     <path d="M13 10V8H14V10H13Z" />
@@ -226,6 +253,44 @@
     <path d="M7.33301 8V7L6.33301 7L6.33301 8H7.33301Z" />
     <path d="M7.33301 9L7.33301 7L6.33301 7L6.33301 9H7.33301Z" />
     <path d="M6.33301 10V9H5.33301L5.33301 10H6.33301Z" />
+  {:else if name === "settings"}
+    <path d="M7 5H14V6H7V5Z" />
+    <path d="M9 11L2 11L2 10L9 10V11Z" />
+    <path d="M2 5H5V6H2V5Z" />
+    <path d="M14 11H11V10H14V11Z" />
+    <path d="M9 8H11V9H9V8Z" />
+    <path d="M5 3H7V4H5V3Z" />
+    <path d="M9 12H11V13H9V12Z" />
+    <path d="M5 7H7V8H5V7Z" />
+    <path d="M8 9L9 9V12H8V9Z" />
+    <path d="M4 4L5 4L5 7H4V4Z" />
+    <path d="M11 9L12 9V12H11V9Z" />
+    <path d="M7 4L8 4V7L7 7V4Z" />
+  {:else if name === "sun"}
+    <path d="M8 2H9V3H8V2Z" />
+    <path d="M14 8V9H13V8H14Z" />
+    <path d="M4 7V8H3V7H4Z" />
+    <path d="M7 12H8V13H7V12Z" />
+    <path d="M8 3H9L9 4H8L8 3Z" />
+    <path d="M13 8V9H12V8H13Z" />
+    <path d="M3 7V8H2L2 7H3Z" />
+    <path d="M7 13H8V14H7V13Z" />
+    <path d="M7 5H9V6H7V5Z" />
+    <path d="M7 10H9V11H7V10Z" />
+    <path d="M5 7H6V9H5V7Z" />
+    <path d="M10 7H11V9H10V7Z" />
+    <path d="M11 5H12V6H11V5Z" />
+    <path d="M10 12H11V11H10V12Z" />
+    <path d="M6 4H5V5H6V4Z" />
+    <path d="M5 11H4V10H5V11Z" />
+    <path d="M12 4H13V5H12V4Z" />
+    <path d="M11 13H12V12H11V13Z" />
+    <path d="M5 3H4V4H5L5 3Z" />
+    <path d="M4 12H3V11H4L4 12Z" />
+    <path d="M6 6H7V7L6 7V6Z" />
+    <path d="M6 9L7 9L7 10H6V9Z" />
+    <path d="M9 9L10 9L10 10H9L9 9Z" />
+    <path d="M9 6H10V7H9V6Z" />
   {:else if name === "warning"}
     <path d="M7 2H9V3H7V2Z" />
     <path d="M6 3H7V5H6V3Z" />
