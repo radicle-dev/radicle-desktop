@@ -5,18 +5,21 @@
   font-display: swap;
   src: url("fonts/Inter-Regular.woff2");
 }
+
 @font-face {
   font-family: "Inter";
   font-weight: 500;
   font-display: swap;
   src: url("fonts/Inter-Medium.woff2");
 }
+
 @font-face {
   font-family: "Inter";
   font-weight: 600;
   font-display: swap;
   src: url("fonts/Inter-SemiBold.woff2");
 }
+
 @font-face {
   font-family: "Inter";
   font-weight: 700;
@@ -24,20 +27,79 @@
   src: url("fonts/Inter-Bold.woff2");
 }
 
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fonts/JetBrainsMono-Regular.woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("fonts/JetBrainsMono-Medium.woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-weight: 600;
+  font-display: swap;
+  src: url("fonts/JetBrainsMono-SemiBold.woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-weight: 700;
+  font-display: swap;
+  src: url("fonts/JetBrainsMono-Bold.woff2");
+}
+
 :root {
   --font-family-sans-serif: Inter, sans-serif;
+  --font-family-monospace: monospace;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-size-tiny: 0.75rem; /* 12px */
   --font-size-small: 0.875rem; /* 14px */
   --font-size-regular: 1rem; /* 16px */
   --font-size-medium: 1.25rem; /* 20px */
-  --font-weight-semibold: 600;
+  --font-size-large: 1.5rem; /* 24px */
+  --font-size-x-large: 2rem; /* 32px */
+  --font-size-xx-large: 3rem; /* 48px */
+}
+
+[data-codefont="system"] {
+  --font-family-monospace: monospace;
+}
+
+[data-codefont="jetbrains"] {
+  --font-family-monospace: "JetBrains Mono";
 }
 
 html {
+  -ms-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
   font-family: var(--font-family-sans-serif);
+  font-feature-settings: "zero";
+  /* The root element font size has to be set in px,
+   * otherwise Safari breaks. */
   font-size: 16px;
   font-weight: var(--font-weight-regular);
+  line-height: 1.5;
 }
 
+p {
+  margin: 1rem 0;
+}
+.txt-tiny {
+  font-size: var(--font-size-tiny);
+}
 .txt-small {
   font-size: var(--font-size-small);
 }
@@ -47,7 +109,36 @@ html {
 .txt-medium {
   font-size: var(--font-size-medium);
 }
+.txt-large {
+  font-size: var(--font-size-large);
+}
+.txt-huge {
+  font-size: var(--font-size-x-large);
+}
+.txt-humongous {
+  font-size: var(--font-size-xx-large);
+}
 
+.txt-monospace {
+  font-family: var(--font-family-monospace);
+}
+.txt-bold {
+  font-weight: var(--font-weight-bold) !important;
+}
 .txt-semibold {
   font-weight: var(--font-weight-semibold) !important;
+}
+.txt-missing {
+  color: var(--color-foreground-dim);
+}
+.txt-emoji {
+  height: 1em;
+  width: 1em;
+  margin: 0 0.05em 0 0.1em;
+  vertical-align: -0.1em;
+}
+.txt-overflow {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
