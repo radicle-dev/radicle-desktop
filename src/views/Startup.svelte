@@ -3,7 +3,7 @@
   import { onMount } from "svelte";
   import { Link } from "svelte-routing";
 
-  import warningIcon from "/images/warning.png";
+  import Icon from "@app/components/Icon.svelte";
 
   let loading = true;
   let error: { err: string; hint?: string } | undefined = undefined;
@@ -31,7 +31,9 @@
 
 <main>
   {#if error}
-    <img height="32" src={warningIcon} alt="warning" />
+    <div style="display: flex; justify-content: center;">
+      <Icon name="warning" size="32" />
+    </div>
     <p class="txt-medium">{error.err}</p>
     {#if error.hint}
       <p class="txt-small">{@html error.hint}</p>

@@ -1,19 +1,22 @@
 <script lang="ts">
   import { unreachable } from "@app/lib/utils";
 
+  export let size: "16" | "32" = "16";
+
   export let name:
-    | "dashboard"
     | "arrow-left"
     | "arrow-right"
-    | "plus"
-    | "offline"
     | "chevron-right"
-    | "inbox"
+    | "dashboard"
     | "delegate"
     | "diff"
     | "file"
+    | "inbox"
+    | "offline"
+    | "plus"
     | "repo"
-    | "seedling";
+    | "seedling"
+    | "warning";
 </script>
 
 <style>
@@ -28,8 +31,8 @@
 <svg
   role="img"
   on:click
-  width="16"
-  height="16"
+  width={size}
+  height={size}
   fill="currentColor"
   viewBox="0 0 16 16">
   {#if name === "arrow-left"}
@@ -52,9 +55,78 @@
     <path d="M10 3H9.00003V13H10V3Z" />
     <path d="M13 6H12V7H13V6Z" />
     <path d="M14 7H13V8H14V7Z" />
-  {:else if name === "plus"}
-    <path d="M7.00002 2H9.00002V14H7.00002V2Z" />
-    <path d="M14 7V9L2.00002 9L2.00002 7L14 7Z" />
+  {:else if name === "chevron-right"}
+    <path d="M9 7L10 7L10 8L9 8L9 7Z" />
+    <path d="M8 6H9V7H8L8 6Z" />
+    <path d="M7 5L8 5V6L7 6L7 5Z" />
+    <path d="M6 4L7 4L7 5L6 5L6 4Z" />
+    <path d="M5 3L6 3L6 4H5L5 3Z" />
+    <path d="M5 12H6L6 13H5L5 12Z" />
+    <path d="M6 11H7L7 12H6L6 11Z" />
+    <path d="M7 10L8 10L8 11L7 11L7 10Z" />
+    <path d="M9 8L10 8V9L9 9V8Z" />
+    <path d="M8 9H9V10H8L8 9Z" />
+  {:else if name === "dashboard"}
+    <path d="M2 11H14V12H2V11Z" />
+    <path d="M2 9H3V11H2L2 9Z" />
+    <path d="M14 9H13V11L14 11V9Z" />
+    <path d="M10 4V5L6 5V4L10 4Z" />
+    <path d="M3 7H4V9L3 9L3 7Z" />
+    <path d="M13 7H12V9H13V7Z" />
+    <path d="M4 6H5V7H4L4 6Z" />
+    <path d="M12 6H11V7H12V6Z" />
+    <path d="M5 5L6 5V6H5V5Z" />
+    <path d="M11 5L10 5V6H11V5Z" />
+    <path d="M7 8H8V10H7V8Z" />
+    <path d="M8 6H9V8H8V6Z" />
+    <path d="M6 10H10V11H6V10Z" />
+  {:else if name === "delegate"}
+    <path d="M2.33301 9L2.33301 7H3.33301V9H2.33301Z" />
+    <path d="M3.33301 11L3.33301 9H4.33301L4.33301 11H3.33301Z" />
+    <path d="M4.33301 12L4.33301 11H7.33301V12H4.33301Z" />
+    <path d="M7.33301 11L7.33301 10H8.33301V11H7.33301Z" />
+    <path d="M7.33301 6V5H8.33301V6H7.33301Z" />
+    <path d="M4.33301 5V4L7.33301 4V5L4.33301 5Z" />
+    <path d="M3.33301 7L3.33301 5L4.33301 5L4.33301 7H3.33301Z" />
+    <path d="M4.33301 9L4.33301 7L5.33301 7V9L4.33301 9Z" />
+    <path d="M7.33301 9V7H8.33301V9H7.33301Z" />
+    <path d="M8.33301 7L8.33301 6L13.333 6V7L8.33301 7Z" />
+    <path d="M8.33301 10L8.33301 9L10.333 9V10L8.33301 10Z" />
+    <path d="M13.333 9V7L14.333 7V9H13.333Z" />
+    <path d="M10.333 8H11.333V9L10.333 9V8Z" />
+    <path d="M11.333 9L13.333 9V10H11.333L11.333 9Z" />
+    <path d="M5.33301 6L7.33301 6L7.33301 7L5.33301 7L5.33301 6Z" />
+    <path d="M5.33301 9L7.33301 9L7.33301 10H5.33301V9Z" />
+  {:else if name === "diff"}
+    <path d="M2 3H3V13H2V3Z" />
+    <path d="M3 13H12V14H3L3 13Z" />
+    <path d="M3 2H12V3L3 3L3 2Z" />
+    <path d="M12 3L13 3V13H12V3Z" />
+    <path d="M7 4H8V9H7V4Z" />
+    <path d="M5 6H10V7H5V6Z" />
+    <path d="M5 10H10V11H5V10Z" />
+  {:else if name === "file"}
+    <path d="M10 4H11V5H10V4Z" />
+    <path d="M11 5L12 5V6H11V5Z" />
+    <path d="M10 6L12 6V7H10V6Z" />
+    <path d="M9 6H10V7H9V6Z" />
+    <path d="M8 5H9L9 6L8 6V5Z" />
+    <path d="M8 3H9V5H8V3Z" />
+    <path d="M9 3L10 3V4H9V3Z" />
+    <path d="M4 13H12V14H4V13Z" />
+    <path d="M4 2H9V3L4 3V2Z" />
+    <path d="M13 6V13H12V6L13 6Z" />
+    <path d="M4 3V13H3L3 3L4 3Z" />
+  {:else if name === "inbox"}
+    <path d="M2 3H3V13H2V3Z" />
+    <path d="M13 3H14V13H13V3Z" />
+    <path d="M3 7H5V8H3V7Z" />
+    <path d="M11 7H14V8H11V7Z" />
+    <path d="M5 8H6V9H5L5 8Z" />
+    <path d="M10 8H11V9H10V8Z" />
+    <path d="M6 9H10L10 10H6L6 9Z" />
+    <path d="M3 13H13V14H3L3 13Z" />
+    <path d="M3 2H13V3H3L3 2Z" />
   {:else if name === "offline"}
     <path d="M3 6L3 8H2L2 6H3Z" />
     <path d="M13 10V8H14V10H13Z" />
@@ -93,27 +165,9 @@
     <path d="M4 11L5 11V12L4 12L4 11Z" />
     <path d="M3 12H4L4 13H3L3 12Z" />
     <path d="M2 13L3 13L3 14H2V13Z" />
-  {:else if name === "chevron-right"}
-    <path d="M9 7L10 7L10 8L9 8L9 7Z" />
-    <path d="M8 6H9V7H8L8 6Z" />
-    <path d="M7 5L8 5V6L7 6L7 5Z" />
-    <path d="M6 4L7 4L7 5L6 5L6 4Z" />
-    <path d="M5 3L6 3L6 4H5L5 3Z" />
-    <path d="M5 12H6L6 13H5L5 12Z" />
-    <path d="M6 11H7L7 12H6L6 11Z" />
-    <path d="M7 10L8 10L8 11L7 11L7 10Z" />
-    <path d="M9 8L10 8V9L9 9V8Z" />
-    <path d="M8 9H9V10H8L8 9Z" />
-  {:else if name === "inbox"}
-    <path d="M2 3H3V13H2V3Z" />
-    <path d="M13 3H14V13H13V3Z" />
-    <path d="M3 7H5V8H3V7Z" />
-    <path d="M11 7H14V8H11V7Z" />
-    <path d="M5 8H6V9H5L5 8Z" />
-    <path d="M10 8H11V9H10V8Z" />
-    <path d="M6 9H10L10 10H6L6 9Z" />
-    <path d="M3 13H13V14H3L3 13Z" />
-    <path d="M3 2H13V3H3L3 2Z" />
+  {:else if name === "plus"}
+    <path d="M7.00002 2H9.00002V14H7.00002V2Z" />
+    <path d="M14 7V9L2.00002 9L2.00002 7L14 7Z" />
   {:else if name === "repo"}
     <path d="M13 5H14V7H13V5Z" />
     <path d="M13 10H14V11H13V10Z" />
@@ -147,57 +201,6 @@
     <path d="M7 8H5V9L7 9L7 8Z" />
     <path d="M7 10H5L5 11H7L7 10Z" />
     <path d="M7 12H5L5 13H7L7 12Z" />
-  {:else if name === "dashboard"}
-    <path d="M2 11H14V12H2V11Z" />
-    <path d="M2 9H3V11H2L2 9Z" />
-    <path d="M14 9H13V11L14 11V9Z" />
-    <path d="M10 4V5L6 5V4L10 4Z" />
-    <path d="M3 7H4V9L3 9L3 7Z" />
-    <path d="M13 7H12V9H13V7Z" />
-    <path d="M4 6H5V7H4L4 6Z" />
-    <path d="M12 6H11V7H12V6Z" />
-    <path d="M5 5L6 5V6H5V5Z" />
-    <path d="M11 5L10 5V6H11V5Z" />
-    <path d="M7 8H8V10H7V8Z" />
-    <path d="M8 6H9V8H8V6Z" />
-    <path d="M6 10H10V11H6V10Z" />
-  {:else if name === "diff"}
-    <path d="M2 3H3V13H2V3Z" />
-    <path d="M3 13H12V14H3L3 13Z" />
-    <path d="M3 2H12V3L3 3L3 2Z" />
-    <path d="M12 3L13 3V13H12V3Z" />
-    <path d="M7 4H8V9H7V4Z" />
-    <path d="M5 6H10V7H5V6Z" />
-    <path d="M5 10H10V11H5V10Z" />
-  {:else if name === "file"}
-    <path d="M10 4H11V5H10V4Z" />
-    <path d="M11 5L12 5V6H11V5Z" />
-    <path d="M10 6L12 6V7H10V6Z" />
-    <path d="M9 6H10V7H9V6Z" />
-    <path d="M8 5H9L9 6L8 6V5Z" />
-    <path d="M8 3H9V5H8V3Z" />
-    <path d="M9 3L10 3V4H9V3Z" />
-    <path d="M4 13H12V14H4V13Z" />
-    <path d="M4 2H9V3L4 3V2Z" />
-    <path d="M13 6V13H12V6L13 6Z" />
-    <path d="M4 3V13H3L3 3L4 3Z" />
-  {:else if name === "delegate"}
-    <path d="M2.33301 9L2.33301 7H3.33301V9H2.33301Z" />
-    <path d="M3.33301 11L3.33301 9H4.33301L4.33301 11H3.33301Z" />
-    <path d="M4.33301 12L4.33301 11H7.33301V12H4.33301Z" />
-    <path d="M7.33301 11L7.33301 10H8.33301V11H7.33301Z" />
-    <path d="M7.33301 6V5H8.33301V6H7.33301Z" />
-    <path d="M4.33301 5V4L7.33301 4V5L4.33301 5Z" />
-    <path d="M3.33301 7L3.33301 5L4.33301 5L4.33301 7H3.33301Z" />
-    <path d="M4.33301 9L4.33301 7L5.33301 7V9L4.33301 9Z" />
-    <path d="M7.33301 9V7H8.33301V9H7.33301Z" />
-    <path d="M8.33301 7L8.33301 6L13.333 6V7L8.33301 7Z" />
-    <path d="M8.33301 10L8.33301 9L10.333 9V10L8.33301 10Z" />
-    <path d="M13.333 9V7L14.333 7V9H13.333Z" />
-    <path d="M10.333 8H11.333V9L10.333 9V8Z" />
-    <path d="M11.333 9L13.333 9V10H11.333L11.333 9Z" />
-    <path d="M5.33301 6L7.33301 6L7.33301 7L5.33301 7L5.33301 6Z" />
-    <path d="M5.33301 9L7.33301 9L7.33301 10H5.33301V9Z" />
   {:else if name === "seedling"}
     <path d="M10.333 6H9.33301V5L10.333 5V6Z" />
     <path d="M11.333 5L10.333 5V4L11.333 4V5Z" />
@@ -223,6 +226,21 @@
     <path d="M7.33301 8V7L6.33301 7L6.33301 8H7.33301Z" />
     <path d="M7.33301 9L7.33301 7L6.33301 7L6.33301 9H7.33301Z" />
     <path d="M6.33301 10V9H5.33301L5.33301 10H6.33301Z" />
+  {:else if name === "warning"}
+    <path d="M7 2H9V3H7V2Z" />
+    <path d="M6 3H7V5H6V3Z" />
+    <path d="M5 5H6V7H5V5Z" />
+    <path d="M4 7H5V9H4V7Z" />
+    <path d="M3 9H4V11H3V9Z" />
+    <path d="M2 11H3V13H2V11Z" />
+    <path d="M10 3H9V5H10V3Z" />
+    <path d="M11 5H10V7H11V5Z" />
+    <path d="M12 7H11V9H12V7Z" />
+    <path d="M13 9H12V11H13V9Z" />
+    <path d="M14 11H13V13H14V11Z" />
+    <path d="M3 13H13V14H3V13Z" />
+    <path d="M7 6H9V10H7V6Z" />
+    <path d="M7 11H9V12H7V11Z" />
   {:else}
     {unreachable(name)}
   {/if}
