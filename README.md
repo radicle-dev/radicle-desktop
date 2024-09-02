@@ -9,12 +9,7 @@ This desktop application lets you interact with [Radicle][rad], a peer-to-peer c
 - Recent versions of [Node.js][nod] (20.9.0 or higher) and [npm][npm] installed
 - Requires the [Rust][rus] toolchain (1.77 or higher).
 
-If you are running any Linux distro make sure to also have at least the following dependencies installed:
-
-- libgtk-3-dev
-- libjavascriptcoregtk-4.1-dev
-- libsoup-3.0-dev
-- libwebkit2gtk-4.1-dev
+Also make sure to have the following [Tauri system dependencies][tau] installed.
 
 Run the following commands to build the desktop app locally:
 
@@ -40,4 +35,5 @@ The UI is distributed under the terms of GPLv3. See [LICENSE][lic] for details.
 [nod]: https://nodejs.org
 [npm]: https://www.npmjs.com
 [rus]: https://www.rust-lang.org/
+[tau]: https://v2.tauri.app/start/prerequisites/#system-dependencies
 [zul]: https://radicle.zulipchat.com/#narrow/stream/444463-desktop
