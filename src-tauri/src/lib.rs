@@ -17,8 +17,7 @@ pub fn run() {
                 Err(radicle::profile::Error::NotFound(path)) => Err(error::Error::WithHint {
                     err: anyhow::anyhow!("Radicle profile not found in '{}'.", path.display()),
                     hint: "To setup your radicle profile, run `rad auth`.",
-                }
-                .into()),
+                }),
                 Err(e) => Err(error::Error::WithHint {
                     err: e.into(),
                     hint: "Could not load radicle profile",

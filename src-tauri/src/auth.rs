@@ -13,7 +13,7 @@ pub fn authenticate(ctx: tauri::State<AppState>) -> Result<(), Error> {
     match ssh::agent::Agent::connect() {
         Ok(mut agent) => {
             if agent.request_identities()?.contains(&profile.public_key) {
-                return Ok(());
+                Ok(())
             } else {
                 Err(Error::WithHint {
                     err: anyhow!("Not able to find your keys in the ssh agent"),
