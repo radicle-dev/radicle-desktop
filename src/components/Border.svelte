@@ -132,35 +132,35 @@
   tabindex="0"
   {style}
   style:height={styleHeight}>
-  <div class="pixel p1-1" />
-  <div class="pixel p1-2" />
-  <div class="pixel p1-3" />
-  <div class="pixel p1-4" />
-  <div class="pixel p1-5" />
+  <div class="pixel p1-1"></div>
+  <div class="pixel p1-2"></div>
+  <div class="pixel p1-3"></div>
+  <div class="pixel p1-4"></div>
+  <div class="pixel p1-5"></div>
 
-  <div class="pixel p2-1" />
-  <div class="pixel p2-2" />
-  <div class="pixel p2-3" />
-  <div class="pixel p2-4" />
-  <div class="pixel p2-5" />
+  <div class="pixel p2-1"></div>
+  <div class="pixel p2-2"></div>
+  <div class="pixel p2-3"></div>
+  <div class="pixel p2-4"></div>
+  <div class="pixel p2-5"></div>
 
-  <div class="pixel p3-1" />
-  <div class="pixel p3-2" />
+  <div class="pixel p3-1"></div>
+  <div class="pixel p3-2"></div>
   <div class="pixel p3-3 txt-semibold txt-small" style:padding={stylePadding}>
     <slot />
   </div>
-  <div class="pixel p3-4" />
-  <div class="pixel p3-5" />
+  <div class="pixel p3-4"></div>
+  <div class="pixel p3-5"></div>
 
-  <div class="pixel p4-1" />
-  <div class="pixel p4-2" />
-  <div class="pixel p4-3" />
-  <div class="pixel p4-4" />
-  <div class="pixel p4-5" />
+  <div class="pixel p4-1"></div>
+  <div class="pixel p4-2"></div>
+  <div class="pixel p4-3"></div>
+  <div class="pixel p4-4"></div>
+  <div class="pixel p4-5"></div>
 
-  <div class="pixel p5-1" />
-  <div class="pixel p5-2" />
-  <div class="pixel p5-3" />
-  <div class="pixel p5-4" />
-  <div class="pixel p5-5" />
+  <div class="pixel p5-1"></div>
+  <div class="pixel p5-2"></div>
+  <div class="pixel p5-3"></div>
+  <div class="pixel p5-4"></div>
+  <div class="pixel p5-5"></div>
 </div>

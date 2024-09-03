@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
-    "@sveltejs/vite-plugin-svelte": "^3.1.2",
+    "@sveltejs/vite-plugin-svelte": "^4.0.0-next.6",
     "@tauri-apps/cli": "^2.0.0-rc.1",
     "@tsconfig/svelte": "^5.0.4",
     "eslint": "^9.9.1",
@@ -32,7 +32,7 @@
     "eslint-plugin-svelte": "^2.43.0",
     "prettier": "^3.3.3",
     "prettier-plugin-svelte": "^3.2.6",
-    "svelte": "^4.2.19",
+    "svelte": "^5.0.0-next.243",
     "svelte-check": "^4.0.0",
     "svelte-eslint-parser": "^0.41.0",
     "tslib": "^2.7.0",

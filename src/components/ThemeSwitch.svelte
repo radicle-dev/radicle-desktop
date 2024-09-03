@@ -1,4 +1,4 @@
-<script lang="ts" context="module">
+<script lang="ts" module>
   type Theme = "dark" | "light";
 
   export const theme = writable<Theme>(loadTheme());

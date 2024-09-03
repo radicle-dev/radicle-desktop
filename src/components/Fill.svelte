@@ -79,17 +79,17 @@
   tabindex="0"
   {style}
   style:height={styleHeight}>
-  <div class="pixel p1-1" />
-  <div class="pixel p1-2" />
-  <div class="pixel p1-3" />
+  <div class="pixel p1-1"></div>
+  <div class="pixel p1-2"></div>
+  <div class="pixel p1-3"></div>
 
-  <div class="pixel p2-1" />
+  <div class="pixel p2-1"></div>
   <div class="pixel p2-2 txt-semibold txt-small" style:padding={stylePadding}>
     <slot />
   </div>
-  <div class="pixel p2-3" />
+  <div class="pixel p2-3"></div>
 
-  <div class="pixel p3-1" />
-  <div class="pixel p3-2" />
-  <div class="pixel p3-3" />
+  <div class="pixel p3-1"></div>
+  <div class="pixel p3-2"></div>
+  <div class="pixel p3-3"></div>
 </div>
