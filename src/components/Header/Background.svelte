@@ -1,3 +1,6 @@
+<script lang="ts">
+</script>
+
 <style>
   .container {
     height: 3rem;
