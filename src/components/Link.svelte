@@ -1,15 +1,10 @@
-<script lang="ts" strictEvents>
+<script lang="ts">
   import type { Route } from "@app/lib/router/definitions";
 
-  import { createEventDispatcher } from "svelte";
   import { push, routeToPath } from "@app/lib/router";
 
   export let route: Route;
   export let disabled: boolean = false;
-
-  const dispatch = createEventDispatcher<{
-    afterNavigate: null;
-  }>();
 
   function navigateToRoute(event: MouseEvent): void {
     event.preventDefault();
@@ -18,7 +13,6 @@
     }
 
     void push(route);
-    dispatch("afterNavigate");
   }
 </script>
 
