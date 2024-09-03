@@ -26,6 +26,9 @@
   svg {
     display: flex;
     flex-shrink: 0;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 </style>
 

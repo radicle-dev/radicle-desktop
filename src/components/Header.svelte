@@ -5,6 +5,8 @@
   import Icon from "./Icon.svelte";
   import Popover from "./Popover.svelte";
   import ThemeSwitch from "./ThemeSwitch.svelte";
+
+  export let currentPage: string;
 </script>
 
 <style>
@@ -26,17 +28,30 @@
     gap: 0.5rem;
     padding: 0 0.5rem;
   }
+
+  .navigation :global(svg:hover) {
+    display: flex;
+    color: var(--color-fill-secondary);
+  }
 </style>
 
 <header class="flex-item">
   <div class="wrapper flex-item">
     <div class="wrapper-left flex-item">
-      <div class="flex-item" style:gap="0.5rem">
-        <Icon name="arrow-left" />
-        <Icon name="arrow-right" />
+      <div class="flex-item navigation" style:gap="0.5rem">
+        <Icon
+          name="arrow-left"
+          on:click={() => {
+            window.history.back();
+          }} />
+        <Icon
+          name="arrow-right"
+          on:click={() => {
+            window.history.forward();
+          }} />
       </div>
       <Fill variant="ghost" stylePadding="0 0.5rem" styleHeight="32px">
-        Repositories
+        {currentPage}
       </Fill>
       <Border variant="ghost" stylePadding="0 0.25rem" styleHeight="32px">
         <Icon name="plus" />
