@@ -97,9 +97,6 @@ function setTitle(loadedRoute: LoadedRoute) {
   } else if (loadedRoute.resource === "authenticationError") {
     title.push("Authentication Error");
     title.push("Radicle");
-  } else if (loadedRoute.resource === "designSystem") {
-    title.push("Design System");
-    title.push("Radicle");
   } else {
     utils.unreachable(loadedRoute);
   }
@@ -126,9 +123,6 @@ function urlToRoute(url: URL): Route | null {
     case "authenticationError": {
       return { resource: "authenticationError", params: { error: "" } };
     }
-    case "designSystem": {
-      return { resource: "designSystem" };
-    }
     default: {
       return null;
     }
@@ -140,8 +134,6 @@ export function routeToPath(route: Route): string {
     return "/";
   } else if (route.resource === "authenticationError") {
     return "/authenticationError";
-  } else if (route.resource === "designSystem") {
-    return "/designSystem";
   } else if (route.resource === "booting") {
     return "";
   } else {

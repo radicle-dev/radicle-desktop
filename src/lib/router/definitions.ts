@@ -24,19 +24,10 @@ interface LoadedHomeRoute {
   params: { repos: RepoInfo[]; config: Config };
 }
 
-interface DesignSystemRoute {
-  resource: "designSystem";
-}
-
-export type Route =
-  | BootingRoute
-  | DesignSystemRoute
-  | HomeRoute
-  | AuthenticationErrorRoute;
+export type Route = BootingRoute | HomeRoute | AuthenticationErrorRoute;
 
 export type LoadedRoute =
   | BootingRoute
-  | DesignSystemRoute
   | LoadedHomeRoute
   | AuthenticationErrorRoute;
 

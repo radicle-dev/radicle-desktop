@@ -8,7 +8,6 @@
   import { unreachable } from "@app/lib/utils";
 
   import AuthenticationError from "@app/views/AuthenticationError.svelte";
-  import DesignSystem from "@app/views/DesignSystem.svelte";
   import Home from "@app/views/Home.svelte";
 
   const activeRouteStore = router.activeRouteStore;
@@ -44,8 +43,6 @@
   <Home {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "authenticationError"}
   <AuthenticationError {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "designSystem"}
-  <DesignSystem />
 {:else}
   {unreachable($activeRouteStore)}
 {/if}

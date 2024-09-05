@@ -3,7 +3,6 @@
   import type { RepoInfo } from "@bindings/RepoInfo";
 
   import Header from "@app/components/Header.svelte";
-  import Link from "@app/components/Link.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
 
   export let repos: RepoInfo[];
@@ -29,9 +28,5 @@
         <RepoCard {repo} selfDid={`did:key:${config.publicKey}`} />
       {/if}
     {/each}
-  </div>
-
-  <div style:margin-top="1rem">
-    👉 <Link route={{ resource: "designSystem" }}>Design System</Link>
   </div>
 </div>
