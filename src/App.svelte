@@ -16,7 +16,12 @@
 
   onMount(async () => {
     try {
-      await invoke("authenticate");
+      // For development purposes don't run tauri commands when viewing from
+      // a browser.
+      if (window.__TAURI_INTERNALS__) {
+        await invoke("authenticate");
+      }
+
       void router.push({ resource: "home" });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
