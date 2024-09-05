@@ -7,9 +7,9 @@
   import { theme } from "@app/components/ThemeSwitch.svelte";
   import { unreachable } from "@app/lib/utils";
 
+  import AuthenticationError from "@app/views/AuthenticationError.svelte";
   import DesignSystem from "@app/views/DesignSystem.svelte";
   import Home from "@app/views/Home.svelte";
-  import AuthenticationError from "@app/views/AuthenticationError.svelte";
 
   const activeRouteStore = router.activeRouteStore;
   void router.loadFromLocation();
@@ -36,7 +36,7 @@
 {#if $activeRouteStore.resource === "booting"}
   <!-- Don't show anything -->
 {:else if $activeRouteStore.resource === "home"}
-  <Home />
+  <Home {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "authenticationError"}
   <AuthenticationError {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "designSystem"}

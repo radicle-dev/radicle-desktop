@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Repo } from "@app/lib/api/repo";
+  import type { RepoInfo } from "@bindings/RepoInfo";
 
   import { formatRepositoryId, formatTimestamp } from "@app/lib/utils";
 
@@ -7,13 +7,10 @@
   import Fill from "./Fill.svelte";
   import Icon from "./Icon.svelte";
 
-  // TODO: Pass this via repo.
-  export let updatedAt: number = 1725360130;
-
-  export let repo: Repo;
+  export let repo: RepoInfo;
   export let selfDid: string;
 
-  $: project = repo.payloads["xyz.radicle.project"];
+  $: project = repo.payloads["xyz.radicle.project"]!;
 </script>
 
 <style>
@@ -66,17 +63,26 @@
       </div>
     </div>
 
-    <div class="title">Radicle Heartwood Protocol & Stack</div>
-
+    <div class="title">
+      {#if project.data.description}
+        {project.data.description}
+      {:else}
+        No description
+      {/if}
+    </div>
     <div class="global-oid">{formatRepositoryId(repo.rid)}</div>
 
     <div class="global-flex footer">
       <div class="global-flex">
-        <div class="global-flex" style:gap="4px"><Icon name="issue" /> 4</div>
-        <div class="global-flex" style:gap="4px"><Icon name="patch" /> 6</div>
+        <div class="global-flex" style:gap="4px">
+          <Icon name="issue" />{project.meta.issues.open}
+        </div>
+        <div class="global-flex" style:gap="4px">
+          <Icon name="patch" />{project.meta.patches.open}
+        </div>
       </div>
       <span style:color="var(--color-fill-gray)">
-        Updated {formatTimestamp(updatedAt)}
+        Updated {formatTimestamp(project.meta.lastCommit)}
       </span>
     </div>
   </div>

@@ -28,7 +28,7 @@ tauri = { version = "2.0.0-rc.0", features = ["isolation"] }
 tauri-plugin-shell = { version = "2.0.0-rc.0" }
 tauri-plugin-window-state = "2.0.0-rc.1"
 thiserror = { version = "1.0.63" }
-ts-rs = { version = "9.0.1", features = ["serde-json-impl"] }
+ts-rs = { version = "9.0.1", features = ["serde-json-impl", "no-serde-warnings"] }
 
 [features]
 # by default Tauri runs in production mode

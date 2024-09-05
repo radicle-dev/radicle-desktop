@@ -1,13 +1,13 @@
 <script lang="ts">
-  import type { Repo } from "@app/lib/api/repo";
-
-  import repoFixture from "@app/lib/api/fixtures/heartwood-repo.json";
+  import type { Config } from "@bindings/Config";
+  import type { RepoInfo } from "@bindings/RepoInfo";
 
   import Header from "@app/components/Header.svelte";
   import Link from "@app/components/Link.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
 
-  const selfDid = "did:key:z6MksFqXN3Yhqk8pTJdUGLwATkRfQvwZXPqR2qMEhbS9wzpT";
+  export let repos: RepoInfo[];
+  export let config: Config;
 </script>
 
 <style>
@@ -24,25 +24,11 @@
 <Header currentPage="Repositories" />
 <div class="layout">
   <div class="repo-grid">
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
-    <RepoCard repo={repoFixture as Repo} {selfDid} />
+    {#each repos as repo}
+      {#if repo.payloads["xyz.radicle.project"]}
+        <RepoCard {repo} selfDid={`did:key:${config.publicKey}`} />
+      {/if}
+    {/each}
   </div>
 
   <div style:margin-top="1rem">
