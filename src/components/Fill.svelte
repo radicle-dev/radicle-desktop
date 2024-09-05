@@ -1,7 +1,14 @@
 <script lang="ts">
-  export let variant: "primary" | "secondary" | "ghost" | "transparent";
+  export let variant:
+    | "delegate"
+    | "ghost"
+    | "primary"
+    | "private"
+    | "secondary"
+    | "transparent";
   export let stylePadding: string | undefined = undefined;
   export let styleHeight: string | undefined = undefined;
+  export let styleWidth: string | undefined = undefined;
 
   $: style =
     variant === "transparent"
@@ -34,6 +41,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    justify-content: center;
   }
   .p2-3 {
     grid-area: p2-3;
@@ -78,13 +86,14 @@
   role="button"
   tabindex="0"
   {style}
+  style:width={styleWidth}
   style:height={styleHeight}>
   <div class="pixel p1-1"></div>
   <div class="pixel p1-2"></div>
   <div class="pixel p1-3"></div>
 
   <div class="pixel p2-1"></div>
-  <div class="pixel p2-2 txt-semibold txt-small" style:padding={stylePadding}>
+  <div class="pixel p2-2" style:padding={stylePadding}>
     <slot />
   </div>
   <div class="pixel p2-3"></div>

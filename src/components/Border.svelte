@@ -2,6 +2,8 @@
   export let variant: "primary" | "secondary" | "ghost";
   export let stylePadding: string | undefined = undefined;
   export let styleHeight: string | undefined = undefined;
+  export let styleMinHeight: string | undefined = undefined;
+  export let styleWidth: string | undefined = undefined;
 
   $: style = `--button-color-1: var(--color-fill-${variant});`;
 </script>
@@ -121,16 +123,27 @@
       "p3-1 p3-2 p3-3 p3-4 p3-5"
       "p4-1 p4-2 p4-3 p4-4 p4-5"
       "p5-1 p5-2 p5-3 p5-4 p5-5";
+    overflow: hidden;
+  }
+
+  .container:hover .p2-3,
+  .container:hover .p3-2,
+  .container:hover .p3-3,
+  .container:hover .p3-4,
+  .container:hover .p4-3 {
+    background-color: var(--color-background-float);
   }
 </style>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
+  style:width={styleWidth}
   class="container"
   on:click
   role="button"
   tabindex="0"
   {style}
+  style:min-height={styleMinHeight}
   style:height={styleHeight}>
   <div class="pixel p1-1"></div>
   <div class="pixel p1-2"></div>
@@ -146,7 +159,7 @@
 
   <div class="pixel p3-1"></div>
   <div class="pixel p3-2"></div>
-  <div class="pixel p3-3 txt-semibold txt-small" style:padding={stylePadding}>
+  <div class="pixel p3-3" style:padding={stylePadding}>
     <slot />
   </div>
   <div class="pixel p3-4"></div>

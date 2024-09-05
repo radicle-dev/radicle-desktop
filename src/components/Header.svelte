@@ -51,7 +51,7 @@
           }} />
       </div>
       <Fill variant="ghost" stylePadding="0 0.5rem" styleHeight="32px">
-        {currentPage}
+        <span class="txt-small txt-semibold">{currentPage}</span>
       </Fill>
       <Border variant="ghost" stylePadding="0 0.25rem" styleHeight="32px">
         <Icon name="plus" />
@@ -60,7 +60,8 @@
 
     <div class="flex-item" style:gap="0.5rem">
       <Border variant="ghost" stylePadding="0 0.5rem" styleHeight="32px">
-        <Icon name="offline" /> Offline
+        <Icon name="offline" />
+        <span class="txt-small txt-semibold">Offline</span>
       </Border>
       <Popover popoverPositionRight="0" popoverPositionTop="3rem">
         <Border

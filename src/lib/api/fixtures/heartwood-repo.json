@@ -1,0 +1,36 @@
+{
+  "rid": "rad:z3trNYnLWS11cJWC6BbxDs5niGo82",
+  "payloads": {
+    "xyz.radicle.project": {
+      "data": {
+        "name": "rips",
+        "description": "Radicle Improvement Proposals (RIPs)",
+        "defaultBranch": "master"
+      },
+      "meta": {
+        "head": "329dee9a4b65169ea3889a7da239892b705d0d68",
+        "patches": {
+          "open": 0,
+          "draft": 2,
+          "archived": 0,
+          "merged": 0
+        },
+        "issues": {
+          "open": 1,
+          "closed": 0
+        }
+      }
+    }
+  },
+  "delegates": [
+    {
+      "id": "did:key:z6MksFqXN3Yhqk8pTJdUGLwATkRfQvwZXPqR2qMEhbS9wzpT",
+      "alias": "cloudhead"
+    }
+  ],
+  "threshold": 1,
+  "visibility": {
+    "type": "private"
+  },
+  "seeding": 29
+}
