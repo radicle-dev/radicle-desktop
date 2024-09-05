@@ -3672,6 +3672,7 @@ name = "radicle-desktop"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "log",
  "radicle",
  "radicle-surf",
  "serde",

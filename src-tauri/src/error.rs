@@ -73,6 +73,10 @@ pub enum Error {
         hint: &'static str,
     },
 
+    /// Tauri error.
+    #[error(transparent)]
+    Tauri(#[from] tauri::Error),
+
     /// Storage error.
     #[error(transparent)]
     Storage(#[from] radicle::storage::Error),

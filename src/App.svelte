@@ -2,15 +2,27 @@
   import { onMount } from "svelte";
 
   import { invoke } from "@tauri-apps/api/core";
+  import { listen } from "@tauri-apps/api/event";
 
   import * as router from "@app/lib/router";
   import { theme } from "@app/components/ThemeSwitch.svelte";
+  import { subscribeToNodeEvents } from "@app/lib/events";
   import { unreachable } from "@app/lib/utils";
 
   import AuthenticationError from "@app/views/AuthenticationError.svelte";
   import Home from "@app/views/Home.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
+
+  subscribeToNodeEvents();
+
+  void listen("event", event => {
+    console.log(event.payload);
+  });
+
+  void listen("node_status", event => {
+    console.log(`Node: ${event.payload}`);
+  });
 
   const activeRouteStore = router.activeRouteStore;
 

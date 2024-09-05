@@ -1,8 +1,13 @@
 mod commands;
 mod error;
+mod events;
 mod types;
 
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
+
 use serde_json::json;
+use tauri::Listener;
 use tauri::Manager;
 
 use radicle::identity::doc::PayloadId;
@@ -15,6 +20,7 @@ use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
 
 use commands::{auth, cobs, profile, repos};
+use events::subscribe_events;
 use types::repo::SupportedPayloads;
 
 struct AppState {
@@ -97,7 +103,23 @@ pub fn run() {
                 }),
             }?;
 
-            app.manage(AppState { profile });
+            app.manage(AppState {
+                profile: profile.clone(),
+            });
+
+            let existing_events_thread: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+
+            let events_handler = app.handle().clone();
+            app.listen("subscribe_events", move |_| {
+                let profile = profile.clone();
+                let existing_events_thread = existing_events_thread.clone();
+
+                let events_handler = events_handler.to_owned();
+                tauri::async_runtime::spawn(async move {
+                    let _result =
+                        subscribe_events(&events_handler, profile, existing_events_thread).await;
+                });
+            });
 
             Ok(())
         })
