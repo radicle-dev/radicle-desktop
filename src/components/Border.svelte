@@ -1,11 +1,15 @@
 <script lang="ts">
   export let variant: "primary" | "secondary" | "ghost";
+  export let hoverable: boolean = false;
+
   export let stylePadding: string | undefined = undefined;
   export let styleHeight: string | undefined = undefined;
   export let styleMinHeight: string | undefined = undefined;
   export let styleWidth: string | undefined = undefined;
 
-  $: style = `--button-color-1: var(--color-fill-${variant});`;
+  $: style =
+    `--local-button-color-1: var(--color-fill-${variant});` +
+    `--local-hover-background-color: ${hoverable ? "var(--color-background-float)" : "var(--color-background-default)"}`;
 </script>
 
 <style>
@@ -21,7 +25,7 @@
   }
   .p1-3 {
     grid-area: p1-3;
-    background-color: var(--button-color-1);
+    background-color: var(--local-button-color-1);
   }
   .p1-4 {
     grid-area: p1-4;
@@ -35,14 +39,14 @@
   }
   .p2-2 {
     grid-area: p2-2;
-    background-color: var(--button-color-1);
+    background-color: var(--local-button-color-1);
   }
   .p2-3 {
     grid-area: p2-3;
   }
   .p2-4 {
     grid-area: p2-4;
-    background-color: var(--button-color-1);
+    background-color: var(--local-button-color-1);
   }
   .p2-5 {
     grid-area: p2-5;
@@ -50,7 +54,7 @@
 
   .p3-1 {
     grid-area: p3-1;
-    background-color: var(--button-color-1);
+    background-color: var(--local-button-color-1);
   }
   .p3-2 {
     grid-area: p3-2;
@@ -66,7 +70,7 @@
   }
   .p3-5 {
     grid-area: p3-5;
-    background-color: var(--button-color-1);
+    background-color: var(--local-button-color-1);
   }
 
   .p4-1 {
@@ -74,14 +78,14 @@
   }
   .p4-2 {
     grid-area: p4-2;
-    background-color: var(--button-color-1);
+    background-color: var(--local-button-color-1);
   }
   .p4-3 {
     grid-area: p4-3;
   }
   .p4-4 {
     grid-area: p4-4;
-    background-color: var(--button-color-1);
+    background-color: var(--local-button-color-1);
   }
   .p4-5 {
     grid-area: p4-5;
@@ -95,7 +99,7 @@
   }
   .p5-3 {
     grid-area: p5-3;
-    background-color: var(--button-color-1);
+    background-color: var(--local-button-color-1);
   }
   .p5-4 {
     grid-area: p5-4;
@@ -125,13 +129,20 @@
       "p5-1 p5-2 p5-3 p5-4 p5-5";
     overflow: hidden;
   }
+  .container .p2-3,
+  .container .p3-2,
+  .container .p3-3,
+  .container .p3-4,
+  .container .p4-3 {
+    background-color: var(--color-background-default);
+  }
 
   .container:hover .p2-3,
   .container:hover .p3-2,
   .container:hover .p3-3,
   .container:hover .p3-4,
   .container:hover .p4-3 {
-    background-color: var(--color-background-float);
+    background-color: var(--local-hover-background-color);
   }
 </style>
 

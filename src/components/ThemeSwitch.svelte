@@ -35,7 +35,7 @@
 </script>
 
 <div style="display: flex; gap: 1rem;">
-  <Border styleHeight="32px" variant="secondary">
+  <Border variant="secondary">
     <Fill
       stylePadding="0 0.5rem"
       variant={$theme === "dark" ? "secondary" : "transparent"}
