@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+
+cargo check --manifest-path ./src-tauri/Cargo.toml
+cargo clippy --manifest-path ./src-tauri/Cargo.toml -- -Dwarnings
+cargo fmt --manifest-path ./src-tauri/Cargo.toml --check

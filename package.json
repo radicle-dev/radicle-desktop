@@ -8,7 +8,9 @@
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "scripts/check",
+    "check": "scripts/check-js && scripts/check-rs",
+    "check-js": "scripts/check-js",
+    "check-rs": "scripts/check-rs",
     "format": "npx prettier '**/*.@(ts|js|svelte|json|css|html|yml)' --write",
     "tauri": "npx tauri"
   },
