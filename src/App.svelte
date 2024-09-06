@@ -11,7 +11,6 @@
   import Home from "@app/views/Home.svelte";
 
   const activeRouteStore = router.activeRouteStore;
-  void router.loadFromLocation();
 
   onMount(async () => {
     try {
@@ -21,7 +20,7 @@
         await invoke("authenticate");
       }
 
-      void router.push({ resource: "home" });
+      void router.loadFromLocation();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       void router.push({
