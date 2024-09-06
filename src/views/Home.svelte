@@ -4,9 +4,24 @@
 
   import Header from "@app/components/Header.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
+  import { onMount } from "svelte";
+  import { invoke } from "@tauri-apps/api/core";
 
   export let repos: RepoInfo[];
   export let config: Config;
+
+  onMount(async () => {
+    const patches = await invoke("list_patches", {
+      rid: "rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5",
+      status: "open",
+    });
+    const issues = await invoke("list_issues", {
+      rid: "rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5",
+      status: "open",
+    });
+
+    console.log(patches, issues);
+  });
 </script>
 
 <style>

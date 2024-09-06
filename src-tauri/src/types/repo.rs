@@ -4,13 +4,15 @@ use ts_rs::TS;
 
 use radicle::identity::RepoId;
 
+use super::cobs::Author;
+
 /// Repos info.
 #[derive(Serialize, TS)]
 #[ts(export)]
 pub struct RepoInfo {
     pub payloads: SupportedPayloads,
     #[ts(type = "({ id: string } | { id: string, alias?: string })[]")]
-    pub delegates: Vec<Value>,
+    pub delegates: Vec<Author>,
     pub threshold: usize,
     #[ts(type = "{ type: 'public' } | { type: 'private', allow?: string[] }")]
     pub visibility: radicle::identity::Visibility,

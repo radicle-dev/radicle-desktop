@@ -1,6 +1,5 @@
 mod commands;
 mod error;
-mod json;
 mod types;
 
 use serde_json::json;
@@ -15,7 +14,7 @@ use radicle::patch::cache::Patches;
 use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
 
-use commands::{auth, profile, repos};
+use commands::{auth, cobs, profile, repos};
 use types::repo::SupportedPayloads;
 
 struct AppState {
@@ -35,7 +34,7 @@ impl AppState {
         let delegates = doc
             .delegates
             .into_iter()
-            .map(|did| json::Author::new(&did).as_json(&aliases))
+            .map(|did| types::cobs::Author::new(did, &aliases))
             .collect::<Vec<_>>();
         let db = &self.profile.database()?;
         let seeding = db.count(&rid).unwrap_or_default();
@@ -107,6 +106,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             auth::authenticate,
             repos::list_repos,
+            repos::repo_by_id,
+            cobs::list_issues,
+            cobs::list_patches,
             profile::config,
         ])
         .run(tauri::generate_context!())

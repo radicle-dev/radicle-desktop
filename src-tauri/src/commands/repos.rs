@@ -1,3 +1,4 @@
+use radicle::identity::RepoId;
 use radicle::storage::ReadStorage;
 
 use crate::error::Error;
@@ -27,4 +28,15 @@ pub fn list_repos(ctx: tauri::State<AppState>) -> Result<Vec<types::repo::RepoIn
         .collect::<Vec<_>>();
 
     Ok::<_, Error>(infos)
+}
+
+#[tauri::command]
+pub fn repo_by_id(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+) -> Result<types::repo::RepoInfo, Error> {
+    let (repo, doc) = ctx.repo(rid)?;
+    let repo_info = ctx.repo_info(&repo, doc)?;
+
+    Ok::<_, Error>(repo_info)
 }

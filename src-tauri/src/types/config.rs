@@ -6,7 +6,7 @@ use radicle::node::config::DefaultSeedingPolicy;
 use radicle::node::Alias;
 
 /// Service configuration.
-#[derive(Debug, Clone, TS, Serialize)]
+#[derive(TS, Serialize)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct Config {

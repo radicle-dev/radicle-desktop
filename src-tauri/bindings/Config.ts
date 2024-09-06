@@ -5,7 +5,7 @@
  */
 export type Config = {
   /**
-   * Node alias.
+   * Node Public Key in NID format.
    */
   publicKey: string;
   /**
