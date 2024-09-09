@@ -2,26 +2,13 @@
   import type { Config } from "@bindings/Config";
   import type { RepoInfo } from "@bindings/RepoInfo";
 
+  import * as router from "@app/lib/router";
+
   import Header from "@app/components/Header.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
-  import { onMount } from "svelte";
-  import { invoke } from "@tauri-apps/api/core";
 
   export let repos: RepoInfo[];
   export let config: Config;
-
-  onMount(async () => {
-    const patches = await invoke("list_patches", {
-      rid: "rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5",
-      status: "open",
-    });
-    const issues = await invoke("list_issues", {
-      rid: "rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5",
-      status: "open",
-    });
-
-    console.log(patches, issues);
-  });
 </script>
 
 <style>
@@ -40,7 +27,16 @@
   <div class="repo-grid">
     {#each repos as repo}
       {#if repo.payloads["xyz.radicle.project"]}
-        <RepoCard {repo} selfDid={`did:key:${config.publicKey}`} />
+        <RepoCard
+          {repo}
+          selfDid={`did:key:${config.publicKey}`}
+          on:click={() => {
+            void router.push({
+              resource: "repo.issues",
+              rid: repo.rid,
+              status: "open",
+            });
+          }} />
       {/if}
     {/each}
   </div>

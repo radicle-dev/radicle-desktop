@@ -31,7 +31,12 @@
   }
 </style>
 
-<Border variant="ghost" styleWidth="100%" stylePadding="8px 12px" hoverable>
+<Border
+  variant="ghost"
+  styleWidth="100%"
+  stylePadding="8px 12px"
+  hoverable
+  on:click>
   <div class="container txt-small">
     <div class="global-flex header">
       <div class="global-flex">

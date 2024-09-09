@@ -5,6 +5,7 @@ import { get, writable } from "svelte/store";
 import * as mutexExecutor from "@app/lib/mutexExecutor";
 import * as utils from "@app/lib/utils";
 import { loadRoute } from "@app/lib/router/definitions";
+import { repoRouteToPath, repoUrlToRoute } from "@app/views/repo/router";
 
 export { type Route };
 
@@ -45,10 +46,8 @@ async function navigateToUrl(
   if (route) {
     await navigate(action, route);
   } else {
-    await navigate(action, {
-      // On 404 we redirect to the Home page, shouldn't happen.
-      resource: "home",
-    });
+    console.error("Could not resolve route for URL: ", url);
+    await navigate(action, { resource: "home" });
   }
 }
 
@@ -95,11 +94,14 @@ export async function replace(newRoute: Route): Promise<void> {
 
 function urlToRoute(url: URL): Route | null {
   const segments = url.pathname.substring(1).split("/");
-
   const resource = segments.shift();
+
   switch (resource) {
     case "": {
       return { resource: "home" };
+    }
+    case "repos": {
+      return repoUrlToRoute(segments, url.searchParams);
     }
     case "authenticationError": {
       return { resource: "authenticationError", params: { error: "" } };
@@ -115,6 +117,11 @@ export function routeToPath(route: Route): string {
     return "/";
   } else if (route.resource === "authenticationError") {
     return "/authenticationError";
+  } else if (
+    route.resource === "repo.issues" ||
+    route.resource === "repo.patches"
+  ) {
+    return repoRouteToPath(route);
   } else if (route.resource === "booting") {
     return "";
   } else {
