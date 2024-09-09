@@ -2,6 +2,13 @@
   box-sizing: border-box;
 }
 
+html {
+  height: 100%;
+  width: 100%;
+  /* Prevent rubber-band effect when scrolling via touchpad on macOS. */
+  overscroll-behavior: none;
+}
+
 body {
   height: 100%;
   width: 100%;
@@ -9,11 +16,6 @@ body {
   padding: 0;
   color: var(--color-foreground-contrast);
   background-color: var(--color-background-default);
-}
-
-html {
-  height: 100%;
-  width: 100%;
 }
 
 .global-oid {
