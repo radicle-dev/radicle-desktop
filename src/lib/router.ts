@@ -80,28 +80,9 @@ async function navigate(
     return;
   }
 
-  setTitle(loadedRoute);
   activeRouteStore.set(loadedRoute);
   activeUnloadedRouteStore.set(newRoute);
   isLoading.set(false);
-}
-
-function setTitle(loadedRoute: LoadedRoute) {
-  const title: string[] = [];
-
-  if (loadedRoute.resource === "booting") {
-    title.push("Radicle");
-  } else if (loadedRoute.resource === "home") {
-    title.push("Home");
-    title.push("Radicle");
-  } else if (loadedRoute.resource === "authenticationError") {
-    title.push("Authentication Error");
-    title.push("Radicle");
-  } else {
-    utils.unreachable(loadedRoute);
-  }
-
-  document.title = title.join(" · ");
 }
 
 export async function push(newRoute: Route): Promise<void> {
