@@ -141,9 +141,13 @@ pub fn run() {
             repos::list_repos,
             repos::repo_by_id,
             cobs::list_issues,
+            cobs::issues_by_id,
             cobs::list_patches,
             thread::create_issue_comment,
             thread::create_patch_comment,
+            cobs::patches_by_id,
+            cobs::revisions_by_patch,
+            cobs::revisions_by_id,
             profile::config,
         ])
         .run(tauri::generate_context!())

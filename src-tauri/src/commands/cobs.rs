@@ -1,5 +1,10 @@
+use std::str::FromStr;
+
+use radicle::cob::ObjectId;
+use radicle::git::Oid;
 use radicle::identity::RepoId;
 use radicle::issue::cache::Issues;
+use radicle::issue::IssueId;
 use radicle::patch::cache::Patches;
 
 use crate::error::Error;
@@ -33,6 +38,22 @@ pub fn list_issues(
 }
 
 #[tauri::command]
+pub fn issues_by_id(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+    id: IssueId,
+) -> Result<Option<cobs::Issue>, Error> {
+    let (repo, _) = ctx.repo(rid)?;
+    let issues = ctx.profile.issues(&repo)?;
+    let issue = issues.get(&id)?;
+
+    let aliases = &ctx.profile.aliases();
+    let issue = issue.map(|issue| cobs::Issue::new(id, issue, aliases));
+
+    Ok::<_, Error>(issue)
+}
+
+#[tauri::command]
 pub fn list_patches(
     ctx: tauri::State<AppState>,
     rid: RepoId,
@@ -56,6 +77,66 @@ pub fn list_patches(
         .collect::<Vec<_>>();
 
     Ok::<_, Error>(patches)
+}
+
+#[tauri::command]
+pub fn patches_by_id(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+    id: String,
+) -> Result<Option<cobs::Patch>, Error> {
+    let id = ObjectId::from_str(&id)?;
+    let (repo, _) = ctx.repo(rid)?;
+    let patches = ctx.profile.patches(&repo)?;
+    let patch = patches.get(&id)?;
+
+    let aliases = &ctx.profile.aliases();
+    let patches = patch.map(|patch| cobs::Patch::new(id, patch, aliases));
+
+    Ok::<_, Error>(patches)
+}
+
+#[tauri::command]
+pub fn revisions_by_patch(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+    id: String,
+) -> Result<Option<Vec<cobs::Revision>>, Error> {
+    let id = ObjectId::from_str(&id)?;
+    let (repo, _) = ctx.repo(rid)?;
+    let patches = ctx.profile.patches(&repo)?;
+
+    let revisions = patches.get(&id)?.map(|patch| {
+        let aliases = &ctx.profile.aliases();
+
+        patch
+            .revisions()
+            .map(|(_, r)| cobs::Revision::new(r.clone(), aliases))
+            .collect::<Vec<_>>()
+    });
+
+    Ok::<_, Error>(revisions)
+}
+
+#[tauri::command]
+pub fn revisions_by_id(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+    id: String,
+    revision_id: String,
+) -> Result<Option<cobs::Revision>, Error> {
+    let id = ObjectId::from_str(&id)?;
+    let (repo, _) = ctx.repo(rid)?;
+    let patches = ctx.profile.patches(&repo)?;
+    let revision = patches.get(&id)?.and_then(|patch| {
+        let revision_id = Oid::from_str(&revision_id).ok()?;
+        let aliases = &ctx.profile.aliases();
+
+        patch
+            .revision(&revision_id.into())
+            .map(|r| cobs::Revision::new(r.clone(), aliases))
+    });
+    Ok::<_, Error>(revision)
 }
 
 mod query {

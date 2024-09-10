@@ -12,6 +12,7 @@
     "check-js": "scripts/check-js",
     "check-rs": "scripts/check-rs",
     "format": "npx prettier '**/*.@(ts|js|svelte|json|css|html|yml)' --write",
+    "generate-types": "cargo test --manifest-path ./src-tauri/Cargo.toml && npx prettier ./src-tauri/bindings --write",
     "tauri": "npx tauri"
   },
   "engines": {
