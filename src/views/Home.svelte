@@ -30,7 +30,7 @@
         <RepoCard
           {repo}
           selfDid={`did:key:${config.publicKey}`}
-          on:click={() => {
+          onclick={() => {
             void router.push({
               resource: "repo.issues",
               rid: repo.rid,

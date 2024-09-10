@@ -9,6 +9,7 @@
 
   export let repo: RepoInfo;
   export let selfDid: string;
+  export let onclick: (() => void) | undefined = undefined;
 
   $: project = repo.payloads["xyz.radicle.project"]!;
 </script>
@@ -36,7 +37,7 @@
   styleWidth="100%"
   stylePadding="8px 12px"
   hoverable
-  on:click>
+  {onclick}>
   <div class="container txt-small">
     <div class="global-flex header">
       <div class="global-flex">
