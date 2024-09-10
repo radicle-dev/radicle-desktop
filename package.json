@@ -20,6 +20,7 @@
   "license": "MIT",
   "dependencies": {
     "@tauri-apps/api": "^2.0.0-beta.15",
+    "@tauri-apps/plugin-clipboard-manager": "^2.0.0-rc.1",
     "@tauri-apps/plugin-shell": "^2.0.0-beta.8",
     "@tauri-apps/plugin-window-state": "^2.0.0-rc.0"
   },
@@ -28,12 +29,14 @@
     "@sveltejs/vite-plugin-svelte": "^4.0.0-next.6",
     "@tauri-apps/cli": "^2.0.0-rc.1",
     "@tsconfig/svelte": "^5.0.4",
+    "@types/lodash": "^4.17.7",
     "@types/node": "^20.9.0",
     "baconjs": "^3.0.19",
     "bs58": "^6.0.0",
     "eslint": "^9.9.1",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-svelte": "^2.43.0",
+    "lodash": "^4.17.21",
     "prettier": "^3.3.3",
     "prettier-plugin-svelte": "^3.2.6",
     "svelte": "^5.0.0-next.243",

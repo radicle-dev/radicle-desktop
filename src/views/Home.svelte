@@ -4,6 +4,7 @@
 
   import * as router from "@app/lib/router";
 
+  import CopyableId from "@app/components/CopyableId.svelte";
   import Header from "@app/components/Header.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
 
@@ -22,7 +23,11 @@
   }
 </style>
 
-<Header currentPage="Repositories" />
+<Header>
+  <svelte:fragment slot="center">
+    <CopyableId id={`did:key:${config.publicKey}`} />
+  </svelte:fragment>
+</Header>
 <div class="layout">
   <div class="repo-grid">
     {#each repos as repo}

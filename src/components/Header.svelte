@@ -1,12 +1,9 @@
 <script lang="ts">
   import Background from "./Header/Background.svelte";
   import Border from "./Border.svelte";
-  import Fill from "./Fill.svelte";
   import Icon from "./Icon.svelte";
   import Popover from "./Popover.svelte";
   import ThemeSwitch from "./ThemeSwitch.svelte";
-
-  export let currentPage: string;
 </script>
 
 <style>
@@ -50,13 +47,10 @@
             window.history.forward();
           }} />
       </div>
-      <Fill variant="ghost" stylePadding="0 0.5rem" styleHeight="32px">
-        <span class="txt-small txt-semibold">{currentPage}</span>
-      </Fill>
-      <Border variant="ghost" stylePadding="0 0.25rem" styleHeight="32px">
-        <Icon name="plus" />
-      </Border>
+      <slot name="icon-left" />
     </div>
+
+    <slot name="center" />
 
     <div class="flex-item" style:gap="0.5rem">
       <Border variant="ghost" stylePadding="0 0.5rem" styleHeight="32px">
@@ -71,7 +65,7 @@
           variant="ghost"
           stylePadding="0 0.25rem"
           styleHeight="32px">
-          <Icon name="settings" />
+          <Icon name="more-vertical" />
         </Border>
         <Border variant="ghost" slot="popover" stylePadding="0.5rem 1rem">
           <div style="display: flex; gap: 2rem; align-items: center;">

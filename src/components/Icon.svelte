@@ -7,7 +7,9 @@
   export let name:
     | "arrow-left"
     | "arrow-right"
+    | "checkmark"
     | "chevron-right"
+    | "copy"
     | "dashboard"
     | "delegate"
     | "diff"
@@ -16,12 +18,14 @@
     | "issue"
     | "lock"
     | "moon"
+    | "more-vertical"
     | "offline"
     | "patch"
     | "plus"
     | "repo"
     | "seedling"
     | "settings"
+    | "sidebar"
     | "sun"
     | "warning";
 </script>
@@ -65,6 +69,17 @@
     <path d="M10 3H9.00003V13H10V3Z" />
     <path d="M13 6H12V7H13V6Z" />
     <path d="M14 7H13V8H14V7Z" />
+  {:else if name === "checkmark"}
+    <path d="M7 11V12H6V11H7Z" />
+    <path d="M8 10V11L7 11L7 10H8Z" />
+    <path d="M9 9V10H8V9L9 9Z" />
+    <path d="M10 8V9L9 9V8H10Z" />
+    <path d="M11 7V8L10 8L10 7H11Z" />
+    <path d="M12 6V7H11V6H12Z" />
+    <path d="M13 5V6L12 6V5L13 5Z" />
+    <path d="M4 8V9H3L3 8H4Z" />
+    <path d="M5 9L5 10L4 10L4 9H5Z" />
+    <path d="M6 10L6 11H5L5 10L6 10Z" />
   {:else if name === "chevron-right"}
     <path d="M9 7L10 7L10 8L9 8L9 7Z" />
     <path d="M8 6H9V7H8L8 6Z" />
@@ -76,6 +91,17 @@
     <path d="M7 10L8 10L8 11L7 11L7 10Z" />
     <path d="M9 8L10 8V9L9 9V8Z" />
     <path d="M8 9H9V10H8L8 9Z" />
+  {:else if name === "copy"}
+    <path d="M6.5 2H13.5V3H6.5V2Z" />
+    <path d="M3.5 5H4.5V6H3.5V5Z" />
+    <path d="M7.5 5H10.5V6H7.5V5Z" />
+    <path d="M6.5 10H13.5V11H6.5V10Z" />
+    <path d="M3.5 13H10.5V14H3.5V13Z" />
+    <path d="M13.5 3L14.5 3V10L13.5 10L13.5 3Z" />
+    <path d="M5.5 3L6.5 3L6.5 10L5.5 10V3Z" />
+    <path d="M2.5 6H3.5L3.5 13H2.5V6Z" />
+    <path d="M10.5 12H11.5V13H10.5V12Z" />
+    <path d="M10.5 6L11.5 6V9H10.5L10.5 6Z" />
   {:else if name === "dashboard"}
     <path d="M2 11H14V12H2V11Z" />
     <path d="M2 9H3V11H2L2 9Z" />
@@ -193,6 +219,10 @@
     <path d="M11 4H12V7H11V4Z" />
     <path d="M10 5H13V6H10V5Z" />
     <path d="M9 3H10V4H9V3Z" />
+  {:else if name === "more-vertical"}
+    <path d="M9 2V4L7 4L7 2L9 2Z" />
+    <path d="M9 7L9 9H7L7 7H9Z" />
+    <path d="M9 12L9 14H7L7 12H9Z" />
   {:else if name === "offline"}
     <path d="M3 6L3 8H2L2 6H3Z" />
     <path d="M13 10V8H14V10H13Z" />
@@ -338,6 +368,12 @@
     <path d="M4 4L5 4L5 7H4V4Z" />
     <path d="M11 9L12 9V12H11V9Z" />
     <path d="M7 4L8 4V7L7 7V4Z" />
+  {:else if name === "sidebar"}
+    <path d="M2 3H3V13H2V3Z" />
+    <path d="M13 3H14V13H13V3Z" />
+    <path d="M6 2H7V14H6V2Z" />
+    <path d="M3 2H13L13 3H3L3 2Z" />
+    <path d="M3 13H13L13 14H3L3 13Z" />
   {:else if name === "sun"}
     <path d="M8 2H9V3H8V2Z" />
     <path d="M14 8V9H13V8H14Z" />
