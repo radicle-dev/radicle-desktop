@@ -2,6 +2,7 @@
   import { unreachable } from "@app/lib/utils";
 
   export let size: "16" | "32" = "16";
+  export let onclick: (() => void) | undefined = undefined;
 
   export let name:
     | "arrow-left"
@@ -39,7 +40,7 @@
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <svg
   role="img"
-  on:click
+  {onclick}
   width={size}
   height={size}
   fill="currentColor"

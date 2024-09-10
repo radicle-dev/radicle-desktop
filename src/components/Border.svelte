@@ -1,6 +1,7 @@
 <script lang="ts">
   export let variant: "primary" | "secondary" | "ghost";
   export let hoverable: boolean = false;
+  export let onclick: (() => void) | undefined = undefined;
 
   export let stylePadding: string | undefined = undefined;
   export let styleHeight: string | undefined = undefined;
@@ -150,7 +151,7 @@
 <div
   style:width={styleWidth}
   class="container"
-  on:click
+  {onclick}
   role="button"
   tabindex="0"
   {style}

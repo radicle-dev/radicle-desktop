@@ -9,6 +9,7 @@
   export let stylePadding: string | undefined = undefined;
   export let styleHeight: string | undefined = undefined;
   export let styleWidth: string | undefined = undefined;
+  export let onclick: (() => void) | undefined = undefined;
 
   $: style =
     variant === "transparent"
@@ -82,9 +83,9 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
   class="container"
-  on:click
   role="button"
   tabindex="0"
+  {onclick}
   {style}
   style:width={styleWidth}
   style:height={styleHeight}>

@@ -39,7 +39,7 @@
     <Fill
       stylePadding="0 0.5rem"
       variant={$theme === "dark" ? "secondary" : "transparent"}
-      on:click={() => {
+      onclick={() => {
         storeTheme("dark");
       }}>
       <Icon name="moon" />
@@ -49,7 +49,7 @@
     <Fill
       stylePadding="0 0.5rem"
       variant={$theme === "light" ? "secondary" : "transparent"}
-      on:click={() => {
+      onclick={() => {
         storeTheme("light");
       }}>
       <span

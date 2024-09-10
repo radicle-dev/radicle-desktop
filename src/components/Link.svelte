@@ -28,6 +28,6 @@
   }
 </style>
 
-<a on:click={navigateToRoute} href={routeToPath(route)}>
+<a onclick={navigateToRoute} href={routeToPath(route)}>
   <slot />
 </a>

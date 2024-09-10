@@ -47,7 +47,7 @@
   }
 </style>
 
-<svelte:window on:click={clickOutside} on:touchstart={clickOutside} />
+<svelte:window onclick={clickOutside} on:touchstart={clickOutside} />
 
 <div
   bind:this={thisComponent}

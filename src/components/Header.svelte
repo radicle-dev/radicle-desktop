@@ -41,12 +41,12 @@
       <div class="flex-item navigation" style:gap="0.5rem">
         <Icon
           name="arrow-left"
-          on:click={() => {
+          onclick={() => {
             window.history.back();
           }} />
         <Icon
           name="arrow-right"
-          on:click={() => {
+          onclick={() => {
             window.history.forward();
           }} />
       </div>
@@ -67,7 +67,7 @@
         <Border
           slot="toggle"
           let:toggle
-          on:click={toggle}
+          onclick={toggle}
           variant="ghost"
           stylePadding="0 0.25rem"
           styleHeight="32px">

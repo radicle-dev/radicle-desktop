@@ -1,5 +1,6 @@
 <script lang="ts">
   export let variant: "primary" | "secondary" | "ghost";
+  export let onclick: (() => void) | undefined = undefined;
 
   $: style =
     `--button-color-1: var(--color-fill-${variant});` +
@@ -222,7 +223,7 @@
 </style>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="container" on:click role="button" tabindex="0" {style}>
+<div class="container" {onclick} role="button" tabindex="0" {style}>
   <div class="pixel p1-1"></div>
   <div class="pixel p1-2"></div>
   <div class="pixel p1-3"></div>
