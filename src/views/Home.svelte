@@ -13,22 +13,26 @@
 </script>
 
 <style>
-  .layout {
-    padding: 1rem;
+  .header {
+    position: sticky;
+    top: 0;
   }
   .repo-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
     gap: 1rem;
+    padding: 1rem;
   }
 </style>
 
-<Header>
-  <svelte:fragment slot="center">
-    <CopyableId id={`did:key:${config.publicKey}`} />
-  </svelte:fragment>
-</Header>
-<div class="layout">
+<div style:height="fit-content">
+  <div class="header">
+    <Header>
+      <svelte:fragment slot="center">
+        <CopyableId id={`did:key:${config.publicKey}`} />
+      </svelte:fragment>
+    </Header>
+  </div>
   <div class="repo-grid">
     {#each repos as repo}
       {#if repo.payloads["xyz.radicle.project"]}
