@@ -7,7 +7,6 @@
 
 <style>
   .header {
-    margin: 0 0.5rem;
     padding: 0 0.5rem;
     gap: 0.25rem;
     height: 3rem;
