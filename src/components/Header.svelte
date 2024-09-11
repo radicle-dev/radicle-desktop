@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Background from "./Header/Background.svelte";
   import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
   import Popover from "./Popover.svelte";
@@ -7,11 +6,8 @@
 </script>
 
 <style>
-  .flex-item {
-    display: flex;
-    align-items: center;
-  }
-  header {
+  .header {
+    margin: 0 0.5rem;
     padding: 0 0.5rem;
     gap: 0.25rem;
     height: 3rem;
@@ -25,17 +21,44 @@
     gap: 0.5rem;
     padding: 0 0.5rem;
   }
-
   .navigation :global(svg:hover) {
     display: flex;
     color: var(--color-fill-secondary);
   }
+  .bottom-pixel-corners {
+    position: absolute;
+    top: 0;
+    left: 0.5rem;
+    right: 0.5rem;
+    height: 3rem;
+    z-index: -1;
+
+    background-color: var(--color-background-float);
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% calc(100% - 6px),
+      calc(100% - 2px) calc(100% - 6px),
+      calc(100% - 2px) calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 4px),
+      calc(100% - 4px) calc(100% - 2px),
+      calc(100% - 6px) calc(100% - 2px),
+      calc(100% - 6px) 100%,
+      6px 100%,
+      6px calc(100% - 2px),
+      4px calc(100% - 2px),
+      4px calc(100% - 4px),
+      2px calc(100% - 4px),
+      2px calc(100% - 6px),
+      0 calc(100% - 6px)
+    );
+  }
 </style>
 
-<header class="flex-item">
-  <div class="wrapper flex-item">
-    <div class="wrapper-left flex-item">
-      <div class="flex-item navigation" style:gap="0.5rem">
+<div class="header global-flex">
+  <div class="wrapper global-flex">
+    <div class="wrapper-left global-flex">
+      <div class="global-flex navigation" style:gap="0.5rem">
         <Icon
           name="arrow-left"
           onclick={() => {
@@ -52,7 +75,7 @@
 
     <slot name="center" />
 
-    <div class="flex-item" style:gap="0.5rem">
+    <div class="global-flex" style:gap="0.5rem">
       <Border variant="ghost" stylePadding="0 0.5rem" styleHeight="32px">
         <Icon name="offline" />
         <span class="txt-small txt-semibold">Offline</span>
@@ -75,6 +98,5 @@
       </Popover>
     </div>
   </div>
-
-  <Background />
-</header>
+  <div class="bottom-pixel-corners"></div>
+</div>
