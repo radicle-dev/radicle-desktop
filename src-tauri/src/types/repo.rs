@@ -11,7 +11,7 @@ use super::cobs::Author;
 #[ts(export)]
 pub struct RepoInfo {
     pub payloads: SupportedPayloads,
-    #[ts(type = "({ id: string } | { id: string, alias?: string })[]")]
+    #[ts(as = "Vec<Author>")]
     pub delegates: Vec<Author>,
     pub threshold: usize,
     #[ts(type = "{ type: 'public' } | { type: 'private', allow?: string[] }")]

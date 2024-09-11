@@ -53,7 +53,7 @@
             </div>
           </Fill>
         {/if}
-        {#if repo.delegates.find(x => x.id === selfDid)}
+        {#if repo.delegates.find(x => x.did === selfDid)}
           <Fill variant="delegate" styleWidth="24px" styleHeight="24px">
             <div style:color="var(--color-fill-primary)">
               <Icon name="delegate" />
