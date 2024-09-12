@@ -24,6 +24,11 @@
 <style>
   .copyable-id {
     cursor: pointer;
+    color: var(--color-foreground-dim);
+  }
+
+  .copyable-id:hover {
+    color: var(--color-foreground-contrast);
   }
 </style>
 
@@ -32,8 +37,7 @@
   role="button"
   tabindex="0"
   onclick={copy}
-  class="copyable-id global-flex txt-small txt-monospace"
-  style:color="var(--color-foreground-dim)">
+  class="copyable-id global-flex txt-small txt-monospace">
   {id}
   <Icon name={icon} />
 </div>
