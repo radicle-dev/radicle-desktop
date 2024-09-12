@@ -1,6 +1,7 @@
-import type { RepoInfo } from "@bindings/RepoInfo";
-import type { Patch } from "@bindings/Patch";
+import type { Config } from "@bindings/Config";
 import type { Issue } from "@bindings/Issue";
+import type { Patch } from "@bindings/Patch";
+import type { RepoInfo } from "@bindings/RepoInfo";
 
 import { invoke } from "@tauri-apps/api/core";
 import { unreachable } from "@app/lib/utils";
@@ -13,7 +14,7 @@ export interface RepoIssuesRoute {
 
 export interface LoadedRepoIssuesRoute {
   resource: "repo.issues";
-  params: { repo: RepoInfo; issues: Issue[] };
+  params: { repo: RepoInfo; config: Config; issues: Issue[] };
 }
 
 export interface RepoPatchesRoute {
@@ -24,7 +25,7 @@ export interface RepoPatchesRoute {
 
 export interface LoadedRepoPatchesRoute {
   resource: "repo.patches";
-  params: { repo: RepoInfo; patches: Patch[] };
+  params: { repo: RepoInfo; config: Config; patches: Patch[] };
 }
 
 export type RepoRoute = RepoIssuesRoute | RepoPatchesRoute;
@@ -34,24 +35,26 @@ export async function loadPatches(route: RepoRoute): Promise<LoadedRepoRoute> {
   const repo: RepoInfo = await invoke("repo_by_id", {
     rid: route.rid,
   });
+  const config: Config = await invoke("config");
   const patches: Patch[] = await invoke("list_patches", {
     rid: route.rid,
     status: route.status,
   });
 
-  return { resource: "repo.patches", params: { repo, patches } };
+  return { resource: "repo.patches", params: { repo, config, patches } };
 }
 
 export async function loadIssues(route: RepoRoute): Promise<LoadedRepoRoute> {
   const repo: RepoInfo = await invoke("repo_by_id", {
     rid: route.rid,
   });
+  const config: Config = await invoke("config");
   const issues: Issue[] = await invoke("list_issues", {
     rid: route.rid,
     status: route.status,
   });
 
-  return { resource: "repo.issues", params: { repo, issues } };
+  return { resource: "repo.issues", params: { repo, config, issues } };
 }
 
 export function repoRouteToPath(route: RepoRoute): string {

@@ -7,6 +7,7 @@
   import CopyableId from "@app/components/CopyableId.svelte";
   import Header from "@app/components/Header.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
 
   export let repos: RepoInfo[];
   export let config: Config;
@@ -67,6 +68,13 @@
     <Header>
       <svelte:fragment slot="center">
         <CopyableId id={`did:key:${config.publicKey}`} />
+      </svelte:fragment>
+      <svelte:fragment slot="breadcrumbs">
+        <NodeId
+          nodeId={config.publicKey}
+          alias={config.alias}
+          styleFontFamily="var(--font-family-sans-serif)"
+          styleFontSize="var(--font-size-tiny)" />
       </svelte:fragment>
     </Header>
   </div>

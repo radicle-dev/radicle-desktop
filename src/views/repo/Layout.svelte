@@ -8,8 +8,6 @@
   import NakedButton from "@app/components/NakedButton.svelte";
 
   export let repo: RepoInfo;
-
-  $: project = repo.payloads["xyz.radicle.project"]!;
 </script>
 
 <style>
@@ -30,9 +28,11 @@
       <svelte:fragment slot="center">
         <CopyableId id={repo.rid} />
       </svelte:fragment>
+      <svelte:fragment slot="breadcrumbs">
+        <slot name="breadcrumbs" />
+      </svelte:fragment>
     </Header>
   </div>
-  <div>{project.data.name}</div>
 
   Issues
   <Link route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}>
