@@ -1,6 +1,8 @@
 <script lang="ts">
   import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
+  import NakedButton from "./NakedButton.svelte";
+  import OutlineButton from "./OutlineButton.svelte";
   import Popover from "./Popover.svelte";
   import ThemeSwitch from "./ThemeSwitch.svelte";
 </script>
@@ -19,10 +21,6 @@
   .wrapper-left {
     gap: 0.5rem;
     padding: 0 0.5rem;
-  }
-  .navigation :global(svg:hover) {
-    display: flex;
-    color: var(--color-fill-secondary);
   }
   .bottom-pixel-corners {
     position: absolute;
@@ -56,18 +54,22 @@
 
 <div class="header global-flex">
   <div class="wrapper global-flex">
-    <div class="wrapper-left global-flex">
-      <div class="global-flex navigation" style:gap="0.5rem">
-        <Icon
-          name="arrow-left"
+    <div class="wrapper-left global-flex" style:gap="0">
+      <div class="global-flex" style:gap="0">
+        <NakedButton
+          variant="ghost"
           onclick={() => {
             window.history.back();
-          }} />
-        <Icon
-          name="arrow-right"
+          }}>
+          <Icon name="arrow-left" />
+        </NakedButton>
+        <NakedButton
+          variant="ghost"
           onclick={() => {
             window.history.forward();
-          }} />
+          }}>
+          <Icon name="arrow-right" />
+        </NakedButton>
       </div>
       <slot name="icon-left" />
     </div>
@@ -75,20 +77,14 @@
     <slot name="center" />
 
     <div class="global-flex" style:gap="0.5rem">
-      <Border variant="ghost" stylePadding="0 0.5rem" styleHeight="32px">
+      <OutlineButton variant="ghost">
         <Icon name="offline" />
-        <span class="txt-small txt-semibold">Offline</span>
-      </Border>
+        Offline
+      </OutlineButton>
       <Popover popoverPositionRight="0" popoverPositionTop="3rem">
-        <Border
-          slot="toggle"
-          let:toggle
-          onclick={toggle}
-          variant="ghost"
-          stylePadding="0 0.25rem"
-          styleHeight="32px">
+        <NakedButton variant="ghost" slot="toggle" let:toggle onclick={toggle}>
           <Icon name="more-vertical" />
-        </Border>
+        </NakedButton>
         <Border variant="ghost" slot="popover" stylePadding="0.5rem 1rem">
           <div style="display: flex; gap: 2rem; align-items: center;">
             Theme <ThemeSwitch />

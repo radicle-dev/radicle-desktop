@@ -5,6 +5,7 @@
   import Header from "@app/components/Header.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
 
   export let repo: RepoInfo;
 
@@ -22,7 +23,9 @@
   <div class="header">
     <Header>
       <svelte:fragment slot="icon-left">
-        <Icon name="sidebar" />
+        <NakedButton variant="ghost">
+          <Icon name="sidebar" />
+        </NakedButton>
       </svelte:fragment>
       <svelte:fragment slot="center">
         <CopyableId id={repo.rid} />
