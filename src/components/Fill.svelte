@@ -9,6 +9,7 @@
   export let stylePadding: string | undefined = undefined;
   export let styleHeight: string | undefined = undefined;
   export let styleWidth: string | undefined = undefined;
+  export let styleCursor: "inherit" | "pointer" = "inherit";
   export let onclick: (() => void) | undefined = undefined;
 
   $: style =
@@ -61,7 +62,6 @@
   }
 
   .container {
-    cursor: pointer;
     white-space: nowrap;
 
     -webkit-touch-callout: none;
@@ -88,6 +88,7 @@
   {onclick}
   {style}
   style:width={styleWidth}
+  style:cursor={styleCursor}
   style:height={styleHeight}>
   <div class="pixel p1-1"></div>
   <div class="pixel p1-2"></div>

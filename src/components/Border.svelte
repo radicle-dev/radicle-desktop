@@ -7,6 +7,7 @@
   export let styleHeight: string | undefined = undefined;
   export let styleMinHeight: string | undefined = undefined;
   export let styleWidth: string | undefined = undefined;
+  export let styleCursor: "default" | "pointer" = "default";
 
   $: style =
     `--local-button-color-1: var(--color-fill-${variant});` +
@@ -110,7 +111,6 @@
   }
 
   .container {
-    cursor: pointer;
     white-space: nowrap;
 
     -webkit-touch-callout: none;
@@ -150,6 +150,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <div
   style:width={styleWidth}
+  style:cursor={styleCursor}
   class="container"
   {onclick}
   role="button"

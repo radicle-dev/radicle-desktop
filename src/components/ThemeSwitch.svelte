@@ -37,6 +37,7 @@
 <div style="display: flex; gap: 1rem;">
   <Border variant="secondary">
     <Fill
+      styleCursor="pointer"
       stylePadding="0 0.5rem"
       variant={$theme === "dark" ? "secondary" : "transparent"}
       onclick={() => {
@@ -47,6 +48,7 @@
     </Fill>
 
     <Fill
+      styleCursor="pointer"
       stylePadding="0 0.5rem"
       variant={$theme === "light" ? "secondary" : "transparent"}
       onclick={() => {
