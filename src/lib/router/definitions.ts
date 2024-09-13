@@ -1,6 +1,11 @@
 import type { Config } from "@bindings/Config";
 import type { RepoInfo } from "@bindings/RepoInfo";
-import type { LoadedRepoRoute, RepoRoute } from "@app/views/repo/router";
+import type {
+  RepoIssuesRoute,
+  RepoPatchesRoute,
+  LoadedRepoIssuesRoute,
+  LoadedRepoPatchesRoute,
+} from "@app/views/repo/router";
 
 import { invoke } from "@tauri-apps/api/core";
 
@@ -31,13 +36,15 @@ export type Route =
   | AuthenticationErrorRoute
   | BootingRoute
   | HomeRoute
-  | RepoRoute;
+  | RepoIssuesRoute
+  | RepoPatchesRoute;
 
 export type LoadedRoute =
   | AuthenticationErrorRoute
   | BootingRoute
   | LoadedHomeRoute
-  | LoadedRepoRoute;
+  | LoadedRepoIssuesRoute
+  | LoadedRepoPatchesRoute;
 
 export async function loadRoute(
   route: Route,

@@ -6,32 +6,48 @@ import type { RepoInfo } from "@bindings/RepoInfo";
 import { invoke } from "@tauri-apps/api/core";
 import { unreachable } from "@app/lib/utils";
 
+export type IssueStatus = "all" | Issue["state"]["status"];
+
 export interface RepoIssuesRoute {
   resource: "repo.issues";
   rid: string;
-  status?: "open" | "closed";
+  status: IssueStatus;
 }
 
 export interface LoadedRepoIssuesRoute {
   resource: "repo.issues";
-  params: { repo: RepoInfo; config: Config; issues: Issue[] };
+  params: {
+    repo: RepoInfo;
+    config: Config;
+    issues: Issue[];
+    status: IssueStatus;
+  };
 }
+
+export type PatchStatus = "all" | Patch["state"]["status"];
 
 export interface RepoPatchesRoute {
   resource: "repo.patches";
   rid: string;
-  status?: "draft" | "open" | "archived" | "merged";
+  status: PatchStatus;
 }
 
 export interface LoadedRepoPatchesRoute {
   resource: "repo.patches";
-  params: { repo: RepoInfo; config: Config; patches: Patch[] };
+  params: {
+    repo: RepoInfo;
+    config: Config;
+    patches: Patch[];
+    status: PatchStatus;
+  };
 }
 
 export type RepoRoute = RepoIssuesRoute | RepoPatchesRoute;
 export type LoadedRepoRoute = LoadedRepoIssuesRoute | LoadedRepoPatchesRoute;
 
-export async function loadPatches(route: RepoRoute): Promise<LoadedRepoRoute> {
+export async function loadPatches(
+  route: RepoPatchesRoute,
+): Promise<LoadedRepoPatchesRoute> {
   const repo: RepoInfo = await invoke("repo_by_id", {
     rid: route.rid,
   });
@@ -41,10 +57,15 @@ export async function loadPatches(route: RepoRoute): Promise<LoadedRepoRoute> {
     status: route.status,
   });
 
-  return { resource: "repo.patches", params: { repo, config, patches } };
+  return {
+    resource: "repo.patches",
+    params: { repo, config, patches, status: route.status },
+  };
 }
 
-export async function loadIssues(route: RepoRoute): Promise<LoadedRepoRoute> {
+export async function loadIssues(
+  route: RepoIssuesRoute,
+): Promise<LoadedRepoIssuesRoute> {
   const repo: RepoInfo = await invoke("repo_by_id", {
     rid: route.rid,
   });
@@ -54,7 +75,10 @@ export async function loadIssues(route: RepoRoute): Promise<LoadedRepoRoute> {
     status: route.status,
   });
 
-  return { resource: "repo.issues", params: { repo, config, issues } };
+  return {
+    resource: "repo.issues",
+    params: { repo, config, issues, status: route.status },
+  };
 }
 
 export function repoRouteToPath(route: RepoRoute): string {
@@ -94,7 +118,7 @@ export function repoUrlToRoute(
       if (status === "open" || status === "closed") {
         return { resource: "repo.issues", rid, status };
       } else {
-        return { resource: "repo.issues", rid };
+        return { resource: "repo.issues", rid, status: "all" };
       }
     } else if (resource === "patches") {
       const status = searchParams.get("status");
@@ -106,7 +130,7 @@ export function repoUrlToRoute(
       ) {
         return { resource: "repo.patches", rid, status };
       } else {
-        return { resource: "repo.patches", rid };
+        return { resource: "repo.patches", rid, status: "all" };
       }
     } else {
       return null;

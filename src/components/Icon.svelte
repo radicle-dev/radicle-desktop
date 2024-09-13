@@ -24,6 +24,7 @@
     | "plus"
     | "repo"
     | "seedling"
+    | "seedling-filled"
     | "settings"
     | "sidebar"
     | "sun"
@@ -355,6 +356,35 @@
     <path d="M7.33301 8V7L6.33301 7L6.33301 8H7.33301Z" />
     <path d="M7.33301 9L7.33301 7L6.33301 7L6.33301 9H7.33301Z" />
     <path d="M6.33301 10V9H5.33301L5.33301 10H6.33301Z" />
+  {:else if name === "seedling-filled"}
+    <path d="M10 6H9V5L10 5V6Z" />
+    <path d="M11 5L10 5V4L11 4V5Z" />
+    <path d="M12 4H11L11 3L12 3L12 4Z" />
+    <path d="M13 4L12 4L12 3L13 3L13 4Z" />
+    <path d="M14 5L13 5V4L14 4V5Z" />
+    <path d="M13 6H12V5H13V6Z" />
+    <path d="M5 7L5 6L4 6L4 7L5 7Z" />
+    <path d="M4 8V7L3 7L3 8L4 8Z" />
+    <path d="M3 9L3 8L2 8L2 9H3Z" />
+    <path d="M3 10L3 9H2L2 10H3Z" />
+    <path d="M4 11L4 10H3L3 11L4 11Z" />
+    <path d="M10 7H9L9 6H10L10 7Z" />
+    <path d="M9 8H8V7L9 7L9 8Z" />
+    <path d="M8 8H7V7H8V8Z" />
+    <path d="M11 8L10 8L10 7L11 7V8Z" />
+    <path d="M12 8L10 8L10 7L12 7V8Z" />
+    <path d="M13 7H12V6H13V7Z" />
+    <path d="M5 10L5 9H4L4 10L5 10Z" />
+    <path d="M9 8H8V11H9V8Z" />
+    <path d="M8 11L7 11V14H8V11Z" />
+    <path d="M6 7L6 6H5L5 7H6Z" />
+    <path d="M7 8V7L6 7L6 8H7Z" />
+    <path d="M7 9L7 7L6 7L6 9H7Z" />
+    <path d="M6 10V9H5L5 10H6Z" />
+    <path d="M4 7L6 7L6 9H4L4 7Z" />
+    <path d="M3 8L4 8L4 10H3L3 8Z" />
+    <path d="M11 4L13 4V5L11 5V4Z" />
+    <path d="M10 5L12 5V7L10 7L10 5Z" />
   {:else if name === "settings"}
     <path d="M7 5H14V6H7V5Z" />
     <path d="M9 11L2 11L2 10L9 10V11Z" />

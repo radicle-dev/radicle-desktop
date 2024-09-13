@@ -23,22 +23,7 @@
     background-repeat: no-repeat;
     width: 1rem;
     height: 1rem;
-    clip-path: polygon(
-      0 2px,
-      2px 2px,
-      2px 0,
-      calc(100% - 2px) 0,
-      calc(100% - 2px) 2px,
-      100% 2px,
-      100% calc(100% - 2px),
-      calc(100% - 2px) calc(100% - 2px),
-      calc(100% - 2px) calc(100% - 2px),
-      calc(100% - 2px) 100%,
-      2px 100%,
-      2px calc(100% - 2px),
-      0 calc(100% - 2px)
-    );
-    background-color: red;
+    clip-path: var(--1px-corner-fill);
   }
 </style>
 

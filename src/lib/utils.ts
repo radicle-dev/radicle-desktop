@@ -34,6 +34,10 @@ export function truncateId(pubkey: string): string {
   return `${pubkey.substring(0, 6)}…${pubkey.slice(-6)}`;
 }
 
+export function formatOid(id: string): string {
+  return id.substring(0, 7);
+}
+
 export const formatTimestamp = (
   timestamp: number,
   current = new Date().getTime(),

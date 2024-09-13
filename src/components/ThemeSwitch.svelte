@@ -30,38 +30,51 @@
   import { writable } from "svelte/store";
 
   import Border from "./Border.svelte";
-  import Fill from "./Fill.svelte";
   import Icon from "./Icon.svelte";
 </script>
 
-<div style="display: flex; gap: 1rem;">
-  <Border variant="secondary">
-    <Fill
-      styleCursor="pointer"
-      stylePadding="0 0.5rem"
-      variant={$theme === "dark" ? "secondary" : "transparent"}
-      onclick={() => {
-        storeTheme("dark");
-      }}>
+<style>
+  button {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    border: none;
+    white-space: nowrap;
+    touch-action: manipulation;
+    clip-path: var(--1px-corner-fill);
+    height: 24px;
+    font-size: var(--font-size-small);
+  }
+</style>
+
+<Border variant="secondary">
+  <button
+    style:background-color={$theme === "dark"
+      ? "var(--color-fill-secondary)"
+      : "transparent"}
+    onclick={() => {
+      storeTheme("dark");
+    }}>
+    <span style="display: flex; align-items: center; gap: 0.5rem">
       <Icon name="moon" />
       Dark
-    </Fill>
+    </span>
+  </button>
 
-    <Fill
-      styleCursor="pointer"
-      stylePadding="0 0.5rem"
-      variant={$theme === "light" ? "secondary" : "transparent"}
-      onclick={() => {
-        storeTheme("light");
-      }}>
-      <span
-        style="display: flex; align-items: center; gap: 0.5rem"
-        style:color={$theme === "light"
-          ? "var(--color-foreground-white)"
-          : "var(--color-foreground-contrast)"}>
-        <Icon name="sun" />
-        Light
-      </span>
-    </Fill>
-  </Border>
-</div>
+  <button
+    style:background-color={$theme === "light"
+      ? "var(--color-fill-secondary)"
+      : "transparent"}
+    onclick={() => {
+      storeTheme("light");
+    }}>
+    <span
+      style="display: flex; align-items: center; gap: 0.5rem"
+      style:color={$theme === "light"
+        ? "var(--color-foreground-white)"
+        : "var(--color-foreground-contrast)"}>
+      <Icon name="sun" />
+      Light
+    </span>
+  </button>
+</Border>

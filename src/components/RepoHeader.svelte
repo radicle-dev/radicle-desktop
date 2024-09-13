@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { RepoInfo } from "@bindings/RepoInfo";
 
-  import Fill from "./Fill.svelte";
   import Icon from "./Icon.svelte";
 
   export let repo: RepoInfo;
@@ -13,16 +12,21 @@
 
 <style>
   .header {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
     width: 100%;
+    gap: 0.5rem;
   }
 </style>
 
-<div class="global-flex header txt-small">
+<div class="header txt-small">
   <div class="global-flex">
-    <Fill styleWidth="1.5rem" styleHeight="24px" variant="ghost">
+    <div
+      class="global-counter"
+      style:background-color="var(--color-fill-ghost)">
       {project.data.name[0]}
-    </Fill>
+    </div>
     {#if emphasizedTitle}
       <span class="txt-regular txt-semibold">{project.data.name}</span>
     {:else}
@@ -31,24 +35,34 @@
   </div>
   <div class="global-flex">
     {#if repo.visibility.type === "private"}
-      <Fill variant="private" styleWidth="24px" styleHeight="24px">
+      <div
+        class="global-counter"
+        style:padding="0"
+        style:background-color="var(--color-fill-private)">
         <div style:color="var(--color-foreground-yellow)">
           <Icon name="lock" />
         </div>
-      </Fill>
+      </div>
     {/if}
     {#if repo.delegates.find(x => x.did === selfDid)}
-      <Fill variant="delegate" styleWidth="24px" styleHeight="24px">
+      <div
+        class="global-counter"
+        style:padding="0"
+        style:background-color="var(--color-fill-delegate)">
         <div style:color="var(--color-fill-primary)">
           <Icon name="delegate" />
         </div>
-      </Fill>
+      </div>
     {/if}
     <div class="global-flex">
-      <Fill variant="ghost" styleHeight="24px" stylePadding="0 4px">
+      <div
+        class="global-counter"
+        style:padding="0 6px"
+        style:background-color="var(--color-fill-ghost)"
+        style:gap="4px">
         <Icon name="seedling" />
-        <span style:line-height="16px">{repo.seeding}</span>
-      </Fill>
+        {repo.seeding}
+      </div>
     </div>
   </div>
 </div>
