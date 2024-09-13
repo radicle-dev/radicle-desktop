@@ -7,6 +7,10 @@ html {
   width: 100%;
   /* Prevent rubber-band effect when scrolling via touchpad on macOS. */
   overscroll-behavior: none;
+  cursor: default;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 body {
