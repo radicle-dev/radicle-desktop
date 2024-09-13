@@ -50,6 +50,11 @@
       0 calc(100% - 6px)
     );
   }
+  .breadcrumbs {
+    gap: 0.5rem;
+    margin-left: 1rem;
+    min-height: 1.5rem;
+  }
 </style>
 
 <div class="header global-flex">
@@ -102,11 +107,7 @@
         </Popover>
       </div>
     </div>
-    <div
-      class="global-flex txt-tiny txt-semibold"
-      style:gap="0.5rem"
-      style:margin-left="1rem"
-      style:min-height="1.5rem">
+    <div class="global-flex txt-tiny txt-semibold breadcrumbs">
       <slot name="breadcrumbs" />
     </div>
   </div>

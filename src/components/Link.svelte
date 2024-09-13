@@ -18,7 +18,7 @@
 
 <style>
   a {
-    color: var(--color-fill-secondary);
+    color: var(--color-foreground-contrast);
     text-decoration: none;
   }
   a:hover {

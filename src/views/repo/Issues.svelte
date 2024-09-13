@@ -3,8 +3,10 @@
   import type { Issue } from "@bindings/Issue";
   import type { RepoInfo } from "@bindings/RepoInfo";
 
-  import Icon from "@app/components/Icon.svelte";
   import Layout from "./Layout.svelte";
+
+  import Icon from "@app/components/Icon.svelte";
+  import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
   export let repo: RepoInfo;
@@ -16,11 +18,13 @@
 
 <Layout {repo}>
   <svelte:fragment slot="breadcrumbs">
-    <NodeId
-      nodeId={config.publicKey}
-      alias={config.alias}
-      styleFontFamily="var(--font-family-sans-serif)"
-      styleFontSize="var(--font-size-tiny)" />
+    <Link route={{ resource: "home" }}>
+      <NodeId
+        nodeId={config.publicKey}
+        alias={config.alias}
+        styleFontFamily="var(--font-family-sans-serif)"
+        styleFontSize="var(--font-size-tiny)" />
+    </Link>
     <Icon name="chevron-right" />
     {project.data.name}
     <Icon name="chevron-right" />
