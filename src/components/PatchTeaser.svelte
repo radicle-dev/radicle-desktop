@@ -4,6 +4,7 @@
   import { formatOid } from "@app/lib/utils";
 
   import Icon from "./Icon.svelte";
+  import InlineTitle from "./InlineTitle.svelte";
   import NodeId from "./NodeId.svelte";
 
   export let patch: Patch;
@@ -65,7 +66,7 @@
       class="global-flex"
       style:flex-direction="column"
       style:align-items="flex-start">
-      {patch.title}
+      <InlineTitle content={patch.title} />
       <div class="global-flex txt-small">
         <NodeId
           nodeId={patch.author.did.replace("did:key:", "")}

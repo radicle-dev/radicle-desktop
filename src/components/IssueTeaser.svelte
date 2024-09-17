@@ -4,6 +4,7 @@
   import { formatOid } from "@app/lib/utils";
 
   import Icon from "./Icon.svelte";
+  import InlineTitle from "./InlineTitle.svelte";
   import NodeId from "./NodeId.svelte";
 
   export let issue: Issue;
@@ -60,7 +61,7 @@
       class="global-flex"
       style:flex-direction="column"
       style:align-items="flex-start">
-      {issue.title}
+      <InlineTitle content={issue.title} />
       <div class="global-flex txt-small">
         <NodeId
           nodeId={issue.author.did.replace("did:key:", "")}
