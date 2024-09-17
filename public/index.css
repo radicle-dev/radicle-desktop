@@ -126,4 +126,42 @@ body {
     2px calc(100% - 6px),
     0 calc(100% - 6px)
   );
+
+  --3px-top-corner-fill: polygon(
+    0 6px,
+    2px 6px,
+    2px 4px,
+    4px 4px,
+    4px 2px,
+    6px 2px,
+    6px 0,
+    calc(100% - 6px) 0,
+    calc(100% - 6px) 2px,
+    calc(100% - 4px) 2px,
+    calc(100% - 4px) 4px,
+    calc(100% - 2px) 4px,
+    calc(100% - 2px) 6px,
+    100% 6px,
+    100% 100%,
+    0 100%
+  );
+
+  --3px-bottom-corner-fill: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 6px),
+    calc(100% - 2px) calc(100% - 6px),
+    calc(100% - 2px) calc(100% - 4px),
+    calc(100% - 4px) calc(100% - 4px),
+    calc(100% - 4px) calc(100% - 2px),
+    calc(100% - 6px) calc(100% - 2px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    6px calc(100% - 2px),
+    4px calc(100% - 2px),
+    4px calc(100% - 4px),
+    2px calc(100% - 4px),
+    2px calc(100% - 6px),
+    0 calc(100% - 6px)
+  );
 }

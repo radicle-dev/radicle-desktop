@@ -15,7 +15,6 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    height: 1rem;
     font-weight: var(--font-weight-semibold);
   }
   .no-alias {

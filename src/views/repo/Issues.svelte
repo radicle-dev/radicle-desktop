@@ -4,11 +4,10 @@
   import type { IssueStatus } from "./router";
   import type { RepoInfo } from "@bindings/RepoInfo";
 
-  import { formatOid } from "@app/lib/utils";
-
   import Layout from "./Layout.svelte";
 
   import Icon from "@app/components/Icon.svelte";
+  import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
@@ -17,14 +16,6 @@
   export let config: Config;
   export let status: IssueStatus;
 
-  const statusColor: Record<Issue["state"]["status"], string> = {
-    open: "var(--color-fill-success)",
-    closed: "var(--color-foreground-red)",
-  };
-  const statusBackgroundColor: Record<Issue["state"]["status"], string> = {
-    open: "var(--color-fill-diff-green)",
-    closed: "var(--color-fill-diff-red)",
-  };
   $: project = repo.payloads["xyz.radicle.project"]!;
 </script>
 
@@ -32,7 +23,8 @@
   .list {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 2px;
+    padding: 0 1rem 1rem 1rem;
   }
 </style>
 
@@ -106,17 +98,7 @@
 
   <div class="list">
     {#each issues as issue}
-      <div class="global-flex">
-        <div
-          class="global-counter"
-          style:padding="0"
-          style:color={statusColor[issue.state.status]}
-          style:background-color={statusBackgroundColor[issue.state.status]}>
-          <Icon name="issue" />
-        </div>
-        <div class="global-oid">{formatOid(issue.id)}</div>
-        {issue.title}
-      </div>
+      <IssueTeaser {issue} />
     {/each}
 
     {#if issues.length === 0}

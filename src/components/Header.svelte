@@ -31,24 +31,7 @@
     z-index: -1;
 
     background-color: var(--color-background-float);
-    clip-path: polygon(
-      0 0,
-      100% 0,
-      100% calc(100% - 6px),
-      calc(100% - 2px) calc(100% - 6px),
-      calc(100% - 2px) calc(100% - 4px),
-      calc(100% - 4px) calc(100% - 4px),
-      calc(100% - 4px) calc(100% - 2px),
-      calc(100% - 6px) calc(100% - 2px),
-      calc(100% - 6px) 100%,
-      6px 100%,
-      6px calc(100% - 2px),
-      4px calc(100% - 2px),
-      4px calc(100% - 4px),
-      2px calc(100% - 4px),
-      2px calc(100% - 6px),
-      0 calc(100% - 6px)
-    );
+    clip-path: var(--3px-bottom-corner-fill);
   }
   .breadcrumbs {
     gap: 0.5rem;

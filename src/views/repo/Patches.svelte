@@ -4,32 +4,17 @@
   import type { PatchStatus } from "./router";
   import type { RepoInfo } from "@bindings/RepoInfo";
 
-  import { formatOid } from "@app/lib/utils";
-
   import Layout from "./Layout.svelte";
 
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import PatchTeaser from "@app/components/PatchTeaser.svelte";
 
   export let repo: RepoInfo;
   export let patches: Patch[];
   export let config: Config;
   export let status: PatchStatus;
-
-  const statusColor: Record<Patch["state"]["status"], string> = {
-    draft: "var(--color-fill-gray)",
-    open: "var(--color-fill-success)",
-    archived: "var(--color-foreground-yellow)",
-    merged: "var(--color-fill-primary)",
-  };
-
-  const statusBackgroundColor: Record<Patch["state"]["status"], string> = {
-    draft: "var(--color-fill-ghost)",
-    open: "var(--color-fill-diff-green)",
-    archived: "var(--color-fill-private)",
-    merged: "var(--color-fill-delegate)",
-  };
 
   $: project = repo.payloads["xyz.radicle.project"]!;
 </script>
@@ -38,7 +23,8 @@
   .list {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 2px;
+    padding: 0 1rem 1rem 1rem;
   }
 </style>
 
@@ -131,17 +117,7 @@
 
   <div class="list">
     {#each patches as patch}
-      <div class="global-flex">
-        <div
-          class="global-counter"
-          style:padding="0"
-          style:color={statusColor[patch.state.status]}
-          style:background-color={statusBackgroundColor[patch.state.status]}>
-          <Icon name="patch" />
-        </div>
-        <div class="global-oid">{formatOid(patch.id)}</div>
-        {patch.title}
-      </div>
+      <PatchTeaser {patch} />
     {/each}
 
     {#if patches.length === 0}

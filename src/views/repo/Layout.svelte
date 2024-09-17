@@ -29,7 +29,7 @@
   .sidebar {
     grid-column: 1 / 2;
     margin-left: 1rem;
-    margin-right: 1.5rem;
+    margin-right: 0.5rem;
     min-width: 14rem;
   }
 
