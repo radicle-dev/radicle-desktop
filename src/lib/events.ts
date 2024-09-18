@@ -5,7 +5,7 @@ import { writable } from "svelte/store";
 let interval: ReturnType<typeof setInterval> | undefined = undefined;
 
 type NodeState = "stopped" | "running";
-export let nodeState = writable<NodeState>("stopped");
+export const nodeState = writable<NodeState>("stopped");
 
 export function subscribeToNodeEvents() {
   void listen("event", event => {
