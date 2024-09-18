@@ -81,5 +81,10 @@
     {#each patch.labels as label}
       <div class="global-counter txt-small">{label}</div>
     {/each}
+
+    <div class="txt-small global-flex" style:gap="0.25rem">
+      <Icon name="revision" />
+      {patch.revisionCount}
+    </div>
   </div>
 </div>

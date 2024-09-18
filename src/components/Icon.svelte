@@ -24,6 +24,7 @@
     | "patch"
     | "plus"
     | "repo"
+    | "revision"
     | "seedling"
     | "seedling-filled"
     | "settings"
@@ -335,6 +336,38 @@
     <path d="M7 8H5V9L7 9L7 8Z" />
     <path d="M7 10H5L5 11H7L7 10Z" />
     <path d="M7 12H5L5 13H7L7 12Z" />
+  {:else if name === "revision"}
+    <path d="M6 13H8V14H6V13Z" />
+    <path d="M8 13H9V14H8V13Z" />
+    <path d="M3 6L3 8H2L2 6H3Z" />
+    <path d="M4 12H6L6 13H4V12Z" />
+    <path d="M12 12H10V13H12V12Z" />
+    <path d="M4 4V6H3L3 4H4Z" />
+    <path d="M4 10L4 12H3L3 10H4Z" />
+    <path d="M12 10V11H13V10H12Z" />
+    <path d="M13 7V8H14V7H13Z" />
+    <path d="M6 4L4 4L4 3L6 3V4Z" />
+    <path d="M3 8L3 10H2L2 8H3Z" />
+    <path d="M8 3L6 3L6 2L8 2V3Z" />
+    <path d="M8 3H9V2L8 2V3Z" />
+    <path d="M11 4H12V5H11V4Z" />
+    <path d="M12 3H13V4L12 4V3Z" />
+    <path d="M11 6H12V7H11V6Z" />
+    <path d="M12 5L13 5V6H12V5Z" />
+    <path d="M13 4H14V5H13V4Z" />
+    <path d="M10 7L11 7V8H10V7Z" />
+    <path d="M7 6H8V7H7V6Z" />
+    <path d="M8 5H9V6H8V5Z" />
+    <path d="M9 4H10V5L9 5V4Z" />
+    <path d="M10 3H11V4L10 4L10 3Z" />
+    <path d="M11 2H12V3L11 3V2Z" />
+    <path d="M9 8L10 8L10 9H9V8Z" />
+    <path d="M7 9H8V10H7V9Z" />
+    <path d="M7 8H8V9H7V8Z" />
+    <path d="M6 8H7V9H6V8Z" />
+    <path d="M6 7H7V8H6V7Z" />
+    <path d="M8 9H9V10L8 10V9Z" />
+    <path d="M6 9H7V10H6V9Z" />
   {:else if name === "seedling"}
     <path d="M10.333 6H9.33301V5L10.333 5V6Z" />
     <path d="M11.333 5L10.333 5V4L11.333 4V5Z" />
