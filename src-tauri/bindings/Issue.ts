@@ -8,4 +8,5 @@ export type Issue = {
   state: { status: "closed"; reason: "other" | "solved" } | { status: "open" };
   assignees: Array<Author>;
   labels: Array<string>;
+  timestamp: number;
 };

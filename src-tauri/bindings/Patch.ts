@@ -23,4 +23,6 @@ export type Patch = {
       };
   assignees: Array<Author>;
   labels: Array<string>;
+  timestamp: number;
+  revisionCount: number;
 };

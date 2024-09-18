@@ -51,8 +51,6 @@ export const formatTimestamp = (
     second: 1000,
   };
 
-  // Multiplying timestamp with 1000 to convert from seconds to milliseconds
-  timestamp = timestamp * 1000;
   const rtf = new Intl.RelativeTimeFormat("en", {
     numeric: "auto",
     style: "long",

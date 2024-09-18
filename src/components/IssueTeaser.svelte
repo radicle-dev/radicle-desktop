@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Issue } from "@bindings/Issue";
 
-  import { formatOid } from "@app/lib/utils";
+  import { formatOid, formatTimestamp } from "@app/lib/utils";
 
   import Icon from "./Icon.svelte";
   import InlineTitle from "./InlineTitle.svelte";
@@ -68,6 +68,7 @@
           alias={issue.author.alias} />
         opened
         <div class="global-oid">{formatOid(issue.id)}</div>
+        {formatTimestamp(issue.timestamp)}
       </div>
     </div>
   </div>

@@ -59,7 +59,7 @@ impl AppState {
                     "issues": issues,
                     "patches": patches,
                     "head": head,
-                    "lastCommit": commit.time().seconds(),
+                    "lastCommit": commit.time().seconds() * 1000,
                 },
             }))
         });

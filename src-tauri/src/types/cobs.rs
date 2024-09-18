@@ -1,4 +1,4 @@
-use radicle::cob::Label;
+use radicle::cob;
 use radicle::identity;
 use radicle::issue;
 use radicle::node::{Alias, AliasStore};
@@ -27,6 +27,7 @@ impl Author {
 
 #[derive(TS, Serialize)]
 #[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Issue {
     #[ts(as = "String")]
     id: String,
@@ -36,7 +37,9 @@ pub struct Issue {
     state: issue::State,
     assignees: Vec<Author>,
     #[ts(as = "Vec<String>")]
-    labels: Vec<Label>,
+    labels: Vec<cob::Label>,
+    #[ts(type = "number")]
+    timestamp: cob::Timestamp,
 }
 
 impl Issue {
@@ -51,12 +54,14 @@ impl Issue {
                 .map(|did| Author::new(*did, aliases))
                 .collect::<Vec<_>>(),
             labels: issue.labels().cloned().collect::<Vec<_>>(),
+            timestamp: issue.timestamp(),
         }
     }
 }
 
 #[derive(TS, Serialize)]
 #[ts(export)]
+#[serde(rename_all = "camelCase")]
 pub struct Patch {
     #[ts(as = "String")]
     id: String,
@@ -75,7 +80,10 @@ pub struct Patch {
     state: patch::State,
     assignees: Vec<Author>,
     #[ts(as = "Vec<String>")]
-    labels: Vec<Label>,
+    labels: Vec<cob::Label>,
+    #[ts(type = "number")]
+    timestamp: cob::Timestamp,
+    revision_count: usize,
 }
 
 impl Patch {
@@ -90,6 +98,8 @@ impl Patch {
                 .map(|did| Author::new(did, aliases))
                 .collect::<Vec<_>>(),
             labels: patch.labels().cloned().collect::<Vec<_>>(),
+            timestamp: patch.timestamp(),
+            revision_count: patch.revisions().count(),
         }
     }
 }

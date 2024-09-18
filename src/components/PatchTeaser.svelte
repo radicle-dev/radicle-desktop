@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Patch } from "@bindings/Patch";
 
-  import { formatOid } from "@app/lib/utils";
+  import { formatOid, formatTimestamp } from "@app/lib/utils";
 
   import Icon from "./Icon.svelte";
   import InlineTitle from "./InlineTitle.svelte";
@@ -73,6 +73,7 @@
           alias={patch.author.alias} />
         opened
         <div class="global-oid">{formatOid(patch.id)}</div>
+        {formatTimestamp(patch.timestamp)}
       </div>
     </div>
   </div>
