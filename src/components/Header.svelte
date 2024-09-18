@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { nodeState } from "@app/lib/events";
+  import { nodeRunning } from "@app/lib/events";
 
   import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
@@ -73,7 +73,7 @@
 
       <div class="global-flex" style:gap="0.5rem">
         <OutlineButton variant="ghost">
-          {#if $nodeState === "running"}
+          {#if $nodeRunning}
             <Icon name="online" />
             Online
           {:else}

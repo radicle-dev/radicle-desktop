@@ -4,21 +4,27 @@
   import { invoke } from "@tauri-apps/api/core";
 
   import * as router from "@app/lib/router";
+  import { nodeRunning } from "@app/lib/events";
   import { theme } from "@app/components/ThemeSwitch.svelte";
-  import { subscribeToNodeEvents } from "@app/lib/events";
   import { unreachable } from "@app/lib/utils";
 
   import AuthenticationError from "@app/views/AuthenticationError.svelte";
   import Home from "@app/views/Home.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
-
-  subscribeToNodeEvents();
+  import { listen } from "@tauri-apps/api/event";
 
   const activeRouteStore = router.activeRouteStore;
 
   onMount(async () => {
     try {
+      await listen("event", event => {
+        console.log(event.payload);
+      });
+
+      await listen<boolean>("node_running", event => {
+        nodeRunning.set(event.payload);
+      });
       // For development purposes don't run tauri commands when viewing from
       // a browser.
       if (window.__TAURI_INTERNALS__) {

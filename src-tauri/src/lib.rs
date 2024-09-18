@@ -1,13 +1,9 @@
 mod commands;
 mod error;
-mod events;
 mod types;
 
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
-
 use serde_json::json;
-use tauri::Listener;
+use tauri::Emitter;
 use tauri::Manager;
 
 use radicle::identity::doc::PayloadId;
@@ -15,12 +11,13 @@ use radicle::identity::DocAt;
 use radicle::identity::RepoId;
 use radicle::issue::cache::Issues;
 use radicle::node::routing::Store;
+use radicle::node::Handle;
 use radicle::patch::cache::Patches;
 use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
+use radicle::Node;
 
 use commands::{auth, cobs, profile, repos};
-use events::subscribe_events;
 use types::repo::SupportedPayloads;
 
 struct AppState {
@@ -103,22 +100,35 @@ pub fn run() {
                 }),
             }?;
 
-            app.manage(AppState {
-                profile: profile.clone(),
+            let events_handler = app.handle().clone();
+            let node_handler = app.handle().clone();
+
+            let node = Node::new(profile.socket());
+            let node_status = node.clone();
+
+            app.manage(AppState { profile });
+
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    let _ = node_handler.emit("node_running", node_status.is_running());
+                    std::thread::sleep(std::time::Duration::from_secs(2));
+                }
             });
 
-            let existing_events_thread: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    if node.is_running() {
+                        log::debug!("node: spawned node event subscription.");
+                        while let Ok(events) = node.subscribe(std::time::Duration::MAX) {
+                            for event in events.into_iter().flatten() {
+                                let _ = events_handler.emit("event", event);
+                            }
+                        }
+                        log::debug!("node: event subscription loop has exited.");
+                    }
 
-            let events_handler = app.handle().clone();
-            app.listen("subscribe_events", move |_| {
-                let profile = profile.clone();
-                let existing_events_thread = existing_events_thread.clone();
-
-                let events_handler = events_handler.to_owned();
-                tauri::async_runtime::spawn(async move {
-                    let _result =
-                        subscribe_events(&events_handler, profile, existing_events_thread).await;
-                });
+                    std::thread::sleep(std::time::Duration::from_secs(2));
+                }
             });
 
             Ok(())
