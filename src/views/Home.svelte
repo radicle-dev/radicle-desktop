@@ -26,7 +26,7 @@
   }
 
   .hero-image {
-    background-image: url("aliens.png");
+    background-image: url("/aliens.png");
     background-position: center;
     background-size: cover;
     height: 9.5rem;
