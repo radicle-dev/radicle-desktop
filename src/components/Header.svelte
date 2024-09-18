@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { nodeState } from "@app/lib/events";
+
   import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
@@ -71,8 +73,13 @@
 
       <div class="global-flex" style:gap="0.5rem">
         <OutlineButton variant="ghost">
-          <Icon name="offline" />
-          Offline
+          {#if $nodeState === "running"}
+            <Icon name="online" />
+            Online
+          {:else}
+            <Icon name="offline" />
+            Offline
+          {/if}
         </OutlineButton>
         <Popover popoverPositionRight="0" popoverPositionTop="3rem">
           <NakedButton

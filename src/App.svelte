@@ -2,7 +2,6 @@
   import { onMount } from "svelte";
 
   import { invoke } from "@tauri-apps/api/core";
-  import { listen } from "@tauri-apps/api/event";
 
   import * as router from "@app/lib/router";
   import { theme } from "@app/components/ThemeSwitch.svelte";
@@ -15,14 +14,6 @@
   import Patches from "@app/views/repo/Patches.svelte";
 
   subscribeToNodeEvents();
-
-  void listen("event", event => {
-    console.log(event.payload);
-  });
-
-  void listen("node_status", event => {
-    console.log(`Node: ${event.payload}`);
-  });
 
   const activeRouteStore = router.activeRouteStore;
 
