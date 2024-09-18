@@ -42,6 +42,7 @@
     position: relative;
   }
   .popover {
+    box-shadow: var(--elevation-low);
     position: absolute;
     z-index: 10;
   }
