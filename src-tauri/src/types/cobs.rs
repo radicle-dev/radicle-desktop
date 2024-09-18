@@ -1,8 +1,10 @@
 use radicle::cob;
+use radicle::git;
 use radicle::identity;
 use radicle::issue;
 use radicle::node::{Alias, AliasStore};
 use radicle::patch;
+use serde::Deserialize;
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -101,5 +103,114 @@ impl Patch {
             timestamp: patch.timestamp(),
             revision_count: patch.revisions().count(),
         }
+    }
+}
+
+#[derive(TS, Serialize, Deserialize)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct NewPatchComment {
+    pub id: String,
+    pub revision: String,
+    pub body: String,
+    #[ts(as = "Option<String>")]
+    #[ts(optional)]
+    pub reply_to: Option<cob::thread::CommentId>,
+    pub location: Option<CodeLocation>,
+    #[ts(type = "{ name: string, content: string }[]")]
+    pub embeds: Vec<cob::Embed>,
+}
+
+#[derive(TS, Serialize, Deserialize)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct NewIssueComment {
+    pub id: String,
+    pub body: String,
+    #[ts(as = "Option<String>")]
+    #[ts(optional)]
+    pub reply_to: Option<cob::thread::CommentId>,
+    #[ts(type = "{ name: string, content: string }[]")]
+    pub embeds: Vec<cob::Embed>,
+}
+
+#[derive(TS, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CodeLocation {
+    #[ts(as = "String")]
+    commit: git::Oid,
+    path: std::path::PathBuf,
+    old: Option<CodeRange>,
+    new: Option<CodeRange>,
+}
+
+impl From<cob::CodeLocation> for CodeLocation {
+    fn from(val: cob::CodeLocation) -> Self {
+        Self {
+            commit: val.commit,
+            path: val.path,
+            old: val.old.map(|o| o.into()),
+            new: val.new.map(|o| o.into()),
+        }
+    }
+}
+
+impl From<CodeLocation> for cob::CodeLocation {
+    fn from(val: CodeLocation) -> Self {
+        Self {
+            commit: val.commit,
+            path: val.path,
+            old: val.old.map(|o| o.into()),
+            new: val.new.map(|o| o.into()),
+        }
+    }
+}
+
+#[derive(TS, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "type")]
+#[ts(export)]
+pub enum CodeRange {
+    Lines {
+        #[ts(type = "{ start: number, end: number }")]
+        range: std::ops::Range<usize>,
+    },
+    Chars {
+        line: usize,
+        #[ts(type = "{ start: number, end: number }")]
+        range: std::ops::Range<usize>,
+    },
+}
+
+impl From<cob::CodeRange> for CodeRange {
+    fn from(val: cob::CodeRange) -> Self {
+        match val {
+            cob::CodeRange::Chars { line, range } => Self::Chars { line, range },
+            cob::CodeRange::Lines { range } => Self::Lines { range },
+        }
+    }
+}
+
+impl From<CodeRange> for cob::CodeRange {
+    fn from(val: CodeRange) -> Self {
+        match val {
+            CodeRange::Chars { line, range } => Self::Chars { line, range },
+            CodeRange::Lines { range } => Self::Lines { range },
+        }
+    }
+}
+
+#[derive(TS, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CobOptions {
+    #[ts(as = "Option<bool>")]
+    #[ts(optional)]
+    announce: Option<bool>,
+}
+
+impl CobOptions {
+    pub fn announce(&self) -> bool {
+        self.announce.unwrap_or(true)
     }
 }

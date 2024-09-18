@@ -54,6 +54,14 @@ pub enum Error {
     #[error(transparent)]
     Surf(#[from] radicle_surf::Error),
 
+    /// Issue error.
+    #[error(transparent)]
+    Issue(#[from] radicle::issue::Error),
+
+    /// Patch error.
+    #[error(transparent)]
+    Patch(#[from] radicle::patch::Error),
+
     /// Crypto error.
     #[error(transparent)]
     Crypto(#[from] radicle::crypto::ssh::keystore::Error),
@@ -76,6 +84,10 @@ pub enum Error {
     /// Tauri error.
     #[error(transparent)]
     Tauri(#[from] tauri::Error),
+
+    /// Parse ObjectId error.
+    #[error(transparent)]
+    ParseObjectId(#[from] radicle::cob::object::ParseObjectId),
 
     /// Storage error.
     #[error(transparent)]

@@ -17,7 +17,7 @@ use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
 use radicle::Node;
 
-use commands::{auth, cobs, profile, repos};
+use commands::{auth, cobs, profile, repos, thread};
 use types::repo::SupportedPayloads;
 
 struct AppState {
@@ -142,6 +142,8 @@ pub fn run() {
             repos::repo_by_id,
             cobs::list_issues,
             cobs::list_patches,
+            thread::create_issue_comment,
+            thread::create_patch_comment,
             profile::config,
         ])
         .run(tauri::generate_context!())
