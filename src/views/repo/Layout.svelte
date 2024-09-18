@@ -23,17 +23,17 @@
 
   .header {
     grid-column: 1 / 4;
-    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--color-background-default);
   }
 
   .sidebar {
     grid-column: 1 / 2;
-    margin-left: 1rem;
-    margin-right: 0.5rem;
+    margin: 1rem 0.5rem 0 1rem;
     min-width: 14rem;
   }
 
   .content {
+    padding-top: 1rem;
     grid-column: 2 / 3;
     overflow: scroll;
     overscroll-behavior: none;
