@@ -121,11 +121,13 @@
     {/each}
 
     {#if patches.length === 0}
-      {#if status === "all"}
-        No patches.
-      {:else}
-        No {status} patches.
-      {/if}
+      <div class="txt-missing txt-small">
+        {#if status === "all"}
+          No patches.
+        {:else}
+          No {status} patches.
+        {/if}
+      </div>
     {/if}
   </div>
 </Layout>

@@ -102,11 +102,13 @@
     {/each}
 
     {#if issues.length === 0}
-      {#if status === "all"}
-        No issues.
-      {:else}
-        No {status} issues.
-      {/if}
+      <div class="txt-missing txt-small">
+        {#if status === "all"}
+          No issues.
+        {:else}
+          No {status} issues.
+        {/if}
+      </div>
     {/if}
   </div>
 </Layout>
