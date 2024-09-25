@@ -1,4 +1,5 @@
 import bs58 from "bs58";
+import twemojiModule from "twemoji";
 
 export const unreachable = (value: never): never => {
   throw new Error(`Unreachable code: ${value}`);
@@ -75,3 +76,27 @@ export const formatTimestamp = (
 
   return new Date(timestamp).toUTCString();
 };
+
+export function twemoji(
+  node: HTMLElement,
+  { exclude }: { exclude: string[] } = { exclude: [] },
+) {
+  twemojiModule.parse(node, {
+    callback: (icon, options) => {
+      const { base, size, ext } = options as Record<string, string>;
+      if (!exclude.includes(icon)) {
+        return `${base}${size}/${icon}${ext}`;
+      }
+      return false;
+    },
+    base: "/",
+    folder: "twemoji",
+    ext: ".svg",
+    className: `txt-emoji`,
+  });
+}
+
+export function scrollIntoView(id: string, options?: ScrollIntoViewOptions) {
+  const lineElement = document.getElementById(id);
+  if (lineElement) lineElement.scrollIntoView(options);
+}
