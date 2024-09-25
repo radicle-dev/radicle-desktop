@@ -40,6 +40,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    padding-bottom: 1rem;
   }
   .content {
     padding: 0 1rem 1rem 1rem;

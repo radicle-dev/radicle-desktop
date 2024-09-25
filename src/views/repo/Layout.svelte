@@ -22,6 +22,7 @@
     grid-column: 1 / 2;
     margin: 1rem 0.5rem 0 1rem;
     min-width: 14rem;
+    overflow: scroll;
   }
 
   .content {
