@@ -38,6 +38,7 @@
     "@wooorm/starry-night": "^3.5.0",
     "baconjs": "^3.0.19",
     "bs58": "^6.0.0",
+    "buffer": "^6.0.3",
     "dompurify": "^3.1.6",
     "eslint": "^9.11.1",
     "eslint-config-prettier": "^9.1.0",
