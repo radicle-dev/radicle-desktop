@@ -5,6 +5,8 @@ export type Patch = {
   id: string;
   author: Author;
   title: string;
+  base: string;
+  head: string;
   state:
     | {
         status: "draft";

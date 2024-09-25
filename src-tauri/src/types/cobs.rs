@@ -78,6 +78,10 @@ pub struct Patch {
     id: String,
     author: Author,
     title: String,
+    #[ts(as = "String")]
+    base: git::Oid,
+    #[ts(as = "String")]
+    head: git::Oid,
     #[ts(type = r#"{
   status: 'draft'
 } | {
@@ -104,6 +108,8 @@ impl Patch {
             author: Author::new(*patch.author().id(), aliases),
             title: patch.title().to_string(),
             state: patch.state().clone(),
+            base: *patch.base(),
+            head: *patch.head(),
             assignees: patch
                 .assignees()
                 .map(|did| Author::new(did, aliases))
@@ -456,5 +462,23 @@ pub struct CobOptions {
 impl CobOptions {
     pub fn announce(&self) -> bool {
         self.announce.unwrap_or(true)
+    }
+}
+
+#[derive(TS, Serialize)]
+#[ts(export)]
+pub struct Stats {
+    pub files_changed: usize,
+    pub insertions: usize,
+    pub deletions: usize,
+}
+
+impl Stats {
+    pub fn new(stats: &radicle_surf::diff::Stats) -> Self {
+        Self {
+            files_changed: stats.files_changed,
+            insertions: stats.insertions,
+            deletions: stats.deletions,
+        }
     }
 }

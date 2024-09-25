@@ -1,13 +1,16 @@
 <script lang="ts">
   import type { Patch } from "@bindings/Patch";
+  import type { Stats } from "@bindings/Stats";
 
   import { formatOid, formatTimestamp } from "@app/lib/utils";
+  import { invoke } from "@tauri-apps/api/core";
 
   import Icon from "./Icon.svelte";
   import InlineTitle from "./InlineTitle.svelte";
   import NodeId from "./NodeId.svelte";
 
   export let patch: Patch;
+  export let rid: string;
 
   const statusColor: Record<Patch["state"]["status"], string> = {
     draft: "var(--color-fill-gray)",
@@ -78,6 +81,9 @@
     </div>
   </div>
   <div class="global-flex">
+    {#await invoke<Stats>( "diff", { rid, base: patch.base, head: patch.head }, ) then stats}
+      <div>{stats.insertions} / {stats.deletions}</div>
+    {/await}
     {#each patch.labels as label}
       <div class="global-counter txt-small">{label}</div>
     {/each}

@@ -140,6 +140,7 @@ pub fn run() {
             auth::authenticate,
             repos::list_repos,
             repos::repo_by_id,
+            repos::diff,
             cobs::list_issues,
             cobs::issues_by_id,
             cobs::list_patches,

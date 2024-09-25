@@ -117,7 +117,7 @@
 
   <div class="list">
     {#each patches as patch}
-      <PatchTeaser {patch} />
+      <PatchTeaser rid={repo.rid} {patch} />
     {/each}
 
     {#if patches.length === 0}
