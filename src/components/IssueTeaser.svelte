@@ -1,22 +1,20 @@
 <script lang="ts">
   import type { Issue } from "@bindings/Issue";
 
-  import { formatOid, formatTimestamp } from "@app/lib/utils";
+  import {
+    formatOid,
+    formatTimestamp,
+    issueStatusBackgroundColor,
+    issueStatusColor,
+  } from "@app/lib/utils";
+  import { push } from "@app/lib/router";
 
   import Icon from "./Icon.svelte";
   import InlineTitle from "./InlineTitle.svelte";
   import NodeId from "./NodeId.svelte";
 
   export let issue: Issue;
-
-  const statusColor: Record<Issue["state"]["status"], string> = {
-    open: "var(--color-fill-success)",
-    closed: "var(--color-foreground-red)",
-  };
-  const statusBackgroundColor: Record<Issue["state"]["status"], string> = {
-    open: "var(--color-fill-diff-green)",
-    closed: "var(--color-fill-diff-red)",
-  };
+  export let rid: string;
 </script>
 
 <style>
@@ -49,12 +47,19 @@
   }
 </style>
 
-<div class="issue-teaser">
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div
+  tabindex="0"
+  role="button"
+  class="issue-teaser"
+  onclick={() => {
+    void push({ resource: "repo.issue", rid, issue: issue.id });
+  }}>
   <div class="global-flex">
     <div
       class="global-counter status"
-      style:color={statusColor[issue.state.status]}
-      style:background-color={statusBackgroundColor[issue.state.status]}>
+      style:color={issueStatusColor[issue.state.status]}
+      style:background-color={issueStatusBackgroundColor[issue.state.status]}>
       <Icon name="issue" />
     </div>
     <div

@@ -1,3 +1,5 @@
+import type { Issue } from "@bindings/Issue";
+
 import bs58 from "bs58";
 import twemojiModule from "twemoji";
 
@@ -100,3 +102,16 @@ export function scrollIntoView(id: string, options?: ScrollIntoViewOptions) {
   const lineElement = document.getElementById(id);
   if (lineElement) lineElement.scrollIntoView(options);
 }
+
+export const issueStatusColor: Record<Issue["state"]["status"], string> = {
+  open: "var(--color-fill-success)",
+  closed: "var(--color-foreground-red)",
+};
+
+export const issueStatusBackgroundColor: Record<
+  Issue["state"]["status"],
+  string
+> = {
+  open: "var(--color-fill-diff-green)",
+  closed: "var(--color-fill-diff-red)",
+};

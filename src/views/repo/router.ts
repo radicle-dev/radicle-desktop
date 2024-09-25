@@ -8,6 +8,22 @@ import { unreachable } from "@app/lib/utils";
 
 export type IssueStatus = "all" | Issue["state"]["status"];
 
+export interface RepoIssueRoute {
+  resource: "repo.issue";
+  rid: string;
+  issue: string;
+}
+
+export interface LoadedRepoIssueRoute {
+  resource: "repo.issue";
+  params: {
+    repo: RepoInfo;
+    config: Config;
+    issue: Issue;
+    issues: Issue[];
+  };
+}
+
 export interface RepoIssuesRoute {
   resource: "repo.issues";
   rid: string;
@@ -42,8 +58,11 @@ export interface LoadedRepoPatchesRoute {
   };
 }
 
-export type RepoRoute = RepoIssuesRoute | RepoPatchesRoute;
-export type LoadedRepoRoute = LoadedRepoIssuesRoute | LoadedRepoPatchesRoute;
+export type RepoRoute = RepoIssueRoute | RepoIssuesRoute | RepoPatchesRoute;
+export type LoadedRepoRoute =
+  | LoadedRepoIssueRoute
+  | LoadedRepoIssuesRoute
+  | LoadedRepoPatchesRoute;
 
 export async function loadPatches(
   route: RepoPatchesRoute,
@@ -81,10 +100,35 @@ export async function loadIssues(
   };
 }
 
+export async function loadIssue(
+  route: RepoIssueRoute,
+): Promise<LoadedRepoIssueRoute> {
+  const repo: RepoInfo = await invoke("repo_by_id", {
+    rid: route.rid,
+  });
+  const config: Config = await invoke("config");
+  const issues: Issue[] = await invoke("list_issues", {
+    rid: route.rid,
+    status: "all",
+  });
+  const issue: Issue = await invoke("issues_by_id", {
+    rid: route.rid,
+    id: route.issue,
+  });
+
+  return {
+    resource: "repo.issue",
+    params: { repo, config, issue, issues },
+  };
+}
+
 export function repoRouteToPath(route: RepoRoute): string {
   const pathSegments = ["/repos", route.rid];
 
-  if (route.resource === "repo.issues") {
+  if (route.resource === "repo.issue") {
+    const url = [...pathSegments, "issues", route.issue].join("/");
+    return url;
+  } else if (route.resource === "repo.issues") {
     let url = [...pathSegments, "issues"].join("/");
     const searchParams = new URLSearchParams();
     if (route.status) {
@@ -114,11 +158,20 @@ export function repoUrlToRoute(
 
   if (rid) {
     if (resource === "issues") {
-      const status = searchParams.get("status");
-      if (status === "open" || status === "closed") {
-        return { resource: "repo.issues", rid, status };
+      const id = segments.shift();
+      if (id) {
+        return {
+          resource: "repo.issue",
+          rid,
+          issue: id,
+        };
       } else {
-        return { resource: "repo.issues", rid, status: "all" };
+        const status = searchParams.get("status");
+        if (status === "open" || status === "closed") {
+          return { resource: "repo.issues", rid, status };
+        } else {
+          return { resource: "repo.issues", rid, status: "all" };
+        }
       }
     } else if (resource === "patches") {
       const status = searchParams.get("status");

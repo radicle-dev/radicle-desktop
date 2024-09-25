@@ -1,15 +1,7 @@
 <script lang="ts">
-  import type { RepoInfo } from "@bindings/RepoInfo";
-
-  import Border from "@app/components/Border.svelte";
-  import CopyableId from "@app/components/CopyableId.svelte";
   import Header from "@app/components/Header.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
-  import RepoHeader from "@app/components/RepoHeader.svelte";
-
-  export let repo: RepoInfo;
-  export let selfDid: string;
 
   let hidden = false;
 </script>
@@ -56,9 +48,11 @@
           <Icon name="sidebar" />
         </NakedButton>
       </svelte:fragment>
+
       <svelte:fragment slot="center">
-        <CopyableId id={repo.rid} />
+        <slot name="header-center" />
       </svelte:fragment>
+
       <svelte:fragment slot="breadcrumbs">
         <slot name="breadcrumbs" />
       </svelte:fragment>
@@ -66,14 +60,6 @@
   </div>
 
   <div class="sidebar" class:hidden>
-    <Border
-      hoverable={false}
-      variant="ghost"
-      styleWidth="100%"
-      styleHeight="32px">
-      <RepoHeader {repo} {selfDid} emphasizedTitle={false} />
-    </Border>
-
     <slot name="sidebar" />
   </div>
 

@@ -4,7 +4,6 @@ use radicle::cob::ObjectId;
 use radicle::git::Oid;
 use radicle::identity::RepoId;
 use radicle::issue::cache::Issues;
-use radicle::issue::IssueId;
 use radicle::patch::cache::Patches;
 
 use crate::error::Error;
@@ -41,14 +40,14 @@ pub fn list_issues(
 pub fn issues_by_id(
     ctx: tauri::State<AppState>,
     rid: RepoId,
-    id: IssueId,
+    id: Oid,
 ) -> Result<Option<cobs::Issue>, Error> {
     let (repo, _) = ctx.repo(rid)?;
     let issues = ctx.profile.issues(&repo)?;
-    let issue = issues.get(&id)?;
+    let issue = issues.get(&id.into())?;
 
     let aliases = &ctx.profile.aliases();
-    let issue = issue.map(|issue| cobs::Issue::new(id, issue, aliases));
+    let issue = issue.map(|issue| cobs::Issue::new(id.into(), issue, aliases));
 
     Ok::<_, Error>(issue)
 }
