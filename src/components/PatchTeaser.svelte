@@ -5,6 +5,7 @@
   import { formatOid, formatTimestamp } from "@app/lib/utils";
   import { invoke } from "@tauri-apps/api/core";
 
+  import DiffStatBadge from "./DiffStatBadge.svelte";
   import Icon from "./Icon.svelte";
   import InlineTitle from "./InlineTitle.svelte";
   import NodeId from "./NodeId.svelte";
@@ -82,7 +83,7 @@
   </div>
   <div class="global-flex">
     {#await invoke<Stats>( "diff", { rid, base: patch.base, head: patch.head }, ) then stats}
-      <div>{stats.insertions} / {stats.deletions}</div>
+      <DiffStatBadge {stats} />
     {/await}
     {#each patch.labels as label}
       <div class="global-counter txt-small">{label}</div>
