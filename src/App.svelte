@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
 
   import { invoke } from "@tauri-apps/api/core";
+  import { listen } from "@tauri-apps/api/event";
 
   import * as router from "@app/lib/router";
   import { nodeRunning } from "@app/lib/events";
@@ -10,9 +11,9 @@
 
   import AuthenticationError from "@app/views/AuthenticationError.svelte";
   import Home from "@app/views/Home.svelte";
+  import Issue from "@app/views/repo/Issue.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
-  import { listen } from "@tauri-apps/api/event";
 
   const activeRouteStore = router.activeRouteStore;
 
@@ -51,6 +52,8 @@
   <!-- Don't show anything -->
 {:else if $activeRouteStore.resource === "home"}
   <Home {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "repo.issue"}
+  <Issue {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.issues"}
   <Issues {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.patches"}

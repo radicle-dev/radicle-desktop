@@ -6,10 +6,13 @@
 
   import Layout from "./Layout.svelte";
 
+  import Border from "@app/components/Border.svelte";
+  import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import RepoHeader from "@app/components/RepoHeader.svelte";
 
   export let repo: RepoInfo;
   export let issues: Issue[];
@@ -28,7 +31,7 @@
   }
 </style>
 
-<Layout {repo} selfDid={`did:key:${config.publicKey}`}>
+<Layout>
   <svelte:fragment slot="breadcrumbs">
     <Link route={{ resource: "home" }}>
       <NodeId
@@ -47,7 +50,22 @@
     Issues
   </svelte:fragment>
 
+  <svelte:fragment slot="header-center">
+    <CopyableId id={repo.rid} />
+  </svelte:fragment>
+
   <svelte:fragment slot="sidebar">
+    <Border
+      hoverable={false}
+      variant="ghost"
+      styleWidth="100%"
+      styleHeight="32px">
+      <RepoHeader
+        {repo}
+        selfDid={`did:key:${config.publicKey}`}
+        emphasizedTitle={false} />
+    </Border>
+
     <div class="global-flex txt-small" style:margin="0.5rem 0">
       <Link
         variant={status === "all" ? "active" : "tab"}
@@ -98,7 +116,7 @@
 
   <div class="list">
     {#each issues as issue}
-      <IssueTeaser {issue} />
+      <IssueTeaser {issue} rid={repo.rid} />
     {/each}
 
     {#if issues.length === 0}

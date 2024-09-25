@@ -16,6 +16,7 @@
     font-family: var(--font-family-monospace);
     padding: 0.125rem 0.25rem;
     background-color: var(--color-fill-ghost);
+    font-size: inherit;
   }
 </style>
 

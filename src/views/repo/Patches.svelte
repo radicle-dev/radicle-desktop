@@ -6,10 +6,13 @@
 
   import Layout from "./Layout.svelte";
 
+  import Border from "@app/components/Border.svelte";
+  import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
+  import RepoHeader from "@app/components/RepoHeader.svelte";
 
   export let repo: RepoInfo;
   export let patches: Patch[];
@@ -28,7 +31,7 @@
   }
 </style>
 
-<Layout {repo} selfDid={`did:key:${config.publicKey}`}>
+<Layout>
   <svelte:fragment slot="breadcrumbs">
     <Link route={{ resource: "home" }}>
       <NodeId
@@ -46,8 +49,22 @@
     <Icon name="chevron-right" />
     Patches
   </svelte:fragment>
+  <svelte:fragment slot="header-center">
+    <CopyableId id={repo.rid} />
+  </svelte:fragment>
 
   <svelte:fragment slot="sidebar">
+    <Border
+      hoverable={false}
+      variant="ghost"
+      styleWidth="100%"
+      styleHeight="32px">
+      <RepoHeader
+        {repo}
+        selfDid={`did:key:${config.publicKey}`}
+        emphasizedTitle={false} />
+    </Border>
+
     <div class="global-flex txt-small" style:margin="0.5rem 0">
       <Link
         variant="tab"
