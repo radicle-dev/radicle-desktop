@@ -50,7 +50,7 @@ pub struct Issue {
 }
 
 impl Issue {
-    pub fn new(id: issue::IssueId, issue: issue::Issue, aliases: &impl AliasStore) -> Self {
+    pub fn new(id: &issue::IssueId, issue: &issue::Issue, aliases: &impl AliasStore) -> Self {
         Self {
             id: id.to_string(),
             author: Author::new(*issue.author().id(), aliases),
@@ -356,6 +356,20 @@ pub struct NewPatchComment {
     #[ts(optional)]
     pub reply_to: Option<cob::thread::CommentId>,
     pub location: Option<CodeLocation>,
+    #[ts(type = "{ name: string, content: string }[]")]
+    pub embeds: Vec<cob::Embed>,
+}
+
+#[derive(TS, Serialize, Deserialize)]
+#[ts(export)]
+#[serde(rename_all = "camelCase")]
+pub struct NewIssue {
+    pub title: String,
+    pub description: String,
+    #[ts(as = "Vec<String>")]
+    pub labels: Vec<cob::Label>,
+    #[ts(as = "Vec<String>")]
+    pub assignees: Vec<identity::Did>,
     #[ts(type = "{ name: string, content: string }[]")]
     pub embeds: Vec<cob::Embed>,
 }
