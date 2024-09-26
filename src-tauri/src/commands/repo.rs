@@ -44,7 +44,7 @@ pub fn repo_by_id(
 }
 
 #[tauri::command]
-pub async fn diff(
+pub async fn diff_stats(
     ctx: tauri::State<'_, AppState>,
     rid: RepoId,
     base: String,

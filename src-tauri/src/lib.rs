@@ -17,7 +17,7 @@ use radicle::storage::git::Repository;
 use radicle::storage::{ReadRepository, ReadStorage};
 use radicle::Node;
 
-use commands::{auth, cobs, profile, repos, thread};
+use commands::{auth, cob, profile, repo, thread};
 use types::repo::SupportedPayloads;
 
 struct AppState {
@@ -138,17 +138,17 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             auth::authenticate,
-            repos::list_repos,
-            repos::repo_by_id,
-            repos::diff,
-            cobs::list_issues,
-            cobs::issues_by_id,
-            cobs::list_patches,
+            repo::list_repos,
+            repo::repo_by_id,
+            repo::diff_stats,
+            cob::issue::list_issues,
+            cob::issue::issue_by_id,
+            cob::patch::list_patches,
+            cob::patch::patch_by_id,
+            cob::patch::revisions_by_patch,
+            cob::patch::revision_by_patch_and_id,
             thread::create_issue_comment,
             thread::create_patch_comment,
-            cobs::patches_by_id,
-            cobs::revisions_by_patch,
-            cobs::revisions_by_id,
             profile::config,
         ])
         .run(tauri::generate_context!())

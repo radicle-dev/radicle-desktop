@@ -3,54 +3,12 @@ use std::str::FromStr;
 use radicle::cob::ObjectId;
 use radicle::git::Oid;
 use radicle::identity::RepoId;
-use radicle::issue::cache::Issues;
 use radicle::patch::cache::Patches;
 
+use crate::cob::query;
 use crate::error::Error;
 use crate::types::cobs;
 use crate::AppState;
-
-#[tauri::command]
-pub fn list_issues(
-    ctx: tauri::State<AppState>,
-    rid: RepoId,
-    status: query::IssueStatus,
-) -> Result<Vec<cobs::Issue>, Error> {
-    let (repo, _) = ctx.repo(rid)?;
-    let issues = ctx.profile.issues(&repo)?;
-    let mut issues: Vec<_> = issues
-        .list()?
-        .filter_map(|r| {
-            let (id, issue) = r.ok()?;
-            (status.matches(issue.state())).then_some((id, issue))
-        })
-        .collect::<Vec<_>>();
-
-    issues.sort_by(|(_, a), (_, b)| b.timestamp().cmp(&a.timestamp()));
-    let aliases = &ctx.profile.aliases();
-    let issues = issues
-        .into_iter()
-        .map(|(id, issue)| cobs::Issue::new(id, issue, aliases))
-        .collect::<Vec<_>>();
-
-    Ok::<_, Error>(issues)
-}
-
-#[tauri::command]
-pub fn issues_by_id(
-    ctx: tauri::State<AppState>,
-    rid: RepoId,
-    id: Oid,
-) -> Result<Option<cobs::Issue>, Error> {
-    let (repo, _) = ctx.repo(rid)?;
-    let issues = ctx.profile.issues(&repo)?;
-    let issue = issues.get(&id.into())?;
-
-    let aliases = &ctx.profile.aliases();
-    let issue = issue.map(|issue| cobs::Issue::new(id.into(), issue, aliases));
-
-    Ok::<_, Error>(issue)
-}
 
 #[tauri::command]
 pub fn list_patches(
@@ -79,7 +37,7 @@ pub fn list_patches(
 }
 
 #[tauri::command]
-pub fn patches_by_id(
+pub fn patch_by_id(
     ctx: tauri::State<AppState>,
     rid: RepoId,
     id: String,
@@ -118,7 +76,7 @@ pub fn revisions_by_patch(
 }
 
 #[tauri::command]
-pub fn revisions_by_id(
+pub fn revision_by_patch_and_id(
     ctx: tauri::State<AppState>,
     rid: RepoId,
     id: String,
@@ -136,53 +94,4 @@ pub fn revisions_by_id(
             .map(|r| cobs::Revision::new(r.clone(), aliases))
     });
     Ok::<_, Error>(revision)
-}
-
-mod query {
-    use serde::{Deserialize, Serialize};
-
-    use radicle::issue;
-    use radicle::patch;
-
-    #[derive(Default, Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub enum IssueStatus {
-        Closed,
-        #[default]
-        Open,
-        All,
-    }
-
-    impl IssueStatus {
-        pub fn matches(&self, issue: &issue::State) -> bool {
-            match self {
-                Self::Open => matches!(issue, issue::State::Open),
-                Self::Closed => matches!(issue, issue::State::Closed { .. }),
-                Self::All => true,
-            }
-        }
-    }
-
-    #[derive(Default, Serialize, Deserialize)]
-    #[serde(rename_all = "camelCase")]
-    pub enum PatchStatus {
-        #[default]
-        Open,
-        Draft,
-        Archived,
-        Merged,
-        All,
-    }
-
-    impl PatchStatus {
-        pub fn matches(&self, patch: &patch::State) -> bool {
-            match self {
-                Self::Open => matches!(patch, patch::State::Open { .. }),
-                Self::Draft => matches!(patch, patch::State::Draft),
-                Self::Archived => matches!(patch, patch::State::Archived),
-                Self::Merged => matches!(patch, patch::State::Merged { .. }),
-                Self::All => true,
-            }
-        }
-    }
 }

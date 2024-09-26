@@ -82,7 +82,7 @@
     </div>
   </div>
   <div class="global-flex">
-    {#await invoke<Stats>( "diff", { rid, base: patch.base, head: patch.head }, ) then stats}
+    {#await invoke<Stats>( "diff_stats", { rid, base: patch.base, head: patch.head }, ) then stats}
       <DiffStatBadge {stats} />
     {/await}
     {#each patch.labels as label}

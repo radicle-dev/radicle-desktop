@@ -111,7 +111,7 @@ export async function loadIssue(
     rid: route.rid,
     status: "all",
   });
-  const issue: Issue = await invoke("issues_by_id", {
+  const issue: Issue = await invoke("issue_by_id", {
     rid: route.rid,
     id: route.issue,
   });

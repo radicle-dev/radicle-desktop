@@ -1,5 +1,5 @@
 pub mod auth;
-pub mod cobs;
+pub mod cob;
 pub mod profile;
-pub mod repos;
+pub mod repo;
 pub mod thread;
