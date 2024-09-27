@@ -3,15 +3,22 @@ import type { RepoInfo } from "@bindings/RepoInfo";
 import type {
   LoadedRepoIssueRoute,
   LoadedRepoIssuesRoute,
+  LoadedRepoPatchRoute,
   LoadedRepoPatchesRoute,
   RepoIssueRoute,
   RepoIssuesRoute,
+  RepoPatchRoute,
   RepoPatchesRoute,
 } from "@app/views/repo/router";
 
 import { invoke } from "@tauri-apps/api/core";
 
-import { loadIssues, loadIssue, loadPatches } from "@app/views/repo/router";
+import {
+  loadIssue,
+  loadIssues,
+  loadPatch,
+  loadPatches,
+} from "@app/views/repo/router";
 
 interface BootingRoute {
   resource: "booting";
@@ -40,6 +47,7 @@ export type Route =
   | HomeRoute
   | RepoIssueRoute
   | RepoIssuesRoute
+  | RepoPatchRoute
   | RepoPatchesRoute;
 
 export type LoadedRoute =
@@ -48,6 +56,7 @@ export type LoadedRoute =
   | LoadedHomeRoute
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
+  | LoadedRepoPatchRoute
   | LoadedRepoPatchesRoute;
 
 export async function loadRoute(
@@ -62,6 +71,8 @@ export async function loadRoute(
     return loadIssue(route);
   } else if (route.resource === "repo.issues") {
     return loadIssues(route);
+  } else if (route.resource === "repo.patch") {
+    return loadPatch(route);
   } else if (route.resource === "repo.patches") {
     return loadPatches(route);
   }

@@ -2,6 +2,7 @@ import type { Config } from "@bindings/Config";
 import type { Issue } from "@bindings/Issue";
 import type { Patch } from "@bindings/Patch";
 import type { RepoInfo } from "@bindings/RepoInfo";
+import type { Revision } from "@bindings/Revision";
 
 import { invoke } from "@tauri-apps/api/core";
 import { unreachable } from "@app/lib/utils";
@@ -42,6 +43,23 @@ export interface LoadedRepoIssuesRoute {
 
 export type PatchStatus = "all" | Patch["state"]["status"];
 
+export interface RepoPatchRoute {
+  resource: "repo.patch";
+  rid: string;
+  patch: string;
+}
+
+export interface LoadedRepoPatchRoute {
+  resource: "repo.patch";
+  params: {
+    repo: RepoInfo;
+    config: Config;
+    patch: Patch;
+    patches: Patch[];
+    revisions: Revision[];
+  };
+}
+
 export interface RepoPatchesRoute {
   resource: "repo.patches";
   rid: string;
@@ -58,11 +76,42 @@ export interface LoadedRepoPatchesRoute {
   };
 }
 
-export type RepoRoute = RepoIssueRoute | RepoIssuesRoute | RepoPatchesRoute;
+export type RepoRoute =
+  | RepoIssueRoute
+  | RepoIssuesRoute
+  | RepoPatchRoute
+  | RepoPatchesRoute;
 export type LoadedRepoRoute =
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
+  | LoadedRepoPatchRoute
   | LoadedRepoPatchesRoute;
+
+export async function loadPatch(
+  route: RepoPatchRoute,
+): Promise<LoadedRepoPatchRoute> {
+  const repo: RepoInfo = await invoke("repo_by_id", {
+    rid: route.rid,
+  });
+  const config: Config = await invoke("config");
+  const patches: Patch[] = await invoke("list_patches", {
+    rid: route.rid,
+    status: "all",
+  });
+  const patch: Patch = await invoke("patch_by_id", {
+    rid: route.rid,
+    id: route.patch,
+  });
+  const revisions: Revision[] = await invoke("revisions_by_patch", {
+    rid: route.rid,
+    id: route.patch,
+  });
+
+  return {
+    resource: "repo.patch",
+    params: { repo, config, patch, patches, revisions },
+  };
+}
 
 export async function loadPatches(
   route: RepoPatchesRoute,
@@ -79,24 +128,6 @@ export async function loadPatches(
   return {
     resource: "repo.patches",
     params: { repo, config, patches, status: route.status },
-  };
-}
-
-export async function loadIssues(
-  route: RepoIssuesRoute,
-): Promise<LoadedRepoIssuesRoute> {
-  const repo: RepoInfo = await invoke("repo_by_id", {
-    rid: route.rid,
-  });
-  const config: Config = await invoke("config");
-  const issues: Issue[] = await invoke("list_issues", {
-    rid: route.rid,
-    status: route.status,
-  });
-
-  return {
-    resource: "repo.issues",
-    params: { repo, config, issues, status: route.status },
   };
 }
 
@@ -122,6 +153,24 @@ export async function loadIssue(
   };
 }
 
+export async function loadIssues(
+  route: RepoIssuesRoute,
+): Promise<LoadedRepoIssuesRoute> {
+  const repo: RepoInfo = await invoke("repo_by_id", {
+    rid: route.rid,
+  });
+  const config: Config = await invoke("config");
+  const issues: Issue[] = await invoke("list_issues", {
+    rid: route.rid,
+    status: route.status,
+  });
+
+  return {
+    resource: "repo.issues",
+    params: { repo, config, issues, status: route.status },
+  };
+}
+
 export function repoRouteToPath(route: RepoRoute): string {
   const pathSegments = ["/repos", route.rid];
 
@@ -135,6 +184,9 @@ export function repoRouteToPath(route: RepoRoute): string {
       searchParams.set("status", route.status);
       url += `?${searchParams}`;
     }
+    return url;
+  } else if (route.resource === "repo.patch") {
+    const url = [...pathSegments, "patches", route.patch].join("/");
     return url;
   } else if (route.resource === "repo.patches") {
     let url = [...pathSegments, "patches"].join("/");
@@ -174,16 +226,25 @@ export function repoUrlToRoute(
         }
       }
     } else if (resource === "patches") {
-      const status = searchParams.get("status");
-      if (
-        status === "draft" ||
-        status === "open" ||
-        status === "archived" ||
-        status === "merged"
-      ) {
-        return { resource: "repo.patches", rid, status };
+      const id = segments.shift();
+      if (id) {
+        return {
+          resource: "repo.patch",
+          rid,
+          patch: id,
+        };
       } else {
-        return { resource: "repo.patches", rid, status: "all" };
+        const status = searchParams.get("status");
+        if (
+          status === "draft" ||
+          status === "open" ||
+          status === "archived" ||
+          status === "merged"
+        ) {
+          return { resource: "repo.patches", rid, status };
+        } else {
+          return { resource: "repo.patches", rid, status: "all" };
+        }
       }
     } else {
       return null;

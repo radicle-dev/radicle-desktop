@@ -1,4 +1,5 @@
 import type { Issue } from "@bindings/Issue";
+import type { Patch } from "@bindings/Patch";
 
 import bs58 from "bs58";
 import twemojiModule from "twemoji";
@@ -114,4 +115,21 @@ export const issueStatusBackgroundColor: Record<
 > = {
   open: "var(--color-fill-diff-green)",
   closed: "var(--color-fill-diff-red)",
+};
+
+export const patchStatusColor: Record<Patch["state"]["status"], string> = {
+  draft: "var(--color-fill-gray)",
+  open: "var(--color-fill-success)",
+  archived: "var(--color-foreground-yellow)",
+  merged: "var(--color-fill-primary)",
+};
+
+export const patchStatusBackgroundColor: Record<
+  Patch["state"]["status"],
+  string
+> = {
+  draft: "var(--color-fill-ghost)",
+  open: "var(--color-fill-diff-green)",
+  archived: "var(--color-fill-private)",
+  merged: "var(--color-fill-delegate)",
 };

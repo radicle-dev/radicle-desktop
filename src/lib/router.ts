@@ -120,6 +120,7 @@ export function routeToPath(route: Route): string {
   } else if (
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||
+    route.resource === "repo.patch" ||
     route.resource === "repo.patches"
   ) {
     return repoRouteToPath(route);

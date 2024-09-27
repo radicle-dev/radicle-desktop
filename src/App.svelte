@@ -13,6 +13,7 @@
   import Home from "@app/views/Home.svelte";
   import Issue from "@app/views/repo/Issue.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
+  import Patch from "@app/views/repo/Patch.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
 
   const activeRouteStore = router.activeRouteStore;
@@ -56,6 +57,8 @@
   <Issue {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.issues"}
   <Issues {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "repo.patch"}
+  <Patch {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.patches"}
   <Patches {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "authenticationError"}

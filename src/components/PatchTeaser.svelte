@@ -2,8 +2,14 @@
   import type { Patch } from "@bindings/Patch";
   import type { Stats } from "@bindings/Stats";
 
-  import { formatOid, formatTimestamp } from "@app/lib/utils";
+  import {
+    formatOid,
+    formatTimestamp,
+    patchStatusBackgroundColor,
+    patchStatusColor,
+  } from "@app/lib/utils";
   import { invoke } from "@tauri-apps/api/core";
+  import { push } from "@app/lib/router";
 
   import DiffStatBadge from "./DiffStatBadge.svelte";
   import Icon from "./Icon.svelte";
@@ -12,20 +18,6 @@
 
   export let patch: Patch;
   export let rid: string;
-
-  const statusColor: Record<Patch["state"]["status"], string> = {
-    draft: "var(--color-fill-gray)",
-    open: "var(--color-fill-success)",
-    archived: "var(--color-foreground-yellow)",
-    merged: "var(--color-fill-primary)",
-  };
-
-  const statusBackgroundColor: Record<Patch["state"]["status"], string> = {
-    draft: "var(--color-fill-ghost)",
-    open: "var(--color-fill-diff-green)",
-    archived: "var(--color-fill-private)",
-    merged: "var(--color-fill-delegate)",
-  };
 </script>
 
 <style>
@@ -58,12 +50,19 @@
   }
 </style>
 
-<div class="patch-teaser">
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div
+  tabindex="0"
+  role="button"
+  class="patch-teaser"
+  onclick={() => {
+    void push({ resource: "repo.patch", rid, patch: patch.id });
+  }}>
   <div class="global-flex">
     <div
       class="global-counter status"
-      style:color={statusColor[patch.state.status]}
-      style:background-color={statusBackgroundColor[patch.state.status]}>
+      style:color={patchStatusColor[patch.state.status]}
+      style:background-color={patchStatusBackgroundColor[patch.state.status]}>
       <Icon name="patch" />
     </div>
     <div
