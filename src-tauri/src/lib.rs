@@ -2,81 +2,16 @@ mod commands;
 mod error;
 mod types;
 
-use serde_json::json;
 use tauri::Emitter;
 use tauri::Manager;
 
-use radicle::identity::doc::PayloadId;
-use radicle::identity::DocAt;
-use radicle::identity::RepoId;
-use radicle::issue::cache::Issues;
-use radicle::node::routing::Store;
 use radicle::node::Handle;
-use radicle::patch::cache::Patches;
-use radicle::storage::git::Repository;
-use radicle::storage::{ReadRepository, ReadStorage};
 use radicle::Node;
 
 use commands::{auth, cob, profile, repo, thread};
-use types::repo::SupportedPayloads;
 
 struct AppState {
     profile: radicle::Profile,
-}
-
-impl AppState {
-    pub fn repo_info<R: ReadRepository + radicle::cob::Store>(
-        &self,
-        repo: &R,
-        doc: DocAt,
-    ) -> Result<types::repo::RepoInfo, error::Error> {
-        let DocAt { doc, .. } = doc;
-        let rid = repo.id();
-
-        let aliases = self.profile.aliases();
-        let delegates = doc
-            .delegates
-            .into_iter()
-            .map(|did| types::cobs::Author::new(did, &aliases))
-            .collect::<Vec<_>>();
-        let db = &self.profile.database()?;
-        let seeding = db.count(&rid).unwrap_or_default();
-
-        let project = doc.payload.get(&PayloadId::project()).and_then(|payload| {
-            let (_, head) = repo.head().ok()?;
-            let commit = repo.commit(head).ok()?;
-            let patches = self.profile.patches(repo).ok()?;
-            let patches = patches.counts().ok()?;
-            let issues = self.profile.issues(repo).ok()?;
-            let issues = issues.counts().ok()?;
-
-            Some(json!({
-                "data": payload,
-                "meta": {
-                    "issues": issues,
-                    "patches": patches,
-                    "head": head,
-                    "lastCommit": commit.time().seconds() * 1000,
-                },
-            }))
-        });
-
-        Ok(types::repo::RepoInfo {
-            payloads: SupportedPayloads { project },
-            delegates,
-            threshold: doc.threshold,
-            visibility: doc.visibility,
-            rid,
-            seeding,
-        })
-    }
-
-    /// Get a repository by RID, checking to make sure we're allowed to view it.
-    pub fn repo(&self, rid: RepoId) -> Result<(Repository, DocAt), error::Error> {
-        let repo = self.profile.storage.repository(rid)?;
-        let doc = repo.identity_doc()?;
-        Ok((repo, doc))
-    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

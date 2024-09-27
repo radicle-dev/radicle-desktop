@@ -1,6 +1,7 @@
-use radicle::git::Oid;
+use radicle::git;
 use radicle::identity::RepoId;
 use radicle::issue::cache::Issues;
+use radicle::storage::ReadStorage;
 
 use crate::cob::query;
 use crate::error::Error;
@@ -13,7 +14,7 @@ pub fn create_issue(
     rid: RepoId,
     new: cobs::NewIssue,
 ) -> Result<cobs::Issue, Error> {
-    let (repo, _) = ctx.repo(rid)?;
+    let repo = ctx.profile.storage.repository(rid)?;
     let signer = ctx.profile.signer()?;
     let aliases = ctx.profile.aliases();
     let mut issues = ctx.profile.issues_mut(&repo)?;
@@ -35,7 +36,7 @@ pub fn list_issues(
     rid: RepoId,
     status: query::IssueStatus,
 ) -> Result<Vec<cobs::Issue>, Error> {
-    let (repo, _) = ctx.repo(rid)?;
+    let repo = ctx.profile.storage.repository(rid)?;
     let issues = ctx.profile.issues(&repo)?;
     let mut issues: Vec<_> = issues
         .list()?
@@ -59,9 +60,9 @@ pub fn list_issues(
 pub fn issue_by_id(
     ctx: tauri::State<AppState>,
     rid: RepoId,
-    id: Oid,
+    id: git::Oid,
 ) -> Result<Option<cobs::Issue>, Error> {
-    let (repo, _) = ctx.repo(rid)?;
+    let repo = ctx.profile.storage.repository(rid)?;
     let issues = ctx.profile.issues(&repo)?;
     let issue = issues.get(&id.into())?;
 
