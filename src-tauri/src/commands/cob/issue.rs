@@ -8,6 +8,28 @@ use crate::types::cobs;
 use crate::AppState;
 
 #[tauri::command]
+pub fn create_issue(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+    new: cobs::NewIssue,
+) -> Result<cobs::Issue, Error> {
+    let (repo, _) = ctx.repo(rid)?;
+    let signer = ctx.profile.signer()?;
+    let aliases = ctx.profile.aliases();
+    let mut issues = ctx.profile.issues_mut(&repo)?;
+    let issue = issues.create(
+        new.title,
+        new.description,
+        &new.labels,
+        &new.assignees,
+        new.embeds,
+        &signer,
+    )?;
+
+    Ok::<_, Error>(cobs::Issue::new(issue.id(), &issue, &aliases))
+}
+
+#[tauri::command]
 pub fn list_issues(
     ctx: tauri::State<AppState>,
     rid: RepoId,
@@ -27,7 +49,7 @@ pub fn list_issues(
     let aliases = &ctx.profile.aliases();
     let issues = issues
         .into_iter()
-        .map(|(id, issue)| cobs::Issue::new(id, issue, aliases))
+        .map(|(id, issue)| cobs::Issue::new(&id, &issue, aliases))
         .collect::<Vec<_>>();
 
     Ok::<_, Error>(issues)
@@ -44,7 +66,7 @@ pub fn issue_by_id(
     let issue = issues.get(&id.into())?;
 
     let aliases = &ctx.profile.aliases();
-    let issue = issue.map(|issue| cobs::Issue::new(id.into(), issue, aliases));
+    let issue = issue.map(|issue| cobs::Issue::new(&id.into(), &issue, aliases));
 
     Ok::<_, Error>(issue)
 }

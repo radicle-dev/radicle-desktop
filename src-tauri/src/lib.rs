@@ -143,6 +143,7 @@ pub fn run() {
             repo::diff_stats,
             cob::issue::list_issues,
             cob::issue::issue_by_id,
+            cob::issue::create_issue,
             cob::patch::list_patches,
             cob::patch::patch_by_id,
             cob::patch::revisions_by_patch,
