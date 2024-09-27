@@ -1,9 +1,7 @@
-use std::str::FromStr;
-
-use radicle::cob::ObjectId;
-use radicle::git::Oid;
+use radicle::git;
 use radicle::identity::RepoId;
 use radicle::patch::cache::Patches;
+use radicle::storage::ReadStorage;
 
 use crate::cob::query;
 use crate::error::Error;
@@ -16,7 +14,7 @@ pub fn list_patches(
     rid: RepoId,
     status: query::PatchStatus,
 ) -> Result<Vec<cobs::Patch>, Error> {
-    let (repo, _) = ctx.repo(rid)?;
+    let repo = ctx.profile.storage.repository(rid)?;
     let patches = ctx.profile.patches(&repo)?;
     let mut patches: Vec<_> = patches
         .list()?
@@ -40,15 +38,13 @@ pub fn list_patches(
 pub fn patch_by_id(
     ctx: tauri::State<AppState>,
     rid: RepoId,
-    id: String,
+    id: git::Oid,
 ) -> Result<Option<cobs::Patch>, Error> {
-    let id = ObjectId::from_str(&id)?;
-    let (repo, _) = ctx.repo(rid)?;
+    let repo = ctx.profile.storage.repository(rid)?;
     let patches = ctx.profile.patches(&repo)?;
-    let patch = patches.get(&id)?;
-
+    let patch = patches.get(&id.into())?;
     let aliases = &ctx.profile.aliases();
-    let patches = patch.map(|patch| cobs::Patch::new(id, patch, aliases));
+    let patches = patch.map(|patch| cobs::Patch::new(id.into(), patch, aliases));
 
     Ok::<_, Error>(patches)
 }
@@ -57,13 +53,11 @@ pub fn patch_by_id(
 pub fn revisions_by_patch(
     ctx: tauri::State<AppState>,
     rid: RepoId,
-    id: String,
+    id: git::Oid,
 ) -> Result<Option<Vec<cobs::Revision>>, Error> {
-    let id = ObjectId::from_str(&id)?;
-    let (repo, _) = ctx.repo(rid)?;
+    let repo = ctx.profile.storage.repository(rid)?;
     let patches = ctx.profile.patches(&repo)?;
-
-    let revisions = patches.get(&id)?.map(|patch| {
+    let revisions = patches.get(&id.into())?.map(|patch| {
         let aliases = &ctx.profile.aliases();
 
         patch
@@ -79,14 +73,12 @@ pub fn revisions_by_patch(
 pub fn revision_by_patch_and_id(
     ctx: tauri::State<AppState>,
     rid: RepoId,
-    id: String,
-    revision_id: String,
+    id: git::Oid,
+    revision_id: git::Oid,
 ) -> Result<Option<cobs::Revision>, Error> {
-    let id = ObjectId::from_str(&id)?;
-    let (repo, _) = ctx.repo(rid)?;
+    let repo = ctx.profile.storage.repository(rid)?;
     let patches = ctx.profile.patches(&repo)?;
-    let revision = patches.get(&id)?.and_then(|patch| {
-        let revision_id = Oid::from_str(&revision_id).ok()?;
+    let revision = patches.get(&id.into())?.and_then(|patch| {
         let aliases = &ctx.profile.aliases();
 
         patch

@@ -349,8 +349,10 @@ impl Comment {
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct NewPatchComment {
-    pub id: String,
-    pub revision: String,
+    #[ts(as = "String")]
+    pub id: git::Oid,
+    #[ts(as = "String")]
+    pub revision: git::Oid,
     pub body: String,
     #[ts(as = "Option<String>")]
     #[ts(optional)]
@@ -378,7 +380,8 @@ pub struct NewIssue {
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct NewIssueComment {
-    pub id: String,
+    #[ts(as = "String")]
+    pub id: git::Oid,
     pub body: String,
     #[ts(as = "Option<String>")]
     #[ts(optional)]
