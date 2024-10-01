@@ -1,5 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import type { UnlistenFn } from "@tauri-apps/api/event";
+
+  import { onDestroy, onMount } from "svelte";
 
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
@@ -18,21 +20,20 @@
 
   const activeRouteStore = router.activeRouteStore;
 
+  let unlistenEvents: UnlistenFn | undefined = undefined;
+  let unlistenNodeEvents: UnlistenFn | undefined = undefined;
+
   onMount(async () => {
+    unlistenEvents = await listen("event", event => {
+      console.log(event.payload);
+    });
+
+    unlistenNodeEvents = await listen<boolean>("node_running", event => {
+      nodeRunning.set(event.payload);
+    });
+
     try {
-      await listen("event", event => {
-        console.log(event.payload);
-      });
-
-      await listen<boolean>("node_running", event => {
-        nodeRunning.set(event.payload);
-      });
-      // For development purposes don't run tauri commands when viewing from
-      // a browser.
-      if (window.__TAURI_INTERNALS__) {
-        await invoke("authenticate");
-      }
-
+      await invoke("authenticate");
       void router.loadFromLocation();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
@@ -43,6 +44,15 @@
           hint: e.hint,
         },
       });
+    }
+  });
+
+  onDestroy(() => {
+    if (unlistenEvents) {
+      unlistenEvents();
+    }
+    if (unlistenNodeEvents) {
+      unlistenNodeEvents();
     }
   });
 
