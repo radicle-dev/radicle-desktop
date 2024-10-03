@@ -11,7 +11,7 @@ export type Revision = {
   author: Author;
   description: Array<Edit>;
   base: string;
-  oid: string;
+  head: string;
   reviews: Array<Review>;
   timestamp: bigint;
   discussion: Array<Comment<CodeLocation>>;

@@ -132,7 +132,7 @@ pub struct Revision {
     #[ts(as = "String")]
     base: git::Oid,
     #[ts(as = "String")]
-    oid: git::Oid,
+    head: git::Oid,
     reviews: Vec<Review>,
     #[ts(as = "i64")]
     timestamp: cob::common::Timestamp,
@@ -150,7 +150,7 @@ impl Revision {
                 .map(|e| Edit::new(e, aliases))
                 .collect::<Vec<_>>(),
             base: *value.base(),
-            oid: value.head(),
+            head: value.head(),
             reviews: value
                 .reviews()
                 .map(|(id, r)| Review::new(*id, r.clone(), aliases))
