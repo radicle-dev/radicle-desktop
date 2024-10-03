@@ -16,22 +16,22 @@ name = "app_lib"
 crate-type = ["staticlib", "cdylib", "lib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-rc.0", features = ["isolation"] }
+tauri-build = { version = "2.0", features = ["isolation"] }
 
 [dependencies]
-anyhow = { version = "1.0.86" }
+anyhow = { version = "1.0" }
 log = { version = "0.4" }
 radicle = { version = "0.13.0" }
 radicle-surf = { version = "0.22.0" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
-tauri = { version = "2.0.0-rc.0", features = ["isolation"] }
-tauri-plugin-clipboard-manager = { version = "2.1.0-beta.7" }
-tauri-plugin-devtools = { version = "2.0.0-rc" }
-tauri-plugin-shell = { version = "2.0.0-rc.0" }
-tauri-plugin-window-state = { version = "2.0.0-rc.1" }
-thiserror = { version = "1.0.63" }
-ts-rs = { version = "9.0.1", features = ["serde-json-impl", "no-serde-warnings"] }
+tauri = { version = "2.0", features = ["isolation"] }
+tauri-plugin-clipboard-manager = { version = "2.0" }
+tauri-plugin-devtools = { version = "2.0" }
+tauri-plugin-shell = { version = "2.0" }
+tauri-plugin-window-state = { version = "2.0" }
+thiserror = { version = "1.0" }
+ts-rs = { version = "9.0", features = ["serde-json-impl", "no-serde-warnings"] }
 
 [features]
 # by default Tauri runs in production mode
