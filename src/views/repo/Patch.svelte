@@ -146,7 +146,7 @@
     </div>
     <div class="txt-small" style:margin-top="1rem">Revisions</div>
     {#each revisions as revision}
-      <div class="global-oid">{formatOid(revision.oid)}</div>
+      <div class="global-oid">{formatOid(revision.id)}</div>
     {/each}
   </div>
 </Layout>
