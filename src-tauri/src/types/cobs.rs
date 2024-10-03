@@ -125,6 +125,8 @@ impl Patch {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct Revision {
+    #[ts(as = "String")]
+    id: patch::RevisionId,
     author: Author,
     description: Vec<Edit>,
     #[ts(as = "String")]
@@ -141,6 +143,7 @@ pub struct Revision {
 impl Revision {
     pub fn new(value: cob::patch::Revision, aliases: &impl AliasStore) -> Self {
         Self {
+            id: value.id(),
             author: Author::new(*value.author().id(), aliases),
             description: value
                 .edits()

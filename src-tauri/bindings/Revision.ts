@@ -7,6 +7,7 @@ import type { Reaction } from "./Reaction";
 import type { Review } from "./Review";
 
 export type Revision = {
+  id: string;
   author: Author;
   description: Array<Edit>;
   base: string;
