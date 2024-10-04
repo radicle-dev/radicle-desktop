@@ -54,7 +54,7 @@
   }
 </style>
 
-<Layout {repo} selfDid={`did:key:${config.publicKey}`}>
+<Layout>
   <svelte:fragment slot="breadcrumbs">
     <Link route={{ resource: "home" }}>
       <NodeId

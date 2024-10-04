@@ -119,6 +119,10 @@ impl Patch {
             revision_count: patch.revisions().count(),
         }
     }
+
+    pub fn timestamp(&self) -> u64 {
+        self.timestamp.as_millis()
+    }
 }
 
 #[derive(Serialize, TS)]

@@ -34,17 +34,25 @@ mod query {
         Draft,
         Archived,
         Merged,
-        All,
     }
 
-    impl PatchStatus {
-        pub fn matches(&self, patch: &patch::State) -> bool {
-            match self {
-                Self::Open => matches!(patch, patch::State::Open { .. }),
-                Self::Draft => matches!(patch, patch::State::Draft),
-                Self::Archived => matches!(patch, patch::State::Archived),
-                Self::Merged => matches!(patch, patch::State::Merged { .. }),
-                Self::All => true,
+    impl From<patch::Status> for PatchStatus {
+        fn from(value: patch::Status) -> Self {
+            match value {
+                patch::Status::Archived => Self::Archived,
+                patch::Status::Draft => Self::Draft,
+                patch::Status::Merged => Self::Merged,
+                patch::Status::Open => Self::Open,
+            }
+        }
+    }
+    impl From<PatchStatus> for patch::Status {
+        fn from(value: PatchStatus) -> Self {
+            match value {
+                PatchStatus::Archived => Self::Archived,
+                PatchStatus::Draft => Self::Draft,
+                PatchStatus::Merged => Self::Merged,
+                PatchStatus::Open => Self::Open,
             }
         }
     }

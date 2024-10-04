@@ -2,36 +2,59 @@ use radicle::git;
 use radicle::identity::RepoId;
 use radicle::patch::cache::Patches;
 use radicle::storage::ReadStorage;
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
-use crate::cob::query;
 use crate::error::Error;
 use crate::types::cobs;
 use crate::AppState;
 
+use crate::cob::query;
+
+#[derive(Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct PaginatedQuery<T> {
+    pub cursor: usize,
+    pub more: bool,
+    pub content: T,
+}
+
 #[tauri::command]
-pub fn list_patches(
-    ctx: tauri::State<AppState>,
+pub async fn list_patches(
+    ctx: tauri::State<'_, AppState>,
     rid: RepoId,
-    status: query::PatchStatus,
-) -> Result<Vec<cobs::Patch>, Error> {
+    status: Option<query::PatchStatus>,
+    skip: Option<usize>,
+    take: Option<usize>,
+) -> Result<PaginatedQuery<Vec<cobs::Patch>>, Error> {
+    let cursor = skip.unwrap_or(0);
+    let take = take.unwrap_or(20);
     let repo = ctx.profile.storage.repository(rid)?;
-    let patches = ctx.profile.patches(&repo)?;
-    let mut patches: Vec<_> = patches
-        .list()?
-        .filter_map(|r| {
-            let (id, patch) = r.ok()?;
-            (status.matches(patch.state())).then_some((id, patch))
-        })
-        .collect::<Vec<_>>();
-
-    patches.sort_by(|(_, a), (_, b)| b.timestamp().cmp(&a.timestamp()));
     let aliases = &ctx.profile.aliases();
-    let patches = patches
+    let cache = ctx.profile.patches(&repo)?;
+    let patches = match status {
+        None => cache.list()?.collect::<Vec<_>>(),
+        Some(s) => cache.list_by_status(&s.into())?.collect::<Vec<_>>(),
+    };
+    let more = cursor + take < patches.len();
+
+    let mut patches = patches
         .into_iter()
-        .map(|(id, patch)| cobs::Patch::new(id, patch, aliases))
+        .filter_map(|p| {
+            p.map(|(id, patch)| cobs::Patch::new(id, patch, aliases))
+                .ok()
+        })
+        .skip(cursor)
+        .take(take)
         .collect::<Vec<_>>();
 
-    Ok::<_, Error>(patches)
+    patches.sort_by_key(|b| std::cmp::Reverse(b.timestamp()));
+
+    Ok::<_, Error>(PaginatedQuery {
+        cursor,
+        more,
+        content: patches,
+    })
 }
 
 #[tauri::command]

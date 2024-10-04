@@ -1,9 +1,30 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import Header from "@app/components/Header.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
 
+  export let loadMore: (() => Promise<void>) | undefined = undefined;
+
   let hidden = false;
+  let listElement: HTMLElement;
+  let loading = false;
+
+  onMount(() => {
+    if (listElement && loadMore) {
+      listElement.addEventListener("scroll", async () => {
+        if (
+          listElement.scrollTop + listElement.clientHeight >=
+            listElement.scrollHeight - 600 &&
+          loading === false
+        ) {
+          loading = true;
+          void loadMore().finally(() => (loading = false));
+        }
+      });
+    }
+  });
 </script>
 
 <style>
@@ -64,7 +85,7 @@
     <slot name="sidebar" />
   </div>
 
-  <div class="content">
+  <div class="content" bind:this={listElement}>
     <slot />
   </div>
 </div>

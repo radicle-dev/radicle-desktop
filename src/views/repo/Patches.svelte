@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { Config } from "@bindings/Config";
+  import type { PaginatedQuery } from "@bindings/PaginatedQuery";
   import type { Patch } from "@bindings/Patch";
   import type { PatchStatus } from "./router";
   import type { RepoInfo } from "@bindings/RepoInfo";
 
-  import Layout from "./Layout.svelte";
+  import { invoke } from "@tauri-apps/api/core";
 
+  import Layout from "./Layout.svelte";
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -15,9 +17,28 @@
   import RepoHeader from "@app/components/RepoHeader.svelte";
 
   export let repo: RepoInfo;
-  export let patches: Patch[];
+  export let patches: PaginatedQuery<Patch[]>;
   export let config: Config;
-  export let status: PatchStatus;
+  export let status: PatchStatus | undefined = undefined;
+
+  $: items = patches.content;
+  $: more = patches.more;
+  $: cursor = patches.cursor;
+
+  async function loadMore() {
+    if (more) {
+      const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
+        rid: repo.rid,
+        skip: cursor + 20,
+        status,
+        take: 20,
+      });
+
+      cursor = p.cursor;
+      more = p.more;
+      items = [...items, ...p.content];
+    }
+  }
 
   $: project = repo.payloads["xyz.radicle.project"]!;
 </script>
@@ -31,7 +52,7 @@
   }
 </style>
 
-<Layout>
+<Layout {loadMore}>
   <svelte:fragment slot="breadcrumbs">
     <Link route={{ resource: "home" }}>
       <NodeId
@@ -77,8 +98,8 @@
     </div>
     <div class="global-flex txt-small" style:margin="0.5rem 0">
       <Link
-        variant={status === "all" ? "active" : "tab"}
-        route={{ resource: "repo.patches", rid: repo.rid, status: "all" }}>
+        variant={status === undefined ? "active" : "tab"}
+        route={{ resource: "repo.patches", rid: repo.rid }}>
         <div class="global-flex"><Icon name="patch" />Patches</div>
         <div class="global-counter">
           {project.meta.patches.draft +
@@ -133,13 +154,13 @@
   </svelte:fragment>
 
   <div class="list">
-    {#each patches as patch}
+    {#each items as patch}
       <PatchTeaser rid={repo.rid} {patch} />
     {/each}
 
-    {#if patches.length === 0}
+    {#if patches.content.length === 0}
       <div class="txt-missing txt-small">
-        {#if status === "all"}
+        {#if status === undefined}
           No patches.
         {:else}
           No {status} patches.

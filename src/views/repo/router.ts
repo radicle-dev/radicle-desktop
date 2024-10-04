@@ -1,4 +1,5 @@
 import type { Config } from "@bindings/Config";
+import type { PaginatedQuery } from "@bindings/PaginatedQuery";
 import type { Issue } from "@bindings/Issue";
 import type { Patch } from "@bindings/Patch";
 import type { RepoInfo } from "@bindings/RepoInfo";
@@ -41,7 +42,7 @@ export interface LoadedRepoIssuesRoute {
   };
 }
 
-export type PatchStatus = "all" | Patch["state"]["status"];
+export type PatchStatus = Patch["state"]["status"];
 
 export interface RepoPatchRoute {
   resource: "repo.patch";
@@ -63,7 +64,7 @@ export interface LoadedRepoPatchRoute {
 export interface RepoPatchesRoute {
   resource: "repo.patches";
   rid: string;
-  status: PatchStatus;
+  status?: PatchStatus;
 }
 
 export interface LoadedRepoPatchesRoute {
@@ -71,8 +72,8 @@ export interface LoadedRepoPatchesRoute {
   params: {
     repo: RepoInfo;
     config: Config;
-    patches: Patch[];
-    status: PatchStatus;
+    patches: PaginatedQuery<Patch[]>;
+    status?: PatchStatus;
   };
 }
 
@@ -94,9 +95,8 @@ export async function loadPatch(
     rid: route.rid,
   });
   const config: Config = await invoke("config");
-  const patches: Patch[] = await invoke("list_patches", {
+  const patches: PaginatedQuery<Patch[]> = await invoke("list_patches", {
     rid: route.rid,
-    status: "all",
   });
   const patch: Patch = await invoke("patch_by_id", {
     rid: route.rid,
@@ -109,7 +109,7 @@ export async function loadPatch(
 
   return {
     resource: "repo.patch",
-    params: { repo, config, patch, patches, revisions },
+    params: { repo, config, patch, patches: patches.content, revisions },
   };
 }
 
@@ -120,7 +120,7 @@ export async function loadPatches(
     rid: route.rid,
   });
   const config: Config = await invoke("config");
-  const patches: Patch[] = await invoke("list_patches", {
+  const patches: PaginatedQuery<Patch[]> = await invoke("list_patches", {
     rid: route.rid,
     status: route.status,
   });
@@ -243,7 +243,7 @@ export function repoUrlToRoute(
         ) {
           return { resource: "repo.patches", rid, status };
         } else {
-          return { resource: "repo.patches", rid, status: "all" };
+          return { resource: "repo.patches", rid };
         }
       }
     } else {

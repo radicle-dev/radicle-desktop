@@ -100,9 +100,7 @@
     </div>
 
     <div class="global-flex txt-small" style:margin="0.5rem 0">
-      <Link
-        variant="tab"
-        route={{ resource: "repo.patches", rid: repo.rid, status: "all" }}>
+      <Link variant="tab" route={{ resource: "repo.patches", rid: repo.rid }}>
         <div class="global-flex"><Icon name="patch" />Patches</div>
         <div class="global-counter">
           {project.meta.patches.draft +

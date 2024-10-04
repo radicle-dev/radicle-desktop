@@ -9,12 +9,23 @@
     patchStatusColor,
   } from "@app/lib/utils";
   import { invoke } from "@tauri-apps/api/core";
+  import { onMount } from "svelte";
   import { push } from "@app/lib/router";
 
   import DiffStatBadge from "./DiffStatBadge.svelte";
   import Icon from "./Icon.svelte";
   import InlineTitle from "./InlineTitle.svelte";
   import NodeId from "./NodeId.svelte";
+
+  let stats: Stats | undefined = undefined;
+
+  onMount(async () => {
+    stats = await invoke<Stats>("diff_stats", {
+      rid,
+      base: patch.base,
+      head: patch.head,
+    });
+  });
 
   export let patch: Patch;
   export let rid: string;
@@ -81,9 +92,9 @@
     </div>
   </div>
   <div class="global-flex">
-    {#await invoke<Stats>( "diff_stats", { rid, base: patch.base, head: patch.head }, ) then stats}
+    {#if stats}
       <DiffStatBadge {stats} />
-    {/await}
+    {/if}
     {#each patch.labels as label}
       <div class="global-counter txt-small">{label}</div>
     {/each}
