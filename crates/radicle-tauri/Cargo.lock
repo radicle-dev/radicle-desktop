@@ -3835,27 +3835,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "radicle-desktop"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "base64 0.22.1",
- "log",
- "radicle",
- "radicle-surf",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-devtools",
- "tauri-plugin-shell",
- "tauri-plugin-window-state",
- "thiserror",
- "ts-rs",
-]
-
-[[package]]
 name = "radicle-git-ext"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3904,6 +3883,26 @@ dependencies = [
  "tar",
  "thiserror",
  "url",
+]
+
+[[package]]
+name = "radicle-tauri"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "log",
+ "radicle",
+ "radicle-surf",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-devtools",
+ "tauri-plugin-shell",
+ "tauri-plugin-window-state",
+ "thiserror",
+ "ts-rs",
 ]
 
 [[package]]

@@ -14,13 +14,13 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     watch: {
-      ignored: ["**/src-tauri/**"],
+      ignored: ["**/crates/radicle-tauri/**"],
     },
   },
   resolve: {
     alias: {
       "@app": path.resolve("./src"),
-      "@bindings": path.resolve("./src-tauri/bindings/"),
+      "@bindings": path.resolve("./crates/radicle-tauri/bindings/"),
       "@public": path.resolve("./public"),
     },
   },

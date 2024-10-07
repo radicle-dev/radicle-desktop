@@ -1,15 +1,11 @@
 [package]
-name = "radicle-desktop"
+name = "radicle-tauri"
 version = "0.0.0"
-description = "Radicle Desktop App"
 authors = ["Rudolfs Osins <rudolfs@osins.org>", "Sebastian Martinez <me@sebastinez.dev>"]
-homepage = "https://radicle.xyz"
 license = "MIT OR Apache-2.0"
-repository = ""
 edition = "2021"
 rust-version = "1.70"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+publish = false
 
 [lib]
 name = "app_lib"

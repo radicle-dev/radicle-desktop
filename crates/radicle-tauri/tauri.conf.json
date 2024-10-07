@@ -6,7 +6,7 @@
     "beforeDevCommand": "npm start",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
-    "frontendDist": "../build"
+    "frontendDist": "../../build"
   },
   "app": {
     "windows": [
@@ -26,7 +26,7 @@
       "pattern": {
         "use": "isolation",
         "options": {
-          "dir": "../isolation"
+          "dir": "../../isolation"
         }
       }
     }
