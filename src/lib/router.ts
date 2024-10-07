@@ -82,6 +82,11 @@ async function navigate(
   activeRouteStore.set(loadedRoute);
   activeUnloadedRouteStore.set(newRoute);
   isLoading.set(false);
+  Array.from(
+    document.getElementsByClassName("global-reset-scroll-after-navigate"),
+  ).forEach(el => {
+    el.scrollTo(0, 0);
+  });
 }
 
 export async function push(newRoute: Route): Promise<void> {

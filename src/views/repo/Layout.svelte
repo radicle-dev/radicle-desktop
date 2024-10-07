@@ -85,7 +85,9 @@
     <slot name="sidebar" />
   </div>
 
-  <div class="content" bind:this={listElement}>
+  <div
+    class="content global-reset-scroll-after-navigate"
+    bind:this={listElement}>
     <slot />
   </div>
 </div>
