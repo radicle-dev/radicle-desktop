@@ -38,6 +38,10 @@ export function truncateId(pubkey: string): string {
   return `${pubkey.substring(0, 6)}…${pubkey.slice(-6)}`;
 }
 
+export function isCommit(input: string): boolean {
+  return /^[a-f0-9]{40}$/.test(input);
+}
+
 export function formatOid(id: string): string {
   return id.substring(0, 7);
 }

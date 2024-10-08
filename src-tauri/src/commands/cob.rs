@@ -1,5 +1,25 @@
+use base64::{engine::general_purpose::STANDARD, Engine as _};
+
+use radicle::git;
+use radicle::identity;
+use radicle::storage::{ReadRepository, ReadStorage};
+
+use crate::{error, AppState};
+
 pub mod issue;
 pub mod patch;
+
+#[tauri::command]
+pub async fn get_file_by_oid(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    oid: git::Oid,
+) -> Result<String, error::Error> {
+    let repo = ctx.profile.storage.repository(rid)?;
+    let blob = repo.blob(oid)?;
+
+    Ok::<_, error::Error>(STANDARD.encode(blob.content()))
+}
 
 mod query {
     use serde::{Deserialize, Serialize};
