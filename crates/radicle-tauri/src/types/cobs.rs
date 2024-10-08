@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -351,4 +352,82 @@ impl Stats {
             deletions: stats.deletions,
         }
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize, TS)]
+#[serde(tag = "type", rename_all = "camelCase")]
+#[ts(export)]
+pub enum IssueAction {
+    /// Assign issue to an actor.
+    #[serde(rename = "assign")]
+    Assign {
+        #[ts(as = "Vec<String>")]
+        assignees: BTreeSet<identity::Did>,
+    },
+
+    /// Edit issue title.
+    #[serde(rename = "edit")]
+    Edit { title: String },
+
+    /// Transition to a different state.
+    #[serde(rename = "lifecycle")]
+    Lifecycle {
+        #[ts(type = "{ status: 'closed', reason: 'other' | 'solved' } | { status: 'open' } ")]
+        state: issue::State,
+    },
+
+    /// Modify issue labels.
+    #[serde(rename = "label")]
+    Label {
+        #[ts(as = "Vec<String>")]
+        labels: BTreeSet<cob::Label>,
+    },
+
+    /// Comment on a thread.
+    #[serde(rename_all = "camelCase")]
+    #[serde(rename = "comment")]
+    Comment {
+        /// Comment body.
+        body: String,
+        /// Comment this is a reply to.
+        /// Should be [`None` | `null`] if it's the top-level comment.
+        /// Should be the root [`CommentId`] if it's a top-level comment.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(as = "Option<String>")]
+        reply_to: Option<cob::thread::CommentId>,
+        /// Embeded content.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        #[ts(as = "Vec<String>")]
+        embeds: Vec<cob::Embed<cob::Uri>>,
+    },
+
+    /// Edit a comment.
+    #[serde(rename = "comment.edit")]
+    CommentEdit {
+        /// Comment being edited.
+        #[ts(as = "String")]
+        id: cob::thread::CommentId,
+        /// New value for the comment body.
+        body: String,
+        /// New value for the embeds list.
+        #[ts(as = "Vec<String>")]
+        embeds: Vec<cob::Embed<cob::Uri>>,
+    },
+
+    /// Redact a change. Not all changes can be redacted.
+    #[serde(rename = "comment.redact")]
+    CommentRedact {
+        #[ts(as = "String")]
+        id: cob::thread::CommentId,
+    },
+
+    /// React to a comment.
+    #[serde(rename = "comment.react")]
+    CommentReact {
+        #[ts(as = "String")]
+        id: cob::thread::CommentId,
+        #[ts(as = "String")]
+        reaction: cob::Reaction,
+        active: bool,
+    },
 }

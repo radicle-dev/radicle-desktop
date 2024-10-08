@@ -39,6 +39,59 @@ pub fn create_issue(
 }
 
 #[tauri::command]
+pub fn edit_issue(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+    cob_id: git::Oid,
+    action: cobs::IssueAction,
+    opts: cobs::CobOptions,
+) -> Result<cobs::Issue, Error> {
+    let mut node = Node::new(ctx.profile.socket());
+    let repo = ctx.profile.storage.repository(rid)?;
+    let signer = ctx.profile.signer()?;
+    let aliases = ctx.profile.aliases();
+    let mut issues = ctx.profile.issues_mut(&repo)?;
+    let mut issue = issues.get_mut(&cob_id.into())?;
+
+    match action {
+        cobs::IssueAction::Lifecycle { state } => {
+            issue.lifecycle(state, &signer)?;
+        }
+        cobs::IssueAction::Assign { assignees } => {
+            issue.assign(assignees, &signer)?;
+        }
+        cobs::IssueAction::Label { labels } => {
+            issue.label(labels, &signer)?;
+        }
+        cobs::IssueAction::CommentReact {
+            id,
+            reaction,
+            active,
+        } => {
+            issue.react(id, reaction, active, &signer)?;
+        }
+        cobs::IssueAction::CommentRedact { id } => {
+            issue.redact_comment(id, &signer)?;
+        }
+        cobs::IssueAction::Comment { .. } => {
+            unimplemented!("Create of issue comment not yet implemented")
+        }
+        cobs::IssueAction::CommentEdit { .. } => {
+            unimplemented!("Edit of issue comment not yet implemented")
+        }
+        cobs::IssueAction::Edit { title } => {
+            issue.edit(title, &signer)?;
+        }
+    }
+
+    if opts.announce() {
+        node.announce_refs(rid)?;
+    }
+
+    Ok::<_, Error>(cobs::Issue::new(issue.id(), &issue, &aliases))
+}
+
+#[tauri::command]
 pub fn list_issues(
     ctx: tauri::State<AppState>,
     rid: RepoId,
