@@ -6,6 +6,7 @@ use radicle::storage::{ReadRepository, ReadStorage};
 
 use crate::{error, AppState};
 
+pub mod draft;
 pub mod issue;
 pub mod patch;
 

@@ -66,6 +66,10 @@ pub enum Error {
     #[error(transparent)]
     Patch(#[from] radicle::patch::Error),
 
+    /// TypeName parse error.
+    #[error(transparent)]
+    TypeNameParse(#[from] radicle::cob::TypeNameParse),
+
     /// Crypto error.
     #[error(transparent)]
     Crypto(#[from] radicle::crypto::ssh::keystore::Error),

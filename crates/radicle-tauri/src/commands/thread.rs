@@ -1,19 +1,20 @@
 use radicle::git::Oid;
-use radicle::identity::RepoId;
+use radicle::identity;
 use radicle::node::Handle;
 use radicle::storage::ReadStorage;
 use radicle::Node;
 
 use crate::error::Error;
-use crate::types::cobs::{CobOptions, NewIssueComment, NewPatchComment};
+use crate::types::cobs;
+use crate::types::thread;
 use crate::AppState;
 
 #[tauri::command]
 pub fn create_issue_comment(
     ctx: tauri::State<AppState>,
-    rid: RepoId,
-    new: NewIssueComment,
-    opts: CobOptions,
+    rid: identity::RepoId,
+    new: thread::NewIssueComment,
+    opts: cobs::CobOptions,
 ) -> Result<Oid, Error> {
     let mut node = Node::new(ctx.profile.socket());
     let signer = ctx.profile.signer()?;
@@ -36,9 +37,9 @@ pub fn create_issue_comment(
 #[tauri::command]
 pub fn create_patch_comment(
     ctx: tauri::State<AppState>,
-    rid: RepoId,
-    new: NewPatchComment,
-    opts: CobOptions,
+    rid: identity::RepoId,
+    new: thread::NewPatchComment,
+    opts: cobs::CobOptions,
 ) -> Result<Oid, Error> {
     let mut node = Node::new(ctx.profile.socket());
     let signer = ctx.profile.signer()?;
