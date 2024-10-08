@@ -76,6 +76,7 @@ pub fn run() {
             repo::list_repos,
             repo::repo_by_id,
             repo::diff_stats,
+            cob::get_file_by_oid,
             cob::issue::list_issues,
             cob::issue::issue_by_id,
             cob::issue::create_issue,

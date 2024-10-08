@@ -20,6 +20,7 @@ tauri-build = { version = "2.0", features = ["isolation"] }
 
 [dependencies]
 anyhow = { version = "1.0" }
+base64 = { version = "0.22" }
 log = { version = "0.4" }
 radicle = { version = "0.13.0" }
 radicle-surf = { version = "0.22.0" }

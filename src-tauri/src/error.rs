@@ -42,6 +42,10 @@ pub enum Error {
     #[error(transparent)]
     Routing(#[from] radicle::node::routing::Error),
 
+    /// Radicle Git error.
+    #[error(transparent)]
+    Git(#[from] radicle::git::Error),
+
     /// Git2 error.
     #[error(transparent)]
     Git2(#[from] radicle::git::raw::Error),

@@ -6,8 +6,10 @@
 
   import { Renderer, markdownWithExtensions } from "@app/lib/markdown";
   import { highlight } from "@app/lib/syntax";
-  import { twemoji, scrollIntoView } from "@app/lib/utils";
+  import { twemoji, scrollIntoView, isCommit } from "@app/lib/utils";
+  import { invoke } from "@tauri-apps/api/core";
 
+  export let rid: string;
   export let content: string;
   // If true, add <br> on a single line break
   export let breaks: boolean = false;
@@ -69,6 +71,23 @@
       );
       i.insertAdjacentElement("beforebegin", checkbox);
       i.remove();
+    }
+
+    // Iterate over all images, and replace the source with a canonicalized URL
+    // pointing at the repos /raw endpoint.
+    for (const i of container.querySelectorAll("img")) {
+      const imagePath = i.getAttribute("src");
+
+      // If the image is an oid embed
+      if (imagePath && isCommit(imagePath)) {
+        let base64Content = await invoke<string>("get_file_by_oid", {
+          rid,
+          oid: imagePath,
+        });
+
+        i.setAttribute("src", `data:image/jpeg;base64,${base64Content}`);
+        continue;
+      }
     }
 
     // Replaces code blocks in the background with highlighted code.

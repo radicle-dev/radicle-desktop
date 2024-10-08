@@ -127,6 +127,7 @@
     <div class="txt-small body">
       {#if issue.discussion[0].edits.slice(-1)[0].body !== ""}
         <Markdown
+          rid={repo.rid}
           breaks
           content={issue.discussion[0].edits.slice(-1)[0].body} />
       {:else}
