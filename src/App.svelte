@@ -12,6 +12,7 @@
   import { unreachable } from "@app/lib/utils";
 
   import AuthenticationError from "@app/views/AuthenticationError.svelte";
+  import CreateIssue from "@app/views/repo/CreateIssue.svelte";
   import Home from "@app/views/Home.svelte";
   import Issue from "@app/views/repo/Issue.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
@@ -63,6 +64,8 @@
   <!-- Don't show anything -->
 {:else if $activeRouteStore.resource === "home"}
   <Home {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "repo.createIssue"}
+  <CreateIssue {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.issue"}
   <Issue {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.issues"}

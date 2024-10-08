@@ -1,19 +1,11 @@
 import type { Config } from "@bindings/Config";
 import type { RepoInfo } from "@bindings/RepoInfo";
-import type {
-  LoadedRepoIssueRoute,
-  LoadedRepoIssuesRoute,
-  LoadedRepoPatchRoute,
-  LoadedRepoPatchesRoute,
-  RepoIssueRoute,
-  RepoIssuesRoute,
-  RepoPatchRoute,
-  RepoPatchesRoute,
-} from "@app/views/repo/router";
+import type { LoadedRepoRoute, RepoRoute } from "@app/views/repo/router";
 
 import { invoke } from "@tauri-apps/api/core";
 
 import {
+  loadCreateIssue,
   loadIssue,
   loadIssues,
   loadPatch,
@@ -45,19 +37,13 @@ export type Route =
   | AuthenticationErrorRoute
   | BootingRoute
   | HomeRoute
-  | RepoIssueRoute
-  | RepoIssuesRoute
-  | RepoPatchRoute
-  | RepoPatchesRoute;
+  | RepoRoute;
 
 export type LoadedRoute =
   | AuthenticationErrorRoute
   | BootingRoute
   | LoadedHomeRoute
-  | LoadedRepoIssueRoute
-  | LoadedRepoIssuesRoute
-  | LoadedRepoPatchRoute
-  | LoadedRepoPatchesRoute;
+  | LoadedRepoRoute;
 
 export async function loadRoute(
   route: Route,
@@ -69,6 +55,8 @@ export async function loadRoute(
     return { resource: "home", params: { repos, config } };
   } else if (route.resource === "repo.issue") {
     return loadIssue(route);
+  } else if (route.resource === "repo.createIssue") {
+    return loadCreateIssue(route);
   } else if (route.resource === "repo.issues") {
     return loadIssues(route);
   } else if (route.resource === "repo.patch") {

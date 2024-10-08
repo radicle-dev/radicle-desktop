@@ -4,6 +4,8 @@
   import type { IssueStatus } from "./router";
   import type { RepoInfo } from "@bindings/RepoInfo";
 
+  import * as router from "@app/lib/router";
+
   import Layout from "./Layout.svelte";
 
   import Border from "@app/components/Border.svelte";
@@ -13,6 +15,7 @@
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import RepoHeader from "@app/components/RepoHeader.svelte";
+  import Button from "@app/components/Button.svelte";
 
   export let repo: RepoInfo;
   export let issues: Issue[];
@@ -28,6 +31,14 @@
     flex-direction: column;
     gap: 2px;
     padding: 0 1rem 1rem 1rem;
+  }
+  .header {
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-medium);
+    display: flex;
+    padding: 0 1rem 1rem 1rem;
+    align-items: center;
+    justify-content: space-between;
   }
 </style>
 
@@ -111,7 +122,21 @@
       </Link>
     </div>
   </svelte:fragment>
-
+  <div class="header">
+    <div>Issues</div>
+    <div class="txt-regular txt-semibold">
+      <Button
+        variant="secondary"
+        onclick={() => {
+          void router.push({
+            resource: "repo.createIssue",
+            rid: repo.rid,
+          });
+        }}>
+        <Icon name="plus" />New
+      </Button>
+    </div>
+  </div>
   <div class="list">
     {#each issues as issue}
       <IssueTeaser {issue} rid={repo.rid} />

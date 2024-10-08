@@ -16,12 +16,26 @@ export interface RepoIssueRoute {
   issue: string;
 }
 
+export interface RepoCreateIssueRoute {
+  resource: "repo.createIssue";
+  rid: string;
+}
+
 export interface LoadedRepoIssueRoute {
   resource: "repo.issue";
   params: {
     repo: RepoInfo;
     config: Config;
     issue: Issue;
+    issues: Issue[];
+  };
+}
+
+export interface LoadedRepoCreateIssueRoute {
+  resource: "repo.createIssue";
+  params: {
+    repo: RepoInfo;
+    config: Config;
     issues: Issue[];
   };
 }
@@ -78,11 +92,13 @@ export interface LoadedRepoPatchesRoute {
 }
 
 export type RepoRoute =
+  | RepoCreateIssueRoute
   | RepoIssueRoute
   | RepoIssuesRoute
   | RepoPatchRoute
   | RepoPatchesRoute;
 export type LoadedRepoRoute =
+  | LoadedRepoCreateIssueRoute
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
   | LoadedRepoPatchRoute
@@ -128,6 +144,24 @@ export async function loadPatches(
   return {
     resource: "repo.patches",
     params: { repo, config, patches, status: route.status },
+  };
+}
+
+export async function loadCreateIssue(
+  route: RepoCreateIssueRoute,
+): Promise<LoadedRepoCreateIssueRoute> {
+  const repo: RepoInfo = await invoke("repo_by_id", {
+    rid: route.rid,
+  });
+  const config: Config = await invoke("config");
+  const issues: Issue[] = await invoke("list_issues", {
+    rid: route.rid,
+    status: "all",
+  });
+
+  return {
+    resource: "repo.createIssue",
+    params: { repo, config, issues },
   };
 }
 
@@ -177,6 +211,9 @@ export function repoRouteToPath(route: RepoRoute): string {
   if (route.resource === "repo.issue") {
     const url = [...pathSegments, "issues", route.issue].join("/");
     return url;
+  } else if (route.resource === "repo.createIssue") {
+    const url = [...pathSegments, "issues", "create"].join("/");
+    return url;
   } else if (route.resource === "repo.issues") {
     let url = [...pathSegments, "issues"].join("/");
     const searchParams = new URLSearchParams();
@@ -210,13 +247,17 @@ export function repoUrlToRoute(
 
   if (rid) {
     if (resource === "issues") {
-      const id = segments.shift();
-      if (id) {
-        return {
-          resource: "repo.issue",
-          rid,
-          issue: id,
-        };
+      const idOrAction = segments.shift();
+      if (idOrAction) {
+        if (idOrAction === "create") {
+          return { resource: "repo.createIssue", rid };
+        } else {
+          return {
+            resource: "repo.issue",
+            rid,
+            issue: idOrAction,
+          };
+        }
       } else {
         const status = searchParams.get("status");
         if (status === "open" || status === "closed") {

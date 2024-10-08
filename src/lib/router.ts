@@ -123,6 +123,7 @@ export function routeToPath(route: Route): string {
   } else if (route.resource === "authenticationError") {
     return "/authenticationError";
   } else if (
+    route.resource === "repo.createIssue" ||
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||
     route.resource === "repo.patch" ||

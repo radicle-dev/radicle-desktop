@@ -154,7 +154,7 @@
   class="container"
   {onclick}
   role="button"
-  tabindex="0"
+  tabindex={onclick !== undefined ? 0 : -1}
   {style}
   style:min-height={styleMinHeight}
   style:height={styleHeight}>
