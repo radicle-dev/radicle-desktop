@@ -131,7 +131,10 @@
     </div>
     <div class="txt-small body">
       {#if revisions[0].description.slice(-1)[0].body !== ""}
-        <Markdown breaks content={revisions[0].description.slice(-1)[0].body} />
+        <Markdown
+          rid={repo.rid}
+          breaks
+          content={revisions[0].description.slice(-1)[0].body} />
       {:else}
         <span class="txt-missing">No description.</span>
       {/if}
