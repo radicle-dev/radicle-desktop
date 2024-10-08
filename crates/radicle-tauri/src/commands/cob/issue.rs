@@ -1,6 +1,8 @@
 use radicle::git;
 use radicle::identity::RepoId;
 use radicle::issue::cache::Issues;
+use radicle::node::Handle;
+use radicle::node::Node;
 use radicle::storage::ReadStorage;
 
 use crate::cob::query;
@@ -13,7 +15,9 @@ pub fn create_issue(
     ctx: tauri::State<AppState>,
     rid: RepoId,
     new: cobs::NewIssue,
+    opts: cobs::CobOptions,
 ) -> Result<cobs::Issue, Error> {
+    let mut node = Node::new(ctx.profile.socket());
     let repo = ctx.profile.storage.repository(rid)?;
     let signer = ctx.profile.signer()?;
     let aliases = ctx.profile.aliases();
@@ -26,6 +30,10 @@ pub fn create_issue(
         new.embeds,
         &signer,
     )?;
+
+    if opts.announce() {
+        node.announce_refs(rid)?;
+    }
 
     Ok::<_, Error>(cobs::Issue::new(issue.id(), &issue, &aliases))
 }
