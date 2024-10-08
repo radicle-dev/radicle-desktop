@@ -1,5 +1,6 @@
 {
   "productName": "Radicle",
+  "mainBinaryName": "radicle-desktop",
   "version": "0.1.0",
   "identifier": "xyz.radicle.desktop",
   "build": {
