@@ -80,7 +80,7 @@
 
       // If the image is an oid embed
       if (imagePath && isCommit(imagePath)) {
-        let base64Content = await invoke<string>("get_file_by_oid", {
+        const base64Content = await invoke<string>("get_file_by_oid", {
           rid,
           oid: imagePath,
         });
