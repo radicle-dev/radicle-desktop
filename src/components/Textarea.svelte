@@ -6,10 +6,8 @@
   export let value: string | undefined = undefined;
   export let placeholder: string | undefined = undefined;
   export let focus: boolean = false;
-  // If `false` we automatically grow the textarea height.
-  // If `true` we show a resize handle on the lower right-hand side of the
-  // textarea to allow resizing the textarea manually.
-  export let resizable: boolean = false;
+  export let size: "grow" | "resizable" | "fixed-height" = "grow";
+  export let styleMinHeight: string | undefined = undefined;
 
   // Defaulting selectionStart and selectionEnd to 0, since no full support yet.
   export let selectionStart: number = 0;
@@ -21,7 +19,7 @@
   // We either auto-grow the textarea, or allow the user to resize it. These
   // options are mutually exclusive because a user resized textarea would
   // automatically shrink upon text input otherwise.
-  $: if (textareaElement && !resizable) {
+  $: if (textareaElement && size === "grow") {
     // React to changes to the textarea content.
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     value;
@@ -66,11 +64,6 @@
     outline: none;
   }
 
-  .resizable {
-    resize: vertical;
-    overflow: scroll;
-  }
-
   textarea::-webkit-scrollbar-corner {
     background-color: transparent;
   }
@@ -87,14 +80,21 @@
   }
 </style>
 
-<Border variant={focussed ? "secondary" : "ghost"} styleWidth="100%">
+<Border
+  variant={focussed ? "secondary" : "ghost"}
+  styleWidth="100%"
+  {styleMinHeight}>
   <textarea
+    style:min-height={styleMinHeight}
     tabindex="0"
     bind:this={textareaElement}
     bind:value
     aria-label="textarea-comment"
     class="txt-small"
-    class:resizable
+    style:resize={size === "resizable" ? "vertical" : undefined}
+    style:overflow={size === "resizable" || size === "fixed-height"
+      ? "scroll"
+      : undefined}
     {placeholder}
     on:change
     on:click

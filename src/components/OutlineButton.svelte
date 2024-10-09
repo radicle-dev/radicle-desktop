@@ -1,6 +1,7 @@
 <script lang="ts">
   export let variant: "primary" | "secondary" | "ghost";
   export let onclick: (() => void) | undefined = undefined;
+  export let disabled: boolean = false;
 
   $: style =
     `--button-color-1: var(--color-fill-${variant});` +
@@ -107,91 +108,111 @@
     grid-area: p5-5;
   }
 
-  .container:hover .p1-3 {
+  .container:hover:not(.disabled) .p1-3 {
     background-color: var(--button-color-1);
   }
 
-  .container:hover .p2-2 {
+  .container:hover:not(.disabled) .p2-2 {
     background-color: var(--button-color-1);
   }
-  .container:hover .p2-3 {
+  .container:hover:not(.disabled) .p2-3 {
     background-color: var(--button-color-1);
   }
-  .container:hover .p2-4 {
-    background-color: var(--button-color-1);
-  }
-
-  .container:hover .p3-1 {
-    background-color: var(--button-color-1);
-  }
-  .container:hover .p3-2 {
-    background-color: var(--button-color-1);
-  }
-  .container:hover .p3-3 {
-    background-color: var(--button-color-1);
-  }
-  .container:hover .p3-4 {
-    background-color: var(--button-color-1);
-  }
-  .container:hover .p3-5 {
+  .container:hover:not(.disabled) .p2-4 {
     background-color: var(--button-color-1);
   }
 
-  .container:hover .p4-2 {
+  .container:hover:not(.disabled) .p3-1 {
     background-color: var(--button-color-1);
   }
-  .container:hover .p4-3 {
+  .container:hover:not(.disabled) .p3-2 {
     background-color: var(--button-color-1);
   }
-  .container:hover .p4-4 {
+  .container:hover:not(.disabled) .p3-3 {
+    background-color: var(--button-color-1);
+  }
+  .container:hover:not(.disabled) .p3-4 {
+    background-color: var(--button-color-1);
+  }
+  .container:hover:not(.disabled) .p3-5 {
     background-color: var(--button-color-1);
   }
 
-  .container:hover .p5-3 {
+  .container:hover:not(.disabled) .p4-2 {
+    background-color: var(--button-color-1);
+  }
+  .container:hover:not(.disabled) .p4-3 {
+    background-color: var(--button-color-1);
+  }
+  .container:hover:not(.disabled) .p4-4 {
     background-color: var(--button-color-1);
   }
 
-  .container:active .p1-3 {
+  .container:hover:not(.disabled) .p5-3 {
     background-color: var(--button-color-1);
   }
 
-  .container:active .p2-2 {
+  .container:active:not(.disabled) .p1-3 {
     background-color: var(--button-color-1);
   }
-  .container:active .p2-3 {
+
+  .container:active:not(.disabled) .p2-2 {
+    background-color: var(--button-color-1);
+  }
+  .container:active:not(.disabled) .p2-3 {
     background-color: var(--button-color-3);
   }
-  .container:active .p2-4 {
+  .container:active:not(.disabled) .p2-4 {
     background-color: var(--button-color-1);
   }
 
-  .container:active .p3-1 {
+  .container:active:not(.disabled) .p3-1 {
     background-color: var(--button-color-1);
   }
-  .container:active .p3-2 {
+  .container:active:not(.disabled) .p3-2 {
     background-color: var(--button-color-3);
   }
-  .container:active .p3-3 {
+  .container:active:not(.disabled) .p3-3 {
     background-color: var(--button-color-1);
   }
-  .container:active .p3-4 {
+  .container:active:not(.disabled) .p3-4 {
     background-color: var(--button-color-2);
   }
-  .container:active .p3-5 {
+  .container:active:not(.disabled) .p3-5 {
     background-color: var(--button-color-1);
   }
 
-  .container:active .p4-2 {
+  .container:active:not(.disabled) .p4-2 {
     background-color: var(--button-color-1);
   }
-  .container:active .p4-3 {
+  .container:active:not(.disabled) .p4-3 {
     background-color: var(--button-color-2);
   }
-  .container:active .p4-4 {
+  .container:active:not(.disabled) .p4-4 {
     background-color: var(--button-color-1);
   }
-  .container:active .p5-3 {
+  .container:active:not(.disabled) .p5-3 {
     background-color: var(--button-color-1);
+  }
+
+  .container.disabled {
+    color: var(--color-foreground-disabled);
+  }
+
+  .disabled .p1-3,
+  .disabled .p2-2,
+  .disabled .p2-3,
+  .disabled .p2-4,
+  .disabled .p3-1,
+  .disabled .p3-2,
+  .disabled .p3-3,
+  .disabled .p3-4,
+  .disabled .p3-5,
+  .disabled .p4-2,
+  .disabled .p4-3,
+  .disabled .p4-4,
+  .disabled .p5-3 {
+    background-color: var(--color-fill-ghost);
   }
 
   .container {
@@ -218,7 +239,14 @@
 </style>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div class="container" {onclick} role="button" tabindex="0" {style}>
+<div
+  class="container"
+  style:cursor={!disabled ? "pointer" : "default"}
+  class:disabled
+  onclick={!disabled ? onclick : undefined}
+  role="button"
+  tabindex="0"
+  {style}>
   <div class="pixel p1-1"></div>
   <div class="pixel p1-2"></div>
   <div class="pixel p1-3"></div>

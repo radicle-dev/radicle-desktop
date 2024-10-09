@@ -19,6 +19,7 @@
   import OutlineButton from "@app/components/OutlineButton.svelte";
   import TextInput from "@app/components/TextInput.svelte";
   import Textarea from "@app/components/Textarea.svelte";
+  import Markdown from "@app/components/Markdown.svelte";
 
   export let repo: RepoInfo;
   export let issues: Issue[];
@@ -26,6 +27,7 @@
 
   let title: string = "";
   let description: string = "";
+  let preview: boolean = false;
 
   const labels: string[] = [];
   const assignees: Author[] = [];
@@ -52,8 +54,8 @@
     font-weight: var(--font-weight-medium);
     -webkit-user-select: text;
     user-select: text;
-    margin-bottom: 1rem;
     margin-top: 0.35rem;
+    margin-bottom: 1rem;
   }
   .issue-teaser {
     max-width: 11rem;
@@ -68,6 +70,13 @@
   }
   .content {
     padding: 0 1rem 1rem 1rem;
+    height: calc(100% - 8rem);
+  }
+  .body {
+    background-color: var(--color-background-float);
+    padding: 1rem;
+    min-height: calc(100% + 2px);
+    clip-path: var(--2px-corner-fill);
   }
 </style>
 
@@ -140,27 +149,60 @@
   </svelte:fragment>
 
   <div class="content">
-    <div class="title">
-      <TextInput placeholder="Title" autofocus bind:value={title} />
-    </div>
-    <Textarea placeholder="Description" bind:value={description} />
+    {#if preview}
+      <div class="title">
+        <InlineTitle content={title} fontSize="medium" />
+      </div>
+    {:else}
+      <div style:margin-bottom="0.35rem">
+        <TextInput placeholder="Title" autofocus bind:value={title} />
+      </div>
+    {/if}
+    {#if preview}
+      <div class="txt-small body">
+        {#if description.trim() === ""}
+          <span class="txt-missing">No description.</span>
+        {:else}
+          <Markdown rid={repo.rid} content={description} breaks />
+        {/if}
+      </div>
+    {:else}
+      <Textarea
+        placeholder="Description"
+        bind:value={description}
+        size="fixed-height"
+        styleMinHeight="100%" />
+    {/if}
     <div
       class="global-flex"
-      style:justify-content="flex-end"
+      style:justify-content="space-between"
+      style:padding-bottom="1.5rem"
       style:margin-top="1.5rem">
       <OutlineButton
         variant="ghost"
         onclick={() => {
           window.history.back();
         }}>
-        Cancel
+        <Icon name="cross" />Discard
       </OutlineButton>
-      <Button
-        variant="ghost"
-        disabled={title.length === 0}
-        onclick={createIssue}>
-        Save
-      </Button>
+      <div class="global-flex">
+        <div class="global-flex txt-small txt-missing">
+          <Icon name="markdown" />
+          Markdown is supported.
+        </div>
+        <OutlineButton
+          variant="ghost"
+          disabled={title.length === 0}
+          onclick={() => (preview = !preview)}>
+          <Icon name={preview ? "pen" : "eye"} />{preview ? "Edit" : "Preview"}
+        </OutlineButton>
+        <Button
+          variant="ghost"
+          disabled={title.length === 0}
+          onclick={createIssue}>
+          <Icon name="checkmark" />Save
+        </Button>
+      </div>
     </div>
   </div>
 </Layout>
