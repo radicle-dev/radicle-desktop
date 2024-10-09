@@ -10,18 +10,22 @@
     | "checkmark"
     | "chevron-right"
     | "copy"
+    | "cross"
     | "dashboard"
     | "delegate"
     | "diff"
+    | "eye"
     | "file"
     | "inbox"
     | "issue"
     | "lock"
+    | "markdown"
     | "moon"
     | "more-vertical"
     | "offline"
     | "online"
     | "patch"
+    | "pen"
     | "plus"
     | "repo"
     | "revision"
@@ -105,6 +109,23 @@
     <path d="M2.5 6H3.5L3.5 13H2.5V6Z" />
     <path d="M10.5 12H11.5V13H10.5V12Z" />
     <path d="M10.5 6L11.5 6V9H10.5L10.5 6Z" />
+  {:else if name === "cross"}
+    <path d="M5.00003 11V12H4.00003L4.00003 11H5.00003Z" />
+    <path d="M6.00003 10L6.00003 11H5.00003L5.00003 10H6.00003Z" />
+    <path d="M7.00003 9V10H6.00003L6.00003 9L7.00003 9Z" />
+    <path d="M8.00003 7V8H7.00003V7H8.00003Z" />
+    <path d="M10 6V7H9.00003V6H10Z" />
+    <path d="M11 5V6L10 6V5H11Z" />
+    <path d="M12 4V5L11 5V4L12 4Z" />
+    <path d="M10 10V11H11V10H10Z" />
+    <path d="M11 11V12H12V11H11Z" />
+    <path d="M9.00003 9V10H10V9H9.00003Z" />
+    <path d="M8.00003 8L8.00003 9H9.00003V8L8.00003 8Z" />
+    <path d="M8.00003 7V8L9.00003 8V7L8.00003 7Z" />
+    <path d="M7.00003 7L7.00003 9H8.00003L8.00003 7H7.00003Z" />
+    <path d="M6.00003 6L6.00003 7H7.00003L7.00003 6H6.00003Z" />
+    <path d="M5.00003 5V6L6.00003 6V5L5.00003 5Z" />
+    <path d="M4.00003 4L4.00003 5L5.00003 5L5.00003 4L4.00003 4Z" />
   {:else if name === "dashboard"}
     <path d="M2 11H14V12H2V11Z" />
     <path d="M2 9H3V11H2L2 9Z" />
@@ -144,6 +165,29 @@
     <path d="M7 4H8V9H7V4Z" />
     <path d="M5 6H10V7H5V6Z" />
     <path d="M5 10H10V11H5V10Z" />
+  {:else if name === "eye"}
+    <path d="M10 5L8.00002 5V4L10 4V5Z" />
+    <path d="M6.00002 11L8.00002 11L8.00002 12H6.00002L6.00002 11Z" />
+    <path d="M7.00002 7L9.00002 7V6L7.00002 6V7Z" />
+    <path d="M9.00001 9L7.00001 9V10L9.00001 10V9Z" />
+    <path d="M4.00002 6V7H3.00002L3.00002 6H4.00002Z" />
+    <path d="M12 10V9H13V10H12Z" />
+    <path d="M12 6L10 6V5L12 5V6Z" />
+    <path d="M4.00002 10L6.00002 10V11H4.00002L4.00002 10Z" />
+    <path d="M6.00002 6L4.00002 6L4.00002 5L6.00002 5V6Z" />
+    <path d="M10 10H12V11L10 11L10 10Z" />
+    <path d="M12 7V6H13V7H12Z" />
+    <path d="M4.00002 9V10H3.00002L3.00002 9H4.00002Z" />
+    <path d="M8.00002 5L6.00002 5V4L8.00002 4V5Z" />
+    <path d="M8.00002 11L10 11V12H8.00002L8.00002 11Z" />
+    <path d="M6.00002 8V7L7.00002 7V8L6.00002 8Z" />
+    <path d="M10 8V9H9.00001L9.00002 8H10Z" />
+    <path d="M9.00002 8L9.00002 7L10 7V8H9.00002Z" />
+    <path d="M7.00002 8L7.00001 9L6.00002 9V8L7.00002 8Z" />
+    <path d="M14 7V8H13V7L14 7Z" />
+    <path d="M2.00002 9L2.00002 8H3.00002V9L2.00002 9Z" />
+    <path d="M3.00002 7L3.00002 8H2.00002L2.00002 7H3.00002Z" />
+    <path d="M13 9V8H14V9L13 9Z" />
   {:else if name === "file"}
     <path d="M10 4H11V5H10V4Z" />
     <path d="M11 5L12 5V6H11V5Z" />
@@ -198,6 +242,23 @@
     <path d="M13 7H14V13H13V7Z" />
     <path d="M3 6H13V7H3L3 6Z" />
     <path d="M7 8H9V11H7V8Z" />
+  {:else if name === "markdown"}
+    <path d="M2 4.00003H3V12H2V4.00003Z" />
+    <path d="M3 7.00003H4V12H3V7.00003Z" />
+    <path d="M9 4.00003H8V8.00003H9V4.00003Z" />
+    <path d="M8 7.00003H7V9.00003H8V7.00003Z" />
+    <path d="M11 11H12V12H11V11Z" />
+    <path d="M9 10H13V11H9V10Z" />
+    <path d="M8 9.00003H14V10H8V9.00003Z" />
+    <path d="M10 4.00003H12V10H10V4.00003Z" />
+    <path d="M4 5.00003H5V7.00003H4V5.00003Z" />
+    <path d="M5 7.00003H6V8.00003H5V7.00003Z" />
+    <path d="M5 6.00003H6V7.00003H5V6.00003Z" />
+    <path d="M6 5.00003H7V7.00003H6V5.00003Z" />
+    <path d="M7 4.00003H8V6.00003H7V4.00003Z" />
+    <path d="M8 11H9V12H8V11Z" />
+    <path d="M7 10H8V12H7V10Z" />
+    <path d="M3 4.00003H4V6.00003H3V4.00003Z" />
   {:else if name === "moon"}
     <path d="M4 3H6V4H4V3Z" />
     <path d="M3 4L4 4L4 6H3V4Z" />
@@ -300,6 +361,40 @@
     <path d="M7 4H8V9H7V4Z" />
     <path d="M5 6H10V7H5V6Z" />
     <path d="M5 10H10V11H5V10Z" />
+  {:else if name === "pen"}
+    <path d="M13 4.99998H14V5.99999H13V4.99998Z" />
+    <path d="M2 13H3V14H2V13Z" />
+    <path d="M10 1.99998H11V2.99998H10V1.99998Z" />
+    <path d="M11 2.99998L12 2.99998V3.99998H11V2.99998Z" />
+    <path d="M12 3.99998L13 3.99998V4.99998H12V3.99998Z" />
+    <path d="M6 5.99998H7V6.99998H6V5.99998Z" />
+    <path d="M7 4.99998H8V5.99998H7V4.99998Z" />
+    <path d="M8 3.99998H9V4.99998H8V3.99998Z" />
+    <path d="M9 4.99998L10 4.99998V5.99998H9V4.99998Z" />
+    <path d="M10 5.99998H11V6.99998H10V5.99998Z" />
+    <path d="M9 2.99998L10 2.99998V3.99998H9V2.99998Z" />
+    <path d="M12 5.99998L13 5.99999V6.99998H12V5.99998Z" />
+    <path d="M5 6.99999L6 6.99998L6 7.99999H5V6.99999Z" />
+    <path d="M9 8.99998H10V9.99998H9V8.99998Z" />
+    <path d="M10 7.99998H11V8.99998H10V7.99998Z" />
+    <path d="M11 6.99998H12V7.99998H11V6.99998Z" />
+    <path d="M4 7.99998L5 7.99999V8.99998H4V7.99998Z" />
+    <path d="M8 9.99998H9L9 11H8V9.99998Z" />
+    <path d="M3 8.99998H4V9.99998H3V8.99998Z" />
+    <path d="M7 11H8V12H7V11Z" />
+    <path d="M2 9.99998H3V11H2V9.99998Z" />
+    <path d="M6 12H7V13H6V12Z" />
+    <path d="M4 12H5V13H4V12Z" />
+    <path d="M4 11H5V12H4V11Z" />
+    <path d="M3 11H4V12H3V11Z" />
+    <path d="M3 9.99998H4V11H3V9.99998Z" />
+    <path d="M5 12H6V13H5V12Z" />
+    <path d="M4 13H5V14H4V13Z" />
+    <path d="M5 13H6L6 14H5V13Z" />
+    <path d="M2 12H3V13H2V12Z" />
+    <path d="M2 11H3V12H2V11Z" />
+    <path d="M3 12H4V13H3V12Z" />
+    <path d="M3 13H4V14H3V13Z" />
   {:else if name === "plus"}
     <path d="M7.00002 2H9.00002V14H7.00002V2Z" />
     <path d="M14 7V9L2.00002 9L2.00002 7L14 7Z" />
