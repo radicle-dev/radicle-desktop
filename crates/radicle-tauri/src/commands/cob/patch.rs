@@ -117,9 +117,8 @@ pub fn revision_by_patch_and_id(
 }
 
 /// Creates a draft review for a specific patch revision.
-/// If there is already an ongoing draft patch review this command returns its review id.
 ///
-/// This Tauri command allows users to either create a new draft review or retrieve the id for an existing one for a specific patch revision.
+/// This Tauri command allows users to create a new draft review for a specific patch revision.
 /// The draft is associated with the user (signer) and the provided patch revision within the repository.
 #[tauri::command]
 pub fn create_draft_review(
@@ -139,20 +138,23 @@ pub fn create_draft_review(
         .revision(&revision_id)
         .ok_or_else(|| Error::WithHint {
             err: anyhow::anyhow!("patch revision not found"),
-            hint: "",
+            hint: "Not able to find the specified patch revision.",
         })?;
 
-    let review_id = if let Some(r) = revision.review_by(signer.public_key()) {
-        r.id()
-    } else {
-        patch.review(
-            revision.id(),
-            Some(cob::patch::Verdict::Reject),
-            None,
-            labels,
-            &signer,
-        )?
-    };
+    revision
+        .review_by(signer.public_key())
+        .ok_or(Error::WithHint {
+            err: anyhow::anyhow!("duplicate patch review found"),
+            hint: "Found an existing draft patch review on this patch revision and repo.",
+        })?;
+
+    let review_id = patch.review(
+        revision.id(),
+        Some(cob::patch::Verdict::Reject),
+        None,
+        labels,
+        &signer,
+    )?;
 
     patches.write(&cob_id.into())?;
 
@@ -225,11 +227,12 @@ pub fn edit_draft_review(
     Ok::<_, Error>(())
 }
 
-/// Fetches a draft review for a specific patch revision in a repository.
+/// Gets the draft review of the local user for a specific patch revision in a repository.
 ///
-/// This Tauri command is used to retrieve a review draft for a given patch revision from a repository.
+/// This Tauri command is used to retrieve a patch review draft for the local user
+/// on a given patch revision from a repository.
 /// It looks up the repository using the provided repository ID (`rid`) and patch object ID (`cob_id`),
-/// and fetches the review associated with a specific revision (`revision_id`), if it exists.
+/// and gets the patch review of the local user associated with a specific revision (`revision_id`), if it exists.
 #[tauri::command]
 pub fn get_draft_review(
     ctx: tauri::State<AppState>,
