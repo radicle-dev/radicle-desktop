@@ -3,6 +3,8 @@
   import type { Issue } from "@bindings/Issue";
   import type { RepoInfo } from "@bindings/RepoInfo";
 
+  import capitalize from "lodash/capitalize";
+
   import { formatTimestamp, formatOid, issueStatusColor } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
@@ -45,10 +47,30 @@
   .content {
     padding: 0 1rem 1rem 1rem;
   }
-
   .body {
     background-color: var(--color-background-float);
     padding: 1rem;
+    margin-top: 1rem;
+    clip-path: var(--2px-corner-fill);
+  }
+  .divider {
+    width: 2px;
+    background-color: var(--color-fill-ghost);
+    height: calc(100% + 8px);
+    top: -2px;
+    position: relative;
+  }
+  .section {
+    padding: 0.5rem;
+    font-size: var(--font-size-small);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    height: 100%;
+  }
+  .section-title {
+    margin-bottom: 0.5rem;
+    color: var(--color-foreground-dim);
   }
 </style>
 
@@ -124,14 +146,56 @@
     <div class="title">
       <InlineTitle content={issue.title} fontSize="medium" />
     </div>
+
+    <Border variant="ghost" styleGap="0">
+      <div class="section" style:min-width="8rem">
+        <div class="section-title">Status</div>
+        <div
+          class="global-counter txt-small"
+          style:width="fit-content"
+          style:color="var(--color-foreground-match-background)"
+          style:background-color={issueStatusColor[issue.state.status]}>
+          {capitalize(issue.state.status)}
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section" style:flex="1">
+        <div class="section-title">Labels</div>
+        <div class="global-flex" style:flex-wrap="wrap">
+          {#each issue.labels as label}
+            <div class="global-counter txt-small">{label}</div>
+          {:else}
+            <span class="txt-missing">No labels.</span>
+          {/each}
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="section" style:flex="1">
+        <div class="section-title">Assignees</div>
+        <div class="global-flex" style:flex-wrap="wrap">
+          {#each issue.assignees as assignee}
+            <NodeId
+              nodeId={assignee.did.replace("did:key:", "")}
+              alias={assignee.alias} />
+          {:else}
+            <span class="txt-missing">Not assigned to anyone.</span>
+          {/each}
+        </div>
+      </div>
+    </Border>
+
     <div class="txt-small body">
-      {#if issue.discussion[0].edits.slice(-1)[0].body !== ""}
+      {#if issue.discussion[0].edits.slice(-1)[0].body.trim() === ""}
+        <span class="txt-missing">No description.</span>
+      {:else}
         <Markdown
           rid={repo.rid}
           breaks
           content={issue.discussion[0].edits.slice(-1)[0].body} />
-      {:else}
-        <span class="txt-missing">No description.</span>
       {/if}
       <div class="global-flex txt-small" style:margin-top="1.5rem">
         <NodeId

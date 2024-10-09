@@ -8,6 +8,7 @@
   export let styleMinHeight: string | undefined = undefined;
   export let styleWidth: string | undefined = undefined;
   export let styleCursor: "default" | "pointer" = "default";
+  export let styleGap: string = "0.5rem";
 
   $: style =
     `--local-button-color-1: var(--color-fill-${variant});` +
@@ -65,7 +66,6 @@
     grid-area: p3-3;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
   }
   .p3-4 {
     grid-area: p3-4;
@@ -172,7 +172,7 @@
 
   <div class="pixel p3-1"></div>
   <div class="pixel p3-2"></div>
-  <div class="pixel p3-3" style:padding={stylePadding}>
+  <div class="pixel p3-3" style:padding={stylePadding} style:gap={styleGap}>
     <slot />
   </div>
   <div class="pixel p3-4"></div>
