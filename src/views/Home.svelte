@@ -42,7 +42,7 @@
       </svelte:fragment>
       <svelte:fragment slot="breadcrumbs">
         <NodeId
-          nodeId={config.publicKey}
+          publicKey={config.publicKey}
           alias={config.alias}
           styleFontFamily="var(--font-family-sans-serif)"
           styleFontSize="var(--font-size-tiny)" />

@@ -2,6 +2,7 @@
   import type { Issue } from "@bindings/Issue";
 
   import {
+    authorForNodeId,
     formatOid,
     formatTimestamp,
     issueStatusBackgroundColor,
@@ -68,9 +69,7 @@
       style:align-items="flex-start">
       <InlineTitle content={issue.title} />
       <div class="global-flex txt-small">
-        <NodeId
-          nodeId={issue.author.did.replace("did:key:", "")}
-          alias={issue.author.alias} />
+        <NodeId {...authorForNodeId(issue.author)} />
         opened
         <div class="global-oid">{formatOid(issue.id)}</div>
         {formatTimestamp(issue.timestamp)}

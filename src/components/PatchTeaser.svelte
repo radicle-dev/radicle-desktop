@@ -3,6 +3,7 @@
   import type { Stats } from "@bindings/Stats";
 
   import {
+    authorForNodeId,
     formatOid,
     formatTimestamp,
     patchStatusBackgroundColor,
@@ -82,9 +83,7 @@
       style:align-items="flex-start">
       <InlineTitle content={patch.title} />
       <div class="global-flex txt-small">
-        <NodeId
-          nodeId={patch.author.did.replace("did:key:", "")}
-          alias={patch.author.alias} />
+        <NodeId {...authorForNodeId(patch.author)} />
         opened
         <div class="global-oid">{formatOid(patch.id)}</div>
         {formatTimestamp(patch.timestamp)}

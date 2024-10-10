@@ -1,8 +1,13 @@
+import type { ComponentProps } from "svelte";
+
+import type { Author } from "@bindings/Author";
 import type { Issue } from "@bindings/Issue";
 import type { Patch } from "@bindings/Patch";
 
 import bs58 from "bs58";
 import twemojiModule from "twemoji";
+
+import NodeId from "@app/components/NodeId.svelte";
 
 export const unreachable = (value: never): never => {
   throw new Error(`Unreachable code: ${value}`);
@@ -39,7 +44,11 @@ export function truncateId(pubkey: string): string {
 }
 
 export function truncateDid(did: string): string {
-  return `did:key:${truncateId(did.replace("did:key:", ""))}`;
+  return `did:key:${truncateId(publicKeyFromDid(did))}`;
+}
+
+export function publicKeyFromDid(did: string) {
+  return did.replace("did:key:", "");
 }
 
 export function isCommit(input: string): boolean {
@@ -141,3 +150,7 @@ export const patchStatusBackgroundColor: Record<
   archived: "var(--color-fill-private)",
   merged: "var(--color-fill-delegate)",
 };
+
+export function authorForNodeId(author: Author): ComponentProps<NodeId> {
+  return { publicKey: publicKeyFromDid(author.did), alias: author.alias };
+}

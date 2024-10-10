@@ -4,7 +4,12 @@
   import type { RepoInfo } from "@bindings/RepoInfo";
   import type { Revision } from "@bindings/Revision";
 
-  import { formatTimestamp, formatOid, patchStatusColor } from "@app/lib/utils";
+  import {
+    authorForNodeId,
+    formatOid,
+    formatTimestamp,
+    patchStatusColor,
+  } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -58,7 +63,7 @@
   <svelte:fragment slot="breadcrumbs">
     <Link route={{ resource: "home" }}>
       <NodeId
-        nodeId={config.publicKey}
+        publicKey={config.publicKey}
         alias={config.alias}
         styleFontFamily="var(--font-family-sans-serif)"
         styleFontSize="var(--font-size-tiny)" />
@@ -141,9 +146,7 @@
         </span>
       {/if}
       <div class="global-flex txt-small" style:margin-top="1.5rem">
-        <NodeId
-          nodeId={patch.author.did.replace("did:key:", "")}
-          alias={patch.author.alias} />
+        <NodeId {...authorForNodeId(patch.author)} />
         opened
         <div class="global-oid">{formatOid(patch.id)}</div>
         {formatTimestamp(patch.timestamp)}

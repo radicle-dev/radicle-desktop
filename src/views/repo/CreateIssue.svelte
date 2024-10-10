@@ -84,7 +84,7 @@
   <svelte:fragment slot="breadcrumbs">
     <Link route={{ resource: "home" }}>
       <NodeId
-        nodeId={config.publicKey}
+        publicKey={config.publicKey}
         alias={config.alias}
         styleFontFamily="var(--font-family-sans-serif)"
         styleFontSize="var(--font-size-tiny)" />

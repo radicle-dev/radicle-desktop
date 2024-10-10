@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createIcon } from "@app/lib/blockies";
 
-  export let nodeId: string;
+  export let publicKey: string;
 
   function createContainer(source: string) {
     const seed = source.toLowerCase();
@@ -27,4 +27,8 @@
   }
 </style>
 
-<img title={nodeId} src={createContainer(nodeId)} class="avatar" alt="avatar" />
+<img
+  title={publicKey}
+  src={createContainer(publicKey)}
+  class="avatar"
+  alt="avatar" />

@@ -6,6 +6,7 @@
   import capitalize from "lodash/capitalize";
 
   import {
+    authorForNodeId,
     formatOid,
     formatTimestamp,
     issueStatusColor,
@@ -83,7 +84,7 @@
   <svelte:fragment slot="breadcrumbs">
     <Link route={{ resource: "home" }}>
       <NodeId
-        nodeId={config.publicKey}
+        publicKey={config.publicKey}
         alias={config.alias}
         styleFontFamily="var(--font-family-sans-serif)"
         styleFontSize="var(--font-size-tiny)" />
@@ -183,9 +184,7 @@
         <div class="section-title">Assignees</div>
         <div class="global-flex" style:flex-wrap="wrap">
           {#each issue.assignees as assignee}
-            <NodeId
-              nodeId={assignee.did.replace("did:key:", "")}
-              alias={assignee.alias} />
+            <NodeId {...authorForNodeId(assignee)} />
           {:else}
             <span class="txt-missing">Not assigned to anyone.</span>
           {/each}
@@ -195,9 +194,7 @@
 
     <div class="txt-small body">
       <div class="global-flex txt-small" style:margin-bottom="1rem">
-        <NodeId
-          nodeId={issue.author.did.replace("did:key:", "")}
-          alias={issue.author.alias} />
+        <NodeId {...authorForNodeId(issue.author)} />
         opened
         <div class="global-oid">{formatOid(issue.id)}</div>
         {formatTimestamp(issue.timestamp)}
