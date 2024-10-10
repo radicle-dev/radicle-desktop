@@ -38,6 +38,10 @@ export function truncateId(pubkey: string): string {
   return `${pubkey.substring(0, 6)}…${pubkey.slice(-6)}`;
 }
 
+export function truncateDid(did: string): string {
+  return `did:key:${truncateId(did.replace("did:key:", ""))}`;
+}
+
 export function isCommit(input: string): boolean {
   return /^[a-f0-9]{40}$/.test(input);
 }

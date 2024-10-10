@@ -5,7 +5,12 @@
 
   import capitalize from "lodash/capitalize";
 
-  import { formatTimestamp, formatOid, issueStatusColor } from "@app/lib/utils";
+  import {
+    formatOid,
+    formatTimestamp,
+    issueStatusColor,
+    truncateDid,
+  } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -189,6 +194,22 @@
     </Border>
 
     <div class="txt-small body">
+      <div class="global-flex txt-small" style:margin-bottom="1rem">
+        <NodeId
+          nodeId={issue.author.did.replace("did:key:", "")}
+          alias={issue.author.alias} />
+        opened
+        <div class="global-oid">{formatOid(issue.id)}</div>
+        {formatTimestamp(issue.timestamp)}
+        {#if issue.discussion[0].edits.length > 1}
+          {@const lastEdit = issue.discussion[0].edits.slice(-1)[0]}
+          <span
+            class="txt-missing"
+            title={`${lastEdit.author.alias ? lastEdit.author.alias : truncateDid(lastEdit.author.did)} edited ${new Date(Number(lastEdit.timestamp)).toLocaleString()}`}>
+            • edited
+          </span>
+        {/if}
+      </div>
       {#if issue.discussion[0].edits.slice(-1)[0].body.trim() === ""}
         <span class="txt-missing" style:line-height="1.625rem">
           No description.
@@ -199,14 +220,6 @@
           breaks
           content={issue.discussion[0].edits.slice(-1)[0].body} />
       {/if}
-      <div class="global-flex txt-small" style:margin-top="1.5rem">
-        <NodeId
-          nodeId={issue.author.did.replace("did:key:", "")}
-          alias={issue.author.alias} />
-        opened
-        <div class="global-oid">{formatOid(issue.id)}</div>
-        {formatTimestamp(issue.timestamp)}
-      </div>
     </div>
   </div>
 </Layout>
