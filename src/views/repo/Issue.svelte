@@ -190,7 +190,9 @@
 
     <div class="txt-small body">
       {#if issue.discussion[0].edits.slice(-1)[0].body.trim() === ""}
-        <span class="txt-missing">No description.</span>
+        <span class="txt-missing" style:line-height="1.625rem">
+          No description.
+        </span>
       {:else}
         <Markdown
           rid={repo.rid}

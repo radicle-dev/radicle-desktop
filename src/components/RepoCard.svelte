@@ -43,7 +43,7 @@
       {#if project.data.description}
         {project.data.description}
       {:else}
-        No description
+        No description.
       {/if}
     </div>
     <div class="global-oid">{formatRepositoryId(repo.rid)}</div>

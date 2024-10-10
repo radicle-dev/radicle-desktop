@@ -136,7 +136,9 @@
           breaks
           content={revisions[0].description.slice(-1)[0].body} />
       {:else}
-        <span class="txt-missing">No description.</span>
+        <span class="txt-missing" style:line-height="1.625rem">
+          No description.
+        </span>
       {/if}
       <div class="global-flex txt-small" style:margin-top="1.5rem">
         <NodeId

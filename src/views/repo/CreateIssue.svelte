@@ -161,7 +161,9 @@
     {#if preview}
       <div class="txt-small body">
         {#if description.trim() === ""}
-          <span class="txt-missing">No description.</span>
+          <span class="txt-missing" style:line-height="1.625rem">
+            No description.
+          </span>
         {:else}
           <Markdown rid={repo.rid} content={description} breaks />
         {/if}
