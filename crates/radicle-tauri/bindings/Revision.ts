@@ -13,7 +13,7 @@ export type Revision = {
   base: string;
   head: string;
   reviews: Array<Review>;
-  timestamp: bigint;
+  timestamp: number;
   discussion: Array<Comment<CodeLocation>>;
   reactions: Array<Reaction>;
 };

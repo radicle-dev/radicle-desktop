@@ -3,7 +3,7 @@ import type { Author } from "./Author";
 
 export type Edit = {
   author: Author;
-  timestamp: bigint;
+  timestamp: number;
   body: string;
   embeds: { name: string; content: string };
 };

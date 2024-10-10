@@ -9,5 +9,5 @@ export type Review = {
   verdict?: "accept" | "reject";
   summary: string | null;
   comments: Array<Comment<CodeLocation>>;
-  timestamp: bigint;
+  timestamp: number;
 };

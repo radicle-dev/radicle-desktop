@@ -154,7 +154,7 @@ pub struct Revision {
     #[ts(as = "String")]
     head: git::Oid,
     reviews: Vec<Review>,
-    #[ts(as = "i64")]
+    #[ts(type = "number")]
     timestamp: cob::common::Timestamp,
     discussion: Vec<thread::Comment<thread::CodeLocation>>,
     reactions: Vec<Reaction>,
@@ -253,7 +253,7 @@ pub struct Review {
     verdict: Option<cob::patch::Verdict>,
     summary: Option<String>,
     comments: Vec<thread::Comment<thread::CodeLocation>>,
-    #[ts(as = "i64")]
+    #[ts(type = "number")]
     timestamp: cob::common::Timestamp,
 }
 
@@ -283,7 +283,7 @@ impl Review {
 #[serde(rename_all = "camelCase")]
 pub struct Edit {
     pub author: Author,
-    #[ts(as = "i64")]
+    #[ts(type = "number")]
     pub timestamp: cob::common::Timestamp,
     pub body: String,
     #[ts(type = "{ name: string, content: string }")]
