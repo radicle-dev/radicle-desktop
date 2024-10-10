@@ -2,12 +2,13 @@
 import type { Author } from "./Author";
 import type { Edit } from "./Edit";
 import type { Never } from "./Never";
+import type { Reaction } from "./Reaction";
 
 export type Comment<T = Never> = {
   id: string;
   author: Author;
   edits: Array<Edit>;
-  reactions: string;
+  reactions: Array<Reaction>;
   replyTo?: string;
   location?: T;
   resolved: boolean;

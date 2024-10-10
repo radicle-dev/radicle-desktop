@@ -1,9 +1,7 @@
-use std::collections::BTreeMap;
-
-use radicle::node::AliasStore;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use radicle::node::AliasStore;
 use radicle::{cob, git};
 
 use crate::types::cobs;
@@ -30,8 +28,7 @@ pub struct Comment<T = cobs::Never> {
     id: cob::thread::CommentId,
     author: cobs::Author,
     edits: Vec<cobs::Edit>,
-    #[ts(as = "String")]
-    reactions: BTreeMap<cob::common::Reaction, Vec<cob::op::ActorId>>,
+    reactions: Vec<cobs::Reaction>,
     #[ts(as = "Option<String>")]
     #[ts(optional)]
     reply_to: Option<cob::thread::CommentId>,
@@ -56,8 +53,8 @@ impl Comment<CodeLocation> {
             reactions: comment
                 .reactions()
                 .into_iter()
-                .map(|(r, a)| (*r, a.into_iter().copied().collect::<Vec<_>>()))
-                .collect::<BTreeMap<cob::common::Reaction, Vec<cob::op::ActorId>>>(),
+                .map(|(reaction, authors)| cobs::Reaction::new(*reaction, authors, None, aliases))
+                .collect::<Vec<_>>(),
             reply_to: comment.reply_to(),
             location: comment.location().map(|l| CodeLocation::new(l.clone())),
             resolved: comment.is_resolved(),
@@ -81,8 +78,8 @@ impl Comment {
             reactions: comment
                 .reactions()
                 .into_iter()
-                .map(|(r, a)| (*r, a.into_iter().copied().collect::<Vec<_>>()))
-                .collect::<BTreeMap<cob::common::Reaction, Vec<cob::op::ActorId>>>(),
+                .map(|(reaction, authors)| cobs::Reaction::new(*reaction, authors, None, aliases))
+                .collect::<Vec<_>>(),
             reply_to: comment.reply_to(),
             location: None,
             resolved: comment.is_resolved(),
