@@ -9,6 +9,7 @@
     | "arrow-right"
     | "checkmark"
     | "chevron-right"
+    | "comment"
     | "copy"
     | "cross"
     | "dashboard"
@@ -98,6 +99,19 @@
     <path d="M7 10L8 10L8 11L7 11L7 10Z" />
     <path d="M9 8L10 8V9L9 9V8Z" />
     <path d="M8 9H9V10H8L8 9Z" />
+  {:else if name === "comment"}
+    <path d="M4 2H12V3H4V2Z" />
+    <path d="M12 3L13 3V4H12V3Z" />
+    <path d="M12 10H13V11H12V10Z" />
+    <path d="M3 3L4 3V4H3V3Z" />
+    <path d="M5 11H12V12H5V11Z" />
+    <path d="M3 13H4V14H3V13Z" />
+    <path d="M4 12H5V13H4L4 12Z" />
+    <path d="M5 11H6V12H5V11Z" />
+    <path d="M13 4H14V10H13V4Z" />
+    <path d="M2 4L3 4L3 13H2V4Z" />
+    <path d="M5 5H11V6H5V5Z" />
+    <path d="M5 8H11V9H5V8Z" />
   {:else if name === "copy"}
     <path d="M6.5 2H13.5V3H6.5V2Z" />
     <path d="M3.5 5H4.5V6H3.5V5Z" />
