@@ -34,6 +34,8 @@ pub struct Comment<T = cobs::Never> {
     reply_to: Option<cob::thread::CommentId>,
     #[ts(optional)]
     location: Option<T>,
+    #[ts(type = "{ name: string, content: string }[]")]
+    embeds: Vec<cob::Embed<cob::Uri>>,
     resolved: bool,
 }
 
@@ -57,6 +59,7 @@ impl Comment<CodeLocation> {
                 .collect::<Vec<_>>(),
             reply_to: comment.reply_to(),
             location: comment.location().map(|l| CodeLocation::new(l.clone())),
+            embeds: comment.embeds().to_vec(),
             resolved: comment.is_resolved(),
         }
     }
@@ -82,6 +85,7 @@ impl Comment {
                 .collect::<Vec<_>>(),
             reply_to: comment.reply_to(),
             location: None,
+            embeds: comment.embeds().to_vec(),
             resolved: comment.is_resolved(),
         }
     }

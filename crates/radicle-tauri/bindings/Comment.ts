@@ -11,5 +11,6 @@ export type Comment<T = Never> = {
   reactions: Array<Reaction>;
   replyTo?: string;
   location?: T;
+  embeds: { name: string; content: string }[];
   resolved: boolean;
 };
