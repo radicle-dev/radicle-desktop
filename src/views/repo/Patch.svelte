@@ -4,6 +4,7 @@
   import type { RepoInfo } from "@bindings/RepoInfo";
   import type { Revision } from "@bindings/Revision";
 
+  import { invoke } from "@tauri-apps/api/core";
   import { formatTimestamp, formatOid, patchStatusColor } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
@@ -20,6 +21,13 @@
   export let patches: Patch[];
   export let revisions: Revision[];
   export let config: Config;
+
+  // Test example how to get the history of a cob similar to the `rad cob log` output
+  $: void invoke("activity_by_id", {
+    rid: repo.rid,
+    id: patch.id,
+    typeName: "xyz.radicle.patch",
+  }).then(console.log);
 
   $: project = repo.payloads["xyz.radicle.project"]!;
 </script>

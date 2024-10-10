@@ -6,6 +6,7 @@
   import capitalize from "lodash/capitalize";
 
   import { formatTimestamp, formatOid, issueStatusColor } from "@app/lib/utils";
+  import { invoke } from "@tauri-apps/api/core";
 
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -20,6 +21,13 @@
   export let issue: Issue;
   export let issues: Issue[];
   export let config: Config;
+
+  // Test example how to get the history of a cob similar to the `rad cob log` output
+  $: void invoke("activity_by_id", {
+    rid: repo.rid,
+    id: issue.id,
+    typeName: "xyz.radicle.issue",
+  }).then(console.log);
 
   $: project = repo.payloads["xyz.radicle.project"]!;
 </script>
