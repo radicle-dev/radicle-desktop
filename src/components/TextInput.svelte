@@ -69,7 +69,5 @@
     bind:value
     autocomplete="off"
     spellcheck="false"
-    on:input
-    on:click
-    on:change />
+    on:input />
 </Border>

@@ -118,7 +118,9 @@ export function twemoji(
 
 export function scrollIntoView(id: string, options?: ScrollIntoViewOptions) {
   const lineElement = document.getElementById(id);
-  if (lineElement) lineElement.scrollIntoView(options);
+  if (lineElement) {
+    lineElement.scrollIntoView(options);
+  }
 }
 
 export const issueStatusColor: Record<Issue["state"]["status"], string> = {
@@ -153,4 +155,27 @@ export const patchStatusBackgroundColor: Record<
 
 export function authorForNodeId(author: Author): ComponentProps<NodeId> {
   return { publicKey: publicKeyFromDid(author.did), alias: author.alias };
+}
+
+export function absoluteTimestamp(timestamp: number) {
+  return new Date(Number(timestamp)).toLocaleString();
+}
+
+export function formatEditedCaption(author: Author, timestamp: number) {
+  return `${author.alias ? author.alias : truncateDid(author.did)} edited ${absoluteTimestamp(timestamp)}`;
+}
+
+export function isMac() {
+  if (
+    (navigator.platform && navigator.platform.includes("Mac")) ||
+    navigator.userAgent.includes("OS X")
+  ) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+export function modifierKey() {
+  return isMac() ? "⌘" : "ctrl";
 }

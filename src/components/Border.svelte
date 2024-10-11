@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let variant: "primary" | "secondary" | "ghost";
+  export let variant: "primary" | "secondary" | "ghost" | "float";
   export let hoverable: boolean = false;
   export let onclick: (() => void) | undefined = undefined;
 
@@ -7,7 +7,7 @@
   export let styleHeight: string | undefined = undefined;
   export let styleMinHeight: string | undefined = undefined;
   export let styleWidth: string | undefined = undefined;
-  export let styleCursor: "default" | "pointer" = "default";
+  export let styleCursor: "default" | "pointer" | "text" = "default";
   export let styleGap: string = "0.5rem";
   export let styleOverflow: string | undefined = undefined;
 
@@ -129,7 +129,6 @@
       "p3-1 p3-2 p3-3 p3-4 p3-5"
       "p4-1 p4-2 p4-3 p4-4 p4-5"
       "p5-1 p5-2 p5-3 p5-4 p5-5";
-    overflow: hidden;
   }
   .container .p2-3,
   .container .p3-2,

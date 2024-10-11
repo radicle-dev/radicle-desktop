@@ -44,6 +44,7 @@
     clip-path: var(--1px-corner-fill);
     height: 24px;
     font-size: var(--font-size-small);
+    margin: 0;
   }
 </style>
 

@@ -3,6 +3,7 @@
 
   export let size: "16" | "32" = "16";
   export let onclick: (() => void) | undefined = undefined;
+  export let styleCursor: "default" | "pointer" = "default";
 
   export let name:
     | "arrow-left"
@@ -16,6 +17,7 @@
     | "delegate"
     | "diff"
     | "eye"
+    | "face"
     | "file"
     | "inbox"
     | "issue"
@@ -28,6 +30,7 @@
     | "patch"
     | "pen"
     | "plus"
+    | "reply"
     | "repo"
     | "revision"
     | "seedling"
@@ -51,6 +54,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <svg
+  style:cursor={styleCursor}
   role="img"
   {onclick}
   width={size}
@@ -202,6 +206,29 @@
     <path d="M2.00002 9L2.00002 8H3.00002V9L2.00002 9Z" />
     <path d="M3.00002 7L3.00002 8H2.00002L2.00002 7H3.00002Z" />
     <path d="M13 9V8H14V9L13 9Z" />
+  {:else if name === "face"}
+    <path d="M6 13H8V14H6V13Z" />
+    <path d="M10 13L8 13V14L10 14V13Z" />
+    <path d="M3 6L3 8H2L2 6H3Z" />
+    <path d="M13 6V8H14V6H13Z" />
+    <path d="M4 12H6V13L4 13V12Z" />
+    <path d="M12 12H10L10 13H12V12Z" />
+    <path d="M4 4V6H3L3 4H4Z" />
+    <path d="M12 4V6L13 6V4H12Z" />
+    <path d="M4 10L4 12H3L3 10H4Z" />
+    <path d="M12 10V12L13 12V10H12Z" />
+    <path d="M6 4L4 4L4 3L6 3V4Z" />
+    <path d="M10 4L12 4V3L10 3V4Z" />
+    <path d="M3 8L3 10H2L2 8H3Z" />
+    <path d="M13 8V10L14 10V8H13Z" />
+    <path d="M8 3L6 3V2L8 2V3Z" />
+    <path d="M8 3L10 3L10 2L8 2V3Z" />
+    <path d="M9 6H11V7H9V6Z" />
+    <path d="M5 9H6V10H5V9Z" />
+    <path d="M10 9H11V10H10V9Z" />
+    <path d="M6 10H7V11H6L6 10Z" />
+    <path d="M7 10L10 10L10 11H7V10Z" />
+    <path d="M5 6H7V7H5V6Z" />
   {:else if name === "file"}
     <path d="M10 4H11V5H10V4Z" />
     <path d="M11 5L12 5V6H11V5Z" />
@@ -412,6 +439,14 @@
   {:else if name === "plus"}
     <path d="M7.00002 2H9.00002V14H7.00002V2Z" />
     <path d="M14 7V9L2.00002 9L2.00002 7L14 7Z" />
+  {:else if name === "reply"}
+    <path d="M2.5 9V8H3.5V9H2.5Z" />
+    <path d="M3.5 10L3.5 9L4.5 9V10L3.5 10Z" />
+    <path d="M3.5 7V8L4.5 8V7L3.5 7Z" />
+    <path d="M3.5 8L13.5 8V9L3.5 9V8Z" />
+    <path d="M4.5 6H5.5V11H4.5V6Z" />
+    <path d="M13.5 4H12.5V8L13.5 8L13.5 4Z" />
+    <path d="M5.5 5H6.5V12H5.5V5Z" />
   {:else if name === "repo"}
     <path d="M13 5H14V7H13V5Z" />
     <path d="M13 10H14V11H13V10Z" />

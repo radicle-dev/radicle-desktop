@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { afterUpdate, beforeUpdate } from "svelte";
+  import type { ComponentProps } from "svelte";
+
+  import { afterUpdate, beforeUpdate, createEventDispatcher } from "svelte";
+
+  import * as utils from "@app/lib/utils";
 
   import Border from "./Border.svelte";
 
@@ -8,6 +12,8 @@
   export let focus: boolean = false;
   export let size: "grow" | "resizable" | "fixed-height" = "grow";
   export let styleMinHeight: string | undefined = undefined;
+  export let stylePadding: string = "0.75rem";
+  export let borderVariant: ComponentProps<Border>["variant"] = "float";
 
   // Defaulting selectionStart and selectionEnd to 0, since no full support yet.
   export let selectionStart: number = 0;
@@ -47,21 +53,35 @@
       textareaElement.focus();
     }
   });
+
+  const dispatch = createEventDispatcher<{
+    submit: null;
+  }>();
+
+  function handleKeydown(event: KeyboardEvent) {
+    const auxiliarKey = utils.isMac() ? event.metaKey : event.ctrlKey;
+    if (auxiliarKey && event.key === "Enter") {
+      dispatch("submit");
+    }
+    if (event.key === "Escape") {
+      textareaElement?.blur();
+    }
+  }
 </script>
 
 <style>
   textarea {
-    background-color: var(--color-background-dip);
+    background-color: transparent;
     border: 0;
     color: var(--color-foreground-default);
     font-family: inherit;
     height: 5rem;
-    padding: 0.75rem;
     width: 100%;
     min-height: 6.375rem;
     resize: none;
     overflow: hidden;
     outline: none;
+    line-height: 1rem;
   }
 
   textarea::-webkit-scrollbar-corner {
@@ -81,11 +101,12 @@
 </style>
 
 <Border
-  variant={focussed ? "secondary" : "ghost"}
+  variant={focussed ? "secondary" : borderVariant}
   styleWidth="100%"
   {styleMinHeight}>
   <textarea
     style:min-height={styleMinHeight}
+    style:padding={stylePadding}
     tabindex="0"
     bind:this={textareaElement}
     bind:value
@@ -96,12 +117,10 @@
       ? "scroll"
       : undefined}
     {placeholder}
-    on:change
-    on:click
     on:input
     on:focus={() => (focussed = true)}
     on:blur={() => (focussed = false)}
-    on:paste
+    on:keydown|stopPropagation={handleKeydown}
     on:keypress>
   </textarea>
 </Border>

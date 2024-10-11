@@ -1,35 +1,169 @@
 <script lang="ts">
+  import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
+  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Issue } from "@bindings/cob/issue/Issue";
-  import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Operation } from "@bindings/cob/issue/Operation";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import capitalize from "lodash/capitalize";
+  import partial from "lodash/partial";
 
+  import * as roles from "@app/lib/roles";
   import {
-    authorForNodeId,
-    formatOid,
-    formatTimestamp,
     issueStatusColor,
-    truncateDid,
+    publicKeyFromDid,
+    scrollIntoView,
   } from "@app/lib/utils";
   import { invoke } from "@tauri-apps/api/core";
 
   import Border from "@app/components/Border.svelte";
+  import CommentComponent from "@app/components/Comment.svelte";
+  import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
-  import Layout from "./Layout.svelte";
+  import IssueMetadata from "@app/components/IssueMetadata.svelte";
+  import IssueTimelineLifecycleAction from "@app/components/IssueTimelineLifecycleAction.svelte";
   import Link from "@app/components/Link.svelte";
-  import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import Thread from "@app/components/Thread.svelte";
+
+  import Layout from "./Layout.svelte";
+  import { tick } from "svelte";
 
   export let repo: RepoInfo;
   export let issue: Issue;
   export let issues: Issue[];
   export let config: Config;
 
+  const announce = false;
+  let topLevelReplyOpen = false;
+
+  // Close the comment textbox when switching between issues. The view doesn't
+  // get destroyed when we switch between different issues in the sidebar and
+  // because of that the top-level state gets retained when the issue changes.
+  $: if (issue) {
+    topLevelReplyOpen = false;
+  }
+
   $: project = repo.payloads["xyz.radicle.project"]!;
+
+  $: threads = issue.discussion
+    .filter(
+      comment =>
+        (comment.id !== issue.discussion[0].id && !comment.replyTo) ||
+        comment.replyTo === issue.discussion[0].id,
+    )
+    .map(thread => {
+      return {
+        root: thread,
+        replies: issue.discussion
+          .filter(comment => comment.replyTo === thread.id)
+          .sort(
+            (a, b) =>
+              a.edits.slice(-1)[0].timestamp - b.edits.slice(-1)[0].timestamp,
+          ),
+      };
+    }, []);
+
+  async function toggleReply() {
+    topLevelReplyOpen = !topLevelReplyOpen;
+    if (!topLevelReplyOpen) {
+      return;
+    }
+
+    await tick();
+    scrollIntoView(`reply-${issue.id}`, {
+      behavior: "smooth",
+      block: "center",
+    });
+  }
+
+  async function reload() {
+    issue = await invoke("issue_by_id", {
+      rid: repo.rid,
+      id: issue.id,
+    });
+  }
+
+  async function createComment(body: string, embeds: Embed[]) {
+    try {
+      await invoke("create_issue_comment", {
+        rid: repo.rid,
+        new: { id: issue.id, body, embeds },
+        opts: { announce },
+      });
+    } catch (error) {
+      console.error("Comment creation failed: ", error);
+    } finally {
+      await reload();
+    }
+  }
+
+  async function createReply(replyTo: string, body: string, embeds: Embed[]) {
+    try {
+      await invoke("create_issue_comment", {
+        rid: repo.rid,
+        new: { id: issue.id, body, embeds, replyTo },
+        opts: { announce },
+      });
+    } catch (error) {
+      console.error("Comment reply creation failed", error);
+    } finally {
+      await reload();
+    }
+  }
+
+  async function editComment(id: string, body: string, embeds: Embed[]) {
+    try {
+      await invoke("edit_issue", {
+        rid: repo.rid,
+        cobId: issue.id,
+        action: {
+          type: "comment.edit",
+          id,
+          body,
+          embeds,
+        },
+        opts: { announce },
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Issue comment editing failed: ", error);
+      }
+    } finally {
+      await reload();
+    }
+  }
+
+  async function reactOnComment(
+    publicKey: string,
+    commentId: string,
+    authors: Author[],
+    reaction: string,
+  ) {
+    try {
+      await invoke("edit_issue", {
+        rid: repo.rid,
+        cobId: issue.id,
+        action: {
+          type: "comment.react",
+          id: commentId,
+          reaction,
+          active: !authors.find(
+            ({ did }) => publicKeyFromDid(did) === publicKey,
+          ),
+        },
+        opts: { announce },
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Editing reactions failed", error);
+      }
+    } finally {
+      await reload();
+    }
+  }
 </script>
 
 <style>
@@ -40,6 +174,22 @@
     user-select: text;
     margin-bottom: 1rem;
     margin-top: 0.35rem;
+  }
+  .issue-body {
+    margin-top: 1rem;
+    position: relative;
+  }
+  /* We put the background and clip-path in a separate element to prevent
+     popovers being clipped in the main element. */
+  .issue-body::after {
+    position: absolute;
+    z-index: -1;
+    content: " ";
+    background-color: var(--color-background-float);
+    clip-path: var(--2px-corner-fill);
+    width: 100%;
+    height: 100%;
+    top: 0;
   }
   .issue-teaser {
     max-width: 11rem;
@@ -55,30 +205,11 @@
   .content {
     padding: 0 1rem 1rem 1rem;
   }
-  .body {
-    background-color: var(--color-background-float);
-    padding: 1rem;
-    margin-top: 1rem;
-    clip-path: var(--2px-corner-fill);
-  }
-  .divider {
+  .connector {
     width: 2px;
-    background-color: var(--color-fill-ghost);
-    height: calc(100% + 8px);
-    top: -2px;
-    position: relative;
-  }
-  .section {
-    padding: 0.5rem;
-    font-size: var(--font-size-small);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    height: 100%;
-  }
-  .section-title {
-    margin-bottom: 0.5rem;
-    color: var(--color-foreground-dim);
+    height: 1.5rem;
+    margin-left: 1.25rem;
+    background-color: var(--color-background-float);
   }
 </style>
 
@@ -155,102 +286,75 @@
       <InlineTitle content={issue.title} fontSize="medium" />
     </div>
 
-    <Border variant="ghost" styleGap="0">
-      <div class="section" style:min-width="8rem">
-        <div class="section-title">Status</div>
-        <div
-          class="global-counter txt-small"
-          style:width="fit-content"
-          style:color="var(--color-foreground-match-background)"
-          style:background-color={issueStatusColor[issue.state.status]}>
-          {capitalize(issue.state.status)}
-        </div>
-      </div>
+    <IssueMetadata {issue} />
 
-      <div class="divider"></div>
-
-      <div class="section" style:flex="1">
-        <div class="section-title">Labels</div>
-        <div class="global-flex" style:flex-wrap="wrap">
-          {#each issue.labels as label}
-            <div class="global-counter txt-small">{label}</div>
-          {:else}
-            <span class="txt-missing">No labels.</span>
-          {/each}
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <div class="section" style:flex="1">
-        <div class="section-title">Assignees</div>
-        <div class="global-flex" style:flex-wrap="wrap">
-          {#each issue.assignees as assignee}
-            <NodeId {...authorForNodeId(assignee)} />
-          {:else}
-            <span class="txt-missing">Not assigned to anyone.</span>
-          {/each}
-        </div>
-      </div>
-    </Border>
-
-    <div class="txt-small body">
-      <div class="global-flex txt-small" style:margin-bottom="1rem">
-        <NodeId {...authorForNodeId(issue.author)} />
-        opened
-        <div class="global-oid">{formatOid(issue.id)}</div>
-        {formatTimestamp(issue.timestamp)}
-        {#if issue.discussion[0].edits.length > 1}
-          {@const lastEdit = issue.discussion[0].edits.slice(-1)[0]}
-          <span
-            class="txt-missing"
-            title={`${lastEdit.author.alias ? lastEdit.author.alias : truncateDid(lastEdit.author.did)} edited ${new Date(Number(lastEdit.timestamp)).toLocaleString()}`}>
-            • edited
-          </span>
-        {/if}
-      </div>
-      {#if issue.discussion[0].edits.slice(-1)[0].body.trim() === ""}
-        <span class="txt-missing" style:line-height="1.625rem">
-          No description.
-        </span>
-      {:else}
-        <Markdown
-          rid={repo.rid}
-          breaks
-          content={issue.discussion[0].edits.slice(-1)[0].body} />
-      {/if}
+    <div class="issue-body">
+      <CommentComponent
+        rid={repo.rid}
+        id={issue.id}
+        lastEdit={issue.discussion[0].edits.length > 1
+          ? issue.discussion[0].edits.at(-1)
+          : undefined}
+        author={issue.discussion[0].author}
+        reactions={issue.discussion[0].reactions}
+        timestamp={issue.discussion[0].edits.slice(-1)[0].timestamp}
+        body={issue.discussion[0].edits.slice(-1)[0].body}
+        editComment={roles.isDelegateOrAuthor(
+          config.publicKey,
+          repo.delegates.map(delegate => delegate.did),
+          issue.discussion[0].author.did,
+        ) && partial(editComment, issue.discussion[0].id)}
+        reactOnComment={partial(
+          reactOnComment,
+          config.publicKey,
+          issue.discussion[0].id,
+        )}>
+        <svelte:fragment slot="actions">
+          <Icon styleCursor="pointer" name="reply" onclick={toggleReply} />
+        </svelte:fragment>
+        <svelte:fragment slot="caption">opened</svelte:fragment>
+      </CommentComponent>
     </div>
+    <div class="connector"></div>
+
     <div>
       {#await invoke<Operation[]>( "activity_by_id", { rid: repo.rid, typeName: "xyz.radicle.issue", id: issue.id }, ) then activity}
         {#each activity.slice(1) as op}
           {#if op.type === "lifecycle"}
-            <div class="txt-small body">
-              <div class="global-flex txt-small">
-                <NodeId {...authorForNodeId(op.author)} />
-                alias={op.author.alias} /> change of status to {op.state.status}
-                <!-- <div class="global-oid"></div> -->
-                {formatTimestamp(op.timestamp)}
-              </div>
-            </div>
+            <IssueTimelineLifecycleAction operation={op} />
+            <div class="connector"></div>
           {:else if op.type === "comment"}
-            <div class="txt-small body">
-              <Markdown rid={repo.rid} breaks content={op.body} />
-              <div class="global-flex txt-small" style:margin-top="1.5rem">
-                <NodeId {...authorForNodeId(op.author)} />
-                {#if op.replyTo}
-                  replied to <div class="global-oid">
-                    {formatOid(op.replyTo)}
-                  </div>
-                {:else}
-                  commented
-                {/if}
-                <!-- <div class="global-oid"></div> -->
-                {formatTimestamp(op.timestamp)}
-              </div>
-            </div>
+            {@const thread = threads.find(t => t.root.id === op.entryId)}
+            {#if thread}
+              <Thread
+                {thread}
+                rid={repo.rid}
+                canEditComment={partial(
+                  roles.isDelegateOrAuthor,
+                  config.publicKey,
+                  repo.delegates.map(delegate => delegate.did),
+                )}
+                {editComment}
+                createReply={partial(createReply)}
+                reactOnComment={partial(reactOnComment, config.publicKey)} />
+              <div class="connector"></div>
+            {/if}
           {/if}
         {/each}
       {/await}
+    </div>
+
+    <div id={`reply-${issue.id}`}>
+      <CommentToggleInput
+        disallowEmptyBody
+        rid={repo.rid}
+        focus
+        onexpand={toggleReply}
+        onclose={topLevelReplyOpen
+          ? () => (topLevelReplyOpen = false)
+          : undefined}
+        placeholder="Leave a comment"
+        submit={partial(createComment)} />
     </div>
   </div>
 </Layout>

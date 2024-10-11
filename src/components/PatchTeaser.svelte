@@ -4,7 +4,6 @@
 
   import {
     authorForNodeId,
-    formatOid,
     formatTimestamp,
     patchStatusBackgroundColor,
     patchStatusColor,
@@ -17,6 +16,7 @@
   import Icon from "./Icon.svelte";
   import InlineTitle from "./InlineTitle.svelte";
   import NodeId from "./NodeId.svelte";
+  import Id from "./Id.svelte";
 
   let stats: Stats | undefined = undefined;
 
@@ -85,7 +85,7 @@
       <div class="global-flex txt-small">
         <NodeId {...authorForNodeId(patch.author)} />
         opened
-        <div class="global-oid">{formatOid(patch.id)}</div>
+        <Id id={patch.id} variant="oid" />
         {formatTimestamp(patch.timestamp)}
       </div>
     </div>
