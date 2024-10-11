@@ -8,7 +8,7 @@ use tauri::Manager;
 use radicle::node::Handle;
 use radicle::Node;
 
-use commands::{auth, cob, profile, repo, thread};
+use commands::{auth, cob, diff, profile, repo, thread};
 
 struct AppState {
     profile: radicle::Profile,
@@ -76,6 +76,7 @@ pub fn run() {
             repo::list_repos,
             repo::repo_by_id,
             repo::diff_stats,
+            diff::get_diff,
             cob::get_file_by_oid,
             cob::activity_by_id,
             cob::save_embed,

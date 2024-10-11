@@ -50,6 +50,10 @@ pub enum Error {
     #[error(transparent)]
     Git2(#[from] radicle::git::raw::Error),
 
+    /// Diff error.
+    #[error(transparent)]
+    Diff(#[from] radicle_surf::diff::git::error::Diff),
+
     /// Storage refs error.
     #[error(transparent)]
     StorageRef(#[from] radicle::storage::refs::Error),

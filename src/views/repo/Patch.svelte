@@ -10,6 +10,7 @@
     formatTimestamp,
     patchStatusColor,
   } from "@app/lib/utils";
+  import { invoke } from "@tauri-apps/api/core";
 
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -25,6 +26,15 @@
   export let patches: Patch[];
   export let revisions: Revision[];
   export let config: Config;
+
+  $: void invoke("get_diff", {
+    rid: repo.rid,
+    options: {
+      base: revisions[0].base,
+      head: revisions[0].head,
+      unified: 10,
+    },
+  }).then(console.log);
 
   $: project = repo.payloads["xyz.radicle.project"]!;
 </script>
