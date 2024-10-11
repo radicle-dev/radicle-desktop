@@ -1,14 +1,26 @@
 use base64::{engine::general_purpose::STANDARD, Engine as _};
 
+use radicle::cob;
 use radicle::git;
 use radicle::identity;
 use radicle::storage::{ReadRepository, ReadStorage};
 
-use crate::{error, AppState};
+use crate::{error, types, AppState};
 
 pub mod draft;
 pub mod issue;
 pub mod patch;
+
+#[derive(serde::Serialize, ts_rs::TS)]
+#[ts(export)]
+pub struct IssueOps {
+    #[ts(as = "String")]
+    id: git::Oid,
+    action: types::cobs::IssueAction,
+    #[ts(type = "number")]
+    timestamp: cob::Timestamp,
+    author: types::cobs::Author,
+}
 
 #[tauri::command]
 pub async fn get_file_by_oid(
@@ -20,6 +32,39 @@ pub async fn get_file_by_oid(
     let blob = repo.blob(oid)?;
 
     Ok::<_, error::Error>(STANDARD.encode(blob.content()))
+}
+
+#[tauri::command]
+pub fn activity_by_id(
+    ctx: tauri::State<AppState>,
+    rid: identity::RepoId,
+    type_name: cob::TypeName,
+    id: git::Oid,
+) -> Result<Vec<serde_json::Value>, error::Error> {
+    let aliases = ctx.profile.aliases();
+    let repo = ctx.profile.storage.repository(rid)?;
+    let ops = cob::store::ops(&id.into(), &type_name, &repo).unwrap();
+    let mut actions: Vec<serde_json::Value> = Vec::new();
+
+    for op in ops.into_iter() {
+        actions.extend(
+            op.actions
+                .iter()
+                .filter_map(|action: &Vec<u8>| -> Option<serde_json::Value> {
+                    serde_json::from_slice(action).ok()
+                })
+                .map(|action| {
+                    serde_json::json!({
+                        "id": op.id,
+                        "action": action,
+                        "author": types::cobs::Author::new(op.author.into(), &aliases),
+                        "timestamp": op.timestamp
+                    })
+                }),
+        )
+    }
+
+    Ok::<_, error::Error>(actions)
 }
 
 mod query {
