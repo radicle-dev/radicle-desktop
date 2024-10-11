@@ -2,10 +2,12 @@
   import type { Config } from "@bindings/Config";
   import type { Issue } from "@bindings/Issue";
   import type { RepoInfo } from "@bindings/RepoInfo";
+  import type { IssueOps } from "@bindings/IssueOps";
 
   import capitalize from "lodash/capitalize";
 
   import { formatTimestamp, formatOid, issueStatusColor } from "@app/lib/utils";
+  import { invoke } from "@tauri-apps/api/core";
 
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -205,6 +207,42 @@
         <div class="global-oid">{formatOid(issue.id)}</div>
         {formatTimestamp(issue.timestamp)}
       </div>
+    </div>
+    <div>
+      {#await invoke<IssueOps[]>( "activity_by_id", { rid: repo.rid, typeName: "xyz.radicle.issue", id: issue.id }, ) then activity}
+        {#each activity.slice(1) as { action, timestamp, author }}
+          {#if action.type === "lifecycle"}
+            <div class="txt-small body">
+              <div class="global-flex txt-small">
+                <NodeId
+                  nodeId={author.did.replace("did:key:", "")}
+                  alias={author.alias} />
+                change of status to {action.state.status}
+                <!-- <div class="global-oid"></div> -->
+                {formatTimestamp(timestamp)}
+              </div>
+            </div>
+          {:else if action.type === "comment"}
+            <div class="txt-small body">
+              <Markdown rid={repo.rid} breaks content={action.body} />
+              <div class="global-flex txt-small" style:margin-top="1.5rem">
+                <NodeId
+                  nodeId={author.did.replace("did:key:", "")}
+                  alias={author.alias} />
+                {#if action.replyTo}
+                  replied to <div class="global-oid">
+                    {formatOid(action.replyTo)}
+                  </div>
+                {:else}
+                  commented
+                {/if}
+                <!-- <div class="global-oid"></div> -->
+                {formatTimestamp(timestamp)}
+              </div>
+            </div>
+          {/if}
+        {/each}
+      {/await}
     </div>
   </div>
 </Layout>
