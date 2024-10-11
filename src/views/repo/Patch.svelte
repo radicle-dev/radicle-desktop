@@ -6,7 +6,6 @@
 
   import {
     authorForNodeId,
-    formatOid,
     formatTimestamp,
     patchStatusColor,
   } from "@app/lib/utils";
@@ -20,6 +19,7 @@
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import Markdown from "@app/components/Markdown.svelte";
+  import Id from "@app/components/Id.svelte";
 
   export let repo: RepoInfo;
   export let patch: Patch;
@@ -158,13 +158,13 @@
       <div class="global-flex txt-small" style:margin-top="1.5rem">
         <NodeId {...authorForNodeId(patch.author)} />
         opened
-        <div class="global-oid">{formatOid(patch.id)}</div>
+        <Id id={patch.id} variant="oid" />
         {formatTimestamp(patch.timestamp)}
       </div>
     </div>
     <div class="txt-small" style:margin-top="1rem">Revisions</div>
     {#each revisions as revision}
-      <div class="global-oid">{formatOid(revision.id)}</div>
+      <Id id={revision.id} variant="oid" />
     {/each}
   </div>
 </Layout>

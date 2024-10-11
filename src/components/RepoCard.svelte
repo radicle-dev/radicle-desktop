@@ -6,6 +6,7 @@
   import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
   import RepoHeader from "./RepoHeader.svelte";
+  import Id from "./Id.svelte";
 
   export let repo: RepoInfo;
   export let selfDid: string;
@@ -46,7 +47,11 @@
         No description.
       {/if}
     </div>
-    <div class="global-oid">{formatRepositoryId(repo.rid)}</div>
+    <Id
+      clipboard={repo.rid}
+      shorten={false}
+      variant="oid"
+      id={formatRepositoryId(repo.rid)} />
 
     <div class="global-flex footer">
       <div class="global-flex">

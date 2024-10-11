@@ -9,7 +9,6 @@
 
 <script lang="ts">
   export let popoverContainerMinWidth: string | undefined = undefined;
-  export let popoverBorderRadius: string | undefined = undefined;
   export let popoverPadding: string | undefined = undefined;
   export let popoverPositionBottom: string | undefined = undefined;
   export let popoverPositionLeft: string | undefined = undefined;
@@ -63,8 +62,7 @@
       style:left={popoverPositionLeft}
       style:right={popoverPositionRight}
       style:top={popoverPositionTop}
-      style:padding={popoverPadding}
-      style:border-radius={popoverBorderRadius}>
+      style:padding={popoverPadding}>
       <slot name="popover" {toggle} />
     </div>
   {/if}

@@ -29,6 +29,13 @@ body {
   font-weight: var(--font-weight-regular);
 }
 
+.global-commit {
+  color: var(--color-foreground-dim);
+  font-size: var(--font-size-small);
+  font-family: var(--font-family-monospace);
+  font-weight: var(--font-weight-semibold);
+}
+
 .global-flex {
   display: flex;
   align-items: center;
@@ -102,6 +109,21 @@ body {
     2px calc(100% - 2px),
     2px calc(100% - 4px),
     0 calc(100% - 4px)
+  );
+
+  --2px-top-corner-fill: polygon(
+    0 4px,
+    2px 4px,
+    2px 2px,
+    4px 2px,
+    4px 0,
+    calc(100% - 4px) 0,
+    calc(100% - 4px) 2px,
+    calc(100% - 2px) 2px,
+    calc(100% - 2px) 4px,
+    100% 4px,
+    100% 100%,
+    0 100%
   );
 
   --3px-corner-fill: polygon(

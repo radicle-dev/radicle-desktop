@@ -3,7 +3,6 @@
 
   import {
     authorForNodeId,
-    formatOid,
     formatTimestamp,
     issueStatusBackgroundColor,
     issueStatusColor,
@@ -11,6 +10,7 @@
   import { push } from "@app/lib/router";
 
   import Icon from "./Icon.svelte";
+  import Id from "./Id.svelte";
   import InlineTitle from "./InlineTitle.svelte";
   import NodeId from "./NodeId.svelte";
 
@@ -71,7 +71,7 @@
       <div class="global-flex txt-small">
         <NodeId {...authorForNodeId(issue.author)} />
         opened
-        <div class="global-oid">{formatOid(issue.id)}</div>
+        <Id id={issue.id} variant="oid" />
         {formatTimestamp(issue.timestamp)}
       </div>
     </div>
