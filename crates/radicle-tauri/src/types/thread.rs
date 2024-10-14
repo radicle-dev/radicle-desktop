@@ -18,7 +18,7 @@ pub struct CreateReviewComment {
     pub reply_to: Option<cob::thread::CommentId>,
     pub location: Option<thread::CodeLocation>,
     #[ts(type = "{ name: string, content: string }[]")]
-    pub embeds: Vec<cob::Embed>,
+    pub embeds: Vec<cob::Embed<cob::Uri>>,
 }
 
 #[derive(Serialize, TS)]
@@ -102,7 +102,7 @@ pub struct NewIssueComment {
     #[ts(optional)]
     pub reply_to: Option<cob::thread::CommentId>,
     #[ts(type = "{ name: string, content: string }[]")]
-    pub embeds: Vec<cob::Embed>,
+    pub embeds: Vec<cob::Embed<cob::Uri>>,
 }
 
 #[derive(TS, Serialize, Deserialize)]
@@ -119,7 +119,7 @@ pub struct NewPatchComment {
     pub reply_to: Option<cob::thread::CommentId>,
     pub location: Option<CodeLocation>,
     #[ts(type = "{ name: string, content: string }[]")]
-    pub embeds: Vec<cob::Embed>,
+    pub embeds: Vec<cob::Embed<cob::Uri>>,
 }
 
 #[derive(TS, Serialize, Deserialize)]

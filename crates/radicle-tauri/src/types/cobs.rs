@@ -318,7 +318,7 @@ pub struct NewIssue {
     #[ts(as = "Vec<String>")]
     pub assignees: Vec<identity::Did>,
     #[ts(type = "{ name: string, content: string }[]")]
-    pub embeds: Vec<cob::Embed>,
+    pub embeds: Vec<cob::Embed<cob::Uri>>,
 }
 
 #[derive(TS, Serialize, Deserialize)]

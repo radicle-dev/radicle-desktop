@@ -78,6 +78,7 @@ pub fn run() {
             repo::diff_stats,
             cob::get_file_by_oid,
             cob::activity_by_id,
+            cob::save_embed,
             cob::issue::list_issues,
             cob::issue::issue_by_id,
             cob::issue::create_issue,

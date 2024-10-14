@@ -35,6 +35,19 @@ pub async fn get_file_by_oid(
 }
 
 #[tauri::command]
+pub async fn save_embed(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    name: &str,
+    bytes: &[u8],
+) -> Result<git::Oid, error::Error> {
+    let repo = ctx.profile.storage.repository(rid)?;
+    let embed = cob::Embed::<git::Oid>::store(name, bytes, &repo.backend)?;
+
+    Ok::<_, error::Error>(embed.oid())
+}
+
+#[tauri::command]
 pub fn activity_by_id(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,

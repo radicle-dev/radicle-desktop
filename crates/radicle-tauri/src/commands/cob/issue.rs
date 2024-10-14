@@ -73,11 +73,15 @@ pub fn edit_issue(
         cobs::IssueAction::CommentRedact { id } => {
             issue.redact_comment(id, &signer)?;
         }
-        cobs::IssueAction::Comment { .. } => {
-            unimplemented!("Create of issue comment not yet implemented")
+        cobs::IssueAction::Comment {
+            body,
+            reply_to,
+            embeds,
+        } => {
+            issue.comment(body, reply_to.unwrap_or(cob_id), embeds, &signer)?;
         }
-        cobs::IssueAction::CommentEdit { .. } => {
-            unimplemented!("Edit of issue comment not yet implemented")
+        cobs::IssueAction::CommentEdit { id, body, embeds } => {
+            issue.edit_comment(id, body, embeds, &signer)?;
         }
         cobs::IssueAction::Edit { title } => {
             issue.edit(title, &signer)?;
