@@ -28,6 +28,7 @@
   let title: string = "";
   let description: string = "";
   let preview: boolean = false;
+  const announce = false;
 
   const labels: string[] = [];
   const assignees: Author[] = [];
@@ -37,6 +38,7 @@
     const response: Issue = await invoke("create_issue", {
       rid: repo.rid,
       new: { title, description, labels, assignees, embeds },
+      opts: { announce },
     });
     void router.push({
       resource: "repo.issue",
