@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { Config } from "@bindings/Config";
-  import type { Issue } from "@bindings/Issue";
-  import type { RepoInfo } from "@bindings/RepoInfo";
-  import type { IssueOps } from "@bindings/IssueOps";
+  import type { Config } from "@bindings/config/Config";
+  import type { Issue } from "@bindings/cob/issue/Issue";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { IssueOps } from "@bindings/cob/issue/IssueOps";
 
   import capitalize from "lodash/capitalize";
 

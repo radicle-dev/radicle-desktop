@@ -1,5 +1,5 @@
-import type { Config } from "@bindings/Config";
-import type { RepoInfo } from "@bindings/RepoInfo";
+import type { Config } from "@bindings/config/Config";
+import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { LoadedRepoRoute, RepoRoute } from "@app/views/repo/router";
 
 import { invoke } from "@tauri-apps/api/core";

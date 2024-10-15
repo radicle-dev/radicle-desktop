@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { Config } from "@bindings/Config";
-  import type { Issue } from "@bindings/Issue";
+  import type { Config } from "@bindings/config/Config";
+  import type { Issue } from "@bindings/cob/issue/Issue";
   import type { IssueStatus } from "./router";
-  import type { RepoInfo } from "@bindings/RepoInfo";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import * as router from "@app/lib/router";
 

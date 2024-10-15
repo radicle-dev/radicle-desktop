@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { Author } from "@bindings/Author";
-  import type { Config } from "@bindings/Config";
-  import type { Issue } from "@bindings/Issue";
-  import type { RepoInfo } from "@bindings/RepoInfo";
+  import type { Author } from "@bindings/cob/Author";
+  import type { Config } from "@bindings/config/Config";
+  import type { Issue } from "@bindings/cob/issue/Issue";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { invoke } from "@tauri-apps/api/core";
 

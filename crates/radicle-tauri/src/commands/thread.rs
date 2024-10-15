@@ -25,7 +25,12 @@ pub fn create_issue_comment(
         let (root_id, _) = issue.root();
         *root_id
     });
-    let oid = issue.comment(new.body, id, new.embeds, &signer)?;
+    let oid = issue.comment(
+        new.body,
+        id,
+        new.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+        &signer,
+    )?;
 
     if opts.announce() {
         node.announce_refs(rid)?;
@@ -51,7 +56,7 @@ pub fn create_patch_comment(
         new.body,
         new.reply_to,
         new.location.map(|l| l.into()),
-        new.embeds,
+        new.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
         &signer,
     )?;
 

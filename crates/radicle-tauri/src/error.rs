@@ -97,6 +97,10 @@ pub enum Error {
     #[error(transparent)]
     Tauri(#[from] tauri::Error),
 
+    /// Serde JSON error.
+    #[error(transparent)]
+    SerdeJSON(#[from] serde_json::error::Error),
+
     /// Parse ObjectId error.
     #[error(transparent)]
     ParseObjectId(#[from] radicle::cob::object::ParseObjectId),

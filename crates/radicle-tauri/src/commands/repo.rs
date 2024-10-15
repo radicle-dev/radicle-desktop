@@ -1,18 +1,17 @@
 use radicle::crypto::Verified;
-use radicle::prelude::Doc;
-use radicle::storage::git::Repository;
-use serde_json::json;
-
 use radicle::identity::doc::PayloadId;
 use radicle::identity::{DocAt, RepoId};
 use radicle::issue::cache::Issues;
 use radicle::node::routing::Store;
 use radicle::patch::cache::Patches;
+use radicle::prelude::Doc;
+use radicle::storage::git::Repository;
 use radicle::storage::ReadStorage;
 use radicle::storage::{self, ReadRepository};
 
 use crate::error::Error;
 use crate::types;
+use crate::types::repo::{ProjectPayload, ProjectPayloadData, ProjectPayloadMeta};
 use crate::AppState;
 
 /// List all repos.
@@ -94,22 +93,22 @@ pub fn repo_info(
         let issues = profile.issues(repo).ok()?;
         let issues = issues.counts().ok()?;
 
-        Some(json!({
-            "data": payload,
-            "meta": {
-                "issues": issues,
-                "patches": patches,
-                "head": head,
-                "lastCommit": commit.time().seconds() * 1000,
-            },
-        }))
+        let data: ProjectPayloadData = (*payload).clone().try_into().ok()?;
+        let meta = ProjectPayloadMeta {
+            issues,
+            patches,
+            head,
+            last_commit: commit.time().seconds() * 1000,
+        };
+
+        Some(ProjectPayload::new(data, meta))
     });
 
     Ok::<_, Error>(types::repo::RepoInfo {
         payloads: types::repo::SupportedPayloads { project },
         delegates,
         threshold: doc.threshold,
-        visibility: doc.visibility.clone(),
+        visibility: doc.visibility.clone().into(),
         rid: repo.id,
         seeding,
     })

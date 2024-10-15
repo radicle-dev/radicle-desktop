@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Issue } from "@bindings/Issue";
+  import type { Issue } from "@bindings/cob/issue/Issue";
 
   import {
     authorForNodeId,

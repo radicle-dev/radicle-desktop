@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Stats } from "@bindings/Stats";
+  import type { Stats } from "@bindings/cob/Stats";
 
   export let stats: Stats;
 </script>

@@ -1,9 +1,9 @@
-import type { Config } from "@bindings/Config";
-import type { PaginatedQuery } from "@bindings/PaginatedQuery";
-import type { Issue } from "@bindings/Issue";
-import type { Patch } from "@bindings/Patch";
-import type { RepoInfo } from "@bindings/RepoInfo";
-import type { Revision } from "@bindings/Revision";
+import type { Config } from "@bindings/config/Config";
+import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
+import type { Issue } from "@bindings/cob/issue/Issue";
+import type { Patch } from "@bindings/cob/patch/Patch";
+import type { RepoInfo } from "@bindings/repo/RepoInfo";
+import type { Revision } from "@bindings/cob/patch/Revision";
 
 import { invoke } from "@tauri-apps/api/core";
 import { unreachable } from "@app/lib/utils";

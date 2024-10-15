@@ -1,5 +1,5 @@
 use radicle::git;
-use radicle::identity::RepoId;
+use radicle::identity;
 use radicle::issue::cache::Issues;
 use radicle::node::Handle;
 use radicle::node::Node;
@@ -13,10 +13,10 @@ use crate::AppState;
 #[tauri::command]
 pub fn create_issue(
     ctx: tauri::State<AppState>,
-    rid: RepoId,
-    new: cobs::NewIssue,
+    rid: identity::RepoId,
+    new: cobs::issue::NewIssue,
     opts: cobs::CobOptions,
-) -> Result<cobs::Issue, Error> {
+) -> Result<cobs::issue::Issue, Error> {
     let mut node = Node::new(ctx.profile.socket());
     let repo = ctx.profile.storage.repository(rid)?;
     let signer = ctx.profile.signer()?;
@@ -27,7 +27,7 @@ pub fn create_issue(
         new.description,
         &new.labels,
         &new.assignees,
-        new.embeds,
+        new.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
         &signer,
     )?;
 
@@ -35,17 +35,17 @@ pub fn create_issue(
         node.announce_refs(rid)?;
     }
 
-    Ok::<_, Error>(cobs::Issue::new(issue.id(), &issue, &aliases))
+    Ok::<_, Error>(cobs::issue::Issue::new(issue.id(), &issue, &aliases))
 }
 
 #[tauri::command]
 pub fn edit_issue(
     ctx: tauri::State<AppState>,
-    rid: RepoId,
+    rid: identity::RepoId,
     cob_id: git::Oid,
-    action: cobs::IssueAction,
+    action: cobs::issue::Action,
     opts: cobs::CobOptions,
-) -> Result<cobs::Issue, Error> {
+) -> Result<cobs::issue::Issue, Error> {
     let mut node = Node::new(ctx.profile.socket());
     let repo = ctx.profile.storage.repository(rid)?;
     let signer = ctx.profile.signer()?;
@@ -54,36 +54,46 @@ pub fn edit_issue(
     let mut issue = issues.get_mut(&cob_id.into())?;
 
     match action {
-        cobs::IssueAction::Lifecycle { state } => {
-            issue.lifecycle(state, &signer)?;
+        cobs::issue::Action::Lifecycle { state } => {
+            issue.lifecycle(state.into(), &signer)?;
         }
-        cobs::IssueAction::Assign { assignees } => {
+        cobs::issue::Action::Assign { assignees } => {
             issue.assign(assignees, &signer)?;
         }
-        cobs::IssueAction::Label { labels } => {
+        cobs::issue::Action::Label { labels } => {
             issue.label(labels, &signer)?;
         }
-        cobs::IssueAction::CommentReact {
+        cobs::issue::Action::CommentReact {
             id,
             reaction,
             active,
         } => {
             issue.react(id, reaction, active, &signer)?;
         }
-        cobs::IssueAction::CommentRedact { id } => {
+        cobs::issue::Action::CommentRedact { id } => {
             issue.redact_comment(id, &signer)?;
         }
-        cobs::IssueAction::Comment {
+        cobs::issue::Action::Comment {
             body,
             reply_to,
             embeds,
         } => {
-            issue.comment(body, reply_to.unwrap_or(cob_id), embeds, &signer)?;
+            issue.comment(
+                body,
+                reply_to.unwrap_or(cob_id),
+                embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                &signer,
+            )?;
         }
-        cobs::IssueAction::CommentEdit { id, body, embeds } => {
-            issue.edit_comment(id, body, embeds, &signer)?;
+        cobs::issue::Action::CommentEdit { id, body, embeds } => {
+            issue.edit_comment(
+                id,
+                body,
+                embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                &signer,
+            )?;
         }
-        cobs::IssueAction::Edit { title } => {
+        cobs::issue::Action::Edit { title } => {
             issue.edit(title, &signer)?;
         }
     }
@@ -92,15 +102,15 @@ pub fn edit_issue(
         node.announce_refs(rid)?;
     }
 
-    Ok::<_, Error>(cobs::Issue::new(issue.id(), &issue, &aliases))
+    Ok::<_, Error>(cobs::issue::Issue::new(issue.id(), &issue, &aliases))
 }
 
 #[tauri::command]
 pub fn list_issues(
     ctx: tauri::State<AppState>,
-    rid: RepoId,
+    rid: identity::RepoId,
     status: query::IssueStatus,
-) -> Result<Vec<cobs::Issue>, Error> {
+) -> Result<Vec<cobs::issue::Issue>, Error> {
     let repo = ctx.profile.storage.repository(rid)?;
     let issues = ctx.profile.issues(&repo)?;
     let mut issues: Vec<_> = issues
@@ -115,7 +125,7 @@ pub fn list_issues(
     let aliases = &ctx.profile.aliases();
     let issues = issues
         .into_iter()
-        .map(|(id, issue)| cobs::Issue::new(&id, &issue, aliases))
+        .map(|(id, issue)| cobs::issue::Issue::new(&id, &issue, aliases))
         .collect::<Vec<_>>();
 
     Ok::<_, Error>(issues)
@@ -124,15 +134,15 @@ pub fn list_issues(
 #[tauri::command]
 pub fn issue_by_id(
     ctx: tauri::State<AppState>,
-    rid: RepoId,
+    rid: identity::RepoId,
     id: git::Oid,
-) -> Result<Option<cobs::Issue>, Error> {
+) -> Result<Option<cobs::issue::Issue>, Error> {
     let repo = ctx.profile.storage.repository(rid)?;
     let issues = ctx.profile.issues(&repo)?;
     let issue = issues.get(&id.into())?;
 
     let aliases = &ctx.profile.aliases();
-    let issue = issue.map(|issue| cobs::Issue::new(&id.into(), &issue, aliases));
+    let issue = issue.map(|issue| cobs::issue::Issue::new(&id.into(), &issue, aliases));
 
     Ok::<_, Error>(issue)
 }

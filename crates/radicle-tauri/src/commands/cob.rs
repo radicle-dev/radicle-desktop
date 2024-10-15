@@ -11,17 +11,6 @@ pub mod draft;
 pub mod issue;
 pub mod patch;
 
-#[derive(serde::Serialize, ts_rs::TS)]
-#[ts(export)]
-pub struct IssueOps {
-    #[ts(as = "String")]
-    id: git::Oid,
-    action: types::cobs::IssueAction,
-    #[ts(type = "number")]
-    timestamp: cob::Timestamp,
-    author: types::cobs::Author,
-}
-
 #[tauri::command]
 pub async fn get_file_by_oid(
     ctx: tauri::State<'_, AppState>,
