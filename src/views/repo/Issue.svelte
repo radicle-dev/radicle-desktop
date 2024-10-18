@@ -222,31 +222,30 @@
     </div>
     <div>
       {#await invoke<IssueOps[]>( "activity_by_id", { rid: repo.rid, typeName: "xyz.radicle.issue", id: issue.id }, ) then activity}
-        {#each activity.slice(1) as { action, timestamp, author }}
-          {#if action.type === "lifecycle"}
+        {#each activity.slice(1) as op}
+          {#if op.type === "lifecycle"}
             <div class="txt-small body">
               <div class="global-flex txt-small">
-                <NodeId {...authorForNodeId(author)} />
-                alias={author.alias} /> change of status to {action.state
-                  .status}
+                <NodeId {...authorForNodeId(op.author)} />
+                alias={op.author.alias} /> change of status to {op.state.status}
                 <!-- <div class="global-oid"></div> -->
-                {formatTimestamp(timestamp)}
+                {formatTimestamp(op.timestamp)}
               </div>
             </div>
-          {:else if action.type === "comment"}
+          {:else if op.type === "comment"}
             <div class="txt-small body">
-              <Markdown rid={repo.rid} breaks content={action.body} />
+              <Markdown rid={repo.rid} breaks content={op.body} />
               <div class="global-flex txt-small" style:margin-top="1.5rem">
-                <NodeId {...authorForNodeId(author)} />
-                {#if action.replyTo}
+                <NodeId {...authorForNodeId(op.author)} />
+                {#if op.replyTo}
                   replied to <div class="global-oid">
-                    {formatOid(action.replyTo)}
+                    {formatOid(op.replyTo)}
                   </div>
                 {:else}
                   commented
                 {/if}
                 <!-- <div class="global-oid"></div> -->
-                {formatTimestamp(timestamp)}
+                {formatTimestamp(op.timestamp)}
               </div>
             </div>
           {/if}
