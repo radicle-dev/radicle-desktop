@@ -20,9 +20,10 @@
     justify-content: space-between;
   }
   .title {
-    display: flex;
     color: var(--color-fill-gray);
     margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .container {
     width: 100%;
