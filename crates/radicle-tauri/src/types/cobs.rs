@@ -12,6 +12,7 @@ use radicle::node::{Alias, AliasStore};
 use radicle::patch;
 use radicle::storage::git;
 
+use crate::types::cobs;
 use crate::types::thread;
 
 #[derive(Serialize, TS)]
@@ -45,7 +46,7 @@ pub struct Issue {
     #[ts(type = "{ status: 'closed', reason: 'other' | 'solved' } | { status: 'open' } ")]
     state: issue::State,
     assignees: Vec<Author>,
-    discussion: Vec<thread::Comment>,
+    discussion: Vec<thread::Comment<cobs::Never>>,
     #[ts(as = "Vec<String>")]
     labels: Vec<cob::Label>,
     #[ts(type = "number")]

@@ -23,7 +23,7 @@ pub struct CreateReviewComment {
 
 #[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
-pub struct Comment<T = cobs::Never> {
+pub struct Comment<T> {
     #[ts(as = "String")]
     id: cob::thread::CommentId,
     author: cobs::Author,
@@ -65,7 +65,7 @@ impl Comment<CodeLocation> {
     }
 }
 
-impl Comment {
+impl Comment<cobs::Never> {
     pub fn new(
         id: cob::thread::CommentId,
         comment: cob::thread::Comment,
@@ -91,7 +91,7 @@ impl Comment {
     }
 }
 
-#[derive(TS, Serialize, Deserialize)]
+#[derive(Clone, TS, Serialize, Deserialize)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct NewIssueComment {
@@ -105,7 +105,7 @@ pub struct NewIssueComment {
     pub embeds: Vec<cob::Embed<cob::Uri>>,
 }
 
-#[derive(TS, Serialize, Deserialize)]
+#[derive(Clone, TS, Serialize, Deserialize)]
 #[ts(export)]
 #[serde(rename_all = "camelCase")]
 pub struct NewPatchComment {
@@ -122,7 +122,7 @@ pub struct NewPatchComment {
     pub embeds: Vec<cob::Embed<cob::Uri>>,
 }
 
-#[derive(TS, Serialize, Deserialize)]
+#[derive(Clone, TS, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 pub struct CodeLocation {
@@ -166,7 +166,7 @@ impl From<CodeLocation> for cob::CodeLocation {
     }
 }
 
-#[derive(TS, Serialize, Deserialize)]
+#[derive(Clone, TS, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 #[ts(export)]
 pub enum CodeRange {
