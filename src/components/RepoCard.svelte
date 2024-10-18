@@ -20,9 +20,10 @@
     justify-content: space-between;
   }
   .title {
-    display: flex;
     color: var(--color-fill-gray);
     margin-top: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .container {
     width: 100%;
@@ -39,7 +40,7 @@
   <div class="container txt-small">
     <RepoHeader {repo} {selfDid} />
 
-    <div class="title">
+    <div class="title" title={project.data.description}>
       {#if project.data.description}
         {project.data.description}
       {:else}

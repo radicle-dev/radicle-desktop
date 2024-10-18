@@ -66,6 +66,7 @@
     grid-area: p3-3;
     display: flex;
     align-items: center;
+    overflow: hidden;
   }
   .p3-4 {
     grid-area: p3-4;

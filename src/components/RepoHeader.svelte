@@ -21,16 +21,24 @@
 </style>
 
 <div class="header txt-small">
-  <div class="global-flex">
+  <div class="global-flex txt-overflow">
     <div
       class="global-counter"
       style:background-color="var(--color-fill-ghost)">
       {project.data.name[0]}
     </div>
     {#if emphasizedTitle}
-      <span class="txt-regular txt-semibold">{project.data.name}</span>
+      <span
+        title={project.data.name}
+        class="txt-regular txt-overflow txt-semibold">
+        {project.data.name}
+      </span>
     {:else}
-      <span class="txt-small txt-semibold">{project.data.name}</span>
+      <span
+        title={project.data.name}
+        class="txt-small txt-overflow txt-semibold">
+        {project.data.name}
+      </span>
     {/if}
   </div>
   <div class="global-flex">
