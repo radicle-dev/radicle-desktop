@@ -12,23 +12,23 @@ name = "app_lib"
 crate-type = ["staticlib", "cdylib", "lib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0", features = ["isolation"] }
+tauri-build = { version = "2.0.1", features = ["isolation"] }
 
 [dependencies]
-anyhow = { version = "1.0" }
-base64 = { version = "0.22" }
-log = { version = "0.4" }
+anyhow = { version = "1.0.90" }
+base64 = { version = "0.22.1" }
+log = { version = "0.4.22" }
 radicle = { git = "https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git" }
-radicle-surf = { version = "0.22.0", features = ["serde"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = { version = "1.0" }
-tauri = { version = "2.0", features = ["isolation"] }
-tauri-plugin-clipboard-manager = { version = "2.0" }
-tauri-plugin-devtools = { version = "2.0" }
-tauri-plugin-shell = { version = "2.0" }
-tauri-plugin-window-state = { version = "2.0" }
-thiserror = { version = "1.0" }
-ts-rs = { version = "9.0", features = ["serde-json-impl", "no-serde-warnings"] }
+radicle-surf = { version = "0.22.1", features = ["serde"] }
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = { version = "1.0.132" }
+tauri = { version = "2.0.4", features = ["isolation"] }
+tauri-plugin-clipboard-manager = { version = "2.0.1" }
+tauri-plugin-devtools = { version = "2.0.0" }
+tauri-plugin-shell = { version = "2.0.1" }
+tauri-plugin-window-state = { version = "2.0.1" }
+thiserror = { version = "1.0.64" }
+ts-rs = { version = "10.0.0", features = ["serde-json-impl", "no-serde-warnings"] }
 
 [features]
 # by default Tauri runs in production mode
