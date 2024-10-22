@@ -5,6 +5,7 @@ use radicle::git;
 use radicle::identity;
 use radicle::storage::{ReadRepository, ReadStorage};
 
+use crate::types::cobs::IssueAction;
 use crate::{error, types, AppState};
 
 pub mod draft;
@@ -12,14 +13,16 @@ pub mod issue;
 pub mod patch;
 
 #[derive(serde::Serialize, ts_rs::TS)]
+#[serde(rename_all = "camelCase")]
 #[ts(export)]
-pub struct IssueOps {
+pub struct IssueOp {
     #[ts(as = "String")]
-    id: git::Oid,
-    action: types::cobs::IssueAction,
+    pub entry_id: git::Oid,
+    #[serde(flatten)]
+    pub action: types::cobs::IssueAction,
     #[ts(type = "number")]
-    timestamp: cob::Timestamp,
-    author: types::cobs::Author,
+    pub timestamp: cob::Timestamp,
+    pub author: types::cobs::Author,
 }
 
 #[tauri::command]
@@ -53,25 +56,24 @@ pub fn activity_by_id(
     rid: identity::RepoId,
     type_name: cob::TypeName,
     id: git::Oid,
-) -> Result<Vec<serde_json::Value>, error::Error> {
+) -> Result<Vec<IssueOp>, error::Error> {
     let aliases = ctx.profile.aliases();
     let repo = ctx.profile.storage.repository(rid)?;
     let ops = cob::store::ops(&id.into(), &type_name, &repo).unwrap();
-    let mut actions: Vec<serde_json::Value> = Vec::new();
+    let mut actions: Vec<IssueOp> = Vec::new();
 
     for op in ops.into_iter() {
         actions.extend(
             op.actions
                 .iter()
-                .filter_map(|action: &Vec<u8>| -> Option<serde_json::Value> {
-                    serde_json::from_slice(action).ok()
-                })
-                .map(|action| {
-                    serde_json::json!({
-                        "id": op.id,
-                        "action": action,
-                        "author": types::cobs::Author::new(op.author.into(), &aliases),
-                        "timestamp": op.timestamp
+                .filter_map(|action: &Vec<u8>| -> Option<IssueOp> {
+                    let action: IssueAction = serde_json::from_slice(action).ok()?;
+
+                    Some(IssueOp {
+                        entry_id: op.id,
+                        action,
+                        author: types::cobs::Author::new(op.author.into(), &aliases),
+                        timestamp: op.timestamp,
                     })
                 }),
         )
