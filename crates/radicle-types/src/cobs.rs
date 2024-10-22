@@ -12,8 +12,8 @@ use radicle::node::{Alias, AliasStore};
 use radicle::patch;
 use radicle::storage::git;
 
-use crate::types::cobs;
-use crate::types::thread;
+use crate::cobs;
+use crate::thread;
 
 #[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]

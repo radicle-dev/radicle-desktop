@@ -1,6 +1,5 @@
 mod commands;
 mod error;
-mod types;
 
 use tauri::Emitter;
 use tauri::Manager;

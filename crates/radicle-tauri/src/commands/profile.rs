@@ -1,5 +1,6 @@
+use radicle_types::config::Config;
+
 use crate::error::Error;
-use crate::types::config::Config;
 use crate::AppState;
 
 /// Get active config.

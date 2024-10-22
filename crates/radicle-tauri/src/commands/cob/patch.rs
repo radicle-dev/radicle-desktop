@@ -1,3 +1,6 @@
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
+
 use radicle::cob;
 use radicle::git;
 use radicle::identity;
@@ -5,15 +8,12 @@ use radicle::patch;
 use radicle::patch::cache::Patches;
 use radicle::storage;
 use radicle::storage::ReadStorage;
-use serde::{Deserialize, Serialize};
-use ts_rs::TS;
-
-use crate::error::Error;
-use crate::types::cobs;
-use crate::types::thread;
-use crate::AppState;
+use radicle_types::cobs;
+use radicle_types::thread;
 
 use crate::cob::query;
+use crate::error::Error;
+use crate::AppState;
 
 #[derive(Serialize, Deserialize, TS)]
 #[ts(export)]

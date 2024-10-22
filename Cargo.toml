@@ -1,6 +1,7 @@
 [workspace]
 resolver = "1"
 
-members = [
+members = [ 
     "crates/radicle-tauri",
+    "crates/radicle-types"
 ]

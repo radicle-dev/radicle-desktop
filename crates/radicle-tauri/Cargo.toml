@@ -20,6 +20,7 @@ base64 = { version = "0.22.1" }
 log = { version = "0.4.22" }
 localtime = { version = "1.3.1" }
 radicle = { git = "https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git" }
+radicle-types = { version = "0.1.0", path = "../radicle-types" }
 radicle-surf = { version = "0.22.1", features = ["serde"] }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = { version = "1.0.132" }

@@ -4,10 +4,10 @@ use radicle::issue::cache::Issues;
 use radicle::node::Handle;
 use radicle::node::Node;
 use radicle::storage::ReadStorage;
+use radicle_types::cobs;
 
 use crate::cob::query;
 use crate::error::Error;
-use crate::types::cobs;
 use crate::AppState;
 
 #[tauri::command]

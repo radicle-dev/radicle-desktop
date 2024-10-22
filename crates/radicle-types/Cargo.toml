@@ -1,0 +1,11 @@
+[package]
+name = "radicle-types"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+radicle = { git = "https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git" }
+radicle-surf = { version = "0.22.1", features = ["serde"] }
+serde = { version = "1.0.210", features = ["derive"] }
+serde_json = { version = "1.0.132" }
+ts-rs = { version = "10.0.0", features = ["serde-json-impl", "no-serde-warnings"] }

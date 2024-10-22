@@ -5,10 +5,10 @@ use radicle::identity;
 use radicle::node::Handle;
 use radicle::storage::ReadStorage;
 use radicle::Node;
+use radicle_types::cobs;
+use radicle_types::thread;
 
 use crate::error::Error;
-use crate::types::cobs;
-use crate::types::thread;
 use crate::AppState;
 
 #[tauri::command]

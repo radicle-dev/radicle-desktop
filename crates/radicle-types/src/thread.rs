@@ -4,8 +4,8 @@ use ts_rs::TS;
 use radicle::node::AliasStore;
 use radicle::{cob, git};
 
-use crate::types::cobs;
-use crate::types::thread;
+use crate::cobs;
+use crate::thread;
 
 #[derive(TS, Serialize, Deserialize)]
 #[ts(export)]

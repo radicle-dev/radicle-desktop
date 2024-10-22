@@ -4,9 +4,10 @@ use radicle::cob;
 use radicle::git;
 use radicle::identity;
 use radicle::storage::{ReadRepository, ReadStorage};
+use radicle_types as types;
+use radicle_types::cobs::IssueAction;
 
-use crate::types::cobs::IssueAction;
-use crate::{error, types, AppState};
+use crate::{error, AppState};
 
 pub mod draft;
 pub mod issue;

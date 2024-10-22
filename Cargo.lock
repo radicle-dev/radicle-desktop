@@ -3996,6 +3996,7 @@ dependencies = [
  "log",
  "radicle",
  "radicle-surf",
+ "radicle-types",
  "serde",
  "serde_json",
  "tauri",
@@ -4005,6 +4006,17 @@ dependencies = [
  "tauri-plugin-shell",
  "tauri-plugin-window-state",
  "thiserror",
+ "ts-rs",
+]
+
+[[package]]
+name = "radicle-types"
+version = "0.1.0"
+dependencies = [
+ "radicle",
+ "radicle-surf",
+ "serde",
+ "serde_json",
  "ts-rs",
 ]
 
