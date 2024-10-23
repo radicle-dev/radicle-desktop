@@ -56,7 +56,7 @@ impl Issue {
 pub struct Operation {
     #[ts(as = "String")]
     pub entry_id: git::Oid,
-    #[ts(flatten)]
+    #[serde(flatten)]
     pub action: Action,
     #[ts(type = "number")]
     pub timestamp: cob::Timestamp,
