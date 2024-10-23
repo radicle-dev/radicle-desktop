@@ -19,11 +19,9 @@
     margin-top: 1rem;
     justify-content: space-between;
   }
-  .title {
+  .description {
     color: var(--color-fill-gray);
     margin-top: 4px;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .container {
     width: 100%;
@@ -35,12 +33,13 @@
   styleCursor="pointer"
   styleWidth="100%"
   stylePadding="8px 12px"
+  styleOverflow="hidden"
   hoverable
   {onclick}>
   <div class="container txt-small">
     <RepoHeader {repo} {selfDid} />
 
-    <div class="title" title={project.data.description}>
+    <div class="description txt-overflow" title={project.data.description}>
       {#if project.data.description}
         {project.data.description}
       {:else}

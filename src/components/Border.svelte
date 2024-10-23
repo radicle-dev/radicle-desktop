@@ -9,6 +9,7 @@
   export let styleWidth: string | undefined = undefined;
   export let styleCursor: "default" | "pointer" = "default";
   export let styleGap: string = "0.5rem";
+  export let styleOverflow: string | undefined = undefined;
 
   $: style =
     `--local-button-color-1: var(--color-fill-${variant});` +
@@ -66,7 +67,6 @@
     grid-area: p3-3;
     display: flex;
     align-items: center;
-    overflow: hidden;
   }
   .p3-4 {
     grid-area: p3-4;
@@ -173,7 +173,11 @@
 
   <div class="pixel p3-1"></div>
   <div class="pixel p3-2"></div>
-  <div class="pixel p3-3" style:padding={stylePadding} style:gap={styleGap}>
+  <div
+    class="pixel p3-3"
+    style:padding={stylePadding}
+    style:gap={styleGap}
+    style:overflow={styleOverflow}>
     <slot />
   </div>
   <div class="pixel p3-4"></div>
