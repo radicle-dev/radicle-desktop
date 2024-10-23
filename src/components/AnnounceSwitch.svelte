@@ -1,26 +1,25 @@
 <script lang="ts" module>
-  type Theme = "dark" | "light";
+  export const announce = writable<boolean>(loadAnnounce());
 
-  export const theme = writable<Theme>(loadTheme());
+  function loadAnnounce(): boolean {
+    const storedAnnounce = localStorage
+      ? localStorage.getItem("announce")
+      : null;
 
-  function loadTheme(): Theme {
-    const { matches } = window.matchMedia("(prefers-color-scheme: dark)");
-    const storedTheme = localStorage ? localStorage.getItem("theme") : null;
-
-    if (storedTheme === null) {
-      return matches ? "dark" : "light";
+    if (storedAnnounce === null) {
+      return true;
     } else {
-      return storedTheme as Theme;
+      return storedAnnounce === "true";
     }
   }
 
-  export function storeTheme(newTheme: Theme): void {
-    theme.set(newTheme);
+  export function storeAnnounce(newAnnounce: boolean): void {
+    announce.set(newAnnounce);
     if (localStorage) {
-      localStorage.setItem("theme", newTheme);
+      localStorage.setItem("announce", newAnnounce.toString());
     } else {
       console.warn(
-        "localStorage isn't available, not able to persist the selected theme without it.",
+        "localStorage isn't available, not able to persist the selected announce preference without it.",
       );
     }
   }
@@ -28,7 +27,6 @@
 
 <script lang="ts">
   import { writable } from "svelte/store";
-  import Icon from "./Icon.svelte";
 </script>
 
 <style>
@@ -55,7 +53,6 @@
     color: var(--color-foreground-contrast);
     background-color: var(--color-fill-ghost);
     font-weight: var(--font-weight-semibold);
-    gap: 6px;
   }
 
   .active {
@@ -66,20 +63,18 @@
 
 <div class="container">
   <button
-    class:active={$theme === "dark"}
+    class:active={$announce}
     onclick={() => {
-      storeTheme("dark");
+      storeAnnounce(true);
     }}>
-    <Icon name="moon" />
-    Dark
+    Right away
   </button>
 
   <button
-    class:active={$theme === "light"}
+    class:active={!$announce}
     onclick={() => {
-      storeTheme("light");
+      storeAnnounce(false);
     }}>
-    <Icon name="sun" />
-    Light
+    Periodically
   </button>
 </div>
