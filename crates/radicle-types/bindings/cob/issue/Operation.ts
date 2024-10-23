@@ -4,7 +4,7 @@ import type { Embed } from "../thread/Embed";
 import type { State } from "./State";
 
 export type Operation = {
-  entry_id: string;
+  entryId: string;
   timestamp: number;
   author: Author;
 } & (

@@ -50,6 +50,7 @@ impl Issue {
 }
 
 #[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "cob/issue/")]
 pub struct Operation {

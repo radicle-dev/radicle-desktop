@@ -2,9 +2,6 @@
 import type { CodeLocation } from "../thread/CodeLocation";
 import type { Embed } from "../thread/Embed";
 
-/**
- * Patch operation.
- */
 export type Action =
   | { type: "edit"; title: string; target: string }
   | { type: "label"; labels: Array<string> }
@@ -31,10 +28,6 @@ export type Action =
       review: string;
       body: string;
       location?: CodeLocation;
-      /**
-       * Comment this is a reply to.
-       * Should be [`null`] if it's the top-level comment.
-       */
       reply_to?: string;
       embeds?: Array<Embed>;
     }
