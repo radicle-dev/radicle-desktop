@@ -15,9 +15,6 @@ pub enum Error {
     #[error(transparent)]
     PolicyStore(#[from] radicle::node::policy::store::Error),
 
-    #[error(transparent)]
-    CobsCache(#[from] radicle::cob::cache::Error),
-
     /// Cob patch cache error.
     #[error(transparent)]
     CachePatch(#[from] radicle::cob::patch::cache::Error),
@@ -30,17 +27,13 @@ pub enum Error {
     #[error(transparent)]
     Repository(#[from] radicle::storage::RepositoryError),
 
-    /// Project doc error.
+    /// Crypto error.
     #[error(transparent)]
-    ProjectDoc(#[from] radicle::identity::doc::PayloadError),
+    Crypto(#[from] radicle::crypto::ssh::keystore::Error),
 
-    /// Notification store error.
+    /// SSH Agent error.
     #[error(transparent)]
-    NotificationsStore(#[from] radicle::node::notifications::store::Error),
-
-    /// Routing error.
-    #[error(transparent)]
-    Routing(#[from] radicle::node::routing::Error),
+    Agent(#[from] radicle::crypto::ssh::agent::Error),
 
     /// Radicle Git error.
     #[error(transparent)]
@@ -54,9 +47,9 @@ pub enum Error {
     #[error(transparent)]
     Diff(#[from] radicle_surf::diff::git::error::Diff),
 
-    /// Storage refs error.
+    /// Storage error.
     #[error(transparent)]
-    StorageRef(#[from] radicle::storage::refs::Error),
+    Storage(#[from] radicle::storage::Error),
 
     /// Surf error.
     #[error(transparent)]
@@ -70,40 +63,12 @@ pub enum Error {
     #[error(transparent)]
     Patch(#[from] radicle::patch::Error),
 
-    /// TypeName parse error.
-    #[error(transparent)]
-    TypeNameParse(#[from] radicle::cob::TypeNameParse),
-
-    /// Crypto error.
-    #[error(transparent)]
-    Crypto(#[from] radicle::crypto::ssh::keystore::Error),
-
-    /// SSH Agent error.
-    #[error(transparent)]
-    Agent(#[from] radicle::crypto::ssh::agent::Error),
-
-    /// Memory Signer error.
-    #[error(transparent)]
-    MemorySigner(#[from] radicle::crypto::ssh::keystore::MemorySignerError),
-
     /// An error with a hint.
     #[error("{err} {hint}")]
     WithHint {
         err: anyhow::Error,
         hint: &'static str,
     },
-
-    /// Tauri error.
-    #[error(transparent)]
-    Tauri(#[from] tauri::Error),
-
-    /// Parse ObjectId error.
-    #[error(transparent)]
-    ParseObjectId(#[from] radicle::cob::object::ParseObjectId),
-
-    /// Storage error.
-    #[error(transparent)]
-    Storage(#[from] radicle::storage::Error),
 
     /// Node error.
     #[error(transparent)]
