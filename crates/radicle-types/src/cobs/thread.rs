@@ -2,40 +2,43 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use radicle::node::AliasStore;
-use radicle::{cob, git};
+use radicle::{cob, crypto, git};
 
 use crate::cobs;
-use crate::thread;
 
 #[derive(TS, Serialize, Deserialize)]
 #[ts(export)]
+#[ts(export_to = "cob/thread/")]
 #[serde(rename_all = "camelCase")]
 pub struct CreateReviewComment {
     #[ts(as = "String")]
     pub review_id: cob::patch::ReviewId,
     pub body: String,
-    #[ts(as = "Option<String>")]
+    #[ts(as = "Option<String>", optional)]
     pub reply_to: Option<cob::thread::CommentId>,
-    pub location: Option<thread::CodeLocation>,
-    #[ts(type = "{ name: string, content: string }[]")]
-    pub embeds: Vec<cob::Embed<cob::Uri>>,
+    #[ts(as = "Option<CodeLocation>", optional)]
+    pub location: Option<CodeLocation>,
+    #[ts(as = "Option<_>", optional)]
+    pub embeds: Vec<Embed>,
 }
 
 #[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
-pub struct Comment<T> {
+#[ts(export)]
+#[ts(export_to = "cob/thread/")]
+pub struct Comment<T = cobs::Never> {
     #[ts(as = "String")]
     id: cob::thread::CommentId,
     author: cobs::Author,
-    edits: Vec<cobs::Edit>,
-    reactions: Vec<cobs::Reaction>,
-    #[ts(as = "Option<String>")]
-    #[ts(optional)]
+    edits: Vec<cobs::patch::Edit>,
+    reactions: Vec<cobs::thread::Reaction>,
+    #[ts(as = "Option<String>", optional)]
     reply_to: Option<cob::thread::CommentId>,
     #[ts(optional)]
     location: Option<T>,
-    #[ts(type = "{ name: string, content: string }[]")]
-    embeds: Vec<cob::Embed<cob::Uri>>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[ts(as = "Option<_>", optional)]
+    embeds: Vec<Embed>,
     resolved: bool,
 }
 
@@ -50,16 +53,23 @@ impl Comment<CodeLocation> {
             author: cobs::Author::new(comment.author().into(), aliases),
             edits: comment
                 .edits()
-                .map(|e| cobs::Edit::new(e, aliases))
+                .map(|e| cobs::patch::Edit::new(e, aliases))
                 .collect::<Vec<_>>(),
             reactions: comment
                 .reactions()
                 .into_iter()
-                .map(|(reaction, authors)| cobs::Reaction::new(*reaction, authors, None, aliases))
+                .map(|(reaction, authors)| {
+                    cobs::thread::Reaction::new(*reaction, authors, None, aliases)
+                })
                 .collect::<Vec<_>>(),
             reply_to: comment.reply_to(),
             location: comment.location().map(|l| CodeLocation::new(l.clone())),
-            embeds: comment.embeds().to_vec(),
+            embeds: comment
+                .embeds()
+                .iter()
+                .cloned()
+                .map(|e| e.into())
+                .collect::<Vec<_>>(),
             resolved: comment.is_resolved(),
         }
     }
@@ -76,55 +86,99 @@ impl Comment<cobs::Never> {
             author: cobs::Author::new(comment.author().into(), aliases),
             edits: comment
                 .edits()
-                .map(|e| cobs::Edit::new(e, aliases))
+                .map(|e| cobs::patch::Edit::new(e, aliases))
                 .collect::<Vec<_>>(),
             reactions: comment
                 .reactions()
                 .into_iter()
-                .map(|(reaction, authors)| cobs::Reaction::new(*reaction, authors, None, aliases))
+                .map(|(reaction, authors)| {
+                    cobs::thread::Reaction::new(*reaction, authors, None, aliases)
+                })
                 .collect::<Vec<_>>(),
             reply_to: comment.reply_to(),
             location: None,
-            embeds: comment.embeds().to_vec(),
+            embeds: comment
+                .embeds()
+                .iter()
+                .cloned()
+                .map(|e| e.into())
+                .collect::<Vec<_>>(),
             resolved: comment.is_resolved(),
         }
     }
 }
 
-#[derive(Clone, TS, Serialize, Deserialize)]
-#[ts(export)]
+#[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/")]
+pub struct Reaction {
+    #[ts(as = "String")]
+    emoji: cob::Reaction,
+    authors: Vec<cobs::Author>,
+    #[ts(optional)]
+    location: Option<CodeLocation>,
+}
+
+impl Reaction {
+    pub fn new(
+        emoji: cob::Reaction,
+        authors: Vec<&crypto::PublicKey>,
+        location: Option<CodeLocation>,
+        aliases: &impl AliasStore,
+    ) -> Self {
+        Self {
+            emoji,
+            authors: authors
+                .into_iter()
+                .map(|a| cobs::Author::new(a.into(), aliases))
+                .collect::<Vec<_>>(),
+            location,
+        }
+    }
+}
+
+#[derive(Clone, TS, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/thread/")]
 pub struct NewIssueComment {
     #[ts(as = "String")]
     pub id: git::Oid,
     pub body: String,
-    #[ts(as = "Option<String>")]
-    #[ts(optional)]
+    #[serde(default)]
+    #[ts(as = "Option<String>", optional)]
     pub reply_to: Option<cob::thread::CommentId>,
-    #[ts(type = "{ name: string, content: string }[]")]
-    pub embeds: Vec<cob::Embed<cob::Uri>>,
+    #[serde(default)]
+    #[ts(as = "Option<_>", optional)]
+    pub embeds: Vec<Embed>,
 }
 
 #[derive(Clone, TS, Serialize, Deserialize)]
-#[ts(export)]
 #[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/thread/")]
 pub struct NewPatchComment {
     #[ts(as = "String")]
     pub id: git::Oid,
     #[ts(as = "String")]
     pub revision: git::Oid,
     pub body: String,
-    #[ts(as = "Option<String>")]
-    #[ts(optional)]
+    #[serde(default)]
+    #[ts(as = "Option<String>", optional)]
     pub reply_to: Option<cob::thread::CommentId>,
+    #[serde(default)]
+    #[ts(optional)]
     pub location: Option<CodeLocation>,
-    #[ts(type = "{ name: string, content: string }[]")]
-    pub embeds: Vec<cob::Embed<cob::Uri>>,
+    #[serde(default)]
+    #[ts(as = "Option<_>", optional)]
+    pub embeds: Vec<Embed>,
 }
 
 #[derive(Clone, TS, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
+#[ts(export_to = "cob/thread/")]
 pub struct CodeLocation {
     #[ts(as = "String")]
     commit: git::Oid,
@@ -169,6 +223,7 @@ impl From<CodeLocation> for cob::CodeLocation {
 #[derive(Clone, TS, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 #[ts(export)]
+#[ts(export_to = "cob/thread/")]
 pub enum CodeRange {
     Lines {
         #[ts(type = "{ start: number, end: number }")]
@@ -195,6 +250,33 @@ impl From<CodeRange> for cob::CodeRange {
         match val {
             CodeRange::Chars { line, range } => Self::Chars { line, range },
             CodeRange::Lines { range } => Self::Lines { range },
+        }
+    }
+}
+
+#[derive(TS, Clone, Deserialize, Serialize)]
+#[ts(export)]
+#[ts(export_to = "cob/thread/")]
+pub struct Embed {
+    name: String,
+    #[ts(as = "String")]
+    content: cob::Uri,
+}
+
+impl From<cob::Embed<cob::Uri>> for Embed {
+    fn from(value: cob::Embed<cob::Uri>) -> Self {
+        Self {
+            name: value.name,
+            content: value.content,
+        }
+    }
+}
+
+impl From<Embed> for cob::Embed<cob::Uri> {
+    fn from(value: Embed) -> Self {
+        Self {
+            name: value.name,
+            content: value.content,
         }
     }
 }

@@ -5,26 +5,12 @@ use radicle::git;
 use radicle::identity;
 use radicle::storage::{ReadRepository, ReadStorage};
 use radicle_types as types;
-use radicle_types::cobs::IssueAction;
 
 use crate::{error, AppState};
 
 pub mod draft;
 pub mod issue;
 pub mod patch;
-
-#[derive(serde::Serialize, ts_rs::TS)]
-#[serde(rename_all = "camelCase")]
-#[ts(export)]
-pub struct IssueOp {
-    #[ts(as = "String")]
-    pub entry_id: git::Oid,
-    #[serde(flatten)]
-    pub action: types::cobs::IssueAction,
-    #[ts(type = "number")]
-    pub timestamp: cob::Timestamp,
-    pub author: types::cobs::Author,
-}
 
 #[tauri::command]
 pub async fn get_file_by_oid(
@@ -57,27 +43,25 @@ pub fn activity_by_id(
     rid: identity::RepoId,
     type_name: cob::TypeName,
     id: git::Oid,
-) -> Result<Vec<IssueOp>, error::Error> {
+) -> Result<Vec<types::cobs::issue::Operation>, error::Error> {
     let aliases = ctx.profile.aliases();
     let repo = ctx.profile.storage.repository(rid)?;
     let ops = cob::store::ops(&id.into(), &type_name, &repo).unwrap();
-    let mut actions: Vec<IssueOp> = Vec::new();
+    let mut actions: Vec<types::cobs::issue::Operation> = Vec::new();
 
     for op in ops.into_iter() {
-        actions.extend(
-            op.actions
-                .iter()
-                .filter_map(|action: &Vec<u8>| -> Option<IssueOp> {
-                    let action: IssueAction = serde_json::from_slice(action).ok()?;
+        actions.extend(op.actions.iter().filter_map(
+            |action: &Vec<u8>| -> Option<types::cobs::issue::Operation> {
+                let action: types::cobs::issue::Action = serde_json::from_slice(action).ok()?;
 
-                    Some(IssueOp {
-                        entry_id: op.id,
-                        action,
-                        author: types::cobs::Author::new(op.author.into(), &aliases),
-                        timestamp: op.timestamp,
-                    })
-                }),
-        )
+                Some(types::cobs::issue::Operation {
+                    entry_id: op.id,
+                    action,
+                    author: types::cobs::Author::new(op.author.into(), &aliases),
+                    timestamp: op.timestamp,
+                })
+            },
+        ))
     }
 
     Ok::<_, error::Error>(actions)

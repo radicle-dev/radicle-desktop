@@ -20,7 +20,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@app": path.resolve("./src"),
-      "@bindings": path.resolve("./crates/radicle-tauri/bindings/"),
+      "@bindings": path.resolve("./crates/radicle-types/bindings/"),
       "@public": path.resolve("./public"),
     },
   },

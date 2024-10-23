@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { Config } from "@bindings/Config";
-  import type { Issue } from "@bindings/Issue";
-  import type { RepoInfo } from "@bindings/RepoInfo";
-  import type { IssueOp } from "@bindings/IssueOp";
+  import type { Config } from "@bindings/config/Config";
+  import type { Issue } from "@bindings/cob/issue/Issue";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { Operation } from "@bindings/cob/issue/Operation";
 
   import capitalize from "lodash/capitalize";
 
@@ -221,7 +221,7 @@
       {/if}
     </div>
     <div>
-      {#await invoke<IssueOp[]>( "activity_by_id", { rid: repo.rid, typeName: "xyz.radicle.issue", id: issue.id }, ) then activity}
+      {#await invoke<Operation[]>( "activity_by_id", { rid: repo.rid, typeName: "xyz.radicle.issue", id: issue.id }, ) then activity}
         {#each activity.slice(1) as op}
           {#if op.type === "lifecycle"}
             <div class="txt-small body">

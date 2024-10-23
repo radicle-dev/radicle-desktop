@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RepoInfo } from "@bindings/RepoInfo";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { formatRepositoryId, formatTimestamp } from "@app/lib/utils";
 
@@ -59,7 +59,7 @@
         </div>
       </div>
       <span style:color="var(--color-fill-gray)">
-        Updated {formatTimestamp(project.meta.lastCommit)}
+        Updated {formatTimestamp(project.meta.lastCommitTimestamp)}
       </span>
     </div>
   </div>

@@ -9,6 +9,7 @@ use radicle::node::Alias;
 #[derive(TS, Serialize)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
+#[ts(export_to = "config/")]
 pub struct Config {
     /// Node Public Key in NID format.
     #[ts(as = "String")]

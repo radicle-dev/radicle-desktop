@@ -5,8 +5,7 @@ use radicle::identity;
 use radicle::node::Handle;
 use radicle::storage::ReadStorage;
 use radicle::Node;
-use radicle_types::cobs;
-use radicle_types::thread;
+use radicle_types as types;
 
 use crate::error::Error;
 use crate::AppState;
@@ -15,9 +14,9 @@ use crate::AppState;
 pub fn create_issue_comment(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,
-    new: thread::NewIssueComment,
-    opts: cobs::CobOptions,
-) -> Result<thread::Comment<cobs::Never>, Error> {
+    new: types::cobs::thread::NewIssueComment,
+    opts: types::cobs::CobOptions,
+) -> Result<types::cobs::thread::Comment<types::cobs::Never>, Error> {
     let aliases = &ctx.profile.aliases();
     let mut node = Node::new(ctx.profile.socket());
     let signer = ctx.profile.signer()?;
@@ -28,20 +27,26 @@ pub fn create_issue_comment(
         let (root_id, _) = issue.root();
         *root_id
     });
-    let oid = issue.comment(new.body.clone(), id, new.embeds.clone(), &signer)?;
+    let n = new.clone();
+    let oid = issue.comment(
+        n.body,
+        id,
+        n.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+        &signer,
+    )?;
 
     if opts.announce() {
         node.announce_refs(rid)?;
     }
 
-    Ok(thread::Comment::<cobs::Never>::new(
+    Ok(types::cobs::thread::Comment::<types::cobs::Never>::new(
         oid,
         cob::thread::Comment::new(
             *signer.public_key(),
             new.body,
             id.into(),
             None,
-            new.embeds,
+            new.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
             LocalTime::now().into(),
         ),
         aliases,
@@ -52,9 +57,9 @@ pub fn create_issue_comment(
 pub fn create_patch_comment(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,
-    new: thread::NewPatchComment,
-    opts: cobs::CobOptions,
-) -> Result<thread::Comment<thread::CodeLocation>, Error> {
+    new: types::cobs::thread::NewPatchComment,
+    opts: types::cobs::CobOptions,
+) -> Result<types::cobs::thread::Comment<types::cobs::thread::CodeLocation>, Error> {
     let aliases = &ctx.profile.aliases();
     let mut node = Node::new(ctx.profile.socket());
     let signer = ctx.profile.signer()?;
@@ -67,7 +72,7 @@ pub fn create_patch_comment(
         n.body,
         n.reply_to,
         n.location.map(|l| l.into()),
-        n.embeds,
+        n.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
         &signer,
     )?;
 
@@ -75,14 +80,16 @@ pub fn create_patch_comment(
         node.announce_refs(rid)?;
     }
 
-    Ok(thread::Comment::<thread::CodeLocation>::new(
+    Ok(types::cobs::thread::Comment::<
+        types::cobs::thread::CodeLocation,
+    >::new(
         oid,
         cob::thread::Comment::new(
             *signer.public_key(),
             new.body,
             new.reply_to,
             new.location.map(|l| l.into()),
-            new.embeds,
+            new.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
             LocalTime::now().into(),
         ),
         aliases,

@@ -1,27 +1,17 @@
-use serde::{Deserialize, Serialize};
-use ts_rs::TS;
-
 use radicle::cob;
 use radicle::git;
 use radicle::identity;
+use radicle::node::Handle;
+use radicle::node::Node;
 use radicle::patch;
 use radicle::patch::cache::Patches;
 use radicle::storage;
 use radicle::storage::ReadStorage;
-use radicle_types::cobs;
-use radicle_types::thread;
+use radicle_types as types;
 
 use crate::cob::query;
 use crate::error::Error;
 use crate::AppState;
-
-#[derive(Serialize, Deserialize, TS)]
-#[ts(export)]
-pub struct PaginatedQuery<T> {
-    pub cursor: usize,
-    pub more: bool,
-    pub content: T,
-}
 
 #[tauri::command]
 pub async fn list_patches(
@@ -30,7 +20,7 @@ pub async fn list_patches(
     status: Option<query::PatchStatus>,
     skip: Option<usize>,
     take: Option<usize>,
-) -> Result<PaginatedQuery<Vec<cobs::Patch>>, Error> {
+) -> Result<types::cobs::PaginatedQuery<Vec<types::cobs::patch::Patch>>, Error> {
     let cursor = skip.unwrap_or(0);
     let take = take.unwrap_or(20);
     let repo = ctx.profile.storage.repository(rid)?;
@@ -45,7 +35,7 @@ pub async fn list_patches(
     let mut patches = patches
         .into_iter()
         .filter_map(|p| {
-            p.map(|(id, patch)| cobs::Patch::new(id, patch, aliases))
+            p.map(|(id, patch)| types::cobs::patch::Patch::new(id, &patch, aliases))
                 .ok()
         })
         .skip(cursor)
@@ -54,7 +44,7 @@ pub async fn list_patches(
 
     patches.sort_by_key(|b| std::cmp::Reverse(b.timestamp()));
 
-    Ok::<_, Error>(PaginatedQuery {
+    Ok::<_, Error>(types::cobs::PaginatedQuery {
         cursor,
         more,
         content: patches,
@@ -66,12 +56,12 @@ pub fn patch_by_id(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,
     id: git::Oid,
-) -> Result<Option<cobs::Patch>, Error> {
+) -> Result<Option<types::cobs::patch::Patch>, Error> {
     let repo = ctx.profile.storage.repository(rid)?;
     let patches = ctx.profile.patches(&repo)?;
     let patch = patches.get(&id.into())?;
     let aliases = &ctx.profile.aliases();
-    let patches = patch.map(|patch| cobs::Patch::new(id.into(), patch, aliases));
+    let patches = patch.map(|patch| types::cobs::patch::Patch::new(id.into(), &patch, aliases));
 
     Ok::<_, Error>(patches)
 }
@@ -81,7 +71,7 @@ pub fn revisions_by_patch(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,
     id: git::Oid,
-) -> Result<Option<Vec<cobs::Revision>>, Error> {
+) -> Result<Option<Vec<types::cobs::patch::Revision>>, Error> {
     let repo = ctx.profile.storage.repository(rid)?;
     let patches = ctx.profile.patches(&repo)?;
     let revisions = patches.get(&id.into())?.map(|patch| {
@@ -89,7 +79,7 @@ pub fn revisions_by_patch(
 
         patch
             .revisions()
-            .map(|(_, r)| cobs::Revision::new(r.clone(), aliases))
+            .map(|(_, r)| types::cobs::patch::Revision::new(r.clone(), aliases))
             .collect::<Vec<_>>()
     });
 
@@ -102,7 +92,7 @@ pub fn revision_by_patch_and_id(
     rid: identity::RepoId,
     id: git::Oid,
     revision_id: git::Oid,
-) -> Result<Option<cobs::Revision>, Error> {
+) -> Result<Option<types::cobs::patch::Revision>, Error> {
     let repo = ctx.profile.storage.repository(rid)?;
     let patches = ctx.profile.patches(&repo)?;
     let revision = patches.get(&id.into())?.and_then(|patch| {
@@ -110,7 +100,7 @@ pub fn revision_by_patch_and_id(
 
         patch
             .revision(&revision_id.into())
-            .map(|r| cobs::Revision::new(r.clone(), aliases))
+            .map(|r| types::cobs::patch::Revision::new(r.clone(), aliases))
     });
 
     Ok::<_, Error>(revision)
@@ -171,7 +161,7 @@ pub fn create_draft_review_comment(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,
     cob_id: git::Oid,
-    new: thread::CreateReviewComment,
+    new: types::cobs::thread::CreateReviewComment,
 ) -> Result<(), Error> {
     let repo = ctx.profile.storage.repository(rid)?;
     let signer = ctx.profile.signer()?;
@@ -186,7 +176,7 @@ pub fn create_draft_review_comment(
             new.body,
             new.location.map(|l| l.into()),
             new.reply_to,
-            new.embeds,
+            new.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
         )?;
 
         Ok(())
@@ -206,7 +196,7 @@ pub fn edit_draft_review(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,
     cob_id: git::Oid,
-    edit: cobs::ReviewEdit,
+    edit: types::cobs::patch::ReviewEdit,
 ) -> Result<(), Error> {
     let repo = ctx.profile.storage.repository(rid)?;
     let signer = ctx.profile.signer()?;

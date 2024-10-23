@@ -2,7 +2,7 @@
 
 export type ReviewEdit = {
   reviewId: string;
-  verdict: string | null;
-  summary: string | null;
-  labels: Array<string>;
+  verdict?: string;
+  summary?: string;
+  labels?: Array<string>;
 };

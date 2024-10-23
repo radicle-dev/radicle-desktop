@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Config } from "@bindings/Config";
-  import type { RepoInfo } from "@bindings/RepoInfo";
+  import type { Config } from "@bindings/config/Config";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import * as router from "@app/lib/router";
 

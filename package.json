@@ -13,7 +13,7 @@
     "check-js": "scripts/check-js",
     "check-rs": "scripts/check-rs",
     "format": "npx prettier '**/*.@(ts|js|svelte|json|css|html|yml)' --write",
-    "generate-types": "cargo test --manifest-path ./crates/radicle-tauri/Cargo.toml && npx prettier ./crates/radicle-tauri/bindings --write",
+    "generate-types": "cargo test --manifest-path ./crates/radicle-types/Cargo.toml && npx prettier ./crates/radicle-types/bindings --write",
     "tauri": "npx tauri"
   },
   "engines": {

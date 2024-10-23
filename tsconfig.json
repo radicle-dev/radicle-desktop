@@ -20,7 +20,7 @@
     "skipLibCheck": true,
     "paths": {
       "@app/*": ["./src/*"],
-      "@bindings/*": ["./crates/radicle-tauri/bindings/*"],
+      "@bindings/*": ["./crates/radicle-types/bindings/*"],
       "@public/*": ["./public/*"]
     }
   }

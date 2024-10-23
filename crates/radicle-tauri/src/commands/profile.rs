@@ -3,7 +3,6 @@ use radicle_types::config::Config;
 use crate::error::Error;
 use crate::AppState;
 
-/// Get active config.
 #[tauri::command]
 pub fn config(ctx: tauri::State<AppState>) -> Result<Config, Error> {
     let config = Config {

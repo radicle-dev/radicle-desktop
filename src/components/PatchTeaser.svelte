@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Patch } from "@bindings/Patch";
-  import type { Stats } from "@bindings/Stats";
+  import type { Patch } from "@bindings/cob/patch/Patch";
+  import type { Stats } from "@bindings/cob/Stats";
 
   import {
     authorForNodeId,

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RepoInfo } from "@bindings/RepoInfo";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import Icon from "./Icon.svelte";
 

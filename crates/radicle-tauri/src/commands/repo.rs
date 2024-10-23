@@ -1,5 +1,3 @@
-use serde_json::json;
-
 use radicle::crypto::Verified;
 use radicle::identity::doc::PayloadId;
 use radicle::identity::{DocAt, RepoId};
@@ -15,7 +13,6 @@ use radicle_types as types;
 use crate::error::Error;
 use crate::AppState;
 
-/// List all repos.
 #[tauri::command]
 pub fn list_repos(ctx: tauri::State<AppState>) -> Result<Vec<types::repo::RepoInfo>, Error> {
     let storage = &ctx.profile.storage;
@@ -94,22 +91,22 @@ pub fn repo_info(
         let issues = profile.issues(repo).ok()?;
         let issues = issues.counts().ok()?;
 
-        Some(json!({
-            "data": payload,
-            "meta": {
-                "issues": issues,
-                "patches": patches,
-                "head": head,
-                "lastCommit": commit.time().seconds() * 1000,
-            },
-        }))
+        let data: types::repo::ProjectPayloadData = (*payload).clone().try_into().ok()?;
+        let meta = types::repo::ProjectPayloadMeta {
+            issues,
+            patches,
+            head,
+            last_commit_timestamp: commit.time().seconds() * 1000,
+        };
+
+        Some(types::repo::ProjectPayload::new(data, meta))
     });
 
     Ok::<_, Error>(types::repo::RepoInfo {
         payloads: types::repo::SupportedPayloads { project },
         delegates,
         threshold: doc.threshold,
-        visibility: doc.visibility.clone(),
+        visibility: doc.visibility.clone().into(),
         rid: repo.id,
         seeding,
     })

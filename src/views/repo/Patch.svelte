@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { Config } from "@bindings/Config";
-  import type { Patch } from "@bindings/Patch";
-  import type { RepoInfo } from "@bindings/RepoInfo";
-  import type { Revision } from "@bindings/Revision";
+  import type { Config } from "@bindings/config/Config";
+  import type { Patch } from "@bindings/cob/patch/Patch";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { Revision } from "@bindings/cob/patch/Revision";
 
   import {
     authorForNodeId,

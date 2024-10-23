@@ -139,6 +139,7 @@ export default [
       "node_modules/**/*",
       "target/*",
       "crates/radicle-tauri/**/*",
+      "crates/radicle-types/**/*",
       "eslint.config.js",
     ],
   },
