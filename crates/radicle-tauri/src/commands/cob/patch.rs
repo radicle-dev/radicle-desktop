@@ -241,3 +241,186 @@ pub fn get_draft_review(
 
     review
 }
+
+#[tauri::command]
+pub fn edit_patch(
+    ctx: tauri::State<AppState>,
+    rid: identity::RepoId,
+    cob_id: git::Oid,
+    action: types::cobs::patch::Action,
+    opts: types::cobs::CobOptions,
+) -> Result<types::cobs::patch::Patch, Error> {
+    let mut node = Node::new(ctx.profile.socket());
+    let repo = ctx.profile.storage.repository(rid)?;
+    let signer = ctx.profile.signer()?;
+    let aliases = ctx.profile.aliases();
+    let mut patches = ctx.profile.patches_mut(&repo)?;
+    let mut patch = patches.get_mut(&cob_id.into())?;
+
+    match action {
+        types::cobs::patch::Action::RevisionEdit {
+            revision,
+            description,
+            embeds,
+        } => {
+            patch.edit_revision(
+                revision,
+                description,
+                embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                &signer,
+            )?;
+        }
+        types::cobs::patch::Action::RevisionCommentRedact { revision, comment } => {
+            patch.comment_redact(revision, comment, &signer)?;
+        }
+        types::cobs::patch::Action::ReviewCommentRedact { review, comment } => {
+            patch.redact_review_comment(review, comment, &signer)?;
+        }
+        types::cobs::patch::Action::ReviewCommentReact {
+            review,
+            comment,
+            reaction,
+            active,
+        } => {
+            patch.react_review_comment(review, comment, reaction, active, &signer)?;
+        }
+        types::cobs::patch::Action::ReviewCommentResolve { review, comment } => {
+            patch.resolve_review_comment(review, comment, &signer)?;
+        }
+        types::cobs::patch::Action::ReviewCommentUnresolve { review, comment } => {
+            patch.unresolve_review_comment(review, comment, &signer)?;
+        }
+        types::cobs::patch::Action::Edit { title, target } => {
+            patch.edit(title, target, &signer)?;
+        }
+        types::cobs::patch::Action::ReviewEdit {
+            review,
+            summary,
+            verdict,
+            labels,
+        } => {
+            patch.review_edit(review, verdict, summary, labels, &signer)?;
+        }
+        types::cobs::patch::Action::Review {
+            revision,
+            summary,
+            verdict,
+            labels,
+        } => {
+            patch.review(revision, verdict, summary, labels, &signer)?;
+        }
+        types::cobs::patch::Action::ReviewRedact { review } => {
+            patch.redact_review(review, &signer)?;
+        }
+        types::cobs::patch::Action::ReviewComment {
+            review,
+            body,
+            location,
+            reply_to,
+            embeds,
+        } => {
+            patch.review_comment(
+                review,
+                body,
+                location.map(|l| l.into()),
+                reply_to,
+                embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                &signer,
+            )?;
+        }
+        types::cobs::patch::Action::ReviewCommentEdit {
+            review,
+            comment,
+            body,
+            embeds,
+        } => {
+            patch.edit_review_comment(
+                review,
+                comment,
+                body,
+                embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                &signer,
+            )?;
+        }
+        types::cobs::patch::Action::Lifecycle { state } => {
+            patch.lifecycle(state, &signer)?;
+        }
+        types::cobs::patch::Action::Assign { assignees } => {
+            patch.assign(assignees, &signer)?;
+        }
+        types::cobs::patch::Action::Label { labels } => {
+            patch.label(labels, &signer)?;
+        }
+        types::cobs::patch::Action::RevisionReact {
+            revision,
+            reaction,
+            location,
+            active,
+        } => {
+            patch.react(
+                revision,
+                reaction,
+                location.map(|l| l.into()),
+                active,
+                &signer,
+            )?;
+        }
+        types::cobs::patch::Action::RevisionComment {
+            revision,
+            location,
+            body,
+            reply_to,
+            embeds,
+        } => {
+            patch.comment(
+                revision,
+                body,
+                reply_to,
+                location.map(|l| l.into()),
+                embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                &signer,
+            )?;
+        }
+        types::cobs::patch::Action::RevisionCommentEdit {
+            revision,
+            comment,
+            body,
+            embeds,
+        } => {
+            patch.comment_edit(
+                revision,
+                comment,
+                body,
+                embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                &signer,
+            )?;
+        }
+        types::cobs::patch::Action::RevisionCommentReact {
+            revision,
+            comment,
+            reaction,
+            active,
+        } => {
+            patch.comment_react(revision, comment, reaction, active, &signer)?;
+        }
+        types::cobs::patch::Action::RevisionRedact { revision } => {
+            patch.redact(revision, &signer)?;
+        }
+        types::cobs::patch::Action::Merge { .. } => {
+            unimplemented!("We don't support merging of patches through the desktop")
+        }
+        types::cobs::patch::Action::Revision { .. } => {
+            unimplemented!("We don't support creating new revisions through the desktop")
+        }
+    }
+
+    if opts.announce() {
+        node.announce_refs(rid)?;
+    }
+
+    Ok::<_, Error>(types::cobs::patch::Patch::new(
+        *patch.id(),
+        &patch,
+        &aliases,
+    ))
+}

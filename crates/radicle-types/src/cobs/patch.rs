@@ -269,3 +269,207 @@ impl Review {
     }
 }
 
+#[derive(Serialize, Deserialize, TS)]
+#[serde(tag = "type", rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/patch/")]
+pub enum Action {
+    #[serde(rename = "edit")]
+    Edit {
+        title: String,
+        #[ts(as = "String")]
+        target: patch::MergeTarget,
+    },
+    #[serde(rename = "label")]
+    Label {
+        #[ts(as = "Vec<String>")]
+        labels: BTreeSet<cob::Label>,
+    },
+    #[serde(rename = "lifecycle")]
+    Lifecycle {
+        #[ts(type = "{ status: 'draft' | 'open' | 'archived' }")]
+        state: patch::Lifecycle,
+    },
+    #[serde(rename = "assign")]
+    Assign {
+        #[ts(as = "Vec<String>")]
+        assignees: BTreeSet<identity::Did>,
+    },
+    #[serde(rename = "merge")]
+    Merge {
+        #[ts(as = "String")]
+        revision: patch::RevisionId,
+        #[ts(as = "String")]
+        commit: git::Oid,
+    },
+
+    #[serde(rename = "review")]
+    Review {
+        #[ts(as = "String")]
+        revision: patch::RevisionId,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        summary: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(as = "Option<String>", optional)]
+        verdict: Option<patch::Verdict>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        #[ts(as = "Option<Vec<String>>", optional)]
+        labels: Vec<cob::Label>,
+    },
+    #[serde(rename = "review.edit")]
+    ReviewEdit {
+        #[ts(as = "String")]
+        review: patch::ReviewId,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        summary: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(as = "Option<String>", optional)]
+        verdict: Option<patch::Verdict>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        #[ts(as = "Option<Vec<String>>", optional)]
+        labels: Vec<cob::Label>,
+    },
+    #[serde(rename = "review.redact")]
+    ReviewRedact {
+        #[ts(as = "String")]
+        review: patch::ReviewId,
+    },
+    #[serde(rename = "review.comment")]
+    ReviewComment {
+        #[ts(as = "String")]
+        review: patch::ReviewId,
+        body: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        location: Option<cobs::thread::CodeLocation>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(as = "Option<String>", optional)]
+        reply_to: Option<cob::thread::CommentId>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        #[ts(as = "Option<_>", optional)]
+        embeds: Vec<cobs::thread::Embed>,
+    },
+    #[serde(rename = "review.comment.edit")]
+    ReviewCommentEdit {
+        #[ts(as = "String")]
+        review: patch::ReviewId,
+        #[ts(as = "String")]
+        comment: cob::EntryId,
+        body: String,
+        #[ts(as = "Option<_>", optional)]
+        embeds: Vec<cobs::thread::Embed>,
+    },
+    #[serde(rename = "review.comment.redact")]
+    ReviewCommentRedact {
+        #[ts(as = "String")]
+        review: patch::ReviewId,
+        #[ts(as = "String")]
+        comment: cob::EntryId,
+    },
+    #[serde(rename = "review.comment.react")]
+    ReviewCommentReact {
+        #[ts(as = "String")]
+        review: patch::ReviewId,
+        #[ts(as = "String")]
+        comment: cob::EntryId,
+        #[ts(as = "String")]
+        reaction: cob::Reaction,
+        active: bool,
+    },
+    #[serde(rename = "review.comment.resolve")]
+    ReviewCommentResolve {
+        #[ts(as = "String")]
+        review: patch::ReviewId,
+        #[ts(as = "String")]
+        comment: cob::EntryId,
+    },
+    #[serde(rename = "review.comment.unresolve")]
+    ReviewCommentUnresolve {
+        #[ts(as = "String")]
+        review: patch::ReviewId,
+        #[ts(as = "String")]
+        comment: cob::EntryId,
+    },
+
+    #[serde(rename = "revision")]
+    Revision {
+        description: String,
+        #[ts(as = "String")]
+        base: git::Oid,
+        #[ts(as = "String")]
+        oid: git::Oid,
+        #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+        #[ts(as = "Option<BTreeSet<(String, String)>>", optional)]
+        resolves: BTreeSet<(cob::EntryId, cob::thread::CommentId)>,
+    },
+    #[serde(rename = "revision.edit")]
+    RevisionEdit {
+        #[ts(as = "String")]
+        revision: patch::RevisionId,
+        description: String,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        #[ts(as = "Option<_>", optional)]
+        embeds: Vec<cobs::thread::Embed>,
+    },
+    #[serde(rename = "revision.react")]
+    RevisionReact {
+        #[ts(as = "String")]
+        revision: patch::RevisionId,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        location: Option<cobs::thread::CodeLocation>,
+        #[ts(as = "String")]
+        reaction: cob::Reaction,
+        active: bool,
+    },
+    #[serde(rename = "revision.redact")]
+    RevisionRedact {
+        #[ts(as = "String")]
+        revision: patch::RevisionId,
+    },
+    #[serde(rename_all = "camelCase")]
+    #[serde(rename = "revision.comment")]
+    RevisionComment {
+        #[ts(as = "String")]
+        revision: patch::RevisionId,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(optional)]
+        location: Option<cobs::thread::CodeLocation>,
+        body: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(as = "Option<String>", optional)]
+        reply_to: Option<cob::thread::CommentId>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        #[ts(as = "Option<_>", optional)]
+        embeds: Vec<cobs::thread::Embed>,
+    },
+    #[serde(rename = "revision.comment.edit")]
+    RevisionCommentEdit {
+        #[ts(as = "String")]
+        revision: patch::RevisionId,
+        #[ts(as = "String")]
+        comment: cob::thread::CommentId,
+        body: String,
+        #[ts(as = "Option<_>", optional)]
+        embeds: Vec<cobs::thread::Embed>,
+    },
+    #[serde(rename = "revision.comment.redact")]
+    RevisionCommentRedact {
+        #[ts(as = "String")]
+        revision: patch::RevisionId,
+        #[ts(as = "String")]
+        comment: cob::thread::CommentId,
+    },
+    #[serde(rename = "revision.comment.react")]
+    RevisionCommentReact {
+        #[ts(as = "String")]
+        revision: patch::RevisionId,
+        #[ts(as = "String")]
+        comment: cob::thread::CommentId,
+        #[ts(as = "String")]
+        reaction: cob::Reaction,
+        active: bool,
+    },
+}
