@@ -1,6 +1,7 @@
 <script lang="ts">
   import { nodeRunning } from "@app/lib/events";
 
+  import AnnounceSwitch from "./AnnounceSwitch.svelte";
   import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
@@ -87,11 +88,31 @@
             slot="toggle"
             let:toggle
             onclick={toggle}>
-            <Icon name="more-vertical" />
+            <Icon name="settings" />
           </NakedButton>
-          <Border variant="ghost" slot="popover" stylePadding="0.5rem 1rem">
-            <div style="display: flex; gap: 2rem; align-items: center;">
-              Theme <ThemeSwitch />
+          <Border
+            variant="ghost"
+            slot="popover"
+            stylePadding="0.5rem 1rem"
+            styleWidth="27rem">
+            <div
+              class="global-flex"
+              style:flex-direction="column"
+              style:align-items="flex-start"
+              style:gap="1rem"
+              style:width="100%">
+              <div
+                class="global-flex"
+                style:justify-content="space-between"
+                style:width="100%">
+                Theme <ThemeSwitch />
+              </div>
+              <div
+                class="global-flex"
+                style:justify-content="space-between"
+                style:width="100%">
+                Announce changes <AnnounceSwitch />
+              </div>
             </div>
           </Border>
         </Popover>

@@ -12,6 +12,8 @@
   import { issueStatusColor, publicKeyFromDid } from "@app/lib/utils";
   import { invoke } from "@tauri-apps/api/core";
 
+  import { announce } from "@app/components/AnnounceSwitch.svelte";
+
   import Border from "@app/components/Border.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
@@ -31,7 +33,6 @@
   export let issues: Issue[];
   export let config: Config;
 
-  const announce = false;
   let topLevelReplyOpen = false;
 
   // Close the comment textbox when switching between issues. The view doesn't
@@ -73,7 +74,7 @@
       await invoke("create_issue_comment", {
         rid: repo.rid,
         new: { id: issue.id, body, embeds },
-        opts: { announce },
+        opts: { announce: $announce },
       });
     } catch (error) {
       console.error("Comment creation failed: ", error);
@@ -87,7 +88,7 @@
       await invoke("create_issue_comment", {
         rid: repo.rid,
         new: { id: issue.id, body, embeds, replyTo },
-        opts: { announce },
+        opts: { announce: $announce },
       });
     } catch (error) {
       console.error("Comment reply creation failed", error);
@@ -107,7 +108,7 @@
           body,
           embeds,
         },
-        opts: { announce },
+        opts: { announce: $announce },
       });
     } catch (error) {
       if (error instanceof Error) {
@@ -136,7 +137,7 @@
             ({ did }) => publicKeyFromDid(did) === publicKey,
           ),
         },
-        opts: { announce },
+        opts: { announce: $announce },
       });
     } catch (error) {
       if (error instanceof Error) {
