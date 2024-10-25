@@ -30,7 +30,7 @@
 
 <style>
   input {
-    background: var(--color-background-dip);
+    background: var(--color-background-ghost);
     font-family: inherit;
     font-size: var(--font-size-small);
     color: var(--color-foreground-contrast);

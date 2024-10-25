@@ -172,6 +172,7 @@
       </div>
     {:else}
       <Textarea
+        borderVariant="ghost"
         placeholder="Description"
         bind:value={description}
         size="fixed-height"
