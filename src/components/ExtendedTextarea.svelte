@@ -81,7 +81,7 @@
   }
   .preview {
     font-size: var(--font-size-small);
-    min-height: 6.8rem;
+    min-height: 109px;
     padding: 0.75rem;
     margin-left: 1px;
     margin-top: 1px;
