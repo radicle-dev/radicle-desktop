@@ -31,6 +31,7 @@ tauri-plugin-shell = { version = "2.0.1" }
 tauri-plugin-window-state = { version = "2.0.1" }
 thiserror = { version = "1.0.64" }
 ts-rs = { version = "10.0.0", features = ["serde-json-impl", "no-serde-warnings"] }
+tokio = { version = "1.40.0", features = ["time"] }
 
 [features]
 # by default Tauri runs in production mode

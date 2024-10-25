@@ -45,7 +45,7 @@ pub fn run() {
             tauri::async_runtime::spawn(async move {
                 loop {
                     let _ = node_handler.emit("node_running", node_status.is_running());
-                    std::thread::sleep(std::time::Duration::from_secs(2));
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 }
             });
 
@@ -61,7 +61,7 @@ pub fn run() {
                         log::debug!("node: event subscription loop has exited.");
                     }
 
-                    std::thread::sleep(std::time::Duration::from_secs(2));
+                    tokio::time::sleep(std::time::Duration::from_secs(2)).await;
                 }
             });
 
