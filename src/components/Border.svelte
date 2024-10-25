@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let variant: "primary" | "secondary" | "ghost" | "float";
+  export let variant: "primary" | "secondary" | "ghost" | "float" | "danger";
   export let hoverable: boolean = false;
   export let onclick: (() => void) | undefined = undefined;
 

@@ -32,6 +32,7 @@
 
   import Layout from "./Layout.svelte";
   import { tick } from "svelte";
+  import TextInput from "@app/components/TextInput.svelte";
 
   export let repo: RepoInfo;
   export let issue: Issue;
@@ -39,12 +40,16 @@
   export let config: Config;
 
   let topLevelReplyOpen = false;
+  let editingTitle = false;
+  let updatedTitle: string = issue.title;
 
-  // Close the comment textbox when switching between issues. The view doesn't
-  // get destroyed when we switch between different issues in the sidebar and
-  // because of that the top-level state gets retained when the issue changes.
+  // The view doesn't get destroyed when we switch between different issues in
+  // the sidebar and because of that the top-level state gets retained when the
+  // issue changes.
   $: if (issue) {
     topLevelReplyOpen = false;
+    editingTitle = false;
+    updatedTitle = issue.title;
   }
 
   $: project = repo.payloads["xyz.radicle.project"]!;
@@ -137,6 +142,32 @@
     }
   }
 
+  async function editTitle(id: string, title: string) {
+    if (issue.title === updatedTitle) {
+      editingTitle = false;
+      return;
+    }
+
+    try {
+      await invoke("edit_issue", {
+        rid: repo.rid,
+        cobId: issue.id,
+        action: {
+          type: "edit",
+          id,
+          title,
+        },
+        opts: { announce: $announce },
+      });
+      editingTitle = false;
+      issue.title = updatedTitle;
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error("Issue editing failed: ", error);
+      }
+    }
+  }
+
   async function reactOnComment(
     publicKey: string,
     commentId: string,
@@ -173,8 +204,12 @@
     font-weight: var(--font-weight-medium);
     -webkit-user-select: text;
     user-select: text;
-    margin-bottom: 1rem;
-    margin-top: 0.35rem;
+    margin-bottom: 20px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    word-break: break-all;
   }
   .issue-body {
     margin-top: 1rem;
@@ -211,6 +246,12 @@
     height: 1.5rem;
     margin-left: 1.25rem;
     background-color: var(--color-background-float);
+  }
+
+  .title-icons {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: 1rem;
   }
 </style>
 
@@ -283,9 +324,45 @@
   </svelte:fragment>
 
   <div class="content">
-    <div class="title">
-      <InlineTitle content={issue.title} fontSize="medium" />
-    </div>
+    {#if editingTitle}
+      <div class="global-flex" style:margin-bottom="0.5rem">
+        <TextInput
+          valid={updatedTitle.trim().length > 0}
+          bind:value={updatedTitle}
+          autofocus
+          onSubmit={() => {
+            if (updatedTitle.trim().length > 0) {
+              editTitle(issue.id, updatedTitle);
+            }
+          }}
+          onDismiss={() => {
+            updatedTitle = issue.title;
+            editingTitle = !editingTitle;
+          }} />
+        <div class="title-icons">
+          <Icon
+            name="checkmark"
+            onclick={() => {
+              if (updatedTitle.trim().length > 0) {
+                editTitle(issue.id, updatedTitle);
+              }
+            }} />
+          <Icon
+            name="cross"
+            onclick={() => {
+              updatedTitle = issue.title;
+              editingTitle = !editingTitle;
+            }} />
+        </div>
+      </div>
+    {:else}
+      <div class="title">
+        <InlineTitle content={issue.title} fontSize="medium" />
+        <div class="title-icons">
+          <Icon name="pen" onclick={() => (editingTitle = !editingTitle)} />
+        </div>
+      </div>
+    {/if}
 
     <IssueMetadata {issue} />
 

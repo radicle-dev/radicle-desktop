@@ -10,6 +10,9 @@
   export let autofocus: boolean = false;
   export let autoselect: boolean = false;
   export let disabled: boolean = false;
+  export let onSubmit: (() => void) | undefined = undefined;
+  export let onDismiss: (() => void) | undefined = undefined;
+  export let valid: boolean = true;
 
   let inputElement: HTMLInputElement | undefined = undefined;
   let focussed = false;
@@ -26,6 +29,17 @@
       inputElement.select();
     }
   });
+
+  function handleKeydown(event: KeyboardEvent) {
+    if (event.key === "Enter" && valid && onSubmit) {
+      onSubmit();
+    }
+
+    if (event.key === "Escape" && onDismiss) {
+      inputElement?.blur();
+      onDismiss();
+    }
+  }
 </script>
 
 <style>
@@ -42,6 +56,7 @@
     margin: 0;
     height: 32px;
     padding: 0.25rem 0.75rem;
+    border: 0;
   }
   input::placeholder {
     font-family: var(--font-family-sans-serif);
@@ -53,7 +68,9 @@
   }
 </style>
 
-<Border variant={focussed ? "secondary" : "ghost"} styleWidth="100%">
+<Border
+  variant={valid ? (focussed ? "secondary" : "ghost") : "danger"}
+  styleWidth="100%">
   <input
     on:focus={() => {
       focussed = true;
@@ -69,5 +86,6 @@
     bind:value
     autocomplete="off"
     spellcheck="false"
+    on:keydown|stopPropagation={handleKeydown}
     on:input />
 </Border>
