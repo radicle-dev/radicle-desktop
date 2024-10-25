@@ -118,7 +118,7 @@
         preview = false;
         dispatch("close");
       }}>
-      Discard
+      <Icon name="cross" />Discard
     </OutlineButton>
     {#if !preview}
       <div class="caption">
@@ -139,6 +139,7 @@
           submitInProgress ||
           (disallowEmptyBody && body.trim() === "")}
         onclick={submit}>
+        <Icon name="checkmark" />
         {#if submitInProgress}
           Loading...
         {:else}
