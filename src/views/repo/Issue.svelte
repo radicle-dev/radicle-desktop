@@ -7,6 +7,7 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import partial from "lodash/partial";
+  import { onMount, tick } from "svelte";
 
   import * as roles from "@app/lib/roles";
   import {
@@ -31,7 +32,6 @@
   import Thread from "@app/components/Thread.svelte";
 
   import Layout from "./Layout.svelte";
-  import { tick } from "svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   export let repo: RepoInfo;
@@ -45,11 +45,15 @@
 
   // The view doesn't get destroyed when we switch between different issues in
   // the sidebar and because of that the top-level state gets retained when the
-  // issue changes.
-  $: if (issue) {
+  // issue changes. This reactive statement makes sure we always load the new
+  // issue and reset the state to defaults.
+  let issueId = issue.id;
+  $: if (issueId !== issue.id) {
+    issueId = issue.id;
     topLevelReplyOpen = false;
     editingTitle = false;
     updatedTitle = issue.title;
+    void loadActivity();
   }
 
   $: project = repo.payloads["xyz.radicle.project"]!;
@@ -72,6 +76,20 @@
       };
     }, []);
 
+  let activity: Operation[];
+
+  async function loadActivity() {
+    activity = await invoke("activity_by_id", {
+      rid: repo.rid,
+      typeName: "xyz.radicle.issue",
+      id: issue.id,
+    });
+  }
+
+  onMount(() => {
+    void loadActivity();
+  });
+
   async function toggleReply() {
     topLevelReplyOpen = !topLevelReplyOpen;
     if (!topLevelReplyOpen) {
@@ -90,6 +108,7 @@
       rid: repo.rid,
       id: issue.id,
     });
+    await loadActivity();
   }
 
   async function createComment(body: string, embeds: Embed[]) {
@@ -330,9 +349,9 @@
           valid={updatedTitle.trim().length > 0}
           bind:value={updatedTitle}
           autofocus
-          onSubmit={() => {
+          onSubmit={async () => {
             if (updatedTitle.trim().length > 0) {
-              editTitle(issue.id, updatedTitle);
+              await editTitle(issue.id, updatedTitle);
             }
           }}
           onDismiss={() => {
@@ -342,9 +361,9 @@
         <div class="title-icons">
           <Icon
             name="checkmark"
-            onclick={() => {
+            onclick={async () => {
               if (updatedTitle.trim().length > 0) {
-                editTitle(issue.id, updatedTitle);
+                await editTitle(issue.id, updatedTitle);
               }
             }} />
           <Icon
@@ -396,30 +415,28 @@
     <div class="connector"></div>
 
     <div>
-      {#await invoke<Operation[]>( "activity_by_id", { rid: repo.rid, typeName: "xyz.radicle.issue", id: issue.id }, ) then activity}
-        {#each activity.slice(1) as op}
-          {#if op.type === "lifecycle"}
-            <IssueTimelineLifecycleAction operation={op} />
+      {#each activity as op}
+        {#if op.type === "lifecycle"}
+          <IssueTimelineLifecycleAction operation={op} />
+          <div class="connector"></div>
+        {:else if op.type === "comment"}
+          {@const thread = threads.find(t => t.root.id === op.entryId)}
+          {#if thread}
+            <Thread
+              {thread}
+              rid={repo.rid}
+              canEditComment={partial(
+                roles.isDelegateOrAuthor,
+                config.publicKey,
+                repo.delegates.map(delegate => delegate.did),
+              )}
+              {editComment}
+              createReply={partial(createReply)}
+              reactOnComment={partial(reactOnComment, config.publicKey)} />
             <div class="connector"></div>
-          {:else if op.type === "comment"}
-            {@const thread = threads.find(t => t.root.id === op.entryId)}
-            {#if thread}
-              <Thread
-                {thread}
-                rid={repo.rid}
-                canEditComment={partial(
-                  roles.isDelegateOrAuthor,
-                  config.publicKey,
-                  repo.delegates.map(delegate => delegate.did),
-                )}
-                {editComment}
-                createReply={partial(createReply)}
-                reactOnComment={partial(reactOnComment, config.publicKey)} />
-              <div class="connector"></div>
-            {/if}
           {/if}
-        {/each}
-      {/await}
+        {/if}
+      {/each}
     </div>
 
     <div id={`reply-${issue.id}`}>
