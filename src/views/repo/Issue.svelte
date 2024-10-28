@@ -178,8 +178,13 @@
         },
         opts: { announce: $announce },
       });
-      editingTitle = false;
       issue.title = updatedTitle;
+      // Update sidebar issue title without reloading the whole issue list.
+      const issueIndex = issues.findIndex(i => i.id === issue.id);
+      if (issueIndex !== -1) {
+        issues[issueIndex].title = updatedTitle;
+      }
+      editingTitle = false;
     } catch (error) {
       if (error instanceof Error) {
         console.error("Issue editing failed: ", error);
