@@ -12,7 +12,7 @@ use radicle::patch;
 
 use crate::cobs;
 
-#[derive(TS, Serialize)]
+#[derive(Debug, TS, Serialize)]
 #[ts(export)]
 #[ts(export_to = "cob/patch/")]
 #[serde(rename_all = "camelCase")]
@@ -57,7 +57,7 @@ impl Patch {
     }
 }
 
-#[derive(Serialize, Deserialize, TS)]
+#[derive(Debug, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", tag = "status")]
 #[ts(export)]
 #[ts(export_to = "cob/patch/")]

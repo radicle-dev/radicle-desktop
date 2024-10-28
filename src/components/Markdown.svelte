@@ -7,7 +7,7 @@
   import { Renderer, markdownWithExtensions } from "@app/lib/markdown";
   import { highlight } from "@app/lib/syntax";
   import { twemoji, scrollIntoView, isCommit } from "@app/lib/utils";
-  import { invoke } from "@tauri-apps/api/core";
+  import { invoke } from "@app/lib/invoke";
 
   export let rid: string;
   export let content: string;

@@ -2,7 +2,7 @@ import type { Config } from "@bindings/config/Config";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { LoadedRepoRoute, RepoRoute } from "@app/views/repo/router";
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@app/lib/invoke";
 
 import {
   loadCreateIssue,

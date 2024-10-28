@@ -9,7 +9,7 @@
     formatTimestamp,
     patchStatusColor,
   } from "@app/lib/utils";
-  import { invoke } from "@tauri-apps/api/core";
+  import { invoke } from "@app/lib/invoke";
 
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";

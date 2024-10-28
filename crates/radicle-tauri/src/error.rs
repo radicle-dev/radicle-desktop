@@ -51,6 +51,10 @@ pub enum Error {
     #[error(transparent)]
     Storage(#[from] radicle::storage::Error),
 
+    /// Types error.
+    #[error(transparent)]
+    Types(#[from] radicle_types::error::Error),
+
     /// Surf error.
     #[error(transparent)]
     Surf(#[from] radicle_surf::Error),

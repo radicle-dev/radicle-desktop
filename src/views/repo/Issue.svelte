@@ -14,7 +14,7 @@
     publicKeyFromDid,
     scrollIntoView,
   } from "@app/lib/utils";
-  import { invoke } from "@tauri-apps/api/core";
+  import { invoke } from "@app/lib/invoke";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
 

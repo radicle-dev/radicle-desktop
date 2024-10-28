@@ -5,7 +5,7 @@ import type { Patch } from "@bindings/cob/patch/Patch";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { Revision } from "@bindings/cob/patch/Revision";
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@app/lib/invoke";
 import { unreachable } from "@app/lib/utils";
 
 export type IssueStatus = "all" | Issue["state"]["status"];

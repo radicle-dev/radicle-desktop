@@ -3,5 +3,6 @@ resolver = "1"
 
 members = [ 
     "crates/radicle-tauri",
-    "crates/radicle-types"
+    "crates/radicle-types",
+    "crates/test-http-api",
 ]

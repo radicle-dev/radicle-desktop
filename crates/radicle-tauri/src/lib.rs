@@ -6,11 +6,32 @@ use tauri::Manager;
 
 use radicle::node::Handle;
 use radicle::Node;
+use radicle_types::traits::auth::Auth;
+use radicle_types::traits::cobs::Cobs;
+use radicle_types::traits::issue::{Issues, IssuesMut};
+use radicle_types::traits::patch::{Patches, PatchesMut};
+use radicle_types::traits::repo::Repo;
+use radicle_types::traits::thread::Thread;
+use radicle_types::traits::Profile;
 
 use commands::{auth, cob, diff, profile, repo, thread};
 
 struct AppState {
     profile: radicle::Profile,
+}
+
+impl Auth for AppState {}
+impl Repo for AppState {}
+impl Thread for AppState {}
+impl Cobs for AppState {}
+impl Issues for AppState {}
+impl IssuesMut for AppState {}
+impl Patches for AppState {}
+impl PatchesMut for AppState {}
+impl Profile for AppState {
+    fn profile(&self) -> radicle::Profile {
+        self.profile.clone()
+    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

@@ -5,7 +5,7 @@
   import type { PatchStatus } from "./router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import { invoke } from "@tauri-apps/api/core";
+  import { invoke } from "@app/lib/invoke";
 
   import Layout from "./Layout.svelte";
   import Border from "@app/components/Border.svelte";

@@ -3,6 +3,7 @@
 node_modules/
 
 # Tauri
+crates/test-http-api/target
 crates/radicle-tauri/target
 crates/radicle-tauri/gen/schemas
 

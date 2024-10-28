@@ -4,7 +4,7 @@
   import type { Issue } from "@bindings/cob/issue/Issue";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import { invoke } from "@tauri-apps/api/core";
+  import { invoke } from "@app/lib/invoke";
 
   import { issueStatusColor } from "@app/lib/utils";
   import * as router from "@app/lib/router";

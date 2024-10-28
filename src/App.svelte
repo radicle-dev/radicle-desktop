@@ -3,7 +3,7 @@
 
   import { onDestroy, onMount } from "svelte";
 
-  import { invoke } from "@tauri-apps/api/core";
+  import { invoke } from "@app/lib/invoke";
   import { listen } from "@tauri-apps/api/event";
 
   import * as router from "@app/lib/router";
@@ -25,13 +25,15 @@
   let unlistenNodeEvents: UnlistenFn | undefined = undefined;
 
   onMount(async () => {
-    unlistenEvents = await listen("event", event => {
-      console.log(event.payload);
-    });
+    if (window.__TAURI_INTERNALS__) {
+      unlistenEvents = await listen("event", event => {
+        console.log(event.payload);
+      });
 
-    unlistenNodeEvents = await listen<boolean>("node_running", event => {
-      nodeRunning.set(event.payload);
-    });
+      unlistenNodeEvents = await listen<boolean>("node_running", event => {
+        nodeRunning.set(event.payload);
+      });
+    }
 
     try {
       await invoke("authenticate");

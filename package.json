@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "vite",
+    "start:http": "cargo run --manifest-path ./crates/test-http-api/Cargo.toml",
     "build": "vite build && scripts/copy-katex-assets && scripts/install-twemoji-assets",
     "postinstall": "scripts/copy-katex-assets && scripts/install-twemoji-assets",
     "preview": "vite preview",
