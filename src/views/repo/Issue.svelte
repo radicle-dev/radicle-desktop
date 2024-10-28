@@ -69,10 +69,7 @@
         root: thread,
         replies: issue.discussion
           .filter(comment => comment.replyTo === thread.id)
-          .sort(
-            (a, b) =>
-              a.edits.slice(-1)[0].timestamp - b.edits.slice(-1)[0].timestamp,
-          ),
+          .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
       };
     }, []);
 

@@ -115,7 +115,7 @@
               author={reply.author}
               caption="replied"
               reactions={reply.reactions}
-              timestamp={reply.edits.slice(-1)[0].timestamp}
+              timestamp={reply.edits[0].timestamp}
               body={reply.edits.slice(-1)[0].body}
               editComment={editComment &&
                 canEditComment(reply.author.did) &&
