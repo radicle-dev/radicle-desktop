@@ -8,10 +8,10 @@
 
   import { scrollIntoView } from "@app/lib/utils";
 
-  import CommentComponent from "@app/components/Comment.svelte";
-  import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
-  import Icon from "@app/components/Icon.svelte";
   import Border from "./Border.svelte";
+  import CommentComponent from "@app/components/Comment.svelte";
+  import ExtendedTextarea from "./ExtendedTextarea.svelte";
+  import Icon from "@app/components/Icon.svelte";
 
   export let thread: {
     root: Comment;
@@ -47,6 +47,7 @@
   }
 
   let showReplyForm = false;
+  let submitInProgress = false;
 
   $: root = thread.root;
   $: replies = thread.replies;
@@ -125,16 +126,29 @@
         {/if}
         {#if createReply && showReplyForm}
           <div id={`reply-${root.id}`} style:padding="1rem">
-            <CommentToggleInput
+            <ExtendedTextarea
               disallowEmptyBody
+              {submitInProgress}
               {rid}
-              focus
               inline
-              onclose={() => (showReplyForm = false)}
               placeholder="Reply to comment"
               submitCaption="Reply"
-              onexpand={toggleReply}
-              submit={partial(createReply, root.id)} />
+              focus
+              stylePadding="0.5rem 0.75rem"
+              on:close={() => (showReplyForm = false)}
+              on:submit={async ({ detail: { comment, embeds } }) => {
+                try {
+                  submitInProgress = true;
+                  await createReply(
+                    root.id,
+                    comment,
+                    Array.from(embeds.values()),
+                  );
+                } finally {
+                  showReplyForm = false;
+                  submitInProgress = false;
+                }
+              }} />
           </div>
         {/if}
         <div></div>

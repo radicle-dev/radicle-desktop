@@ -5,10 +5,7 @@
   import Border from "./Border.svelte";
 
   export let rid: string;
-  export let body: string | undefined = undefined;
   export let placeholder: string | undefined = undefined;
-  export let submitCaption: string | undefined = undefined;
-  export let inline: boolean = false;
   export let focus: boolean = false;
   export let submit: (comment: string, embeds: Embed[]) => Promise<void>;
   export let onclose: (() => void) | undefined = undefined;
@@ -32,12 +29,9 @@
   <ExtendedTextarea
     {disallowEmptyBody}
     {rid}
-    {inline}
     {placeholder}
-    {submitCaption}
     submitInProgress={state === "submit"}
     {focus}
-    {body}
     stylePadding="0.5rem 0.75rem"
     on:close={() => {
       if (onclose !== undefined) {

@@ -141,7 +141,7 @@
         onclick={submit}>
         <Icon name="checkmark" />
         {#if submitInProgress}
-          Loading...
+          Saving…
         {:else}
           {submitCaption}
         {/if}
