@@ -9,6 +9,7 @@
     | "arrow-left"
     | "arrow-right"
     | "checkmark"
+    | "chevron-down"
     | "chevron-right"
     | "comment"
     | "copy"
@@ -92,6 +93,17 @@
     <path d="M4 8V9H3L3 8H4Z" />
     <path d="M5 9L5 10L4 10L4 9H5Z" />
     <path d="M6 10L6 11H5L5 10L6 10Z" />
+  {:else if name === "chevron-down"}
+    <path d="M9 10V11H8V10H9Z" />
+    <path d="M10 9V10L9 10V9H10Z" />
+    <path d="M11 8V9H10V8L11 8Z" />
+    <path d="M12 7V8L11 8V7H12Z" />
+    <path d="M4 6V7H3L3 6L4 6Z" />
+    <path d="M13 6V7L12 7L12 6L13 6Z" />
+    <path d="M5 7L5 8H4L4 7L5 7Z" />
+    <path d="M6 8V9H5L5 8L6 8Z" />
+    <path d="M8 10V11H7L7 10H8Z" />
+    <path d="M7 9L7 10H6L6 9L7 9Z" />
   {:else if name === "chevron-right"}
     <path d="M9 7L10 7L10 8L9 8L9 7Z" />
     <path d="M8 6H9V7H8L8 6Z" />

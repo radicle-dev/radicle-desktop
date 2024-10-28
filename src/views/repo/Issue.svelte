@@ -20,6 +20,7 @@
   import { announce } from "@app/components/AnnounceSwitch.svelte";
 
   import Border from "@app/components/Border.svelte";
+  import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -29,10 +30,10 @@
   import IssueTimelineLifecycleAction from "@app/components/IssueTimelineLifecycleAction.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import TextInput from "@app/components/TextInput.svelte";
   import Thread from "@app/components/Thread.svelte";
 
   import Layout from "./Layout.svelte";
-  import TextInput from "@app/components/TextInput.svelte";
 
   export let repo: RepoInfo;
   export let issue: Issue;
@@ -150,9 +151,7 @@
         opts: { announce: $announce },
       });
     } catch (error) {
-      if (error instanceof Error) {
-        console.error("Issue comment editing failed: ", error);
-      }
+      console.error("Issue comment editing failed: ", error);
     } finally {
       await reload();
     }
@@ -183,9 +182,7 @@
       }
       editingTitle = false;
     } catch (error) {
-      if (error instanceof Error) {
-        console.error("Issue editing failed: ", error);
-      }
+      console.error("Issue editing failed: ", error);
     }
   }
 
@@ -210,9 +207,25 @@
         opts: { announce: $announce },
       });
     } catch (error) {
-      if (error instanceof Error) {
-        console.error("Editing reactions failed", error);
-      }
+      console.error("Editing reactions failed", error);
+    } finally {
+      await reload();
+    }
+  }
+
+  async function saveState(state: Issue["state"]) {
+    try {
+      await invoke("edit_issue", {
+        rid: repo.rid,
+        cobId: issue.id,
+        action: {
+          type: "lifecycle",
+          state,
+        },
+        opts: { announce: $announce },
+      });
+    } catch (error) {
+      console.error("Editing reactions failed", error);
     } finally {
       await reload();
     }
@@ -271,8 +284,9 @@
 
   .title-icons {
     display: flex;
-    gap: 0.5rem;
+    gap: 1rem;
     margin-left: 1rem;
+    align-items: center;
   }
 </style>
 
@@ -374,6 +388,7 @@
               updatedTitle = issue.title;
               editingTitle = !editingTitle;
             }} />
+          <IssueStateButton state={issue.state} save={saveState} />
         </div>
       </div>
     {:else}
@@ -381,6 +396,7 @@
         <InlineTitle content={issue.title} fontSize="medium" />
         <div class="title-icons">
           <Icon name="pen" onclick={() => (editingTitle = !editingTitle)} />
+          <IssueStateButton state={issue.state} save={saveState} />
         </div>
       </div>
     {/if}
