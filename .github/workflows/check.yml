@@ -1,4 +1,4 @@
-name: radicle-desktop
+name: check
 on: push
 
 jobs:
