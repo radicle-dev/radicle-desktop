@@ -23,8 +23,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: crates/radicle-tauri -> target
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev

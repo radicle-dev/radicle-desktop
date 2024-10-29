@@ -22,3 +22,7 @@ public/twemoji/*.svg
 
 # Mac OS
 .DS_Store
+
+# Integration Tests
+tests/tmp/**/*
+tests/artifacts/**/*

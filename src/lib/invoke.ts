@@ -8,7 +8,7 @@ export async function invoke<T = null>(
   if (window.__TAURI_INTERNALS__) {
     return tauri.invoke(cmd, args, options);
   } else {
-    return fetch(`http://127.0.0.1:8080/${cmd}`, {
+    return fetch(`http://127.0.0.1:8081/${cmd}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(args),

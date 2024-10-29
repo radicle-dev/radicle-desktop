@@ -1,6 +1,6 @@
 {
   "extends": "@tsconfig/svelte/tsconfig.json",
-  "include": ["src", "./*.js", "./*.ts"],
+  "include": ["src", "tests", "./*.js", "./*.ts"],
   "exclude": ["node_modules/*", "isolation/*"],
   "compilerOptions": {
     "noEmit": true,
@@ -21,7 +21,8 @@
     "paths": {
       "@app/*": ["./src/*"],
       "@bindings/*": ["./crates/radicle-types/bindings/*"],
-      "@public/*": ["./public/*"]
+      "@public/*": ["./public/*"],
+      "@tests/*": ["./tests/*"]
     }
   }
 }
