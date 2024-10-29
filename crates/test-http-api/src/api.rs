@@ -61,6 +61,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/get_diff", post(diff_handler))
         .route("/list_issues", post(issues_handler))
         .route("/create_issue", post(create_issue_handler))
+        .route("/create_issue_comment", post(create_issue_comment_handler))
         .route("/edit_issue", post(edit_issue_handler))
         .route("/issue_by_id", post(issue_handler))
         .route("/list_patches", post(patches_handler))
@@ -170,6 +171,22 @@ async fn create_issue_handler(
     let issues = ctx.create_issue(rid, new, opts)?;
 
     Ok::<_, Error>(Json(issues))
+}
+
+#[derive(Serialize, Deserialize)]
+struct CreateIssueCommentBody {
+    pub rid: identity::RepoId,
+    pub new: types::cobs::thread::NewIssueComment,
+    pub opts: types::cobs::CobOptions,
+}
+
+async fn create_issue_comment_handler(
+    State(ctx): State<Context>,
+    Json(CreateIssueCommentBody { rid, opts, new }): Json<CreateIssueCommentBody>,
+) -> impl IntoResponse {
+    let comment = ctx.create_issue_comment(rid, new, opts)?;
+
+    Ok::<_, Error>(Json(comment))
 }
 
 #[derive(Serialize, Deserialize)]
