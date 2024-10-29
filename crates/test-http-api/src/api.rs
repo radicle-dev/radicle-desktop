@@ -279,8 +279,8 @@ async fn issue_handler(
 #[serde(rename_all = "camelCase")]
 struct PatchesBody {
     pub rid: identity::RepoId,
-    pub page: Option<usize>,
-    pub per_page: Option<usize>,
+    pub skip: Option<usize>,
+    pub take: Option<usize>,
     pub status: Option<types::cobs::query::PatchStatus>,
 }
 
@@ -288,12 +288,12 @@ async fn patches_handler(
     State(ctx): State<Context>,
     Json(PatchesBody {
         rid,
-        page,
-        per_page,
+        skip,
+        take,
         status,
     }): Json<PatchesBody>,
 ) -> impl IntoResponse {
-    let patches = ctx.list_patches(rid, status, page, per_page)?;
+    let patches = ctx.list_patches(rid, status, skip, take)?;
 
     Ok::<_, Error>(Json(patches))
 }
