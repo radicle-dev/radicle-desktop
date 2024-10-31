@@ -396,13 +396,15 @@
       {:else}
         <div class="title">
           <InlineTitle content={issue.title} fontSize="medium" />
-          <div class="title-icons">
-            <Icon
-              styleCursor="pointer"
-              name="pen"
-              onclick={() => (editingTitle = !editingTitle)} />
-            <IssueStateButton state={issue.state} save={saveState} />
-          </div>
+          {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), issue.discussion[0].author.did, )}
+            <div class="title-icons">
+              <Icon
+                styleCursor="pointer"
+                name="pen"
+                onclick={() => (editingTitle = !editingTitle)} />
+              <IssueStateButton state={issue.state} save={saveState} />
+            </div>
+          {/if}
         </div>
       {/if}
     </div>
