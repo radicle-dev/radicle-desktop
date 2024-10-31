@@ -238,8 +238,7 @@
     font-weight: var(--font-weight-medium);
     -webkit-user-select: text;
     user-select: text;
-    margin-bottom: 20px;
-    margin-top: 6px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -359,47 +358,54 @@
   </svelte:fragment>
 
   <div class="content">
-    {#if editingTitle}
-      <div class="global-flex" style:margin-bottom="0.5rem">
-        <TextInput
-          valid={updatedTitle.trim().length > 0}
-          bind:value={updatedTitle}
-          autofocus
-          onSubmit={async () => {
-            if (updatedTitle.trim().length > 0) {
-              await editTitle(issue.id, updatedTitle);
-            }
-          }}
-          onDismiss={() => {
-            updatedTitle = issue.title;
-            editingTitle = !editingTitle;
-          }} />
-        <div class="title-icons">
-          <Icon
-            name="checkmark"
-            onclick={async () => {
+    <div style:margin-bottom="1rem" style:margin-top="-4px">
+      {#if editingTitle}
+        <div class="global-flex">
+          <TextInput
+            valid={updatedTitle.trim().length > 0}
+            bind:value={updatedTitle}
+            autofocus
+            onSubmit={async () => {
               if (updatedTitle.trim().length > 0) {
                 await editTitle(issue.id, updatedTitle);
               }
-            }} />
-          <Icon
-            name="cross"
-            onclick={() => {
+            }}
+            onDismiss={() => {
               updatedTitle = issue.title;
               editingTitle = !editingTitle;
             }} />
-          <IssueStateButton state={issue.state} save={saveState} />
+          <div class="title-icons">
+            <Icon
+              styleCursor="pointer"
+              name="checkmark"
+              onclick={async () => {
+                if (updatedTitle.trim().length > 0) {
+                  await editTitle(issue.id, updatedTitle);
+                }
+              }} />
+            <Icon
+              styleCursor="pointer"
+              name="cross"
+              onclick={() => {
+                updatedTitle = issue.title;
+                editingTitle = !editingTitle;
+              }} />
+            <IssueStateButton state={issue.state} save={saveState} />
+          </div>
         </div>
-      </div>
-    {:else}
-      <div class="title">
-        <InlineTitle content={issue.title} fontSize="medium" />
-        <div class="title-icons">
-          <Icon name="pen" onclick={() => (editingTitle = !editingTitle)} />
-          <IssueStateButton state={issue.state} save={saveState} />
+      {:else}
+        <div class="title">
+          <InlineTitle content={issue.title} fontSize="medium" />
+          <div class="title-icons">
+            <Icon
+              styleCursor="pointer"
+              name="pen"
+              onclick={() => (editingTitle = !editingTitle)} />
+            <IssueStateButton state={issue.state} save={saveState} />
+          </div>
         </div>
-      </div>
-    {/if}
+      {/if}
+    </div>
 
     <IssueMetadata {issue} />
 
