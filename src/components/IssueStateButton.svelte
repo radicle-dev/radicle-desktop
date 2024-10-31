@@ -33,13 +33,13 @@
     display: flex;
     flex-direction: row;
     justify-content: center;
-    gap: 1px;
   }
 </style>
 
 <div class="main">
   <Button
     variant="secondary"
+    flatRight
     onclick={() => void save(selectedAction["state"])}>
     {selectedAction["caption"]}
   </Button>
@@ -48,7 +48,12 @@
     popoverPadding="0"
     popoverPositionTop="3rem"
     popoverPositionRight="0">
-    <Button slot="toggle" let:toggle onclick={toggle} variant="secondary">
+    <Button
+      flatLeft
+      slot="toggle"
+      let:toggle
+      onclick={toggle}
+      variant="secondary">
       <div style:height="22px" class="global-flex">
         <Icon name="chevron-down" />
       </div>

@@ -28,58 +28,38 @@
 
 <script lang="ts">
   import { writable } from "svelte/store";
+
   import Icon from "./Icon.svelte";
+  import Button from "./Button.svelte";
 </script>
 
 <style>
   .container {
-    background-color: var(--color-fill-ghost);
-    clip-path: var(--2px-corner-fill);
-    display: flex;
-    height: 32px;
-    align-items: center;
-    padding: 0 2px;
-  }
-  button {
-    height: 28px;
-    cursor: pointer;
     display: flex;
     align-items: center;
-    border: none;
-    white-space: nowrap;
-    touch-action: manipulation;
-    clip-path: var(--1px-corner-fill);
-    font-size: var(--font-size-small);
-    margin: 0;
-    padding: 0 1rem;
-    color: var(--color-foreground-contrast);
-    background-color: var(--color-fill-ghost);
-    font-weight: var(--font-weight-semibold);
-    gap: 6px;
-  }
-
-  .active {
-    color: var(--color-foreground-emphasized);
-    background-color: var(--color-background-dip);
   }
 </style>
 
 <div class="container">
-  <button
-    class:active={$theme === "dark"}
+  <Button
+    flatRight
+    active={$theme === "dark"}
+    variant="ghost"
     onclick={() => {
       storeTheme("dark");
     }}>
     <Icon name="moon" />
     Dark
-  </button>
+  </Button>
 
-  <button
-    class:active={$theme === "light"}
+  <Button
+    flatLeft
+    variant="ghost"
+    active={$theme === "light"}
     onclick={() => {
       storeTheme("light");
     }}>
     <Icon name="sun" />
     Light
-  </button>
+  </Button>
 </div>

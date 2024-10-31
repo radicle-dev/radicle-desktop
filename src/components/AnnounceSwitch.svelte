@@ -27,54 +27,34 @@
 
 <script lang="ts">
   import { writable } from "svelte/store";
+  import Button from "./Button.svelte";
 </script>
 
 <style>
   .container {
-    background-color: var(--color-fill-ghost);
-    clip-path: var(--2px-corner-fill);
-    display: flex;
-    height: 32px;
-    align-items: center;
-    padding: 0 2px;
-  }
-  button {
-    height: 28px;
-    cursor: pointer;
     display: flex;
     align-items: center;
-    border: none;
-    white-space: nowrap;
-    touch-action: manipulation;
-    clip-path: var(--1px-corner-fill);
-    font-size: var(--font-size-small);
-    margin: 0;
-    padding: 0 1rem;
-    color: var(--color-foreground-contrast);
-    background-color: var(--color-fill-ghost);
-    font-weight: var(--font-weight-semibold);
-  }
-
-  .active {
-    color: var(--color-foreground-emphasized);
-    background-color: var(--color-background-dip);
   }
 </style>
 
 <div class="container">
-  <button
-    class:active={$announce}
+  <Button
+    flatRight
+    variant="ghost"
+    active={$announce}
     onclick={() => {
       storeAnnounce(true);
     }}>
     Right away
-  </button>
+  </Button>
 
-  <button
-    class:active={!$announce}
+  <Button
+    flatLeft
+    variant="ghost"
+    active={!$announce}
     onclick={() => {
       storeAnnounce(false);
     }}>
     Periodically
-  </button>
+  </Button>
 </div>
