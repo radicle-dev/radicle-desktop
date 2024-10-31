@@ -6,6 +6,7 @@
   export let repo: RepoInfo;
   export let selfDid: string;
   export let emphasizedTitle: boolean = true;
+  export let showLabels: boolean = true;
 
   $: project = repo.payloads["xyz.radicle.project"]!;
 </script>
@@ -42,7 +43,7 @@
     {/if}
   </div>
   <div class="global-flex">
-    {#if repo.visibility.type === "private"}
+    {#if showLabels && repo.visibility.type === "private"}
       <div
         class="global-counter"
         style:padding="0"
@@ -52,7 +53,7 @@
         </div>
       </div>
     {/if}
-    {#if repo.delegates.find(x => x.did === selfDid)}
+    {#if showLabels && repo.delegates.find(x => x.did === selfDid)}
       <div
         class="global-counter"
         style:padding="0"

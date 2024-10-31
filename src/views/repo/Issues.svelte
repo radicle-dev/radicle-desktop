@@ -73,6 +73,7 @@
       styleHeight="32px">
       <RepoHeader
         {repo}
+        showLabels={false}
         selfDid={`did:key:${config.publicKey}`}
         emphasizedTitle={false} />
     </Border>
