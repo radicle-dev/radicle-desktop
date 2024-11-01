@@ -343,7 +343,7 @@
     <div class="issue-list">
       {#each issues as sidebarIssue}
         <Link
-          variant="tab"
+          variant={sidebarIssue.id === issue.id ? "active" : "tab"}
           route={{
             resource: "repo.issue",
             rid: repo.rid,
