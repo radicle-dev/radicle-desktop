@@ -46,29 +46,28 @@
   {popoverPositionRight}
   {popoverPositionLeft}
   popoverPadding="0">
-  <Icon
-    name="face"
-    slot="toggle"
-    let:toggle
-    onclick={toggle}
-    styleCursor="pointer" />
-  <Border variant="ghost" slot="popover">
-    <div class="selector">
-      {#each availableReactions as reaction}
-        {@const lookedUpReaction = reactions?.find(
-          ({ emoji }) => emoji === reaction,
-        )}
-        <button
-          class:active={Boolean(lookedUpReaction)}
-          onclick={() => {
-            dispatch(
-              "select",
-              lookedUpReaction || { emoji: reaction, authors: [] },
-            );
-          }}>
-          {reaction}
-        </button>
-      {/each}
-    </div>
-  </Border>
+  {#snippet toggle(onclick)}
+    <Icon name="face" {onclick} styleCursor="pointer" />
+  {/snippet}
+  {#snippet popover()}
+    <Border variant="ghost">
+      <div class="selector">
+        {#each availableReactions as reaction}
+          {@const lookedUpReaction = reactions?.find(
+            ({ emoji }) => emoji === reaction,
+          )}
+          <button
+            class:active={Boolean(lookedUpReaction)}
+            onclick={() => {
+              dispatch(
+                "select",
+                lookedUpReaction || { emoji: reaction, authors: [] },
+              );
+            }}>
+            {reaction}
+          </button>
+        {/each}
+      </div>
+    </Border>
+  {/snippet}
 </Popover>

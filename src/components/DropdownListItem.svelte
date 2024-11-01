@@ -1,4 +1,7 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
+  export let children: Snippet;
   export let selected: boolean;
   export let disabled: boolean = false;
   export let title: string | undefined = undefined;
@@ -53,5 +56,5 @@
   {style}
   {title}
   on:click>
-  <slot />
+  {@render children()}
 </div>

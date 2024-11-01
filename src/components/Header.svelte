@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import { nodeRunning } from "@app/lib/events";
 
   import AnnounceSwitch from "./AnnounceSwitch.svelte";
@@ -8,6 +10,10 @@
   import OutlineButton from "./OutlineButton.svelte";
   import Popover from "./Popover.svelte";
   import ThemeSwitch from "./ThemeSwitch.svelte";
+
+  export let breadcrumbs: Snippet;
+  export let iconLeft: Snippet | undefined = undefined;
+  export let center: Snippet | undefined = undefined;
 </script>
 
 <style>
@@ -67,10 +73,10 @@
             <Icon name="arrow-right" />
           </NakedButton>
         </div>
-        <slot name="icon-left" />
+        {@render iconLeft?.()}
       </div>
 
-      <slot name="center" />
+      {@render center?.()}
 
       <div class="global-flex" style:gap="0.5rem">
         <OutlineButton variant="ghost">
@@ -83,43 +89,42 @@
           {/if}
         </OutlineButton>
         <Popover popoverPositionRight="0" popoverPositionTop="3rem">
-          <NakedButton
-            variant="ghost"
-            slot="toggle"
-            let:toggle
-            onclick={toggle}>
-            <Icon name="settings" />
-          </NakedButton>
-          <Border
-            variant="ghost"
-            slot="popover"
-            stylePadding="0.5rem 1rem"
-            styleWidth="27rem">
-            <div
-              class="global-flex"
-              style:flex-direction="column"
-              style:align-items="flex-start"
-              style:gap="1rem"
-              style:width="100%">
+          {#snippet toggle(onclick)}
+            <NakedButton variant="ghost" {onclick}>
+              <Icon name="settings" />
+            </NakedButton>
+          {/snippet}
+          {#snippet popover()}
+            <Border
+              variant="ghost"
+              stylePadding="0.5rem 1rem"
+              styleWidth="27rem">
               <div
                 class="global-flex"
-                style:justify-content="space-between"
+                style:flex-direction="column"
+                style:align-items="flex-start"
+                style:gap="1rem"
                 style:width="100%">
-                Theme <ThemeSwitch />
+                <div
+                  class="global-flex"
+                  style:justify-content="space-between"
+                  style:width="100%">
+                  Theme <ThemeSwitch />
+                </div>
+                <div
+                  class="global-flex"
+                  style:justify-content="space-between"
+                  style:width="100%">
+                  Announce changes <AnnounceSwitch />
+                </div>
               </div>
-              <div
-                class="global-flex"
-                style:justify-content="space-between"
-                style:width="100%">
-                Announce changes <AnnounceSwitch />
-              </div>
-            </div>
-          </Border>
+            </Border>
+          {/snippet}
         </Popover>
       </div>
     </div>
     <div class="global-flex txt-tiny txt-semibold breadcrumbs">
-      <slot name="breadcrumbs" />
+      {@render breadcrumbs()}
     </div>
   </div>
   <div class="bottom-pixel-corners"></div>

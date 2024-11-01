@@ -1,4 +1,7 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
+  export let children: Snippet;
   export let variant: "primary" | "secondary" | "ghost" | "float" | "danger";
   export let hoverable: boolean = false;
   export let onclick: (() => void) | undefined = undefined;
@@ -198,7 +201,7 @@
     style:padding={stylePadding}
     style:gap={styleGap}
     style:overflow={styleOverflow}>
-    <slot />
+    {@render children()}
   </div>
   <div class="p3-4"></div>
   <div class="p3-5"></div>

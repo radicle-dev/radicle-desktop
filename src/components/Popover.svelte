@@ -8,6 +8,10 @@
 </script>
 
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
+  export let toggle: Snippet<[() => void]>;
+  export let popover: Snippet;
   export let popoverContainerMinWidth: string | undefined = undefined;
   export let popoverPadding: string | undefined = undefined;
   export let popoverPositionBottom: string | undefined = undefined;
@@ -24,7 +28,7 @@
     }
   }
 
-  function toggle() {
+  function toggleFn() {
     expanded = !expanded;
     if ($focused === thisComponent) {
       closeFocused();
@@ -53,7 +57,7 @@
   bind:this={thisComponent}
   class="container"
   style:min-width={popoverContainerMinWidth}>
-  <slot name="toggle" {expanded} {toggle} />
+  {@render toggle(toggleFn)}
 
   {#if expanded}
     <div
@@ -63,7 +67,7 @@
       style:right={popoverPositionRight}
       style:top={popoverPositionTop}
       style:padding={popoverPadding}>
-      <slot name="popover" {toggle} />
+      {@render popover()}
     </div>
   {/if}
 </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ComponentProps } from "svelte";
+  import type { ComponentProps, Snippet } from "svelte";
 
   import { debounce } from "lodash";
   import { writeText } from "@tauri-apps/plugin-clipboard-manager";
@@ -8,6 +8,7 @@
 
   import Icon from "./Icon.svelte";
 
+  export let children: Snippet | undefined = undefined;
   export let id: string;
   export let clipboard: string = id;
   export let shorten: boolean = true;
@@ -90,13 +91,13 @@
     }}
     role="button"
     tabindex="0">
-    <slot>
-      {#if shorten}
-        {formatOid(id)}
-      {:else}
-        {id}
-      {/if}
-    </slot>
+    {#if children}
+      {@render children()}
+    {:else if shorten}
+      {formatOid(id)}
+    {:else}
+      {id}
+    {/if}
   </div>
 
   {#if visible}

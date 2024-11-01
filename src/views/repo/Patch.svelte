@@ -70,7 +70,7 @@
 </style>
 
 <Layout>
-  <svelte:fragment slot="breadcrumbs">
+  {#snippet breadcrumbs()}
     <Link route={{ resource: "home" }}>
       <NodeId
         publicKey={config.publicKey}
@@ -86,13 +86,13 @@
     </Link>
     <Icon name="chevron-right" />
     Patches
-  </svelte:fragment>
+  {/snippet}
 
-  <svelte:fragment slot="header-center">
+  {#snippet headerCenter()}
     <CopyableId id={patch.id} />
-  </svelte:fragment>
+  {/snippet}
 
-  <svelte:fragment slot="sidebar">
+  {#snippet sidebar()}
     <Border
       hoverable={false}
       variant="ghost"
@@ -138,7 +138,7 @@
         </Link>
       {/each}
     </div>
-  </svelte:fragment>
+  {/snippet}
 
   <div class="content">
     <div class="title">

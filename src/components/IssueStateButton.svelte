@@ -48,29 +48,28 @@
     popoverPadding="0"
     popoverPositionTop="3rem"
     popoverPositionRight="0">
-    <Button
-      flatLeft
-      slot="toggle"
-      let:toggle
-      onclick={toggle}
-      variant="secondary">
-      <div style:height="22px" class="global-flex">
-        <Icon name="chevron-down" />
-      </div>
-    </Button>
-    <Border variant="ghost" slot="popover">
-      <DropdownList items={actions.filter(a => !isEqual(a.state, state))}>
-        <svelte:fragment slot="item" let:item={action}>
-          <DropdownListItem
-            selected={isEqual(selectedAction, action)}
-            on:click={() => {
-              selectedAction = action;
-              closeFocused();
-            }}>
-            {action.caption}
-          </DropdownListItem>
-        </svelte:fragment>
-      </DropdownList>
-    </Border>
+    {#snippet toggle(onclick)}
+      <Button flatLeft {onclick} variant="secondary">
+        <div style:height="22px" class="global-flex">
+          <Icon name="chevron-down" />
+        </div>
+      </Button>
+    {/snippet}
+    {#snippet popover()}
+      <Border variant="ghost">
+        <DropdownList items={actions.filter(a => !isEqual(a.state, state))}>
+          {#snippet item(action)}
+            <DropdownListItem
+              selected={isEqual(selectedAction, action)}
+              on:click={() => {
+                selectedAction = action;
+                closeFocused();
+              }}>
+              {action.caption}
+            </DropdownListItem>
+          {/snippet}
+        </DropdownList>
+      </Border>
+    {/snippet}
   </Popover>
 </div>

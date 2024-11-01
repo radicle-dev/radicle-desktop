@@ -1,10 +1,16 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import { onMount } from "svelte";
 
   import Header from "@app/components/Header.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
 
+  export let children: Snippet;
+  export let breadcrumbs: Snippet;
+  export let headerCenter: Snippet | undefined = undefined;
+  export let sidebar: Snippet;
   export let loadMore: (() => Promise<void>) | undefined = undefined;
 
   let hidden = false;
@@ -60,8 +66,8 @@
 
 <div class="layout">
   <div class="header">
-    <Header>
-      <svelte:fragment slot="icon-left">
+    <Header {breadcrumbs} center={headerCenter}>
+      {#snippet iconLeft()}
         <NakedButton
           variant="ghost"
           onclick={() => {
@@ -69,25 +75,17 @@
           }}>
           <Icon name="sidebar" />
         </NakedButton>
-      </svelte:fragment>
-
-      <svelte:fragment slot="center">
-        <slot name="header-center" />
-      </svelte:fragment>
-
-      <svelte:fragment slot="breadcrumbs">
-        <slot name="breadcrumbs" />
-      </svelte:fragment>
+      {/snippet}
     </Header>
   </div>
 
   <div class="sidebar" class:hidden>
-    <slot name="sidebar" />
+    {@render sidebar()}
   </div>
 
   <div
     class="content global-reset-scroll-after-navigate"
     bind:this={listElement}>
-    <slot />
+    {@render children()}
   </div>
 </div>

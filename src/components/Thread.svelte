@@ -97,9 +97,9 @@
         canEditComment(root.author.did) &&
         partial(editComment, root.id)}
       reactOnComment={reactOnComment && partial(reactOnComment, root.id)}>
-      <svelte:fragment slot="actions">
+      {#snippet actions()}
         <Icon name="reply" onclick={toggleReply} styleCursor="pointer" />
-      </svelte:fragment>
+      {/snippet}
     </CommentComponent>
   </div>
   {#if replies.length > 0 || (createReply && showReplyForm)}

@@ -297,7 +297,7 @@
 </style>
 
 <Layout>
-  <svelte:fragment slot="breadcrumbs">
+  {#snippet breadcrumbs()}
     <Link route={{ resource: "home" }}>
       <NodeId
         publicKey={config.publicKey}
@@ -313,13 +313,13 @@
     </Link>
     <Icon name="chevron-right" />
     Issues
-  </svelte:fragment>
+  {/snippet}
 
-  <svelte:fragment slot="header-center">
+  {#snippet headerCenter()}
     <CopyableId id={issue.id} />
-  </svelte:fragment>
+  {/snippet}
 
-  <svelte:fragment slot="sidebar">
+  {#snippet sidebar()}
     <Border
       hoverable={false}
       variant="ghost"
@@ -362,7 +362,7 @@
         </Link>
       {/each}
     </div>
-  </svelte:fragment>
+  {/snippet}
 
   <div class="content">
     <div style:margin-bottom="1rem" style:margin-top="-4px">
@@ -439,10 +439,9 @@
           config.publicKey,
           issueBody.id,
         )}>
-        <svelte:fragment slot="actions">
+        {#snippet actions()}
           <Icon styleCursor="pointer" name="reply" onclick={toggleReply} />
-        </svelte:fragment>
-        <svelte:fragment slot="caption">opened</svelte:fragment>
+        {/snippet}
       </CommentComponent>
     </div>
     <div class="connector"></div>

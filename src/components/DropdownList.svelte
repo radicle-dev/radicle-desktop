@@ -1,4 +1,8 @@
 <script lang="ts" generics="T">
+  import type { Snippet } from "svelte";
+
+  export let item: Snippet<[T]>;
+  export let empty: Snippet | undefined = undefined;
   export let items: T[];
   export let styleDropdownMinWidth: string | undefined = undefined;
 </script>
@@ -17,13 +21,13 @@
 </style>
 
 <div class="dropdown" style:min-width={styleDropdownMinWidth}>
-  {#each items as item}
+  {#each items as i}
     <div class="dropdown-item">
-      <slot name="item" {item} />
+      {@render item(i)}
     </div>
   {:else}
     <div class="dropdown-item">
-      <slot name="empty" />
+      {@render empty?.()}
     </div>
   {/each}
 </div>

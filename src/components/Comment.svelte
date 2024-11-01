@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import type { Author } from "@bindings/cob/Author";
   import type { Edit } from "@bindings/cob/patch/Edit";
   import type { Reaction } from "@bindings/cob/Reaction";
@@ -17,6 +18,7 @@
   import ReactionSelector from "@app/components/ReactionSelector.svelte";
   import Reactions from "@app/components/Reactions.svelte";
 
+  export let actions: Snippet | undefined = undefined;
   export let id: string | undefined = undefined;
   export let rid: string;
   export let author: Author;
@@ -105,9 +107,8 @@
 <div class="card" {id}>
   <div style:position="relative">
     <div class="card-header">
-      <slot class="icon" name="icon" />
       <NodeId {...utils.authorForNodeId(author)} />
-      <slot name="caption">{caption}</slot>
+      {caption}
       {#if id}
         <Id {id} variant="oid" />
       {/if}
@@ -143,7 +144,7 @@
               }
             }} />
         {/if}
-        <slot name="actions" />
+        {@render actions?.()}
       </div>
     </div>
   </div>

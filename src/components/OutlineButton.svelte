@@ -1,4 +1,7 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
+  export let children: Snippet;
   export let variant: "primary" | "secondary" | "ghost";
   export let onclick: (() => void) | undefined = undefined;
   export let disabled: boolean = false;
@@ -261,7 +264,9 @@
 
   <div class="pixel p3-1"></div>
   <div class="pixel p3-2"></div>
-  <div class="pixel p3-3 txt-semibold txt-small"><slot /></div>
+  <div class="pixel p3-3 txt-semibold txt-small">
+    {@render children()}
+  </div>
   <div class="pixel p3-4"></div>
   <div class="pixel p3-5"></div>
 

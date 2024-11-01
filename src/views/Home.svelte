@@ -37,16 +37,16 @@
 <div style:height="fit-content">
   <div class="header">
     <Header>
-      <svelte:fragment slot="center">
+      {#snippet center()}
         <CopyableId id={`did:key:${config.publicKey}`} />
-      </svelte:fragment>
-      <svelte:fragment slot="breadcrumbs">
+      {/snippet}
+      {#snippet breadcrumbs()}
         <NodeId
           publicKey={config.publicKey}
           alias={config.alias}
           styleFontFamily="var(--font-family-sans-serif)"
           styleFontSize="var(--font-size-tiny)" />
-      </svelte:fragment>
+      {/snippet}
     </Header>
   </div>
   <div style:padding="1rem">

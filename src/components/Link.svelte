@@ -1,8 +1,10 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
   import type { Route } from "@app/lib/router/definitions";
 
   import { push, routeToPath } from "@app/lib/router";
 
+  export let children: Snippet;
   export let route: Route;
   export let disabled: boolean = false;
   export let variant: "active" | "regular" | "tab" = "regular";
@@ -58,5 +60,5 @@
   class:regular={variant === "regular"}
   class:active={variant === "active"}
   class:tab={variant === "tab"}>
-  <slot />
+  {@render children()}
 </a>
