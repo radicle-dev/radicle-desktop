@@ -50,8 +50,10 @@ export async function loadRoute(
   _previousLoaded: LoadedRoute,
 ): Promise<LoadedRoute> {
   if (route.resource === "home") {
-    const repos: RepoInfo[] = await invoke("list_repos");
-    const config: Config = await invoke("config");
+    const [config, repos] = await Promise.all([
+      invoke<Config>("config"),
+      invoke<RepoInfo[]>("list_repos"),
+    ]);
     return { resource: "home", params: { repos, config } };
   } else if (route.resource === "repo.issue") {
     return loadIssue(route);

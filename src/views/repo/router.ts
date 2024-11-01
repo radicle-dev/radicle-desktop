@@ -107,21 +107,23 @@ export type LoadedRepoRoute =
 export async function loadPatch(
   route: RepoPatchRoute,
 ): Promise<LoadedRepoPatchRoute> {
-  const repo: RepoInfo = await invoke("repo_by_id", {
-    rid: route.rid,
-  });
-  const config: Config = await invoke("config");
-  const patches: PaginatedQuery<Patch[]> = await invoke("list_patches", {
-    rid: route.rid,
-  });
-  const patch: Patch = await invoke("patch_by_id", {
-    rid: route.rid,
-    id: route.patch,
-  });
-  const revisions: Revision[] = await invoke("revisions_by_patch", {
-    rid: route.rid,
-    id: route.patch,
-  });
+  const [config, repo, patches, patch, revisions] = await Promise.all([
+    invoke<Config>("config"),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<PaginatedQuery<Patch[]>>("list_patches", {
+      rid: route.rid,
+    }),
+    invoke<Patch>("patch_by_id", {
+      rid: route.rid,
+      id: route.patch,
+    }),
+    invoke<Revision[]>("revisions_by_patch", {
+      rid: route.rid,
+      id: route.patch,
+    }),
+  ]);
 
   return {
     resource: "repo.patch",
@@ -132,14 +134,16 @@ export async function loadPatch(
 export async function loadPatches(
   route: RepoPatchesRoute,
 ): Promise<LoadedRepoPatchesRoute> {
-  const repo: RepoInfo = await invoke("repo_by_id", {
-    rid: route.rid,
-  });
-  const config: Config = await invoke("config");
-  const patches: PaginatedQuery<Patch[]> = await invoke("list_patches", {
-    rid: route.rid,
-    status: route.status,
-  });
+  const [config, repo, patches] = await Promise.all([
+    invoke<Config>("config"),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<PaginatedQuery<Patch[]>>("list_patches", {
+      rid: route.rid,
+      status: route.status,
+    }),
+  ]);
 
   return {
     resource: "repo.patches",
@@ -150,14 +154,16 @@ export async function loadPatches(
 export async function loadCreateIssue(
   route: RepoCreateIssueRoute,
 ): Promise<LoadedRepoCreateIssueRoute> {
-  const repo: RepoInfo = await invoke("repo_by_id", {
-    rid: route.rid,
-  });
-  const config: Config = await invoke("config");
-  const issues: Issue[] = await invoke("list_issues", {
-    rid: route.rid,
-    status: "all",
-  });
+  const [config, repo, issues] = await Promise.all([
+    invoke<Config>("config"),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Issue[]>("list_issues", {
+      rid: route.rid,
+      status: "all",
+    }),
+  ]);
 
   return {
     resource: "repo.createIssue",
@@ -168,18 +174,20 @@ export async function loadCreateIssue(
 export async function loadIssue(
   route: RepoIssueRoute,
 ): Promise<LoadedRepoIssueRoute> {
-  const repo: RepoInfo = await invoke("repo_by_id", {
-    rid: route.rid,
-  });
-  const config: Config = await invoke("config");
-  const issues: Issue[] = await invoke("list_issues", {
-    rid: route.rid,
-    status: "all",
-  });
-  const issue: Issue = await invoke("issue_by_id", {
-    rid: route.rid,
-    id: route.issue,
-  });
+  const [config, repo, issue, issues] = await Promise.all([
+    invoke<Config>("config"),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Issue>("issue_by_id", {
+      rid: route.rid,
+      id: route.issue,
+    }),
+    invoke<Issue[]>("list_issues", {
+      rid: route.rid,
+      status: "all",
+    }),
+  ]);
 
   return {
     resource: "repo.issue",
@@ -190,14 +198,16 @@ export async function loadIssue(
 export async function loadIssues(
   route: RepoIssuesRoute,
 ): Promise<LoadedRepoIssuesRoute> {
-  const repo: RepoInfo = await invoke("repo_by_id", {
-    rid: route.rid,
-  });
-  const config: Config = await invoke("config");
-  const issues: Issue[] = await invoke("list_issues", {
-    rid: route.rid,
-    status: route.status,
-  });
+  const [config, repo, issues] = await Promise.all([
+    invoke<Config>("config"),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Issue[]>("list_issues", {
+      rid: route.rid,
+      status: route.status,
+    }),
+  ]);
 
   return {
     resource: "repo.issues",
