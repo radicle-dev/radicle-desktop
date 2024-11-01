@@ -226,6 +226,11 @@
         },
         opts: { announce: $announce },
       });
+      // Update sidebar issue icon without reloading the whole issue list.
+      const issueIndex = issues.findIndex(i => i.id === issue.id);
+      if (issueIndex !== -1) {
+        issues[issueIndex].state = state;
+      }
     } catch (error) {
       console.error("Editing reactions failed", error);
     } finally {
