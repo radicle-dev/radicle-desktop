@@ -2,9 +2,12 @@
   import dompurify from "dompurify";
   import escape from "lodash/escape";
 
-  export let content: string;
-  export let fontSize: "tiny" | "small" | "regular" | "medium" | "large" =
-    "small";
+  interface Props {
+    content: string;
+    fontSize?: "tiny" | "small" | "regular" | "medium" | "large";
+  }
+
+  const { content, fontSize = "small" }: Props = $props();
 
   function formatInlineTitle(input: string): string {
     return input.replaceAll(/`([^`]+)`/g, "<code>$1</code>");

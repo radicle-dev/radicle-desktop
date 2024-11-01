@@ -35,48 +35,57 @@
 
   import Layout from "./Layout.svelte";
 
-  export let repo: RepoInfo;
-  export let issue: Issue;
-  export let issues: Issue[];
-  export let config: Config;
+  interface Props {
+    repo: RepoInfo;
+    issue: Issue;
+    issues: Issue[];
+    config: Config;
+  }
 
-  let topLevelReplyOpen = false;
-  let editingTitle = false;
-  let updatedTitle: string = issue.title;
+  /* eslint-disable prefer-const */
+  let { repo, issue, issues: initialIssues, config }: Props = $props();
+  /* eslint-enable prefer-const */
+
+  const issues = $state(initialIssues);
+  let topLevelReplyOpen = $state(false);
+  let editingTitle = $state(false);
+  let updatedTitle = $state(issue.title);
 
   // The view doesn't get destroyed when we switch between different issues in
   // the sidebar and because of that the top-level state gets retained when the
   // issue changes. This reactive statement makes sure we always load the new
   // issue and reset the state to defaults.
   let issueId = issue.id;
-  $: if (issueId !== issue.id) {
-    issueId = issue.id;
-    topLevelReplyOpen = false;
-    editingTitle = false;
-    updatedTitle = issue.title;
-    void loadActivity();
-  }
+  $effect(() => {
+    if (issueId !== issue.id) {
+      issueId = issue.id;
+      topLevelReplyOpen = false;
+      editingTitle = false;
+      updatedTitle = issue.title;
+      void loadActivity();
+    }
+  });
 
-  $: project = repo.payloads["xyz.radicle.project"]!;
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
+  const issueBody = $derived(issue.discussion[0]);
+  const threads = $derived(
+    issue.discussion
+      .filter(
+        comment =>
+          (comment.id !== issueBody.id && !comment.replyTo) ||
+          comment.replyTo === issueBody.id,
+      )
+      .map(thread => {
+        return {
+          root: thread,
+          replies: issue.discussion
+            .filter(comment => comment.replyTo === thread.id)
+            .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
+        };
+      }, []),
+  );
 
-  $: issueBody = issue.discussion[0];
-
-  $: threads = issue.discussion
-    .filter(
-      comment =>
-        (comment.id !== issueBody.id && !comment.replyTo) ||
-        comment.replyTo === issueBody.id,
-    )
-    .map(thread => {
-      return {
-        root: thread,
-        replies: issue.discussion
-          .filter(comment => comment.replyTo === thread.id)
-          .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
-      };
-    }, []);
-
-  let activity: Operation[];
+  let activity = $state<Operation[]>([]);
 
   async function loadActivity() {
     activity = await invoke("activity_by_id", {

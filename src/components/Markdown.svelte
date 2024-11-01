@@ -1,34 +1,35 @@
 <script lang="ts">
   import dompurify from "dompurify";
   import matter from "@radicle/gray-matter";
-  import { afterUpdate } from "svelte";
   import { toDom } from "hast-util-to-dom";
 
   import { Renderer, markdownWithExtensions } from "@app/lib/markdown";
   import { highlight } from "@app/lib/syntax";
   import { twemoji, scrollIntoView, isCommit } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
+  import { tick } from "svelte";
 
-  export let rid: string;
-  export let content: string;
-  // If true, add <br> on a single line break
-  export let breaks: boolean = false;
+  interface Props {
+    rid: string;
+    content: string;
+    // If true, add <br> on a single line break
+    breaks?: boolean;
+  }
+
+  const { rid, content, breaks = false }: Props = $props();
 
   let container: HTMLElement;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let frontMatter: [string, any][] | undefined = undefined;
 
-  $: {
+  const doc = $derived(matter(content));
+  const frontMatter = $derived.by(() => {
     try {
-      const doc = matter(content);
-      content = doc.content;
-      frontMatter = Object.entries(doc.data).filter(
+      return Object.entries(doc.data).filter(
         ([, val]) => typeof val === "string" || typeof val === "number",
       );
     } catch (error) {
       console.error("Not able to parse frontmatter: ", error);
     }
-  }
+  });
 
   function render(content: string): string {
     return dompurify.sanitize(
@@ -39,85 +40,86 @@
     );
   }
 
-  afterUpdate(async () => {
-    for (const e of container.querySelectorAll("a")) {
-      try {
-        const url = new URL(e.href);
-        if (url.origin !== window.origin) {
-          e.target = "_blank";
+  $effect(() => {
+    void tick().then(() => {
+      for (const e of container.querySelectorAll("a")) {
+        try {
+          const url = new URL(e.href);
+          if (url.origin !== window.origin) {
+            e.target = "_blank";
+          }
+        } catch (e) {
+          console.warn("Not able to parse url", e);
         }
-      } catch (e) {
-        console.warn("Not able to parse url", e);
+        // Don't underline <a> tags that contain images.
+        // Make an exception for emojis.
+        if (
+          e.firstElementChild instanceof HTMLImageElement &&
+          !e.firstElementChild.classList.contains("txt-emoji")
+        ) {
+          e.classList.add("no-underline");
+        }
       }
-      // Don't underline <a> tags that contain images.
-      // Make an exception for emojis.
-      if (
-        e.firstElementChild instanceof HTMLImageElement &&
-        !e.firstElementChild.classList.contains("txt-emoji")
-      ) {
-        e.classList.add("no-underline");
+
+      // Replace standard HTML checkboxes with our custom radicle-icon-small element
+      for (const i of container.querySelectorAll('input[type="checkbox"]')) {
+        i.parentElement?.classList.add("task-item");
+
+        const checkbox = document.createElement("radicle-icon-small");
+        const checked = i.getAttribute("checked");
+        checkbox.setAttribute(
+          "name",
+          checked === null ? "checkbox-unchecked" : "checkbox-checked",
+        );
+        i.insertAdjacentElement("beforebegin", checkbox);
+        i.remove();
       }
-    }
 
-    // Replace standard HTML checkboxes with our custom radicle-icon-small element
-    for (const i of container.querySelectorAll('input[type="checkbox"]')) {
-      i.parentElement?.classList.add("task-item");
+      // Iterate over all images, and replace the source with a canonicalized URL
+      // pointing at the repos /raw endpoint.
+      for (const i of container.querySelectorAll("img")) {
+        const imagePath = i.getAttribute("src");
 
-      const checkbox = document.createElement("radicle-icon-small");
-      const checked = i.getAttribute("checked");
-      checkbox.setAttribute(
-        "name",
-        checked === null ? "checkbox-unchecked" : "checkbox-checked",
-      );
-      i.insertAdjacentElement("beforebegin", checkbox);
-      i.remove();
-    }
-
-    // Iterate over all images, and replace the source with a canonicalized URL
-    // pointing at the repos /raw endpoint.
-    for (const i of container.querySelectorAll("img")) {
-      const imagePath = i.getAttribute("src");
-
-      // If the image is an oid embed
-      if (imagePath && isCommit(imagePath)) {
-        const base64Content = await invoke<string>("get_file_by_oid", {
-          rid,
-          oid: imagePath,
-        });
-
-        i.setAttribute("src", `data:image/jpeg;base64,${base64Content}`);
-        continue;
+        // If the image is an oid embed
+        if (imagePath && isCommit(imagePath)) {
+          void invoke<string>("get_file_by_oid", {
+            rid,
+            oid: imagePath,
+          }).then(base64Content =>
+            i.setAttribute("src", `data:image/jpeg;base64,${base64Content}`),
+          );
+        }
       }
-    }
 
-    // Replaces code blocks in the background with highlighted code.
-    const prefix = "language-";
-    const nodes = Array.from(document.body.querySelectorAll("pre code"));
+      // Replaces code blocks in the background with highlighted code.
+      const prefix = "language-";
+      const nodes = Array.from(document.body.querySelectorAll("pre code"));
 
-    const treeChanges: Promise<void>[] = [];
+      const treeChanges: Promise<void>[] = [];
 
-    for (const node of nodes) {
-      const className = Array.from(node.classList).find(name =>
-        name.startsWith(prefix),
-      );
-      if (!className) continue;
+      for (const node of nodes) {
+        const className = Array.from(node.classList).find(name =>
+          name.startsWith(prefix),
+        );
+        if (!className) continue;
 
-      treeChanges.push(
-        highlight(node.textContent ?? "", className.slice(prefix.length))
-          .then(tree => {
-            if (tree) {
-              node.replaceChildren(toDom(tree, { fragment: true }));
-            }
-          })
-          .catch(e => console.warn("Not able to highlight code block", e)),
-      );
-    }
+        treeChanges.push(
+          highlight(node.textContent ?? "", className.slice(prefix.length))
+            .then(tree => {
+              if (tree) {
+                node.replaceChildren(toDom(tree, { fragment: true }));
+              }
+            })
+            .catch(e => console.warn("Not able to highlight code block", e)),
+        );
+      }
 
-    await Promise.allSettled(treeChanges);
+      void Promise.allSettled(treeChanges);
 
-    if (window.location.hash) {
-      scrollIntoView(window.location.hash.substring(1));
-    }
+      if (window.location.hash) {
+        scrollIntoView(window.location.hash.substring(1));
+      }
+    });
   });
 </script>
 
@@ -385,17 +387,18 @@
 {#if frontMatter && frontMatter.length > 0}
   <div class="front-matter">
     <table>
-      {#each frontMatter as [key, val]}
-        <!-- svelte-ignore node_invalid_placement_ssr -->
-        <tr>
-          <td><span class="txt-bold">{key}</span></td>
-          <td>{val}</td>
-        </tr>
-      {/each}
+      <tbody>
+        {#each frontMatter as [key, val]}
+          <tr>
+            <td><span class="txt-bold">{key}</span></td>
+            <td>{val}</td>
+          </tr>
+        {/each}
+      </tbody>
     </table>
   </div>
 {/if}
 
 <div class="markdown" bind:this={container} use:twemoji={{ exclude: ["21a9"] }}>
-  {@html render(content)}
+  {@html render(doc.content)}
 </div>

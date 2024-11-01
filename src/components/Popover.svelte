@@ -10,17 +10,33 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  export let toggle: Snippet<[() => void]>;
-  export let popover: Snippet;
-  export let popoverContainerMinWidth: string | undefined = undefined;
-  export let popoverPadding: string | undefined = undefined;
-  export let popoverPositionBottom: string | undefined = undefined;
-  export let popoverPositionLeft: string | undefined = undefined;
-  export let popoverPositionRight: string | undefined = undefined;
-  export let popoverPositionTop: string | undefined = undefined;
+  interface Props {
+    toggle: Snippet<[() => void]>;
+    popover: Snippet;
+    popoverContainerMinWidth?: string;
+    popoverPadding?: string;
+    popoverPositionBottom?: string;
+    popoverPositionLeft?: string;
+    popoverPositionRight?: string;
+    popoverPositionTop?: string;
+    expanded?: boolean;
+  }
 
-  export let expanded = false;
-  let thisComponent: HTMLDivElement;
+  /* eslint-disable prefer-const */
+  let {
+    toggle,
+    popover,
+    popoverContainerMinWidth,
+    popoverPadding,
+    popoverPositionBottom,
+    popoverPositionLeft,
+    popoverPositionRight,
+    popoverPositionTop,
+    expanded = $bindable(false),
+  }: Props = $props();
+  /* eslint-enable prefer-const */
+
+  let thisComponent: HTMLDivElement | undefined = $state();
 
   function clickOutside(ev: MouseEvent | TouchEvent) {
     if ($focused && !ev.composedPath().includes($focused)) {
@@ -37,7 +53,9 @@
     }
   }
 
-  $: expanded = $focused === thisComponent;
+  $effect(() => {
+    expanded = $focused === thisComponent;
+  });
 </script>
 
 <style>

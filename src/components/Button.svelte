@@ -1,22 +1,33 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  export let children: Snippet;
-  export let variant: "primary" | "secondary" | "ghost";
-  export let onclick: (() => void) | undefined = undefined;
+  interface Props {
+    children: Snippet;
+    variant: "primary" | "secondary" | "ghost";
+    onclick?: () => void;
+    disabled?: boolean;
+    active?: boolean;
+    flatLeft?: boolean;
+    flatRight?: boolean;
+  }
 
-  export let disabled: boolean = false;
-  export let active: boolean = false;
+  const {
+    children,
+    variant,
+    onclick = undefined,
+    disabled = false,
+    active = false,
+    flatLeft = false,
+    flatRight = false,
+  }: Props = $props();
 
-  export let flatLeft: boolean = false;
-  export let flatRight: boolean = false;
-
-  $: style =
+  const style = $derived(
     `--button-color-1: var(--color-fill-${variant});` +
-    `--button-color-2: var(--color-fill-${variant}-hover);` +
-    `--button-color-3: var(--color-fill-${variant}-shade);` +
-    // The ghost colors are called --color-fill-counter and --color-fill-counter-emphasized.
-    `--button-color-4: var(--color-fill${variant === "ghost" ? "" : `-${variant}`}-counter)`;
+      `--button-color-2: var(--color-fill-${variant}-hover);` +
+      `--button-color-3: var(--color-fill-${variant}-shade);` +
+      // The ghost colors are called --color-fill-counter and --color-fill-counter-emphasized.
+      `--button-color-4: var(--color-fill${variant === "ghost" ? "" : `-${variant}`}-counter)`,
+  );
 </script>
 
 <style>
@@ -347,7 +358,7 @@
   }
 </style>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
   class="container active"
   style:cursor={!disabled ? "pointer" : "default"}

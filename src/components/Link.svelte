@@ -4,10 +4,19 @@
 
   import { push, routeToPath } from "@app/lib/router";
 
-  export let children: Snippet;
-  export let route: Route;
-  export let disabled: boolean = false;
-  export let variant: "active" | "regular" | "tab" = "regular";
+  interface Props {
+    children: Snippet;
+    route: Route;
+    disabled?: boolean;
+    variant?: "active" | "regular" | "tab";
+  }
+
+  const {
+    children,
+    route,
+    disabled = false,
+    variant = "regular",
+  }: Props = $props();
 
   function navigateToRoute(event: MouseEvent): void {
     event.preventDefault();

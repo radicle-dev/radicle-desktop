@@ -7,7 +7,11 @@
   import IssueStateBadge from "@app/components/IssueStateBadge.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
-  export let operation: Extract<Operation, { type: "lifecycle" }>;
+  interface Props {
+    operation: Extract<Operation, { type: "lifecycle" }>;
+  }
+
+  const { operation }: Props = $props();
 </script>
 
 <Border variant="float" stylePadding="1rem">

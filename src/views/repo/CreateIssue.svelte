@@ -21,13 +21,17 @@
   import Textarea from "@app/components/Textarea.svelte";
   import Markdown from "@app/components/Markdown.svelte";
 
-  export let repo: RepoInfo;
-  export let issues: Issue[];
-  export let config: Config;
+  interface Props {
+    repo: RepoInfo;
+    issues: Issue[];
+    config: Config;
+  }
 
-  let title: string = "";
-  let description: string = "";
-  let preview: boolean = false;
+  const { repo, issues, config }: Props = $props();
+
+  let title: string = $state("");
+  let description: string = $state("");
+  let preview: boolean = $state(false);
   const announce = false;
 
   const labels: string[] = [];
@@ -47,7 +51,7 @@
     });
   }
 
-  $: project = repo.payloads["xyz.radicle.project"]!;
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>
@@ -176,6 +180,7 @@
         placeholder="Description"
         bind:value={description}
         size="fixed-height"
+        submit={createIssue}
         styleMinHeight="100%" />
     {/if}
     <div

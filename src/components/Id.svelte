@@ -8,16 +8,9 @@
 
   import Icon from "./Icon.svelte";
 
-  export let children: Snippet | undefined = undefined;
-  export let id: string;
-  export let clipboard: string = id;
-  export let shorten: boolean = true;
-  export let variant: "oid" | "commit" | "none";
-  export let ariaLabel: string | undefined = undefined;
-
-  let icon: ComponentProps<Icon>["name"] = "copy";
+  let icon: ComponentProps<typeof Icon>["name"] = $state("copy");
   const text = "Click to copy";
-  let tooltip = text;
+  let tooltip = $state(text);
 
   const restoreIcon = debounce(() => {
     icon = "copy";
@@ -31,8 +24,26 @@
     restoreIcon();
   }
 
-  let visible: boolean = false;
-  export let debounceTimeout = 50;
+  let visible: boolean = $state(false);
+  interface Props {
+    children?: Snippet;
+    id: string;
+    clipboard?: string;
+    shorten?: boolean;
+    variant: "oid" | "commit" | "none";
+    ariaLabel?: string;
+    debounceTimeout?: number;
+  }
+
+  const {
+    children,
+    id,
+    clipboard = id,
+    shorten = true,
+    variant,
+    ariaLabel,
+    debounceTimeout = 50,
+  }: Props = $props();
 
   const setVisible = debounce((value: boolean) => {
     visible = value;
@@ -73,7 +84,7 @@
 </style>
 
 <div class="container">
-  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
     onmouseenter={() => {
       setVisible(true);

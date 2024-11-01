@@ -11,9 +11,13 @@
   import Popover from "./Popover.svelte";
   import ThemeSwitch from "./ThemeSwitch.svelte";
 
-  export let breadcrumbs: Snippet;
-  export let iconLeft: Snippet | undefined = undefined;
-  export let center: Snippet | undefined = undefined;
+  interface Props {
+    breadcrumbs: Snippet;
+    iconLeft?: Snippet;
+    center?: Snippet;
+  }
+
+  const { breadcrumbs, iconLeft, center }: Props = $props();
 </script>
 
 <style>

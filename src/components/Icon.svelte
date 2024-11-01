@@ -1,45 +1,53 @@
 <script lang="ts">
   import { unreachable } from "@app/lib/utils";
 
-  export let size: "16" | "32" = "16";
-  export let onclick: (() => void) | undefined = undefined;
-  export let styleCursor: "default" | "pointer" = "default";
+  interface Props {
+    size?: "16" | "32";
+    onclick?: () => void;
+    styleCursor?: "default" | "pointer";
+    name:
+      | "arrow-left"
+      | "arrow-right"
+      | "checkmark"
+      | "chevron-down"
+      | "chevron-right"
+      | "comment"
+      | "copy"
+      | "cross"
+      | "dashboard"
+      | "delegate"
+      | "diff"
+      | "eye"
+      | "face"
+      | "file"
+      | "inbox"
+      | "issue"
+      | "lock"
+      | "markdown"
+      | "moon"
+      | "more-vertical"
+      | "offline"
+      | "online"
+      | "patch"
+      | "pen"
+      | "plus"
+      | "reply"
+      | "repo"
+      | "revision"
+      | "seedling"
+      | "seedling-filled"
+      | "settings"
+      | "sidebar"
+      | "sun"
+      | "warning";
+  }
 
-  export let name:
-    | "arrow-left"
-    | "arrow-right"
-    | "checkmark"
-    | "chevron-down"
-    | "chevron-right"
-    | "comment"
-    | "copy"
-    | "cross"
-    | "dashboard"
-    | "delegate"
-    | "diff"
-    | "eye"
-    | "face"
-    | "file"
-    | "inbox"
-    | "issue"
-    | "lock"
-    | "markdown"
-    | "moon"
-    | "more-vertical"
-    | "offline"
-    | "online"
-    | "patch"
-    | "pen"
-    | "plus"
-    | "reply"
-    | "repo"
-    | "revision"
-    | "seedling"
-    | "seedling-filled"
-    | "settings"
-    | "sidebar"
-    | "sun"
-    | "warning";
+  const {
+    size = "16",
+    onclick = undefined,
+    styleCursor = "default",
+    name,
+  }: Props = $props();
 </script>
 
 <style>
@@ -52,8 +60,8 @@
   }
 </style>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <svg
   style:cursor={styleCursor}
   role="img"

@@ -9,7 +9,6 @@
     formatTimestamp,
     patchStatusColor,
   } from "@app/lib/utils";
-  import { invoke } from "@app/lib/invoke";
 
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -21,22 +20,17 @@
   import Markdown from "@app/components/Markdown.svelte";
   import Id from "@app/components/Id.svelte";
 
-  export let repo: RepoInfo;
-  export let patch: Patch;
-  export let patches: Patch[];
-  export let revisions: Revision[];
-  export let config: Config;
+  interface Props {
+    repo: RepoInfo;
+    patch: Patch;
+    patches: Patch[];
+    revisions: Revision[];
+    config: Config;
+  }
 
-  $: void invoke("get_diff", {
-    rid: repo.rid,
-    options: {
-      base: revisions[0].base,
-      head: revisions[0].head,
-      unified: 10,
-    },
-  }).then(console.log);
+  const { repo, patch, patches, revisions, config }: Props = $props();
 
-  $: project = repo.payloads["xyz.radicle.project"]!;
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>

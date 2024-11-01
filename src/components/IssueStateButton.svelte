@@ -12,8 +12,13 @@
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
 
-  export let state: State;
-  export let save: (state: State) => Promise<void>;
+  const {
+    save,
+    ...rest
+  }: {
+    state: State;
+    save: (state: State) => Promise<void>;
+  } = $props();
 
   const actions: { caption: string; state: State }[] = [
     { caption: "Reopen", state: { status: "open" } },
@@ -25,7 +30,9 @@
   ];
 
   // Pick a default for the action button when the issue state changes.
-  $: selectedAction = state.status === "open" ? actions[1] : actions[0];
+  let selectedAction = $state(
+    rest.state.status === "open" ? actions[1] : actions[0],
+  );
 </script>
 
 <style>
@@ -40,7 +47,7 @@
   <Button
     variant="secondary"
     flatRight
-    onclick={() => void save(selectedAction["state"])}>
+    onclick={() => void save($state.snapshot(selectedAction["state"]))}>
     {selectedAction["caption"]}
   </Button>
 
@@ -57,11 +64,12 @@
     {/snippet}
     {#snippet popover()}
       <Border variant="ghost">
-        <DropdownList items={actions.filter(a => !isEqual(a.state, state))}>
+        <DropdownList
+          items={actions.filter(a => !isEqual(a.state, rest.state))}>
           {#snippet item(action)}
             <DropdownListItem
               selected={isEqual(selectedAction, action)}
-              on:click={() => {
+              onclick={() => {
                 selectedAction = action;
                 closeFocused();
               }}>

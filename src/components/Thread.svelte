@@ -13,25 +13,38 @@
   import ExtendedTextarea from "./ExtendedTextarea.svelte";
   import Icon from "@app/components/Icon.svelte";
 
-  export let thread: {
-    root: Comment;
-    replies: Comment[];
-  };
-  export let rid: string;
-  export let canEditComment: (author: string) => true | undefined;
-  export let editComment:
-    | ((commentId: string, body: string, embeds: Embed[]) => Promise<void>)
-    | undefined;
-  export let createReply:
-    | ((commentId: string, comment: string, embeds: Embed[]) => Promise<void>)
-    | undefined;
-  export let reactOnComment:
-    | ((
-        commentId: string,
-        authors: Author[],
-        reaction: string,
-      ) => Promise<void>)
-    | undefined;
+  interface Props {
+    thread: {
+      root: Comment;
+      replies: Comment[];
+    };
+    rid: string;
+    canEditComment: (author: string) => true | undefined;
+    editComment?: (
+      commentId: string,
+      body: string,
+      embeds: Embed[],
+    ) => Promise<void>;
+    createReply?: (
+      commentId: string,
+      comment: string,
+      embeds: Embed[],
+    ) => Promise<void>;
+    reactOnComment?: (
+      commentId: string,
+      authors: Author[],
+      reaction: string,
+    ) => Promise<void>;
+  }
+
+  const {
+    thread,
+    rid,
+    canEditComment,
+    editComment,
+    createReply,
+    reactOnComment,
+  }: Props = $props();
 
   async function toggleReply() {
     showReplyForm = !showReplyForm;
@@ -46,16 +59,16 @@
     });
   }
 
-  let showReplyForm = false;
-  let submitInProgress = false;
+  let showReplyForm = $state(false);
+  let submitInProgress = $state(false);
 
-  $: root = thread.root;
-  $: replies = thread.replies;
-
-  $: style =
+  const root = $derived(thread.root);
+  const replies = $derived(thread.replies);
+  const style = $derived(
     replies.length > 0
       ? "--local-clip-path: var(--2px-top-corner-fill)"
-      : "--local-clip-path: var(--2px-corner-fill)";
+      : "--local-clip-path: var(--2px-corner-fill)",
+  );
 </script>
 
 <style>
@@ -135,8 +148,8 @@
               submitCaption="Reply"
               focus
               stylePadding="0.5rem 0.75rem"
-              on:close={() => (showReplyForm = false)}
-              on:submit={async ({ detail: { comment, embeds } }) => {
+              close={() => (showReplyForm = false)}
+              submit={async ({ comment, embeds }) => {
                 try {
                   submitInProgress = true;
                   await createReply(

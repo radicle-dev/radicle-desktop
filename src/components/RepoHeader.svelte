@@ -3,12 +3,21 @@
 
   import Icon from "./Icon.svelte";
 
-  export let repo: RepoInfo;
-  export let selfDid: string;
-  export let emphasizedTitle: boolean = true;
-  export let showLabels: boolean = true;
+  interface Props {
+    repo: RepoInfo;
+    selfDid: string;
+    emphasizedTitle?: boolean;
+    showLabels?: boolean;
+  }
 
-  $: project = repo.payloads["xyz.radicle.project"]!;
+  const {
+    repo,
+    selfDid,
+    emphasizedTitle = true,
+    showLabels = true,
+  }: Props = $props();
+
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>

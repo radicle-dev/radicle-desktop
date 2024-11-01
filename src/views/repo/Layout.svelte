@@ -7,20 +7,31 @@
   import Icon from "@app/components/Icon.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
 
-  export let children: Snippet;
-  export let breadcrumbs: Snippet;
-  export let headerCenter: Snippet | undefined = undefined;
-  export let sidebar: Snippet;
-  export let loadMore: (() => Promise<void>) | undefined = undefined;
+  interface Props {
+    children: Snippet;
+    breadcrumbs: Snippet;
+    headerCenter?: Snippet;
+    sidebar: Snippet;
+    loadMore?: () => Promise<void>;
+  }
 
-  let hidden = false;
-  let listElement: HTMLElement;
+  const {
+    children,
+    breadcrumbs,
+    headerCenter = undefined,
+    sidebar,
+    loadMore = undefined,
+  }: Props = $props();
+
+  let hidden = $state(false);
+  let listElement: HTMLElement | undefined = $state();
   let loading = false;
 
   onMount(() => {
     if (listElement && loadMore) {
       listElement.addEventListener("scroll", async () => {
         if (
+          listElement &&
           listElement.scrollTop + listElement.clientHeight >=
             listElement.scrollHeight - 600 &&
           loading === false

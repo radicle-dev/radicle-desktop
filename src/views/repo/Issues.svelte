@@ -17,12 +17,16 @@
   import RepoHeader from "@app/components/RepoHeader.svelte";
   import Button from "@app/components/Button.svelte";
 
-  export let repo: RepoInfo;
-  export let issues: Issue[];
-  export let config: Config;
-  export let status: IssueStatus;
+  interface Props {
+    repo: RepoInfo;
+    issues: Issue[];
+    config: Config;
+    status: IssueStatus;
+  }
 
-  $: project = repo.payloads["xyz.radicle.project"]!;
+  const { repo, issues, config, status }: Props = $props();
+
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>

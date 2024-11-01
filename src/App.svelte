@@ -59,7 +59,7 @@
     }
   });
 
-  $: document.documentElement.setAttribute("data-theme", $theme);
+  $effect(() => document.documentElement.setAttribute("data-theme", $theme));
 </script>
 
 {#if $activeRouteStore.resource === "booting"}

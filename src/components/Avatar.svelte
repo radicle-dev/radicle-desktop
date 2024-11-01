@@ -1,7 +1,11 @@
 <script lang="ts">
   import { createIcon } from "@app/lib/blockies";
 
-  export let publicKey: string;
+  const {
+    publicKey,
+  }: {
+    publicKey: string;
+  } = $props();
 
   function createContainer(source: string) {
     const seed = source.toLowerCase();

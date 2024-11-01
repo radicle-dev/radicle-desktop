@@ -1,11 +1,23 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  export let children: Snippet;
-  export let selected: boolean;
-  export let disabled: boolean = false;
-  export let title: string | undefined = undefined;
-  export let style: string | undefined = undefined;
+  interface Props {
+    children: Snippet;
+    selected: boolean;
+    onclick: () => void;
+    disabled?: boolean;
+    title?: string;
+    style?: string;
+  }
+
+  const {
+    onclick,
+    children,
+    selected,
+    disabled = false,
+    title,
+    style,
+  }: Props = $props();
 </script>
 
 <style>
@@ -46,7 +58,7 @@
   }
 </style>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
   role="button"
   tabindex="0"
@@ -55,6 +67,6 @@
   class:disabled
   {style}
   {title}
-  on:click>
+  {onclick}>
   {@render children()}
 </div>

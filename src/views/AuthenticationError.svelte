@@ -1,8 +1,12 @@
 <script lang="ts">
   import Icon from "@app/components/Icon.svelte";
 
-  export let error: string;
-  export let hint: string | undefined = undefined;
+  interface Props {
+    error: string;
+    hint?: string;
+  }
+
+  const { error, hint }: Props = $props();
 </script>
 
 <style>

@@ -9,8 +9,12 @@
   import RepoCard from "@app/components/RepoCard.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
-  export let repos: RepoInfo[];
-  export let config: Config;
+  interface Props {
+    repos: RepoInfo[];
+    config: Config;
+  }
+
+  const { repos, config }: Props = $props();
 </script>
 
 <style>

@@ -6,9 +6,13 @@
 
   import Icon from "./Icon.svelte";
 
-  export let id: string;
+  const {
+    id,
+  }: {
+    id: string;
+  } = $props();
 
-  let icon: ComponentProps<Icon>["name"] = "copy";
+  let icon: ComponentProps<typeof Icon>["name"] = $state("copy");
 
   const restoreIcon = debounce(() => {
     icon = "copy";

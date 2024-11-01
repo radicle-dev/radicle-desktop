@@ -18,26 +18,41 @@
   import ReactionSelector from "@app/components/ReactionSelector.svelte";
   import Reactions from "@app/components/Reactions.svelte";
 
-  export let actions: Snippet | undefined = undefined;
-  export let id: string | undefined = undefined;
-  export let rid: string;
-  export let author: Author;
-  export let body: string;
-  export let reactions: Reaction[] | undefined = undefined;
-  export let embeds: Map<string, Embed> | undefined = undefined;
-  export let caption = "commented";
-  export let timestamp: number;
-  export let lastEdit: Edit | undefined = undefined;
-  export let disallowEmptyBody: boolean = false;
+  interface Props {
+    actions?: Snippet;
+    id?: string;
+    rid: string;
+    author: Author;
+    body: string;
+    reactions?: Reaction[];
+    embeds?: Map<string, Embed>;
+    caption?: string;
+    timestamp: number;
+    lastEdit?: Edit;
+    disallowEmptyBody?: boolean;
+    editComment?: (body: string, embeds: Embed[]) => Promise<void>;
+    reactOnComment?: (authors: Author[], reaction: string) => Promise<void>;
+  }
 
-  export let editComment:
-    | ((body: string, embeds: Embed[]) => Promise<void>)
-    | undefined = undefined;
-  export let reactOnComment:
-    | ((authors: Author[], reaction: string) => Promise<void>)
-    | undefined = undefined;
+  /* eslint-disable prefer-const */
+  let {
+    actions,
+    id,
+    rid,
+    author,
+    body = $bindable(),
+    reactions,
+    embeds,
+    caption = "commented",
+    timestamp,
+    lastEdit,
+    disallowEmptyBody = false,
+    editComment,
+    reactOnComment,
+  }: Props = $props();
+  /* eslint-enable prefer-const */
 
-  let state: "read" | "edit" | "submit" = "read";
+  let state: "read" | "edit" | "submit" = $state("read");
 
   async function toggleEdit() {
     if (state === "read") {
@@ -136,7 +151,7 @@
             popoverPositionRight="0"
             popoverPositionBottom="1.5rem"
             {reactions}
-            on:select={async ({ detail: { authors, emoji } }) => {
+            select={async ({ authors, emoji }) => {
               try {
                 await reactOnComment(authors, emoji);
               } finally {
@@ -169,7 +184,7 @@
             submitInProgress={state === "submit"}
             submitCaption="Save"
             placeholder="Leave a comment"
-            on:submit={async ({ detail: { comment, embeds } }) => {
+            submit={async ({ comment, embeds }) => {
               state = "submit";
               try {
                 await editComment(comment, Array.from(embeds.values()));
@@ -177,7 +192,7 @@
                 state = "read";
               }
             }}
-            on:close={async () => {
+            close={async () => {
               body = body;
               await tick();
               state = "read";
@@ -199,7 +214,7 @@
           popoverPositionLeft="0"
           popoverPositionBottom="1.5rem"
           {reactions}
-          on:select={async ({ detail: { authors, emoji } }) => {
+          select={async ({ authors, emoji }) => {
             try {
               await reactOnComment(authors, emoji);
             } finally {

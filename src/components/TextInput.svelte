@@ -2,20 +2,38 @@
   import { onMount } from "svelte";
 
   import Border from "./Border.svelte";
+  import type { FormEventHandler } from "svelte/elements";
 
-  export let name: string | undefined = undefined;
-  export let placeholder: string | undefined = undefined;
-  export let value: string | undefined = undefined;
+  interface Props {
+    name?: string;
+    placeholder?: string;
+    value?: string;
+    autofocus?: boolean;
+    autoselect?: boolean;
+    disabled?: boolean;
+    onSubmit?: () => void;
+    onDismiss?: () => void;
+    valid?: boolean;
+    oninput?: FormEventHandler<HTMLInputElement>;
+  }
 
-  export let autofocus: boolean = false;
-  export let autoselect: boolean = false;
-  export let disabled: boolean = false;
-  export let onSubmit: (() => void) | undefined = undefined;
-  export let onDismiss: (() => void) | undefined = undefined;
-  export let valid: boolean = true;
+  /* eslint-disable prefer-const */
+  let {
+    name,
+    placeholder,
+    value = $bindable(undefined),
+    autofocus = false,
+    autoselect = false,
+    disabled = false,
+    onSubmit,
+    onDismiss,
+    valid = true,
+    oninput,
+  }: Props = $props();
+  /* eslint-enable prefer-const */
 
-  let inputElement: HTMLInputElement | undefined = undefined;
-  let focussed = false;
+  let inputElement: HTMLInputElement | undefined = $state(undefined);
+  let focussed = $state(false);
 
   onMount(() => {
     if (inputElement === undefined) {
@@ -31,6 +49,7 @@
   });
 
   function handleKeydown(event: KeyboardEvent) {
+    event.stopPropagation();
     if (event.key === "Enter" && valid && onSubmit) {
       onSubmit();
     }
@@ -72,10 +91,10 @@
   variant={valid ? (focussed ? "secondary" : "ghost") : "danger"}
   styleWidth="100%">
   <input
-    on:focus={() => {
+    onfocus={() => {
       focussed = true;
     }}
-    on:blur={() => {
+    onblur={() => {
       focussed = false;
     }}
     bind:this={inputElement}
@@ -86,6 +105,6 @@
     bind:value
     autocomplete="off"
     spellcheck="false"
-    on:keydown|stopPropagation={handleKeydown}
-    on:input />
+    onkeydown={handleKeydown}
+    {oninput} />
 </Border>

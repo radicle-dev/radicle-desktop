@@ -4,7 +4,11 @@
   import capitalize from "lodash/capitalize";
   import { issueStatusColor } from "@app/lib/utils";
 
-  export let state: Issue["state"];
+  interface Props {
+    state: Issue["state"];
+  }
+
+  const { state }: Props = $props();
 </script>
 
 <div

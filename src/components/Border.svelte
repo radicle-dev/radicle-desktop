@@ -1,23 +1,40 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  export let children: Snippet;
-  export let variant: "primary" | "secondary" | "ghost" | "float" | "danger";
-  export let hoverable: boolean = false;
-  export let onclick: (() => void) | undefined = undefined;
+  interface Props {
+    children: Snippet;
+    variant: "primary" | "secondary" | "ghost" | "float" | "danger";
+    hoverable?: boolean;
+    onclick?: () => void;
+    stylePadding?: string;
+    styleHeight?: string;
+    styleMinHeight?: string;
+    styleWidth?: string;
+    styleCursor?: "default" | "pointer" | "text";
+    styleGap?: string;
+    styleOverflow?: string;
+    flatTop?: boolean;
+  }
 
-  export let stylePadding: string | undefined = undefined;
-  export let styleHeight: string | undefined = undefined;
-  export let styleMinHeight: string | undefined = undefined;
-  export let styleWidth: string | undefined = undefined;
-  export let styleCursor: "default" | "pointer" | "text" = "default";
-  export let styleGap: string = "0.5rem";
-  export let styleOverflow: string | undefined = undefined;
-  export let flatTop: boolean = false;
+  const {
+    children,
+    variant,
+    hoverable = false,
+    onclick,
+    stylePadding,
+    styleHeight,
+    styleMinHeight,
+    styleWidth,
+    styleCursor = "default",
+    styleGap = "0.5rem",
+    styleOverflow,
+    flatTop = false,
+  }: Props = $props();
 
-  $: style =
+  const style = $derived(
     `--local-button-color-1: var(--color-fill-${variant});` +
-    `--local-hover-background-color: ${hoverable ? "var(--color-background-float)" : "var(--color-background-default)"}`;
+      `--local-hover-background-color: ${hoverable ? "var(--color-background-float)" : "var(--color-background-default)"}`,
+  );
 </script>
 
 <style>
@@ -170,7 +187,7 @@
   }
 </style>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
   style:width={styleWidth}
   style:cursor={styleCursor}

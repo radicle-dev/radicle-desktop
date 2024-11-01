@@ -1,7 +1,11 @@
 <script lang="ts">
   import type { Stats } from "@bindings/cob/Stats";
 
-  export let stats: Stats;
+  interface Props {
+    stats: Stats;
+  }
+
+  const { stats }: Props = $props();
 </script>
 
 <style>

@@ -1,17 +1,22 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  export let children: Snippet;
-  export let variant: "primary" | "secondary" | "ghost";
-  export let onclick: (() => void) | undefined = undefined;
-  export let disabled: boolean = false;
+  interface Props {
+    children: Snippet;
+    variant: "primary" | "secondary" | "ghost";
+    onclick?: () => void;
+    disabled?: boolean;
+  }
 
-  $: style =
+  const { children, variant, onclick, disabled = false }: Props = $props();
+
+  const style = $derived(
     `--button-color-1: var(--color-fill-${variant});` +
-    `--button-color-2: var(--color-fill-${variant}-hover);` +
-    `--button-color-3: var(--color-fill-${variant}-shade);` +
-    // The ghost colors are called --color-fill-counter and --color-fill-counter-emphasized.
-    `--button-color-4: var(--color-fill${variant === "ghost" ? "" : `-${variant}`}-counter)`;
+      `--button-color-2: var(--color-fill-${variant}-hover);` +
+      `--button-color-3: var(--color-fill-${variant}-shade);` +
+      // The ghost colors are called --color-fill-counter and --color-fill-counter-emphasized.
+      `--button-color-4: var(--color-fill${variant === "ghost" ? "" : `-${variant}`}-counter)`,
+  );
 </script>
 
 <style>
@@ -241,7 +246,7 @@
   }
 </style>
 
-<!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
   class="container"
   style:cursor={!disabled ? "pointer" : "default"}

@@ -4,17 +4,33 @@
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
   import Border from "./Border.svelte";
 
-  export let rid: string;
-  export let placeholder: string | undefined = undefined;
-  export let focus: boolean = false;
-  export let submit: (comment: string, embeds: Embed[]) => Promise<void>;
-  export let onclose: (() => void) | undefined = undefined;
-  export let onexpand: (() => void) | undefined = undefined;
-  export let disallowEmptyBody: boolean = false;
+  interface Props {
+    rid: string;
+    placeholder?: string;
+    focus?: boolean;
+    submit: (comment: string, embeds: Embed[]) => Promise<void>;
+    onclose?: () => void;
+    onexpand?: () => void;
+    disallowEmptyBody?: boolean;
+  }
 
-  let state: "collapsed" | "expanded" | "submit";
+  /* eslint-disable prefer-const */
+  let {
+    rid,
+    placeholder,
+    focus = false,
+    submit,
+    onclose,
+    onexpand,
+    disallowEmptyBody = false,
+  }: Props = $props();
+  /* eslint-enable prefer-const */
 
-  $: state = onclose !== undefined ? "expanded" : "collapsed";
+  let state: "collapsed" | "expanded" | "submit" | undefined = $state();
+
+  $effect(() => {
+    state = onclose !== undefined ? "expanded" : "collapsed";
+  });
 </script>
 
 <style>
@@ -33,14 +49,14 @@
     submitInProgress={state === "submit"}
     {focus}
     stylePadding="0.5rem 0.75rem"
-    on:close={() => {
+    close={() => {
       if (onclose !== undefined) {
         onclose();
       } else {
         state = "collapsed";
       }
     }}
-    on:submit={async ({ detail: { comment, embeds } }) => {
+    submit={async ({ comment, embeds }) => {
       try {
         state = "submit";
         await submit(comment, Array.from(embeds.values()));

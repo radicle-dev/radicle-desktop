@@ -8,11 +8,15 @@
   import RepoHeader from "./RepoHeader.svelte";
   import Id from "./Id.svelte";
 
-  export let repo: RepoInfo;
-  export let selfDid: string;
-  export let onclick: (() => void) | undefined = undefined;
+  interface Props {
+    repo: RepoInfo;
+    selfDid: string;
+    onclick?: () => void;
+  }
 
-  $: project = repo.payloads["xyz.radicle.project"]!;
+  const { repo, selfDid, onclick }: Props = $props();
+
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>

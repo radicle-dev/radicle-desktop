@@ -3,12 +3,19 @@
 
   import Avatar from "./Avatar.svelte";
 
-  export let publicKey: string;
-  export let alias: string | undefined = undefined;
+  interface Props {
+    publicKey: string;
+    alias?: string;
+    styleFontSize?: string;
+    styleFontFamily?: string;
+  }
 
-  export let styleFontSize: string | undefined = "var(--font-size-small)";
-  export let styleFontFamily: string | undefined =
-    "var(--font-family-monospace)";
+  const {
+    publicKey,
+    alias,
+    styleFontSize = "var(--font-size-small)",
+    styleFontFamily = "var(--font-family-monospace)",
+  }: Props = $props();
 </script>
 
 <style>

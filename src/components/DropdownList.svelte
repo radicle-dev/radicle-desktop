@@ -1,10 +1,14 @@
 <script lang="ts" generics="T">
   import type { Snippet } from "svelte";
 
-  export let item: Snippet<[T]>;
-  export let empty: Snippet | undefined = undefined;
-  export let items: T[];
-  export let styleDropdownMinWidth: string | undefined = undefined;
+  interface Props {
+    item: Snippet<[T]>;
+    empty?: Snippet;
+    items: T[];
+    styleDropdownMinWidth?: string;
+  }
+
+  const { item, empty, items, styleDropdownMinWidth }: Props = $props();
 </script>
 
 <style>

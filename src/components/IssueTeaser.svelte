@@ -14,8 +14,12 @@
   import InlineTitle from "./InlineTitle.svelte";
   import NodeId from "./NodeId.svelte";
 
-  export let issue: Issue;
-  export let rid: string;
+  interface Props {
+    issue: Issue;
+    rid: string;
+  }
+
+  const { issue, rid }: Props = $props();
 </script>
 
 <style>

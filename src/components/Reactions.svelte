@@ -2,10 +2,12 @@
   import type { Author } from "@bindings/cob/Author";
   import type { Reaction } from "@bindings/cob/Reaction";
 
-  export let reactions: Reaction[];
-  export let handleReaction:
-    | ((authors: Author[], reaction: string) => Promise<void>)
-    | undefined;
+  interface Props {
+    reactions: Reaction[];
+    handleReaction?: (authors: Author[], reaction: string) => Promise<void>;
+  }
+
+  const { reactions, handleReaction }: Props = $props();
 
   function authorsToTooltip(authors: Author[]) {
     return authors.map(a => a.alias ?? a.did).join("\n");

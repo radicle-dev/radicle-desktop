@@ -18,7 +18,7 @@
   import NodeId from "./NodeId.svelte";
   import Id from "./Id.svelte";
 
-  let stats: Stats | undefined = undefined;
+  let stats: Stats | undefined = $state(undefined);
 
   onMount(async () => {
     stats = await invoke<Stats>("diff_stats", {
@@ -28,8 +28,12 @@
     });
   });
 
-  export let patch: Patch;
-  export let rid: string;
+  interface Props {
+    patch: Patch;
+    rid: string;
+  }
+
+  const { patch, rid }: Props = $props();
 </script>
 
 <style>

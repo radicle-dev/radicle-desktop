@@ -16,14 +16,24 @@
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import RepoHeader from "@app/components/RepoHeader.svelte";
 
-  export let repo: RepoInfo;
-  export let patches: PaginatedQuery<Patch[]>;
-  export let config: Config;
-  export let status: PatchStatus | undefined = undefined;
+  interface Props {
+    repo: RepoInfo;
+    patches: PaginatedQuery<Patch[]>;
+    config: Config;
+    status?: PatchStatus;
+  }
 
-  $: items = patches.content;
-  $: more = patches.more;
-  $: cursor = patches.cursor;
+  const { repo, patches, config, status }: Props = $props();
+
+  let items = $state(patches.content);
+  let cursor = patches.cursor;
+  let more = patches.more;
+
+  $effect(() => {
+    items = patches.content;
+    cursor = patches.cursor;
+    more = patches.more;
+  });
 
   async function loadMore() {
     if (more) {
@@ -40,7 +50,7 @@
     }
   }
 
-  $: project = repo.payloads["xyz.radicle.project"]!;
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>

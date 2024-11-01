@@ -153,7 +153,7 @@ export const patchStatusBackgroundColor: Record<
   merged: "var(--color-fill-delegate)",
 };
 
-export function authorForNodeId(author: Author): ComponentProps<NodeId> {
+export function authorForNodeId(author: Author): ComponentProps<typeof NodeId> {
   return { publicKey: publicKeyFromDid(author.did), alias: author.alias };
 }
 

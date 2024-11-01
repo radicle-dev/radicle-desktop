@@ -2,8 +2,6 @@
   import type { ComponentProps } from "svelte";
   import type { Embed } from "@bindings/cob/thread/Embed";
 
-  import { createEventDispatcher } from "svelte";
-
   import * as utils from "@app/lib/utils";
 
   import Button from "./Button.svelte";
@@ -12,39 +10,58 @@
   import Textarea from "./Textarea.svelte";
   import OutlineButton from "./OutlineButton.svelte";
 
-  export let rid: string;
-  export let placeholder: string = "Leave your comment";
-  export let submitCaption: string = "Comment";
-  export let focus: boolean = false;
-  export let inline: boolean = false;
-  export let body: string = "";
-  export let embeds: Map<string, Embed> = new Map();
-  export let submitInProgress: boolean = false;
-  export let disallowEmptyBody: boolean = false;
-  export let isValid: () => boolean = () => {
-    return true;
-  };
-  export let stylePadding: string | undefined = undefined;
-  export let borderVariant: ComponentProps<Textarea>["borderVariant"] = "float";
+  interface Props {
+    rid: string;
+    placeholder?: string;
+    submitCaption?: string;
+    focus?: boolean;
+    inline?: boolean;
+    body?: string;
+    embeds?: Map<string, Embed>;
+    submitInProgress?: boolean;
+    disallowEmptyBody?: boolean;
+    isValid?: () => boolean;
+    stylePadding?: string;
+    borderVariant?: ComponentProps<typeof Textarea>["borderVariant"];
+    submit: (opts: {
+      comment: string;
+      embeds: Map<string, Embed>;
+    }) => Promise<void>;
+    close: () => void;
+  }
 
-  let preview: boolean = false;
-  let selectionStart = 0;
-  let selectionEnd = 0;
-  let inputFiles: FileList | undefined = undefined;
+  /* eslint-disable prefer-const */
+  let {
+    rid,
+    placeholder = "Leave your comment",
+    submitCaption = "Comment",
+    focus = false,
+    inline = false,
+    body = $bindable(""),
+    embeds = new Map(),
+    submitInProgress = false,
+    disallowEmptyBody = false,
+    isValid = () => true,
+    stylePadding,
+    borderVariant = "float",
+    submit,
+    close,
+  }: Props = $props();
+  /* eslint-enable prefer-const */
+
+  let preview: boolean = $state(false);
+  let selectionStart = $state(0);
+  let selectionEnd = $state(0);
+  let inputFiles: FileList | undefined = $state(undefined);
 
   const inputId = `input-label-${crypto.randomUUID()}`;
 
-  const dispatch = createEventDispatcher<{
-    submit: {
-      comment: string;
-      embeds: Map<string, Embed>;
-    };
-    close: null;
-  }>();
-
-  function submit() {
-    dispatch("submit", { comment: body, embeds });
-    preview = false;
+  function submitFn() {
+    void submit({ comment: body, embeds })
+      .then(() => (preview = false))
+      .catch(e => {
+        console.error(e);
+      });
   }
 </script>
 
@@ -106,7 +123,7 @@
       bind:selectionEnd
       bind:selectionStart
       {focus}
-      on:submit={submit}
+      submit={() => submit({ comment: body, embeds })}
       bind:value={body}
       {placeholder} />
   {/if}
@@ -116,7 +133,7 @@
       variant="ghost"
       onclick={() => {
         preview = false;
-        dispatch("close");
+        close();
       }}>
       <Icon name="cross" />Discard
     </OutlineButton>
@@ -138,7 +155,7 @@
         disabled={!isValid() ||
           submitInProgress ||
           (disallowEmptyBody && body.trim() === "")}
-        onclick={submit}>
+        onclick={submitFn}>
         <Icon name="checkmark" />
         {#if submitInProgress}
           Saving…

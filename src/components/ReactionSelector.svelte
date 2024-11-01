@@ -1,22 +1,27 @@
 <script lang="ts">
   import type { Reaction } from "@bindings/cob/Reaction";
 
-  import { createEventDispatcher } from "svelte";
-
   import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
   import Popover from "./Popover.svelte";
 
-  export let reactions: Reaction[] | undefined = undefined;
-  export let popoverPositionBottom: string | undefined = undefined;
-  export let popoverPositionRight: string | undefined = undefined;
-  export let popoverPositionLeft: string | undefined = undefined;
+  interface Props {
+    reactions?: Reaction[];
+    popoverPositionBottom?: string;
+    popoverPositionRight?: string;
+    popoverPositionLeft?: string;
+    select: (reaction: Reaction) => Promise<void>;
+  }
+
+  const {
+    reactions,
+    popoverPositionBottom,
+    popoverPositionRight,
+    popoverPositionLeft,
+    select,
+  }: Props = $props();
 
   const availableReactions = ["👍", "👎", "😄", "🎉", "🙁", "🚀", "👀"];
-
-  const dispatch = createEventDispatcher<{
-    select: Reaction;
-  }>();
 </script>
 
 <style>
@@ -58,12 +63,8 @@
           )}
           <button
             class:active={Boolean(lookedUpReaction)}
-            onclick={() => {
-              dispatch(
-                "select",
-                lookedUpReaction || { emoji: reaction, authors: [] },
-              );
-            }}>
+            onclick={() =>
+              select(lookedUpReaction || { emoji: reaction, authors: [] })}>
             {reaction}
           </button>
         {/each}

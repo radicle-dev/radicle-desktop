@@ -7,7 +7,11 @@
   import IssueStateBadge from "@app/components/IssueStateBadge.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
-  export let issue: Issue;
+  interface Props {
+    issue: Issue;
+  }
+
+  const { issue }: Props = $props();
 </script>
 
 <style>
