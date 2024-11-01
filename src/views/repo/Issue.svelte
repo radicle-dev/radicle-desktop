@@ -59,11 +59,13 @@
 
   $: project = repo.payloads["xyz.radicle.project"]!;
 
+  $: issueBody = issue.discussion[0];
+
   $: threads = issue.discussion
     .filter(
       comment =>
-        (comment.id !== issue.discussion[0].id && !comment.replyTo) ||
-        comment.replyTo === issue.discussion[0].id,
+        (comment.id !== issueBody.id && !comment.replyTo) ||
+        comment.replyTo === issueBody.id,
     )
     .map(thread => {
       return {
@@ -396,7 +398,7 @@
       {:else}
         <div class="title">
           <InlineTitle content={issue.title} fontSize="medium" />
-          {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), issue.discussion[0].author.did, )}
+          {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), issueBody.author.did, )}
             <div class="title-icons">
               <Icon
                 styleCursor="pointer"
@@ -415,22 +417,22 @@
       <CommentComponent
         rid={repo.rid}
         id={issue.id}
-        lastEdit={issue.discussion[0].edits.length > 1
-          ? issue.discussion[0].edits.at(-1)
+        lastEdit={issueBody.edits.length > 1
+          ? issueBody.edits.at(-1)
           : undefined}
-        author={issue.discussion[0].author}
-        reactions={issue.discussion[0].reactions}
-        timestamp={issue.discussion[0].edits.slice(-1)[0].timestamp}
-        body={issue.discussion[0].edits.slice(-1)[0].body}
+        author={issueBody.author}
+        reactions={issueBody.reactions}
+        timestamp={issueBody.edits.slice(-1)[0].timestamp}
+        body={issueBody.edits.slice(-1)[0].body}
         editComment={roles.isDelegateOrAuthor(
           config.publicKey,
           repo.delegates.map(delegate => delegate.did),
-          issue.discussion[0].author.did,
-        ) && partial(editComment, issue.discussion[0].id)}
+          issueBody.author.did,
+        ) && partial(editComment, issueBody.id)}
         reactOnComment={partial(
           reactOnComment,
           config.publicKey,
-          issue.discussion[0].id,
+          issueBody.id,
         )}>
         <svelte:fragment slot="actions">
           <Icon styleCursor="pointer" name="reply" onclick={toggleReply} />
