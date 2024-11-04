@@ -2,7 +2,7 @@
   import type { ComponentProps, Snippet } from "svelte";
 
   import { debounce } from "lodash";
-  import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+  import { writeToClipboard } from "@app/lib/invoke";
 
   import { formatOid } from "@app/lib/utils";
 
@@ -18,7 +18,7 @@
   }, 1000);
 
   async function copy() {
-    await writeText(clipboard);
+    await writeToClipboard(clipboard);
     icon = "checkmark";
     tooltip = "Copied to clipboard";
     restoreIcon();

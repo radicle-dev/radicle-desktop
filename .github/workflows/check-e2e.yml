@@ -28,7 +28,7 @@ jobs:
 
       - name: Install Playwright browsers
         if: steps.playwright-dep-cache.outputs.cache-hit != 'true'
-        run: npx playwright install webkit
+        run: npx playwright install webkit chromium
 
       - name: Install Radicle binaries
         run: |

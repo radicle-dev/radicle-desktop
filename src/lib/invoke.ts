@@ -19,3 +19,19 @@ export async function invoke<T = null>(
       });
   }
 }
+
+export async function writeToClipboard(
+  text: string,
+  opts?: {
+    label?: string;
+  },
+) {
+  if (window.__TAURI_INTERNALS__) {
+    await tauri.invoke("plugin:clipboard-manager|write_text", {
+      label: opts?.label,
+      text,
+    });
+  } else {
+    await navigator.clipboard.writeText(text);
+  }
+}

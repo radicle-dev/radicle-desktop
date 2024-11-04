@@ -3,11 +3,12 @@
 
   interface Props {
     children: Snippet;
+    title?: string;
     variant: "primary" | "secondary" | "ghost";
     onclick?: () => void;
   }
 
-  const { children, variant, onclick }: Props = $props();
+  const { children, title, variant, onclick }: Props = $props();
 
   const style = $derived(
     `--button-color-1: var(--color-fill-${variant});` +
@@ -203,7 +204,7 @@
 </style>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="container" {onclick} role="button" tabindex="0" {style}>
+<div class="container" {onclick} {title} role="button" tabindex="0" {style}>
   <div class="pixel p1-1"></div>
   <div class="pixel p1-2"></div>
   <div class="pixel p1-3"></div>

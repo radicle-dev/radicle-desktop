@@ -94,7 +94,7 @@
         </OutlineButton>
         <Popover popoverPositionRight="0" popoverPositionTop="3rem">
           {#snippet toggle(onclick)}
-            <NakedButton variant="ghost" {onclick}>
+            <NakedButton title="Settings" variant="ghost" {onclick}>
               <Icon name="settings" />
             </NakedButton>
           {/snippet}

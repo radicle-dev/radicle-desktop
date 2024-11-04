@@ -52,6 +52,7 @@
       {/if}
     </div>
     <Id
+      ariaLabel="repo-id"
       clipboard={repo.rid}
       shorten={false}
       variant="oid"
