@@ -7,7 +7,7 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import partial from "lodash/partial";
-  import { onMount, tick } from "svelte";
+  import { tick } from "svelte";
 
   import * as roles from "@app/lib/roles";
   import {
@@ -39,11 +39,18 @@
     repo: RepoInfo;
     issue: Issue;
     issues: Issue[];
+    activity: Operation[];
     config: Config;
   }
 
   /* eslint-disable prefer-const */
-  let { repo, issue, issues: initialIssues, config }: Props = $props();
+  let {
+    repo,
+    issue,
+    issues: initialIssues,
+    activity,
+    config,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 
   const issues = $state(initialIssues);
@@ -62,7 +69,6 @@
       topLevelReplyOpen = false;
       editingTitle = false;
       updatedTitle = issue.title;
-      void loadActivity();
     }
   });
 
@@ -85,20 +91,6 @@
       }, []),
   );
 
-  let activity = $state<Operation[]>([]);
-
-  async function loadActivity() {
-    activity = await invoke("activity_by_id", {
-      rid: repo.rid,
-      typeName: "xyz.radicle.issue",
-      id: issue.id,
-    });
-  }
-
-  onMount(() => {
-    void loadActivity();
-  });
-
   async function toggleReply() {
     topLevelReplyOpen = !topLevelReplyOpen;
     if (!topLevelReplyOpen) {
@@ -113,11 +105,17 @@
   }
 
   async function reload() {
-    issue = await invoke("issue_by_id", {
-      rid: repo.rid,
-      id: issue.id,
-    });
-    await loadActivity();
+    [issue, activity] = await Promise.all([
+      invoke<Issue>("issue_by_id", {
+        rid: repo.rid,
+        id: issue.id,
+      }),
+      invoke<Operation[]>("activity_by_id", {
+        rid: repo.rid,
+        typeName: "xyz.radicle.issue",
+        id: issue.id,
+      }),
+    ]);
   }
 
   async function createComment(body: string, embeds: Embed[]) {

@@ -1,6 +1,7 @@
 import type { Config } from "@bindings/config/Config";
-import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
 import type { Issue } from "@bindings/cob/issue/Issue";
+import type { Operation } from "@bindings/cob/issue/Operation";
+import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { Revision } from "@bindings/cob/patch/Revision";
@@ -28,6 +29,7 @@ export interface LoadedRepoIssueRoute {
     config: Config;
     issue: Issue;
     issues: Issue[];
+    activity: Operation[];
   };
 }
 
@@ -174,13 +176,18 @@ export async function loadCreateIssue(
 export async function loadIssue(
   route: RepoIssueRoute,
 ): Promise<LoadedRepoIssueRoute> {
-  const [config, repo, issue, issues] = await Promise.all([
+  const [config, repo, issue, activity, issues] = await Promise.all([
     invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
     }),
     invoke<Issue>("issue_by_id", {
       rid: route.rid,
+      id: route.issue,
+    }),
+    invoke<Operation[]>("activity_by_id", {
+      rid: route.rid,
+      typeName: "xyz.radicle.issue",
       id: route.issue,
     }),
     invoke<Issue[]>("list_issues", {
@@ -191,7 +198,7 @@ export async function loadIssue(
 
   return {
     resource: "repo.issue",
-    params: { repo, config, issue, issues },
+    params: { repo, config, issue, activity, issues },
   };
 }
 
