@@ -4,21 +4,18 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
-  import {
-    authorForNodeId,
-    formatTimestamp,
-    patchStatusColor,
-  } from "@app/lib/utils";
+  import { authorForNodeId, formatTimestamp } from "@app/lib/utils";
 
-  import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
   import Markdown from "@app/components/Markdown.svelte";
-  import Id from "@app/components/Id.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
+  import PatchTeaser from "@app/components/PatchTeaser.svelte";
+  import Sidebar from "@app/components/Sidebar.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -42,19 +39,15 @@
     margin-bottom: 1rem;
     margin-top: 0.35rem;
   }
-  .patch-teaser {
-    max-width: 11rem;
-    white-space: nowrap;
-  }
   .patch-list {
     margin-top: 0.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 2px;
     padding-bottom: 1rem;
   }
   .content {
-    padding: 0 1rem 1rem 1rem;
+    padding: 0 1rem 1rem 0;
   }
 
   .body {
@@ -79,7 +72,11 @@
       </div>
     </Link>
     <Icon name="chevron-right" />
-    Patches
+    <Link route={{ resource: "repo.patches", rid: repo.rid, status: "open" }}>
+      Patches
+    </Link>
+    <Icon name="chevron-right" />
+    {patch.title}
   {/snippet}
 
   {#snippet headerCenter()}
@@ -87,49 +84,23 @@
   {/snippet}
 
   {#snippet sidebar()}
-    <Border
-      hoverable={false}
-      variant="ghost"
-      styleWidth="100%"
-      styleHeight="32px">
-      <div style:margin-left="0.5rem">
-        <Icon name="patch" />
-      </div>
-      <span class="txt-small txt-semibold">Patches</span>
-      <div class="global-flex txt-small" style:margin-left="auto">
-        <div
-          class="global-counter"
-          style:padding="0 6px"
-          style:background-color="var(--color-fill-ghost)"
-          style:gap="4px">
-          {project.meta.patches.draft +
-            project.meta.patches.open +
-            project.meta.patches.merged +
-            project.meta.patches.archived}
-        </div>
-      </div>
-    </Border>
+    <Sidebar activeTab="patches" rid={repo.rid} />
+  {/snippet}
 
+  {#snippet secondColumn()}
+    <div
+      style:height="34px"
+      class="global-flex txt-medium"
+      style:font-weight="var(--font-weight-medium)">
+      Patches
+    </div>
     <div class="patch-list">
-      {#each patches as sidebarPatch}
-        <Link
-          variant="tab"
-          route={{
-            resource: "repo.patch",
-            rid: repo.rid,
-            patch: sidebarPatch.id,
-          }}>
-          <div class="global-flex">
-            <div
-              style:color={patchStatusColor[sidebarPatch.state.status]}
-              style:margin-left="2px">
-              <Icon name="patch" />
-            </div>
-            <span class="txt-small patch-teaser txt-overflow">
-              <InlineTitle content={sidebarPatch.title} fontSize="small" />
-            </span>
-          </div>
-        </Link>
+      {#each patches as p}
+        <PatchTeaser
+          compact
+          patch={p}
+          rid={repo.rid}
+          selected={patch && p.id === patch.id} />
       {/each}
     </div>
   {/snippet}

@@ -6,8 +6,9 @@
 
   import CopyableId from "@app/components/CopyableId.svelte";
   import Header from "@app/components/Header.svelte";
-  import RepoCard from "@app/components/RepoCard.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import RepoCard from "@app/components/RepoCard.svelte";
+  import Settings from "@app/components/Settings.svelte";
 
   interface Props {
     repos: RepoInfo[];
@@ -50,6 +51,14 @@
           alias={config.alias}
           styleFontFamily="var(--font-family-sans-serif)"
           styleFontSize="var(--font-size-tiny)" />
+      {/snippet}
+      {#snippet settingsButton()}
+        <Settings
+          styleHeight="32px"
+          popoverProps={{
+            popoverPositionRight: "0",
+            popoverPositionTop: "2.5rem",
+          }} />
       {/snippet}
     </Header>
   </div>

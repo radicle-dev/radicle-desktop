@@ -4,7 +4,7 @@
   interface Props {
     size?: "16" | "32";
     onclick?: () => void;
-    styleCursor?: "default" | "pointer";
+    styleCursor?: "default" | "pointer" | "inherit";
     name:
       | "arrow-left"
       | "arrow-right"
@@ -27,6 +27,7 @@
       | "moon"
       | "more-vertical"
       | "offline"
+      | "one"
       | "online"
       | "patch"
       | "pen"
@@ -37,15 +38,15 @@
       | "seedling"
       | "seedling-filled"
       | "settings"
-      | "sidebar"
       | "sun"
+      | "two"
       | "warning";
   }
 
   const {
     size = "16",
     onclick = undefined,
-    styleCursor = "default",
+    styleCursor = "inherit",
     name,
   }: Props = $props();
 </script>
@@ -387,6 +388,15 @@
     <path d="M4 11L5 11V12L4 12L4 11Z" />
     <path d="M3 12H4L4 13H3L3 12Z" />
     <path d="M2 13L3 13L3 14H2V13Z" />
+  {:else if name === "one"}
+    <path d="M2 3.00003H3V13H2V3.00003Z" />
+    <path d="M13 3.00003H14V13H13V3.00003Z" />
+    <path d="M3 2.00003H13V3.00003H3L3 2.00003Z" />
+    <path d="M3 13H13V14H3L3 13Z" />
+    <path d="M8 5.00003H9V11H8V5.00003Z" />
+    <path d="M6 7.00003H7V8.00003H6V7.00003Z" />
+    <path d="M7 6.00003H8V7.00003H7V6.00003Z" />
+    <path d="M6 10H11V11H6V10Z" />
   {:else if name === "online"}
     <path d="M3 5.99999L3 7.99999H2L2 5.99999H3Z" />
     <path d="M13 9.99998V7.99998H14V9.99998H13Z" />
@@ -600,12 +610,6 @@
     <path d="M4 4L5 4L5 7H4V4Z" />
     <path d="M11 9L12 9V12H11V9Z" />
     <path d="M7 4L8 4V7L7 7V4Z" />
-  {:else if name === "sidebar"}
-    <path d="M2 3H3V13H2V3Z" />
-    <path d="M13 3H14V13H13V3Z" />
-    <path d="M6 2H7V14H6V2Z" />
-    <path d="M3 2H13L13 3H3L3 2Z" />
-    <path d="M3 13H13L13 14H3L3 13Z" />
   {:else if name === "sun"}
     <path d="M8 2H9V3H8V2Z" />
     <path d="M14 8V9H13V8H14Z" />
@@ -631,6 +635,32 @@
     <path d="M6 9L7 9L7 10H6V9Z" />
     <path d="M9 9L10 9L10 10H9L9 9Z" />
     <path d="M9 6H10V7H9V6Z" />
+  {:else if name === "two"}
+    <path d="M2 3.00003H3V13H2V3.00003Z" />
+    <path d="M13 3.00003H14V13H13V3.00003Z" />
+    <path d="M6 2.00003H3L3 3.00003L6 3.00003V2.00003Z" />
+    <path d="M10 2.00003H13V3.00003L10 3.00003V2.00003Z" />
+    <path d="M10 13H13V14H10V13Z" />
+    <path d="M3 13H6V14H3L3 13Z" />
+    <path d="M2 3.00003H3V13H2V3.00003Z" />
+    <path d="M13 3.00003H14V13H13V3.00003Z" />
+    <path d="M6 3.00003L7 3.00003V4.00003H6V3.00003Z" />
+    <path d="M6 12H7V13H6L6 12Z" />
+    <path d="M9 3.00003L10 3.00003V4.00003H9V3.00003Z" />
+    <path d="M9 12H10V13L9 13V12Z" />
+    <path d="M7 2.00003L3 2.00003L3 3.00003L7 3.00003V2.00003Z" />
+    <path d="M9 2.00003L13 2.00003V3.00003L9 3.00003L9 2.00003Z" />
+    <path d="M9 13L13 13V14H9L9 13Z" />
+    <path d="M3 13H7L7 14H3L3 13Z" />
+    <path d="M6 5.00003H10V6.00003H6V5.00003Z" />
+    <path d="M6 9.00003H8V10H6V9.00003Z" />
+    <path d="M5 10H6V11H5V10Z" />
+    <path d="M6 10H7V11H6V10Z" />
+    <path d="M7 10H8V11H7V10Z" />
+    <path d="M6 10H11V11H6V10Z" />
+    <path d="M10 6.00003L11 6.00003V8.00003H10V6.00003Z" />
+    <path d="M5 6.00003H6V7.00003H5V6.00003Z" />
+    <path d="M8 8.00003H10V9.00003L8 9.00003L8 8.00003Z" />
   {:else if name === "warning"}
     <path d="M7 2H9V3H7V2Z" />
     <path d="M6 3H7V5H6V3Z" />

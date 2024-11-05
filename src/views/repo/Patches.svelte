@@ -6,15 +6,16 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { invoke } from "@app/lib/invoke";
+  import { patchStatusColor } from "@app/lib/utils";
 
-  import Layout from "./Layout.svelte";
-  import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
-  import RepoHeader from "@app/components/RepoHeader.svelte";
+  import PatchesSecondColumn from "@app/components/PatchesSecondColumn.svelte";
+  import Sidebar from "@app/components/Sidebar.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -58,11 +59,19 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+    padding: 0 1rem 1rem 0;
+  }
+  .header {
+    font-weight: var(--font-weight-medium);
+    font-size: var(--font-size-medium);
     padding: 0 1rem 1rem 1rem;
+    display: flex;
+    align-items: center;
+    height: 50px;
   }
 </style>
 
-<Layout {loadMore}>
+<Layout {loadMore} hideSidebar styleSecondColumnOverflow="visible">
   {#snippet breadcrumbs()}
     <Link route={{ resource: "home" }}>
       <NodeId
@@ -86,84 +95,21 @@
   {/snippet}
 
   {#snippet sidebar()}
-    <Border
-      hoverable={false}
-      variant="ghost"
-      styleWidth="100%"
-      styleHeight="32px">
-      <RepoHeader
-        {repo}
-        showLabels={false}
-        selfDid={`did:key:${config.publicKey}`}
-        emphasizedTitle={false} />
-    </Border>
+    <Sidebar
+      activeTab="patches"
+      rid={repo.rid}
+      activeIconColor={status !== undefined
+        ? patchStatusColor[status]
+        : undefined} />
+  {/snippet}
 
-    <div class="global-flex txt-small" style:margin="0.5rem 0">
-      <Link
-        variant="tab"
-        route={{ resource: "repo.issues", rid: repo.rid, status: "all" }}>
-        <div class="global-flex"><Icon name="issue" />Issues</div>
-        <div class="global-counter">
-          {project.meta.issues.open + project.meta.issues.closed}
-        </div>
-      </Link>
-    </div>
-    <div class="global-flex txt-small" style:margin="0.5rem 0">
-      <Link
-        variant={status === undefined ? "active" : "tab"}
-        route={{ resource: "repo.patches", rid: repo.rid }}>
-        <div class="global-flex"><Icon name="patch" />Patches</div>
-        <div class="global-counter">
-          {project.meta.patches.draft +
-            project.meta.patches.open +
-            project.meta.patches.archived +
-            project.meta.patches.merged}
-        </div>
-      </Link>
-    </div>
-    <div class="global-flex txt-small global-tab">
-      <Link
-        variant={status === "draft" ? "active" : "tab"}
-        route={{
-          resource: "repo.patches",
-          rid: repo.rid,
-          status: "draft",
-        }}>
-        Draft <div class="global-counter">
-          {project.meta.patches.draft}
-        </div>
-      </Link>
-      <Link
-        variant={status === "open" ? "active" : "tab"}
-        route={{ resource: "repo.patches", rid: repo.rid, status: "open" }}>
-        Open <div class="global-counter">
-          {project.meta.patches.open}
-        </div>
-      </Link>
-      <Link
-        variant={status === "archived" ? "active" : "tab"}
-        route={{
-          resource: "repo.patches",
-          rid: repo.rid,
-          status: "archived",
-        }}>
-        Archived <div class="global-counter">
-          {project.meta.patches.archived}
-        </div>
-      </Link>
-      <Link
-        variant={status === "merged" ? "active" : "tab"}
-        route={{
-          resource: "repo.patches",
-          rid: repo.rid,
-          status: "merged",
-        }}>
-        Merged <div class="global-counter">
-          {project.meta.patches.merged}
-        </div>
-      </Link>
+  {#snippet secondColumn()}
+    <div style:margin-left="1rem" style:height="100%">
+      <PatchesSecondColumn {project} {status} {repo} />
     </div>
   {/snippet}
+
+  <div class="header">Patches</div>
 
   <div class="list">
     {#each items as patch}
@@ -171,7 +117,7 @@
     {/each}
 
     {#if patches.content.length === 0}
-      <div class="txt-missing txt-small">
+      <div class="txt-missing txt-small" style:margin-left="1rem">
         {#if status === undefined}
           No patches.
         {:else}

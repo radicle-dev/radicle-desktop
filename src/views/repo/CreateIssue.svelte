@@ -6,20 +6,21 @@
 
   import { invoke } from "@app/lib/invoke";
 
-  import { issueStatusColor } from "@app/lib/utils";
   import * as router from "@app/lib/router";
 
-  import Border from "@app/components/Border.svelte";
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
-  import Layout from "./Layout.svelte";
+  import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
   import Link from "@app/components/Link.svelte";
+  import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import OutlineButton from "@app/components/OutlineButton.svelte";
+  import Sidebar from "@app/components/Sidebar.svelte";
   import TextInput from "@app/components/TextInput.svelte";
   import Textarea from "@app/components/Textarea.svelte";
-  import Markdown from "@app/components/Markdown.svelte";
+
+  import Layout from "./Layout.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -63,17 +64,6 @@
     margin-top: 0.35rem;
     margin-bottom: 1rem;
   }
-  .issue-teaser {
-    max-width: 11rem;
-    white-space: nowrap;
-  }
-  .issue-list {
-    margin-top: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding-bottom: 1rem;
-  }
   .content {
     padding: 0 1rem 1rem 1rem;
     height: calc(100% - 8rem);
@@ -110,48 +100,11 @@
   {/snippet}
 
   {#snippet sidebar()}
-    <Border
-      hoverable={false}
-      variant="ghost"
-      styleWidth="100%"
-      styleHeight="32px">
-      <div style:margin-left="0.5rem">
-        <Icon name="issue" />
-      </div>
-      <span class="txt-small txt-semibold">Issues</span>
-      <div class="global-flex txt-small" style:margin-left="auto">
-        <div
-          class="global-counter"
-          style:padding="0 6px"
-          style:background-color="var(--color-fill-ghost)"
-          style:gap="4px">
-          {project.meta.issues.open + project.meta.issues.closed}
-        </div>
-      </div>
-    </Border>
+    <Sidebar activeTab="issues" rid={repo.rid} />
+  {/snippet}
 
-    <div class="issue-list">
-      {#each issues as sidebarIssue}
-        <Link
-          variant="tab"
-          route={{
-            resource: "repo.issue",
-            rid: repo.rid,
-            issue: sidebarIssue.id,
-          }}>
-          <div class="global-flex">
-            <div
-              style:color={issueStatusColor[sidebarIssue.state.status]}
-              style:margin-left="2px">
-              <Icon name="issue" />
-            </div>
-            <span class="txt-small issue-teaser txt-overflow">
-              <InlineTitle content={sidebarIssue.title} fontSize="small" />
-            </span>
-          </div>
-        </Link>
-      {/each}
-    </div>
+  {#snippet secondColumn()}
+    <IssueSecondColumn {repo} {issues} />
   {/snippet}
 
   <div class="content">

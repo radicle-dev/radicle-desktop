@@ -3,86 +3,89 @@
 
   import { nodeRunning } from "@app/lib/events";
 
-  import AnnounceSwitch from "./AnnounceSwitch.svelte";
-  import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
   import OutlineButton from "./OutlineButton.svelte";
-  import Popover from "./Popover.svelte";
-  import ThemeSwitch from "./ThemeSwitch.svelte";
 
   interface Props {
     breadcrumbs: Snippet;
-    iconLeft?: Snippet;
+    columnSwitch?: Snippet;
     center?: Snippet;
+    settingsButton?: Snippet;
   }
 
-  const { breadcrumbs, iconLeft, center }: Props = $props();
+  const { breadcrumbs, columnSwitch, center, settingsButton }: Props = $props();
 </script>
 
 <style>
   .header {
-    padding: 0 0.5rem;
-    gap: 0.25rem;
     height: 5rem;
+    padding: 0.5rem 1rem;
+    display: flex;
+    align-items: flex-start;
   }
-  .wrapper {
-    width: 100%;
-    justify-content: space-between;
-    padding: 0 0.5rem;
-  }
-  .wrapper-left {
-    gap: 0.5rem;
-    padding: 0 0.5rem;
-  }
-  .bottom-pixel-corners {
+  .header:after {
+    content: " ";
     position: absolute;
     top: 0;
     left: 0.5rem;
     right: 0.5rem;
     height: 5rem;
     z-index: -1;
-
     background-color: var(--color-background-float);
     clip-path: var(--3px-bottom-corner-fill);
   }
-  .breadcrumbs {
+  .wrapper {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    row-gap: 8px;
+  }
+  .top-row {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .bottom-row {
+    display: flex;
     gap: 0.5rem;
-    margin-left: 1rem;
+    font-size: var(--font-size-tiny);
+    font-weight: var(--font-weight-semibold);
+    align-items: center;
+
     min-height: 1.5rem;
+    width: 100%;
+    padding-left: 12px;
+    /* Fixed height so that the navigation arrow buttons don't jump vertically
+       when the column buttons aren't shown on the Home view vs Repo view. */
+    height: 24px;
   }
 </style>
 
 <div class="header global-flex">
-  <div
-    class="global-flex"
-    style:flex-direction="column"
-    style:width="100%"
-    style:align-items="flex-start">
-    <div class="wrapper global-flex">
-      <div class="wrapper-left global-flex" style:gap="0">
-        <div class="global-flex" style:gap="0">
-          <NakedButton
-            variant="ghost"
-            onclick={() => {
-              window.history.back();
-            }}>
-            <Icon name="arrow-left" />
-          </NakedButton>
-          <NakedButton
-            variant="ghost"
-            onclick={() => {
-              window.history.forward();
-            }}>
-            <Icon name="arrow-right" />
-          </NakedButton>
-        </div>
-        {@render iconLeft?.()}
+  <div class="wrapper">
+    <div class="top-row">
+      <div class="global-flex" style:gap="0">
+        <NakedButton
+          variant="ghost"
+          onclick={() => {
+            window.history.back();
+          }}>
+          <Icon name="arrow-left" />
+        </NakedButton>
+        <NakedButton
+          variant="ghost"
+          onclick={() => {
+            window.history.forward();
+          }}>
+          <Icon name="arrow-right" />
+        </NakedButton>
       </div>
 
       {@render center?.()}
 
-      <div class="global-flex" style:gap="0.5rem">
+      <div class="global-flex">
+        {@render settingsButton?.()}
         <OutlineButton variant="ghost">
           {#if $nodeRunning}
             <Icon name="online" />
@@ -92,44 +95,16 @@
             Offline
           {/if}
         </OutlineButton>
-        <Popover popoverPositionRight="0" popoverPositionTop="3rem">
-          {#snippet toggle(onclick)}
-            <NakedButton title="Settings" variant="ghost" {onclick}>
-              <Icon name="settings" />
-            </NakedButton>
-          {/snippet}
-          {#snippet popover()}
-            <Border
-              variant="ghost"
-              stylePadding="0.5rem 1rem"
-              styleWidth="27rem">
-              <div
-                class="global-flex"
-                style:flex-direction="column"
-                style:align-items="flex-start"
-                style:gap="1rem"
-                style:width="100%">
-                <div
-                  class="global-flex"
-                  style:justify-content="space-between"
-                  style:width="100%">
-                  Theme <ThemeSwitch />
-                </div>
-                <div
-                  class="global-flex"
-                  style:justify-content="space-between"
-                  style:width="100%">
-                  Announce changes <AnnounceSwitch />
-                </div>
-              </div>
-            </Border>
-          {/snippet}
-        </Popover>
       </div>
     </div>
-    <div class="global-flex txt-tiny txt-semibold breadcrumbs">
+
+    <div class="bottom-row">
       {@render breadcrumbs()}
+      {#if columnSwitch}
+        <div style:margin-left="auto">
+          {@render columnSwitch()}
+        </div>
+      {/if}
     </div>
   </div>
-  <div class="bottom-pixel-corners"></div>
 </div>

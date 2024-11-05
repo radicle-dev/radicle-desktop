@@ -31,9 +31,11 @@
   interface Props {
     patch: Patch;
     rid: string;
+    selected?: boolean;
+    compact?: boolean;
   }
 
-  const { patch, rid }: Props = $props();
+  const { patch, rid, selected = false, compact = false }: Props = $props();
 </script>
 
 <style>
@@ -42,11 +44,15 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.25rem;
-    height: 5rem;
+    min-height: 5rem;
     background-color: var(--color-background-float);
     padding: 1rem;
     cursor: pointer;
     font-size: var(--font-size-regular);
+    word-break: break-word;
+  }
+  .selected {
+    background-color: var(--color-fill-float-hover);
   }
   .patch-teaser:hover {
     background-color: var(--color-fill-float-hover);
@@ -70,6 +76,7 @@
 <div
   tabindex="0"
   role="button"
+  class:selected
   class="patch-teaser"
   onclick={() => {
     void push({ resource: "repo.patch", rid, patch: patch.id });
@@ -86,7 +93,7 @@
       style:flex-direction="column"
       style:align-items="flex-start">
       <InlineTitle content={patch.title} />
-      <div class="global-flex txt-small">
+      <div class="global-flex txt-small" style:flex-wrap="wrap">
         <NodeId {...authorForNodeId(patch.author)} />
         opened
         <Id id={patch.id} variant="oid" />
@@ -94,17 +101,20 @@
       </div>
     </div>
   </div>
-  <div class="global-flex">
-    {#if stats}
-      <DiffStatBadge {stats} />
-    {/if}
-    {#each patch.labels as label}
-      <div class="global-counter txt-small">{label}</div>
-    {/each}
 
-    <div class="txt-small global-flex" style:gap="0.25rem">
-      <Icon name="revision" />
-      {patch.revisionCount}
+  {#if !compact}
+    <div class="global-flex">
+      {#if stats}
+        <DiffStatBadge {stats} />
+      {/if}
+      {#each patch.labels as label}
+        <div class="global-counter txt-small">{label}</div>
+      {/each}
+
+      <div class="txt-small global-flex" style:gap="0.25rem">
+        <Icon name="revision" />
+        {patch.revisionCount}
+      </div>
     </div>
-  </div>
+  {/if}
 </div>

@@ -224,7 +224,6 @@
   }
 
   .container {
-    height: 32px;
     cursor: pointer;
     white-space: nowrap;
 

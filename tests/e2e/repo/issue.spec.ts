@@ -46,7 +46,7 @@ test("creation of top level comments", async ({ page }) => {
     page.getByText("Make sure that comment creation is working").last(),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "icon-issue Make sure that" }),
+    page.getByRole("button", { name: "icon-issue Make sure that" }),
   ).toBeVisible();
   await expect(
     page

@@ -14,6 +14,9 @@
     styleGap?: string;
     styleOverflow?: string;
     flatTop?: boolean;
+    styleBackgroundColor?: string;
+    styleFlexDirection?: string;
+    styleJustifyContent?: string;
   }
 
   const {
@@ -29,11 +32,15 @@
     styleGap = "0.5rem",
     styleOverflow,
     flatTop = false,
+    styleBackgroundColor = "var(--color-background-default)",
+    styleFlexDirection = "row",
+    styleJustifyContent,
   }: Props = $props();
 
   const style = $derived(
-    `--local-button-color-1: var(--color-fill-${variant});` +
-      `--local-hover-background-color: ${hoverable ? "var(--color-background-float)" : "var(--color-background-default)"}`,
+    `--local-background-color: ${styleBackgroundColor};` +
+      `--local-button-color-1: var(--color-fill-${variant});` +
+      `--local-hover-background-color: ${hoverable ? "var(--color-background-float)" : styleBackgroundColor}`,
   );
 </script>
 
@@ -97,7 +104,7 @@
   }
   .p2-3 {
     grid-area: p2-3;
-    background-color: var(--color-background-default);
+    background-color: var(--local-background-color);
   }
   .p2-4 {
     grid-area: p2-4;
@@ -114,17 +121,17 @@
   }
   .p3-2 {
     grid-area: p3-2;
-    background-color: var(--color-background-default);
+    background-color: var(--local-background-color);
   }
   .p3-3 {
     grid-area: p3-3;
     display: flex;
     align-items: center;
-    background-color: var(--color-background-default);
+    background-color: var(--local-background-color);
   }
   .p3-4 {
     grid-area: p3-4;
-    background-color: var(--color-background-default);
+    background-color: var(--local-background-color);
   }
   .p3-5 {
     grid-area: p3-5;
@@ -141,7 +148,7 @@
   }
   .p4-3 {
     grid-area: p4-3;
-    background-color: var(--color-background-default);
+    background-color: var(--local-background-color);
   }
   .p4-4 {
     grid-area: p4-4;
@@ -217,7 +224,9 @@
     class="p3-3"
     style:padding={stylePadding}
     style:gap={styleGap}
-    style:overflow={styleOverflow}>
+    style:overflow={styleOverflow}
+    style:justify-content={styleJustifyContent}
+    style:flex-direction={styleFlexDirection}>
     {@render children()}
   </div>
   <div class="p3-4"></div>

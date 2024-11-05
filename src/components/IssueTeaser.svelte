@@ -17,9 +17,11 @@
   interface Props {
     issue: Issue;
     rid: string;
+    selected?: boolean;
+    compact?: boolean;
   }
 
-  const { issue, rid }: Props = $props();
+  const { issue, rid, selected = false, compact = false }: Props = $props();
 </script>
 
 <style>
@@ -28,11 +30,15 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.25rem;
-    height: 5rem;
+    min-height: 5rem;
     background-color: var(--color-background-float);
     padding: 1rem;
     cursor: pointer;
     font-size: var(--font-size-regular);
+    word-break: break-word;
+  }
+  .selected {
+    background-color: var(--color-fill-float-hover);
   }
   .issue-teaser:hover {
     background-color: var(--color-fill-float-hover);
@@ -57,6 +63,7 @@
   tabindex="0"
   role="button"
   class="issue-teaser"
+  class:selected
   onclick={() => {
     void push({ resource: "repo.issue", rid, issue: issue.id });
   }}>
@@ -72,7 +79,7 @@
       style:flex-direction="column"
       style:align-items="flex-start">
       <InlineTitle content={issue.title} />
-      <div class="global-flex txt-small">
+      <div class="global-flex txt-small" style:flex-wrap="wrap">
         <NodeId {...authorForNodeId(issue.author)} />
         opened
         <Id id={issue.id} variant="oid" />
@@ -80,10 +87,13 @@
       </div>
     </div>
   </div>
+
   <div class="global-flex">
-    {#each issue.labels as label}
-      <div class="global-counter txt-small">{label}</div>
-    {/each}
+    {#if !compact}
+      {#each issue.labels as label}
+        <div class="global-counter txt-small">{label}</div>
+      {/each}
+    {/if}
 
     {#if issue.commentCount > 0}
       <div class="txt-small global-flex" style:gap="0.25rem">

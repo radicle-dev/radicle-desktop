@@ -6,9 +6,16 @@
     title?: string;
     variant: "primary" | "secondary" | "ghost";
     onclick?: () => void;
+    styleHeight?: string;
   }
 
-  const { children, title, variant, onclick }: Props = $props();
+  const {
+    children,
+    title,
+    variant,
+    onclick,
+    styleHeight = "32px",
+  }: Props = $props();
 
   const style = $derived(
     `--button-color-1: var(--color-fill-${variant});` +
@@ -181,7 +188,6 @@
   }
 
   .container {
-    height: 32px;
     cursor: pointer;
     white-space: nowrap;
 
@@ -204,7 +210,14 @@
 </style>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="container" {onclick} {title} role="button" tabindex="0" {style}>
+<div
+  class="container"
+  {onclick}
+  {title}
+  role="button"
+  tabindex="0"
+  {style}
+  style:height={styleHeight}>
   <div class="pixel p1-1"></div>
   <div class="pixel p1-2"></div>
   <div class="pixel p1-3"></div>

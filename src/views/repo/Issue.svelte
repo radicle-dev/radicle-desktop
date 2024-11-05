@@ -11,23 +11,19 @@
   import { tick } from "svelte";
 
   import * as roles from "@app/lib/roles";
-  import {
-    issueStatusColor,
-    publicKeyFromDid,
-    scrollIntoView,
-  } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
+  import { publicKeyFromDid, scrollIntoView } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
 
-  import Border from "@app/components/Border.svelte";
-  import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import IssueMetadata from "@app/components/IssueMetadata.svelte";
+  import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
+  import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimelineLifecycleAction from "@app/components/IssueTimelineLifecycleAction.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
@@ -35,6 +31,7 @@
   import ThreadComponent from "@app/components/Thread.svelte";
 
   import Layout from "./Layout.svelte";
+  import Sidebar from "@app/components/Sidebar.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -62,9 +59,9 @@
   let updatedTitle = $state(issue.title);
 
   // The view doesn't get destroyed when we switch between different issues in
-  // the sidebar and because of that the top-level state gets retained when the
-  // issue changes. This reactive statement makes sure we always load the new
-  // issue and reset the state to defaults.
+  // the second column and because of that the top-level state gets retained
+  // when the issue changes. This reactive statement makes sure we always load
+  // the new issue and reset the state to defaults.
   let issueId = issue.id;
   $effect(() => {
     if (issueId !== issue.id) {
@@ -177,7 +174,7 @@
         opts: { announce: $announce },
       });
       issue.title = updatedTitle;
-      // Update sidebar issue title without reloading the whole issue list.
+      // Update second colum issue title without reloading the whole issue list.
       const issueIndex = issues.findIndex(i => i.id === issue.id);
       if (issueIndex !== -1) {
         issues[issueIndex].title = updatedTitle;
@@ -226,7 +223,7 @@
         },
         opts: { announce: $announce },
       });
-      // Update sidebar issue icon without reloading the whole issue list.
+      // Update second column issue icon without reloading the whole issue list.
       const issueIndex = issues.findIndex(i => i.id === issue.id);
       if (issueIndex !== -1) {
         issues[issueIndex].state = state;
@@ -267,19 +264,8 @@
     height: 100%;
     top: 0;
   }
-  .issue-teaser {
-    max-width: 11rem;
-    white-space: nowrap;
-  }
-  .issue-list {
-    margin-top: 0.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    padding-bottom: 1rem;
-  }
   .content {
-    padding: 0 1rem 1rem 1rem;
+    padding: 0 1rem 1rem 0;
   }
   .connector {
     width: 2px;
@@ -312,7 +298,11 @@
       </div>
     </Link>
     <Icon name="chevron-right" />
-    Issues
+    <Link route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}>
+      Issues
+    </Link>
+    <Icon name="chevron-right" />
+    {issue.title}
   {/snippet}
 
   {#snippet headerCenter()}
@@ -320,48 +310,11 @@
   {/snippet}
 
   {#snippet sidebar()}
-    <Border
-      hoverable={false}
-      variant="ghost"
-      styleWidth="100%"
-      styleHeight="32px">
-      <div style:margin-left="0.5rem">
-        <Icon name="issue" />
-      </div>
-      <span class="txt-small txt-semibold">Issues</span>
-      <div class="global-flex txt-small" style:margin-left="auto">
-        <div
-          class="global-counter"
-          style:padding="0 6px"
-          style:background-color="var(--color-fill-ghost)"
-          style:gap="4px">
-          {project.meta.issues.open + project.meta.issues.closed}
-        </div>
-      </div>
-    </Border>
+    <Sidebar activeTab="issues" rid={repo.rid} />
+  {/snippet}
 
-    <div class="issue-list">
-      {#each issues as sidebarIssue}
-        <Link
-          variant={sidebarIssue.id === issue.id ? "active" : "tab"}
-          route={{
-            resource: "repo.issue",
-            rid: repo.rid,
-            issue: sidebarIssue.id,
-          }}>
-          <div class="global-flex">
-            <div
-              style:color={issueStatusColor[sidebarIssue.state.status]}
-              style:margin-left="2px">
-              <Icon name="issue" />
-            </div>
-            <span class="txt-small issue-teaser txt-overflow">
-              <InlineTitle content={sidebarIssue.title} fontSize="small" />
-            </span>
-          </div>
-        </Link>
-      {/each}
-    </div>
+  {#snippet secondColumn()}
+    <IssueSecondColumn {repo} selectedIssueId={issue.id} {issues} />
   {/snippet}
 
   <div class="content">

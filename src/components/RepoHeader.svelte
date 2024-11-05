@@ -6,16 +6,9 @@
   interface Props {
     repo: RepoInfo;
     selfDid: string;
-    emphasizedTitle?: boolean;
-    showLabels?: boolean;
   }
 
-  const {
-    repo,
-    selfDid,
-    emphasizedTitle = true,
-    showLabels = true,
-  }: Props = $props();
+  const { repo, selfDid }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
@@ -37,22 +30,14 @@
       style:background-color="var(--color-fill-ghost)">
       {project.data.name[0]}
     </div>
-    {#if emphasizedTitle}
-      <span
-        title={project.data.name}
-        class="txt-regular txt-overflow txt-semibold">
-        {project.data.name}
-      </span>
-    {:else}
-      <span
-        title={project.data.name}
-        class="txt-small txt-overflow txt-semibold">
-        {project.data.name}
-      </span>
-    {/if}
+    <span
+      title={project.data.name}
+      class="txt-regular txt-overflow txt-semibold">
+      {project.data.name}
+    </span>
   </div>
   <div class="global-flex">
-    {#if showLabels && repo.visibility.type === "private"}
+    {#if repo.visibility.type === "private"}
       <div
         class="global-counter"
         style:padding="0"
@@ -62,7 +47,7 @@
         </div>
       </div>
     {/if}
-    {#if showLabels && repo.delegates.find(x => x.did === selfDid)}
+    {#if repo.delegates.find(x => x.did === selfDid)}
       <div
         class="global-counter"
         style:padding="0"

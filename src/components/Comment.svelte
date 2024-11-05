@@ -116,6 +116,7 @@
   .edit-buttons {
     display: flex;
     gap: 0.25rem;
+    cursor: pointer;
   }
 </style>
 
@@ -143,7 +144,7 @@
       <div class="header-right">
         {#if id && editComment}
           <div class="edit-buttons">
-            <Icon styleCursor="pointer" name="pen" onclick={toggleEdit} />
+            <Icon name="pen" onclick={toggleEdit} />
           </div>
         {/if}
         {#if id && reactions && reactOnComment}
