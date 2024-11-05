@@ -404,7 +404,7 @@
                 updatedTitle = issue.title;
                 editingTitle = !editingTitle;
               }} />
-            <IssueStateButton state={issue.state} save={saveState} />
+            <IssueStateButton issueState={issue.state} save={saveState} />
           </div>
         </div>
       {:else}
@@ -416,7 +416,7 @@
                 styleCursor="pointer"
                 name="pen"
                 onclick={() => (editingTitle = !editingTitle)} />
-              <IssueStateButton state={issue.state} save={saveState} />
+              <IssueStateButton issueState={issue.state} save={saveState} />
             </div>
           {/if}
         </div>

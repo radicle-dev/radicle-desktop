@@ -14,10 +14,10 @@
 
   const {
     save,
-    ...rest
+    issueState,
   }: {
-    state: State;
     save: (state: State) => Promise<void>;
+    issueState: State;
   } = $props();
 
   const actions: { caption: string; state: State }[] = [
@@ -29,10 +29,14 @@
     { caption: "Close as other", state: { status: "closed", reason: "other" } },
   ];
 
-  // Pick a default for the action button when the issue state changes.
   let selectedAction = $state(
-    rest.state.status === "open" ? actions[1] : actions[0],
+    issueState.status === "open" ? actions[1] : actions[0],
   );
+
+  // React to state changes that come from outside of this button.
+  $effect(() => {
+    selectedAction = issueState.status === "open" ? actions[1] : actions[0];
+  });
 </script>
 
 <style>
@@ -65,7 +69,7 @@
     {#snippet popover()}
       <Border variant="ghost">
         <DropdownList
-          items={actions.filter(a => !isEqual(a.state, rest.state))}>
+          items={actions.filter(a => !isEqual(a.state, issueState))}>
           {#snippet item(action)}
             <DropdownListItem
               selected={isEqual(selectedAction, action)}
