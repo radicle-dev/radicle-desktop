@@ -21,7 +21,9 @@ pub struct Issue {
     title: String,
     state: cobs::issue::State,
     assignees: Vec<cobs::Author>,
-    discussion: Vec<cobs::thread::Comment<cobs::Never>>,
+    body: cobs::thread::Comment,
+    #[ts(type = "number")]
+    comment_count: usize,
     #[ts(as = "Vec<String>")]
     labels: Vec<cob::Label>,
     #[ts(type = "number")]
@@ -30,6 +32,8 @@ pub struct Issue {
 
 impl Issue {
     pub fn new(id: &issue::IssueId, issue: &issue::Issue, aliases: &impl AliasStore) -> Self {
+        let (root_oid, root_comment) = issue.root();
+
         Self {
             id: id.to_string(),
             author: cobs::Author::new(*issue.author().id(), aliases),
@@ -39,10 +43,12 @@ impl Issue {
                 .assignees()
                 .map(|did| cobs::Author::new(*did, aliases))
                 .collect::<Vec<_>>(),
-            discussion: issue
-                .comments()
-                .map(|(id, c)| cobs::thread::Comment::<cobs::Never>::new(*id, c.clone(), aliases))
-                .collect::<Vec<_>>(),
+            body: cobs::thread::Comment::<cobs::Never>::new(
+                *root_oid,
+                root_comment.clone(),
+                aliases,
+            ),
+            comment_count: issue.replies().count(),
             labels: issue.labels().cloned().collect::<Vec<_>>(),
             timestamp: issue.timestamp(),
         }

@@ -50,6 +50,45 @@ pub trait Issues: Profile {
 
         Ok::<_, Error>(issue)
     }
+
+    fn comment_threads_by_issue_id(
+        &self,
+        rid: identity::RepoId,
+        id: git::Oid,
+    ) -> Result<Option<Vec<cobs::thread::Thread>>, Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+        let issues = profile.issues(&repo)?;
+        let issue = issues.get(&id.into())?;
+
+        let aliases = &profile.aliases();
+        let comments = issue.map(|issue| {
+            issue
+                .replies()
+                // Filter out replies that aren't top level replies
+                .filter(|c| {
+                    let Some(oid) = c.1.reply_to() else {
+                        return false;
+                    };
+
+                    oid == id
+                })
+                .map(|(oid, c)| {
+                    let root = cobs::thread::Comment::<cobs::Never>::new(*oid, c.clone(), aliases);
+                    let replies = issue
+                        .replies_to(oid)
+                        .map(|(oid, c)| {
+                            cobs::thread::Comment::<cobs::Never>::new(*oid, c.clone(), aliases)
+                        })
+                        .collect::<Vec<_>>();
+
+                    cobs::thread::Thread { root, replies }
+                })
+                .collect::<Vec<_>>()
+        });
+
+        Ok::<_, Error>(comments)
+    }
 }
 
 pub trait IssuesMut: Profile {

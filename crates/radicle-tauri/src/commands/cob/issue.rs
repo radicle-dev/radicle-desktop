@@ -47,3 +47,13 @@ pub(crate) fn issue_by_id(
 ) -> Result<Option<types::cobs::issue::Issue>, Error> {
     ctx.issue_by_id(rid, id).map_err(Error::from)
 }
+
+#[tauri::command]
+pub(crate) fn comment_threads_by_issue_id(
+    ctx: tauri::State<AppState>,
+    rid: identity::RepoId,
+    id: git::Oid,
+) -> Result<Option<Vec<types::cobs::thread::Thread>>, Error> {
+    ctx.comment_threads_by_issue_id(rid, id)
+        .map_err(Error::from)
+}

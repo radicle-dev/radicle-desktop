@@ -66,6 +66,7 @@
   style:cursor={styleCursor}
   role="img"
   {onclick}
+  aria-label={`icon-${name}`}
   width={size}
   height={size}
   fill="currentColor"

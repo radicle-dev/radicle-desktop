@@ -26,6 +26,15 @@ pub struct CreateReviewComment {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "cob/thread/")]
+pub struct Thread<T = cobs::Never> {
+    pub root: Comment<T>,
+    pub replies: Vec<Comment<T>>,
+}
+
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/thread/")]
 pub struct Comment<T = cobs::Never> {
     #[ts(as = "String")]
     id: cob::thread::CommentId,

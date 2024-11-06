@@ -85,10 +85,10 @@
       <div class="global-counter txt-small">{label}</div>
     {/each}
 
-    {#if issue.discussion.length > 1}
+    {#if issue.commentCount > 0}
       <div class="txt-small global-flex" style:gap="0.25rem">
         <Icon name="comment" />
-        {issue.discussion.length - 1}
+        {issue.commentCount}
       </div>
     {/if}
   </div>

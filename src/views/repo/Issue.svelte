@@ -5,6 +5,7 @@
   import type { Issue } from "@bindings/cob/issue/Issue";
   import type { Operation } from "@bindings/cob/issue/Operation";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { Thread } from "@bindings/cob/thread/Thread";
 
   import partial from "lodash/partial";
   import { tick } from "svelte";
@@ -31,7 +32,7 @@
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import TextInput from "@app/components/TextInput.svelte";
-  import Thread from "@app/components/Thread.svelte";
+  import ThreadComponent from "@app/components/Thread.svelte";
 
   import Layout from "./Layout.svelte";
 
@@ -41,6 +42,7 @@
     issues: Issue[];
     activity: Operation[];
     config: Config;
+    threads: Thread[];
   }
 
   /* eslint-disable prefer-const */
@@ -50,6 +52,7 @@
     issues: initialIssues,
     activity,
     config,
+    threads,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -73,23 +76,6 @@
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
-  const issueBody = $derived(issue.discussion[0]);
-  const threads = $derived(
-    issue.discussion
-      .filter(
-        comment =>
-          (comment.id !== issueBody.id && !comment.replyTo) ||
-          comment.replyTo === issueBody.id,
-      )
-      .map(thread => {
-        return {
-          root: thread,
-          replies: issue.discussion
-            .filter(comment => comment.replyTo === thread.id)
-            .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
-        };
-      }, []),
-  );
 
   async function toggleReply() {
     topLevelReplyOpen = !topLevelReplyOpen;
@@ -105,7 +91,7 @@
   }
 
   async function reload() {
-    [issue, activity] = await Promise.all([
+    [issue, activity, threads] = await Promise.all([
       invoke<Issue>("issue_by_id", {
         rid: repo.rid,
         id: issue.id,
@@ -113,6 +99,10 @@
       invoke<Operation[]>("activity_by_id", {
         rid: repo.rid,
         typeName: "xyz.radicle.issue",
+        id: issue.id,
+      }),
+      invoke<Thread[]>("comment_threads_by_issue_id", {
+        rid: repo.rid,
         id: issue.id,
       }),
     ]);
@@ -410,7 +400,7 @@
       {:else}
         <div class="title">
           <InlineTitle content={issue.title} fontSize="medium" />
-          {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), issueBody.author.did, )}
+          {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), issue.body.author.did, )}
             <div class="title-icons">
               <Icon
                 styleCursor="pointer"
@@ -429,22 +419,22 @@
       <CommentComponent
         rid={repo.rid}
         id={issue.id}
-        lastEdit={issueBody.edits.length > 1
-          ? issueBody.edits.at(-1)
+        lastEdit={issue.body.edits.length > 1
+          ? issue.body.edits.at(-1)
           : undefined}
-        author={issueBody.author}
-        reactions={issueBody.reactions}
-        timestamp={issueBody.edits.slice(-1)[0].timestamp}
-        body={issueBody.edits.slice(-1)[0].body}
+        author={issue.body.author}
+        reactions={issue.body.reactions}
+        timestamp={issue.body.edits.slice(-1)[0].timestamp}
+        body={issue.body.edits.slice(-1)[0].body}
         editComment={roles.isDelegateOrAuthor(
           config.publicKey,
           repo.delegates.map(delegate => delegate.did),
-          issueBody.author.did,
-        ) && partial(editComment, issueBody.id)}
+          issue.body.author.did,
+        ) && partial(editComment, issue.body.id)}
         reactOnComment={partial(
           reactOnComment,
           config.publicKey,
-          issueBody.id,
+          issue.body.id,
         )}>
         {#snippet actions()}
           <Icon styleCursor="pointer" name="reply" onclick={toggleReply} />
@@ -461,7 +451,7 @@
         {:else if op.type === "comment"}
           {@const thread = threads.find(t => t.root.id === op.entryId)}
           {#if thread}
-            <Thread
+            <ThreadComponent
               {thread}
               rid={repo.rid}
               canEditComment={partial(

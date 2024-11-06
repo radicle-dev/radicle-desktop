@@ -102,6 +102,7 @@ pub fn run() {
             cob::save_embed,
             cob::issue::list_issues,
             cob::issue::issue_by_id,
+            cob::issue::comment_threads_by_issue_id,
             cob::issue::create_issue,
             cob::issue::edit_issue,
             cob::patch::list_patches,

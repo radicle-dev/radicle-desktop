@@ -11,7 +11,9 @@ test("theme persistence", async ({ page }) => {
   await expect(page.getByRole("button", { name: "markdown" })).toBeVisible();
   await page.getByRole("button", { name: "Settings" }).click();
 
-  await page.getByRole("button", { name: "Light", exact: true }).click();
+  await page
+    .getByRole("button", { name: "icon-sun Light", exact: true })
+    .click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
   await page.reload();
@@ -24,9 +26,13 @@ test("change theme", async ({ page }) => {
   await expect(page.getByRole("button", { name: "markdown" })).toBeVisible();
   await page.getByRole("button", { name: "Settings" }).click();
 
-  await page.getByRole("button", { name: "Light", exact: true }).click();
+  await page
+    .getByRole("button", { name: "icon-sun Light", exact: true })
+    .click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
-  await page.getByRole("button", { name: "Dark", exact: true }).click();
+  await page
+    .getByRole("button", { name: "icon-moon Dark", exact: true })
+    .click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });

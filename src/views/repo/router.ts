@@ -1,4 +1,5 @@
 import type { Config } from "@bindings/config/Config";
+import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Operation } from "@bindings/cob/issue/Operation";
 import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
@@ -30,6 +31,7 @@ export interface LoadedRepoIssueRoute {
     issue: Issue;
     issues: Issue[];
     activity: Operation[];
+    threads: Thread[];
   };
 }
 
@@ -176,7 +178,7 @@ export async function loadCreateIssue(
 export async function loadIssue(
   route: RepoIssueRoute,
 ): Promise<LoadedRepoIssueRoute> {
-  const [config, repo, issue, activity, issues] = await Promise.all([
+  const [config, repo, issue, activity, issues, threads] = await Promise.all([
     invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
@@ -194,11 +196,15 @@ export async function loadIssue(
       rid: route.rid,
       status: "all",
     }),
+    invoke<Thread[]>("comment_threads_by_issue_id", {
+      rid: route.rid,
+      id: route.issue,
+    }),
   ]);
 
   return {
     resource: "repo.issue",
-    params: { repo, config, issue, activity, issues },
+    params: { repo, config, issue, activity, issues, threads },
   };
 }
 

@@ -10,7 +10,8 @@ export type Issue = {
   title: string;
   state: State;
   assignees: Array<Author>;
-  discussion: Array<Comment<Never>>;
+  body: Comment<Never>;
+  commentCount: number;
   labels: Array<string>;
   timestamp: number;
 };

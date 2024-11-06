@@ -64,6 +64,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/create_issue_comment", post(create_issue_comment_handler))
         .route("/edit_issue", post(edit_issue_handler))
         .route("/issue_by_id", post(issue_handler))
+        .route("/comment_threads_by_issue_id", post(issue_threads_handler))
         .route("/list_patches", post(patches_handler))
         .route("/patch_by_id", post(patch_handler))
         .route("/revisions_by_patch", post(revision_handler))
@@ -273,6 +274,15 @@ async fn issue_handler(
     let issue = ctx.issue_by_id(rid, id)?;
 
     Ok::<_, Error>(Json(issue))
+}
+
+async fn issue_threads_handler(
+    State(ctx): State<Context>,
+    Json(IssueBody { rid, id }): Json<IssueBody>,
+) -> impl IntoResponse {
+    let issue_threads = ctx.comment_threads_by_issue_id(rid, id)?;
+
+    Ok::<_, Error>(Json(issue_threads))
 }
 
 #[derive(Serialize, Deserialize)]
