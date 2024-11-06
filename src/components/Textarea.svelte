@@ -58,9 +58,12 @@
       textareaElement.style.height = `0px`;
       textareaElement.style.height = `${textareaElement.scrollHeight}px`;
     }
+  });
+
+  $effect(() => {
     if (textareaElement && focus) {
       textareaElement.focus();
-      focussed = false;
+      focus = false;
     }
   });
 
