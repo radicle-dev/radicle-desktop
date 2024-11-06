@@ -4,15 +4,13 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
-  import { authorForNodeId, formatTimestamp } from "@app/lib/utils";
-
+  import CommentComponent from "@app/components/Comment.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
-  import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
@@ -50,9 +48,21 @@
     padding: 0 1rem 1rem 0;
   }
 
-  .body {
+  .patch-body {
+    margin-top: 1rem;
+    position: relative;
+  }
+  /* We put the background and clip-path in a separate element to prevent
+     popovers being clipped in the main element. */
+  .patch-body::after {
+    position: absolute;
+    z-index: -1;
+    content: " ";
     background-color: var(--color-background-float);
-    padding: 1rem;
+    clip-path: var(--2px-corner-fill);
+    width: 100%;
+    height: 100%;
+    top: 0;
   }
 </style>
 
@@ -109,27 +119,23 @@
     <div class="title">
       <InlineTitle content={patch.title} fontSize="medium" />
     </div>
-    <div class="txt-small body">
-      {#if revisions[0].description.slice(-1)[0].body !== ""}
-        <Markdown
-          rid={repo.rid}
-          breaks
-          content={revisions[0].description.slice(-1)[0].body} />
-      {:else}
-        <span class="txt-missing" style:line-height="1.625rem">
-          No description.
-        </span>
-      {/if}
-      <div class="global-flex txt-small" style:margin-top="1.5rem">
-        <NodeId {...authorForNodeId(patch.author)} />
-        opened
-        <Id id={patch.id} variant="oid" />
-        {formatTimestamp(patch.timestamp)}
-      </div>
+    <div class="txt-small patch-body">
+      <CommentComponent
+        caption="opened"
+        rid={repo.rid}
+        id={patch.id}
+        lastEdit={revisions[0].description.length > 1
+          ? revisions[0].description.at(-1)
+          : undefined}
+        author={revisions[0].author}
+        reactions={revisions[0].reactions}
+        timestamp={revisions[0].description.slice(-1)[0].timestamp}
+        body={revisions[0].description.slice(-1)[0].body}>
+      </CommentComponent>
     </div>
     <div class="txt-small" style:margin-top="1rem">Revisions</div>
     {#each revisions as revision}
-      <Id id={revision.id} variant="oid" />
+      <div><Id id={revision.id} variant="oid" /></div>
     {/each}
   </div>
 </Layout>

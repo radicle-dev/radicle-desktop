@@ -379,6 +379,7 @@
           ? issue.body.edits.at(-1)
           : undefined}
         author={issue.body.author}
+        caption="opened"
         reactions={issue.body.reactions}
         timestamp={issue.body.edits.slice(-1)[0].timestamp}
         body={issue.body.edits.slice(-1)[0].body}
