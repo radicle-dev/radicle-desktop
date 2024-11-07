@@ -106,6 +106,9 @@
         id: issue.id,
       }),
     ]);
+
+    topLevelReplyOpen = false;
+    editingTitle = false;
   }
 
   async function createComment(body: string, embeds: Embed[]) {
