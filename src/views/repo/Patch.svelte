@@ -1,8 +1,11 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
+  import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
+
+  import { invoke } from "@app/lib/invoke";
 
   import CommentComponent from "@app/components/Comment.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -18,12 +21,49 @@
   interface Props {
     repo: RepoInfo;
     patch: Patch;
-    patches: Patch[];
+    patches: PaginatedQuery<Patch[]>;
     revisions: Revision[];
     config: Config;
   }
 
-  const { repo, patch, patches, revisions, config }: Props = $props();
+  /* eslint-disable prefer-const */
+  let { repo, patch, patches, revisions, config }: Props = $props();
+  /* eslint-enable prefer-const */
+
+  let items = $state(patches.content);
+  let cursor = patches.cursor;
+  let more = patches.more;
+
+  $effect(() => {
+    items = patches.content;
+    cursor = patches.cursor;
+    more = patches.more;
+  });
+
+  async function loadPatch(rid: string, patchId: string) {
+    patch = await invoke<Patch>("patch_by_id", {
+      rid: rid,
+      id: patchId,
+    });
+    revisions = await invoke<Revision[]>("revisions_by_patch", {
+      rid: rid,
+      id: patchId,
+    });
+  }
+
+  async function loadMoreSecondColumn() {
+    if (more) {
+      const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
+        rid: repo.rid,
+        skip: cursor + 20,
+        take: 20,
+      });
+
+      cursor = p.cursor;
+      more = p.more;
+      items = [...items, ...p.content];
+    }
+  }
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
@@ -66,7 +106,7 @@
   }
 </style>
 
-<Layout>
+<Layout {loadMoreSecondColumn}>
   {#snippet breadcrumbs()}
     <Link route={{ resource: "home" }}>
       <NodeId
@@ -105,9 +145,10 @@
       Patches
     </div>
     <div class="patch-list">
-      {#each patches as p}
+      {#each items as p}
         <PatchTeaser
           compact
+          {loadPatch}
           patch={p}
           rid={repo.rid}
           selected={patch && p.id === patch.id} />

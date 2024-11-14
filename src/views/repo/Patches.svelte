@@ -36,7 +36,7 @@
     more = patches.more;
   });
 
-  async function loadMore() {
+  async function loadMoreContent() {
     if (more) {
       const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
         rid: repo.rid,
@@ -71,7 +71,7 @@
   }
 </style>
 
-<Layout {loadMore} hideSidebar styleSecondColumnOverflow="visible">
+<Layout {loadMoreContent} hideSidebar styleSecondColumnOverflow="visible">
   {#snippet breadcrumbs()}
     <Link route={{ resource: "home" }}>
       <NodeId

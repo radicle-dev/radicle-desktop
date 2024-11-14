@@ -9,33 +9,29 @@
     patchStatusColor,
   } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
-  import { onMount } from "svelte";
   import { push } from "@app/lib/router";
 
   import DiffStatBadge from "./DiffStatBadge.svelte";
   import Icon from "./Icon.svelte";
+  import Id from "./Id.svelte";
   import InlineTitle from "./InlineTitle.svelte";
   import NodeId from "./NodeId.svelte";
-  import Id from "./Id.svelte";
-
-  let stats: Stats | undefined = $state(undefined);
-
-  onMount(async () => {
-    stats = await invoke<Stats>("diff_stats", {
-      rid,
-      base: patch.base,
-      head: patch.head,
-    });
-  });
 
   interface Props {
     patch: Patch;
     rid: string;
     selected?: boolean;
     compact?: boolean;
+    loadPatch?: (rid: string, patchId: string) => void;
   }
 
-  const { patch, rid, selected = false, compact = false }: Props = $props();
+  const {
+    patch,
+    rid,
+    selected = false,
+    compact = false,
+    loadPatch,
+  }: Props = $props();
 </script>
 
 <style>
@@ -79,7 +75,11 @@
   class:selected
   class="patch-teaser"
   onclick={() => {
-    void push({ resource: "repo.patch", rid, patch: patch.id });
+    if (loadPatch) {
+      loadPatch(rid, patch.id);
+    } else {
+      void push({ resource: "repo.patch", rid, patch: patch.id });
+    }
   }}>
   <div class="global-flex">
     <div
@@ -104,9 +104,10 @@
 
   {#if !compact}
     <div class="global-flex">
-      {#if stats}
+      {#await invoke<Stats>( "diff_stats", { rid, base: patch.base, head: patch.head }, ) then stats}
         <DiffStatBadge {stats} />
-      {/if}
+      {/await}
+
       {#each patch.labels as label}
         <div class="global-counter txt-small">{label}</div>
       {/each}

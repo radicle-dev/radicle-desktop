@@ -13,7 +13,8 @@
     headerCenter?: Snippet;
     secondColumn: Snippet;
     sidebar: Snippet;
-    loadMore?: () => Promise<void>;
+    loadMoreContent?: () => Promise<void>;
+    loadMoreSecondColumn?: () => Promise<void>;
     hideSidebar?: boolean;
     styleSecondColumnOverflow?: string;
   }
@@ -24,7 +25,8 @@
     headerCenter = undefined,
     secondColumn,
     sidebar,
-    loadMore = undefined,
+    loadMoreContent = undefined,
+    loadMoreSecondColumn = undefined,
     hideSidebar = false,
     styleSecondColumnOverflow = "scroll",
   }: Props = $props();
@@ -34,8 +36,10 @@
   let oneColumnLayout = $state(
     localStorage ? localStorage.getItem(LAYOUT_KEY) === "one-column" : false,
   );
-  let listElement: HTMLElement | undefined = $state();
-  let loading = false;
+  let contentContainer: HTMLElement | undefined = $state();
+  let secondColumnContainer: HTMLElement | undefined = $state();
+  let loadingContent = false;
+  let loadingSecondColumn = false;
 
   function storeLayout(newValue: LayoutState): void {
     oneColumnLayout = newValue === "one-column";
@@ -49,16 +53,33 @@
   }
 
   onMount(() => {
-    if (listElement && loadMore) {
-      listElement.addEventListener("scroll", async () => {
+    if (contentContainer && loadMoreContent) {
+      contentContainer.addEventListener("scroll", async () => {
         if (
-          listElement &&
-          listElement.scrollTop + listElement.clientHeight >=
-            listElement.scrollHeight - 600 &&
-          loading === false
+          contentContainer &&
+          contentContainer.scrollTop + contentContainer.clientHeight >=
+            contentContainer.scrollHeight - 600 &&
+          loadingContent === false
         ) {
-          loading = true;
-          void loadMore().finally(() => (loading = false));
+          loadingContent = true;
+          void loadMoreContent().finally(() => (loadingContent = false));
+        }
+      });
+    }
+
+    if (secondColumnContainer && loadMoreSecondColumn) {
+      secondColumnContainer.addEventListener("scroll", async () => {
+        if (
+          secondColumnContainer &&
+          secondColumnContainer.scrollTop +
+            secondColumnContainer.clientHeight >=
+            secondColumnContainer.scrollHeight - 600 &&
+          loadingSecondColumn === false
+        ) {
+          loadingSecondColumn = true;
+          void loadMoreSecondColumn().finally(
+            () => (loadingSecondColumn = false),
+          );
         }
       });
     }
@@ -93,7 +114,7 @@
   .secondColumn {
     grid-column: 2 / 3;
     margin: 1rem 0 0 0;
-    max-width: 30rem;
+    max-width: 28rem;
     min-width: 14rem;
     margin-right: 1rem;
   }
@@ -162,6 +183,7 @@
 
   <div
     class="secondColumn"
+    bind:this={secondColumnContainer}
     style:display={oneColumnLayout ? "none" : undefined}
     style:overflow={styleSecondColumnOverflow}>
     {@render secondColumn()}
@@ -169,7 +191,7 @@
 
   <div
     class="content global-reset-scroll-after-navigate"
-    bind:this={listElement}>
+    bind:this={contentContainer}>
     {@render children()}
   </div>
 </div>

@@ -74,7 +74,7 @@ export interface LoadedRepoPatchRoute {
     repo: RepoInfo;
     config: Config;
     patch: Patch;
-    patches: Patch[];
+    patches: PaginatedQuery<Patch[]>;
     revisions: Revision[];
   };
 }
@@ -131,7 +131,7 @@ export async function loadPatch(
 
   return {
     resource: "repo.patch",
-    params: { repo, config, patch, patches: patches.content, revisions },
+    params: { repo, config, patch, patches, revisions },
   };
 }
 

@@ -71,6 +71,7 @@
 
   {#if activeTab === "patches"}
     <Border
+      styleCursor="pointer"
       onclick={() => {
         void router.push({
           resource: "repo.patches",
