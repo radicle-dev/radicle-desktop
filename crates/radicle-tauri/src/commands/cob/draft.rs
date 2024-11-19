@@ -2,9 +2,9 @@ use radicle::cob;
 use radicle::git;
 use radicle::identity;
 
+use radicle_types::error::Error;
 use radicle_types::traits::cobs::Cobs;
 
-use crate::error::Error;
 use crate::AppState;
 
 /// Puts a draft of a Collaborative Object (COB) out of the draft state by updating the reference to the new object ID (OID).
@@ -19,5 +19,4 @@ pub fn publish_draft(
     type_name: cob::TypeName,
 ) -> Result<(), Error> {
     ctx.publish_draft(rid, cob_id, type_name)
-        .map_err(Error::from)
 }

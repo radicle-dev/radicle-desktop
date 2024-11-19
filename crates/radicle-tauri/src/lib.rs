@@ -1,11 +1,11 @@
 mod commands;
-mod error;
 
 use tauri::Emitter;
 use tauri::Manager;
 
 use radicle::node::Handle;
 use radicle::Node;
+use radicle_types::error::Error;
 use radicle_types::traits::auth::Auth;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::issue::{Issues, IssuesMut};
@@ -44,12 +44,12 @@ pub fn run() {
     builder
         .setup(|app| {
             let profile: radicle::Profile = match radicle::Profile::load() {
-                Ok(profile) => Ok::<radicle::Profile, error::Error>(profile),
-                Err(radicle::profile::Error::NotFound(path)) => Err(error::Error::WithHint {
+                Ok(profile) => Ok::<radicle::Profile, Error>(profile),
+                Err(radicle::profile::Error::NotFound(path)) => Err(Error::WithHint {
                     err: anyhow::anyhow!("Radicle profile not found in '{}'.", path.display()),
                     hint: "To setup your radicle profile, run `rad auth`.",
                 }),
-                Err(e) => Err(error::Error::WithHint {
+                Err(e) => Err(Error::WithHint {
                     err: e.into(),
                     hint: "Could not load radicle profile",
                 }),

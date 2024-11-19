@@ -4,10 +4,10 @@ use radicle::identity;
 use radicle::patch;
 
 use radicle_types as types;
+use radicle_types::error::Error;
 use radicle_types::traits::patch::Patches;
 use radicle_types::traits::patch::PatchesMut;
 
-use crate::error::Error;
 use crate::AppState;
 
 #[tauri::command]
@@ -19,7 +19,6 @@ pub async fn list_patches(
     take: Option<usize>,
 ) -> Result<types::cobs::PaginatedQuery<Vec<types::cobs::patch::Patch>>, Error> {
     ctx.list_patches(rid, status, skip, take)
-        .map_err(Error::from)
 }
 
 #[tauri::command]
@@ -28,7 +27,7 @@ pub fn patch_by_id(
     rid: identity::RepoId,
     id: git::Oid,
 ) -> Result<Option<types::cobs::patch::Patch>, Error> {
-    ctx.get_patch(rid, id).map_err(Error::from)
+    ctx.get_patch(rid, id)
 }
 
 #[tauri::command]
@@ -37,7 +36,7 @@ pub fn revisions_by_patch(
     rid: identity::RepoId,
     id: git::Oid,
 ) -> Result<Option<Vec<types::cobs::patch::Revision>>, Error> {
-    ctx.revisions_by_patch(rid, id).map_err(Error::from)
+    ctx.revisions_by_patch(rid, id)
 }
 
 #[tauri::command]
@@ -48,7 +47,6 @@ pub fn revision_by_patch_and_id(
     revision_id: git::Oid,
 ) -> Result<Option<types::cobs::patch::Revision>, Error> {
     ctx.revision_by_id(rid, id, revision_id)
-        .map_err(Error::from)
 }
 
 #[tauri::command]
@@ -60,7 +58,6 @@ pub fn create_draft_review(
     labels: Vec<cob::Label>,
 ) -> Result<patch::ReviewId, Error> {
     ctx.create_draft_review(rid, revision_id, cob_id, labels)
-        .map_err(Error::from)
 }
 
 /// Creates a new review comment on a draft review for a specific patch.
@@ -76,7 +73,6 @@ pub fn create_draft_review_comment(
     new: types::cobs::thread::CreateReviewComment,
 ) -> Result<(), Error> {
     ctx.create_draft_review_comment(rid, cob_id, new)
-        .map_err(Error::from)
 }
 
 /// Edits a draft review for a specific patch revision in a repository.
@@ -91,7 +87,6 @@ pub fn edit_draft_review(
     edit: types::cobs::patch::ReviewEdit,
 ) -> Result<(), Error> {
     ctx.edit_draft_review(rid, cob_id, edit)
-        .map_err(Error::from)
 }
 
 #[tauri::command]
@@ -113,5 +108,4 @@ pub fn edit_patch(
     opts: types::cobs::CobOptions,
 ) -> Result<types::cobs::patch::Patch, Error> {
     ctx.edit_patch(rid, cob_id, action, opts)
-        .map_err(Error::from)
 }

@@ -94,19 +94,31 @@ impl Serialize for Error {
     where
         S: serde::ser::Serializer,
     {
-        if let Error::WithHint { err, hint } = self {
-            let error_wrapper = ErrorWrapperWithHint {
+        match self {
+            Error::WithHint { err, hint } => ErrorWrapperWithHint {
                 err: err.to_string(),
                 hint: hint.to_string(),
-            };
-
-            return error_wrapper.serialize(serializer);
+            }
+            .serialize(serializer),
+            err => ErrorWrapper {
+                err: err.to_string(),
+            }
+            .serialize(serializer),
         }
+    }
+}
 
-        let wrapper = ErrorWrapper {
-            err: self.to_string(),
-        };
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod test {
+    use super::Error;
+    use anyhow::anyhow;
 
-        wrapper.serialize(serializer)
+    #[test]
+    fn serialize_errors() {
+        assert_eq!(serde_json::to_string(&Error::WithHint {
+            err: anyhow!("Not able to find your keys in the ssh agent"),
+            hint: "Make sure to run <code>rad auth</code> in your terminal to add your keys to the ssh-agent.",
+        }).unwrap(),"{\"err\":\"Not able to find your keys in the ssh agent\",\"hint\":\"Make sure to run <code>rad auth</code> in your terminal to add your keys to the ssh-agent.\"}");
     }
 }

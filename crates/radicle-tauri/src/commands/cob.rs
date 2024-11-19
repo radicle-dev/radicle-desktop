@@ -2,10 +2,11 @@ use radicle::cob;
 use radicle::git;
 use radicle::identity;
 use radicle_types as types;
+use radicle_types::error::Error;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::thread::Thread;
 
-use crate::{error, AppState};
+use crate::AppState;
 
 pub mod draft;
 pub mod issue;
@@ -16,8 +17,8 @@ pub async fn get_file_by_oid(
     ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,
     oid: git::Oid,
-) -> Result<String, error::Error> {
-    ctx.get_embed(rid, oid).map_err(error::Error::from)
+) -> Result<String, Error> {
+    ctx.get_embed(rid, oid)
 }
 
 #[tauri::command]
@@ -26,8 +27,8 @@ pub async fn save_embed(
     rid: identity::RepoId,
     name: &str,
     bytes: &[u8],
-) -> Result<git::Oid, error::Error> {
-    ctx.save_embed(rid, name, bytes).map_err(error::Error::from)
+) -> Result<git::Oid, Error> {
+    ctx.save_embed(rid, name, bytes)
 }
 
 #[tauri::command]
@@ -36,7 +37,6 @@ pub fn activity_by_id(
     rid: identity::RepoId,
     type_name: cob::TypeName,
     id: git::Oid,
-) -> Result<Vec<types::cobs::issue::Operation>, error::Error> {
+) -> Result<Vec<types::cobs::issue::Operation>, Error> {
     ctx.activity_by_id(rid, type_name, id)
-        .map_err(error::Error::from)
 }
