@@ -18,6 +18,7 @@
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
+  import { dynamicInterval, checkAuth } from "./lib/auth";
 
   const activeRouteStore = router.activeRouteStore;
 
@@ -38,6 +39,7 @@
     try {
       await invoke("authenticate");
       void router.loadFromLocation();
+      void dynamicInterval(checkAuth, 30_000);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       void router.push({
@@ -47,6 +49,7 @@
           hint: e.hint,
         },
       });
+      void dynamicInterval(checkAuth, 1000);
     }
   });
 
