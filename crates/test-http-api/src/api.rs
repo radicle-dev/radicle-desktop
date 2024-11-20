@@ -15,6 +15,7 @@ use radicle::{git, identity};
 use radicle_types as types;
 use radicle_types::cobs::issue::{Action, NewIssue};
 use radicle_types::cobs::CobOptions;
+use radicle_types::error::Error;
 use radicle_types::traits::auth::Auth;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::issue::{Issues, IssuesMut};
@@ -22,8 +23,6 @@ use radicle_types::traits::patch::{Patches, PatchesMut};
 use radicle_types::traits::repo::Repo;
 use radicle_types::traits::thread::Thread;
 use radicle_types::traits::Profile;
-
-use crate::error::Error;
 
 #[derive(Clone)]
 pub struct Context {

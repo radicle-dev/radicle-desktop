@@ -7,7 +7,6 @@ use tokio::net::TcpListener;
 use radicle::Profile;
 
 mod api;
-mod error;
 
 #[derive(Debug, Clone)]
 pub struct Options {

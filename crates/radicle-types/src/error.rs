@@ -1,3 +1,6 @@
+use axum::body::Body;
+use axum::http::{Response, StatusCode};
+use axum::response::IntoResponse;
 use serde::Serialize;
 
 #[derive(Debug, thiserror::Error)]
@@ -105,6 +108,16 @@ impl Serialize for Error {
             }
             .serialize(serializer),
         }
+    }
+}
+
+impl IntoResponse for Error {
+    fn into_response(self) -> Response<Body> {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            serde_json::to_string(&self).unwrap(),
+        )
+            .into_response()
     }
 }
 
