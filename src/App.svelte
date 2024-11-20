@@ -27,8 +27,8 @@
 
   onMount(async () => {
     if (window.__TAURI_INTERNALS__) {
-      unlistenEvents = await listen("event", event => {
-        console.log(event.payload);
+      unlistenEvents = await listen("event", () => {
+        // Add handler for incoming events
       });
 
       unlistenNodeEvents = await listen<boolean>("node_running", event => {
