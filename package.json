@@ -26,6 +26,7 @@
   "dependencies": {
     "@tauri-apps/api": "^2.0.2",
     "@tauri-apps/plugin-clipboard-manager": "^2.0.0",
+    "@tauri-apps/plugin-log": "^2.0.0",
     "@tauri-apps/plugin-shell": "^2.0.0",
     "@tauri-apps/plugin-window-state": "^2.0.0"
   },

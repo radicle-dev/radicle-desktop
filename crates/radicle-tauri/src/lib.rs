@@ -37,7 +37,7 @@ impl Profile for AppState {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(debug_assertions)]
-    let builder = tauri::Builder::default().plugin(tauri_plugin_devtools::init());
+    let builder = tauri::Builder::default().plugin(tauri_plugin_log::Builder::new().build());
     #[cfg(not(debug_assertions))]
     let builder = tauri::Builder::default();
 

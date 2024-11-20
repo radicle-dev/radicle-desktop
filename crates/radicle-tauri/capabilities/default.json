@@ -15,6 +15,7 @@
     "core:tray:default",
     "shell:allow-open",
     "clipboard-manager:default",
-    "clipboard-manager:allow-write-text"
+    "clipboard-manager:allow-write-text",
+    "log:default"
   ]
 }
