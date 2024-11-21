@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "@tests/support/fixtures.js";
 
 test("navigate to repo issues", async ({ page }) => {
   await page.goto("/repos");

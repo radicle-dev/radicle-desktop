@@ -32,7 +32,8 @@ const config: PlaywrightTestConfig = {
 
   webServer: [
     {
-      command: "npm run start -- --strictPort --port 3001",
+      command:
+        "VITE_AUTH_LONG_DELAY=1000 npm run start -- --strictPort --port 3001",
       port: 3001,
     },
   ],

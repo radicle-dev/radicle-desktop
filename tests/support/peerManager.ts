@@ -235,6 +235,17 @@ export class RadiclePeer {
     });
   }
 
+  /**
+   Removes the peers identity file from the `ssh-agent`
+   **/
+  public async logOut(): Promise<void> {
+    await this.spawn("ssh-add", ["-d", `${this.#radHome}/keys/radicle.pub`]);
+  }
+
+  public async authenticate(): Promise<void> {
+    await this.spawn("rad", ["auth"]);
+  }
+
   public async startHttpd(port?: number): Promise<void> {
     if (!port) {
       port = await getPort();

@@ -26,7 +26,7 @@ export async function checkAuth() {
     if (get(activeRouteStore).resource === "authenticationError") {
       window.history.back();
     }
-    dynamicInterval(checkAuth, 30_000);
+    dynamicInterval(checkAuth, import.meta.env.VITE_AUTH_LONG_DELAY || 30_000);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (e: any) {
     if (get(activeRouteStore).resource !== "authenticationError") {

@@ -12,11 +12,14 @@ export async function invoke<T = null>(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(args),
-    })
-      .then(data => data.json())
-      .catch(() => {
-        throw Error(`Issue with HTTP Route: ${JSON.stringify({ cmd, args })}`);
-      });
+    }).then(async response => {
+      const json = await response.json();
+      if (!response.ok) {
+        throw json;
+      }
+
+      return json;
+    });
   }
 }
 

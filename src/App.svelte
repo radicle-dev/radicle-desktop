@@ -39,7 +39,10 @@
     try {
       await invoke("authenticate");
       void router.loadFromLocation();
-      void dynamicInterval(checkAuth, 30_000);
+      void dynamicInterval(
+        checkAuth,
+        import.meta.env.VITE_AUTH_LONG_DELAY || 30_000,
+      );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       void router.push({
