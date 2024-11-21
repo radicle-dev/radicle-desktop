@@ -52,7 +52,7 @@ export async function loadRoute(
   if (route.resource === "home") {
     const [config, repos] = await Promise.all([
       invoke<Config>("config"),
-      invoke<RepoInfo[]>("list_repos"),
+      invoke<RepoInfo[]>("list_repos", { show: "all" }),
     ]);
     return { resource: "home", params: { repos, config } };
   } else if (route.resource === "repo.issue") {

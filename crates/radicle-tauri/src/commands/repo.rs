@@ -3,13 +3,16 @@ use radicle::identity::RepoId;
 
 use radicle_types as types;
 use radicle_types::error::Error;
-use radicle_types::traits::repo::Repo;
+use radicle_types::traits::repo::{Repo, Show};
 
 use crate::AppState;
 
 #[tauri::command]
-pub fn list_repos(ctx: tauri::State<AppState>) -> Result<Vec<types::repo::RepoInfo>, Error> {
-    ctx.list_repos()
+pub fn list_repos(
+    ctx: tauri::State<AppState>,
+    show: Show,
+) -> Result<Vec<types::repo::RepoInfo>, Error> {
+    ctx.list_repos(show)
 }
 
 #[tauri::command]

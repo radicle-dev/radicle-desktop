@@ -20,7 +20,7 @@ use radicle_types::traits::auth::Auth;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::issue::{Issues, IssuesMut};
 use radicle_types::traits::patch::{Patches, PatchesMut};
-use radicle_types::traits::repo::Repo;
+use radicle_types::traits::repo::{Repo, Show};
 use radicle_types::traits::thread::Thread;
 use radicle_types::traits::Profile;
 
@@ -90,8 +90,16 @@ async fn auth_handler(State(ctx): State<Context>) -> impl IntoResponse {
     Ok::<_, Error>(Json(()))
 }
 
-async fn repo_root_handler(State(ctx): State<Context>) -> impl IntoResponse {
-    let repos = ctx.list_repos()?;
+#[derive(Serialize, Deserialize)]
+pub struct Options {
+    show: Show,
+}
+
+async fn repo_root_handler(
+    State(ctx): State<Context>,
+    Json(Options { show }): Json<Options>,
+) -> impl IntoResponse {
+    let repos = ctx.list_repos(show)?;
 
     Ok::<_, Error>(Json(repos))
 }
