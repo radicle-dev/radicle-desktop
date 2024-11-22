@@ -2,6 +2,7 @@ use base64::{engine::general_purpose::STANDARD, Engine as _};
 use localtime::LocalTime;
 
 use radicle::cob;
+use radicle::cob::cache::migrate;
 use radicle::git;
 use radicle::identity;
 use radicle::node::Handle;
@@ -46,7 +47,7 @@ pub trait Thread: Profile {
         let mut node = Node::new(profile.socket());
         let signer = profile.signer()?;
         let repo = profile.storage.repository(rid)?;
-        let mut issues = profile.issues_mut(&repo)?;
+        let mut issues = profile.issues_mut(&repo, migrate::ignore)?;
         let mut issue = issues.get_mut(&new.id.into())?;
         let id = new.reply_to.unwrap_or_else(|| {
             let (root_id, _) = issue.root();
@@ -89,7 +90,7 @@ pub trait Thread: Profile {
         let mut node = Node::new(profile.socket());
         let signer = profile.signer()?;
         let repo = profile.storage.repository(rid)?;
-        let mut patches = profile.patches_mut(&repo)?;
+        let mut patches = profile.patches_mut(&repo, migrate::ignore)?;
         let mut patch = patches.get_mut(&new.id.into())?;
         let n = new.clone();
         let oid = patch.comment(

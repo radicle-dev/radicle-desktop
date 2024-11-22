@@ -1,7 +1,7 @@
+use radicle::cob::migrate;
 use radicle_surf as surf;
 use serde::{Deserialize, Serialize};
 
-use radicle::crypto::Verified;
 use radicle::identity::{doc, Doc, DocAt};
 use radicle::issue::cache::Issues as _;
 use radicle::node::routing::Store;
@@ -40,7 +40,7 @@ pub trait Repo: Profile {
                 continue;
             }
 
-            if !doc.delegates.contains(&profile.public_key.into()) && show == Show::Delegate {
+            if !doc.delegates().contains(&profile.public_key.into()) && show == Show::Delegate {
                 continue;
             }
 
@@ -87,7 +87,7 @@ pub trait Repo: Profile {
     fn repo_info(
         &self,
         repo: &storage::git::Repository,
-        doc: &Doc<Verified>,
+        doc: &Doc,
     ) -> Result<repo::RepoInfo, Error> {
         let profile = self.profile();
         let aliases = profile.aliases();
@@ -100,14 +100,14 @@ pub trait Repo: Profile {
         let db = profile.database()?;
         let seeding = db.count(&repo.id).unwrap_or_default();
         let project = doc
-            .payload
+            .payload()
             .get(&doc::PayloadId::project())
             .and_then(|payload| {
                 let (_, head) = repo.head().ok()?;
                 let commit = repo.commit(head).ok()?;
-                let patches = profile.patches(repo).ok()?;
+                let patches = profile.patches(repo, migrate::ignore).ok()?;
                 let patches = patches.counts().ok()?;
-                let issues = profile.issues(repo).ok()?;
+                let issues = profile.issues(repo, migrate::ignore).ok()?;
                 let issues = issues.counts().ok()?;
 
                 let data: repo::ProjectPayloadData = (*payload).clone().try_into().ok()?;
@@ -124,8 +124,8 @@ pub trait Repo: Profile {
         Ok::<_, Error>(repo::RepoInfo {
             payloads: repo::SupportedPayloads { project },
             delegates,
-            threshold: doc.threshold,
-            visibility: doc.visibility.clone().into(),
+            threshold: doc.threshold(),
+            visibility: doc.visibility().clone().into(),
             rid: repo.id,
             seeding,
         })

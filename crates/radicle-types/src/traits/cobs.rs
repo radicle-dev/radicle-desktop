@@ -1,3 +1,4 @@
+use radicle::cob::migrate;
 use radicle::cob::object::Storage;
 use radicle::storage::refs::draft;
 use radicle::storage::{self, ReadStorage};
@@ -58,7 +59,7 @@ pub trait Cobs: Profile {
             &draft_oid.into(),
         )?;
 
-        let mut patches = profile.patches_mut(&repo)?;
+        let mut patches = profile.patches_mut(&repo, migrate::ignore)?;
         patches.write(&cob_id.into())?;
 
         storage::git::cob::DraftStore::new(&repo, *signer.public_key()).remove(

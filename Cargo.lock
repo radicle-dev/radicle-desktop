@@ -3748,7 +3748,7 @@ dependencies = [
 [[package]]
 name = "radicle"
 version = "0.13.0"
-source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#855327d303566aac1d3e065d4ba7e16d9ccd18e6"
+source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#2d13591ec21e6ce04678e2965f08d145cf2d76ae"
 dependencies = [
  "amplify",
  "base64 0.21.7",
@@ -3778,7 +3778,7 @@ dependencies = [
 [[package]]
 name = "radicle-cob"
 version = "0.12.0"
-source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#855327d303566aac1d3e065d4ba7e16d9ccd18e6"
+source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#2d13591ec21e6ce04678e2965f08d145cf2d76ae"
 dependencies = [
  "fastrand",
  "git2",
@@ -3796,7 +3796,7 @@ dependencies = [
 [[package]]
 name = "radicle-crypto"
 version = "0.11.0"
-source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#855327d303566aac1d3e065d4ba7e16d9ccd18e6"
+source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#2d13591ec21e6ce04678e2965f08d145cf2d76ae"
 dependencies = [
  "amplify",
  "cyphernet",
@@ -3814,7 +3814,7 @@ dependencies = [
 [[package]]
 name = "radicle-dag"
 version = "0.9.0"
-source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#855327d303566aac1d3e065d4ba7e16d9ccd18e6"
+source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#2d13591ec21e6ce04678e2965f08d145cf2d76ae"
 dependencies = [
  "fastrand",
 ]
@@ -3836,7 +3836,7 @@ dependencies = [
 [[package]]
 name = "radicle-ssh"
 version = "0.9.0"
-source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#855327d303566aac1d3e065d4ba7e16d9ccd18e6"
+source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#2d13591ec21e6ce04678e2965f08d145cf2d76ae"
 dependencies = [
  "byteorder",
  "log",
@@ -6063,7 +6063,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
