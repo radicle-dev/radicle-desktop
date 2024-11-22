@@ -70,7 +70,7 @@ impl Comment<CodeLocation> {
                 .map(|(reaction, authors)| {
                     cobs::thread::Reaction::new(
                         *reaction,
-                        authors.into_iter().map(|s| s.into()).collect(),
+                        authors.into_iter().map(Into::into).collect(),
                         None,
                         aliases,
                     )
@@ -108,7 +108,7 @@ impl Comment<cobs::Never> {
                 .map(|(reaction, authors)| {
                     cobs::thread::Reaction::new(
                         *reaction,
-                        authors.into_iter().map(|m| m.into()).collect::<Vec<_>>(),
+                        authors.into_iter().map(Into::into).collect::<Vec<_>>(),
                         None,
                         aliases,
                     )

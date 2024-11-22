@@ -181,7 +181,7 @@ impl Revision {
                         .map(|(emoji, authors)| {
                             cobs::thread::Reaction::new(
                                 *emoji,
-                                authors.into_iter().map(|a| a.into()).collect::<Vec<_>>(),
+                                authors.into_iter().map(Into::into).collect::<Vec<_>>(),
                                 location
                                     .as_ref()
                                     .map(|l| cobs::thread::CodeLocation::new(l.clone())),

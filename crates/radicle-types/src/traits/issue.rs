@@ -110,7 +110,7 @@ pub trait IssuesMut: Profile {
             new.description,
             &new.labels,
             &new.assignees,
-            new.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+            new.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
             &signer,
         )?;
 
@@ -164,7 +164,7 @@ pub trait IssuesMut: Profile {
                 issue.comment(
                     body,
                     reply_to.unwrap_or(cob_id),
-                    embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                    embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
                     &signer,
                 )?;
             }
@@ -172,7 +172,7 @@ pub trait IssuesMut: Profile {
                 issue.edit_comment(
                     id,
                     body,
-                    embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                    embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
                     &signer,
                 )?;
             }

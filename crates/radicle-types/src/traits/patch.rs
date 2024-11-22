@@ -129,7 +129,7 @@ pub trait PatchesMut: Profile {
                 patch.edit_revision(
                     revision,
                     description,
-                    embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                    embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
                     &signer,
                 )?;
             }
@@ -187,7 +187,7 @@ pub trait PatchesMut: Profile {
                     body,
                     location.map(|l| l.into()),
                     reply_to,
-                    embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                    embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
                     &signer,
                 )?;
             }
@@ -201,7 +201,7 @@ pub trait PatchesMut: Profile {
                     review,
                     comment,
                     body,
-                    embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                    embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
                     &signer,
                 )?;
             }
@@ -240,7 +240,7 @@ pub trait PatchesMut: Profile {
                     body,
                     reply_to,
                     location.map(|l| l.into()),
-                    embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                    embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
                     &signer,
                 )?;
             }
@@ -254,7 +254,7 @@ pub trait PatchesMut: Profile {
                     revision,
                     comment,
                     body,
-                    embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                    embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
                     &signer,
                 )?;
             }
@@ -409,7 +409,7 @@ pub trait PatchesMut: Profile {
                 new.body,
                 new.location.map(|l| l.into()),
                 new.reply_to,
-                new.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                new.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
             )?;
 
             Ok(())

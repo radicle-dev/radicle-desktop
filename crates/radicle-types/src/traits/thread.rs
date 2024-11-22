@@ -57,7 +57,7 @@ pub trait Thread: Profile {
         let oid = issue.comment(
             n.body,
             id,
-            n.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+            n.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
             &signer,
         )?;
 
@@ -72,7 +72,7 @@ pub trait Thread: Profile {
                 new.body,
                 id.into(),
                 None,
-                new.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                new.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
                 LocalTime::now().into(),
             ),
             aliases,
@@ -98,7 +98,7 @@ pub trait Thread: Profile {
             n.body,
             n.reply_to,
             n.location.map(|l| l.into()),
-            n.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+            n.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
             &signer,
         )?;
 
@@ -113,7 +113,7 @@ pub trait Thread: Profile {
                 new.body,
                 new.reply_to,
                 new.location.map(|l| l.into()),
-                new.embeds.into_iter().map(|e| e.into()).collect::<Vec<_>>(),
+                new.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
                 LocalTime::now().into(),
             ),
             aliases,
