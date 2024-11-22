@@ -22,10 +22,10 @@ pub struct Author {
 }
 
 impl Author {
-    pub fn new(did: identity::Did, aliases: &impl AliasStore) -> Self {
+    pub fn new(did: &identity::Did, aliases: &impl AliasStore) -> Self {
         Self {
-            did,
-            alias: aliases.alias(&did),
+            did: *did,
+            alias: aliases.alias(did),
         }
     }
 }

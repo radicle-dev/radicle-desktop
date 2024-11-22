@@ -28,7 +28,7 @@ pub trait Cobs: Profile {
                     Some(crate::cobs::issue::Operation {
                         entry_id: op.id,
                         action,
-                        author: crate::cobs::Author::new(op.author.into(), &aliases),
+                        author: crate::cobs::Author::new(&op.author.into(), &aliases),
                         timestamp: op.timestamp,
                     })
                 },

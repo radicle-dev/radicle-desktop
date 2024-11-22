@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use radicle::node::AliasStore;
-use radicle::{cob, crypto, git};
+use radicle::{cob, git, identity};
 
 use crate::cobs;
 
@@ -59,7 +59,7 @@ impl Comment<CodeLocation> {
     ) -> Self {
         Self {
             id,
-            author: cobs::Author::new(comment.author().into(), aliases),
+            author: cobs::Author::new(&comment.author().into(), aliases),
             edits: comment
                 .edits()
                 .map(|e| cobs::patch::Edit::new(e, aliases))
@@ -68,7 +68,12 @@ impl Comment<CodeLocation> {
                 .reactions()
                 .into_iter()
                 .map(|(reaction, authors)| {
-                    cobs::thread::Reaction::new(*reaction, authors, None, aliases)
+                    cobs::thread::Reaction::new(
+                        *reaction,
+                        authors.into_iter().map(|s| s.into()).collect(),
+                        None,
+                        aliases,
+                    )
                 })
                 .collect::<Vec<_>>(),
             reply_to: comment.reply_to(),
@@ -92,7 +97,7 @@ impl Comment<cobs::Never> {
     ) -> Self {
         Self {
             id,
-            author: cobs::Author::new(comment.author().into(), aliases),
+            author: cobs::Author::new(&comment.author().into(), aliases),
             edits: comment
                 .edits()
                 .map(|e| cobs::patch::Edit::new(e, aliases))
@@ -101,7 +106,12 @@ impl Comment<cobs::Never> {
                 .reactions()
                 .into_iter()
                 .map(|(reaction, authors)| {
-                    cobs::thread::Reaction::new(*reaction, authors, None, aliases)
+                    cobs::thread::Reaction::new(
+                        *reaction,
+                        authors.into_iter().map(|m| m.into()).collect::<Vec<_>>(),
+                        None,
+                        aliases,
+                    )
                 })
                 .collect::<Vec<_>>(),
             reply_to: comment.reply_to(),
@@ -132,7 +142,7 @@ pub struct Reaction {
 impl Reaction {
     pub fn new(
         emoji: cob::Reaction,
-        authors: Vec<&crypto::PublicKey>,
+        authors: Vec<identity::Did>,
         location: Option<CodeLocation>,
         aliases: &impl AliasStore,
     ) -> Self {
@@ -140,7 +150,7 @@ impl Reaction {
             emoji,
             authors: authors
                 .into_iter()
-                .map(|a| cobs::Author::new(a.into(), aliases))
+                .map(|did| cobs::Author::new(&did, aliases))
                 .collect::<Vec<_>>(),
             location,
         }

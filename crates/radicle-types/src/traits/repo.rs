@@ -92,9 +92,8 @@ pub trait Repo: Profile {
         let profile = self.profile();
         let aliases = profile.aliases();
         let delegates = doc
-            .delegates
-            .clone()
-            .into_iter()
+            .delegates()
+            .iter()
             .map(|did| cobs::Author::new(did, &aliases))
             .collect::<Vec<_>>();
         let db = profile.database()?;

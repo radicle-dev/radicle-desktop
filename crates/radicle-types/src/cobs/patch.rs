@@ -37,14 +37,14 @@ impl Patch {
     pub fn new(id: patch::PatchId, patch: &patch::Patch, aliases: &impl AliasStore) -> Self {
         Self {
             id: id.to_string(),
-            author: cobs::Author::new(*patch.author().id(), aliases),
+            author: cobs::Author::new(patch.author().id(), aliases),
             title: patch.title().to_string(),
             state: patch.state().clone().into(),
             base: *patch.base(),
             head: *patch.head(),
             assignees: patch
                 .assignees()
-                .map(|did| cobs::Author::new(did, aliases))
+                .map(|did| cobs::Author::new(&did, aliases))
                 .collect::<Vec<_>>(),
             labels: patch.labels().cloned().collect::<Vec<_>>(),
             timestamp: patch.timestamp(),
@@ -142,7 +142,7 @@ impl Revision {
     pub fn new(value: cob::patch::Revision, aliases: &impl AliasStore) -> Self {
         Self {
             id: value.id(),
-            author: cobs::Author::new(*value.author().id(), aliases),
+            author: cobs::Author::new(value.author().id(), aliases),
             description: value
                 .edits()
                 .map(|e| Edit::new(e, aliases))
@@ -181,7 +181,7 @@ impl Revision {
                         .map(|(emoji, authors)| {
                             cobs::thread::Reaction::new(
                                 *emoji,
-                                authors,
+                                authors.into_iter().map(|a| a.into()).collect::<Vec<_>>(),
                                 location
                                     .as_ref()
                                     .map(|l| cobs::thread::CodeLocation::new(l.clone())),
@@ -211,7 +211,7 @@ pub struct Edit {
 impl Edit {
     pub fn new(edit: &cob::thread::Edit, aliases: &impl AliasStore) -> Self {
         Self {
-            author: cobs::Author::new(edit.author.into(), aliases),
+            author: cobs::Author::new(&edit.author.into(), aliases),
             timestamp: edit.timestamp,
             body: edit.body.clone(),
             embeds: edit
@@ -251,7 +251,7 @@ impl Review {
     ) -> Self {
         Self {
             id,
-            author: cobs::Author::new(review.author().id, aliases),
+            author: cobs::Author::new(&review.author().id, aliases),
             verdict: review.verdict(),
             summary: review.summary().map(|s| s.to_string()),
             comments: review

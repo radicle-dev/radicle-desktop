@@ -36,12 +36,12 @@ impl Issue {
 
         Self {
             id: id.to_string(),
-            author: cobs::Author::new(*issue.author().id(), aliases),
+            author: cobs::Author::new(issue.author().id(), aliases),
             title: issue.title().to_string(),
             state: (*issue.state()).into(),
             assignees: issue
                 .assignees()
-                .map(|did| cobs::Author::new(*did, aliases))
+                .map(|did| cobs::Author::new(did, aliases))
                 .collect::<Vec<_>>(),
             body: cobs::thread::Comment::<cobs::Never>::new(
                 *root_oid,
