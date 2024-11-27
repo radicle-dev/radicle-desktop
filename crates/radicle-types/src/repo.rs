@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 
+use radicle_surf as surf;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -111,4 +112,34 @@ pub struct ProjectPayloadMeta {
     pub patches: patch::PatchCounts,
     #[ts(type = "number")]
     pub last_commit_timestamp: i64,
+}
+
+#[derive(Clone, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub struct Commit {
+    #[ts(as = "String")]
+    pub id: git::Oid,
+    #[ts(type = "{ name: string; email: string; time: number; }")]
+    pub author: surf::Author,
+    #[ts(type = "{ name: string; email: string; time: number; }")]
+    pub committer: surf::Author,
+    pub message: String,
+    pub summary: String,
+    #[ts(as = "Vec<String>")]
+    pub parents: Vec<git::Oid>,
+}
+
+impl From<surf::Commit> for Commit {
+    fn from(value: surf::Commit) -> Self {
+        Self {
+            id: value.id,
+            author: value.author,
+            committer: value.committer,
+            message: value.message,
+            summary: value.summary,
+            parents: value.parents,
+        }
+    }
 }

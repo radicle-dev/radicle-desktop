@@ -32,3 +32,14 @@ pub async fn diff_stats(
 ) -> Result<types::cobs::Stats, Error> {
     ctx.diff_stats(rid, base, head)
 }
+
+#[tauri::command]
+pub async fn list_commits(
+    ctx: tauri::State<'_, AppState>,
+    rid: RepoId,
+    parent: Option<String>,
+    skip: Option<usize>,
+    take: Option<usize>,
+) -> Result<types::cobs::PaginatedQuery<Vec<types::repo::Commit>>, Error> {
+    ctx.list_commits(rid, parent, skip, take)
+}

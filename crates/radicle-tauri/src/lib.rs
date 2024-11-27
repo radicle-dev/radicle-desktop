@@ -96,6 +96,7 @@ pub fn run() {
             repo::list_repos,
             repo::repo_by_id,
             repo::diff_stats,
+            repo::list_commits,
             diff::get_diff,
             cob::get_file_by_oid,
             cob::activity_by_id,

@@ -157,4 +157,39 @@ pub trait Repo: Profile {
 
         Ok::<_, Error>(diff)
     }
+
+    fn list_commits(
+        &self,
+        rid: identity::RepoId,
+        parent: Option<String>,
+        skip: Option<usize>,
+        take: Option<usize>,
+    ) -> Result<cobs::PaginatedQuery<Vec<repo::Commit>>, Error> {
+        let profile = self.profile();
+        let cursor = skip.unwrap_or(0);
+        let take = take.unwrap_or(20);
+        let repo = profile.storage.repository(rid)?;
+
+        let sha = match parent {
+            Some(commit) => commit,
+            None => repo.head()?.1.to_string(),
+        };
+
+        let repo = surf::Repository::open(repo.path())?;
+        let history = repo.history(&sha)?;
+
+        let mut commits = history
+            .filter_map(|c| c.map(Into::into).ok())
+            .skip(cursor)
+            .take(take + 1); // Take one extra item to check if there's more.
+
+        let paginated_commits: Vec<_> = commits.by_ref().take(take).collect();
+        let more = commits.next().is_some();
+
+        Ok::<_, Error>(cobs::PaginatedQuery {
+            cursor,
+            more,
+            content: paginated_commits.to_vec(),
+        })
+    }
 }
