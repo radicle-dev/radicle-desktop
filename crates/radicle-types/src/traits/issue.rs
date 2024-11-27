@@ -1,4 +1,3 @@
-use radicle::cob::migrate;
 use radicle::issue::cache::Issues as _;
 use radicle::node::Handle;
 use radicle::storage::ReadStorage;
@@ -17,7 +16,7 @@ pub trait Issues: Profile {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let status = status.unwrap_or_default();
-        let issues = profile.issues(&repo, migrate::ignore)?;
+        let issues = profile.issues(&repo)?;
         let mut issues: Vec<_> = issues
             .list()?
             .filter_map(|r| {
@@ -43,7 +42,7 @@ pub trait Issues: Profile {
     ) -> Result<Option<cobs::issue::Issue>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let issues = profile.issues(&repo, migrate::ignore)?;
+        let issues = profile.issues(&repo)?;
         let issue = issues.get(&id.into())?;
 
         let aliases = &profile.aliases();
@@ -59,7 +58,7 @@ pub trait Issues: Profile {
     ) -> Result<Option<Vec<cobs::thread::Thread>>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let issues = profile.issues(&repo, migrate::ignore)?;
+        let issues = profile.issues(&repo)?;
         let issue = issues.get(&id.into())?;
 
         let aliases = &profile.aliases();
@@ -104,7 +103,7 @@ pub trait IssuesMut: Profile {
         let repo = profile.storage.repository(rid)?;
         let signer = profile.signer()?;
         let aliases = profile.aliases();
-        let mut issues = profile.issues_mut(&repo, migrate::ignore)?;
+        let mut issues = profile.issues_mut(&repo)?;
         let issue = issues.create(
             new.title,
             new.description,
@@ -133,7 +132,7 @@ pub trait IssuesMut: Profile {
         let repo = profile.storage.repository(rid)?;
         let signer = profile.signer()?;
         let aliases = profile.aliases();
-        let mut issues = profile.issues_mut(&repo, migrate::ignore)?;
+        let mut issues = profile.issues_mut(&repo)?;
         let mut issue = issues.get_mut(&cob_id.into())?;
 
         match action {

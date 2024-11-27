@@ -3748,7 +3748,7 @@ dependencies = [
 [[package]]
 name = "radicle"
 version = "0.13.0"
-source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#2d13591ec21e6ce04678e2965f08d145cf2d76ae"
+source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#47b200988c311d6f06bba7244efa829e9d79b637"
 dependencies = [
  "amplify",
  "base64 0.21.7",
@@ -3778,7 +3778,7 @@ dependencies = [
 [[package]]
 name = "radicle-cob"
 version = "0.12.0"
-source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#2d13591ec21e6ce04678e2965f08d145cf2d76ae"
+source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#47b200988c311d6f06bba7244efa829e9d79b637"
 dependencies = [
  "fastrand",
  "git2",
@@ -3796,7 +3796,7 @@ dependencies = [
 [[package]]
 name = "radicle-crypto"
 version = "0.11.0"
-source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#2d13591ec21e6ce04678e2965f08d145cf2d76ae"
+source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#47b200988c311d6f06bba7244efa829e9d79b637"
 dependencies = [
  "amplify",
  "cyphernet",
@@ -3814,7 +3814,7 @@ dependencies = [
 [[package]]
 name = "radicle-dag"
 version = "0.9.0"
-source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#2d13591ec21e6ce04678e2965f08d145cf2d76ae"
+source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#47b200988c311d6f06bba7244efa829e9d79b637"
 dependencies = [
  "fastrand",
 ]
@@ -3836,7 +3836,7 @@ dependencies = [
 [[package]]
 name = "radicle-ssh"
 version = "0.9.0"
-source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#2d13591ec21e6ce04678e2965f08d145cf2d76ae"
+source = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git#47b200988c311d6f06bba7244efa829e9d79b637"
 dependencies = [
  "byteorder",
  "log",

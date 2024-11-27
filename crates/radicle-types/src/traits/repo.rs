@@ -1,4 +1,3 @@
-use radicle::cob::migrate;
 use radicle_surf as surf;
 use serde::{Deserialize, Serialize};
 
@@ -104,9 +103,9 @@ pub trait Repo: Profile {
             .and_then(|payload| {
                 let (_, head) = repo.head().ok()?;
                 let commit = repo.commit(head).ok()?;
-                let patches = profile.patches(repo, migrate::ignore).ok()?;
+                let patches = profile.patches(repo).ok()?;
                 let patches = patches.counts().ok()?;
-                let issues = profile.issues(repo, migrate::ignore).ok()?;
+                let issues = profile.issues(repo).ok()?;
                 let issues = issues.counts().ok()?;
 
                 let data: repo::ProjectPayloadData = (*payload).clone().try_into().ok()?;

@@ -1,4 +1,3 @@
-use radicle::cob::migrate;
 use radicle::node::Handle;
 use radicle::patch::cache::Patches as _;
 use radicle::storage;
@@ -22,7 +21,7 @@ pub trait Patches: Profile {
         let take = take.unwrap_or(20);
         let repo = profile.storage.repository(rid)?;
         let aliases = &profile.aliases();
-        let cache = profile.patches(&repo, migrate::ignore)?;
+        let cache = profile.patches(&repo)?;
         let patches = match status {
             None => cache.list()?.collect::<Vec<_>>(),
             Some(s) => cache.list_by_status(&s.into())?.collect::<Vec<_>>(),
@@ -55,7 +54,7 @@ pub trait Patches: Profile {
     ) -> Result<Option<cobs::patch::Patch>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let patches = profile.patches(&repo, migrate::ignore)?;
+        let patches = profile.patches(&repo)?;
         let patch = patches.get(&id.into())?;
         let aliases = &profile.aliases();
         let patches = patch.map(|patch| cobs::patch::Patch::new(id.into(), &patch, aliases));
@@ -70,7 +69,7 @@ pub trait Patches: Profile {
     ) -> Result<Option<Vec<cobs::patch::Revision>>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let patches = profile.patches(&repo, migrate::ignore)?;
+        let patches = profile.patches(&repo)?;
         let revisions = patches.get(&id.into())?.map(|patch| {
             let aliases = &profile.aliases();
 
@@ -91,7 +90,7 @@ pub trait Patches: Profile {
     ) -> Result<Option<cobs::patch::Revision>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let patches = profile.patches(&repo, migrate::ignore)?;
+        let patches = profile.patches(&repo)?;
         let revision = patches.get(&id.into())?.and_then(|patch| {
             let aliases = &profile.aliases();
 
@@ -117,7 +116,7 @@ pub trait PatchesMut: Profile {
         let repo = profile.storage.repository(rid)?;
         let signer = profile.signer()?;
         let aliases = profile.aliases();
-        let mut patches = profile.patches_mut(&repo, migrate::ignore)?;
+        let mut patches = profile.patches_mut(&repo)?;
         let mut patch = patches.get_mut(&cob_id.into())?;
 
         match action {
