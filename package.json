@@ -20,7 +20,7 @@
     "tauri": "npx tauri"
   },
   "engines": {
-    "node": "20.9.0"
+    "node": "22.11.0"
   },
   "license": "MIT",
   "dependencies": {
@@ -39,7 +39,7 @@
     "@tsconfig/svelte": "^5.0.4",
     "@types/dompurify": "^3.0.5",
     "@types/lodash": "^4.17.12",
-    "@types/node": "^20.9.0",
+    "@types/node": "^22.10.0",
     "@types/wait-on": "^5.3.4",
     "@wooorm/starry-night": "^3.5.0",
     "baconjs": "^3.0.19",
