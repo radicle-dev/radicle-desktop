@@ -52,7 +52,7 @@ impl CobOptions {
     }
 }
 
-#[derive(Serialize, Deserialize, TS)]
+#[derive(Serialize, Deserialize, TS, Debug, PartialEq, Clone)]
 #[ts(export)]
 #[ts(export_to = "cob/")]
 pub struct PaginatedQuery<T> {

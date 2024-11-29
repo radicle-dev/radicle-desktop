@@ -193,3 +193,125 @@ pub trait Repo: Profile {
         })
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod test {
+    use std::str::FromStr;
+
+    use radicle::crypto::test::signer::MockSigner;
+    use radicle::{git, test};
+    use radicle_surf::Author;
+
+    use crate::cobs;
+    use crate::repo;
+    use crate::traits::repo::Repo;
+    use crate::AppState;
+
+    #[test]
+    fn list_commits_pagination() {
+        let signer = MockSigner::from_seed([0xff; 32]);
+        let tempdir = tempfile::tempdir().unwrap();
+        let profile = crate::test::profile(tempdir.path(), [0xff; 32]);
+        let (rid, _, _, _) =
+            test::fixtures::project(tempdir.path().join("original"), &profile.storage, &signer)
+                .unwrap();
+        let state = AppState { profile };
+        let commits = Repo::list_commits(&state, rid, None, None, Some(1)).unwrap();
+
+        assert_eq!(
+            commits,
+            cobs::PaginatedQuery {
+                cursor: 0,
+                more: true,
+                content: vec![repo::Commit {
+                    id: git::Oid::from_str("f2de534b5e81d7c6e2dcaf58c3dd91573c0a0354").unwrap(),
+                    author: Author {
+                        name: "anonymous".to_string(),
+                        email: "anonymous@radicle.xyz".to_string(),
+                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
+                    },
+                    committer: Author {
+                        name: "anonymous".to_string(),
+                        email: "anonymous@radicle.xyz".to_string(),
+                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
+                    },
+                    message: "Second commit".to_string(),
+                    summary: "Second commit".to_string(),
+                    parents: vec![
+                        git::Oid::from_str("08c788dd1be6315de09e3fe09b5b1b7a2b8711d9").unwrap()
+                    ],
+                }],
+            }
+        );
+
+        let commits = Repo::list_commits(&state, rid, None, Some(1), None).unwrap();
+
+        assert_eq!(
+            commits,
+            cobs::PaginatedQuery {
+                cursor: 1,
+                more: false,
+                content: vec![repo::Commit {
+                    id: git::Oid::from_str("08c788dd1be6315de09e3fe09b5b1b7a2b8711d9").unwrap(),
+                    author: Author {
+                        name: "anonymous".to_string(),
+                        email: "anonymous@radicle.xyz".to_string(),
+                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
+                    },
+                    committer: Author {
+                        name: "anonymous".to_string(),
+                        email: "anonymous@radicle.xyz".to_string(),
+                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
+                    },
+                    message: "Initial commit".to_string(),
+                    summary: "Initial commit".to_string(),
+                    parents: vec![],
+                }],
+            }
+        );
+    }
+
+    #[test]
+    fn list_commits_with_head() {
+        let signer = MockSigner::from_seed([0xff; 32]);
+        let tempdir = tempfile::tempdir().unwrap();
+        let profile = crate::test::profile(tempdir.path(), [0xff; 32]);
+        let (rid, _, _, _) =
+            test::fixtures::project(tempdir.path().join("original"), &profile.storage, &signer)
+                .unwrap();
+        let state = AppState { profile };
+        let commits = Repo::list_commits(
+            &state,
+            rid,
+            Some("08c788dd1be6315de09e3fe09b5b1b7a2b8711d9".to_string()),
+            None,
+            None,
+        )
+        .unwrap();
+
+        assert_eq!(
+            commits,
+            cobs::PaginatedQuery {
+                cursor: 0,
+                more: false,
+                content: vec![repo::Commit {
+                    id: git::Oid::from_str("08c788dd1be6315de09e3fe09b5b1b7a2b8711d9").unwrap(),
+                    author: Author {
+                        name: "anonymous".to_string(),
+                        email: "anonymous@radicle.xyz".to_string(),
+                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
+                    },
+                    committer: Author {
+                        name: "anonymous".to_string(),
+                        email: "anonymous@radicle.xyz".to_string(),
+                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
+                    },
+                    message: "Initial commit".to_string(),
+                    summary: "Initial commit".to_string(),
+                    parents: vec![],
+                }],
+            }
+        );
+    }
+}

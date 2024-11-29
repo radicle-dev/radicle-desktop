@@ -114,7 +114,7 @@ pub struct ProjectPayloadMeta {
     pub last_commit_timestamp: i64,
 }
 
-#[derive(Clone, Serialize, TS)]
+#[derive(Clone, Serialize, TS, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "repo/")]
