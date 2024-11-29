@@ -15,7 +15,7 @@ export type Config = {
   /**
    * Default seeding policy.
    */
-  seedingPolicy:
-    | { default: "allow"; scope: "followed" | "all" }
-    | { default: "block" };
+  seedingPolicy: { default: "allow"; scope: "followed" | "all" } | {
+    default: "block";
+  };
 };
