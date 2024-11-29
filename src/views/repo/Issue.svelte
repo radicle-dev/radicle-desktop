@@ -115,6 +115,12 @@
         new: { id: issue.id, body, embeds },
         opts: { announce: $announce },
       });
+      // Update second column issue comment count without reloading the whole
+      // issue list.
+      const issueIndex = issues.findIndex(i => i.id === issue.id);
+      if (issueIndex !== -1) {
+        issues[issueIndex].commentCount += 1;
+      }
     } catch (error) {
       console.error("Comment creation failed: ", error);
     } finally {
@@ -129,6 +135,12 @@
         new: { id: issue.id, body, embeds, replyTo },
         opts: { announce: $announce },
       });
+      // Update second column issue comment count without reloading the whole
+      // issue list.
+      const issueIndex = issues.findIndex(i => i.id === issue.id);
+      if (issueIndex !== -1) {
+        issues[issueIndex].commentCount += 1;
+      }
     } catch (error) {
       console.error("Comment reply creation failed", error);
     } finally {
@@ -174,7 +186,7 @@
         opts: { announce: $announce },
       });
       issue.title = updatedTitle;
-      // Update second colum issue title without reloading the whole issue list.
+      // Update second column issue title without reloading the whole issue list.
       const issueIndex = issues.findIndex(i => i.id === issue.id);
       if (issueIndex !== -1) {
         issues[issueIndex].title = updatedTitle;
