@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
-cargo check --manifest-path ./crates/radicle-tauri/Cargo.toml
-cargo clippy --manifest-path ./crates/radicle-tauri/Cargo.toml -- -Dwarnings
-cargo fmt --manifest-path ./crates/radicle-tauri/Cargo.toml --check
+crates="radicle-tauri radicle-types test-http-api"
+
+for crate in $crates; do
+    echo "Running checks for: $crate"
+    cargo check --manifest-path ./crates/"$crate"/Cargo.toml --quiet
+    cargo clippy --manifest-path ./crates/"$crate"/Cargo.toml --quiet -- -Dwarnings
+    cargo fmt --manifest-path ./crates/"$crate"/Cargo.toml --check --quiet
+    cargo test --manifest-path ./crates/"$crate"/Cargo.toml --quiet
+done
