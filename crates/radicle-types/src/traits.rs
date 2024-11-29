@@ -20,3 +20,33 @@ pub trait Profile {
         }
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod test {
+    use std::str::FromStr;
+
+    use radicle::crypto::test::signer::MockSigner;
+    use radicle::crypto::Signer;
+    use radicle::node::{config, Alias};
+
+    use crate::config::Config;
+    use crate::{test, AppState, Profile};
+
+    #[test]
+    fn config() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(tmp.path(), [0xff; 32]);
+        let signer = MockSigner::from_seed([0xff; 32]);
+        let state = AppState { profile };
+
+        assert_eq!(
+            Profile::config(&state),
+            Config {
+                public_key: *signer.public_key(),
+                alias: Alias::from_str("seed").unwrap(),
+                seeding_policy: config::DefaultSeedingPolicy::Block,
+            }
+        )
+    }
+}
