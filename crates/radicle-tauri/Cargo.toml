@@ -18,7 +18,7 @@ tauri-build = { version = "2.0.1", features = ["isolation"] }
 anyhow = { version = "1.0.90" }
 base64 = { version = "0.22.1" }
 log = { version = "0.4.22" }
-radicle = { git = "https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git" }
+radicle = { version = "0.14.0" }
 radicle-types = { version = "0.1.0", path = "../radicle-types" }
 radicle-surf = { version = "0.22.1", features = ["serde"] }
 serde = { version = "1.0.210", features = ["derive"] }

@@ -10,7 +10,7 @@ anyhow = { version = "1.0.90" }
 axum = { version = "0.7.5", default-features = false, features = ["json", "query", "tokio", "http1"] }
 hyper = { version = "1.4", default-features = false }
 lexopt = { version = "0.3.0" }
-radicle = { git = "https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git" }
+radicle = { version = "0.14.0" }
 radicle-surf = { version = "0.22.1", default-features = false, features = ["serde"] }
 radicle-types = { path = "../radicle-types" }
 serde = { version = "1", features = ["derive"] }
