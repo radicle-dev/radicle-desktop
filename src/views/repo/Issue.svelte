@@ -185,7 +185,6 @@
         },
         opts: { announce: $announce },
       });
-      issue.title = updatedTitle;
       // Update second column issue title without reloading the whole issue list.
       const issueIndex = issues.findIndex(i => i.id === issue.id);
       if (issueIndex !== -1) {
@@ -194,6 +193,8 @@
       editingTitle = false;
     } catch (error) {
       console.error("Issue editing failed: ", error);
+    } finally {
+      await reload();
     }
   }
 
