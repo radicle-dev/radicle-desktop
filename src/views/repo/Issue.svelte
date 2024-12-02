@@ -255,11 +255,11 @@
     font-weight: var(--font-weight-medium);
     -webkit-user-select: text;
     user-select: text;
-    height: 40px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     word-break: break-all;
+    padding-top: 4px;
   }
   .issue-body {
     margin-top: 1rem;
