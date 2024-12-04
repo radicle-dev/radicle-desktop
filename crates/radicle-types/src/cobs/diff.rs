@@ -5,5 +5,6 @@ use serde::{Deserialize, Serialize};
 pub struct Options {
     pub base: git::Oid,
     pub head: git::Oid,
-    pub unified: u32,
+    pub unified: Option<u32>,
+    pub highlight: Option<bool>,
 }
