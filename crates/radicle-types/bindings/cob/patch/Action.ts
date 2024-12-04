@@ -3,92 +3,92 @@ import type { CodeLocation } from "../thread/CodeLocation";
 import type { Embed } from "../thread/Embed";
 
 export type Action =
-  | { type: "edit"; title: string; target: string }
-  | { type: "label"; labels: Array<string> }
-  | { type: "lifecycle"; state: { status: "draft" | "open" | "archived" } }
-  | { type: "assign"; assignees: Array<string> }
-  | { type: "merge"; revision: string; commit: string }
+  | { "type": "edit"; title: string; target: string }
+  | { "type": "label"; labels: Array<string> }
+  | { "type": "lifecycle"; state: { status: "draft" | "open" | "archived" } }
+  | { "type": "assign"; assignees: Array<string> }
+  | { "type": "merge"; revision: string; commit: string }
   | {
-      type: "review";
-      revision: string;
-      summary?: string;
-      verdict?: string;
-      labels?: Array<string>;
-    }
+    "type": "review";
+    revision: string;
+    summary?: string;
+    verdict?: string;
+    labels?: Array<string>;
+  }
   | {
-      type: "review.edit";
-      review: string;
-      summary?: string;
-      verdict?: string;
-      labels?: Array<string>;
-    }
-  | { type: "review.redact"; review: string }
+    "type": "review.edit";
+    review: string;
+    summary?: string;
+    verdict?: string;
+    labels?: Array<string>;
+  }
+  | { "type": "review.redact"; review: string }
   | {
-      type: "review.comment";
-      review: string;
-      body: string;
-      location?: CodeLocation;
-      reply_to?: string;
-      embeds?: Array<Embed>;
-    }
+    "type": "review.comment";
+    review: string;
+    body: string;
+    location?: CodeLocation;
+    reply_to?: string;
+    embeds?: Array<Embed>;
+  }
   | {
-      type: "review.comment.edit";
-      review: string;
-      comment: string;
-      body: string;
-      embeds?: Array<Embed>;
-    }
-  | { type: "review.comment.redact"; review: string; comment: string }
+    "type": "review.comment.edit";
+    review: string;
+    comment: string;
+    body: string;
+    embeds?: Array<Embed>;
+  }
+  | { "type": "review.comment.redact"; review: string; comment: string }
   | {
-      type: "review.comment.react";
-      review: string;
-      comment: string;
-      reaction: string;
-      active: boolean;
-    }
-  | { type: "review.comment.resolve"; review: string; comment: string }
-  | { type: "review.comment.unresolve"; review: string; comment: string }
+    "type": "review.comment.react";
+    review: string;
+    comment: string;
+    reaction: string;
+    active: boolean;
+  }
+  | { "type": "review.comment.resolve"; review: string; comment: string }
+  | { "type": "review.comment.unresolve"; review: string; comment: string }
   | {
-      type: "revision";
-      description: string;
-      base: string;
-      oid: string;
-      resolves?: Array<[string, string]>;
-    }
+    "type": "revision";
+    description: string;
+    base: string;
+    oid: string;
+    resolves?: Array<[string, string]>;
+  }
   | {
-      type: "revision.edit";
-      revision: string;
-      description: string;
-      embeds?: Array<Embed>;
-    }
+    "type": "revision.edit";
+    revision: string;
+    description: string;
+    embeds?: Array<Embed>;
+  }
   | {
-      type: "revision.react";
-      revision: string;
-      location?: CodeLocation;
-      reaction: string;
-      active: boolean;
-    }
-  | { type: "revision.redact"; revision: string }
+    "type": "revision.react";
+    revision: string;
+    location?: CodeLocation;
+    reaction: string;
+    active: boolean;
+  }
+  | { "type": "revision.redact"; revision: string }
   | {
-      type: "revision.comment";
-      revision: string;
-      location?: CodeLocation;
-      body: string;
-      replyTo?: string;
-      embeds?: Array<Embed>;
-    }
+    "type": "revision.comment";
+    revision: string;
+    location?: CodeLocation;
+    body: string;
+    replyTo?: string;
+    embeds?: Array<Embed>;
+  }
   | {
-      type: "revision.comment.edit";
-      revision: string;
-      comment: string;
-      body: string;
-      embeds?: Array<Embed>;
-    }
-  | { type: "revision.comment.redact"; revision: string; comment: string }
+    "type": "revision.comment.edit";
+    revision: string;
+    comment: string;
+    body: string;
+    embeds?: Array<Embed>;
+  }
+  | { "type": "revision.comment.redact"; revision: string; comment: string }
   | {
-      type: "revision.comment.react";
-      revision: string;
-      comment: string;
-      reaction: string;
-      active: boolean;
-    };
+    "type": "revision.comment.react";
+    revision: string;
+    comment: string;
+    reaction: string;
+    active: boolean;
+  };

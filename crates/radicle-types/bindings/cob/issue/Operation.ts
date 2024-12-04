@@ -3,17 +3,25 @@ import type { Author } from "../Author";
 import type { Embed } from "../thread/Embed";
 import type { State } from "./State";
 
-export type Operation = {
-  entryId: string;
-  timestamp: number;
-  author: Author;
-} & (
-  | { type: "assign"; assignees: Array<string> }
-  | { type: "edit"; title: string }
-  | { type: "lifecycle"; state: State }
-  | { type: "label"; labels: Array<string> }
-  | { type: "comment"; body: string; replyTo?: string; embeds?: Array<Embed> }
-  | { type: "comment.edit"; id: string; body: string; embeds?: Array<Embed> }
-  | { type: "comment.redact"; id: string }
-  | { type: "comment.react"; id: string; reaction: string; active: boolean }
-);
+export type Operation =
+  & { entryId: string; timestamp: number; author: Author }
+  & (
+    | { "type": "assign"; assignees: Array<string> }
+    | { "type": "edit"; title: string }
+    | { "type": "lifecycle"; state: State }
+    | { "type": "label"; labels: Array<string> }
+    | {
+      "type": "comment";
+      body: string;
+      replyTo?: string;
+      embeds?: Array<Embed>;
+    }
+    | {
+      "type": "comment.edit";
+      id: string;
+      body: string;
+      embeds?: Array<Embed>;
+    }
+    | { "type": "comment.redact"; id: string }
+    | { "type": "comment.react"; id: string; reaction: string; active: boolean }
+  );
