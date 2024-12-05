@@ -8,6 +8,8 @@
   import Icon from "./Icon.svelte";
   import OutlineButton from "./OutlineButton.svelte";
 
+  const activeRouteStore = router.activeRouteStore;
+
   interface Props {
     repo: RepoInfo;
     selectedIssueId?: string;
@@ -36,6 +38,7 @@
 
   <OutlineButton
     variant="ghost"
+    disabled={$activeRouteStore.resource === "repo.createIssue"}
     onclick={() => {
       void router.push({
         resource: "repo.createIssue",
