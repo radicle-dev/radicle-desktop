@@ -12,11 +12,7 @@
 
   import * as roles from "@app/lib/roles";
   import { invoke } from "@app/lib/invoke";
-  import {
-    publicKeyFromDid,
-    scrollIntoView,
-    authorForNodeId,
-  } from "@app/lib/utils";
+  import { publicKeyFromDid, scrollIntoView } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
 
@@ -38,6 +34,7 @@
 
   import Layout from "./Layout.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
+  import AssigneeInput from "@app/components/AssigneeInput.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -65,6 +62,7 @@
   let editingTitle = $state(false);
   let updatedTitle = $state("");
   let labelSaveInProgress: boolean = $state(false);
+  let assigneesSaveInProgress: boolean = $state(false);
 
   $effect(() => {
     // The component doesn't get destroyed when we switch between different
@@ -98,6 +96,26 @@
       console.error("Editing labels failed", error);
     } finally {
       labelSaveInProgress = false;
+      await reload();
+    }
+  }
+
+  async function saveAssignees(assignees: string[]) {
+    try {
+      assigneesSaveInProgress = true;
+      await invoke("edit_issue", {
+        rid: repo.rid,
+        cobId: issue.id,
+        action: {
+          type: "assign",
+          assignees,
+        },
+        opts: { announce: $announce },
+      });
+    } catch (error) {
+      console.error("Editing assignees failed", error);
+    } finally {
+      assigneesSaveInProgress = false;
       await reload();
     }
   }
@@ -457,14 +475,15 @@
       <div class="metadata-divider"></div>
 
       <div class="metadata-section" style:flex="1">
-        <div class="metadata-section-title">Assignees</div>
-        <div class="global-flex" style:flex-wrap="wrap">
-          {#each issue.assignees as assignee}
-            <NodeId {...authorForNodeId(assignee)} />
-          {:else}
-            <span class="txt-missing">Not assigned to anyone.</span>
-          {/each}
-        </div>
+        <AssigneeInput
+          allowedToEdit={!!roles.isDelegateOrAuthor(
+            config.publicKey,
+            repo.delegates.map(delegate => delegate.did),
+            issue.body.author.did,
+          )}
+          assignees={issue.assignees}
+          submitInProgress={assigneesSaveInProgress}
+          save={saveAssignees} />
       </div>
     </Border>
 
