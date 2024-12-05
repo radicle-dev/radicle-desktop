@@ -1,6 +1,6 @@
 <script lang="ts">
   import Icon from "@app/components/Icon.svelte";
-  import Label from "./Label.svelte";
+  import Label from "@app/components/Label.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
