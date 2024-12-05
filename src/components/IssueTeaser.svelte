@@ -12,6 +12,7 @@
   import Icon from "./Icon.svelte";
   import Id from "./Id.svelte";
   import InlineTitle from "./InlineTitle.svelte";
+  import Label from "./Label.svelte";
   import NodeId from "./NodeId.svelte";
 
   interface Props {
@@ -91,7 +92,7 @@
   <div class="global-flex">
     {#if !compact}
       {#each issue.labels as label}
-        <div class="global-counter txt-small">{label}</div>
+        <Label {label} />
       {/each}
     {/if}
 

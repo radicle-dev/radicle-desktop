@@ -12,19 +12,25 @@
 
   import * as roles from "@app/lib/roles";
   import { invoke } from "@app/lib/invoke";
-  import { publicKeyFromDid, scrollIntoView } from "@app/lib/utils";
+  import {
+    publicKeyFromDid,
+    scrollIntoView,
+    authorForNodeId,
+  } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
 
+  import Border from "@app/components/Border.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
-  import IssueMetadata from "@app/components/IssueMetadata.svelte";
   import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
+  import IssueStateBadge from "@app/components/IssueStateBadge.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimelineLifecycleAction from "@app/components/IssueTimelineLifecycleAction.svelte";
+  import LabelInput from "@app/components/LabelInput.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import TextInput from "@app/components/TextInput.svelte";
@@ -54,25 +60,47 @@
   /* eslint-enable prefer-const */
 
   const issues = $state(initialIssues);
+
   let topLevelReplyOpen = $state(false);
   let editingTitle = $state(false);
-  let updatedTitle = $state(issue.title);
+  let updatedTitle = $state("");
+  let labelSaveInProgress: boolean = $state(false);
 
-  // The view doesn't get destroyed when we switch between different issues in
-  // the second column and because of that the top-level state gets retained
-  // when the issue changes. This reactive statement makes sure we always load
-  // the new issue and reset the state to defaults.
-  let issueId = issue.id;
   $effect(() => {
-    if (issueId !== issue.id) {
-      issueId = issue.id;
-      topLevelReplyOpen = false;
-      editingTitle = false;
-      updatedTitle = issue.title;
-    }
+    // The component doesn't get destroyed when we switch between different
+    // issues in the second column and because of that the top-level state
+    // gets retained when the issue changes. This reactive statement makes
+    // sure we always reset the state to defaults.
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    issue.id;
+
+    topLevelReplyOpen = false;
+    editingTitle = false;
+    updatedTitle = issue.title;
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
+
+  async function saveLabels(labels: string[]) {
+    try {
+      labelSaveInProgress = true;
+      await invoke("edit_issue", {
+        rid: repo.rid,
+        cobId: issue.id,
+        action: {
+          type: "label",
+          labels,
+        },
+        opts: { announce: $announce },
+      });
+    } catch (error) {
+      console.error("Editing labels failed", error);
+    } finally {
+      labelSaveInProgress = false;
+      await reload();
+    }
+  }
 
   async function toggleReply() {
     topLevelReplyOpen = !topLevelReplyOpen;
@@ -293,6 +321,26 @@
     margin-left: 1rem;
     align-items: center;
   }
+
+  .metadata-divider {
+    width: 2px;
+    background-color: var(--color-fill-ghost);
+    height: calc(100% + 4px);
+    top: 0;
+    position: relative;
+  }
+  .metadata-section {
+    padding: 0.5rem;
+    font-size: var(--font-size-small);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    height: 100%;
+  }
+  .metadata-section-title {
+    margin-bottom: 0.5rem;
+    color: var(--color-foreground-dim);
+  }
 </style>
 
 <Layout>
@@ -386,7 +434,39 @@
       {/if}
     </div>
 
-    <IssueMetadata {issue} />
+    <Border variant="ghost" styleGap="0">
+      <div class="metadata-section" style:min-width="8rem">
+        <div class="metadata-section-title">Status</div>
+        <IssueStateBadge state={issue.state} />
+      </div>
+
+      <div class="metadata-divider"></div>
+
+      <div class="metadata-section" style:flex="1">
+        <LabelInput
+          allowedToEdit={!!roles.isDelegateOrAuthor(
+            config.publicKey,
+            repo.delegates.map(delegate => delegate.did),
+            issue.body.author.did,
+          )}
+          labels={issue.labels}
+          submitInProgress={labelSaveInProgress}
+          save={saveLabels} />
+      </div>
+
+      <div class="metadata-divider"></div>
+
+      <div class="metadata-section" style:flex="1">
+        <div class="metadata-section-title">Assignees</div>
+        <div class="global-flex" style:flex-wrap="wrap">
+          {#each issue.assignees as assignee}
+            <NodeId {...authorForNodeId(assignee)} />
+          {:else}
+            <span class="txt-missing">Not assigned to anyone.</span>
+          {/each}
+        </div>
+      </div>
+    </Border>
 
     <div class="issue-body">
       <CommentComponent
