@@ -10,6 +10,7 @@ use crate::cobs::Author;
 use crate::error;
 
 #[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "repo/")]
 pub struct RepoInfo {
@@ -20,6 +21,8 @@ pub struct RepoInfo {
     #[ts(as = "String")]
     pub rid: identity::RepoId,
     pub seeding: usize,
+    #[ts(type = "number")]
+    pub last_commit_timestamp: i64,
 }
 
 #[derive(Default, Serialize, TS)]
@@ -110,8 +113,6 @@ pub struct ProjectPayloadMeta {
     pub issues: issue::IssueCounts,
     #[ts(type = "{ open: number, draft: number, archived: number, merged: number }")]
     pub patches: patch::PatchCounts,
-    #[ts(type = "number")]
-    pub last_commit_timestamp: i64,
 }
 
 #[derive(Clone, Serialize, TS, Debug, PartialEq)]

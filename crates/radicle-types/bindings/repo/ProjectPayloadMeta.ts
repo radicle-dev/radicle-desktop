@@ -4,5 +4,4 @@ export type ProjectPayloadMeta = {
   head: string;
   issues: { open: number; closed: number };
   patches: { open: number; draft: number; archived: number; merged: number };
-  lastCommitTimestamp: number;
 };

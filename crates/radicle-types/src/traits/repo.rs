@@ -49,7 +49,7 @@ pub trait Repo: Profile {
             entries.push(repo_info)
         }
 
-        entries.sort_by_key(|repo::RepoInfo { rid, .. }| *rid);
+        entries.sort_by(|a, b| b.last_commit_timestamp.cmp(&a.last_commit_timestamp));
 
         Ok::<_, Error>(entries)
     }
@@ -97,12 +97,12 @@ pub trait Repo: Profile {
             .collect::<Vec<_>>();
         let db = profile.database()?;
         let seeding = db.count(&repo.id).unwrap_or_default();
+        let (_, head) = repo.head()?;
+        let commit = repo.commit(head)?;
         let project = doc
             .payload()
             .get(&doc::PayloadId::project())
             .and_then(|payload| {
-                let (_, head) = repo.head().ok()?;
-                let commit = repo.commit(head).ok()?;
                 let patches = profile.patches(repo).ok()?;
                 let patches = patches.counts().ok()?;
                 let issues = profile.issues(repo).ok()?;
@@ -113,7 +113,6 @@ pub trait Repo: Profile {
                     issues,
                     patches,
                     head,
-                    last_commit_timestamp: commit.time().seconds() * 1000,
                 };
 
                 Some(repo::ProjectPayload::new(data, meta))
@@ -126,6 +125,7 @@ pub trait Repo: Profile {
             visibility: doc.visibility().clone().into(),
             rid: repo.id,
             seeding,
+            last_commit_timestamp: commit.time().seconds() * 1000,
         })
     }
 

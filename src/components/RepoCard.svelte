@@ -68,7 +68,7 @@
         </div>
       </div>
       <span style:color="var(--color-fill-gray)">
-        Updated {formatTimestamp(project.meta.lastCommitTimestamp)}
+        Updated {formatTimestamp(repo.lastCommitTimestamp)}
       </span>
     </div>
   </div>

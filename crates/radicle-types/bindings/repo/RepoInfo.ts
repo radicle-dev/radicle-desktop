@@ -10,4 +10,5 @@ export type RepoInfo = {
   visibility: Visibility;
   rid: string;
   seeding: number;
+  lastCommitTimestamp: number;
 };
