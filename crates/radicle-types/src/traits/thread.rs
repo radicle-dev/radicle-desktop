@@ -61,7 +61,9 @@ pub trait Thread: Profile {
         )?;
 
         if opts.announce() {
-            node.announce_refs(rid)?;
+            if let Err(e) = node.announce_refs(rid) {
+                eprintln!("Not able to announce changes: {}", e)
+            }
         }
 
         Ok(cobs::thread::Comment::<cobs::Never>::new(
@@ -102,7 +104,9 @@ pub trait Thread: Profile {
         )?;
 
         if opts.announce() {
-            node.announce_refs(rid)?;
+            if let Err(e) = node.announce_refs(rid) {
+                eprintln!("Not able to announce changes: {}", e)
+            }
         }
 
         Ok(cobs::thread::Comment::<cobs::thread::CodeLocation>::new(

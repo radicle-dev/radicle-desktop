@@ -277,7 +277,9 @@ pub trait PatchesMut: Profile {
         }
 
         if opts.announce() {
-            node.announce_refs(rid)?;
+            if let Err(e) = node.announce_refs(rid) {
+                eprintln!("Not able to announce changes: {}", e)
+            }
         }
 
         Ok::<_, Error>(cobs::patch::Patch::new(*patch.id(), &patch, &aliases))

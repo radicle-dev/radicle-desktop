@@ -12,6 +12,7 @@
 
   import * as roles from "@app/lib/roles";
   import { invoke } from "@app/lib/invoke";
+  import { nodeRunning } from "@app/lib/events";
   import { publicKeyFromDid, scrollIntoView } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
@@ -90,7 +91,7 @@
           type: "label",
           labels,
         },
-        opts: { announce: $announce },
+        opts: { announce: $nodeRunning && $announce },
       });
     } catch (error) {
       console.error("Editing labels failed", error);
@@ -110,7 +111,7 @@
           type: "assign",
           assignees,
         },
-        opts: { announce: $announce },
+        opts: { announce: $nodeRunning && $announce },
       });
     } catch (error) {
       console.error("Editing assignees failed", error);
@@ -159,7 +160,7 @@
       await invoke("create_issue_comment", {
         rid: repo.rid,
         new: { id: issue.id, body, embeds },
-        opts: { announce: $announce },
+        opts: { announce: $nodeRunning && $announce },
       });
       // Update second column issue comment count without reloading the whole
       // issue list.
@@ -179,7 +180,7 @@
       await invoke("create_issue_comment", {
         rid: repo.rid,
         new: { id: issue.id, body, embeds, replyTo },
-        opts: { announce: $announce },
+        opts: { announce: $nodeRunning && $announce },
       });
       // Update second column issue comment count without reloading the whole
       // issue list.
@@ -205,7 +206,7 @@
           body,
           embeds,
         },
-        opts: { announce: $announce },
+        opts: { announce: $nodeRunning && $announce },
       });
     } catch (error) {
       console.error("Issue comment editing failed: ", error);
@@ -229,7 +230,7 @@
           id,
           title,
         },
-        opts: { announce: $announce },
+        opts: { announce: $nodeRunning && $announce },
       });
       // Update second column issue title without reloading the whole issue list.
       const issueIndex = issues.findIndex(i => i.id === issue.id);
@@ -262,7 +263,7 @@
             ({ did }) => publicKeyFromDid(did) === publicKey,
           ),
         },
-        opts: { announce: $announce },
+        opts: { announce: $nodeRunning && $announce },
       });
     } catch (error) {
       console.error("Editing reactions failed", error);
@@ -280,7 +281,7 @@
           type: "lifecycle",
           state,
         },
-        opts: { announce: $announce },
+        opts: { announce: $nodeRunning && $announce },
       });
       // Update second column issue icon without reloading the whole issue list.
       const issueIndex = issues.findIndex(i => i.id === issue.id);

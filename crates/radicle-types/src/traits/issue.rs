@@ -114,7 +114,9 @@ pub trait IssuesMut: Profile {
         )?;
 
         if opts.announce() {
-            node.announce_refs(rid)?;
+            if let Err(e) = node.announce_refs(rid) {
+                eprintln!("Not able to announce changes: {}", e)
+            }
         }
 
         Ok::<_, Error>(cobs::issue::Issue::new(issue.id(), &issue, &aliases))
@@ -181,7 +183,9 @@ pub trait IssuesMut: Profile {
         }
 
         if opts.announce() {
-            node.announce_refs(rid)?;
+            if let Err(e) = node.announce_refs(rid) {
+                eprintln!("Not able to announce changes: {}", e)
+            }
         }
 
         Ok::<_, Error>(cobs::issue::Issue::new(issue.id(), &issue, &aliases))
