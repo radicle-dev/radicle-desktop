@@ -420,7 +420,6 @@
             }} />
           <div class="title-icons">
             <Icon
-              styleCursor="pointer"
               name="checkmark"
               onclick={async () => {
                 if (updatedTitle.trim().length > 0) {
@@ -428,7 +427,6 @@
                 }
               }} />
             <Icon
-              styleCursor="pointer"
               name="cross"
               onclick={() => {
                 updatedTitle = issue.title;
@@ -442,10 +440,7 @@
           <InlineTitle content={issue.title} fontSize="medium" />
           {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), issue.body.author.did, )}
             <div class="title-icons">
-              <Icon
-                styleCursor="pointer"
-                name="pen"
-                onclick={() => (editingTitle = !editingTitle)} />
+              <Icon name="pen" onclick={() => (editingTitle = !editingTitle)} />
               <IssueStateButton issueState={issue.state} save={saveState} />
             </div>
           {/if}
@@ -511,7 +506,7 @@
           issue.body.id,
         )}>
         {#snippet actions()}
-          <Icon styleCursor="pointer" name="reply" onclick={toggleReply} />
+          <Icon name="reply" onclick={toggleReply} />
         {/snippet}
       </CommentComponent>
     </div>

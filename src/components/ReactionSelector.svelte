@@ -52,7 +52,7 @@
   {popoverPositionLeft}
   popoverPadding="0">
   {#snippet toggle(onclick)}
-    <Icon name="face" {onclick} styleCursor="pointer" />
+    <Icon name="face" {onclick} />
   {/snippet}
   {#snippet popover()}
     <Border variant="ghost">

@@ -4,7 +4,7 @@
   interface Props {
     size?: "16" | "32";
     onclick?: () => void;
-    styleCursor?: "default" | "pointer" | "inherit";
+    disabled?: boolean;
     name:
       | "arrow-left"
       | "arrow-right"
@@ -46,8 +46,8 @@
   const {
     size = "16",
     onclick = undefined,
-    styleCursor = "inherit",
     name,
+    disabled = false,
   }: Props = $props();
 </script>
 
@@ -59,14 +59,29 @@
     -webkit-user-select: none;
     user-select: none;
   }
+  .hoverable {
+    color: var(--color-foreground-dim);
+  }
+  .hoverable:not(.disabled):hover {
+    color: var(--color-foreground-default);
+  }
+  .disabled {
+    color: var(--color-foreground-disabled);
+  }
 </style>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <svg
-  style:cursor={styleCursor}
+  style:cursor={onclick && !disabled ? "pointer" : "inherit"}
+  class:hoverable={onclick}
+  class:disabled
   role="img"
-  {onclick}
+  onclick={() => {
+    if (onclick && !disabled) {
+      onclick();
+    }
+  }}
   aria-label={`icon-${name}`}
   width={size}
   height={size}

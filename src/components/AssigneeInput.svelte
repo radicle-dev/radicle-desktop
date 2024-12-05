@@ -122,19 +122,18 @@
     {#if allowedToEdit}
       <div class="global-flex" style:margin-left="auto">
         {#if showInput}
-          <Icon onclick={addAssignee} name="checkmark" styleCursor="pointer" />
+          <Icon
+            onclick={addAssignee}
+            name="checkmark"
+            disabled={!valid || inputValue === ""} />
           <Icon
             onclick={() => {
               inputValue = "";
               showInput = false;
             }}
-            name="cross"
-            styleCursor="pointer" />
+            name="cross" />
         {:else}
-          <Icon
-            name="plus"
-            onclick={() => (showInput = true)}
-            styleCursor="pointer"></Icon>
+          <Icon name="plus" onclick={() => (showInput = true)}></Icon>
         {/if}
       </div>
     {/if}

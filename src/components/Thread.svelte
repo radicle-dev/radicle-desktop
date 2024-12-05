@@ -111,7 +111,7 @@
         partial(editComment, root.id)}
       reactOnComment={reactOnComment && partial(reactOnComment, root.id)}>
       {#snippet actions()}
-        <Icon name="reply" onclick={toggleReply} styleCursor="pointer" />
+        <Icon name="reply" onclick={toggleReply} />
       {/snippet}
     </CommentComponent>
   </div>
