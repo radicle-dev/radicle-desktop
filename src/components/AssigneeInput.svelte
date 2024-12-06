@@ -152,9 +152,10 @@
             <Icon name="cross" onclick={() => removeAssignee(assignee)} />
           {/if}
         </button>
-      {:else}
-        <div class="txt-missing">Not assigned to anyone.</div>
       {/each}
+      {#if updatedAssignees.length === 0 && !showInput}
+        <div class="txt-missing">Not assigned to anyone.</div>
+      {/if}
     {:else}
       {#each updatedAssignees as assignee}
         <NodeId {...authorForNodeId(assignee)} />

@@ -139,9 +139,10 @@
             <Icon name="cross" onclick={() => removeLabel(label)} />
           {/if}
         </button>
-      {:else}
-        <div class="txt-missing">No labels.</div>
       {/each}
+      {#if updatedLabels.length === 0 && !showInput}
+        <div class="txt-missing">No labels.</div>
+      {/if}
     {:else}
       {#each updatedLabels as label}
         <Label {label} />

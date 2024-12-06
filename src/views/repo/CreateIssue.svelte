@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
   import type { Issue } from "@bindings/cob/issue/Issue";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
@@ -7,11 +6,17 @@
   import { invoke } from "@app/lib/invoke";
 
   import * as router from "@app/lib/router";
+  import { nodeRunning } from "@app/lib/events";
 
+  import { announce } from "@app/components/AnnounceSwitch.svelte";
+
+  import AssigneeInput from "@app/components/AssigneeInput.svelte";
+  import Border from "@app/components/Border.svelte";
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
+  import LabelInput from "@app/components/LabelInput.svelte";
   import Link from "@app/components/Link.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
@@ -30,20 +35,26 @@
 
   const { repo, issues, config }: Props = $props();
 
-  let title: string = $state("");
   let description: string = $state("");
   let preview: boolean = $state(false);
-  const announce = false;
+  let title: string = $state("");
 
-  const labels: string[] = [];
-  const assignees: Author[] = [];
   const embeds: { name: string; content: string }[] = [];
+
+  let assignees: string[] = $state([]);
+  let labels: string[] = $state([]);
 
   async function createIssue() {
     const response: Issue = await invoke("create_issue", {
       rid: repo.rid,
-      new: { title, description, labels, assignees, embeds },
-      opts: { announce },
+      new: {
+        title,
+        description,
+        labels: $state.snapshot(labels),
+        assignees: $state.snapshot(assignees),
+        embeds,
+      },
+      opts: { announce: $nodeRunning && $announce },
     });
     void router.push({
       resource: "repo.issue",
@@ -66,13 +77,28 @@
   }
   .content {
     padding: 0 1rem 1rem 1rem;
-    height: calc(100% - 8rem);
+    height: calc(100% - 14rem);
   }
   .body {
     background-color: var(--color-background-float);
     padding: 1rem;
     min-height: calc(100% + 2px);
     clip-path: var(--2px-corner-fill);
+  }
+  .metadata-divider {
+    width: 2px;
+    background-color: var(--color-fill-ghost);
+    height: calc(100% + 4px);
+    top: 0;
+    position: relative;
+  }
+  .metadata-section {
+    padding: 0.5rem;
+    font-size: var(--font-size-small);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    height: 100%;
   }
 </style>
 
@@ -117,6 +143,35 @@
         <TextInput placeholder="Title" autofocus bind:value={title} />
       </div>
     {/if}
+
+    <div style:margin-bottom="0.35rem">
+      <Border variant="ghost" styleGap="0">
+        <div class="metadata-section" style:flex="1">
+          <LabelInput
+            allowedToEdit={true}
+            {labels}
+            submitInProgress={false}
+            save={newLabels => {
+              labels = newLabels;
+            }} />
+        </div>
+
+        <div class="metadata-divider"></div>
+
+        <div class="metadata-section" style:flex="1">
+          <AssigneeInput
+            allowedToEdit={true}
+            assignees={assignees.map(assignee => {
+              return { did: assignee };
+            })}
+            submitInProgress={false}
+            save={newAssignees => {
+              assignees = newAssignees;
+            }} />
+        </div>
+      </Border>
+    </div>
+
     {#if preview}
       <div class="txt-small body">
         {#if description.trim() === ""}
