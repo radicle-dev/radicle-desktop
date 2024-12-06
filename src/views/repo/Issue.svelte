@@ -64,6 +64,7 @@
   let updatedTitle = $state("");
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
+  let focusReply: boolean = $state(false);
 
   $effect(() => {
     // The component doesn't get destroyed when we switch between different
@@ -77,6 +78,7 @@
     topLevelReplyOpen = false;
     editingTitle = false;
     updatedTitle = issue.title;
+    focusReply = false;
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
@@ -132,6 +134,7 @@
       behavior: "smooth",
       block: "center",
     });
+    focusReply = true;
   }
 
   async function reload() {
@@ -541,7 +544,7 @@
       <CommentToggleInput
         disallowEmptyBody
         rid={repo.rid}
-        focus
+        focus={focusReply}
         onexpand={toggleReply}
         onclose={topLevelReplyOpen
           ? () => (topLevelReplyOpen = false)
