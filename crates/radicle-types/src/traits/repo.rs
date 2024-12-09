@@ -10,8 +10,10 @@ use radicle::storage::{ReadRepository, ReadStorage, RepositoryInfo};
 use radicle::{git, identity};
 
 use crate::cobs;
+use crate::diff::Diff;
 use crate::error::Error;
 use crate::repo;
+use crate::syntax::{Highlighter, ToPretty};
 use crate::traits::Profile;
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -129,20 +131,16 @@ pub trait Repo: Profile {
         })
     }
 
-    fn get_diff(
-        &self,
-        rid: identity::RepoId,
-        options: cobs::diff::Options,
-    ) -> Result<surf::diff::Diff, Error> {
+    fn get_diff(&self, rid: identity::RepoId, options: cobs::diff::Options) -> Result<Diff, Error> {
+        let unified = options.unified.unwrap_or(5);
+        let highlight = options.highlight.unwrap_or(true);
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?.backend;
         let base = repo.find_commit(*options.base)?;
         let head = repo.find_commit(*options.head)?;
 
         let mut opts = git::raw::DiffOptions::new();
-        opts.patience(true)
-            .minimal(true)
-            .context_lines(options.unified);
+        opts.patience(true).minimal(true).context_lines(unified);
 
         let mut find_opts = git::raw::DiffFindOptions::new();
         find_opts.exact_match_only(true);
@@ -155,7 +153,13 @@ pub trait Repo: Profile {
         diff.find_similar(Some(&mut find_opts))?;
         let diff = surf::diff::Diff::try_from(diff)?;
 
-        Ok::<_, Error>(diff)
+        if highlight {
+            let mut hi = Highlighter::default();
+
+            return Ok::<_, Error>(diff.pretty(&mut hi, &(), &repo));
+        }
+
+        Ok::<_, Error>(diff.into())
     }
 
     fn list_commits(

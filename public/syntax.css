@@ -1,0 +1,60 @@
+.syntax.operator,
+.syntax.keyword {
+  color: var(--color-prettylights-syntax-keyword);
+}
+.syntax.type {
+  color: var(--color-prettylights-syntax-entity);
+}
+.syntax.property,
+.syntax.variable\.parameter {
+  color: var(--color-prettylights-syntax-variable);
+}
+.syntax.punctuation\.delimiter {
+}
+.syntax.punctuation\.bracket {
+}
+.syntax.attribute {
+}
+.syntax.number,
+.syntax.constant,
+.syntax.type\.builtin,
+.syntax.constant\.builtin,
+.syntax.variable\.builtin,
+.syntax.function {
+  color: var(--color-prettylights-syntax-constant);
+}
+.syntax.comment {
+  color: var(--color-prettylights-syntax-comment);
+}
+.syntax.string {
+  color: var(--color-prettylights-syntax-string);
+}
+.syntax.string.special {
+}
+.syntax.function {
+}
+.syntax.type.builtin {
+}
+.syntax.punctuation.bracket {
+}
+.syntax.punctuation.delimiter {
+}
+.syntax.punctuation.special {
+}
+.syntax.text.literal {
+}
+.syntax.text.title {
+}
+.syntax.variable {
+  color: var(--color-prettylights-syntax-storage-modifier-import);
+}
+.syntax.attribute {
+}
+.syntax.label {
+}
+.syntax.type {
+}
+.syntax.variable.parameter {
+}
+.syntax.constructor {
+}

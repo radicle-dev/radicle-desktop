@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Diff } from "@bindings/diff/Diff";
   import type { Config } from "@bindings/config/Config";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
@@ -17,6 +18,7 @@
   import NodeId from "@app/components/NodeId.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
+  import Changeset from "@app/components/Changeset.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -39,6 +41,18 @@
     cursor = patches.cursor;
     more = patches.more;
   });
+
+  async function loadHighlightedDiff(rid: string, base: string, head: string) {
+    return invoke<Diff>("get_diff", {
+      rid,
+      options: {
+        base,
+        head,
+        unified: 5,
+        highlight: true,
+      },
+    });
+  }
 
   async function loadPatch(rid: string, patchId: string) {
     patch = await invoke<Patch>("patch_by_id", {
@@ -177,6 +191,9 @@
     <div class="txt-small" style:margin-top="1rem">Revisions</div>
     {#each revisions as revision}
       <div><Id id={revision.id} variant="oid" /></div>
+      {#await loadHighlightedDiff(repo.rid, revision.base, revision.head) then diff}
+        <Changeset {diff} repoId={repo.rid} />
+      {/await}
     {/each}
   </div>
 </Layout>
