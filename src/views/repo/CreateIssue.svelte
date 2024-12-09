@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
   import type { Issue } from "@bindings/cob/issue/Issue";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
@@ -41,7 +42,7 @@
 
   const embeds: { name: string; content: string }[] = [];
 
-  let assignees: string[] = $state([]);
+  let assignees: Author[] = $state([]);
   let labels: string[] = $state([]);
 
   async function createIssue() {
@@ -51,7 +52,7 @@
         title,
         description,
         labels: $state.snapshot(labels),
-        assignees: $state.snapshot(assignees),
+        assignees: $state.snapshot(assignees.map(a => a.did)),
         embeds,
       },
       opts: { announce: $nodeRunning && $announce },
@@ -161,9 +162,7 @@
         <div class="metadata-section" style:flex="1">
           <AssigneeInput
             allowedToEdit={true}
-            assignees={assignees.map(assignee => {
-              return { did: assignee };
-            })}
+            bind:assignees
             submitInProgress={false}
             save={newAssignees => {
               assignees = newAssignees;

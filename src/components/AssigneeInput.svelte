@@ -1,7 +1,12 @@
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
 
-  import { authorForNodeId, parseNodeId } from "@app/lib/utils";
+  import {
+    authorForNodeId,
+    parseNodeId,
+    publicKeyFromDid,
+  } from "@app/lib/utils";
+  import { invoke } from "@app/lib/invoke";
 
   import Icon from "@app/components/Icon.svelte";
   import NodeId from "@app/components/NodeId.svelte";
@@ -11,12 +16,12 @@
     allowedToEdit: boolean;
     assignees: Author[];
     submitInProgress: boolean;
-    save: (updatedAssignees: string[]) => void;
+    save: (updatedAssignees: Author[]) => void;
   }
 
   const {
     allowedToEdit = false,
-    assignees,
+    assignees = $bindable(),
     submitInProgress = false,
     save,
   }: Props = $props();
@@ -64,11 +69,17 @@
     }
   });
 
-  function addAssignee() {
+  async function addAssignee() {
     if (valid && assignee) {
-      updatedAssignees = [...updatedAssignees, { did: assignee }];
+      const alias = await invoke<string | null>("alias", {
+        nid: publicKeyFromDid(assignee),
+      });
+      updatedAssignees = [
+        ...updatedAssignees,
+        { did: assignee, alias: alias ?? undefined },
+      ];
       inputValue = "";
-      save($state.snapshot(updatedAssignees.map(x => x.did)));
+      save($state.snapshot(updatedAssignees));
       showInput = false;
     }
   }
@@ -77,7 +88,7 @@
     updatedAssignees = updatedAssignees.filter(
       ({ did }) => did !== assignee.did,
     );
-    save($state.snapshot(updatedAssignees.map(x => x.did)));
+    save($state.snapshot(updatedAssignees));
     showInput = false;
   }
 </script>

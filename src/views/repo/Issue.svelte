@@ -103,7 +103,7 @@
     }
   }
 
-  async function saveAssignees(assignees: string[]) {
+  async function saveAssignees(assignees: Author[]) {
     try {
       assigneesSaveInProgress = true;
       await invoke("edit_issue", {
@@ -111,7 +111,7 @@
         cobId: issue.id,
         action: {
           type: "assign",
-          assignees,
+          assignees: assignees.map(a => a.did),
         },
         opts: { announce: $nodeRunning && $announce },
       });
