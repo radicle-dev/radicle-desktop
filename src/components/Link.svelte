@@ -10,6 +10,7 @@
     disabled?: boolean;
     underline?: boolean;
     styleWidth?: string;
+    styleColor?: string;
   }
 
   const {
@@ -18,6 +19,7 @@
     disabled = false,
     underline = true,
     styleWidth,
+    styleColor,
   }: Props = $props();
 
   function navigateToRoute(event: MouseEvent): void {
@@ -46,6 +48,7 @@
   onclick={navigateToRoute}
   href={routeToPath(route)}
   class:underline
+  style:color={styleColor}
   style:width={styleWidth}>
   {@render children()}
 </a>

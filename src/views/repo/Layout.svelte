@@ -9,7 +9,7 @@
 
   interface Props {
     children: Snippet;
-    breadcrumbs: Snippet;
+    breadcrumbs?: Snippet;
     headerCenter?: Snippet;
     secondColumn: Snippet;
     sidebar: Snippet;

@@ -6,7 +6,6 @@
 
   import CopyableId from "@app/components/CopyableId.svelte";
   import Header from "@app/components/Header.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
   import Settings from "@app/components/Settings.svelte";
 
@@ -44,13 +43,6 @@
     <Header>
       {#snippet center()}
         <CopyableId id={`did:key:${config.publicKey}`} />
-      {/snippet}
-      {#snippet breadcrumbs()}
-        <NodeId
-          publicKey={config.publicKey}
-          alias={config.alias}
-          styleFontFamily="var(--font-family-sans-serif)"
-          styleFontSize="var(--font-size-tiny)" />
       {/snippet}
       {#snippet settingsButton()}
         <Settings
