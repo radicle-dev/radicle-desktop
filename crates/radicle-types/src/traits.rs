@@ -1,3 +1,5 @@
+use radicle::node::{AliasStore, NodeId};
+
 use crate::config::Config;
 
 pub mod auth;
@@ -18,6 +20,13 @@ pub trait Profile {
             alias: p.config.node.alias.clone(),
             seeding_policy: p.config.node.seeding_policy,
         }
+    }
+
+    fn alias(&self, nid: NodeId) -> Option<radicle::node::Alias> {
+        let p = self.profile();
+        let aliases = p.aliases();
+
+        aliases.alias(&nid)
     }
 }
 

@@ -95,6 +95,7 @@ pub fn run() {
             thread::create_issue_comment,
             thread::create_patch_comment,
             profile::config,
+            profile::alias,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
