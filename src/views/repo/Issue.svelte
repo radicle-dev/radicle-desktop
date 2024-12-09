@@ -342,6 +342,7 @@
     gap: 1rem;
     margin-left: 1rem;
     align-items: center;
+    height: 40px;
   }
 
   .metadata-divider {
@@ -405,9 +406,9 @@
   {/snippet}
 
   <div class="content">
-    <div style:margin-bottom="1rem" style:margin-top="-4px">
+    <div style:margin-bottom="1rem" style:margin-top="-6px">
       {#if editingTitle}
-        <div class="global-flex">
+        <div class="title">
           <TextInput
             valid={updatedTitle.trim().length > 0}
             bind:value={updatedTitle}
