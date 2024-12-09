@@ -63,32 +63,30 @@
   .header {
     font-weight: var(--font-weight-medium);
     font-size: var(--font-size-medium);
-    padding: 0 1rem 1rem 1rem;
+    padding: 0 1rem 0.5rem 1rem;
     display: flex;
     align-items: center;
-    height: 50px;
+    height: 42px;
+  }
+  .breadcrumbs {
+    display: flex;
+    gap: 0.5rem;
+    font-size: var(--font-size-tiny);
+    font-weight: var(--font-weight-semibold);
+    align-items: center;
+    min-height: 1.5rem;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding-left: 1rem;
+    color: var(--color-foreground-dim);
   }
 </style>
 
-<Layout {loadMoreContent} hideSidebar styleSecondColumnOverflow="visible">
-  {#snippet breadcrumbs()}
-    <Link route={{ resource: "home" }}>
-      <NodeId
-        publicKey={config.publicKey}
-        alias={config.alias}
-        styleFontFamily="var(--font-family-sans-serif)"
-        styleFontSize="var(--font-size-tiny)" />
-    </Link>
-    <Link route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}>
-      <div class="global-flex">
-        <Icon name="chevron-right" />
-        {project.data.name}
-      </div>
-    </Link>
-    <Icon name="chevron-right" />
-    Patches
-  {/snippet}
-
+<Layout
+  {loadMoreContent}
+  hideSidebar
+  styleSecondColumnOverflow="visible"
+  publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={repo.rid} />
   {/snippet}
@@ -105,6 +103,23 @@
 
   <div class="header">Patches</div>
 
+  <div class="breadcrumbs">
+    <Link route={{ resource: "home" }}>
+      <NodeId
+        publicKey={config.publicKey}
+        alias={config.alias}
+        styleFontFamily="var(--font-family-sans-serif)"
+        styleFontSize="var(--font-size-tiny)" />
+    </Link>
+    <Icon name="chevron-right" />
+    <Link
+      route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}
+      styleColor="var(--color-foreground-dim)">
+      {project.data.name}
+    </Link>
+    <Icon name="chevron-right" />
+    Patches
+  </div>
   <div class="list">
     {#each items as patch}
       <PatchTeaser rid={repo.rid} {patch} {status} />

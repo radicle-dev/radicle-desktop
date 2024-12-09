@@ -1,15 +1,38 @@
+<script lang="ts" module>
+  type LayoutState = "one-column" | "two-column";
+
+  const LAYOUT_KEY = "one-column-layout-enabled";
+
+  let oneColumnLayout = $state(
+    localStorage ? localStorage.getItem(LAYOUT_KEY) === "one-column" : false,
+  );
+
+  export function getLayout() {
+    return oneColumnLayout;
+  }
+
+  export function storeLayout(newValue: LayoutState): void {
+    oneColumnLayout = newValue === "one-column";
+    if (localStorage) {
+      localStorage.setItem(LAYOUT_KEY, newValue);
+    } else {
+      console.warn(
+        "localStorage isn't available, not able to persist the selected layout settings without it.",
+      );
+    }
+  }
+</script>
+
 <script lang="ts">
   import type { Snippet } from "svelte";
-  type LayoutState = "one-column" | "two-column";
 
   import { onMount } from "svelte";
 
   import Header from "@app/components/Header.svelte";
-  import Icon from "@app/components/Icon.svelte";
 
   interface Props {
     children: Snippet;
-    breadcrumbs: Snippet;
+    publicKey: string;
     headerCenter?: Snippet;
     secondColumn: Snippet;
     sidebar: Snippet;
@@ -21,7 +44,7 @@
 
   const {
     children,
-    breadcrumbs,
+    publicKey,
     headerCenter = undefined,
     secondColumn,
     sidebar,
@@ -31,26 +54,10 @@
     styleSecondColumnOverflow = "scroll",
   }: Props = $props();
 
-  const LAYOUT_KEY = "one-column-layout-enabled";
-
-  let oneColumnLayout = $state(
-    localStorage ? localStorage.getItem(LAYOUT_KEY) === "one-column" : false,
-  );
   let contentContainer: HTMLElement | undefined = $state();
   let secondColumnContainer: HTMLElement | undefined = $state();
   let loadingContent = false;
   let loadingSecondColumn = false;
-
-  function storeLayout(newValue: LayoutState): void {
-    oneColumnLayout = newValue === "one-column";
-    if (localStorage) {
-      localStorage.setItem(LAYOUT_KEY, newValue);
-    } else {
-      console.warn(
-        "localStorage isn't available, not able to persist the selected layout settings without it.",
-      );
-    }
-  }
 
   onMount(() => {
     if (contentContainer && loadMoreContent) {
@@ -126,65 +133,21 @@
     overflow: scroll;
     overscroll-behavior: none;
   }
-
-  .column-radio {
-    display: flex;
-    background-color: var(--color-background-dip);
-    clip-path: var(--1px-corner-fill);
-    gap: 2px;
-  }
-  .toggle {
-    cursor: pointer;
-    border: 0;
-    height: 24px;
-    clip-path: var(--1px-corner-fill);
-    margin: 0;
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-active);
-  }
-  .toggle:hover,
-  .toggle.active {
-    background: none;
-    color: var(--color-foreground-emphasized);
-  }
 </style>
 
 <div class="layout">
   <div class="header">
-    <Header {breadcrumbs} center={headerCenter}>
-      {#snippet columnSwitch()}
-        <div class="column-radio">
-          <button
-            class="toggle"
-            class:active={oneColumnLayout}
-            onclick={() => {
-              storeLayout("one-column");
-            }}>
-            <Icon name="one" />
-          </button>
-          <button
-            class="toggle"
-            class:active={!oneColumnLayout}
-            onclick={() => {
-              storeLayout("two-column");
-            }}>
-            <Icon name="two" />
-          </button>
-        </div>
-      {/snippet}
-    </Header>
+    <Header {publicKey} center={headerCenter}></Header>
   </div>
 
-  <div
-    class="sidebar"
-    style:display={hideSidebar && !oneColumnLayout ? "none" : "flex"}>
+  <div class="sidebar" style:display={hideSidebar ? "none" : "flex"}>
     {@render sidebar()}
   </div>
 
   <div
     class="secondColumn"
     bind:this={secondColumnContainer}
-    style:display={oneColumnLayout ? "none" : undefined}
+    style:display={oneColumnLayout && !hideSidebar ? "none" : undefined}
     style:overflow={styleSecondColumnOverflow}>
     {@render secondColumn()}
   </div>

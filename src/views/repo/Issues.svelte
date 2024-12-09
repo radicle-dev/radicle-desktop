@@ -40,31 +40,28 @@
     font-weight: var(--font-weight-medium);
     font-size: var(--font-size-medium);
     display: flex;
-    padding: 0 1rem 1rem 1rem;
+    padding: 0 1rem 0.5rem 1rem;
     align-items: center;
     justify-content: space-between;
   }
+  .breadcrumbs {
+    display: flex;
+    gap: 0.5rem;
+    font-size: var(--font-size-tiny);
+    font-weight: var(--font-weight-semibold);
+    align-items: center;
+    min-height: 1.5rem;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding-left: 1rem;
+    color: var(--color-foreground-dim);
+  }
 </style>
 
-<Layout hideSidebar styleSecondColumnOverflow="visible">
-  {#snippet breadcrumbs()}
-    <Link route={{ resource: "home" }}>
-      <NodeId
-        publicKey={config.publicKey}
-        alias={config.alias}
-        styleFontFamily="var(--font-family-sans-serif)"
-        styleFontSize="var(--font-size-tiny)" />
-    </Link>
-    <Link route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}>
-      <div class="global-flex">
-        <Icon name="chevron-right" />
-        {project.data.name}
-      </div>
-    </Link>
-    <Icon name="chevron-right" />
-    Issues
-  {/snippet}
-
+<Layout
+  hideSidebar
+  styleSecondColumnOverflow="visible"
+  publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={repo.rid} />
   {/snippet}
@@ -94,6 +91,24 @@
         <Icon name="plus" />New
       </Button>
     </div>
+  </div>
+
+  <div class="breadcrumbs">
+    <Link route={{ resource: "home" }}>
+      <NodeId
+        publicKey={config.publicKey}
+        alias={config.alias}
+        styleFontFamily="var(--font-family-sans-serif)"
+        styleFontSize="var(--font-size-tiny)" />
+    </Link>
+    <Icon name="chevron-right" />
+    <Link
+      route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}
+      styleColor="var(--color-foreground-dim)">
+      {project.data.name}
+    </Link>
+    <Icon name="chevron-right" />
+    Issues
   </div>
 
   <div class="list">

@@ -90,7 +90,7 @@
     font-weight: var(--font-weight-medium);
     -webkit-user-select: text;
     user-select: text;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     margin-top: 0.35rem;
   }
   .patch-list {
@@ -120,31 +120,20 @@
     height: 100%;
     top: 0;
   }
+  .breadcrumbs {
+    display: flex;
+    gap: 0.5rem;
+    font-size: var(--font-size-tiny);
+    font-weight: var(--font-weight-semibold);
+    align-items: center;
+    min-height: 1.5rem;
+    width: 100%;
+    margin-bottom: 1rem;
+    color: var(--color-foreground-dim);
+  }
 </style>
 
-<Layout {loadMoreSecondColumn}>
-  {#snippet breadcrumbs()}
-    <Link route={{ resource: "home" }}>
-      <NodeId
-        publicKey={config.publicKey}
-        alias={config.alias}
-        styleFontFamily="var(--font-family-sans-serif)"
-        styleFontSize="var(--font-size-tiny)" />
-    </Link>
-    <Link route={{ resource: "repo.patches", rid: repo.rid, status: "open" }}>
-      <div class="global-flex">
-        <Icon name="chevron-right" />
-        {project.data.name}
-      </div>
-    </Link>
-    <Icon name="chevron-right" />
-    <Link route={{ resource: "repo.patches", rid: repo.rid, status: "open" }}>
-      Patches
-    </Link>
-    <Icon name="chevron-right" />
-    {patch.title}
-  {/snippet}
-
+<Layout {loadMoreSecondColumn} publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={patch.id} />
   {/snippet}
@@ -177,6 +166,31 @@
     <div class="title">
       <InlineTitle content={patch.title} fontSize="medium" />
     </div>
+
+    <div class="breadcrumbs">
+      <Link route={{ resource: "home" }}>
+        <NodeId
+          publicKey={config.publicKey}
+          alias={config.alias}
+          styleFontFamily="var(--font-family-sans-serif)"
+          styleFontSize="var(--font-size-tiny)" />
+      </Link>
+      <Icon name="chevron-right" />
+      <Link
+        route={{ resource: "repo.patches", rid: repo.rid, status: "open" }}
+        styleColor="var(--color-foreground-dim)">
+        {project.data.name}
+      </Link>
+      <Icon name="chevron-right" />
+      <Link
+        route={{ resource: "repo.patches", rid: repo.rid, status: "open" }}
+        styleColor="var(--color-foreground-dim)">
+        Patches
+      </Link>
+      <Icon name="chevron-right" />
+      {patch.title}
+    </div>
+
     <div class="txt-small patch-body">
       <CommentComponent
         caption="opened"

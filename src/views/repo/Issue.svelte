@@ -367,35 +367,20 @@
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
   }
+  .breadcrumbs {
+    display: flex;
+    gap: 0.5rem;
+    font-size: var(--font-size-tiny);
+    font-weight: var(--font-weight-semibold);
+    align-items: center;
+    min-height: 1.5rem;
+    width: 100%;
+    margin-bottom: 1rem;
+    color: var(--color-foreground-dim);
+  }
 </style>
 
-<Layout>
-  {#snippet breadcrumbs()}
-    <div class="global-flex txt-overflow">
-      <Link route={{ resource: "home" }}>
-        <NodeId
-          publicKey={config.publicKey}
-          alias={config.alias}
-          styleFontFamily="var(--font-family-sans-serif)"
-          styleFontSize="var(--font-size-tiny)" />
-      </Link>
-      <Link route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}>
-        <div class="global-flex">
-          <Icon name="chevron-right" />
-          {project.data.name}
-        </div>
-      </Link>
-      <Icon name="chevron-right" />
-      <Link route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}>
-        Issues
-      </Link>
-      <Icon name="chevron-right" />
-      <div class="txt-overflow">
-        {issue.title}
-      </div>
-    </div>
-  {/snippet}
-
+<Layout publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={issue.id} />
   {/snippet}
@@ -409,7 +394,7 @@
   {/snippet}
 
   <div class="content">
-    <div style:margin-bottom="1rem" style:margin-top="-6px">
+    <div style:margin-bottom="0.5rem" style:margin-top="-6px">
       {#if editingTitle}
         <div class="title">
           <TextInput
@@ -453,6 +438,32 @@
           {/if}
         </div>
       {/if}
+    </div>
+
+    <div class="breadcrumbs txt-overflow">
+      <Link route={{ resource: "home" }}>
+        <NodeId
+          publicKey={config.publicKey}
+          alias={config.alias}
+          styleFontFamily="var(--font-family-sans-serif)"
+          styleFontSize="var(--font-size-tiny)" />
+      </Link>
+      <Icon name="chevron-right" />
+      <Link
+        route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}
+        styleColor="var(--color-foreground-dim)">
+        {project.data.name}
+      </Link>
+      <Icon name="chevron-right" />
+      <Link
+        route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}
+        styleColor="var(--color-foreground-dim)">
+        Issues
+      </Link>
+      <Icon name="chevron-right" />
+      <div class="txt-overflow">
+        {issue.title}
+      </div>
     </div>
 
     <Border variant="ghost" styleGap="0">

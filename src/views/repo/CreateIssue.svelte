@@ -19,9 +19,7 @@
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
-  import Link from "@app/components/Link.svelte";
   import Markdown from "@app/components/Markdown.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
   import OutlineButton from "@app/components/OutlineButton.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
   import TextInput from "@app/components/TextInput.svelte";
@@ -66,8 +64,6 @@
       status,
     });
   }
-
-  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>
@@ -106,29 +102,7 @@
   }
 </style>
 
-<Layout>
-  {#snippet breadcrumbs()}
-    <Link route={{ resource: "home" }}>
-      <NodeId
-        publicKey={config.publicKey}
-        alias={config.alias}
-        styleFontFamily="var(--font-family-sans-serif)"
-        styleFontSize="var(--font-size-tiny)" />
-    </Link>
-    <Link route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}>
-      <div class="global-flex">
-        <Icon name="chevron-right" />
-        {project.data.name}
-      </div>
-    </Link>
-    <Icon name="chevron-right" />
-    <Link route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}>
-      Issues
-    </Link>
-    <Icon name="chevron-right" />
-    New Issue
-  {/snippet}
-
+<Layout publicKey={config.publicKey}>
   {#snippet sidebar()}
     <Sidebar activeTab={{ type: "issues", status }} rid={repo.rid} />
   {/snippet}

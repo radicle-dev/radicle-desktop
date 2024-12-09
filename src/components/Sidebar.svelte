@@ -5,9 +5,12 @@
   import { patchStatusColor } from "@app/lib/utils";
   import { issueStatusColor } from "@app/lib/utils";
 
+  import { storeLayout, getLayout } from "@app/views/repo/Layout.svelte";
+
   import Icon from "@app/components/Icon.svelte";
   import Settings from "@app/components/Settings.svelte";
   import Border from "./Border.svelte";
+  import NakedButton from "./NakedButton.svelte";
 
   interface Props {
     activeTab:
@@ -115,8 +118,27 @@
   {/if}
 </div>
 
-<Settings
-  popoverProps={{
-    popoverPositionBottom: "3rem",
-    popoverPositionLeft: "0",
-  }} />
+<div>
+  <NakedButton
+    styleHeight="40px"
+    variant="ghost"
+    onclick={() => {
+      if (getLayout()) {
+        storeLayout("two-column");
+      } else {
+        storeLayout("one-column");
+      }
+    }}>
+    {#if getLayout()}
+      <Icon name="expand-panel" />
+    {:else}
+      <Icon name="collapse-panel" />
+    {/if}
+  </NakedButton>
+
+  <Settings
+    popoverProps={{
+      popoverPositionBottom: "3rem",
+      popoverPositionLeft: "0",
+    }} />
+</div>
