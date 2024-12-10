@@ -202,6 +202,7 @@ pub trait Repo: Profile {
 #[allow(clippy::unwrap_used)]
 mod test {
     use std::str::FromStr;
+    use std::vec;
 
     use radicle::crypto::test::signer::MockSigner;
     use radicle::{git, test};
@@ -220,7 +221,10 @@ mod test {
         let (rid, _, _, _) =
             test::fixtures::project(tempdir.path().join("original"), &profile.storage, &signer)
                 .unwrap();
-        let state = AppState { profile };
+        let state = AppState {
+            profile,
+            buffer: std::sync::Mutex::new(vec![]),
+        };
         let commits = Repo::list_commits(&state, rid, None, None, Some(1)).unwrap();
 
         assert_eq!(
@@ -284,7 +288,10 @@ mod test {
         let (rid, _, _, _) =
             test::fixtures::project(tempdir.path().join("original"), &profile.storage, &signer)
                 .unwrap();
-        let state = AppState { profile };
+        let state = AppState {
+            profile,
+            buffer: std::sync::Mutex::new(vec![]),
+        };
         let commits = Repo::list_commits(
             &state,
             rid,

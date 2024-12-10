@@ -17,6 +17,7 @@ pub mod traits;
 
 pub struct AppState {
     pub profile: radicle::Profile,
+    pub buffer: std::sync::Mutex<Vec<u8>>,
 }
 
 impl Auth for AppState {}

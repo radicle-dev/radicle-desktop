@@ -22,13 +22,22 @@ pub async fn get_file_by_oid(
 }
 
 #[tauri::command]
+pub async fn process_chunk(ctx: tauri::State<'_, AppState>, chunk: Vec<u8>) -> Result<(), Error> {
+    let mut buffer = ctx.buffer.lock().unwrap();
+    buffer.extend_from_slice(&chunk);
+
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn save_embed(
     ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,
     name: &str,
-    bytes: &[u8],
 ) -> Result<git::Oid, Error> {
-    ctx.save_embed(rid, name, bytes)
+    let buffer = ctx.buffer.lock().unwrap();
+
+    ctx.save_embed(rid, name, &buffer.to_vec())
 }
 
 #[tauri::command]

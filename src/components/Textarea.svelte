@@ -1,5 +1,9 @@
 <script lang="ts">
-  import type { FormEventHandler } from "svelte/elements";
+  import type {
+    ClipboardEventHandler,
+    DragEventHandler,
+    FormEventHandler,
+  } from "svelte/elements";
   import type { ComponentProps } from "svelte";
 
   import { tick } from "svelte";
@@ -10,6 +14,8 @@
 
   interface Props {
     borderVariant?: ComponentProps<typeof Border>["variant"];
+    ondrop?: DragEventHandler<HTMLTextAreaElement>;
+    onpaste?: ClipboardEventHandler<HTMLTextAreaElement>;
     focus?: boolean;
     oninput?: FormEventHandler<HTMLTextAreaElement>;
     onkeypress?: FormEventHandler<HTMLTextAreaElement>;
@@ -27,6 +33,8 @@
   let {
     borderVariant = "float",
     focus = false,
+    ondrop,
+    onpaste,
     oninput,
     onkeypress,
     placeholder = undefined,
@@ -61,15 +69,24 @@
   });
 
   $effect(() => {
-    if (textareaElement && focus) {
-      textareaElement.focus();
-      focus = false;
+    if (textareaElement) {
+      textareaElement.addEventListener("selectionchange", (event: Event) => {
+        if (
+          event.target &&
+          "selectionStart" in event.target &&
+          "selectionEnd" in event.target
+        ) {
+          selectionStart = event.target.selectionStart as number;
+          selectionEnd = event.target.selectionEnd as number;
+        }
+      });
     }
   });
 
-  $effect.pre(() => {
-    if (textareaElement) {
-      ({ selectionStart, selectionEnd } = textareaElement);
+  $effect(() => {
+    if (textareaElement && focus) {
+      textareaElement.focus();
+      focus = false;
     }
   });
 
@@ -142,6 +159,8 @@
       ? "scroll"
       : undefined}
     {placeholder}
+    {ondrop}
+    {onpaste}
     {oninput}
     {onkeypress}
     onfocus={() => (focussed = true)}

@@ -47,7 +47,10 @@ mod test {
         let tmp = tempfile::tempdir().unwrap();
         let profile = test::profile(tmp.path(), [0xff; 32]);
         let signer = MockSigner::from_seed([0xff; 32]);
-        let state = AppState { profile };
+        let state = AppState {
+            profile,
+            buffer: std::sync::Mutex::new(vec![]),
+        };
 
         assert_eq!(
             Profile::config(&state),

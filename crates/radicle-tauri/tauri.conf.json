@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "dragDropEnabled": false,
         "title": "Radicle",
         "minWidth": 1200,
         "minHeight": 780

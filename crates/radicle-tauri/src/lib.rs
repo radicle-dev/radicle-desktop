@@ -37,7 +37,10 @@ pub fn run() {
             let node = Node::new(profile.socket());
             let node_status = node.clone();
 
-            app.manage(AppState { profile });
+            app.manage(AppState {
+                profile,
+                buffer: std::sync::Mutex::new(vec![]),
+            });
 
             tauri::async_runtime::spawn(async move {
                 loop {
@@ -77,6 +80,7 @@ pub fn run() {
             cob::get_file_by_oid,
             cob::activity_by_id,
             cob::save_embed,
+            cob::process_chunk,
             cob::issue::list_issues,
             cob::issue::issue_by_id,
             cob::issue::comment_threads_by_issue_id,
