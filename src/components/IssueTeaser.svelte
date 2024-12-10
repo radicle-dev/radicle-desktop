@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Issue } from "@bindings/cob/issue/Issue";
+  import type { IssueStatus } from "@app/views/repo/router";
 
   import {
     authorForNodeId,
@@ -18,11 +19,18 @@
   interface Props {
     issue: Issue;
     rid: string;
+    status: IssueStatus;
     selected?: boolean;
     compact?: boolean;
   }
 
-  const { issue, rid, selected = false, compact = false }: Props = $props();
+  const {
+    issue,
+    rid,
+    status,
+    selected = false,
+    compact = false,
+  }: Props = $props();
 </script>
 
 <style>
@@ -66,7 +74,7 @@
   class="issue-teaser"
   class:selected
   onclick={() => {
-    void push({ resource: "repo.issue", rid, issue: issue.id });
+    void push({ resource: "repo.issue", rid, issue: issue.id, status });
   }}>
   <div class="global-flex">
     <div

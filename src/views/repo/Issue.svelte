@@ -6,6 +6,7 @@
   import type { Operation } from "@bindings/cob/issue/Operation";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Thread } from "@bindings/cob/thread/Thread";
+  import type { IssueStatus } from "./router";
 
   import partial from "lodash/partial";
   import { tick } from "svelte";
@@ -44,6 +45,7 @@
     activity: Operation[];
     config: Config;
     threads: Thread[];
+    status: IssueStatus;
   }
 
   /* eslint-disable prefer-const */
@@ -54,6 +56,7 @@
     activity,
     config,
     threads,
+    status,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -398,11 +401,11 @@
   {/snippet}
 
   {#snippet sidebar()}
-    <Sidebar activeTab="issues" rid={repo.rid} />
+    <Sidebar activeTab={{ type: "issues", status }} rid={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}
-    <IssueSecondColumn {repo} selectedIssueId={issue.id} {issues} />
+    <IssueSecondColumn {repo} selectedIssueId={issue.id} {issues} {status} />
   {/snippet}
 
   <div class="content">

@@ -1,17 +1,22 @@
 <script lang="ts">
+  import type { IssueStatus, PatchStatus } from "@app/views/repo/router";
+
   import * as router from "@app/lib/router";
+  import { patchStatusColor } from "@app/lib/utils";
+  import { issueStatusColor } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
   import Settings from "@app/components/Settings.svelte";
   import Border from "./Border.svelte";
 
   interface Props {
-    activeTab: "issues" | "patches";
+    activeTab:
+      | { type: "issues"; status: IssueStatus }
+      | { type: "patches"; status?: PatchStatus };
     rid: string;
-    activeIconColor?: string;
   }
 
-  const { activeTab, rid, activeIconColor }: Props = $props();
+  const { activeTab, rid }: Props = $props();
 </script>
 
 <style>
@@ -39,7 +44,7 @@
   <div class="global-flex" style:margin-bottom="5px" style:height="40px">
     <Icon name="repo" />
   </div>
-  {#if activeTab === "issues"}
+  {#if activeTab.type === "issues"}
     <Border
       styleCursor="pointer"
       onclick={() => {
@@ -53,7 +58,12 @@
       styleWidth="40px"
       styleHeight="40px"
       styleJustifyContent="center">
-      <div style:color={activeIconColor}><Icon name="issue" /></div>
+      <div
+        style:color={activeTab.status === "all"
+          ? undefined
+          : issueStatusColor[activeTab.status]}>
+        <Icon name="issue" />
+      </div>
     </Border>
   {:else}
     <button
@@ -69,7 +79,7 @@
     </button>
   {/if}
 
-  {#if activeTab === "patches"}
+  {#if activeTab.type === "patches"}
     <Border
       styleCursor="pointer"
       onclick={() => {
@@ -83,7 +93,12 @@
       styleWidth="40px"
       styleHeight="40px"
       styleJustifyContent="center">
-      <div style:color={activeIconColor}><Icon name="patch" /></div>
+      <div
+        style:color={activeTab.status
+          ? patchStatusColor[activeTab.status]
+          : undefined}>
+        <Icon name="patch" />
+      </div>
     </Border>
   {:else}
     <button

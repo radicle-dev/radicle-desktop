@@ -5,7 +5,6 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import * as router from "@app/lib/router";
-  import { issueStatusColor } from "@app/lib/utils";
 
   import Layout from "./Layout.svelte";
 
@@ -71,12 +70,7 @@
   {/snippet}
 
   {#snippet sidebar()}
-    <Sidebar
-      activeTab="issues"
-      rid={repo.rid}
-      activeIconColor={status !== "all"
-        ? issueStatusColor[status]
-        : undefined} />
+    <Sidebar activeTab={{ type: "issues", status }} rid={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}
@@ -93,6 +87,7 @@
         onclick={() => {
           void router.push({
             resource: "repo.createIssue",
+            status,
             rid: repo.rid,
           });
         }}>
@@ -103,7 +98,7 @@
 
   <div class="list">
     {#each issues as issue}
-      <IssueTeaser {issue} rid={repo.rid} />
+      <IssueTeaser {issue} rid={repo.rid} {status} />
     {/each}
 
     {#if issues.length === 0}

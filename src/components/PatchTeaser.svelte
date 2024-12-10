@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { Stats } from "@bindings/cob/Stats";
+  import type { PatchStatus } from "@app/views/repo/router";
 
   import {
     authorForNodeId,
@@ -23,6 +24,7 @@
     selected?: boolean;
     compact?: boolean;
     loadPatch?: (rid: string, patchId: string) => void;
+    status: PatchStatus | undefined;
   }
 
   const {
@@ -31,6 +33,7 @@
     selected = false,
     compact = false,
     loadPatch,
+    status,
   }: Props = $props();
 </script>
 
@@ -78,7 +81,7 @@
     if (loadPatch) {
       loadPatch(rid, patch.id);
     } else {
-      void push({ resource: "repo.patch", rid, patch: patch.id });
+      void push({ resource: "repo.patch", rid, patch: patch.id, status });
     }
   }}>
   <div class="global-flex">

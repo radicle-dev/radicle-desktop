@@ -16,11 +16,13 @@ export interface RepoIssueRoute {
   resource: "repo.issue";
   rid: string;
   issue: string;
+  status: IssueStatus;
 }
 
 export interface RepoCreateIssueRoute {
   resource: "repo.createIssue";
   rid: string;
+  status: IssueStatus;
 }
 
 export interface LoadedRepoIssueRoute {
@@ -30,6 +32,7 @@ export interface LoadedRepoIssueRoute {
     config: Config;
     issue: Issue;
     issues: Issue[];
+    status: IssueStatus;
     activity: Operation[];
     threads: Thread[];
   };
@@ -41,6 +44,7 @@ export interface LoadedRepoCreateIssueRoute {
     repo: RepoInfo;
     config: Config;
     issues: Issue[];
+    status: IssueStatus;
   };
 }
 
@@ -66,6 +70,7 @@ export interface RepoPatchRoute {
   resource: "repo.patch";
   rid: string;
   patch: string;
+  status: PatchStatus | undefined;
 }
 
 export interface LoadedRepoPatchRoute {
@@ -75,6 +80,7 @@ export interface LoadedRepoPatchRoute {
     config: Config;
     patch: Patch;
     patches: PaginatedQuery<Patch[]>;
+    status: PatchStatus | undefined;
     revisions: Revision[];
   };
 }
@@ -82,7 +88,7 @@ export interface LoadedRepoPatchRoute {
 export interface RepoPatchesRoute {
   resource: "repo.patches";
   rid: string;
-  status?: PatchStatus;
+  status: PatchStatus | undefined;
 }
 
 export interface LoadedRepoPatchesRoute {
@@ -91,7 +97,7 @@ export interface LoadedRepoPatchesRoute {
     repo: RepoInfo;
     config: Config;
     patches: PaginatedQuery<Patch[]>;
-    status?: PatchStatus;
+    status: PatchStatus | undefined;
   };
 }
 
@@ -118,6 +124,7 @@ export async function loadPatch(
     }),
     invoke<PaginatedQuery<Patch[]>>("list_patches", {
       rid: route.rid,
+      status: route.status,
     }),
     invoke<Patch>("patch_by_id", {
       rid: route.rid,
@@ -131,7 +138,7 @@ export async function loadPatch(
 
   return {
     resource: "repo.patch",
-    params: { repo, config, patch, patches, revisions },
+    params: { repo, config, patch, patches, revisions, status: route.status },
   };
 }
 
@@ -165,13 +172,13 @@ export async function loadCreateIssue(
     }),
     invoke<Issue[]>("list_issues", {
       rid: route.rid,
-      status: "all",
+      status: route.status,
     }),
   ]);
 
   return {
     resource: "repo.createIssue",
-    params: { repo, config, issues },
+    params: { repo, config, issues, status: route.status },
   };
 }
 
@@ -194,7 +201,7 @@ export async function loadIssue(
     }),
     invoke<Issue[]>("list_issues", {
       rid: route.rid,
-      status: "all",
+      status: route.status,
     }),
     invoke<Thread[]>("comment_threads_by_issue_id", {
       rid: route.rid,
@@ -204,7 +211,15 @@ export async function loadIssue(
 
   return {
     resource: "repo.issue",
-    params: { repo, config, issue, activity, issues, threads },
+    params: {
+      repo,
+      config,
+      issue,
+      activity,
+      issues,
+      threads,
+      status: route.status,
+    },
   };
 }
 
@@ -230,27 +245,32 @@ export async function loadIssues(
 
 export function repoRouteToPath(route: RepoRoute): string {
   const pathSegments = ["/repos", route.rid];
+  const searchParams = new URLSearchParams();
 
   if (route.resource === "repo.issue") {
-    const url = [...pathSegments, "issues", route.issue].join("/");
+    let url = [...pathSegments, "issues", route.issue].join("/");
+    searchParams.set("status", route.status);
+    url += `?${searchParams}`;
     return url;
   } else if (route.resource === "repo.createIssue") {
-    const url = [...pathSegments, "issues", "create"].join("/");
+    let url = [...pathSegments, "issues", "create"].join("/");
+    searchParams.set("status", route.status);
+    url += `?${searchParams}`;
     return url;
   } else if (route.resource === "repo.issues") {
     let url = [...pathSegments, "issues"].join("/");
-    const searchParams = new URLSearchParams();
+    searchParams.set("status", route.status);
+    url += `?${searchParams}`;
+    return url;
+  } else if (route.resource === "repo.patch") {
+    let url = [...pathSegments, "patches", route.patch].join("/");
     if (route.status) {
       searchParams.set("status", route.status);
       url += `?${searchParams}`;
     }
     return url;
-  } else if (route.resource === "repo.patch") {
-    const url = [...pathSegments, "patches", route.patch].join("/");
-    return url;
   } else if (route.resource === "repo.patches") {
     let url = [...pathSegments, "patches"].join("/");
-    const searchParams = new URLSearchParams();
     if (route.status) {
       searchParams.set("status", route.status);
       url += `?${searchParams}`;
@@ -272,13 +292,15 @@ export function repoUrlToRoute(
     if (resource === "issues") {
       const idOrAction = segments.shift();
       if (idOrAction) {
+        const status = (searchParams.get("status") ?? "all") as IssueStatus;
         if (idOrAction === "create") {
-          return { resource: "repo.createIssue", rid };
+          return { resource: "repo.createIssue", rid, status };
         } else {
           return {
             resource: "repo.issue",
             rid,
             issue: idOrAction,
+            status,
           };
         }
       } else {
@@ -291,24 +313,18 @@ export function repoUrlToRoute(
       }
     } else if (resource === "patches") {
       const id = segments.shift();
+      const status = (searchParams.get("status") ?? undefined) as
+        | PatchStatus
+        | undefined;
       if (id) {
         return {
           resource: "repo.patch",
           rid,
           patch: id,
+          status,
         };
       } else {
-        const status = searchParams.get("status");
-        if (
-          status === "draft" ||
-          status === "open" ||
-          status === "archived" ||
-          status === "merged"
-        ) {
-          return { resource: "repo.patches", rid, status };
-        } else {
-          return { resource: "repo.patches", rid };
-        }
+        return { resource: "repo.patches", rid, status };
       }
     } else {
       return null;

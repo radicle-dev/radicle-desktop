@@ -11,7 +11,7 @@
 
   interface Props {
     project: ProjectPayload;
-    status?: PatchStatus;
+    status: PatchStatus | undefined;
     repo: RepoInfo;
   }
   const { project, status, repo }: Props = $props();
@@ -91,7 +91,7 @@
       <Link
         styleWidth="100%"
         underline={false}
-        route={{ resource: "repo.patches", rid: repo.rid }}>
+        route={{ resource: "repo.patches", rid: repo.rid, status }}>
         <div class="tab active">
           <div class="global-flex"><Icon name="patch" />Patches</div>
           <div class="global-counter">

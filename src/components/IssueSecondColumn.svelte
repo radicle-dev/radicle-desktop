@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Issue } from "@bindings/cob/issue/Issue";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { IssueStatus } from "@app/views/repo/router";
 
   import * as router from "@app/lib/router";
 
@@ -14,10 +15,11 @@
     repo: RepoInfo;
     selectedIssueId?: string;
     issues: Issue[];
+    status: IssueStatus;
   }
 
   /* eslint-disable prefer-const */
-  let { repo, selectedIssueId, issues }: Props = $props();
+  let { repo, selectedIssueId, issues, status }: Props = $props();
   /* eslint-enable prefer-const */
 </script>
 
@@ -43,6 +45,7 @@
       void router.push({
         resource: "repo.createIssue",
         rid: repo.rid,
+        status,
       });
     }}>
     <Icon name="plus" />New
@@ -53,6 +56,7 @@
     <IssueTeaser
       compact
       {issue}
+      {status}
       rid={repo.rid}
       selected={issue.id === selectedIssueId} />
   {/each}

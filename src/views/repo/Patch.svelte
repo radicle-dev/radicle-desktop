@@ -5,6 +5,7 @@
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { PatchStatus } from "./router";
 
   import { invoke } from "@app/lib/invoke";
 
@@ -26,10 +27,11 @@
     patches: PaginatedQuery<Patch[]>;
     revisions: Revision[];
     config: Config;
+    status: PatchStatus | undefined;
   }
 
   /* eslint-disable prefer-const */
-  let { repo, patch, patches, revisions, config }: Props = $props();
+  let { repo, patch, patches, revisions, config, status }: Props = $props();
   /* eslint-enable prefer-const */
 
   let items = $state(patches.content);
@@ -148,7 +150,7 @@
   {/snippet}
 
   {#snippet sidebar()}
-    <Sidebar activeTab="patches" rid={repo.rid} />
+    <Sidebar activeTab={{ type: "patches", status }} rid={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}
@@ -165,6 +167,7 @@
           {loadPatch}
           patch={p}
           rid={repo.rid}
+          {status}
           selected={patch && p.id === patch.id} />
       {/each}
     </div>

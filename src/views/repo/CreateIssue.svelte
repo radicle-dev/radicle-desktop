@@ -3,6 +3,7 @@
   import type { Config } from "@bindings/config/Config";
   import type { Issue } from "@bindings/cob/issue/Issue";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { IssueStatus } from "./router";
 
   import { invoke } from "@app/lib/invoke";
 
@@ -32,9 +33,10 @@
     repo: RepoInfo;
     issues: Issue[];
     config: Config;
+    status: IssueStatus;
   }
 
-  const { repo, issues, config }: Props = $props();
+  const { repo, issues, config, status }: Props = $props();
 
   let description: string = $state("");
   let preview: boolean = $state(false);
@@ -61,6 +63,7 @@
       resource: "repo.issue",
       rid: repo.rid,
       issue: response.id,
+      status,
     });
   }
 
@@ -127,11 +130,11 @@
   {/snippet}
 
   {#snippet sidebar()}
-    <Sidebar activeTab="issues" rid={repo.rid} />
+    <Sidebar activeTab={{ type: "issues", status }} rid={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}
-    <IssueSecondColumn {repo} {issues} />
+    <IssueSecondColumn {repo} {issues} {status} />
   {/snippet}
 
   <div class="content">

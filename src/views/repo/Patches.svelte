@@ -6,7 +6,6 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { invoke } from "@app/lib/invoke";
-  import { patchStatusColor } from "@app/lib/utils";
 
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -21,7 +20,7 @@
     repo: RepoInfo;
     patches: PaginatedQuery<Patch[]>;
     config: Config;
-    status?: PatchStatus;
+    status: PatchStatus | undefined;
   }
 
   const { repo, patches, config, status }: Props = $props();
@@ -95,12 +94,7 @@
   {/snippet}
 
   {#snippet sidebar()}
-    <Sidebar
-      activeTab="patches"
-      rid={repo.rid}
-      activeIconColor={status !== undefined
-        ? patchStatusColor[status]
-        : undefined} />
+    <Sidebar activeTab={{ type: "patches", status }} rid={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}
@@ -113,7 +107,7 @@
 
   <div class="list">
     {#each items as patch}
-      <PatchTeaser rid={repo.rid} {patch} />
+      <PatchTeaser rid={repo.rid} {patch} {status} />
     {/each}
 
     {#if patches.content.length === 0}
