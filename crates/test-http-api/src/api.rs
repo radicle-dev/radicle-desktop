@@ -1,4 +1,5 @@
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::extract::State;
@@ -67,8 +68,11 @@ pub fn router(ctx: Context) -> Router {
         .route("/list_patches", post(patches_handler))
         .route("/patch_by_id", post(patch_handler))
         .route("/revisions_by_patch", post(revision_handler))
-        .route("/get_file_by_oid", post(get_embeds_handler))
-        .route("/save_embed", post(save_embed_handler))
+        .route("/get_embed", post(get_embeds_handler))
+        .route("/save_embed_by_path", post(save_embed_handler))
+        .route("/save_embed_by_clipboard", post(save_embed_handler))
+        .route("/save_embed_by_bytes", post(save_embed_handler))
+        .route("/save_embed_to_disk", post(save_embed_handler))
         .layer(
             CorsLayer::new()
                 .allow_origin(cors::Any)
@@ -255,15 +259,14 @@ async fn get_embeds_handler(
 #[derive(Serialize, Deserialize)]
 struct CreateEmbedBody {
     pub rid: identity::RepoId,
-    pub name: String,
-    pub content: Vec<u8>,
+    pub path: PathBuf,
 }
 
 async fn save_embed_handler(
     State(ctx): State<Context>,
-    Json(CreateEmbedBody { rid, name, content }): Json<CreateEmbedBody>,
+    Json(CreateEmbedBody { rid, path }): Json<CreateEmbedBody>,
 ) -> impl IntoResponse {
-    let embed = ctx.save_embed(rid, &name, &content)?;
+    let embed = ctx.save_embed_by_path(rid, path)?;
 
     Ok::<_, Error>(Json(embed))
 }

@@ -202,6 +202,7 @@ pub trait Repo: Profile {
 #[allow(clippy::unwrap_used)]
 mod test {
     use std::str::FromStr;
+    use std::vec;
 
     use radicle::crypto::test::signer::MockSigner;
     use radicle::{git, test};

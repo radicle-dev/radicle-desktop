@@ -6,6 +6,7 @@
     variant: "primary" | "secondary" | "ghost" | "float" | "danger";
     hoverable?: boolean;
     onclick?: () => void;
+    stylePosition?: string;
     stylePadding?: string;
     styleHeight?: string;
     styleMinHeight?: string;
@@ -27,6 +28,7 @@
     stylePadding,
     styleHeight,
     styleMinHeight,
+    stylePosition,
     styleWidth,
     styleCursor = "default",
     styleGap = "0.5rem",
@@ -222,6 +224,7 @@
   <div class="p3-2"></div>
   <div
     class="p3-3"
+    style:position={stylePosition}
     style:padding={stylePadding}
     style:gap={styleGap}
     style:overflow={styleOverflow}

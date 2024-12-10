@@ -13,7 +13,9 @@ use commands::{auth, cob, diff, profile, repo, thread};
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(debug_assertions)]
-    let builder = tauri::Builder::default().plugin(tauri_plugin_log::Builder::new().build());
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_log::Builder::new().build());
     #[cfg(not(debug_assertions))]
     let builder = tauri::Builder::default();
 
@@ -74,9 +76,12 @@ pub fn run() {
             repo::diff_stats,
             repo::list_commits,
             diff::get_diff,
-            cob::get_file_by_oid,
+            cob::get_embed,
+            cob::save_embed_to_disk,
             cob::activity_by_id,
-            cob::save_embed,
+            cob::save_embed_by_path,
+            cob::save_embed_by_clipboard,
+            cob::save_embed_by_bytes,
             cob::issue::list_issues,
             cob::issue::issue_by_id,
             cob::issue::comment_threads_by_issue_id,

@@ -6,6 +6,7 @@
     onclick?: () => void;
     disabled?: boolean;
     name:
+      | "attachment"
       | "arrow-left"
       | "arrow-right"
       | "checkmark"
@@ -108,6 +109,19 @@
     <path d="M10 3H9.00003V13H10V3Z" />
     <path d="M13 6H12V7H13V6Z" />
     <path d="M14 7H13V8H14V7Z" />
+  {:else if name === "attachment"}
+    <path d="M4 4H12V5H4V4Z" />
+    <path d="M4 11H11V12H4V11Z" />
+    <path d="M13 6H14V8H13V6Z" />
+    <path d="M2 6H3V10H2V6Z" />
+    <path d="M12 5L13 5V6H12V5Z" />
+    <path d="M3 5L4 5V6L3 6L3 5Z" />
+    <path d="M12 8H13V9H12V8Z" />
+    <path d="M3 10H4L4 11H3L3 10Z" />
+    <path d="M5 9L12 9V10H5V9Z" />
+    <path d="M4 8H5V9L4 9V8Z" />
+    <path d="M5 6H11V7H5V6Z" />
+    <path d="M4 7H5L5 8H4L4 7Z" />
   {:else if name === "checkmark"}
     <path d="M7 11V12H6V11H7Z" />
     <path d="M8 10V11L7 11L7 10H8Z" />

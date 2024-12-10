@@ -1,4 +1,5 @@
-use base64::{engine::general_purpose::STANDARD, Engine as _};
+use std::fs;
+
 use localtime::LocalTime;
 
 use radicle::cob;
@@ -14,23 +15,51 @@ use crate::error::Error;
 use crate::traits::Profile;
 
 pub trait Thread: Profile {
-    fn get_embed(&self, rid: identity::RepoId, oid: git::Oid) -> Result<String, Error> {
+    fn get_embed(&self, rid: identity::RepoId, oid: git::Oid) -> Result<Vec<u8>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let blob = repo.blob(oid)?;
 
-        Ok::<_, Error>(STANDARD.encode(blob.content()))
+        Ok::<_, Error>(blob.content().to_vec())
     }
 
-    fn save_embed(
+    fn save_embed_to_disk(
         &self,
         rid: identity::RepoId,
-        name: &str,
-        bytes: &[u8],
+        oid: git::Oid,
+        path: std::path::PathBuf,
+    ) -> Result<(), Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+        let blob = repo.blob(oid)?;
+        fs::write(path, blob.content())?;
+
+        Ok::<_, Error>(())
+    }
+
+    fn save_embed_by_path(
+        &self,
+        rid: identity::RepoId,
+        path: std::path::PathBuf,
     ) -> Result<git::Oid, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let embed = radicle::cob::Embed::<git::Oid>::store(name, bytes, &repo.backend)?;
+        let bytes = fs::read(path.clone())?;
+        let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("embed");
+        let embed = radicle::cob::Embed::<git::Oid>::store(name, &bytes, &repo.backend)?;
+
+        Ok(embed.oid())
+    }
+
+    fn save_embed_by_bytes(
+        &self,
+        rid: identity::RepoId,
+        name: String,
+        bytes: Vec<u8>,
+    ) -> Result<git::Oid, Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+        let embed = radicle::cob::Embed::<git::Oid>::store(&name, &bytes, &repo.backend)?;
 
         Ok(embed.oid())
     }

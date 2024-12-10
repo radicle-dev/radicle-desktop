@@ -1,15 +1,18 @@
 <script lang="ts">
-  import type { FormEventHandler } from "svelte/elements";
+  import type {
+    ClipboardEventHandler,
+    FormEventHandler,
+  } from "svelte/elements";
   import type { ComponentProps } from "svelte";
 
-  import { tick } from "svelte";
-
+  import { onMount, tick } from "svelte";
   import * as utils from "@app/lib/utils";
-
   import Border from "./Border.svelte";
 
   interface Props {
+    draggingOver?: boolean;
     borderVariant?: ComponentProps<typeof Border>["variant"];
+    onpaste?: ClipboardEventHandler<HTMLTextAreaElement>;
     focus?: boolean;
     oninput?: FormEventHandler<HTMLTextAreaElement>;
     onkeypress?: FormEventHandler<HTMLTextAreaElement>;
@@ -25,8 +28,10 @@
 
   /* eslint-disable prefer-const */
   let {
+    draggingOver,
     borderVariant = "float",
     focus = false,
+    onpaste,
     oninput,
     onkeypress,
     placeholder = undefined,
@@ -43,6 +48,28 @@
 
   let textareaElement: HTMLTextAreaElement | undefined = $state(undefined);
   let focussed = $state(false);
+
+  onMount(() => {
+    if (textareaElement) {
+      // The selectionchange event listener doesn't modify the selection on Enter.
+      textareaElement.addEventListener("keydown", (event: KeyboardEvent) => {
+        if (event.key === "Enter") {
+          selectionStart += 1;
+          selectionEnd += 1;
+        }
+      });
+      textareaElement.addEventListener("selectionchange", (event: Event) => {
+        if (
+          event.target &&
+          "selectionStart" in event.target &&
+          "selectionEnd" in event.target
+        ) {
+          selectionStart = event.target.selectionStart as number;
+          selectionEnd = event.target.selectionEnd as number;
+        }
+      });
+    }
+  });
 
   // We either auto-grow the textarea, or allow the user to resize it. These
   // options are mutually exclusive because a user resized textarea would
@@ -64,12 +91,6 @@
     if (textareaElement && focus) {
       textareaElement.focus();
       focus = false;
-    }
-  });
-
-  $effect.pre(() => {
-    if (textareaElement) {
-      ({ selectionStart, selectionEnd } = textareaElement);
     }
   });
 
@@ -123,10 +144,22 @@
   textarea::placeholder {
     color: var(--color-foreground-dim);
   }
+
+  .dragover {
+    position: absolute;
+    opacity: 0.5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-background-float);
+  }
 </style>
 
 <Border
   variant={focussed ? "secondary" : borderVariant}
+  stylePosition="relative"
   styleWidth="100%"
   {styleMinHeight}>
   <textarea
@@ -142,10 +175,14 @@
       ? "scroll"
       : undefined}
     {placeholder}
+    {onpaste}
     {oninput}
     {onkeypress}
     onfocus={() => (focussed = true)}
     onblur={() => (focussed = false)}
     onkeydown={handleKeydown}>
   </textarea>
+  {#if draggingOver}
+    <div class="txt-small dragover">Drop files to add them as embeds.</div>
+  {/if}
 </Border>

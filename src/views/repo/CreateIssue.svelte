@@ -4,6 +4,7 @@
   import type { Issue } from "@bindings/cob/issue/Issue";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { IssueStatus } from "./router";
+  import type { Embed } from "@bindings/cob/thread/Embed";
 
   import { invoke } from "@app/lib/invoke";
 
@@ -14,18 +15,14 @@
 
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
-  import Button from "@app/components/Button.svelte";
-  import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
-  import Markdown from "@app/components/Markdown.svelte";
-  import OutlineButton from "@app/components/OutlineButton.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
   import TextInput from "@app/components/TextInput.svelte";
-  import Textarea from "@app/components/Textarea.svelte";
 
   import Layout from "./Layout.svelte";
+  import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -36,17 +33,17 @@
 
   const { repo, issues, config, status }: Props = $props();
 
-  let description: string = $state("");
   let preview: boolean = $state(false);
   let title: string = $state("");
-
-  const embeds: { name: string; content: string }[] = [];
 
   let assignees: Author[] = $state([]);
   let labels: string[] = $state([]);
 
-  async function createIssue() {
-    const response: Issue = await invoke("create_issue", {
+  async function createIssue(
+    description: string,
+    embeds: Embed[],
+  ): Promise<Issue> {
+    return invoke("create_issue", {
       rid: repo.rid,
       new: {
         title,
@@ -56,12 +53,6 @@
         embeds,
       },
       opts: { announce: $nodeRunning && $announce },
-    });
-    void router.push({
-      resource: "repo.issue",
-      rid: repo.rid,
-      issue: response.id,
-      status,
     });
   }
 </script>
@@ -78,12 +69,6 @@
   .content {
     padding: 0 1rem 1rem 1rem;
     height: calc(100% - 14rem);
-  }
-  .body {
-    background-color: var(--color-background-float);
-    padding: 1rem;
-    min-height: calc(100% + 2px);
-    clip-path: var(--2px-corner-fill);
   }
   .metadata-divider {
     width: 2px;
@@ -148,55 +133,29 @@
       </Border>
     </div>
 
-    {#if preview}
-      <div class="txt-small body">
-        {#if description.trim() === ""}
-          <span class="txt-missing" style:line-height="1.625rem">
-            No description.
-          </span>
-        {:else}
-          <Markdown rid={repo.rid} content={description} breaks />
-        {/if}
-      </div>
-    {:else}
-      <Textarea
-        borderVariant="ghost"
-        placeholder="Description"
-        bind:value={description}
-        size="fixed-height"
-        submit={createIssue}
-        styleMinHeight="100%" />
-    {/if}
-    <div
-      class="global-flex"
-      style:justify-content="space-between"
-      style:padding-bottom="1.5rem"
-      style:margin-top="1.5rem">
-      <OutlineButton
-        variant="ghost"
-        onclick={() => {
-          window.history.back();
-        }}>
-        <Icon name="cross" />Discard
-      </OutlineButton>
-      <div class="global-flex">
-        <div class="global-flex txt-small txt-missing">
-          <Icon name="markdown" />
-          Markdown is supported.
-        </div>
-        <OutlineButton
-          variant="ghost"
-          disabled={title.length === 0}
-          onclick={() => (preview = !preview)}>
-          <Icon name={preview ? "pen" : "eye"} />{preview ? "Edit" : "Preview"}
-        </OutlineButton>
-        <Button
-          variant="ghost"
-          disabled={title.length === 0}
-          onclick={createIssue}>
-          <Icon name="checkmark" />Save
-        </Button>
-      </div>
-    </div>
+    <ExtendedTextarea
+      submitCaption="Save"
+      close={() => window.history.back()}
+      submit={async ({ comment, embeds }) => {
+        try {
+          const response = await createIssue(
+            comment,
+            Array.from(embeds.values()),
+          );
+          void router.push({
+            resource: "repo.issue",
+            rid: repo.rid,
+            issue: response.id,
+            status,
+          });
+        } catch {
+          console.error("Not able to create issue.");
+        }
+      }}
+      styleMinHeight="100%"
+      rid={repo.rid}
+      bind:preview
+      borderVariant="ghost"
+      placeholder="Description" />
   </div>
 </Layout>

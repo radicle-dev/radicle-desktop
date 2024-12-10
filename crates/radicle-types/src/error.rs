@@ -9,6 +9,14 @@ pub enum Error {
     #[error(transparent)]
     Profile(#[from] radicle::profile::Error),
 
+    /// Anyhow error.
+    #[error(transparent)]
+    Anyhow(#[from] anyhow::Error),
+
+    /// Io error.
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+
     /// Crypto error.
     #[error(transparent)]
     Crypto(#[from] radicle::crypto::ssh::keystore::Error),

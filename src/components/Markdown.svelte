@@ -41,6 +41,9 @@
   }
 
   $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    content;
+
     void tick().then(() => {
       for (const e of container.querySelectorAll("a")) {
         try {
@@ -59,6 +62,66 @@
         ) {
           e.classList.add("no-underline");
         }
+
+        // Iterate over all links, and try to add a base64 preview beneath it.
+        const href = e.getAttribute("href");
+
+        // If the markdown link is an oid embed
+        if (href && isCommit(href)) {
+          e.style.display = "block";
+          e.onclick = event => {
+            event.preventDefault();
+            invoke("save_embed_to_disk", {
+              rid,
+              oid: href,
+              name: e.innerText,
+            }).catch(console.error);
+          };
+          void invoke<Uint8Array>("get_embed", {
+            rid,
+            oid: href,
+          })
+            .then(byteArray => {
+              const buffer = Buffer.from(byteArray);
+              const blob = new Blob([buffer]);
+              const url = URL.createObjectURL(blob);
+              const ext = e.innerHTML.split(".").at(-1);
+              // Embed an img element below the link
+              if (ext?.match(/(gif|jpe?g|tiff?|png|webp|bmp)/)) {
+                const element = document.createElement("img");
+                element.setAttribute("src", url);
+                e.insertAdjacentElement("afterend", element);
+                // Embed an iframe to display pdf correctly element below the link
+              } else if (ext?.match(/(pdf)/)) {
+                const element = document.createElement("embed");
+                element.setAttribute("src", url);
+                element.type = "application/pdf";
+                element.style.overflow = "scroll";
+                element.style.height = "40rem";
+                element.style.overscrollBehavior = "contain";
+                e.insertAdjacentElement("afterend", element);
+              } else if (ext?.match(/(mp4|mov)/)) {
+                const element = document.createElement("video");
+                const node = document.createElement("source");
+                node.src = url;
+                element.controls = true;
+                node.type = `video/mp4`;
+                element.style.width = "100%";
+                element.appendChild(node);
+                e.insertAdjacentElement("afterend", element);
+              } else if (ext?.match(/(mp3)/)) {
+                const element = document.createElement("audio");
+                element.src = url;
+                element.controls = true;
+                e.insertAdjacentElement("afterend", element);
+              } else {
+                console.warn(
+                  `Not able to provide a preview for ${e.innerHTML}`,
+                );
+              }
+            })
+            .catch(console.error);
+        }
       }
 
       // Replace standard HTML checkboxes with our custom radicle-icon-small element
@@ -73,22 +136,6 @@
         );
         i.insertAdjacentElement("beforebegin", checkbox);
         i.remove();
-      }
-
-      // Iterate over all images, and replace the source with a canonicalized URL
-      // pointing at the repos /raw endpoint.
-      for (const i of container.querySelectorAll("img")) {
-        const imagePath = i.getAttribute("src");
-
-        // If the image is an oid embed
-        if (imagePath && isCommit(imagePath)) {
-          void invoke<string>("get_file_by_oid", {
-            rid,
-            oid: imagePath,
-          }).then(base64Content =>
-            i.setAttribute("src", `data:image/jpeg;base64,${base64Content}`),
-          );
-        }
       }
 
       // Replaces code blocks in the background with highlighted code.
