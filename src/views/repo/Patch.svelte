@@ -133,7 +133,7 @@
   }
 </style>
 
-<Layout {loadMoreSecondColumn}>
+<Layout {loadMoreSecondColumn} publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={patch.id} />
   {/snippet}

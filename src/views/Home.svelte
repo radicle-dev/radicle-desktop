@@ -40,7 +40,7 @@
 
 <div style:height="fit-content">
   <div class="header">
-    <Header>
+    <Header publicKey={config.publicKey}>
       {#snippet center()}
         <CopyableId id={`did:key:${config.publicKey}`} />
       {/snippet}

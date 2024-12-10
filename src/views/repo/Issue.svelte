@@ -380,7 +380,7 @@
   }
 </style>
 
-<Layout>
+<Layout publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={issue.id} />
   {/snippet}

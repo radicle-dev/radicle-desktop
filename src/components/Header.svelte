@@ -1,20 +1,21 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import * as router from "@app/lib/router";
   import { nodeRunning } from "@app/lib/events";
 
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
   import OutlineButton from "./OutlineButton.svelte";
+  import Avatar from "./Avatar.svelte";
 
   interface Props {
-    breadcrumbs?: Snippet;
-    columnSwitch?: Snippet;
+    publicKey: string;
     center?: Snippet;
     settingsButton?: Snippet;
   }
 
-  const { center, settingsButton }: Props = $props();
+  const { center, settingsButton, publicKey }: Props = $props();
 </script>
 
 <style>
@@ -52,6 +53,15 @@
   <div class="wrapper">
     <div class="top-row">
       <div class="global-flex" style:gap="0">
+        <NakedButton
+          variant="ghost"
+          onclick={() => {
+            void router.push({
+              resource: "home",
+            });
+          }}>
+          <Avatar {publicKey} />
+        </NakedButton>
         <NakedButton
           variant="ghost"
           onclick={() => {
