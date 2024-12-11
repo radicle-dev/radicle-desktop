@@ -91,7 +91,7 @@
       <Link
         styleWidth="100%"
         underline={false}
-        route={{ resource: "repo.patches", rid: repo.rid, status }}>
+        route={{ resource: "repo.patches", rid: repo.rid, status: undefined }}>
         <div class="tab active">
           <div class="global-flex"><Icon name="patch" />Patches</div>
           <div class="global-counter">
