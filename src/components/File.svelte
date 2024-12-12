@@ -17,8 +17,6 @@
     align-items: center;
     padding: 0 0.5rem 0 1rem;
     border: 1px solid var(--color-border-hint);
-    border-top-left-radius: var(--border-radius-small);
-    border-top-right-radius: var(--border-radius-small);
     background-color: var(--color-background-default);
     z-index: 2;
   }
@@ -41,21 +39,6 @@
     border: 1px solid var(--color-border-hint);
     border-top: 0;
     background: var(--color-background-float);
-    border-bottom-left-radius: var(--border-radius-small);
-    border-bottom-right-radius: var(--border-radius-small);
-  }
-  @media (max-width: 719.98px) {
-    .header {
-      border-radius: 0;
-      border-left: 0;
-      border-right: 0;
-      padding: 0 1rem 0 1rem;
-    }
-    .container {
-      border-radius: 0;
-      border-left: 0;
-      border-right: 0;
-    }
   }
 </style>
 

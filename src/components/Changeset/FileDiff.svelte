@@ -66,7 +66,6 @@
   .container {
     font-size: var(--font-size-small);
     background: var(--color-background-float);
-    border-radius: 0 0 var(--border-radius-small) var(--border-radius-small);
     overflow-x: auto;
   }
   .actions {

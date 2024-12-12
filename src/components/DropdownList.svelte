@@ -14,7 +14,6 @@
 <style>
   .dropdown {
     align-items: center;
-    border-radius: var(--border-radius-small);
     max-height: 60vh;
     overflow-y: auto;
   }
