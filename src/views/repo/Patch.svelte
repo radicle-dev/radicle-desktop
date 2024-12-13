@@ -1,13 +1,18 @@
 <script lang="ts">
-  import type { Diff } from "@bindings/diff/Diff";
+  import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
+  import type { Diff } from "@bindings/diff/Diff";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
+  import type { PatchStatus } from "./router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
-  import type { PatchStatus } from "./router";
 
+  import * as roles from "@app/lib/roles";
   import { invoke } from "@app/lib/invoke";
+  import { nodeRunning } from "@app/lib/events";
+
+  import { announce } from "@app/components/AnnounceSwitch.svelte";
 
   import CommentComponent from "@app/components/Comment.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -20,6 +25,10 @@
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
   import Changeset from "@app/components/Changeset.svelte";
+  import Border from "@app/components/Border.svelte";
+  import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
+  import LabelInput from "@app/components/LabelInput.svelte";
+  import AssigneeInput from "@app/components/AssigneeInput.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -37,12 +46,16 @@
   let items = $state(patches.content);
   let cursor = patches.cursor;
   let more = patches.more;
+  let labelSaveInProgress: boolean = $state(false);
+  let assigneesSaveInProgress: boolean = $state(false);
 
   $effect(() => {
     items = patches.content;
     cursor = patches.cursor;
     more = patches.more;
   });
+
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
   async function loadHighlightedDiff(rid: string, base: string, head: string) {
     return invoke<Diff>("get_diff", {
@@ -81,7 +94,66 @@
     }
   }
 
-  const project = $derived(repo.payloads["xyz.radicle.project"]!);
+  async function saveLabels(labels: string[]) {
+    try {
+      labelSaveInProgress = true;
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        action: {
+          type: "label",
+          labels,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing labels failed", error);
+    } finally {
+      labelSaveInProgress = false;
+      await reload();
+    }
+  }
+
+  async function saveAssignees(assignees: Author[]) {
+    try {
+      assigneesSaveInProgress = true;
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        action: {
+          type: "assign",
+          assignees: assignees.map(a => a.did),
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing assignees failed", error);
+    } finally {
+      assigneesSaveInProgress = false;
+      await reload();
+    }
+  }
+
+  async function reload() {
+    [config, repo, patches, patch, revisions] = await Promise.all([
+      invoke<Config>("config"),
+      invoke<RepoInfo>("repo_by_id", {
+        rid: repo.rid,
+      }),
+      invoke<PaginatedQuery<Patch[]>>("list_patches", {
+        rid: repo.rid,
+        status,
+      }),
+      invoke<Patch>("patch_by_id", {
+        rid: repo.rid,
+        id: patch.id,
+      }),
+      invoke<Revision[]>("revisions_by_patch", {
+        rid: repo.rid,
+        id: patch.id,
+      }),
+    ]);
+  }
 </script>
 
 <style>
@@ -118,6 +190,25 @@
     width: 100%;
     height: 100%;
     top: 0;
+  }
+  .metadata-divider {
+    width: 2px;
+    background-color: var(--color-fill-ghost);
+    height: calc(100% + 4px);
+    top: 0;
+    position: relative;
+  }
+  .metadata-section {
+    padding: 0.5rem;
+    font-size: var(--font-size-small);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    height: 100%;
+  }
+  .metadata-section-title {
+    margin-bottom: 0.5rem;
+    color: var(--color-foreground-dim);
   }
   .breadcrumbs {
     display: flex;
@@ -189,6 +280,41 @@
       <Icon name="chevron-right" />
       {patch.title}
     </div>
+
+    <Border variant="ghost" styleGap="0">
+      <div class="metadata-section" style:min-width="8rem">
+        <div class="metadata-section-title">Status</div>
+        <PatchStateBadge state={patch.state} />
+      </div>
+
+      <div class="metadata-divider"></div>
+
+      <div class="metadata-section" style:flex="1">
+        <LabelInput
+          allowedToEdit={!!roles.isDelegateOrAuthor(
+            config.publicKey,
+            repo.delegates.map(delegate => delegate.did),
+            patch.author.did,
+          )}
+          labels={patch.labels}
+          submitInProgress={labelSaveInProgress}
+          save={saveLabels} />
+      </div>
+
+      <div class="metadata-divider"></div>
+
+      <div class="metadata-section" style:flex="1">
+        <AssigneeInput
+          allowedToEdit={!!roles.isDelegateOrAuthor(
+            config.publicKey,
+            repo.delegates.map(delegate => delegate.did),
+            patch.author.did,
+          )}
+          assignees={patch.assignees}
+          submitInProgress={assigneesSaveInProgress}
+          save={saveAssignees} />
+      </div>
+    </Border>
 
     <div class="txt-small patch-body">
       <CommentComponent
