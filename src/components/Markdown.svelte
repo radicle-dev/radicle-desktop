@@ -337,6 +337,7 @@
     padding: 1rem !important;
     overflow: scroll;
     scrollbar-width: none;
+    clip-path: var(--2px-corner-fill);
   }
 
   .markdown :global(pre::-webkit-scrollbar) {
