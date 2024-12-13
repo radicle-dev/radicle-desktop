@@ -20,10 +20,12 @@
 
 <div class="diff-list">
   {#each diff.files as file}
-    <FileDiff
-      filePath={"path" in file ? file.path : file.newPath}
-      oldFilePath={"oldPath" in file ? file.oldPath : undefined}
-      fileDiff={file.diff}
-      headerBadgeCaption={file.status} />
+    <div style:margin-bottom="1rem">
+      <FileDiff
+        filePath={"path" in file ? file.path : file.newPath}
+        oldFilePath={"oldPath" in file ? file.oldPath : undefined}
+        fileDiff={file.diff}
+        headerBadgeCaption={file.status} />
+    </div>
   {/each}
 </div>

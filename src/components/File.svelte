@@ -16,9 +16,19 @@
     height: 3rem;
     align-items: center;
     padding: 0 0.5rem 0 1rem;
-    border: 1px solid var(--color-border-hint);
-    background-color: var(--color-background-default);
     z-index: 2;
+    font-size: var(--font-size-small);
+  }
+  .header::after {
+    position: absolute;
+    z-index: -1;
+    content: " ";
+    background-color: var(--color-fill-float-hover);
+    clip-path: var(--2px-top-corner-fill);
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
   }
 
   .sticky {
@@ -36,9 +46,17 @@
   .container {
     position: relative;
     overflow-x: auto;
-    border: 1px solid var(--color-border-hint);
-    border-top: 0;
-    background: var(--color-background-float);
+  }
+  .container::after {
+    position: absolute;
+    z-index: -1;
+    content: " ";
+    background-color: var(--color-background-float);
+    clip-path: var(--2px-bottom-corner-fill);
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
   }
 </style>
 

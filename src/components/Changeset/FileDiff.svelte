@@ -65,7 +65,6 @@
 <style>
   .container {
     font-size: var(--font-size-small);
-    background: var(--color-background-float);
     overflow-x: auto;
   }
   .actions {
