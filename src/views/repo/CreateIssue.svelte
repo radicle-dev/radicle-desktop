@@ -134,6 +134,8 @@
     </div>
 
     <ExtendedTextarea
+      disableSubmit={title.trim() === ""}
+      disallowEmptyBody
       submitCaption="Save"
       close={() => window.history.back()}
       submit={async ({ comment, embeds }) => {

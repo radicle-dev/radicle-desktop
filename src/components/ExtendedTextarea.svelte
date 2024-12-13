@@ -26,6 +26,7 @@
     body?: string;
     embeds?: Map<string, Embed>;
     submitInProgress?: boolean;
+    disableSubmit?: boolean;
     disallowEmptyBody?: boolean;
     isValid?: () => boolean;
     preview?: boolean;
@@ -50,6 +51,7 @@
     body = $bindable(""),
     embeds = new Map(),
     submitInProgress = false,
+    disableSubmit = false,
     disallowEmptyBody = false,
     isValid = () => true,
     stylePadding,
@@ -276,7 +278,7 @@
       </div>
     {/if}
     <div class="buttons">
-      <OutlineButton variant="ghost" onclick={selectFiles}>
+      <OutlineButton variant="ghost" onclick={selectFiles} disabled={preview}>
         <Icon name="attachment" />
         <span class="global-hide-on-small-desktop-down">Attach</span>
       </OutlineButton>
@@ -293,6 +295,7 @@
         variant="ghost"
         disabled={!isValid() ||
           submitInProgress ||
+          disableSubmit ||
           (disallowEmptyBody && body.trim() === "")}
         onclick={submitFn}>
         <Icon name="checkmark" />
