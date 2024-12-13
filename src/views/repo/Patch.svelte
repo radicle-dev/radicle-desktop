@@ -9,26 +9,27 @@
   import type { Revision } from "@bindings/cob/patch/Revision";
 
   import * as roles from "@app/lib/roles";
+  import { formatOid } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
 
+  import AssigneeInput from "@app/components/AssigneeInput.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Changeset from "@app/components/Changeset.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
+  import LabelInput from "@app/components/LabelInput.svelte";
   import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
-  import Changeset from "@app/components/Changeset.svelte";
-  import Border from "@app/components/Border.svelte";
-  import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
-  import LabelInput from "@app/components/LabelInput.svelte";
-  import AssigneeInput from "@app/components/AssigneeInput.svelte";
+  import Button from "@app/components/Button.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -43,16 +44,24 @@
   let { repo, patch, patches, revisions, config, status }: Props = $props();
   /* eslint-enable prefer-const */
 
-  let items = $state(patches.content);
   let cursor = patches.cursor;
   let more = patches.more;
+  let items = $state(patches.content);
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
+  let tab: "patch" | "revisions" = $state("patch");
 
   $effect(() => {
     items = patches.content;
     cursor = patches.cursor;
     more = patches.more;
+  });
+
+  $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    patch.id;
+
+    tab = "patch";
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
@@ -316,26 +325,51 @@
       </div>
     </Border>
 
-    <div class="txt-small patch-body">
-      <CommentComponent
-        caption="opened"
-        rid={repo.rid}
-        id={patch.id}
-        lastEdit={revisions[0].description.length > 1
-          ? revisions[0].description.at(-1)
-          : undefined}
-        author={revisions[0].author}
-        reactions={revisions[0].reactions}
-        timestamp={revisions[0].description.slice(-1)[0].timestamp}
-        body={revisions[0].description.slice(-1)[0].body}>
-      </CommentComponent>
+    <div class="global-flex" style:gap="0" style:margin-top="1rem">
+      <Button
+        flatRight
+        active={tab === "patch"}
+        variant="ghost"
+        onclick={() => {
+          tab = "patch";
+        }}>
+        Patch
+      </Button>
+
+      <Button
+        flatLeft
+        variant="ghost"
+        active={tab === "revisions"}
+        onclick={() => {
+          tab = "revisions";
+        }}>
+        Revision: {formatOid(revisions.slice(-1)[0].id)}
+        <span class="global-counter" style:height="22px">latest</span>
+      </Button>
     </div>
-    <div class="txt-small" style:margin-top="1rem">Revisions</div>
-    {#each revisions as revision}
-      <div><Id id={revision.id} variant="oid" /></div>
+
+    {#if tab === "patch"}
+      <div class="txt-small patch-body">
+        <CommentComponent
+          caption="opened"
+          rid={repo.rid}
+          id={patch.id}
+          lastEdit={revisions[0].description.length > 1
+            ? revisions[0].description.at(-1)
+            : undefined}
+          author={revisions[0].author}
+          reactions={revisions[0].reactions}
+          timestamp={revisions[0].description.slice(-1)[0].timestamp}
+          body={revisions[0].description.slice(-1)[0].body}>
+        </CommentComponent>
+      </div>
+    {:else}
+      {@const revision = revisions.slice(-1)[0]}
       {#await loadHighlightedDiff(repo.rid, revision.base, revision.head) then diff}
-        <Changeset {diff} repoId={repo.rid} />
+        <div style:margin-top="1rem">
+          <Changeset {diff} repoId={repo.rid} />
+        </div>
       {/await}
-    {/each}
+    {/if}
   </div>
 </Layout>
