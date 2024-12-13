@@ -331,7 +331,7 @@
     top: 0;
   }
   .content {
-    padding: 0 1rem 1rem 0;
+    padding: 1rem 1rem 1rem 0;
   }
   .connector {
     width: 2px;
@@ -394,7 +394,7 @@
   {/snippet}
 
   <div class="content">
-    <div style:margin-bottom="0.5rem" style:margin-top="-6px">
+    <div style:margin-bottom="1rem">
       {#if editingTitle}
         <div class="title">
           <TextInput

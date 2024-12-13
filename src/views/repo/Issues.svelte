@@ -40,7 +40,7 @@
     font-weight: var(--font-weight-medium);
     font-size: var(--font-size-medium);
     display: flex;
-    padding: 0 1rem 0.5rem 1rem;
+    padding: 1rem 1rem 0.5rem 1rem;
     align-items: center;
     justify-content: space-between;
   }

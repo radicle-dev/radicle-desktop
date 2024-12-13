@@ -90,8 +90,7 @@
     font-weight: var(--font-weight-medium);
     -webkit-user-select: text;
     user-select: text;
-    margin-bottom: 0.5rem;
-    margin-top: 0.35rem;
+    margin-bottom: 1rem;
   }
   .patch-list {
     margin-top: 0.5rem;
@@ -101,7 +100,7 @@
     padding-bottom: 1rem;
   }
   .content {
-    padding: 0 1rem 1rem 0;
+    padding: 1.5rem 1rem 1rem 0;
   }
 
   .patch-body {

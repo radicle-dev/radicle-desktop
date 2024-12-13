@@ -127,7 +127,6 @@
   }
 
   .content {
-    padding-top: 1rem;
     grid-column: 3 / 4;
     width: 100%;
     overflow: scroll;

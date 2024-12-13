@@ -63,10 +63,10 @@
   .header {
     font-weight: var(--font-weight-medium);
     font-size: var(--font-size-medium);
-    padding: 0 1rem 0.5rem 1rem;
+    padding: 1rem 1rem 0.5rem 1rem;
     display: flex;
     align-items: center;
-    height: 42px;
+    height: 58px;
   }
   .breadcrumbs {
     display: flex;
