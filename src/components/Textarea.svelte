@@ -21,6 +21,7 @@
     selectionStart?: number;
     size?: "grow" | "resizable" | "fixed-height";
     styleMinHeight?: string;
+    styleAlignItems?: string;
     stylePadding?: string;
     submit: () => Promise<void>;
     value?: string;
@@ -39,6 +40,7 @@
     selectionEnd = $bindable(0),
     selectionStart = $bindable(0),
     size = "grow",
+    styleAlignItems = undefined,
     styleMinHeight = undefined,
     stylePadding = "0.75rem",
     submit,
@@ -121,7 +123,7 @@
     border: 0;
     color: var(--color-foreground-default);
     font-family: inherit;
-    height: 5rem;
+    height: 100%;
     width: 100%;
     min-height: 6.375rem;
     resize: none;
@@ -161,6 +163,7 @@
   variant={focussed ? "secondary" : borderVariant}
   stylePosition="relative"
   styleWidth="100%"
+  {styleAlignItems}
   {styleMinHeight}>
   <textarea
     style:min-height={styleMinHeight}

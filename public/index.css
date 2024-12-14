@@ -64,12 +64,6 @@ body {
   font-weight: var(--font-weight-regular);
 }
 
-@media (max-width: 1600px) {
-  .global-hide-on-small-desktop-down {
-    display: none !important;
-  }
-}
-
 :root {
   --elevation-low: 0 0 48px 0 #000000ee;
 }

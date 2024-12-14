@@ -17,6 +17,7 @@
     flatTop?: boolean;
     styleBackgroundColor?: string;
     styleFlexDirection?: string;
+    styleAlignItems?: string;
     styleJustifyContent?: string;
   }
 
@@ -36,6 +37,7 @@
     flatTop = false,
     styleBackgroundColor = "var(--color-background-default)",
     styleFlexDirection = "row",
+    styleAlignItems = "center",
     styleJustifyContent,
   }: Props = $props();
 
@@ -54,6 +56,7 @@
     -webkit-user-select: none;
     user-select: none;
 
+    flex: 1;
     column-gap: 0;
     row-gap: 0;
     display: grid;
@@ -128,7 +131,6 @@
   .p3-3 {
     grid-area: p3-3;
     display: flex;
-    align-items: center;
     background-color: var(--local-background-color);
   }
   .p3-4 {
@@ -229,6 +231,7 @@
     style:gap={styleGap}
     style:overflow={styleOverflow}
     style:justify-content={styleJustifyContent}
+    style:align-items={styleAlignItems}
     style:flex-direction={styleFlexDirection}>
     {@render children()}
   </div>

@@ -67,8 +67,10 @@
     margin-bottom: 1rem;
   }
   .content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     padding: 0 1rem 1rem 1rem;
-    height: calc(100% - 14rem);
   }
   .metadata-divider {
     width: 2px;
@@ -134,6 +136,7 @@
     </div>
 
     <ExtendedTextarea
+      textAreaSize="fixed-height"
       disableSubmit={title.trim() === ""}
       disallowEmptyBody
       submitCaption="Save"
@@ -154,7 +157,6 @@
           console.error("Not able to create issue.");
         }
       }}
-      styleMinHeight="100%"
       rid={repo.rid}
       bind:preview
       borderVariant="ghost"

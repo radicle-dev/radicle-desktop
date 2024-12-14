@@ -17,6 +17,7 @@
   import OutlineButton from "./OutlineButton.svelte";
 
   interface Props {
+    textAreaSize?: ComponentProps<typeof Textarea>["size"];
     styleMinHeight?: string;
     rid: string;
     placeholder?: string;
@@ -41,6 +42,7 @@
 
   /* eslint-disable prefer-const */
   let {
+    textAreaSize,
     preview = $bindable(false),
     styleMinHeight,
     rid,
@@ -196,6 +198,7 @@
     align-items: flex-start;
     gap: 1rem;
     width: 100%;
+    flex: 1;
   }
   .inline {
     border: 0;
@@ -239,6 +242,8 @@
     </div>
   {:else}
     <Textarea
+      size={textAreaSize}
+      styleAlignItems="flex-start"
       {draggingOver}
       {borderVariant}
       {stylePadding}
@@ -269,27 +274,20 @@
           <Icon name="markdown" />
           Markdown is supported.
         </div>
-        <span class="global-hide-on-small-desktop-down">
-          <br />
-        </span>
-        <span class="global-hide-on-small-desktop-down">
-          Press {utils.modifierKey()}↵ to submit.
-        </span>
+        Press {utils.modifierKey()}↵ to submit.
       </div>
     {/if}
     <div class="buttons">
       <OutlineButton variant="ghost" onclick={selectFiles} disabled={preview}>
         <Icon name="attachment" />
-        <span class="global-hide-on-small-desktop-down">Attach</span>
+        Attach
       </OutlineButton>
       <OutlineButton
         variant="ghost"
         disabled={body.trim() === ""}
         onclick={() => (preview = !preview)}>
         <Icon name={preview ? "pen" : "eye"} />
-        <span class="global-hide-on-small-desktop-down">
-          {preview ? "Edit" : "Preview"}
-        </span>
+        {preview ? "Edit" : "Preview"}
       </OutlineButton>
       <Button
         variant="ghost"
@@ -299,13 +297,11 @@
           (disallowEmptyBody && body.trim() === "")}
         onclick={submitFn}>
         <Icon name="checkmark" />
-        <span class="global-hide-on-small-desktop-down">
-          {#if submitInProgress}
-            Saving…
-          {:else}
-            {submitCaption}
-          {/if}
-        </span>
+        {#if submitInProgress}
+          Saving…
+        {:else}
+          {submitCaption}
+        {/if}
       </Button>
     </div>
   </div>
