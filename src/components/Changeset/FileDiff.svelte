@@ -4,6 +4,7 @@
   import type { Modification } from "@bindings/diff/Modification";
 
   import File from "@app/components/File.svelte";
+  import { escape } from "lodash";
 
   interface Props {
     filePath: string;
@@ -263,7 +264,7 @@
                       {@html line.highlight.items
                         .map(
                           s =>
-                            `<span class="syntax ${s.style}">${s.item}</span>`,
+                            `<span class="syntax ${s.style}">${escape(s.item)}</span>`,
                         )
                         .join("")}
                     {:else}
