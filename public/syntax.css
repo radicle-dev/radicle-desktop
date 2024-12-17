@@ -1,4 +1,5 @@
 .syntax.operator,
+.syntax.keyword\.repeat,
 .syntax.keyword {
   color: var(--color-prettylights-syntax-keyword);
 }
@@ -23,7 +24,8 @@
 .syntax.function {
   color: var(--color-prettylights-syntax-constant);
 }
-.syntax.comment {
+.syntax.comment,
+.syntax.comment\.documentation {
   color: var(--color-prettylights-syntax-comment);
 }
 .syntax.string {
@@ -31,7 +33,8 @@
 }
 .syntax.string.special {
 }
-.syntax.function {
+.syntax.function\.method {
+  color: var(--color-prettylights-syntax-entity);
 }
 .syntax.type.builtin {
 }
@@ -57,4 +60,8 @@
 .syntax.variable.parameter {
 }
 .syntax.constructor {
+  color: var(--color-prettylights-syntax-entity);
+}
+.syntax.tag\.delimiter {
+  color: var(--color-prettylights-syntax-keyword);
 }
