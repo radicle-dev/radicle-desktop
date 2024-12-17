@@ -5,6 +5,8 @@
     size?: "16" | "32";
     onclick?: () => void;
     disabled?: boolean;
+    styleDisplay?: string;
+    styleVerticalAlign?: string;
     name:
       | "attachment"
       | "arrow-left"
@@ -50,12 +52,13 @@
     onclick = undefined,
     name,
     disabled = false,
+    styleDisplay = "flex",
+    styleVerticalAlign = undefined,
   }: Props = $props();
 </script>
 
 <style>
   svg {
-    display: flex;
     flex-shrink: 0;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -76,6 +79,8 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <svg
   style:cursor={onclick && !disabled ? "pointer" : "inherit"}
+  style:display={styleDisplay}
+  style:vertical-align={styleVerticalAlign}
   class:hoverable={onclick}
   class:disabled
   role="img"

@@ -217,14 +217,6 @@
     gap: 0.5rem;
   }
 
-  .caption {
-    font-size: var(--font-size-small);
-    color: var(--color-fill-gray);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
   .preview {
     width: 100%;
     font-size: var(--font-size-small);
@@ -268,13 +260,15 @@
       <span class="global-hide-on-small-desktop-down">Discard</span>
     </OutlineButton>
     {#if !preview}
-      <div class="caption">
+      <div
+        class="txt-overflow txt-small txt-missing"
+        title={`Drag and drop files to add them. Markdown is supported. Press ${utils.modifierKey()}↵ to submit.`}>
         Drag and drop files to add them.
-        <div style="display: flex; align-items: center; gap: 0.25rem;">
-          <Icon name="markdown" />
-          Markdown is supported.
-        </div>
-        Press {utils.modifierKey()}↵ to submit.
+        <Icon
+          name="markdown"
+          styleDisplay="inline"
+          styleVerticalAlign="text-top" />
+        Markdown is supported. Press {utils.modifierKey()}↵ to submit.
       </div>
     {/if}
     <div class="buttons">
