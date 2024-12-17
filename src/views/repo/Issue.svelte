@@ -335,11 +335,10 @@
   }
   .connector {
     width: 2px;
-    height: 1.5rem;
+    height: 1rem;
     margin-left: 1.25rem;
     background-color: var(--color-background-float);
   }
-
   .title-icons {
     display: flex;
     gap: 1rem;
@@ -347,7 +346,6 @@
     align-items: center;
     height: 40px;
   }
-
   .metadata-divider {
     width: 2px;
     background-color: var(--color-fill-ghost);
