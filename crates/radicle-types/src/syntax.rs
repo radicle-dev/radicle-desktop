@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -14,20 +13,37 @@ use crate as types;
 /// Highlight groups enabled.
 const HIGHLIGHTS: &[&str] = &[
     "attribute",
+    "comment",
+    "comment.documentation",
     "constant",
     "constant.builtin",
-    "comment",
     "constructor",
     "declare",
+    "embedded",
+    "escape",
     "export",
-    "function.builtin",
-    "function",
-    "identifier",
-    "integer_literal",
     "float.literal",
+    "function",
+    "function.builtin",
+    "function.macro",
+    "function.method",
+    "identifier",
+    "indent.and",
+    "indent.begin",
+    "indent.branch",
+    "indent.end",
+    "integer_literal",
     "keyword",
+    "keyword.coroutine",
+    "keyword.debug",
+    "keyword.exception",
+    "keyword.repeat",
+    "local.definition",
+    "local.reference",
+    "local.scope",
     "label",
     "module",
+    "none",
     "number",
     "operator",
     "property",
@@ -36,19 +52,22 @@ const HIGHLIGHTS: &[&str] = &[
     "punctuation.delimiter",
     "punctuation.special",
     "shorthand_property_identifier",
+    "statement",
     "string",
     "string.special",
-    "statement",
     "tag",
+    "tag.delimiter",
+    "tag.error",
+    "text",
+    "text.literal",
+    "text.title",
     "type",
     "type.builtin",
+    "type.qualifier",
     "type_annotation",
     "variable",
     "variable.builtin",
     "variable.parameter",
-    "text",
-    "text.literal",
-    "text.title",
 ];
 
 /// A structure encapsulating an item and styling.
@@ -169,6 +188,7 @@ impl Builder {
         for event in highlights {
             match event? {
                 ts::HighlightEvent::Source { start, end } => {
+                    println!("highlightEvent::source {start} {end}");
                     for (i, byte) in code.iter().enumerate().skip(start).take(end - start) {
                         if *byte == b'\n' {
                             self.advance();
@@ -188,6 +208,7 @@ impl Builder {
                 }
                 ts::HighlightEvent::HighlightStart(h) => {
                     let name = HIGHLIGHTS[h.0];
+                    println!("highlightEvent::HighlightStart {name}");
 
                     self.advance();
                     self.styles.push(name.to_string());
@@ -215,56 +236,102 @@ impl Builder {
 }
 
 /// Syntax highlighter based on `tree-sitter`.
-#[derive(Default)]
 pub struct Highlighter {
-    configs: HashMap<&'static str, ts::HighlightConfiguration>,
+    configs: std::collections::HashMap<String, ts::HighlightConfiguration>,
+}
+
+impl Default for Highlighter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Highlighter {
+    pub fn new() -> Self {
+        let configs: std::collections::HashMap<String, ts::HighlightConfiguration> = [
+            ("rust", Self::config("rust")),
+            ("json", Self::config("json")),
+            ("jsdoc", Self::config("jsdoc")),
+            ("typescript", Self::config("typescript")),
+            ("javascript", Self::config("javascript")),
+            ("markdown", Self::config("markdown")),
+            ("css", Self::config("css")),
+            ("go", Self::config("go")),
+            ("regex", Self::config("regex")),
+            ("shell", Self::config("shell")),
+            ("c", Self::config("c")),
+            ("python", Self::config("python")),
+            ("svelte", Self::config("svelte")),
+            ("ruby", Self::config("ruby")),
+            ("tsx", Self::config("tsx")),
+            ("html", Self::config("html")),
+            ("toml", Self::config("toml")),
+        ]
+        .into_iter()
+        .filter_map(|(lang, cfg)| cfg.map(|c| (lang.to_string(), c)))
+        .collect();
+
+        Highlighter { configs }
+    }
+
     /// Highlight a source code file.
     pub fn highlight(&mut self, path: &Path, code: &[u8]) -> Result<Vec<Line>, ts::Error> {
         let mut highlighter = ts::Highlighter::new();
-        let Some(config) = self.detect(path, code) else {
+        // Check for a language if none found return plain lines.
+        let Some(language) = Self::detect(path, code) else {
             let Ok(code) = std::str::from_utf8(code) else {
                 return Err(ts::Error::Unknown);
             };
+            println!("Not able to detect language?");
             return Ok(code.lines().map(Line::new).collect());
         };
+
+        // Check if there is a configuration if none found return plain lines.
+        let Some(config) = &mut Self::config(&language) else {
+            let Ok(code) = std::str::from_utf8(code) else {
+                return Err(ts::Error::Unknown);
+            };
+            println!("Not found a configuration?");
+            return Ok(code.lines().map(Line::new).collect());
+        };
+
         config.configure(HIGHLIGHTS);
 
-        let highlights = highlighter.highlight(config, code, None, |_| {
-            // Language injection callback.
-            None
+        let highlights = highlighter.highlight(config, code, None, |language| {
+            let l: &'static str = std::boxed::Box::leak(language.to_string().into_boxed_str());
+
+            self.configs.get(l)
         })?;
 
         Builder::default().run(highlights, code)
     }
 
     /// Detect language.
-    fn detect(&mut self, path: &Path, _code: &[u8]) -> Option<&mut ts::HighlightConfiguration> {
+    fn detect(path: &Path, _code: &[u8]) -> Option<String> {
         match path.extension().and_then(|e| e.to_str()) {
-            Some("rs") => self.config("rust"),
-            Some("svelte") => self.config("svelte"),
-            Some("ts" | "js") => self.config("typescript"),
-            Some("json") => self.config("json"),
-            Some("sh" | "bash") => self.config("shell"),
-            Some("md" | "markdown") => self.config("markdown"),
-            Some("go") => self.config("go"),
-            Some("c") => self.config("c"),
-            Some("py") => self.config("python"),
-            Some("rb") => self.config("ruby"),
-            Some("tsx") => self.config("tsx"),
-            Some("html") | Some("htm") | Some("xml") => self.config("html"),
-            Some("css") => self.config("css"),
-            Some("toml") => self.config("toml"),
+            Some("rs") => Some(String::from("rust")),
+            Some("svelte") => Some(String::from("svelte")),
+            Some("ts" | "js") => Some(String::from("typescript")),
+            Some("json") => Some(String::from("json")),
+            Some("regex") => Some(String::from("regex")),
+            Some("sh" | "bash") => Some(String::from("shell")),
+            Some("md" | "markdown") => Some(String::from("markdown")),
+            Some("go") => Some(String::from("go")),
+            Some("c") => Some(String::from("c")),
+            Some("py") => Some(String::from("python")),
+            Some("rb") => Some(String::from("ruby")),
+            Some("tsx") => Some(String::from("tsx")),
+            Some("html") | Some("htm") | Some("xml") => Some(String::from("html")),
+            Some("css") => Some(String::from("css")),
+            Some("toml") => Some(String::from("toml")),
             _ => None,
         }
     }
 
     /// Get a language configuration.
-    fn config(&mut self, language: &'static str) -> Option<&mut ts::HighlightConfiguration> {
+    fn config(language: &str) -> Option<ts::HighlightConfiguration> {
         match language {
-            "rust" => Some(self.configs.entry(language).or_insert_with(|| {
+            "rust" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_rust::LANGUAGE.into(),
                     language,
@@ -272,9 +339,9 @@ impl Highlighter {
                     tree_sitter_rust::INJECTIONS_QUERY,
                     "",
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "json" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "json" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_json::LANGUAGE.into(),
                     language,
@@ -282,27 +349,29 @@ impl Highlighter {
                     "",
                     "",
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "typescript" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "javascript" => Some(
+                ts::HighlightConfiguration::new(
+                    tree_sitter_javascript::LANGUAGE.into(),
+                    language,
+                    tree_sitter_javascript::HIGHLIGHT_QUERY,
+                    tree_sitter_javascript::INJECTIONS_QUERY,
+                    tree_sitter_javascript::LOCALS_QUERY,
+                )
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "typescript" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
                     language,
-                    &format!(
-                        "{}\n{}",
-                        tree_sitter_javascript::HIGHLIGHT_QUERY,
-                        tree_sitter_typescript::HIGHLIGHTS_QUERY
-                    ),
-                    tree_sitter_javascript::INJECTIONS_QUERY,
-                    &format!(
-                        "{}\n{}",
-                        tree_sitter_javascript::LOCALS_QUERY,
-                        tree_sitter_typescript::LOCALS_QUERY
-                    ),
+                    tree_sitter_typescript::HIGHLIGHTS_QUERY,
+                    "",
+                    tree_sitter_typescript::LOCALS_QUERY,
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "markdown" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "markdown" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_md::LANGUAGE.into(),
                     language,
@@ -310,9 +379,9 @@ impl Highlighter {
                     tree_sitter_md::INJECTION_QUERY_BLOCK,
                     "",
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "css" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "css" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_css::LANGUAGE.into(),
                     language,
@@ -320,9 +389,9 @@ impl Highlighter {
                     "",
                     "",
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "go" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "go" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_go::LANGUAGE.into(),
                     language,
@@ -330,9 +399,9 @@ impl Highlighter {
                     "",
                     "",
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "shell" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "shell" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_bash::LANGUAGE.into(),
                     language,
@@ -340,9 +409,9 @@ impl Highlighter {
                     "",
                     "",
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "c" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "c" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_c::LANGUAGE.into(),
                     language,
@@ -350,9 +419,9 @@ impl Highlighter {
                     "",
                     "",
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "python" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "python" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_python::LANGUAGE.into(),
                     language,
@@ -360,32 +429,29 @@ impl Highlighter {
                     "",
                     "",
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "svelte" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "regex" => Some(
+                ts::HighlightConfiguration::new(
+                    tree_sitter_regex::LANGUAGE.into(),
+                    language,
+                    tree_sitter_regex::HIGHLIGHTS_QUERY,
+                    "",
+                    "",
+                )
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "svelte" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_svelte_ng::LANGUAGE.into(),
                     language,
-                    &format!(
-                        "{}\n{}\n{}",
-                        tree_sitter_javascript::HIGHLIGHT_QUERY,
-                        tree_sitter_typescript::HIGHLIGHTS_QUERY,
-                        tree_sitter_svelte_ng::HIGHLIGHTS_QUERY
-                    ),
-                    &format!(
-                        "{}\n{}",
-                        tree_sitter_javascript::INJECTIONS_QUERY,
-                        tree_sitter_svelte_ng::INJECTIONS_QUERY,
-                    ),
-                    &format!(
-                        "{}\n{}",
-                        tree_sitter_typescript::LOCALS_QUERY,
-                        tree_sitter_svelte_ng::LOCALS_QUERY,
-                    ),
+                    tree_sitter_svelte_ng::HIGHLIGHTS_QUERY,
+                    tree_sitter_svelte_ng::INJECTIONS_QUERY,
+                    tree_sitter_svelte_ng::LOCALS_QUERY,
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "ruby" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "ruby" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_ruby::LANGUAGE.into(),
                     language,
@@ -393,27 +459,29 @@ impl Highlighter {
                     "",
                     tree_sitter_ruby::LOCALS_QUERY,
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "tsx" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "jsdoc" => Some(
+                ts::HighlightConfiguration::new(
+                    tree_sitter_jsdoc::LANGUAGE.into(),
+                    language,
+                    tree_sitter_jsdoc::HIGHLIGHTS_QUERY,
+                    "",
+                    "",
+                )
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "tsx" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_typescript::LANGUAGE_TSX.into(),
                     language,
-                    &format!(
-                        "{}\n{}",
-                        tree_sitter_javascript::HIGHLIGHT_QUERY,
-                        tree_sitter_typescript::HIGHLIGHTS_QUERY
-                    ),
+                    tree_sitter_typescript::HIGHLIGHTS_QUERY,
                     tree_sitter_javascript::INJECTIONS_QUERY,
-                    &format!(
-                        "{}\n{}",
-                        tree_sitter_javascript::LOCALS_QUERY,
-                        tree_sitter_typescript::LOCALS_QUERY
-                    ),
+                    tree_sitter_typescript::LOCALS_QUERY,
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "html" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "html" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_html::LANGUAGE.into(),
                     language,
@@ -421,9 +489,9 @@ impl Highlighter {
                     tree_sitter_html::INJECTIONS_QUERY,
                     "",
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
-            "toml" => Some(self.configs.entry(language).or_insert_with(|| {
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "toml" => Some(
                 ts::HighlightConfiguration::new(
                     tree_sitter_toml_ng::LANGUAGE.into(),
                     language,
@@ -431,8 +499,8 @@ impl Highlighter {
                     "",
                     "",
                 )
-                .expect("Highlighter::config: highlight configuration must be valid")
-            })),
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
             _ => None,
         }
     }

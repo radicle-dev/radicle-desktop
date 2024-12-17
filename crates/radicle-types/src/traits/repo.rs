@@ -154,7 +154,7 @@ pub trait Repo: Profile {
         let diff = surf::diff::Diff::try_from(diff)?;
 
         if highlight {
-            let mut hi = Highlighter::default();
+            let mut hi = Highlighter::new();
 
             return Ok::<_, Error>(diff.pretty(&mut hi, &(), &repo));
         }
