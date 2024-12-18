@@ -100,7 +100,7 @@
     min-height: 1.625rem;
     word-wrap: break-word;
     font-size: var(--font-size-small);
-    padding: 0 1rem;
+    padding: 0 0.75rem;
   }
   .actions {
     display: flex;
