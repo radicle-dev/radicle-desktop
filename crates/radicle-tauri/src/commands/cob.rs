@@ -22,9 +22,10 @@ pub mod patch;
 pub async fn get_embed(
     ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,
+    name: Option<String>,
     oid: git::Oid,
-) -> Result<Vec<u8>, Error> {
-    ctx.get_embed(rid, oid)
+) -> Result<types::cobs::EmbedWithMimeType, Error> {
+    ctx.get_embed(rid, name, oid)
 }
 
 #[tauri::command]

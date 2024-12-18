@@ -244,14 +244,15 @@ async fn activity_handler(
 #[derive(Serialize, Deserialize)]
 struct EmbedBody {
     pub rid: identity::RepoId,
+    pub name: Option<String>,
     pub oid: git::Oid,
 }
 
 async fn get_embeds_handler(
     State(ctx): State<Context>,
-    Json(EmbedBody { rid, oid }): Json<EmbedBody>,
+    Json(EmbedBody { rid, name, oid }): Json<EmbedBody>,
 ) -> impl IntoResponse {
-    let embed = ctx.get_embed(rid, oid)?;
+    let embed = ctx.get_embed(rid, name, oid)?;
 
     Ok::<_, Error>(Json(embed))
 }
