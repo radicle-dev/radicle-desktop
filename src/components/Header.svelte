@@ -6,7 +6,6 @@
 
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
-  import OutlineButton from "./OutlineButton.svelte";
   import Avatar from "./Avatar.svelte";
 
   interface Props {
@@ -81,8 +80,9 @@
       {@render center?.()}
 
       <div class="global-flex">
-        {@render settingsButton?.()}
-        <OutlineButton variant="ghost">
+        <div
+          class="global-flex txt-semibold txt-small"
+          style:margin-right="0.25rem">
           {#if $nodeRunning}
             <Icon name="online" />
             Online
@@ -90,7 +90,8 @@
             <Icon name="offline" />
             Offline
           {/if}
-        </OutlineButton>
+        </div>
+        {@render settingsButton?.()}
       </div>
     </div>
   </div>
