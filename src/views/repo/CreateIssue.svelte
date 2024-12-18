@@ -69,8 +69,8 @@
   .content {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    padding: 0 1rem 1rem 1rem;
+    min-height: 100%;
+    padding: 1rem 1rem 1rem 0;
   }
   .metadata-divider {
     width: 2px;
@@ -104,12 +104,12 @@
         <InlineTitle content={title} fontSize="medium" />
       </div>
     {:else}
-      <div style:margin-bottom="0.35rem">
+      <div style:margin-bottom="1rem">
         <TextInput placeholder="Title" autofocus bind:value={title} />
       </div>
     {/if}
 
-    <div style:margin-bottom="0.35rem">
+    <div style:margin-bottom="1rem">
       <Border variant="ghost" styleGap="0">
         <div class="metadata-section" style:flex="1">
           <LabelInput
