@@ -8,6 +8,8 @@ anyhow = { version = "1.0.90" }
 axum = { version = "0.7.5", default-features = false, features = ["json"] }
 base64 = { version = "0.22.1" }
 localtime = { version = "1.3.1" }
+infer = { version = "0.3" }
+mime-infer = { version = "3.0.0" }
 radicle = { version = "0.14.0", features = ["test"] }
 radicle-surf = { version = "0.22.1", features = ["serde"] }
 serde = { version = "1.0.210", features = ["derive"] }

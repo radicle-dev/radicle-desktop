@@ -30,6 +30,15 @@ impl Author {
     }
 }
 
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/")]
+pub struct EmbedWithMimeType {
+    pub content: Vec<u8>,
+    pub mime_type: Option<String>,
+}
+
 #[derive(TS, Serialize)]
 #[doc = "A type alias for the TS type `never`."]
 #[ts(export)]

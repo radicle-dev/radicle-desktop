@@ -15,12 +15,31 @@ use crate::error::Error;
 use crate::traits::Profile;
 
 pub trait Thread: Profile {
-    fn get_embed(&self, rid: identity::RepoId, oid: git::Oid) -> Result<Vec<u8>, Error> {
+    fn get_embed(
+        &self,
+        rid: identity::RepoId,
+        name: Option<String>,
+        oid: git::Oid,
+    ) -> Result<cobs::EmbedWithMimeType, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let blob = repo.blob(oid)?;
+        let content = blob.content();
+        let mime_type = match infer::get(content).map(|i| i.mime_type().to_string()) {
+            Some(mime_type) => Some(mime_type),
+            None if name.is_some() => {
+                let filename = name.unwrap();
+                mime_infer::from_path(&filename)
+                    .first()
+                    .map(|m| m.as_ref().to_string())
+            }
+            _ => None,
+        };
 
-        Ok::<_, Error>(blob.content().to_vec())
+        Ok::<_, Error>(cobs::EmbedWithMimeType {
+            content: content.to_vec(),
+            mime_type,
+        })
     }
 
     fn save_embed_to_disk(

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Embed } from "@bindings/cob/Embed";
+
   import dompurify from "dompurify";
   import matter from "@radicle/gray-matter";
   import { toDom } from "hast-util-to-dom";
@@ -68,7 +70,6 @@
 
         // If the markdown link is an oid embed
         if (href && isCommit(href)) {
-          e.style.display = "block";
           e.onclick = event => {
             event.preventDefault();
             invoke("save_embed_to_disk", {
@@ -77,47 +78,51 @@
               name: e.innerText,
             }).catch(console.error);
           };
-          void invoke<Uint8Array>("get_embed", {
+          void invoke<Embed>("get_embed", {
             rid,
+            name: e.innerText,
             oid: href,
           })
-            .then(byteArray => {
-              const buffer = Buffer.from(byteArray);
+            .then(({ mimeType, content }) => {
+              const buffer = Buffer.from(content);
               const blob = new Blob([buffer]);
               const url = URL.createObjectURL(blob);
-              const ext = e.innerHTML.split(".").at(-1);
               // Embed an img element below the link
-              if (ext?.match(/(gif|jpe?g|tiff?|png|webp|bmp)/)) {
+              if (mimeType?.startsWith("image")) {
                 const element = document.createElement("img");
                 element.setAttribute("src", url);
+                element.style.display = "block";
+                e.style.display = "block";
                 e.insertAdjacentElement("afterend", element);
                 // Embed an iframe to display pdf correctly element below the link
-              } else if (ext?.match(/(pdf)/)) {
+              } else if (mimeType?.startsWith("application")) {
                 const element = document.createElement("embed");
                 element.setAttribute("src", url);
-                element.type = "application/pdf";
+                element.type = mimeType;
                 element.style.overflow = "scroll";
                 element.style.height = "40rem";
                 element.style.overscrollBehavior = "contain";
+                e.style.display = "block";
                 e.insertAdjacentElement("afterend", element);
-              } else if (ext?.match(/(mp4|mov)/)) {
+              } else if (mimeType?.startsWith("video")) {
                 const element = document.createElement("video");
                 const node = document.createElement("source");
                 node.src = url;
                 element.controls = true;
-                node.type = `video/mp4`;
+                node.type = mimeType;
                 element.style.width = "100%";
+                e.style.display = "block";
                 element.appendChild(node);
                 e.insertAdjacentElement("afterend", element);
-              } else if (ext?.match(/(mp3)/)) {
+              } else if (mimeType?.startsWith("audio")) {
                 const element = document.createElement("audio");
+                element.style.display = "block";
                 element.src = url;
                 element.controls = true;
+                e.style.display = "block";
                 e.insertAdjacentElement("afterend", element);
               } else {
-                console.warn(
-                  `Not able to provide a preview for ${e.innerHTML}`,
-                );
+                console.warn(`Not able to provide a preview for this file.`);
               }
             })
             .catch(console.error);
