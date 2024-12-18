@@ -224,6 +224,7 @@
     padding: 0.75rem;
     margin-left: 1px;
     margin-top: 1px;
+    flex: 1;
   }
 </style>
 
