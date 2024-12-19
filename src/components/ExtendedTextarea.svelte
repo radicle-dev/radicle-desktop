@@ -231,7 +231,11 @@
 <div class="comment-section" aria-label="extended-textarea" class:inline>
   {#if preview}
     <div class="preview">
-      <Markdown {rid} breaks content={body} />
+      {#if body.trim().length === 0}
+        <span class="txt-missing">Nothing to preview.</span>
+      {:else}
+        <Markdown {rid} breaks content={body} />
+      {/if}
     </div>
   {:else}
     <Textarea
@@ -277,10 +281,7 @@
         <Icon name="attachment" />
         Attach
       </OutlineButton>
-      <OutlineButton
-        variant="ghost"
-        disabled={body.trim() === ""}
-        onclick={() => (preview = !preview)}>
+      <OutlineButton variant="ghost" onclick={() => (preview = !preview)}>
         <Icon name={preview ? "pen" : "eye"} />
         {preview ? "Edit" : "Preview"}
       </OutlineButton>

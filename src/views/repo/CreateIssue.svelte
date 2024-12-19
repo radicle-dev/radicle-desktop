@@ -101,7 +101,11 @@
   <div class="content">
     {#if preview}
       <div class="title">
-        <InlineTitle content={title} fontSize="medium" />
+        {#if title.trim().length === 0}
+          <span class="txt-missing">No title</span>
+        {:else}
+          <InlineTitle content={title} fontSize="medium" />
+        {/if}
       </div>
     {:else}
       <div style:margin-bottom="1rem">
