@@ -28,14 +28,6 @@
     grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
     gap: 1rem;
   }
-
-  .hero-image {
-    background-image: url("/aliens.png");
-    background-position: center;
-    background-size: cover;
-    height: 9.5rem;
-    clip-path: var(--3px-corner-fill);
-  }
 </style>
 
 <div style:height="fit-content">
@@ -55,9 +47,9 @@
     </Header>
   </div>
   <div style:padding="1rem">
-    <div class="hero-image"></div>
-
-    <div class="txt-semibold" style:margin="1.5rem 0">Repositories</div>
+    <div class="txt-semibold" style:margin="0.5rem 0 1.5rem 1rem">
+      Repositories
+    </div>
     <div class="repo-grid">
       {#each repos as repo}
         {#if repo.payloads["xyz.radicle.project"]}
