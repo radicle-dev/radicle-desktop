@@ -2,14 +2,17 @@
   import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
   import type { Diff } from "@bindings/diff/Diff";
+  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { PatchStatus } from "./router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
+  import partial from "lodash/partial";
+
   import * as roles from "@app/lib/roles";
-  import { formatOid } from "@app/lib/utils";
+  import { formatOid, publicKeyFromDid } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
 
@@ -162,6 +165,57 @@
         id: patch.id,
       }),
     ]);
+  }
+
+  async function editRevision(
+    revisionId: string,
+    description: string,
+    embeds: Embed[],
+  ) {
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        action: {
+          type: "revision.edit",
+          revision: revisionId,
+          description,
+          embeds,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Patch revision editing failed: ", error);
+    } finally {
+      await reload();
+    }
+  }
+
+  async function reactOnRevision(
+    publicKey: string,
+    revisionId: string,
+    authors: Author[],
+    reaction: string,
+  ) {
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        action: {
+          type: "revision.react",
+          revision: revisionId,
+          reaction,
+          active: !authors.find(
+            ({ did }) => publicKeyFromDid(did) === publicKey,
+          ),
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing reactions failed", error);
+    } finally {
+      await reload();
+    }
   }
 </script>
 
@@ -359,8 +413,18 @@
             : undefined}
           author={revisions[0].author}
           reactions={revisions[0].reactions}
-          timestamp={revisions[0].description.slice(-1)[0].timestamp}
-          body={revisions[0].description.slice(-1)[0].body}>
+          timestamp={revisions[0].timestamp}
+          body={revisions[0].description.slice(-1)[0].body}
+          reactOnComment={partial(
+            reactOnRevision,
+            config.publicKey,
+            revisions[0].id,
+          )}
+          editComment={roles.isDelegateOrAuthor(
+            config.publicKey,
+            repo.delegates.map(delegate => delegate.did),
+            revisions[0].author.did,
+          ) && partial(editRevision, revisions[0].id)}>
         </CommentComponent>
       </div>
     {:else}
