@@ -8,10 +8,7 @@
   import { invoke } from "@app/lib/invoke";
 
   import CopyableId from "@app/components/CopyableId.svelte";
-  import Icon from "@app/components/Icon.svelte";
   import Layout from "./Layout.svelte";
-  import Link from "@app/components/Link.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchesSecondColumn from "@app/components/PatchesSecondColumn.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
@@ -68,18 +65,6 @@
     align-items: center;
     height: 58px;
   }
-  .breadcrumbs {
-    display: flex;
-    gap: 0.5rem;
-    font-size: var(--font-size-tiny);
-    font-weight: var(--font-weight-semibold);
-    align-items: center;
-    min-height: 1.5rem;
-    width: 100%;
-    margin-bottom: 1rem;
-    padding-left: 1rem;
-    color: var(--color-foreground-dim);
-  }
 </style>
 
 <Layout
@@ -103,23 +88,6 @@
 
   <div class="header">Patches</div>
 
-  <div class="breadcrumbs">
-    <Link route={{ resource: "home" }}>
-      <NodeId
-        publicKey={config.publicKey}
-        alias={config.alias}
-        styleFontFamily="var(--font-family-sans-serif)"
-        styleFontSize="var(--font-size-tiny)" />
-    </Link>
-    <Icon name="chevron-right" />
-    <Link
-      route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}
-      styleColor="var(--color-foreground-dim)">
-      {project.data.name}
-    </Link>
-    <Icon name="chevron-right" />
-    Patches
-  </div>
   <div class="list">
     {#each items as patch}
       <PatchTeaser rid={repo.rid} {patch} {status} />

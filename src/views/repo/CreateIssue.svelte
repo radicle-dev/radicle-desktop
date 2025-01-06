@@ -33,6 +33,8 @@
 
   const { repo, issues, config, status }: Props = $props();
 
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
+
   let preview: boolean = $state(false);
   let title: string = $state("");
 
@@ -95,7 +97,7 @@
   {/snippet}
 
   {#snippet secondColumn()}
-    <IssueSecondColumn {repo} {issues} {status} />
+    <IssueSecondColumn {repo} {issues} {status} title={project.data.name} />
   {/snippet}
 
   <div class="content">

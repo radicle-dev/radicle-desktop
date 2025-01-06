@@ -20,6 +20,7 @@
 
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
   import Changeset from "@app/components/Changeset.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -27,12 +28,9 @@
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import Layout from "./Layout.svelte";
-  import Link from "@app/components/Link.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
   import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
-  import Button from "@app/components/Button.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -273,17 +271,6 @@
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
   }
-  .breadcrumbs {
-    display: flex;
-    gap: 0.5rem;
-    font-size: var(--font-size-tiny);
-    font-weight: var(--font-weight-semibold);
-    align-items: center;
-    min-height: 1.5rem;
-    width: 100%;
-    margin-bottom: 1rem;
-    color: var(--color-foreground-dim);
-  }
 </style>
 
 <Layout {loadMoreSecondColumn} publicKey={config.publicKey}>
@@ -297,9 +284,11 @@
 
   {#snippet secondColumn()}
     <div
-      style:height="34px"
-      class="global-flex txt-medium"
-      style:font-weight="var(--font-weight-medium)">
+      class="txt-regular txt-semibold global-flex"
+      style:gap="4px"
+      style:min-height="34px">
+      {project.data.name}
+      <Icon name="chevron-right" />
       Patches
     </div>
     <div class="patch-list">
@@ -318,30 +307,6 @@
   <div class="content">
     <div class="title">
       <InlineTitle content={patch.title} fontSize="medium" />
-    </div>
-
-    <div class="breadcrumbs">
-      <Link route={{ resource: "home" }}>
-        <NodeId
-          publicKey={config.publicKey}
-          alias={config.alias}
-          styleFontFamily="var(--font-family-sans-serif)"
-          styleFontSize="var(--font-size-tiny)" />
-      </Link>
-      <Icon name="chevron-right" />
-      <Link
-        route={{ resource: "repo.patches", rid: repo.rid, status: "open" }}
-        styleColor="var(--color-foreground-dim)">
-        {project.data.name}
-      </Link>
-      <Icon name="chevron-right" />
-      <Link
-        route={{ resource: "repo.patches", rid: repo.rid, status: "open" }}
-        styleColor="var(--color-foreground-dim)">
-        Patches
-      </Link>
-      <Icon name="chevron-right" />
-      {patch.title}
     </div>
 
     <Border variant="ghost" styleGap="0">

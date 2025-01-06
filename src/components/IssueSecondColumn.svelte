@@ -16,10 +16,11 @@
     selectedIssueId?: string;
     issues: Issue[];
     status: IssueStatus;
+    title: string;
   }
 
   /* eslint-disable prefer-const */
-  let { repo, selectedIssueId, issues, status }: Props = $props();
+  let { repo, selectedIssueId, issues, status, title }: Props = $props();
   /* eslint-enable prefer-const */
 </script>
 
@@ -34,7 +35,9 @@
 </style>
 
 <div class="global-flex" style:justify-content="space-between">
-  <div class="txt-medium" style:font-weight="var(--font-weight-medium)">
+  <div class="txt-regular txt-semibold global-flex" style:gap="4px">
+    {title}
+    <Icon name="chevron-right" />
     Issues
   </div>
 

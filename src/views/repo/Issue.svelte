@@ -29,8 +29,6 @@
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimelineLifecycleAction from "@app/components/IssueTimelineLifecycleAction.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
-  import Link from "@app/components/Link.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
   import TextInput from "@app/components/TextInput.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
 
@@ -365,17 +363,6 @@
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
   }
-  .breadcrumbs {
-    display: flex;
-    gap: 0.5rem;
-    font-size: var(--font-size-tiny);
-    font-weight: var(--font-weight-semibold);
-    align-items: center;
-    min-height: 1.5rem;
-    width: 100%;
-    margin-bottom: 1rem;
-    color: var(--color-foreground-dim);
-  }
 </style>
 
 <Layout publicKey={config.publicKey}>
@@ -388,7 +375,12 @@
   {/snippet}
 
   {#snippet secondColumn()}
-    <IssueSecondColumn {repo} selectedIssueId={issue.id} {issues} {status} />
+    <IssueSecondColumn
+      {repo}
+      selectedIssueId={issue.id}
+      {issues}
+      {status}
+      title={project.data.name} />
   {/snippet}
 
   <div class="content">
@@ -436,32 +428,6 @@
           {/if}
         </div>
       {/if}
-    </div>
-
-    <div class="breadcrumbs txt-overflow">
-      <Link route={{ resource: "home" }}>
-        <NodeId
-          publicKey={config.publicKey}
-          alias={config.alias}
-          styleFontFamily="var(--font-family-sans-serif)"
-          styleFontSize="var(--font-size-tiny)" />
-      </Link>
-      <Icon name="chevron-right" />
-      <Link
-        route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}
-        styleColor="var(--color-foreground-dim)">
-        {project.data.name}
-      </Link>
-      <Icon name="chevron-right" />
-      <Link
-        route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}
-        styleColor="var(--color-foreground-dim)">
-        Issues
-      </Link>
-      <Icon name="chevron-right" />
-      <div class="txt-overflow">
-        {issue.title}
-      </div>
     </div>
 
     <Border variant="ghost" styleGap="0">
