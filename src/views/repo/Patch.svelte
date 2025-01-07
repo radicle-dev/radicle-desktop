@@ -12,7 +12,12 @@
   import partial from "lodash/partial";
 
   import * as roles from "@app/lib/roles";
-  import { formatOid, publicKeyFromDid } from "@app/lib/utils";
+  import {
+    formatOid,
+    patchStatusBackgroundColor,
+    patchStatusColor,
+    publicKeyFromDid,
+  } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
 
@@ -223,7 +228,16 @@
     font-weight: var(--font-weight-medium);
     -webkit-user-select: text;
     user-select: text;
-    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    word-break: break-all;
+    min-height: 40px;
+  }
+  .status {
+    padding: 0;
+    margin-right: 0.75rem;
+    height: 2rem;
+    width: 2rem;
   }
   .patch-list {
     margin-top: 0.5rem;
@@ -233,7 +247,7 @@
     padding-bottom: 1rem;
   }
   .content {
-    padding: 1.5rem 1rem 1rem 0;
+    padding: 1rem 1rem 1rem 0;
   }
 
   .patch-body {
@@ -286,7 +300,7 @@
     <div
       class="txt-regular txt-semibold global-flex"
       style:gap="4px"
-      style:min-height="34px">
+      style:min-height="40px">
       {project.data.name}
       <Icon name="chevron-right" />
       Patches
@@ -305,8 +319,18 @@
   {/snippet}
 
   <div class="content">
-    <div class="title">
-      <InlineTitle content={patch.title} fontSize="medium" />
+    <div style:margin-bottom="0.5rem">
+      <div class="title">
+        <div
+          class="global-counter status"
+          style:color={patchStatusColor[patch.state.status]}
+          style:background-color={patchStatusBackgroundColor[
+            patch.state.status
+          ]}>
+          <Icon name="patch" />
+        </div>
+        <InlineTitle content={patch.title} fontSize="medium" />
+      </div>
     </div>
 
     <Border variant="ghost" styleGap="0">

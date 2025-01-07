@@ -14,7 +14,7 @@
     title,
     variant,
     onclick,
-    styleHeight = "32px",
+    styleHeight = "2rem",
   }: Props = $props();
 
   const style = $derived(
@@ -71,7 +71,7 @@
   }
   .p3-3 {
     grid-area: p3-3;
-    padding: 2px 8px;
+    padding: 0 8px;
     display: flex;
     align-items: center;
     gap: 0.5rem;

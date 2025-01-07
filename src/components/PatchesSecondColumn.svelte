@@ -23,7 +23,6 @@
     flex-direction: column;
     height: 100%;
     justify-content: space-between;
-    padding-bottom: 1rem;
   }
   .tab {
     align-items: center;
@@ -64,7 +63,9 @@
 
 <div class="container">
   <div>
-    <RepoTeaser name={project.data.name} seeding={repo.seeding} />
+    <div style:margin-bottom="0.5rem" style:padding-left="0.75rem">
+      <RepoTeaser name={project.data.name} seeding={repo.seeding} />
+    </div>
 
     <div style:margin-bottom="0.5rem">
       <Link

@@ -14,7 +14,12 @@
   import * as roles from "@app/lib/roles";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
-  import { publicKeyFromDid, scrollIntoView } from "@app/lib/utils";
+  import {
+    issueStatusBackgroundColor,
+    issueStatusColor,
+    publicKeyFromDid,
+    scrollIntoView,
+  } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
 
@@ -310,7 +315,13 @@
     align-items: center;
     justify-content: space-between;
     word-break: break-all;
-    padding-top: 4px;
+    min-height: 40px;
+  }
+  .status {
+    padding: 0;
+    margin-right: 0.75rem;
+    height: 2rem;
+    width: 2rem;
   }
   .issue-body {
     margin-top: 1rem;
@@ -342,7 +353,6 @@
     gap: 1rem;
     margin-left: 1rem;
     align-items: center;
-    height: 40px;
   }
   .metadata-divider {
     width: 2px;
@@ -384,9 +394,17 @@
   {/snippet}
 
   <div class="content">
-    <div style:margin-bottom="1rem">
+    <div style:margin-bottom="0.5rem">
       {#if editingTitle}
         <div class="title">
+          <div
+            class="global-counter status"
+            style:color={issueStatusColor[issue.state.status]}
+            style:background-color={issueStatusBackgroundColor[
+              issue.state.status
+            ]}>
+            <Icon name="issue" />
+          </div>
           <TextInput
             valid={updatedTitle.trim().length > 0}
             bind:value={updatedTitle}
@@ -419,7 +437,17 @@
         </div>
       {:else}
         <div class="title">
-          <InlineTitle content={issue.title} fontSize="medium" />
+          <div class="global-flex" style:gap="0">
+            <div
+              class="global-counter status"
+              style:color={issueStatusColor[issue.state.status]}
+              style:background-color={issueStatusBackgroundColor[
+                issue.state.status
+              ]}>
+              <Icon name="issue" />
+            </div>
+            <InlineTitle content={issue.title} fontSize="medium" />
+          </div>
           {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), issue.body.author.did, )}
             <div class="title-icons">
               <Icon name="pen" onclick={() => (editingTitle = !editingTitle)} />

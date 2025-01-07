@@ -14,6 +14,7 @@
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import IssuesSecondColumn from "@app/components/IssuesSecondColumn.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
+  import Border from "@app/components/Border.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -28,19 +29,22 @@
 </script>
 
 <style>
+  .container {
+    padding: 1rem 1rem 1rem 0;
+  }
   .list {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 0 1rem 1rem 0;
   }
   .header {
     font-weight: var(--font-weight-medium);
     font-size: var(--font-size-medium);
     display: flex;
-    padding: 1rem 1rem 0.5rem 1rem;
     align-items: center;
     justify-content: space-between;
+    min-height: 40px;
+    margin-bottom: 0.5rem;
   }
 </style>
 
@@ -57,41 +61,52 @@
   {/snippet}
 
   {#snippet secondColumn()}
-    <div style:margin-left="1rem" style:height="100%">
-      <IssuesSecondColumn {project} {status} {repo} />
-    </div>
+    <IssuesSecondColumn {project} {status} {repo} />
   {/snippet}
 
-  <div class="header">
-    <div>Issues</div>
-    <div class="txt-regular txt-semibold">
-      <Button
-        variant="secondary"
-        onclick={() => {
-          void router.push({
-            resource: "repo.createIssue",
-            status,
-            rid: repo.rid,
-          });
-        }}>
-        <Icon name="plus" />New
-      </Button>
-    </div>
-  </div>
-
-  <div class="list">
-    {#each issues as issue}
-      <IssueTeaser {issue} rid={repo.rid} {status} />
-    {/each}
-
-    {#if issues.length === 0}
-      <div class="txt-missing txt-small" style:margin-left="1rem">
-        {#if status === "all"}
-          No issues.
-        {:else}
-          No {status} issues.
-        {/if}
+  <div class="container">
+    <div class="header">
+      <div>Issues</div>
+      <div class="txt-regular txt-semibold">
+        <Button
+          variant="secondary"
+          onclick={() => {
+            void router.push({
+              resource: "repo.createIssue",
+              status,
+              rid: repo.rid,
+            });
+          }}>
+          <Icon name="plus" />New
+        </Button>
       </div>
-    {/if}
+    </div>
+
+    <div class="list">
+      {#each issues as issue}
+        <IssueTeaser {issue} rid={repo.rid} {status} />
+      {/each}
+
+      {#if issues.length === 0}
+        <Border
+          variant="ghost"
+          styleAlignItems="center"
+          styleJustifyContent="center">
+          <div
+            class="global-flex"
+            style:height="74px"
+            style:justify-content="center">
+            <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
+              <Icon name="none" />
+              {#if status === "all"}
+                No issues.
+              {:else}
+                No {status} issues.
+              {/if}
+            </div>
+          </div>
+        </Border>
+      {/if}
+    </div>
   </div>
 </Layout>

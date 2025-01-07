@@ -57,13 +57,11 @@
 
   <Popover
     popoverPadding="0"
-    popoverPositionTop="3rem"
+    popoverPositionTop="2.5rem"
     popoverPositionRight="0">
     {#snippet toggle(onclick)}
       <Button flatLeft {onclick} variant="secondary">
-        <div style:height="22px" class="global-flex">
-          <Icon name="chevron-down" />
-        </div>
+        <Icon name="chevron-down" />
       </Button>
     {/snippet}
     {#snippet popover()}

@@ -44,7 +44,7 @@
 </style>
 
 <div class="global-flex" style:flex-direction="column" style:gap="0.5rem">
-  <div class="global-flex" style:margin-bottom="5px" style:height="40px">
+  <div class="global-flex" style:height="40px">
     <Icon name="repo" />
   </div>
   {#if activeTab.type === "issues"}

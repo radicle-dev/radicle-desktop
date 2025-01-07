@@ -26,8 +26,8 @@
     display: flex;
     align-items: center;
     flex-direction: row;
-    gap: 0.375rem;
-    padding: 0.5rem 0.375rem;
+    min-height: 2rem;
+    padding: 0 0.5rem;
     white-space: nowrap;
     font-size: var(--font-size-small);
     font-weight: var(--font-weight-regular);

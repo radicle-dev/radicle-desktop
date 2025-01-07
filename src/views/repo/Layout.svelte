@@ -108,22 +108,18 @@
 
   .sidebar {
     grid-column: 1 / 2;
-    width: 40px;
-    margin: 0 1rem;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    margin-top: 13px;
-    margin-bottom: 1rem;
   }
 
   .secondColumn {
     grid-column: 2 / 3;
-    margin: 1rem 0 0 0;
     max-width: 28rem;
     min-width: 14rem;
-    margin-right: 1rem;
+    padding: 1rem 1rem 1rem 0;
   }
 
   .content {
@@ -139,12 +135,16 @@
     <Header {publicKey} center={headerCenter}></Header>
   </div>
 
-  <div class="sidebar" style:display={hideSidebar ? "none" : "flex"}>
+  <div
+    class="sidebar"
+    style:display={hideSidebar ? "none" : "flex"}
+    style:padding-right="1rem">
     {@render sidebar()}
   </div>
 
   <div
     class="secondColumn"
+    style:padding-left={hideSidebar ? "1rem" : "0"}
     bind:this={secondColumnContainer}
     style:display={oneColumnLayout && !hideSidebar ? "none" : undefined}
     style:overflow={styleSecondColumnOverflow}>

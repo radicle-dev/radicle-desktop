@@ -25,6 +25,12 @@
 </script>
 
 <style>
+  .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 40px;
+  }
   .issue-list {
     margin-top: 0.5rem;
     display: flex;
@@ -34,7 +40,7 @@
   }
 </style>
 
-<div class="global-flex" style:justify-content="space-between">
+<div class="container">
   <div class="txt-regular txt-semibold global-flex" style:gap="4px">
     {title}
     <Icon name="chevron-right" />

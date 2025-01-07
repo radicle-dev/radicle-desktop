@@ -68,7 +68,7 @@
   }
   .p3-3 {
     grid-area: p3-3;
-    padding: 2px 8px;
+    padding: 0 8px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -224,6 +224,7 @@
   }
 
   .container {
+    height: 2rem;
     cursor: pointer;
     white-space: nowrap;
 

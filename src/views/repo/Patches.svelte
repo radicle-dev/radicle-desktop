@@ -8,10 +8,12 @@
   import { invoke } from "@app/lib/invoke";
 
   import CopyableId from "@app/components/CopyableId.svelte";
+  import Icon from "@app/components/Icon.svelte";
   import Layout from "./Layout.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchesSecondColumn from "@app/components/PatchesSecondColumn.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
+  import Border from "@app/components/Border.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -51,19 +53,21 @@
 </script>
 
 <style>
+  .container {
+    padding: 1rem 1rem 1rem 0;
+  }
   .list {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 0 1rem 1rem 0;
   }
   .header {
     font-weight: var(--font-weight-medium);
     font-size: var(--font-size-medium);
-    padding: 1rem 1rem 0.5rem 1rem;
     display: flex;
     align-items: center;
-    height: 58px;
+    min-height: 40px;
+    margin-bottom: 0.5rem;
   }
 </style>
 
@@ -81,26 +85,37 @@
   {/snippet}
 
   {#snippet secondColumn()}
-    <div style:margin-left="1rem" style:height="100%">
-      <PatchesSecondColumn {project} {status} {repo} />
-    </div>
+    <PatchesSecondColumn {project} {status} {repo} />
   {/snippet}
 
-  <div class="header">Patches</div>
+  <div class="container">
+    <div class="header">Patches</div>
 
-  <div class="list">
-    {#each items as patch}
-      <PatchTeaser rid={repo.rid} {patch} {status} />
-    {/each}
+    <div class="list">
+      {#each items as patch}
+        <PatchTeaser rid={repo.rid} {patch} {status} />
+      {/each}
 
-    {#if patches.content.length === 0}
-      <div class="txt-missing txt-small" style:margin-left="1rem">
-        {#if status === undefined}
-          No patches.
-        {:else}
-          No {status} patches.
-        {/if}
-      </div>
-    {/if}
+      {#if patches.content.length === 0}
+        <Border
+          variant="ghost"
+          styleAlignItems="center"
+          styleJustifyContent="center">
+          <div
+            class="global-flex"
+            style:height="74px"
+            style:justify-content="center">
+            <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
+              <Icon name="none" />
+              {#if status === undefined}
+                No patches.
+              {:else}
+                No {status} patches.
+              {/if}
+            </div>
+          </div>
+        </Border>
+      {/if}
+    </div>
   </div>
 </Layout>

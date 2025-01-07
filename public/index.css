@@ -62,6 +62,7 @@ body {
   padding: 0 0.5rem;
   min-width: 1.5rem;
   font-weight: var(--font-weight-regular);
+  flex-shrink: 0;
 }
 
 :root {
