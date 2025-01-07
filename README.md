@@ -1,6 +1,6 @@
 # Radicle Desktop
 
-This desktop application lets you interact with [Radicle][rad], a peer-to-peer code collaboration and publishing stack, directly from your web browser.
+This desktop application lets you interact with [Radicle][rad], a peer-to-peer code collaboration and publishing stack.
 
 ## Local-first
 
