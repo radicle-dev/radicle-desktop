@@ -34,6 +34,7 @@
   import LabelInput from "@app/components/LabelInput.svelte";
   import Layout from "./Layout.svelte";
   import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
+  import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
 
@@ -220,6 +221,24 @@
       await reload();
     }
   }
+
+  async function saveState(state: Patch["state"]) {
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        action: {
+          type: "lifecycle",
+          state,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing reactions failed", error);
+    } finally {
+      await reload();
+    }
+  }
 </script>
 
 <style>
@@ -230,8 +249,15 @@
     user-select: text;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     word-break: break-all;
     min-height: 40px;
+  }
+  .title-icons {
+    display: flex;
+    gap: 1rem;
+    margin-left: 1rem;
+    align-items: center;
   }
   .status {
     padding: 0;
@@ -321,15 +347,22 @@
   <div class="content">
     <div style:margin-bottom="0.5rem">
       <div class="title">
-        <div
-          class="global-counter status"
-          style:color={patchStatusColor[patch.state.status]}
-          style:background-color={patchStatusBackgroundColor[
-            patch.state.status
-          ]}>
-          <Icon name="patch" />
+        <div class="global-flex" style:gap="0">
+          <div
+            class="global-counter status"
+            style:color={patchStatusColor[patch.state.status]}
+            style:background-color={patchStatusBackgroundColor[
+              patch.state.status
+            ]}>
+            <Icon name="patch" />
+          </div>
+          <InlineTitle content={patch.title} fontSize="medium" />
         </div>
-        <InlineTitle content={patch.title} fontSize="medium" />
+        {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), patch.author.did, )}
+          <div class="title-icons">
+            <PatchStateButton patchState={patch.state} save={saveState} />
+          </div>
+        {/if}
       </div>
     </div>
 
