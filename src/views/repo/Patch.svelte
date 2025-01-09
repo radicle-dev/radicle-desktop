@@ -37,6 +37,7 @@
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
+  import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -54,6 +55,8 @@
   let cursor = patches.cursor;
   let more = patches.more;
   let items = $state(patches.content);
+  let editingTitle = $state(false);
+  let updatedTitle = $state("");
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let tab: "patch" | "revisions" = $state("patch");
@@ -69,6 +72,8 @@
     patch.id;
 
     tab = "patch";
+    editingTitle = false;
+    updatedTitle = patch.title;
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
@@ -234,7 +239,33 @@
         opts: { announce: $nodeRunning && $announce },
       });
     } catch (error) {
-      console.error("Editing reactions failed", error);
+      console.error("Changing patch state failed", error);
+    } finally {
+      await reload();
+    }
+  }
+
+  async function editTitle(id: string, title: string) {
+    if (patch.title === updatedTitle) {
+      editingTitle = false;
+      return;
+    }
+
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        action: {
+          id,
+          type: "edit",
+          title,
+          target: "delegates",
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+      editingTitle = false;
+    } catch (error) {
+      console.error("Patch title editing failed: ", error);
     } finally {
       await reload();
     }
@@ -346,8 +377,8 @@
 
   <div class="content">
     <div style:margin-bottom="0.5rem">
-      <div class="title">
-        <div class="global-flex" style:gap="0">
+      {#if editingTitle}
+        <div class="title">
           <div
             class="global-counter status"
             style:color={patchStatusColor[patch.state.status]}
@@ -356,14 +387,58 @@
             ]}>
             <Icon name="patch" />
           </div>
-          <InlineTitle content={patch.title} fontSize="medium" />
-        </div>
-        {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), patch.author.did, )}
+
+          <TextInput
+            valid={updatedTitle.trim().length > 0}
+            bind:value={updatedTitle}
+            autofocus
+            onSubmit={async () => {
+              if (updatedTitle.trim().length > 0) {
+                await editTitle(patch.id, updatedTitle);
+              }
+            }}
+            onDismiss={() => {
+              updatedTitle = patch.title;
+              editingTitle = !editingTitle;
+            }} />
           <div class="title-icons">
+            <Icon
+              name="checkmark"
+              onclick={async () => {
+                if (updatedTitle.trim().length > 0) {
+                  await editTitle(patch.id, updatedTitle);
+                }
+              }} />
+            <Icon
+              name="cross"
+              onclick={() => {
+                updatedTitle = patch.title;
+                editingTitle = !editingTitle;
+              }} />
             <PatchStateButton patchState={patch.state} save={saveState} />
           </div>
-        {/if}
-      </div>
+        </div>
+      {:else}
+        <div class="title">
+          <div class="global-flex" style:gap="0">
+            <div
+              class="global-counter status"
+              style:color={patchStatusColor[patch.state.status]}
+              style:background-color={patchStatusBackgroundColor[
+                patch.state.status
+              ]}>
+              <Icon name="patch" />
+            </div>
+            <InlineTitle content={patch.title} fontSize="medium" />
+          </div>
+          {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), patch.author.did, )}
+            <div class="title-icons">
+              <Icon name="pen" onclick={() => (editingTitle = !editingTitle)} />
+              <PatchStateButton patchState={patch.state} save={saveState} />
+            </div>
+          {/if}
+        </div>
+      {/if}
     </div>
 
     <Border variant="ghost" styleGap="0">
