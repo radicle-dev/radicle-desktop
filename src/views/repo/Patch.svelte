@@ -49,12 +49,20 @@
   }
 
   /* eslint-disable prefer-const */
-  let { repo, patch, patches, revisions, config, status }: Props = $props();
+  let {
+    repo,
+    patch,
+    patches,
+    revisions,
+    config,
+    status: initialStatus,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 
   let cursor = patches.cursor;
   let more = patches.more;
   let items = $state(patches.content);
+  let status = $state(initialStatus);
   let editingTitle = $state(false);
   let updatedTitle = $state("");
   let labelSaveInProgress: boolean = $state(false);
@@ -238,6 +246,9 @@
         },
         opts: { announce: $nodeRunning && $announce },
       });
+      if (initialStatus !== undefined) {
+        status = state["status"];
+      }
     } catch (error) {
       console.error("Changing patch state failed", error);
     } finally {
