@@ -248,7 +248,7 @@
       }
       editingTitle = false;
     } catch (error) {
-      console.error("Issue editing failed: ", error);
+      console.error("Issue title editing failed: ", error);
     } finally {
       await reload();
     }
@@ -298,7 +298,7 @@
         issues[issueIndex].state = state;
       }
     } catch (error) {
-      console.error("Editing reactions failed", error);
+      console.error("Changing issue state failed", error);
     } finally {
       await reload();
     }
