@@ -4138,6 +4138,7 @@ dependencies = [
  "base64 0.22.1",
  "infer 0.3.7",
  "localtime",
+ "log",
  "mime-infer",
  "radicle",
  "radicle-surf",
