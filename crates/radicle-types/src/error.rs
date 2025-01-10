@@ -9,6 +9,10 @@ pub enum Error {
     #[error(transparent)]
     Profile(#[from] radicle::profile::Error),
 
+    /// CobStore error.
+    #[error(transparent)]
+    CobStore(#[from] radicle::cob::store::Error),
+
     /// Anyhow error.
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+use radicle::cob;
 use radicle::identity;
 use radicle::node::{Alias, AliasStore};
 
@@ -29,6 +30,21 @@ impl Author {
             alias: aliases.alias(did),
         }
     }
+}
+
+/// Everything that can be done in the system is represented by an `Op`.
+/// Operations are applied to an accumulator to yield a final state.
+#[derive(Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/")]
+pub struct Operation<A> {
+    #[ts(as = "String")]
+    pub id: cob::EntryId,
+    pub actions: Vec<A>,
+    pub author: Author,
+    #[ts(type = "number")]
+    pub timestamp: cob::Timestamp,
 }
 
 #[derive(Serialize, TS)]

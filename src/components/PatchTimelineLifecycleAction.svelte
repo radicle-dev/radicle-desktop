@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Operation } from "@bindings/cob/Operation";
-  import type { Action } from "@bindings/cob/issue/Action";
+  import type { Action } from "@bindings/cob/patch/Action";
 
   import { authorForNodeId, formatTimestamp } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
-  import IssueStateBadge from "@app/components/IssueStateBadge.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import PatchStateBadge from "./PatchStateBadge.svelte";
 
   interface Props {
     action: Extract<Action, { type: "lifecycle" }>;
@@ -21,7 +21,7 @@
     <div class="global-flex txt-small">
       <NodeId {...authorForNodeId(op.author)} />
       changed status to
-      <IssueStateBadge state={action.state} />
+      <PatchStateBadge state={action.state} />
       {formatTimestamp(op.timestamp)}
     </div>
   </div>

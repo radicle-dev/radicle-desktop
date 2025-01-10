@@ -1,8 +1,10 @@
 use radicle::git;
 use radicle::identity;
 
+use radicle::issue::{Action, TYPENAME};
 use radicle_types as types;
 use radicle_types::error::Error;
+use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::issue::Issues;
 use radicle_types::traits::issue::IssuesMut;
 
@@ -54,4 +56,13 @@ pub(crate) fn comment_threads_by_issue_id(
     id: git::Oid,
 ) -> Result<Option<Vec<types::cobs::thread::Thread>>, Error> {
     ctx.comment_threads_by_issue_id(rid, id)
+}
+
+#[tauri::command]
+pub fn activity_by_issue(
+    ctx: tauri::State<AppState>,
+    rid: identity::RepoId,
+    id: git::Oid,
+) -> Result<Vec<types::cobs::Operation<Action>>, Error> {
+    ctx.activity_by_id(rid, &TYPENAME, id)
 }

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { Operation } from "@bindings/cob/Operation";
+  import type { Action } from "@bindings/cob/patch/Action";
   import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
   import type { Diff } from "@bindings/diff/Diff";
@@ -45,6 +47,7 @@
     patches: PaginatedQuery<Patch[]>;
     revisions: Revision[];
     config: Config;
+    activity: Operation<Action>[];
     status: PatchStatus | undefined;
   }
 
@@ -56,6 +59,7 @@
     revisions,
     config,
     status: initialStatus,
+    activity,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -534,6 +538,17 @@
             revisions[0].author.did,
           ) && partial(editRevision, revisions[0].id)}>
         </CommentComponent>
+      </div>
+      <div class="connector"></div>
+      <div>
+        {#each activity as op}
+          {#each op.actions as action}
+            {#if action.type === "revision"}
+              <div>New revision created {action.oid}</div>
+              <div class="connector"></div>
+            {/if}
+          {/each}
+        {/each}
       </div>
     {:else}
       {@const revision = revisions.slice(-1)[0]}

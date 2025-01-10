@@ -8,13 +8,14 @@ use axum::routing::post;
 use axum::Router;
 use hyper::header::CONTENT_TYPE;
 use hyper::Method;
-use radicle::cob::TypeName;
 use serde::{Deserialize, Serialize};
 use tower_http::cors::{self, CorsLayer};
 
 use radicle::{git, identity};
 use radicle_types as types;
-use radicle_types::cobs::issue::{Action, NewIssue};
+use radicle_types::cobs::issue;
+use radicle_types::cobs::issue::NewIssue;
+use radicle_types::cobs::patch;
 use radicle_types::cobs::CobOptions;
 use radicle_types::error::Error;
 use radicle_types::traits::auth::Auth;
@@ -57,7 +58,14 @@ pub fn router(ctx: Context) -> Router {
         .route("/list_repos", post(repo_root_handler))
         .route("/repo_by_id", post(repo_handler))
         .route("/diff_stats", post(diff_stats_handler))
-        .route("/activity_by_id", post(activity_handler))
+        .route(
+            "/activity_by_issue",
+            post(activity_issue_handler::<issue::Action>),
+        )
+        .route(
+            "/activity_by_patch",
+            post(activity_patch_handler::<patch::Action>),
+        )
         .route("/get_diff", post(diff_handler))
         .route("/list_issues", post(issues_handler))
         .route("/create_issue", post(create_issue_handler))
@@ -206,7 +214,7 @@ async fn create_issue_comment_handler(
 struct EditIssuesBody {
     pub rid: identity::RepoId,
     pub cob_id: git::Oid,
-    pub action: Action,
+    pub action: issue::Action,
     pub opts: CobOptions,
 }
 
@@ -228,15 +236,23 @@ async fn edit_issue_handler(
 #[serde(rename_all = "camelCase")]
 struct ActivityBody {
     pub rid: identity::RepoId,
-    pub type_name: TypeName,
     pub id: git::Oid,
 }
 
-async fn activity_handler(
+async fn activity_issue_handler<A: serde::Serialize + serde::de::DeserializeOwned>(
     State(ctx): State<Context>,
-    Json(ActivityBody { rid, type_name, id }): Json<ActivityBody>,
+    Json(ActivityBody { rid, id }): Json<ActivityBody>,
 ) -> impl IntoResponse {
-    let activity = ctx.activity_by_id(rid, type_name, id)?;
+    let activity = ctx.activity_by_id::<A>(rid, &radicle::cob::issue::TYPENAME, id)?;
+
+    Ok::<_, Error>(Json(activity))
+}
+
+async fn activity_patch_handler<A: serde::Serialize + serde::de::DeserializeOwned>(
+    State(ctx): State<Context>,
+    Json(ActivityBody { rid, id }): Json<ActivityBody>,
+) -> impl IntoResponse {
+    let activity = ctx.activity_by_id::<A>(rid, &radicle::cob::patch::TYPENAME, id)?;
 
     Ok::<_, Error>(Json(activity))
 }

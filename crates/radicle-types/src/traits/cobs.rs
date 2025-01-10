@@ -2,39 +2,42 @@ use radicle::cob::object::Storage;
 use radicle::storage::refs::draft;
 use radicle::storage::{self, ReadStorage};
 use radicle::{cob, git, identity};
+use serde::de::DeserializeOwned;
 
 use crate::error::Error;
 use crate::traits::Profile;
 
 pub trait Cobs: Profile {
-    fn activity_by_id(
+    #[allow(clippy::unnecessary_filter_map)]
+    fn activity_by_id<A: DeserializeOwned>(
         &self,
         rid: identity::RepoId,
-        type_name: cob::TypeName,
+        type_name: &cob::TypeName,
         id: git::Oid,
-    ) -> Result<Vec<crate::cobs::issue::Operation>, Error> {
+    ) -> Result<Vec<crate::cobs::Operation<A>>, Error> {
         let profile = self.profile();
         let aliases = profile.aliases();
         let repo = profile.storage.repository(rid)?;
-        let ops = cob::store::ops(&id.into(), &type_name, &repo).unwrap();
-        let mut actions: Vec<crate::cobs::issue::Operation> = Vec::new();
+        let iter = cob::store::ops(&id.into(), type_name, &repo)?;
+        let ops = iter
+            .into_iter()
+            .filter_map(|op| {
+                let actions = op
+                    .actions
+                    .iter()
+                    .filter_map(|a| serde_json::from_slice(a).ok())
+                    .collect::<Vec<_>>();
 
-        for op in ops.into_iter() {
-            actions.extend(op.actions.iter().filter_map(
-                |action: &Vec<u8>| -> Option<crate::cobs::issue::Operation> {
-                    let action: crate::cobs::issue::Action = serde_json::from_slice(action).ok()?;
+                Some(crate::cobs::Operation {
+                    id: op.id,
+                    actions,
+                    author: crate::cobs::Author::new(&op.author.into(), &aliases),
+                    timestamp: op.timestamp,
+                })
+            })
+            .collect::<Vec<_>>();
 
-                    Some(crate::cobs::issue::Operation {
-                        entry_id: op.id,
-                        action,
-                        author: crate::cobs::Author::new(&op.author.into(), &aliases),
-                        timestamp: op.timestamp,
-                    })
-                },
-            ))
-        }
-
-        Ok::<_, Error>(actions)
+        Ok::<_, Error>(ops)
     }
 
     fn publish_draft(

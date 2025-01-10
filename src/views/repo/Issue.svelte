@@ -1,9 +1,10 @@
 <script lang="ts">
+  import type { Action } from "@bindings/cob/issue/Action";
   import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Issue } from "@bindings/cob/issue/Issue";
-  import type { Operation } from "@bindings/cob/issue/Operation";
+  import type { Operation } from "@bindings/cob/Operation";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { IssueStatus } from "./router";
@@ -45,7 +46,7 @@
     repo: RepoInfo;
     issue: Issue;
     issues: Issue[];
-    activity: Operation[];
+    activity: Operation<Action>[];
     config: Config;
     threads: Thread[];
     status: IssueStatus;
@@ -149,9 +150,8 @@
         rid: repo.rid,
         id: issue.id,
       }),
-      invoke<Operation[]>("activity_by_id", {
+      invoke<Operation<Action>[]>("activity_by_issue", {
         rid: repo.rid,
-        typeName: "xyz.radicle.issue",
         id: issue.id,
       }),
       invoke<Thread[]>("comment_threads_by_issue_id", {
@@ -524,26 +524,28 @@
 
     <div>
       {#each activity as op}
-        {#if op.type === "lifecycle"}
-          <IssueTimelineLifecycleAction operation={op} />
-          <div class="connector"></div>
-        {:else if op.type === "comment"}
-          {@const thread = threads.find(t => t.root.id === op.entryId)}
-          {#if thread}
-            <ThreadComponent
-              {thread}
-              rid={repo.rid}
-              canEditComment={partial(
-                roles.isDelegateOrAuthor,
-                config.publicKey,
-                repo.delegates.map(delegate => delegate.did),
-              )}
-              {editComment}
-              createReply={partial(createReply)}
-              reactOnComment={partial(reactOnComment, config.publicKey)} />
+        {#each op.actions as action}
+          {#if action.type === "lifecycle"}
+            <IssueTimelineLifecycleAction {op} {action} />
             <div class="connector"></div>
+          {:else if action.type === "comment"}
+            {@const thread = threads.find(t => t.root.id === op.id)}
+            {#if thread}
+              <ThreadComponent
+                {thread}
+                rid={repo.rid}
+                canEditComment={partial(
+                  roles.isDelegateOrAuthor,
+                  config.publicKey,
+                  repo.delegates.map(delegate => delegate.did),
+                )}
+                {editComment}
+                createReply={partial(createReply)}
+                reactOnComment={partial(reactOnComment, config.publicKey)} />
+              <div class="connector"></div>
+            {/if}
           {/if}
-        {/if}
+        {/each}
       {/each}
     </div>
 

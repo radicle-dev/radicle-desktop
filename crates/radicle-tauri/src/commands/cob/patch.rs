@@ -3,8 +3,10 @@ use radicle::git;
 use radicle::identity;
 use radicle::patch;
 
+use radicle::patch::{Action, TYPENAME};
 use radicle_types as types;
 use radicle_types::error::Error;
+use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::patch::Patches;
 use radicle_types::traits::patch::PatchesMut;
 
@@ -108,4 +110,13 @@ pub fn edit_patch(
     opts: types::cobs::CobOptions,
 ) -> Result<types::cobs::patch::Patch, Error> {
     ctx.edit_patch(rid, cob_id, action, opts)
+}
+
+#[tauri::command]
+pub fn activity_by_patch(
+    ctx: tauri::State<AppState>,
+    rid: identity::RepoId,
+    id: git::Oid,
+) -> Result<Vec<types::cobs::Operation<Action>>, Error> {
+    ctx.activity_by_id(rid, &TYPENAME, id)
 }

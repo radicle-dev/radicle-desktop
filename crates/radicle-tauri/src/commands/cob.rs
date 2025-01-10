@@ -2,12 +2,10 @@ use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 
-use radicle::cob;
 use radicle::git;
 use radicle::identity;
 use radicle_types as types;
 use radicle_types::error::Error;
-use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::thread::Thread;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_dialog::DialogExt;
@@ -83,14 +81,4 @@ pub async fn save_embed_to_disk(
         .context("Not able to convert into PathBuf")?;
 
     ctx.save_embed_to_disk(rid, oid, path)
-}
-
-#[tauri::command]
-pub fn activity_by_id(
-    ctx: tauri::State<AppState>,
-    rid: identity::RepoId,
-    type_name: cob::TypeName,
-    id: git::Oid,
-) -> Result<Vec<types::cobs::issue::Operation>, Error> {
-    ctx.activity_by_id(rid, type_name, id)
 }

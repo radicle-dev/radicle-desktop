@@ -1,7 +1,9 @@
+import type { Action as IssueAction } from "@bindings/cob/issue/Action";
+import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 import type { Config } from "@bindings/config/Config";
 import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Issue } from "@bindings/cob/issue/Issue";
-import type { Operation } from "@bindings/cob/issue/Operation";
+import type { Operation } from "@bindings/cob/Operation";
 import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
@@ -33,7 +35,7 @@ export interface LoadedRepoIssueRoute {
     issue: Issue;
     issues: Issue[];
     status: IssueStatus;
-    activity: Operation[];
+    activity: Operation<IssueAction>[];
     threads: Thread[];
   };
 }
@@ -82,6 +84,7 @@ export interface LoadedRepoPatchRoute {
     patches: PaginatedQuery<Patch[]>;
     status: PatchStatus | undefined;
     revisions: Revision[];
+    activity: Operation<PatchAction>[];
   };
 }
 
@@ -117,28 +120,42 @@ export type LoadedRepoRoute =
 export async function loadPatch(
   route: RepoPatchRoute,
 ): Promise<LoadedRepoPatchRoute> {
-  const [config, repo, patches, patch, revisions] = await Promise.all([
-    invoke<Config>("config"),
-    invoke<RepoInfo>("repo_by_id", {
-      rid: route.rid,
-    }),
-    invoke<PaginatedQuery<Patch[]>>("list_patches", {
-      rid: route.rid,
-      status: route.status,
-    }),
-    invoke<Patch>("patch_by_id", {
-      rid: route.rid,
-      id: route.patch,
-    }),
-    invoke<Revision[]>("revisions_by_patch", {
-      rid: route.rid,
-      id: route.patch,
-    }),
-  ]);
+  const [config, repo, patches, patch, revisions, activity] = await Promise.all(
+    [
+      invoke<Config>("config"),
+      invoke<RepoInfo>("repo_by_id", {
+        rid: route.rid,
+      }),
+      invoke<PaginatedQuery<Patch[]>>("list_patches", {
+        rid: route.rid,
+        status: route.status,
+      }),
+      invoke<Patch>("patch_by_id", {
+        rid: route.rid,
+        id: route.patch,
+      }),
+      invoke<Revision[]>("revisions_by_patch", {
+        rid: route.rid,
+        id: route.patch,
+      }),
+      invoke<Operation<PatchAction>[]>("activity_by_patch", {
+        rid: route.rid,
+        id: route.patch,
+      }),
+    ],
+  );
 
   return {
     resource: "repo.patch",
-    params: { repo, config, patch, patches, revisions, status: route.status },
+    params: {
+      repo,
+      config,
+      patch,
+      patches,
+      revisions,
+      status: route.status,
+      activity,
+    },
   };
 }
 
@@ -194,9 +211,8 @@ export async function loadIssue(
       rid: route.rid,
       id: route.issue,
     }),
-    invoke<Operation[]>("activity_by_id", {
+    invoke<Operation<IssueAction>[]>("activity_by_issue", {
       rid: route.rid,
-      typeName: "xyz.radicle.issue",
       id: route.issue,
     }),
     invoke<Issue[]>("list_issues", {

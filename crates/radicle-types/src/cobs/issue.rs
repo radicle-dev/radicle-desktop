@@ -1,6 +1,5 @@
 use std::collections::BTreeSet;
 
-use radicle::git;
 use radicle::node::AliasStore;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -53,20 +52,6 @@ impl Issue {
             timestamp: issue.timestamp(),
         }
     }
-}
-
-#[derive(Serialize, TS)]
-#[serde(rename_all = "camelCase")]
-#[ts(export)]
-#[ts(export_to = "cob/issue/")]
-pub struct Operation {
-    #[ts(as = "String")]
-    pub entry_id: git::Oid,
-    #[serde(flatten)]
-    pub action: Action,
-    #[ts(type = "number")]
-    pub timestamp: cob::Timestamp,
-    pub author: cobs::Author,
 }
 
 #[derive(Default, Serialize, Deserialize, TS)]
