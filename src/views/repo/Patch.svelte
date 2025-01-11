@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { Operation } from "@bindings/cob/Operation";
   import type { Action } from "@bindings/cob/patch/Action";
   import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
   import type { Diff } from "@bindings/diff/Diff";
   import type { Embed } from "@bindings/cob/thread/Embed";
+  import type { Operation } from "@bindings/cob/Operation";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { PatchStatus } from "./router";
@@ -38,6 +38,7 @@
   import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
+  import PatchTimeline from "@app/components/PatchTimeline.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
@@ -73,6 +74,8 @@
   let assigneesSaveInProgress: boolean = $state(false);
   let tab: "patch" | "revisions" = $state("patch");
 
+  let hideTimeline = $state(false);
+
   $effect(() => {
     items = patches.content;
     cursor = patches.cursor;
@@ -86,6 +89,7 @@
     tab = "patch";
     editingTitle = false;
     updatedTitle = patch.title;
+    hideTimeline = false;
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
@@ -110,6 +114,10 @@
     revisions = await invoke<Revision[]>("revisions_by_patch", {
       rid: rid,
       id: patchId,
+    });
+    activity = await invoke<Operation<Action>[]>("activity_by_patch", {
+      rid: repo.rid,
+      id: patch.id,
     });
   }
 
@@ -168,7 +176,7 @@
   }
 
   async function reload() {
-    [config, repo, patches, patch, revisions] = await Promise.all([
+    [config, repo, patches, patch, revisions, activity] = await Promise.all([
       invoke<Config>("config"),
       invoke<RepoInfo>("repo_by_id", {
         rid: repo.rid,
@@ -182,6 +190,10 @@
         id: patch.id,
       }),
       invoke<Revision[]>("revisions_by_patch", {
+        rid: repo.rid,
+        id: patch.id,
+      }),
+      invoke<Operation<Action>[]>("activity_by_patch", {
         rid: repo.rid,
         id: patch.id,
       }),
@@ -323,7 +335,7 @@
   }
 
   .patch-body {
-    margin-top: 1rem;
+    margin: 1rem 0;
     position: relative;
   }
   /* We put the background and clip-path in a separate element to prevent
@@ -356,6 +368,9 @@
   .metadata-section-title {
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
+  }
+  .hide-timeline {
+    display: none;
   }
 </style>
 
@@ -539,16 +554,22 @@
           ) && partial(editRevision, revisions[0].id)}>
         </CommentComponent>
       </div>
-      <div class="connector"></div>
+
       <div>
-        {#each activity as op}
-          {#each op.actions as action}
-            {#if action.type === "revision"}
-              <div>New revision created {action.oid}</div>
-              <div class="connector"></div>
-            {/if}
-          {/each}
-        {/each}
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <div
+          role="button"
+          tabindex="0"
+          class="txt-semibold global-flex"
+          style:margin-bottom="1rem"
+          style:cursor="pointer"
+          onclick={() => (hideTimeline = !hideTimeline)}>
+          <Icon
+            name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
+        </div>
+        <div class:hide-timeline={hideTimeline}>
+          <PatchTimeline {activity} patchId={patch.id} />
+        </div>
       </div>
     {:else}
       {@const revision = revisions.slice(-1)[0]}
