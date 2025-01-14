@@ -4144,6 +4144,7 @@ dependencies = [
  "radicle-surf",
  "serde",
  "serde_json",
+ "sqlite",
  "tempfile",
  "thiserror 1.0.69",
  "tree-sitter-bash",

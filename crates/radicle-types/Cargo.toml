@@ -15,6 +15,7 @@ radicle = { version = "0.14.0", features = ["test"] }
 radicle-surf = { version = "0.22.1", features = ["serde"] }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = { version = "1.0.132" }
+sqlite = { version = "0.32.0", features = ["bundled"] }
 tempfile = { version = "3.14.0" }
 thiserror = { version = "1.0.65" }
 tree-sitter-bash = { version = "0.23.3" }

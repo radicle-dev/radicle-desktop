@@ -21,6 +21,10 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
+    /// Io error.
+    #[error(transparent)]
+    Sqlite(#[from] sqlite::Error),
+
     /// Crypto error.
     #[error(transparent)]
     Crypto(#[from] radicle::crypto::ssh::keystore::Error),
