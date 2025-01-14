@@ -11,10 +11,12 @@
     styleHeight?: string;
     styleMinHeight?: string;
     styleWidth?: string;
+    styleDisplay?: string;
     styleCursor?: "default" | "pointer" | "text";
     styleGap?: string;
     styleOverflow?: string;
     flatTop?: boolean;
+    flatBottom?: boolean;
     styleBackgroundColor?: string;
     styleFlexDirection?: string;
     styleAlignItems?: string;
@@ -31,10 +33,12 @@
     styleMinHeight,
     stylePosition,
     styleWidth,
+    styleDisplay = "flex",
     styleCursor = "default",
     styleGap = "0.5rem",
     styleOverflow,
     flatTop = false,
+    flatBottom = false,
     styleBackgroundColor = "var(--color-background-default)",
     styleFlexDirection = "row",
     styleAlignItems = "center",
@@ -130,7 +134,6 @@
   }
   .p3-3 {
     grid-area: p3-3;
-    display: flex;
     background-color: var(--local-background-color);
   }
   .p3-4 {
@@ -196,6 +199,21 @@
   .flat-top > .p2-5 {
     background-color: var(--local-button-color-1);
   }
+
+  .flat-bottom > .p4-2,
+  .flat-bottom > .p4-4 {
+    background-color: transparent;
+  }
+
+  .flat-bottom > .p4-1,
+  .flat-bottom > .p4-5,
+  .flat-bottom > .p5-3,
+  .flat-bottom > .p5-1,
+  .flat-bottom > .p5-2,
+  .flat-bottom > .p5-4,
+  .flat-bottom > .p5-5 {
+    background-color: var(--local-button-color-1);
+  }
 </style>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -204,6 +222,7 @@
   style:cursor={styleCursor}
   class="container"
   class:flat-top={flatTop}
+  class:flat-bottom={flatBottom}
   {onclick}
   role="button"
   tabindex={onclick !== undefined ? 0 : -1}
@@ -226,6 +245,7 @@
   <div class="p3-2"></div>
   <div
     class="p3-3"
+    style:display={styleDisplay}
     style:position={stylePosition}
     style:padding={stylePadding}
     style:gap={styleGap}

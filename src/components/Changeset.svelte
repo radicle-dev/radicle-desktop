@@ -16,11 +16,15 @@
     display: flex;
     flex-direction: column;
   }
+
+  .diff:not(:last-of-type) {
+    margin-bottom: 1rem;
+  }
 </style>
 
 <div class="diff-list">
   {#each diff.files as file}
-    <div style:margin-bottom="1rem">
+    <div class="diff">
       <FileDiff
         filePath={"path" in file ? file.path : file.newPath}
         oldFilePath={"oldPath" in file ? file.oldPath : undefined}

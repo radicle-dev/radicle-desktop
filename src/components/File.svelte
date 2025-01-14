@@ -13,9 +13,9 @@
 <style>
   .header {
     display: flex;
-    height: 3rem;
     align-items: center;
-    padding: 0 0.5rem 0 1rem;
+    height: 2.5rem;
+    padding-left: 1rem;
     z-index: 2;
     font-size: var(--font-size-small);
   }
@@ -46,6 +46,7 @@
   .container {
     position: relative;
     overflow-x: auto;
+    z-index: 1;
   }
   .container::after {
     position: absolute;

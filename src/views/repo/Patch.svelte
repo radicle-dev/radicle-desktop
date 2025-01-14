@@ -27,7 +27,6 @@
 
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
-  import Button from "@app/components/Button.svelte";
   import Changeset from "@app/components/Changeset.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -40,6 +39,7 @@
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchTimeline from "@app/components/PatchTimeline.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
+  import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
@@ -335,8 +335,9 @@
   }
 
   .patch-body {
-    margin: 1rem 0;
+    margin-bottom: 1rem;
     position: relative;
+    z-index: 1;
   }
   /* We put the background and clip-path in a separate element to prevent
      popovers being clipped in the main element. */
@@ -471,113 +472,142 @@
       {/if}
     </div>
 
-    <Border variant="ghost" styleGap="0">
-      <div class="metadata-section" style:min-width="8rem">
-        <div class="metadata-section-title">Status</div>
-        <PatchStateBadge state={patch.state} />
-      </div>
+    <div class="global-flex" style:gap="0.5rem">
+      <Border stylePosition="relative" variant="ghost" flatBottom>
+        <div
+          class="global-flex"
+          style:z-index="10"
+          style:gap="1rem"
+          style:padding="0 1rem">
+          <Tab
+            active={tab === "patch"}
+            onclick={() => {
+              tab = "patch";
+            }}>
+            {formatOid(patch.id)}
+            <span
+              class="global-counter"
+              style:height="22px"
+              style:color="var(--color-foreground-contrast)">
+              Initial
+            </span>
+          </Tab>
 
-      <div class="metadata-divider"></div>
-
-      <div class="metadata-section" style:flex="1">
-        <LabelInput
-          allowedToEdit={!!roles.isDelegateOrAuthor(
-            config.publicKey,
-            repo.delegates.map(delegate => delegate.did),
-            patch.author.did,
-          )}
-          labels={patch.labels}
-          submitInProgress={labelSaveInProgress}
-          save={saveLabels} />
-      </div>
-
-      <div class="metadata-divider"></div>
-
-      <div class="metadata-section" style:flex="1">
-        <AssigneeInput
-          allowedToEdit={!!roles.isDelegateOrAuthor(
-            config.publicKey,
-            repo.delegates.map(delegate => delegate.did),
-            patch.author.did,
-          )}
-          assignees={patch.assignees}
-          submitInProgress={assigneesSaveInProgress}
-          save={saveAssignees} />
-      </div>
-    </Border>
-
-    <div class="global-flex" style:gap="0" style:margin-top="1rem">
-      <Button
-        flatRight
-        active={tab === "patch"}
-        variant="ghost"
-        onclick={() => {
-          tab = "patch";
-        }}>
-        Patch
-      </Button>
-
-      <Button
-        flatLeft
-        variant="ghost"
-        active={tab === "revisions"}
-        onclick={() => {
-          tab = "revisions";
-        }}>
-        Revision: {formatOid(revisions.slice(-1)[0].id)}
-        <span class="global-counter" style:height="22px">latest</span>
-      </Button>
+          <Tab
+            active={tab === "revisions"}
+            onclick={() => {
+              tab = "revisions";
+            }}>
+            {formatOid(revisions.slice(-1)[0].id)}
+            <span
+              class="global-counter"
+              style:height="22px"
+              style:color="var(--color-foreground-contrast)">
+              Latest
+            </span>
+          </Tab>
+        </div>
+      </Border>
     </div>
 
     {#if tab === "patch"}
-      <div class="txt-small patch-body">
-        <CommentComponent
-          caption="opened"
-          rid={repo.rid}
-          id={patch.id}
-          lastEdit={revisions[0].description.length > 1
-            ? revisions[0].description.at(-1)
-            : undefined}
-          author={revisions[0].author}
-          reactions={revisions[0].reactions}
-          timestamp={revisions[0].timestamp}
-          body={revisions[0].description.slice(-1)[0].body}
-          reactOnComment={partial(
-            reactOnRevision,
-            config.publicKey,
-            revisions[0].id,
-          )}
-          editComment={roles.isDelegateOrAuthor(
-            config.publicKey,
-            repo.delegates.map(delegate => delegate.did),
-            revisions[0].author.did,
-          ) && partial(editRevision, revisions[0].id)}>
-        </CommentComponent>
-      </div>
+      <Border
+        variant="ghost"
+        flatTop
+        styleWidth="100%"
+        stylePadding="1rem"
+        styleDisplay="block"
+        styleFlexDirection="column"
+        styleAlignItems="flex-start">
+        <div class="txt-small patch-body">
+          <CommentComponent
+            caption="opened"
+            rid={repo.rid}
+            id={patch.id}
+            lastEdit={revisions[0].description.length > 1
+              ? revisions[0].description.at(-1)
+              : undefined}
+            author={revisions[0].author}
+            reactions={revisions[0].reactions}
+            timestamp={revisions[0].timestamp}
+            body={revisions[0].description.slice(-1)[0].body}
+            reactOnComment={partial(
+              reactOnRevision,
+              config.publicKey,
+              revisions[0].id,
+            )}
+            editComment={roles.isDelegateOrAuthor(
+              config.publicKey,
+              repo.delegates.map(delegate => delegate.did),
+              revisions[0].author.did,
+            ) && partial(editRevision, revisions[0].id)}>
+          </CommentComponent>
+        </div>
 
-      <div>
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <div
-          role="button"
-          tabindex="0"
-          class="txt-semibold global-flex"
-          style:margin-bottom="1rem"
-          style:cursor="pointer"
-          onclick={() => (hideTimeline = !hideTimeline)}>
-          <Icon
-            name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
+        <Border variant="ghost" styleGap="0">
+          <div class="metadata-section" style:min-width="8rem">
+            <div class="metadata-section-title">Status</div>
+            <PatchStateBadge state={patch.state} />
+          </div>
+
+          <div class="metadata-divider"></div>
+
+          <div class="metadata-section" style:flex="1">
+            <LabelInput
+              allowedToEdit={!!roles.isDelegateOrAuthor(
+                config.publicKey,
+                repo.delegates.map(delegate => delegate.did),
+                patch.author.did,
+              )}
+              labels={patch.labels}
+              submitInProgress={labelSaveInProgress}
+              save={saveLabels} />
+          </div>
+
+          <div class="metadata-divider"></div>
+
+          <div class="metadata-section" style:flex="1">
+            <AssigneeInput
+              allowedToEdit={!!roles.isDelegateOrAuthor(
+                config.publicKey,
+                repo.delegates.map(delegate => delegate.did),
+                patch.author.did,
+              )}
+              assignees={patch.assignees}
+              submitInProgress={assigneesSaveInProgress}
+              save={saveAssignees} />
+          </div>
+        </Border>
+
+        <div>
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <div
+            role="button"
+            tabindex="0"
+            class="txt-semibold global-flex"
+            style:margin="1rem 0"
+            style:cursor="pointer"
+            onclick={() => (hideTimeline = !hideTimeline)}>
+            <Icon
+              name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
+          </div>
+          <div class:hide-timeline={hideTimeline}>
+            <PatchTimeline {activity} patchId={patch.id} />
+          </div>
         </div>
-        <div class:hide-timeline={hideTimeline}>
-          <PatchTimeline {activity} patchId={patch.id} />
-        </div>
-      </div>
+      </Border>
     {:else}
-      {@const revision = revisions.slice(-1)[0]}
-      {#await loadHighlightedDiff(repo.rid, revision.base, revision.head) then diff}
-        <div style:margin-top="1rem">
+      <Border
+        variant="ghost"
+        flatTop
+        styleDisplay="block"
+        stylePadding="1rem"
+        styleAlignItems="flex-start">
+        {@const revision = revisions.slice(-1)[0]}
+        {#await loadHighlightedDiff(repo.rid, revision.base, revision.head) then diff}
           <Changeset {diff} repoId={repo.rid} />
-        </div>
-      {/await}
+        {/await}
+      </Border>
     {/if}
   </div>
 </Layout>
