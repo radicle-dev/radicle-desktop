@@ -24,6 +24,7 @@
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
 
+  import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
@@ -33,14 +34,13 @@
   import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
   import IssueStateBadge from "@app/components/IssueStateBadge.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
-  import IssueTimelineLifecycleAction from "@app/components/IssueTimelineLifecycleAction.svelte";
+  import IssueTimeline from "@app/components/IssueTimeline.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
+  import Sidebar from "@app/components/Sidebar.svelte";
   import TextInput from "@app/components/TextInput.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
 
   import Layout from "./Layout.svelte";
-  import Sidebar from "@app/components/Sidebar.svelte";
-  import AssigneeInput from "@app/components/AssigneeInput.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -72,6 +72,8 @@
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let focusReply: boolean = $state(false);
+  let hideDiscussion = $state(false);
+  let hideTimeline = $state(false);
 
   $effect(() => {
     // The component doesn't get destroyed when we switch between different
@@ -86,6 +88,8 @@
     editingTitle = false;
     updatedTitle = issue.title;
     focusReply = false;
+    hideDiscussion = false;
+    hideTimeline = false;
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
@@ -324,7 +328,7 @@
     width: 2rem;
   }
   .issue-body {
-    margin-top: 1rem;
+    margin: 1rem 0;
     position: relative;
   }
   /* We put the background and clip-path in a separate element to prevent
@@ -372,6 +376,9 @@
   .metadata-section-title {
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
+  }
+  .hide {
+    display: none;
   }
 </style>
 
@@ -520,46 +527,64 @@
         {/snippet}
       </CommentComponent>
     </div>
-    <div class="connector"></div>
 
-    <div>
-      {#each activity as op}
-        {#each op.actions as action}
-          {#if action.type === "lifecycle"}
-            <IssueTimelineLifecycleAction {op} {action} />
-            <div class="connector"></div>
-          {:else if action.type === "comment"}
-            {@const thread = threads.find(t => t.root.id === op.id)}
-            {#if thread}
-              <ThreadComponent
-                {thread}
-                rid={repo.rid}
-                canEditComment={partial(
-                  roles.isDelegateOrAuthor,
-                  config.publicKey,
-                  repo.delegates.map(delegate => delegate.did),
-                )}
-                {editComment}
-                createReply={partial(createReply)}
-                reactOnComment={partial(reactOnComment, config.publicKey)} />
-              <div class="connector"></div>
-            {/if}
-          {/if}
+    <div style:margin-bottom="1rem">
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <div
+        role="button"
+        tabindex="0"
+        class="txt-semibold global-flex"
+        style:margin-bottom="1rem"
+        style:cursor="pointer"
+        onclick={() => (hideDiscussion = !hideDiscussion)}>
+        <Icon
+          name={hideDiscussion ? "chevron-right" : "chevron-down"} />Discussion
+      </div>
+      <div class:hide={hideDiscussion}>
+        {#each threads as thread}
+          <ThreadComponent
+            {thread}
+            rid={repo.rid}
+            canEditComment={partial(
+              roles.isDelegateOrAuthor,
+              config.publicKey,
+              repo.delegates.map(delegate => delegate.did),
+            )}
+            {editComment}
+            createReply={partial(createReply)}
+            reactOnComment={partial(reactOnComment, config.publicKey)} />
+          <div class="connector"></div>
         {/each}
-      {/each}
+
+        <div id={`reply-${issue.id}`}>
+          <CommentToggleInput
+            disallowEmptyBody
+            rid={repo.rid}
+            focus={focusReply}
+            onexpand={toggleReply}
+            onclose={topLevelReplyOpen
+              ? () => (topLevelReplyOpen = false)
+              : undefined}
+            placeholder="Leave a comment"
+            submit={partial(createComment)} />
+        </div>
+      </div>
     </div>
 
-    <div id={`reply-${issue.id}`}>
-      <CommentToggleInput
-        disallowEmptyBody
-        rid={repo.rid}
-        focus={focusReply}
-        onexpand={toggleReply}
-        onclose={topLevelReplyOpen
-          ? () => (topLevelReplyOpen = false)
-          : undefined}
-        placeholder="Leave a comment"
-        submit={partial(createComment)} />
+    <div>
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <div
+        role="button"
+        tabindex="0"
+        class="txt-semibold global-flex"
+        style:margin-bottom="1rem"
+        style:cursor="pointer"
+        onclick={() => (hideTimeline = !hideTimeline)}>
+        <Icon name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
+      </div>
+      <div class:hide={hideTimeline}>
+        <IssueTimeline {activity} />
+      </div>
     </div>
   </div>
 </Layout>

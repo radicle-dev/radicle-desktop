@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Action } from "@bindings/cob/patch/Action";
+  import type { Action } from "@bindings/cob/issue/Action";
   import type { Operation } from "@bindings/cob/Operation";
   import type { Author } from "@bindings/cob/Author";
 
@@ -16,21 +16,20 @@
     absoluteTimestamp,
     authorForNodeId,
     formatTimestamp,
-    patchStatusColor,
+    issueStatusColor,
     publicKeyFromDid,
   } from "@app/lib/utils";
   import Icon from "./Icon.svelte";
-  import Id from "./Id.svelte";
   import NodeId from "./NodeId.svelte";
   import { invoke } from "@app/lib/invoke";
+  import Id from "./Id.svelte";
 
   interface Props {
-    patchId: string;
     activity: Operation<Action>[];
   }
 
   /* eslint-disable prefer-const */
-  let { activity, patchId }: Props = $props();
+  let { activity }: Props = $props();
   /* eslint-enable prefer-const */
 
   const timeline = $derived(enrichActivity(flattenActivity(activity)));
@@ -74,6 +73,15 @@
 </script>
 
 <style>
+  a {
+    color: var(--color-foreground-default);
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
   .timeline {
     display: flex;
     gap: 0.75rem;
@@ -97,47 +105,17 @@
 
 <div class="timeline txt-small">
   {#each timeline as op}
-    {#if op.type === "revision"}
-      {#if op.id === patchId}
-        <div class="timeline-item">
-          <div class="icon" style:color="var(--color-fill-success)">
-            <Icon name="patch" />
-          </div>
-          <div class="wrapper">
-            <NodeId {...authorForNodeId(op.author)} />
-            <div>opened patch <Id id={op.id} variant="oid" /></div>
-            <div title={absoluteTimestamp(op.timestamp)}>
-              {formatTimestamp(op.timestamp)}
-            </div>
-          </div>
-        </div>
-      {:else}
-        <div class="timeline-item">
-          <div class="icon">
-            <Icon name="revision" />
-          </div>
-          <div class="wrapper">
-            <NodeId {...authorForNodeId(op.author)} />
-            <div>created a new revision <Id id={op.id} variant="oid" /></div>
-            <div title={absoluteTimestamp(op.timestamp)}>
-              {formatTimestamp(op.timestamp)}
-            </div>
-          </div>
-        </div>
-      {/if}
-    {:else if op.type === "lifecycle"}
+    {#if op.type === "lifecycle"}
       <div class="timeline-item">
-        <div class="icon" style:color={patchStatusColor[op.state.status]}>
-          <Icon name="patch" />
+        <div class="icon" style:color={issueStatusColor[op.state.status]}>
+          <Icon name="issue" />
         </div>
         <div class="wrapper">
           <NodeId {...authorForNodeId(op.author)} />
-          {#if op.state.status === "draft"}
-            converted patch to draft
-          {:else if op.state.status === "archived"}
-            archived patch
+          {#if op.state.status === "closed"}
+            closed issue as {op.state.reason}
           {:else if op.state.status === "open"}
-            reopened patch
+            reopened issue
           {/if}
           <div title={absoluteTimestamp(op.timestamp)}>
             {formatTimestamp(op.timestamp)}
@@ -210,21 +188,6 @@
           </div>
         </div>
       {/if}
-    {:else if op.type === "merge"}
-      <div class="timeline-item">
-        <div class="icon" style:color="var(--color-fill-primary)">
-          <Icon name="patch" />
-        </div>
-        <div class="wrapper">
-          <NodeId {...authorForNodeId(op.author)} />
-          <div>
-            merged patch at revision <Id id={op.revision} variant="oid" />
-          </div>
-          <div title={absoluteTimestamp(op.timestamp)}>
-            {formatTimestamp(op.timestamp)}
-          </div>
-        </div>
-      </div>
     {:else if op.type === "edit"}
       {#if op.previous && op.previous.type === op.type}
         <div class="timeline-item">
@@ -242,62 +205,38 @@
           </div>
         </div>
       {/if}
-    {:else if op.type === "review"}
-      <div class="timeline-item">
-        {#if op.verdict === "accept"}
-          <div class="icon" style:color="var(--color-foreground-success)">
-            <Icon name="comment-checkmark" />
+    {:else if op.type === "comment"}
+      {#if op.id === activity[0].id}
+        <div class="timeline-item">
+          <div class="icon" style:color="var(--color-fill-success)">
+            <Icon name="issue" />
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            accepted revision <Id id={op.revision} variant="oid" />
+            <div>opened issue <Id id={op.id} variant="oid" /></div>
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>
           </div>
-        {:else}
-          <div class="icon" style:color="var(--color-foreground-red)">
-            <Icon name="comment-cross" />
+        </div>
+      {:else}
+        <div class="timeline-item">
+          <div class="icon">
+            <Icon name="comment" />
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            rejected revision <Id id={op.revision} variant="oid" />
+            <a href="#{op.id}">
+              {op.replyTo && op.replyTo !== activity[0].id
+                ? "replied to a comment"
+                : "commented"}
+            </a>
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>
           </div>
-        {/if}
-      </div>
-    {:else if op.type === "review.comment"}
-      <div class="timeline-item">
-        <div class="icon">
-          <Icon name="comment" />
         </div>
-        <div class="wrapper">
-          <NodeId {...authorForNodeId(op.author)} />
-          {op.reply_to ? "replied to a comment" : "commented"} on review <Id
-            id={op.review}
-            variant="oid" />
-          <div title={absoluteTimestamp(op.timestamp)}>
-            {formatTimestamp(op.timestamp)}
-          </div>
-        </div>
-      </div>
-    {:else if op.type === "revision.comment"}
-      <div class="timeline-item">
-        <div class="icon">
-          <Icon name="comment" />
-        </div>
-        <div class="wrapper">
-          <NodeId {...authorForNodeId(op.author)} />
-          {op.replyTo ? "replied to a comment" : "commented"} on revision <Id
-            id={op.revision}
-            variant="oid" />
-          <div title={absoluteTimestamp(op.timestamp)}>
-            {formatTimestamp(op.timestamp)}
-          </div>
-        </div>
-      </div>
+      {/if}
     {/if}
   {/each}
 </div>
