@@ -10,8 +10,10 @@
   import type { PatchStatus } from "./router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { Thread } from "@bindings/cob/thread/Thread";
 
   import partial from "lodash/partial";
+  import { tick } from "svelte";
 
   import * as roles from "@app/lib/roles";
   import {
@@ -19,6 +21,7 @@
     patchStatusBackgroundColor,
     patchStatusColor,
     publicKeyFromDid,
+    scrollIntoView,
   } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
@@ -29,6 +32,7 @@
   import Border from "@app/components/Border.svelte";
   import Changeset from "@app/components/Changeset.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
+  import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
@@ -41,6 +45,7 @@
   import Sidebar from "@app/components/Sidebar.svelte";
   import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
+  import ThreadComponent from "@app/components/Thread.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -73,8 +78,30 @@
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let tab: "patch" | "revisions" = $state("patch");
-
+  let hideDiscussion = $state(false);
   let hideTimeline = $state(false);
+  let focusReply: boolean = $state(false);
+  let topLevelReplyOpen = $state(false);
+
+  const threads = $derived(
+    ((revisions[0].discussion &&
+      revisions[0].discussion
+        .filter(
+          comment =>
+            (comment.id !== revisions[0].id && !comment.replyTo) ||
+            comment.replyTo === revisions[0].id,
+        )
+        .map(thread => {
+          return {
+            root: thread,
+            replies:
+              revisions[0].discussion &&
+              revisions[0].discussion
+                .filter(comment => comment.replyTo === thread.id)
+                .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
+          };
+        }, [])) as Thread[]) || [],
+  );
 
   $effect(() => {
     items = patches.content;
@@ -89,49 +116,35 @@
     tab = "patch";
     editingTitle = false;
     updatedTitle = patch.title;
+    hideDiscussion = false;
     hideTimeline = false;
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
-  async function loadHighlightedDiff(rid: string, base: string, head: string) {
-    return invoke<Diff>("get_diff", {
-      rid,
-      options: {
-        base,
-        head,
-        unified: 5,
-        highlight: true,
-      },
-    });
-  }
+  async function editTitle(rid: string, patchId: string, title: string) {
+    if (patch.title === updatedTitle) {
+      editingTitle = false;
+      return;
+    }
 
-  async function loadPatch(rid: string, patchId: string) {
-    patch = await invoke<Patch>("patch_by_id", {
-      rid: rid,
-      id: patchId,
-    });
-    revisions = await invoke<Revision[]>("revisions_by_patch", {
-      rid: rid,
-      id: patchId,
-    });
-    activity = await invoke<Operation<Action>[]>("activity_by_patch", {
-      rid: repo.rid,
-      id: patch.id,
-    });
-  }
-
-  async function loadMoreSecondColumn() {
-    if (more) {
-      const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
-        rid: repo.rid,
-        skip: cursor + 20,
-        take: 20,
+    try {
+      await invoke("edit_patch", {
+        rid,
+        cobId: patchId,
+        action: {
+          id: patchId,
+          type: "edit",
+          title,
+          target: "delegates",
+        },
+        opts: { announce: $nodeRunning && $announce },
       });
-
-      cursor = p.cursor;
-      more = p.more;
-      items = [...items, ...p.content];
+      editingTitle = false;
+    } catch (error) {
+      console.error("Editing title failed: ", error);
+    } finally {
+      await reload();
     }
   }
 
@@ -175,29 +188,25 @@
     }
   }
 
-  async function reload() {
-    [config, repo, patches, patch, revisions, activity] = await Promise.all([
-      invoke<Config>("config"),
-      invoke<RepoInfo>("repo_by_id", {
+  async function saveState(state: Patch["state"]) {
+    try {
+      await invoke("edit_patch", {
         rid: repo.rid,
-      }),
-      invoke<PaginatedQuery<Patch[]>>("list_patches", {
-        rid: repo.rid,
-        status,
-      }),
-      invoke<Patch>("patch_by_id", {
-        rid: repo.rid,
-        id: patch.id,
-      }),
-      invoke<Revision[]>("revisions_by_patch", {
-        rid: repo.rid,
-        id: patch.id,
-      }),
-      invoke<Operation<Action>[]>("activity_by_patch", {
-        rid: repo.rid,
-        id: patch.id,
-      }),
-    ]);
+        cobId: patch.id,
+        action: {
+          type: "lifecycle",
+          state,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+      if (initialStatus !== undefined) {
+        status = state["status"];
+      }
+    } catch (error) {
+      console.error("Changing state failed", error);
+    } finally {
+      await reload();
+    }
   }
 
   async function editRevision(
@@ -218,7 +227,7 @@
         opts: { announce: $nodeRunning && $announce },
       });
     } catch (error) {
-      console.error("Patch revision editing failed: ", error);
+      console.error("Editing revision failed: ", error);
     } finally {
       await reload();
     }
@@ -251,51 +260,161 @@
     }
   }
 
-  async function saveState(state: Patch["state"]) {
+  async function editComment(commentId: string, body: string, embeds: Embed[]) {
     try {
       await invoke("edit_patch", {
         rid: repo.rid,
         cobId: patch.id,
         action: {
-          type: "lifecycle",
-          state,
+          type: "revision.comment.edit",
+          comment: commentId,
+          body,
+          revision: revisions[0].id,
+          embeds,
         },
         opts: { announce: $nodeRunning && $announce },
       });
-      if (initialStatus !== undefined) {
-        status = state["status"];
-      }
     } catch (error) {
-      console.error("Changing patch state failed", error);
+      console.error("Eediting comment failed: ", error);
     } finally {
       await reload();
     }
   }
 
-  async function editTitle(id: string, title: string) {
-    if (patch.title === updatedTitle) {
-      editingTitle = false;
-      return;
+  async function createReply(replyTo: string, body: string, embeds: Embed[]) {
+    try {
+      await invoke("create_patch_comment", {
+        rid: repo.rid,
+        new: { id: patch.id, body, embeds, replyTo, revision: revisions[0].id },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Creating reply failed", error);
+    } finally {
+      await reload();
     }
+  }
 
+  async function reactOnComment(
+    publicKey: string,
+    commentId: string,
+    authors: Author[],
+    reaction: string,
+  ) {
     try {
       await invoke("edit_patch", {
         rid: repo.rid,
         cobId: patch.id,
         action: {
-          id,
-          type: "edit",
-          title,
-          target: "delegates",
+          type: "revision.comment.react",
+          comment: commentId,
+          reaction,
+          revision: revisions[0].id,
+          active: !authors.find(
+            ({ did }) => publicKeyFromDid(did) === publicKey,
+          ),
         },
         opts: { announce: $nodeRunning && $announce },
       });
-      editingTitle = false;
     } catch (error) {
-      console.error("Patch title editing failed: ", error);
+      console.error("Editing comment reactions failed", error);
     } finally {
       await reload();
     }
+  }
+
+  async function createComment(body: string, embeds: Embed[]) {
+    try {
+      await invoke("create_patch_comment", {
+        rid: repo.rid,
+        new: { id: patch.id, body, embeds, revision: revisions[0].id },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Creating comment failed: ", error);
+    } finally {
+      await reload();
+    }
+  }
+
+  async function toggleReply() {
+    topLevelReplyOpen = !topLevelReplyOpen;
+    if (!topLevelReplyOpen) {
+      return;
+    }
+
+    await tick();
+    scrollIntoView(`reply-${patch.id}`, {
+      behavior: "smooth",
+      block: "center",
+    });
+    focusReply = true;
+  }
+
+  async function loadPatch(rid: string, patchId: string) {
+    patch = await invoke<Patch>("patch_by_id", {
+      rid: rid,
+      id: patchId,
+    });
+    revisions = await invoke<Revision[]>("revisions_by_patch", {
+      rid: rid,
+      id: patchId,
+    });
+    activity = await invoke<Operation<Action>[]>("activity_by_patch", {
+      rid: repo.rid,
+      id: patch.id,
+    });
+  }
+
+  async function loadHighlightedDiff(rid: string, base: string, head: string) {
+    return invoke<Diff>("get_diff", {
+      rid,
+      options: {
+        base,
+        head,
+        unified: 5,
+        highlight: true,
+      },
+    });
+  }
+
+  async function loadMoreSecondColumn() {
+    if (more) {
+      const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
+        rid: repo.rid,
+        skip: cursor + 20,
+        take: 20,
+      });
+
+      cursor = p.cursor;
+      more = p.more;
+      items = [...items, ...p.content];
+    }
+  }
+
+  async function reload() {
+    [config, repo, patches, patch, revisions, activity] = await Promise.all([
+      invoke<Config>("config"),
+      invoke<RepoInfo>("repo_by_id", {
+        rid: repo.rid,
+      }),
+      invoke<PaginatedQuery<Patch[]>>("list_patches", {
+        rid: repo.rid,
+        status,
+      }),
+      invoke<Patch>("patch_by_id", {
+        rid: repo.rid,
+        id: patch.id,
+      }),
+      invoke<Revision[]>("revisions_by_patch", {
+        rid: repo.rid,
+        id: patch.id,
+      }),
+      invoke<Operation<Action>[]>("activity_by_patch", {
+        rid: repo.rid,
+        id: patch.id,
+      }),
+    ]);
   }
 </script>
 
@@ -370,8 +489,14 @@
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
   }
-  .hide-timeline {
+  .hide {
     display: none;
+  }
+  .connector {
+    width: 2px;
+    height: 1rem;
+    margin-left: 1.25rem;
+    background-color: var(--color-background-float);
   }
 </style>
 
@@ -425,7 +550,7 @@
             autofocus
             onSubmit={async () => {
               if (updatedTitle.trim().length > 0) {
-                await editTitle(patch.id, updatedTitle);
+                await editTitle(repo.rid, patch.id, updatedTitle);
               }
             }}
             onDismiss={() => {
@@ -437,7 +562,7 @@
               name="checkmark"
               onclick={async () => {
                 if (updatedTitle.trim().length > 0) {
-                  await editTitle(patch.id, updatedTitle);
+                  await editTitle(repo.rid, patch.id, updatedTitle);
                 }
               }} />
             <Icon
@@ -541,6 +666,9 @@
               repo.delegates.map(delegate => delegate.did),
               revisions[0].author.did,
             ) && partial(editRevision, revisions[0].id)}>
+            {#snippet actions()}
+              <Icon name="reply" onclick={toggleReply} />
+            {/snippet}
           </CommentComponent>
         </div>
 
@@ -579,6 +707,51 @@
           </div>
         </Border>
 
+        <div style:margin="1rem 0">
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <div
+            role="button"
+            tabindex="0"
+            class="txt-semibold global-flex"
+            style:margin-bottom="1rem"
+            style:cursor="pointer"
+            onclick={() => (hideDiscussion = !hideDiscussion)}>
+            <Icon
+              name={hideDiscussion
+                ? "chevron-right"
+                : "chevron-down"} />Discussion
+          </div>
+          <div class:hide={hideDiscussion}>
+            {#each threads as thread}
+              <ThreadComponent
+                {thread}
+                rid={repo.rid}
+                canEditComment={partial(
+                  roles.isDelegateOrAuthor,
+                  config.publicKey,
+                  repo.delegates.map(delegate => delegate.did),
+                )}
+                editComment={partial(editComment)}
+                createReply={partial(createReply)}
+                reactOnComment={partial(reactOnComment, config.publicKey)} />
+              <div class="connector"></div>
+            {/each}
+
+            <div id={`reply-${patch.id}`}>
+              <CommentToggleInput
+                disallowEmptyBody
+                rid={repo.rid}
+                focus={focusReply}
+                onexpand={toggleReply}
+                onclose={topLevelReplyOpen
+                  ? () => (topLevelReplyOpen = false)
+                  : undefined}
+                placeholder="Leave a comment"
+                submit={partial(createComment)} />
+            </div>
+          </div>
+        </div>
+
         <div>
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
@@ -591,7 +764,7 @@
             <Icon
               name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
           </div>
-          <div class:hide-timeline={hideTimeline}>
+          <div class:hide={hideTimeline}>
             <PatchTimeline {activity} patchId={patch.id} />
           </div>
         </div>

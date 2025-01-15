@@ -80,6 +80,7 @@
 
   .top-level-comment {
     position: relative;
+    z-index: 1;
   }
   /* We put the background and clip-path in a separate element to prevent
      popovers being clipped in the main element. */
