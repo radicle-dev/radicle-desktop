@@ -2,37 +2,25 @@
   import type { Action } from "@bindings/cob/patch/Action";
   import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
-  import type { Diff } from "@bindings/diff/Diff";
-  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Operation } from "@bindings/cob/Operation";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { PatchStatus } from "./router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
-  import type { Thread } from "@bindings/cob/thread/Thread";
-
-  import partial from "lodash/partial";
-  import { tick } from "svelte";
 
   import * as roles from "@app/lib/roles";
+  import { announce } from "@app/components/AnnounceSwitch.svelte";
   import {
     formatOid,
     patchStatusBackgroundColor,
     patchStatusColor,
-    publicKeyFromDid,
-    scrollIntoView,
   } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
 
-  import { announce } from "@app/components/AnnounceSwitch.svelte";
-
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
-  import Changeset from "@app/components/Changeset.svelte";
-  import CommentComponent from "@app/components/Comment.svelte";
-  import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
@@ -41,11 +29,10 @@
   import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
-  import PatchTimeline from "@app/components/PatchTimeline.svelte";
+  import RevisionComponent from "@app/components/Revision.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
   import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
-  import ThreadComponent from "@app/components/Thread.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -78,32 +65,6 @@
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let tab: "patch" | "revisions" = $state("patch");
-  let hideDiscussion = $state(false);
-  let hideChanges = $state(false);
-  let hideTimeline = $state(false);
-  let focusReply: boolean = $state(false);
-  let topLevelReplyOpen = $state(false);
-  let latestRevision = $derived(revisions.slice(-1)[0]);
-
-  const threads = $derived(
-    ((revisions[0].discussion &&
-      revisions[0].discussion
-        .filter(
-          comment =>
-            (comment.id !== revisions[0].id && !comment.replyTo) ||
-            comment.replyTo === revisions[0].id,
-        )
-        .map(thread => {
-          return {
-            root: thread,
-            replies:
-              revisions[0].discussion &&
-              revisions[0].discussion
-                .filter(comment => comment.replyTo === thread.id)
-                .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
-          };
-        }, [])) as Thread[]) || [],
-  );
 
   $effect(() => {
     items = patches.content;
@@ -118,12 +79,24 @@
     tab = "patch";
     editingTitle = false;
     updatedTitle = patch.title;
-    hideDiscussion = false;
-    hideChanges = false;
-    hideTimeline = false;
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
+
+  async function loadPatch(rid: string, patchId: string) {
+    patch = await invoke<Patch>("patch_by_id", {
+      rid: rid,
+      id: patchId,
+    });
+    revisions = await invoke<Revision[]>("revisions_by_patch", {
+      rid: rid,
+      id: patchId,
+    });
+    activity = await invoke<Operation<Action>[]>("activity_by_patch", {
+      rid: repo.rid,
+      id: patch.id,
+    });
+  }
 
   async function editTitle(rid: string, patchId: string, title: string) {
     if (patch.title === updatedTitle) {
@@ -212,175 +185,6 @@
     }
   }
 
-  async function editRevision(
-    revisionId: string,
-    description: string,
-    embeds: Embed[],
-  ) {
-    try {
-      await invoke("edit_patch", {
-        rid: repo.rid,
-        cobId: patch.id,
-        action: {
-          type: "revision.edit",
-          revision: revisionId,
-          description,
-          embeds,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Editing revision failed: ", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function reactOnRevision(
-    publicKey: string,
-    revisionId: string,
-    authors: Author[],
-    reaction: string,
-  ) {
-    try {
-      await invoke("edit_patch", {
-        rid: repo.rid,
-        cobId: patch.id,
-        action: {
-          type: "revision.react",
-          revision: revisionId,
-          reaction,
-          active: !authors.find(
-            ({ did }) => publicKeyFromDid(did) === publicKey,
-          ),
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Editing reactions failed", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function editComment(commentId: string, body: string, embeds: Embed[]) {
-    try {
-      await invoke("edit_patch", {
-        rid: repo.rid,
-        cobId: patch.id,
-        action: {
-          type: "revision.comment.edit",
-          comment: commentId,
-          body,
-          revision: revisions[0].id,
-          embeds,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Eediting comment failed: ", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function createReply(replyTo: string, body: string, embeds: Embed[]) {
-    try {
-      await invoke("create_patch_comment", {
-        rid: repo.rid,
-        new: { id: patch.id, body, embeds, replyTo, revision: revisions[0].id },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Creating reply failed", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function reactOnComment(
-    publicKey: string,
-    commentId: string,
-    authors: Author[],
-    reaction: string,
-  ) {
-    try {
-      await invoke("edit_patch", {
-        rid: repo.rid,
-        cobId: patch.id,
-        action: {
-          type: "revision.comment.react",
-          comment: commentId,
-          reaction,
-          revision: revisions[0].id,
-          active: !authors.find(
-            ({ did }) => publicKeyFromDid(did) === publicKey,
-          ),
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Editing comment reactions failed", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function createComment(body: string, embeds: Embed[]) {
-    try {
-      await invoke("create_patch_comment", {
-        rid: repo.rid,
-        new: { id: patch.id, body, embeds, revision: revisions[0].id },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Creating comment failed: ", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function toggleReply() {
-    topLevelReplyOpen = !topLevelReplyOpen;
-    if (!topLevelReplyOpen) {
-      return;
-    }
-
-    await tick();
-    scrollIntoView(`reply-${patch.id}`, {
-      behavior: "smooth",
-      block: "center",
-    });
-    focusReply = true;
-  }
-
-  async function loadPatch(rid: string, patchId: string) {
-    patch = await invoke<Patch>("patch_by_id", {
-      rid: rid,
-      id: patchId,
-    });
-    revisions = await invoke<Revision[]>("revisions_by_patch", {
-      rid: rid,
-      id: patchId,
-    });
-    activity = await invoke<Operation<Action>[]>("activity_by_patch", {
-      rid: repo.rid,
-      id: patch.id,
-    });
-  }
-
-  async function loadHighlightedDiff(rid: string, base: string, head: string) {
-    return invoke<Diff>("get_diff", {
-      rid,
-      options: {
-        base,
-        head,
-        unified: 5,
-        highlight: true,
-      },
-    });
-  }
-
   async function loadMoreSecondColumn() {
     if (more) {
       const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
@@ -456,23 +260,6 @@
     padding: 1rem 1rem 1rem 0;
   }
 
-  .patch-body {
-    margin-bottom: 1rem;
-    position: relative;
-    z-index: 1;
-  }
-  /* We put the background and clip-path in a separate element to prevent
-     popovers being clipped in the main element. */
-  .patch-body::after {
-    position: absolute;
-    z-index: -1;
-    content: " ";
-    background-color: var(--color-background-float);
-    clip-path: var(--2px-corner-fill);
-    width: 100%;
-    height: 100%;
-    top: 0;
-  }
   .metadata-divider {
     width: 2px;
     background-color: var(--color-fill-ghost);
@@ -491,15 +278,6 @@
   .metadata-section-title {
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
-  }
-  .hide {
-    display: none;
-  }
-  .connector {
-    width: 2px;
-    height: 1rem;
-    margin-left: 1.25rem;
-    background-color: var(--color-background-float);
   }
 </style>
 
@@ -599,8 +377,42 @@
         </div>
       {/if}
     </div>
+    <Border variant="ghost" styleGap="0">
+      <div class="metadata-section" style:min-width="8rem">
+        <div class="metadata-section-title">Status</div>
+        <PatchStateBadge state={patch.state} />
+      </div>
 
-    <div class="global-flex" style:gap="0.5rem">
+      <div class="metadata-divider"></div>
+
+      <div class="metadata-section" style:flex="1">
+        <LabelInput
+          allowedToEdit={!!roles.isDelegateOrAuthor(
+            config.publicKey,
+            repo.delegates.map(delegate => delegate.did),
+            patch.author.did,
+          )}
+          labels={patch.labels}
+          submitInProgress={labelSaveInProgress}
+          save={saveLabels} />
+      </div>
+
+      <div class="metadata-divider"></div>
+
+      <div class="metadata-section" style:flex="1">
+        <AssigneeInput
+          allowedToEdit={!!roles.isDelegateOrAuthor(
+            config.publicKey,
+            repo.delegates.map(delegate => delegate.did),
+            patch.author.did,
+          )}
+          assignees={patch.assignees}
+          submitInProgress={assigneesSaveInProgress}
+          save={saveAssignees} />
+      </div>
+    </Border>
+
+    <div class="global-flex" style:gap="0.5rem" style:margin-top="1rem">
       <Border stylePosition="relative" variant="ghost" flatBottom>
         <div
           class="global-flex"
@@ -620,20 +432,21 @@
               Initial
             </span>
           </Tab>
-
-          <Tab
-            active={tab === "revisions"}
-            onclick={() => {
-              tab = "revisions";
-            }}>
-            {formatOid(revisions.slice(-1)[0].id)}
-            <span
-              class="global-counter"
-              style:height="22px"
-              style:color="var(--color-foreground-contrast)">
-              Latest
-            </span>
-          </Tab>
+          {#if revisions.length > 1}
+            <Tab
+              active={tab === "revisions"}
+              onclick={() => {
+                tab = "revisions";
+              }}>
+              {formatOid(revisions.slice(-1)[0].id)}
+              <span
+                class="global-counter"
+                style:height="22px"
+                style:color="var(--color-foreground-contrast)">
+                Latest
+              </span>
+            </Tab>
+          {/if}
         </div>
       </Border>
     </div>
@@ -647,163 +460,32 @@
         styleDisplay="block"
         styleFlexDirection="column"
         styleAlignItems="flex-start">
-        <div class="txt-small patch-body">
-          <CommentComponent
-            caption="opened"
-            rid={repo.rid}
-            id={patch.id}
-            lastEdit={revisions[0].description.length > 1
-              ? revisions[0].description.at(-1)
-              : undefined}
-            author={revisions[0].author}
-            reactions={revisions[0].reactions}
-            timestamp={revisions[0].timestamp}
-            body={revisions[0].description.slice(-1)[0].body}
-            reactOnComment={partial(
-              reactOnRevision,
-              config.publicKey,
-              revisions[0].id,
-            )}
-            editComment={roles.isDelegateOrAuthor(
-              config.publicKey,
-              repo.delegates.map(delegate => delegate.did),
-              revisions[0].author.did,
-            ) && partial(editRevision, revisions[0].id)}>
-            {#snippet actions()}
-              <Icon name="reply" onclick={toggleReply} />
-            {/snippet}
-          </CommentComponent>
-        </div>
-
-        <Border variant="ghost" styleGap="0">
-          <div class="metadata-section" style:min-width="8rem">
-            <div class="metadata-section-title">Status</div>
-            <PatchStateBadge state={patch.state} />
-          </div>
-
-          <div class="metadata-divider"></div>
-
-          <div class="metadata-section" style:flex="1">
-            <LabelInput
-              allowedToEdit={!!roles.isDelegateOrAuthor(
-                config.publicKey,
-                repo.delegates.map(delegate => delegate.did),
-                patch.author.did,
-              )}
-              labels={patch.labels}
-              submitInProgress={labelSaveInProgress}
-              save={saveLabels} />
-          </div>
-
-          <div class="metadata-divider"></div>
-
-          <div class="metadata-section" style:flex="1">
-            <AssigneeInput
-              allowedToEdit={!!roles.isDelegateOrAuthor(
-                config.publicKey,
-                repo.delegates.map(delegate => delegate.did),
-                patch.author.did,
-              )}
-              assignees={patch.assignees}
-              submitInProgress={assigneesSaveInProgress}
-              save={saveAssignees} />
-          </div>
-        </Border>
-
-        <div style:margin="1rem 0">
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <div
-            role="button"
-            tabindex="0"
-            class="txt-semibold global-flex"
-            style:margin-bottom="1rem"
-            style:cursor="pointer"
-            onclick={() => (hideDiscussion = !hideDiscussion)}>
-            <Icon
-              name={hideDiscussion
-                ? "chevron-right"
-                : "chevron-down"} />Discussion
-          </div>
-          <div class:hide={hideDiscussion}>
-            {#each threads as thread}
-              <ThreadComponent
-                {thread}
-                rid={repo.rid}
-                canEditComment={partial(
-                  roles.isDelegateOrAuthor,
-                  config.publicKey,
-                  repo.delegates.map(delegate => delegate.did),
-                )}
-                editComment={partial(editComment)}
-                createReply={partial(createReply)}
-                reactOnComment={partial(reactOnComment, config.publicKey)} />
-              <div class="connector"></div>
-            {/each}
-
-            <div id={`reply-${patch.id}`}>
-              <CommentToggleInput
-                disallowEmptyBody
-                rid={repo.rid}
-                focus={focusReply}
-                onexpand={toggleReply}
-                onclose={topLevelReplyOpen
-                  ? () => (topLevelReplyOpen = false)
-                  : undefined}
-                placeholder="Leave a comment"
-                submit={partial(createComment)} />
-            </div>
-          </div>
-        </div>
-
-        <div style:margin="1rem 0">
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <div
-            role="button"
-            tabindex="0"
-            class="txt-semibold global-flex"
-            style:margin-bottom="1rem"
-            style:cursor="pointer"
-            onclick={() => (hideChanges = !hideChanges)}>
-            <Icon
-              name={hideChanges ? "chevron-right" : "chevron-down"} />Changes
-          </div>
-          <div class:hide={hideChanges}>
-            {#await loadHighlightedDiff(repo.rid, latestRevision.base, latestRevision.head)}
-              <span class="txt-small">Loading…</span>
-            {:then diff}
-              <Changeset {diff} repoId={repo.rid} />
-            {/await}
-          </div>
-        </div>
-
-        <div>
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <div
-            role="button"
-            tabindex="0"
-            class="txt-semibold global-flex"
-            style:margin="1rem 0"
-            style:cursor="pointer"
-            onclick={() => (hideTimeline = !hideTimeline)}>
-            <Icon
-              name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
-          </div>
-          <div class:hide={hideTimeline}>
-            <PatchTimeline {activity} patchId={patch.id} />
-          </div>
-        </div>
+        <RevisionComponent
+          rid={repo.rid}
+          repoDelegates={repo.delegates}
+          patchId={patch.id}
+          {reload}
+          {activity}
+          revision={revisions[0]}
+          {config} />
       </Border>
     {:else}
       <Border
         variant="ghost"
         flatTop
-        styleDisplay="block"
+        styleWidth="100%"
         stylePadding="1rem"
+        styleDisplay="block"
+        styleFlexDirection="column"
         styleAlignItems="flex-start">
-        {@const revision = revisions.slice(-1)[0]}
-        {#await loadHighlightedDiff(repo.rid, revision.base, revision.head) then diff}
-          <Changeset {diff} repoId={repo.rid} />
-        {/await}
+        <RevisionComponent
+          rid={repo.rid}
+          repoDelegates={repo.delegates}
+          patchId={patch.id}
+          {reload}
+          {activity}
+          revision={revisions.slice(-1)[0]}
+          {config} />
       </Border>
     {/if}
   </div>
