@@ -79,9 +79,11 @@
   let assigneesSaveInProgress: boolean = $state(false);
   let tab: "patch" | "revisions" = $state("patch");
   let hideDiscussion = $state(false);
+  let hideChanges = $state(false);
   let hideTimeline = $state(false);
   let focusReply: boolean = $state(false);
   let topLevelReplyOpen = $state(false);
+  let latestRevision = $derived(revisions.slice(-1)[0]);
 
   const threads = $derived(
     ((revisions[0].discussion &&
@@ -117,6 +119,7 @@
     editingTitle = false;
     updatedTitle = patch.title;
     hideDiscussion = false;
+    hideChanges = false;
     hideTimeline = false;
   });
 
@@ -749,6 +752,27 @@
                 placeholder="Leave a comment"
                 submit={partial(createComment)} />
             </div>
+          </div>
+        </div>
+
+        <div style:margin="1rem 0">
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <div
+            role="button"
+            tabindex="0"
+            class="txt-semibold global-flex"
+            style:margin-bottom="1rem"
+            style:cursor="pointer"
+            onclick={() => (hideChanges = !hideChanges)}>
+            <Icon
+              name={hideChanges ? "chevron-right" : "chevron-down"} />Changes
+          </div>
+          <div class:hide={hideChanges}>
+            {#await loadHighlightedDiff(repo.rid, latestRevision.base, latestRevision.head)}
+              <span class="txt-small">Loading…</span>
+            {:then diff}
+              <Changeset {diff} repoId={repo.rid} />
+            {/await}
           </div>
         </div>
 
