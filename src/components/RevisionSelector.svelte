@@ -49,6 +49,9 @@
   .dropdown-group:not(:last-of-type) {
     margin-bottom: 1rem;
   }
+  .icon {
+    min-width: 16px;
+  }
 </style>
 
 <Popover popoverPadding="0" popoverPositionTop="2.5rem" popoverPositionLeft="0">
@@ -82,6 +85,29 @@
                     selectRevision(revision);
                   }}>
                   <div class="global-flex txt-overflow">
+                    <div class="icon">
+                      {#if patch.state.status === "merged" && patch.state.revision === revision.id}
+                        <div style:color="var(--color-fill-primary)">
+                          <Icon name="merge" />
+                        </div>
+                      {:else if revision.reviews && revision.reviews.length > 0 && revision.reviews.every( r => {
+                            return r.verdict === "accept";
+                          }, )}
+                        <div style:color="var(--color-fill-success)">
+                          <Icon name="comment-checkmark" />
+                        </div>
+                      {:else if revision.reviews && revision.reviews.length > 0 && revision.reviews.every( r => {
+                            return r.verdict === "reject";
+                          }, )}
+                        <div style:color="var(--color-foreground-red)">
+                          <Icon name="comment-cross" />
+                        </div>
+                      {:else if revision.reviews && revision.reviews.length}
+                        <div style:color="var(--color-foreground-dim)">
+                          <Icon name="none" />
+                        </div>
+                      {/if}
+                    </div>
                     <span class="global-oid">
                       {formatOid(revision.id)}
                     </span>
