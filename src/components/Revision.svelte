@@ -13,13 +13,21 @@
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
-  import { publicKeyFromDid, scrollIntoView } from "@app/lib/utils";
+  import {
+    absoluteTimestamp,
+    authorForNodeId,
+    formatTimestamp,
+    publicKeyFromDid,
+    scrollIntoView,
+  } from "@app/lib/utils";
 
   import Changeset from "@app/components/Changeset.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
+  import Markdown from "./Markdown.svelte";
 
   interface Props {
     rid: string;
@@ -38,6 +46,7 @@
   let focusReply: boolean = $state(false);
   let hideChanges = $state(false);
   let hideDiscussion = $state(false);
+  let hideReviews = $state(false);
   let topLevelReplyOpen = $state(false);
 
   const threads = $derived(
@@ -64,6 +73,7 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     patchId;
 
+    hideReviews = false;
     hideDiscussion = false;
     hideChanges = false;
   });
@@ -250,6 +260,14 @@
     margin-left: 1.25rem;
     background-color: var(--color-background-float);
   }
+  .review {
+    clip-path: var(--2px-corner-fill);
+    padding: 0.5rem 0.75rem;
+    font-size: var(--font-size-small);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 </style>
 
 <div class="txt-small patch-body">
@@ -317,6 +335,53 @@
     </div>
   </div>
 </div>
+
+{#if revision.reviews && revision.reviews.length}
+  <div style:margin="1rem 0">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div
+      role="button"
+      tabindex="0"
+      class="txt-semibold global-flex"
+      style:margin-bottom="1rem"
+      style:cursor="pointer"
+      onclick={() => (hideReviews = !hideReviews)}>
+      <Icon name={hideReviews ? "chevron-right" : "chevron-down"} />Reviews
+    </div>
+    <div class:hide={hideReviews}>
+      {#each revision.reviews as review}
+        <div
+          class="review"
+          style:background-color={review.verdict === "accept"
+            ? "var(--color-fill-diff-green-light)"
+            : "var(--color-fill-diff-red-light)"}>
+          <div class="global-flex">
+            <NodeId {...authorForNodeId(review.author)} />
+            {review.verdict === "accept" ? "accepted" : "rejected"} revision
+            <div title={absoluteTimestamp(review.timestamp)}>
+              {formatTimestamp(review.timestamp)}
+            </div>
+            {#if review.comments.length > 0}
+              <div
+                class="global-flex"
+                style:gap="0.25rem"
+                style:margin-left="auto">
+                <Icon name="comment" />{review.comments.length}
+              </div>
+            {/if}
+          </div>
+          <div>
+            {#if review.summary?.trim()}
+              <Markdown {rid} breaks content={review.summary} />
+            {:else}
+              <span class="txt-missing">No summary.</span>
+            {/if}
+          </div>
+        </div>
+      {/each}
+    </div>
+  </div>
+{/if}
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
