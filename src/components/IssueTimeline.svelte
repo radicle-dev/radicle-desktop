@@ -108,7 +108,11 @@
     {#if op.type === "lifecycle"}
       <div class="timeline-item">
         <div class="icon" style:color={issueStatusColor[op.state.status]}>
-          <Icon name="issue" />
+          {#if op.state.status === "open"}
+            <Icon name="issue" />
+          {:else}
+            <Icon name="issue-closed" />
+          {/if}
         </div>
         <div class="wrapper">
           <NodeId {...authorForNodeId(op.author)} />

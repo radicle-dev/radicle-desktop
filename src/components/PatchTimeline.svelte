@@ -128,7 +128,10 @@
     {:else if op.type === "lifecycle"}
       <div class="timeline-item">
         <div class="icon" style:color={patchStatusColor[op.state.status]}>
-          <Icon name="patch" />
+          <Icon
+            name={op.state.status === "open"
+              ? "patch"
+              : `patch-${op.state.status}`} />
         </div>
         <div class="wrapper">
           <NodeId {...authorForNodeId(op.author)} />
@@ -213,7 +216,7 @@
     {:else if op.type === "merge"}
       <div class="timeline-item">
         <div class="icon" style:color="var(--color-fill-primary)">
-          <Icon name="patch" />
+          <Icon name="patch-merged" />
         </div>
         <div class="wrapper">
           <NodeId {...authorForNodeId(op.author)} />

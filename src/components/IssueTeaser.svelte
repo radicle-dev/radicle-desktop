@@ -81,7 +81,11 @@
       class="global-counter status"
       style:color={issueStatusColor[issue.state.status]}
       style:background-color={issueStatusBackgroundColor[issue.state.status]}>
-      <Icon name="issue" />
+      {#if issue.state.status === "open"}
+        <Icon name="issue" />
+      {:else}
+        <Icon name="issue-closed" />
+      {/if}
     </div>
     <div
       class="global-flex"

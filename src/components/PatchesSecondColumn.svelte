@@ -137,7 +137,7 @@
           <div
             class="global-flex"
             class:merged={["merged", undefined].includes(status)}>
-            <Icon name="patch" />Merged
+            <Icon name="patch-merged" />Merged
           </div>
           <div class="global-counter" class:highlight={status === undefined}>
             {project.meta.patches.merged}
@@ -157,7 +157,7 @@
           <div
             class="global-flex"
             class:archived={["archived", undefined].includes(status)}>
-            <Icon name="patch" />Archived
+            <Icon name="patch-archived" />Archived
           </div>
           <div class="global-counter" class:highlight={status === undefined}>
             {project.meta.patches.archived}
@@ -176,7 +176,7 @@
           <div
             class="global-flex"
             class:draft={["draft", undefined].includes(status)}>
-            <Icon name="patch" />
+            <Icon name="patch-draft" />
             Draft
           </div>
           <div class="global-counter" class:highlight={status === undefined}>

@@ -111,7 +111,7 @@
           <div
             class="global-flex"
             class:closed={["closed", "all"].includes(status)}>
-            <Icon name="issue" />Closed
+            <Icon name="issue-closed" />Closed
           </div>
           <div class="global-counter" class:highlight={status === "all"}>
             {project.meta.issues.closed}

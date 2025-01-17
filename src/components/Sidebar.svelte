@@ -65,7 +65,11 @@
         style:color={activeTab.status === "all"
           ? undefined
           : issueStatusColor[activeTab.status]}>
-        <Icon name="issue" />
+        {#if activeTab.status === "open"}
+          <Icon name="issue" />
+        {:else}
+          <Icon name="issue-closed" />
+        {/if}
       </div>
     </Border>
   {:else}
@@ -100,7 +104,11 @@
         style:color={activeTab.status
           ? patchStatusColor[activeTab.status]
           : undefined}>
-        <Icon name="patch" />
+        {#if activeTab.status === "open" || activeTab.status === undefined}
+          <Icon name="patch" />
+        {:else}
+          <Icon name={`patch-${activeTab.status}`} />
+        {/if}
       </div>
     </Border>
   {:else}

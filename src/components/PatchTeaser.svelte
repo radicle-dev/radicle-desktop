@@ -89,7 +89,10 @@
       class="global-counter status"
       style:color={patchStatusColor[patch.state.status]}
       style:background-color={patchStatusBackgroundColor[patch.state.status]}>
-      <Icon name="patch" />
+      <Icon
+        name={patch.state.status === "open"
+          ? "patch"
+          : `patch-${patch.state.status}`} />
     </div>
     <div
       class="global-flex"

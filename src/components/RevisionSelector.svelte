@@ -88,7 +88,7 @@
                     <div class="icon">
                       {#if patch.state.status === "merged" && patch.state.revision === revision.id}
                         <div style:color="var(--color-fill-primary)">
-                          <Icon name="merge" />
+                          <Icon name="patch-merged" />
                         </div>
                       {:else if revision.reviews && revision.reviews.length > 0 && revision.reviews.every( r => {
                             return r.verdict === "accept";

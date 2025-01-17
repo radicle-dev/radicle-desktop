@@ -332,7 +332,10 @@
             style:background-color={patchStatusBackgroundColor[
               patch.state.status
             ]}>
-            <Icon name="patch" />
+            <Icon
+              name={patch.state.status === "open"
+                ? "patch"
+                : `patch-${patch.state.status}`} />
           </div>
 
           <TextInput
@@ -374,7 +377,10 @@
               style:background-color={patchStatusBackgroundColor[
                 patch.state.status
               ]}>
-              <Icon name="patch" />
+              <Icon
+                name={patch.state.status === "open"
+                  ? "patch"
+                  : `patch-${patch.state.status}`} />
             </div>
             <InlineTitle content={patch.title} fontSize="medium" />
           </div>

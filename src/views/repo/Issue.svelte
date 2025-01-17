@@ -410,7 +410,11 @@
             style:background-color={issueStatusBackgroundColor[
               issue.state.status
             ]}>
-            <Icon name="issue" />
+            {#if issue.state.status === "open"}
+              <Icon name="issue" />
+            {:else}
+              <Icon name="issue-closed" />
+            {/if}
           </div>
           <TextInput
             valid={updatedTitle.trim().length > 0}
@@ -451,7 +455,11 @@
               style:background-color={issueStatusBackgroundColor[
                 issue.state.status
               ]}>
-              <Icon name="issue" />
+              {#if issue.state.status === "open"}
+                <Icon name="issue" />
+              {:else}
+                <Icon name="issue-closed" />
+              {/if}
             </div>
             <InlineTitle content={issue.title} fontSize="medium" />
           </div>
