@@ -113,7 +113,15 @@
                     </span>
                     <RevisionBadges {revision} {revisions} />
                     <span class="txt-overflow">
-                      {revision.description[0].body}
+                      {#if revision.description[0].body.trim()}
+                        {revision.description[0].body}
+                      {:else}
+                        <span
+                          class="txt-missing"
+                          style:font-weight="var(--font-weight-regular)">
+                          No description.
+                        </span>
+                      {/if}
                     </span>
                   </div>
                 </DropdownListItem>
