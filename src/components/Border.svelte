@@ -10,6 +10,7 @@
     stylePadding?: string;
     styleHeight?: string;
     styleMinHeight?: string;
+    styleMinWidth?: string;
     styleWidth?: string;
     styleDisplay?: string;
     styleCursor?: "default" | "pointer" | "text";
@@ -36,6 +37,7 @@
     styleDisplay = "flex",
     styleCursor = "default",
     styleGap = "0.5rem",
+    styleMinWidth,
     styleOverflow,
     flatTop = false,
     flatBottom = false,
@@ -54,8 +56,6 @@
 
 <style>
   .container {
-    white-space: nowrap;
-
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
@@ -245,6 +245,7 @@
   <div class="p3-2"></div>
   <div
     class="p3-3"
+    style:min-width={styleMinWidth}
     style:display={styleDisplay}
     style:position={stylePosition}
     style:padding={stylePadding}

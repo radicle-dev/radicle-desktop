@@ -485,6 +485,7 @@
       flatTop
       styleWidth="100%"
       stylePadding="1rem"
+      styleMinWidth="0"
       styleDisplay="block"
       styleFlexDirection="column"
       styleAlignItems="flex-start">
