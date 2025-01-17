@@ -26,24 +26,23 @@
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
+  import DropdownList from "@app/components/DropdownList.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import Layout from "./Layout.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
   import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
+  import PatchTimeline from "@app/components/PatchTimeline.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import RevisionComponent from "@app/components/Revision.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
   import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
-  import Popover, { closeFocused } from "@app/components/Popover.svelte";
-  import DropdownList from "@app/components/DropdownList.svelte";
-  import DropdownListItem from "@app/components/DropdownListItem.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
-  import Avatar from "@app/components/Avatar.svelte";
-  import PatchTimeline from "@app/components/PatchTimeline.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -75,7 +74,7 @@
   let updatedTitle = $state("");
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
-  let tab: "patch" | "revisions" = $state("patch");
+  let tab: "patch" | "revisions" | "timeline" = $state("patch");
   let hideTimeline = $state(false);
   let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
   const revisionAuthors = $derived(
@@ -288,7 +287,7 @@
     padding-bottom: 1rem;
   }
   .content {
-    padding: 1rem 1rem 0 0;
+    padding: 1rem 1rem 1rem 0;
   }
 
   .metadata-divider {
@@ -455,7 +454,8 @@
           class="global-flex"
           style:z-index="10"
           style:gap="1rem"
-          style:padding="0 1rem">
+          style:padding="0 1rem"
+          style:width="100%">
           <span class="txt-small" style:color="var(--color-foreground-dim)">
             Revisions
           </span>
@@ -478,11 +478,6 @@
               onclick={() => {
                 tab = "revisions";
               }}>
-              <Avatar
-                publicKey={selectedRevision.author.did.replace(
-                  "did:key:",
-                  "",
-                )} />
               {formatOid(selectedRevision.id)}
               {#if selectedRevision.id === revisions.slice(-1)[0].id}
                 <span
@@ -572,19 +567,30 @@
               {/snippet}
             </Popover>
           {/if}
+
+          <div style:margin-left="auto">
+            <Tab
+              active={tab === "timeline"}
+              onclick={() => {
+                tab = "timeline";
+              }}>
+              <Icon name="clock" />
+              Timeline
+            </Tab>
+          </div>
         </div>
       </Border>
     </div>
 
-    {#if tab === "patch"}
-      <Border
-        variant="ghost"
-        flatTop
-        styleWidth="100%"
-        stylePadding="1rem"
-        styleDisplay="block"
-        styleFlexDirection="column"
-        styleAlignItems="flex-start">
+    <Border
+      variant="ghost"
+      flatTop
+      styleWidth="100%"
+      stylePadding="1rem"
+      styleDisplay="block"
+      styleFlexDirection="column"
+      styleAlignItems="flex-start">
+      {#if tab === "patch"}
         <RevisionComponent
           rid={repo.rid}
           repoDelegates={repo.delegates}
@@ -592,16 +598,24 @@
           {reload}
           revision={revisions[0]}
           {config} />
-      </Border>
-    {:else}
-      <Border
-        variant="ghost"
-        flatTop
-        styleWidth="100%"
-        stylePadding="1rem"
-        styleDisplay="block"
-        styleFlexDirection="column"
-        styleAlignItems="flex-start">
+      {:else if tab === "timeline"}
+        <div>
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <div
+            role="button"
+            tabindex="0"
+            class="txt-semibold global-flex"
+            style:margin-bottom={hideTimeline ? undefined : "1rem"}
+            style:cursor="pointer"
+            onclick={() => (hideTimeline = !hideTimeline)}>
+            <Icon
+              name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
+          </div>
+          <div class:hide={hideTimeline}>
+            <PatchTimeline {activity} patchId={patch.id} />
+          </div>
+        </div>
+      {:else}
         <RevisionComponent
           rid={repo.rid}
           repoDelegates={repo.delegates}
@@ -609,23 +623,7 @@
           {reload}
           revision={selectedRevision}
           {config} />
-      </Border>
-    {/if}
-  </div>
-
-  <div style:margin-bottom="1rem">
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
-    <div
-      role="button"
-      tabindex="0"
-      class="txt-semibold global-flex"
-      style:margin="1rem 0"
-      style:cursor="pointer"
-      onclick={() => (hideTimeline = !hideTimeline)}>
-      <Icon name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
-    </div>
-    <div class:hide={hideTimeline}>
-      <PatchTimeline {activity} patchId={patch.id} />
-    </div>
+      {/if}
+    </Border>
   </div>
 </Layout>

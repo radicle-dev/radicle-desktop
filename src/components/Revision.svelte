@@ -318,22 +318,20 @@
   </div>
 </div>
 
-<div style:margin="1rem 0">
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div
-    role="button"
-    tabindex="0"
-    class="txt-semibold global-flex"
-    style:margin-bottom="1rem"
-    style:cursor="pointer"
-    onclick={() => (hideChanges = !hideChanges)}>
-    <Icon name={hideChanges ? "chevron-right" : "chevron-down"} />Changes
-  </div>
-  <div class:hide={hideChanges}>
-    {#await loadHighlightedDiff(rid, revision.base, revision.head)}
-      <span class="txt-small">Loading…</span>
-    {:then diff}
-      <Changeset {diff} repoId={rid} />
-    {/await}
-  </div>
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div
+  role="button"
+  tabindex="0"
+  class="txt-semibold global-flex"
+  style:margin-bottom={hideChanges ? undefined : "1rem"}
+  style:cursor="pointer"
+  onclick={() => (hideChanges = !hideChanges)}>
+  <Icon name={hideChanges ? "chevron-right" : "chevron-down"} />Changes
+</div>
+<div class:hide={hideChanges}>
+  {#await loadHighlightedDiff(rid, revision.base, revision.head)}
+    <span class="txt-small">Loading…</span>
+  {:then diff}
+    <Changeset {diff} repoId={rid} />
+  {/await}
 </div>

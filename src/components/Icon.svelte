@@ -15,6 +15,7 @@
       | "checkmark"
       | "chevron-down"
       | "chevron-right"
+      | "clock"
       | "collapse-panel"
       | "comment"
       | "comment-checkmark"
@@ -185,6 +186,29 @@
     <path d="M7 10L8 10L8 11L7 11L7 10Z" />
     <path d="M9 8L10 8V9L9 9V8Z" />
     <path d="M8 9H9V10H8L8 9Z" />
+  {:else if name === "clock"}
+    <path d="M6 13H8V14H6V13Z" />
+    <path d="M10 13H8V14H10V13Z" />
+    <path d="M3 6L3 8H2L2 6H3Z" />
+    <path d="M13 6V8H14V6H13Z" />
+    <path d="M4 12H6V13H4V12Z" />
+    <path d="M12 12H10V13H12V12Z" />
+    <path d="M4 4V6H3L3 4H4Z" />
+    <path d="M12 4V6L13 6V4L12 4Z" />
+    <path d="M4 10L4 12H3L3 10H4Z" />
+    <path d="M12 10V12H13V10H12Z" />
+    <path d="M6 4L4 4L4 3L6 3V4Z" />
+    <path d="M10 4L12 4V3L10 3V4Z" />
+    <path d="M3 8L3 10H2L2 8H3Z" />
+    <path d="M13 8V10H14V8H13Z" />
+    <path d="M8 3L6 3V2L8 2V3Z" />
+    <path d="M8 3L10 3L10 2L8 2V3Z" />
+    <path d="M8 8H9V9H8V8Z" />
+    <path d="M9 7H10V8H9V7Z" />
+    <path d="M10 6H11V7L10 7V6Z" />
+    <path d="M7 7H8V8L7 8V7Z" />
+    <path d="M6 6H7V7L6 7V6Z" />
+    <path d="M5 5H6V6H5V5Z" />
   {:else if name === "collapse-panel"}
     <path d="M2 3.00002H3V13H2V3.00002Z" />
     <path d="M13 3.00002H14V6.00002H13V3.00002Z" />
