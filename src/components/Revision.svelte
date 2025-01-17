@@ -1,10 +1,8 @@
 <script lang="ts">
-  import type { Action } from "@bindings/cob/patch/Action";
   import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
   import type { Diff } from "@bindings/diff/Diff";
   import type { Embed } from "@bindings/cob/thread/Embed";
-  import type { Operation } from "@bindings/cob/Operation";
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Thread } from "@bindings/cob/thread/Thread";
 
@@ -21,7 +19,6 @@
   import CommentComponent from "@app/components/Comment.svelte";
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import PatchTimeline from "@app/components/PatchTimeline.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
 
   interface Props {
@@ -30,26 +27,17 @@
     patchId: string;
     revision: Revision;
     config: Config;
-    activity: Operation<Action>[];
     reload: () => Promise<void>;
   }
 
   /* eslint-disable prefer-const */
-  let {
-    rid,
-    repoDelegates,
-    patchId,
-    revision,
-    config,
-    activity,
-    reload,
-  }: Props = $props();
+  let { rid, repoDelegates, patchId, revision, config, reload }: Props =
+    $props();
   /* eslint-enable prefer-const */
 
   let focusReply: boolean = $state(false);
   let hideChanges = $state(false);
   let hideDiscussion = $state(false);
-  let hideTimeline = $state(false);
   let topLevelReplyOpen = $state(false);
 
   const threads = $derived(
@@ -78,7 +66,6 @@
 
     hideDiscussion = false;
     hideChanges = false;
-    hideTimeline = false;
   });
 
   async function editRevision(
@@ -348,21 +335,5 @@
     {:then diff}
       <Changeset {diff} repoId={rid} />
     {/await}
-  </div>
-</div>
-
-<div>
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div
-    role="button"
-    tabindex="0"
-    class="txt-semibold global-flex"
-    style:margin="1rem 0"
-    style:cursor="pointer"
-    onclick={() => (hideTimeline = !hideTimeline)}>
-    <Icon name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
-  </div>
-  <div class:hide={hideTimeline}>
-    <PatchTimeline {activity} {patchId} />
   </div>
 </div>

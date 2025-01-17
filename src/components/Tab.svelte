@@ -37,6 +37,7 @@
     display: flex;
     gap: 0.5rem;
     padding: 5px 0;
+    align-items: center;
   }
 
   .active {

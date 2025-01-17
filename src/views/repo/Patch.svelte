@@ -9,9 +9,13 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
+  import uniqBy from "lodash/uniqBy";
+  import orderBy from "lodash/orderBy";
+
   import * as roles from "@app/lib/roles";
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import {
+    authorForNodeId,
     formatOid,
     patchStatusBackgroundColor,
     patchStatusColor,
@@ -33,6 +37,13 @@
   import Sidebar from "@app/components/Sidebar.svelte";
   import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
+  import DropdownList from "@app/components/DropdownList.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
+  import Avatar from "@app/components/Avatar.svelte";
+  import PatchTimeline from "@app/components/PatchTimeline.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -65,6 +76,24 @@
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let tab: "patch" | "revisions" = $state("patch");
+  let hideTimeline = $state(false);
+  let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
+  const revisionAuthors = $derived(
+    orderBy(
+      uniqBy(
+        revisions.map(r => {
+          return r.author;
+        }),
+        "did",
+      ),
+      [
+        o => {
+          return o.did === patch.author.did;
+        },
+      ],
+      ["desc"],
+    ),
+  );
 
   $effect(() => {
     items = patches.content;
@@ -79,6 +108,8 @@
     tab = "patch";
     editingTitle = false;
     updatedTitle = patch.title;
+    selectedRevision = revisions.slice(-1)[0];
+    hideTimeline = false;
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
@@ -257,7 +288,7 @@
     padding-bottom: 1rem;
   }
   .content {
-    padding: 1rem 1rem 1rem 0;
+    padding: 1rem 1rem 0 0;
   }
 
   .metadata-divider {
@@ -278,6 +309,12 @@
   .metadata-section-title {
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
+  }
+  .dropdown-group:not(:last-of-type) {
+    margin-bottom: 1rem;
+  }
+  .hide {
+    display: none;
   }
 </style>
 
@@ -419,6 +456,9 @@
           style:z-index="10"
           style:gap="1rem"
           style:padding="0 1rem">
+          <span class="txt-small" style:color="var(--color-foreground-dim)">
+            Revisions
+          </span>
           <Tab
             active={tab === "patch"}
             onclick={() => {
@@ -438,14 +478,99 @@
               onclick={() => {
                 tab = "revisions";
               }}>
-              {formatOid(revisions.slice(-1)[0].id)}
-              <span
-                class="global-counter"
-                style:height="22px"
-                style:color="var(--color-foreground-contrast)">
-                Latest
-              </span>
+              <Avatar
+                publicKey={selectedRevision.author.did.replace(
+                  "did:key:",
+                  "",
+                )} />
+              {formatOid(selectedRevision.id)}
+              {#if selectedRevision.id === revisions.slice(-1)[0].id}
+                <span
+                  class="global-counter"
+                  style:height="22px"
+                  style:color="var(--color-foreground-contrast)">
+                  Latest
+                </span>
+              {/if}
+              {#if selectedRevision.id === revisions[0].id}
+                <span
+                  class="global-counter"
+                  style:height="22px"
+                  style:color="var(--color-foreground-contrast)">
+                  Initial
+                </span>
+              {/if}
             </Tab>
+
+            <Popover
+              popoverPadding="0"
+              popoverPositionTop="2.5rem"
+              popoverPositionLeft="0">
+              {#snippet toggle(onclick)}
+                <NakedButton variant="ghost" {onclick}>
+                  <Icon name="chevron-down" />
+                </NakedButton>
+              {/snippet}
+
+              {#snippet popover()}
+                <Border variant="ghost">
+                  <div style:max-width="20rem" style:padding-top="0.5rem">
+                    {#each revisionAuthors as author}
+                      <div class="dropdown-group">
+                        <div
+                          style:padding-left="0.5rem"
+                          style:padding-bottom="0.5rem">
+                          <NodeId {...authorForNodeId(author)} />
+                        </div>
+                        <DropdownList
+                          items={orderBy(
+                            revisions.filter(r => {
+                              return r.author.did === author.did;
+                            }),
+                            "timestamp",
+                            ["desc"],
+                          )}>
+                          {#snippet item(revision)}
+                            <DropdownListItem
+                              selected={revision.id === selectedRevision.id}
+                              onclick={() => {
+                                closeFocused();
+                                selectedRevision = revision;
+                                tab = "revisions";
+                              }}>
+                              <div class="global-flex txt-overflow">
+                                <span class="global-oid">
+                                  {formatOid(revision.id)}
+                                </span>
+                                {#if revision.id === revisions.slice(-1)[0].id}
+                                  <span
+                                    class="global-counter"
+                                    style:height="22px"
+                                    style:color="var(--color-foreground-contrast)">
+                                    Latest
+                                  </span>
+                                {/if}
+                                {#if revision.id === revisions[0].id}
+                                  <span
+                                    class="global-counter"
+                                    style:height="22px"
+                                    style:color="var(--color-foreground-contrast)">
+                                    Initial
+                                  </span>
+                                {/if}
+                                <span class="txt-overflow">
+                                  {revision.description[0].body}
+                                </span>
+                              </div>
+                            </DropdownListItem>
+                          {/snippet}
+                        </DropdownList>
+                      </div>
+                    {/each}
+                  </div>
+                </Border>
+              {/snippet}
+            </Popover>
           {/if}
         </div>
       </Border>
@@ -465,7 +590,6 @@
           repoDelegates={repo.delegates}
           patchId={patch.id}
           {reload}
-          {activity}
           revision={revisions[0]}
           {config} />
       </Border>
@@ -483,10 +607,25 @@
           repoDelegates={repo.delegates}
           patchId={patch.id}
           {reload}
-          {activity}
-          revision={revisions.slice(-1)[0]}
+          revision={selectedRevision}
           {config} />
       </Border>
     {/if}
+  </div>
+
+  <div style:margin-bottom="1rem">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div
+      role="button"
+      tabindex="0"
+      class="txt-semibold global-flex"
+      style:margin="1rem 0"
+      style:cursor="pointer"
+      onclick={() => (hideTimeline = !hideTimeline)}>
+      <Icon name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
+    </div>
+    <div class:hide={hideTimeline}>
+      <PatchTimeline {activity} patchId={patch.id} />
+    </div>
   </div>
 </Layout>
