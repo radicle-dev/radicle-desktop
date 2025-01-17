@@ -9,13 +9,9 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
-  import uniqBy from "lodash/uniqBy";
-  import orderBy from "lodash/orderBy";
-
   import * as roles from "@app/lib/roles";
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import {
-    authorForNodeId,
     formatOid,
     patchStatusBackgroundColor,
     patchStatusColor,
@@ -26,20 +22,17 @@
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
-  import DropdownList from "@app/components/DropdownList.svelte";
-  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import Layout from "./Layout.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
   import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchTimeline from "@app/components/PatchTimeline.svelte";
-  import Popover, { closeFocused } from "@app/components/Popover.svelte";
+  import RevisionBadges from "@app/components/RevisionBadges.svelte";
   import RevisionComponent from "@app/components/Revision.svelte";
+  import RevisionSelector from "@app/components/RevisionSelector.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
   import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
@@ -77,22 +70,6 @@
   let tab: "patch" | "revisions" | "timeline" = $state("patch");
   let hideTimeline = $state(false);
   let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
-  const revisionAuthors = $derived(
-    orderBy(
-      uniqBy(
-        revisions.map(r => {
-          return r.author;
-        }),
-        "did",
-      ),
-      [
-        o => {
-          return o.did === patch.author.did;
-        },
-      ],
-      ["desc"],
-    ),
-  );
 
   $effect(() => {
     items = patches.content;
@@ -309,9 +286,6 @@
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
   }
-  .dropdown-group:not(:last-of-type) {
-    margin-bottom: 1rem;
-  }
   .hide {
     display: none;
   }
@@ -479,93 +453,17 @@
                 tab = "revisions";
               }}>
               {formatOid(selectedRevision.id)}
-              {#if selectedRevision.id === revisions.slice(-1)[0].id}
-                <span
-                  class="global-counter"
-                  style:height="22px"
-                  style:color="var(--color-foreground-contrast)">
-                  Latest
-                </span>
-              {/if}
-              {#if selectedRevision.id === revisions[0].id}
-                <span
-                  class="global-counter"
-                  style:height="22px"
-                  style:color="var(--color-foreground-contrast)">
-                  Initial
-                </span>
-              {/if}
+              <RevisionBadges revision={selectedRevision} {revisions} />
             </Tab>
 
-            <Popover
-              popoverPadding="0"
-              popoverPositionTop="2.5rem"
-              popoverPositionLeft="0">
-              {#snippet toggle(onclick)}
-                <NakedButton variant="ghost" {onclick}>
-                  <Icon name="chevron-down" />
-                </NakedButton>
-              {/snippet}
-
-              {#snippet popover()}
-                <Border variant="ghost">
-                  <div style:max-width="20rem" style:padding-top="0.5rem">
-                    {#each revisionAuthors as author}
-                      <div class="dropdown-group">
-                        <div
-                          style:padding-left="0.5rem"
-                          style:padding-bottom="0.5rem">
-                          <NodeId {...authorForNodeId(author)} />
-                        </div>
-                        <DropdownList
-                          items={orderBy(
-                            revisions.filter(r => {
-                              return r.author.did === author.did;
-                            }),
-                            "timestamp",
-                            ["desc"],
-                          )}>
-                          {#snippet item(revision)}
-                            <DropdownListItem
-                              selected={revision.id === selectedRevision.id}
-                              onclick={() => {
-                                closeFocused();
-                                selectedRevision = revision;
-                                tab = "revisions";
-                              }}>
-                              <div class="global-flex txt-overflow">
-                                <span class="global-oid">
-                                  {formatOid(revision.id)}
-                                </span>
-                                {#if revision.id === revisions.slice(-1)[0].id}
-                                  <span
-                                    class="global-counter"
-                                    style:height="22px"
-                                    style:color="var(--color-foreground-contrast)">
-                                    Latest
-                                  </span>
-                                {/if}
-                                {#if revision.id === revisions[0].id}
-                                  <span
-                                    class="global-counter"
-                                    style:height="22px"
-                                    style:color="var(--color-foreground-contrast)">
-                                    Initial
-                                  </span>
-                                {/if}
-                                <span class="txt-overflow">
-                                  {revision.description[0].body}
-                                </span>
-                              </div>
-                            </DropdownListItem>
-                          {/snippet}
-                        </DropdownList>
-                      </div>
-                    {/each}
-                  </div>
-                </Border>
-              {/snippet}
-            </Popover>
+            <RevisionSelector
+              {patch}
+              {revisions}
+              {selectedRevision}
+              selectRevision={rev => {
+                selectedRevision = rev;
+                tab = "revisions";
+              }} />
           {/if}
 
           <div style:margin-left="auto">
