@@ -105,8 +105,8 @@
     </div>
   </div>
 
-  {#if !compact}
-    <div class="global-flex">
+  <div class="global-flex">
+    {#if !compact}
       {#await invoke<Stats>( "diff_stats", { rid, base: patch.base, head: patch.head }, ) then stats}
         <DiffStatBadge {stats} />
       {/await}
@@ -114,11 +114,13 @@
       {#each patch.labels as label}
         <div class="global-counter txt-small">{label}</div>
       {/each}
-
-      <div class="txt-small global-flex" style:gap="0.25rem">
-        <Icon name="revision" />
-        {patch.revisionCount}
-      </div>
+    {/if}
+    <div
+      class="txt-small global-flex"
+      style:gap="0.25rem"
+      style:white-space="nowrap">
+      <Icon name="revision" />
+      {patch.revisionCount}
     </div>
-  {/if}
+  </div>
 </div>
