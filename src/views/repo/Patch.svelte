@@ -9,6 +9,8 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
+  import capitalize from "lodash/capitalize";
+
   import * as roles from "@app/lib/roles";
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import {
@@ -22,14 +24,18 @@
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
+  import DropdownList from "@app/components/DropdownList.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import Layout from "./Layout.svelte";
+  import OutlineButton from "@app/components/OutlineButton.svelte";
   import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchTimeline from "@app/components/PatchTimeline.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import RevisionBadges from "@app/components/RevisionBadges.svelte";
   import RevisionComponent from "@app/components/Revision.svelte";
   import RevisionSelector from "@app/components/RevisionSelector.svelte";
@@ -51,7 +57,7 @@
   let {
     repo,
     patch,
-    patches,
+    patches: initialPatches,
     revisions,
     config,
     status: initialStatus,
@@ -59,9 +65,11 @@
   }: Props = $props();
   /* eslint-enable prefer-const */
 
-  let cursor = patches.cursor;
-  let more = patches.more;
-  let items = $state(patches.content);
+  let cursor: number = $state(0);
+  let more: boolean = $state(false);
+  let patchTeasers: Patch[] = $state([]);
+
+  let patches = $state(initialPatches);
   let status = $state(initialStatus);
   let editingTitle = $state(false);
   let updatedTitle = $state("");
@@ -72,7 +80,7 @@
   let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
 
   $effect(() => {
-    items = patches.content;
+    patchTeasers = patches.content;
     cursor = patches.cursor;
     more = patches.more;
   });
@@ -192,7 +200,7 @@
     }
   }
 
-  async function loadMoreSecondColumn() {
+  async function loadMoreTeasers() {
     if (more) {
       const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
         rid: repo.rid,
@@ -202,7 +210,7 @@
 
       cursor = p.cursor;
       more = p.more;
-      items = [...items, ...p.content];
+      patchTeasers = [...patchTeasers, ...p.content];
     }
   }
 
@@ -230,6 +238,18 @@
       }),
     ]);
   }
+
+  async function loadPatches(filter: PatchStatus | undefined) {
+    try {
+      patches = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
+        rid: repo.rid,
+        status: filter,
+      });
+      status = filter;
+    } catch (error) {
+      console.error("Loading patch list failed", error);
+    }
+  }
 </script>
 
 <style>
@@ -241,7 +261,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    word-break: break-all;
+    word-break: break-word;
     min-height: 40px;
   }
   .title-icons {
@@ -291,7 +311,29 @@
   }
 </style>
 
-<Layout {loadMoreSecondColumn} publicKey={config.publicKey}>
+{#snippet icons(status: PatchStatus | undefined)}
+  <div class="icon" style:color={status ? patchStatusColor[status] : undefined}>
+    <Icon
+      name={status === undefined || status === "open"
+        ? "patch"
+        : `patch-${status}`} />
+  </div>
+{/snippet}
+
+{#snippet counters(status: PatchStatus | undefined)}
+  <div style:margin-left="auto" style:padding-left="0.25rem">
+    {#if status}
+      {project.meta.patches[status]}
+    {:else}
+      {project.meta.patches.draft +
+        project.meta.patches.open +
+        project.meta.patches.archived +
+        project.meta.patches.merged}
+    {/if}
+  </div>
+{/snippet}
+
+<Layout loadMoreSecondColumn={loadMoreTeasers} publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={patch.id} />
   {/snippet}
@@ -303,22 +345,84 @@
   {#snippet secondColumn()}
     <div
       class="txt-regular txt-semibold global-flex"
-      style:gap="4px"
-      style:min-height="40px">
-      {project.data.name}
-      <Icon name="chevron-right" />
-      Patches
+      style:min-height="40px"
+      style:justify-content="space-between">
+      <div class="global-flex" style:gap="4px">
+        {project.data.name}
+        <Icon name="chevron-right" />
+        Patches
+      </div>
+
+      <Popover popoverPositionRight="0" popoverPositionTop="2.5rem">
+        {#snippet toggle(onclick)}
+          <OutlineButton variant="ghost" {onclick}>
+            {@render icons(status)}
+            {status ? capitalize(status) : "All"}
+            {@render counters(status)}
+            <Icon name="chevron-down" />
+          </OutlineButton>
+        {/snippet}
+
+        {#snippet popover()}
+          <Border variant="ghost">
+            <DropdownList
+              items={[
+                undefined,
+                "draft",
+                "open",
+                "archived",
+                "merged",
+              ] as const}>
+              {#snippet item(state)}
+                <DropdownListItem
+                  style="gap: 0.5rem"
+                  selected={status === state}
+                  onclick={async () => {
+                    await loadPatches(state);
+                    closeFocused();
+                  }}>
+                  {@render icons(state)}
+                  {state ? capitalize(state) : "All"}
+                  {@render counters(state)}
+                </DropdownListItem>
+              {/snippet}
+            </DropdownList>
+          </Border>
+        {/snippet}
+      </Popover>
     </div>
     <div class="patch-list">
-      {#each items as p}
+      {#each patchTeasers as teaser}
         <PatchTeaser
           compact
           {loadPatch}
-          patch={p}
+          patch={teaser}
           rid={repo.rid}
           {status}
-          selected={patch && p.id === patch.id} />
+          selected={patch && teaser.id === patch.id} />
       {/each}
+
+      {#if patches.content.length === 0}
+        <Border
+          styleMinWidth="25rem"
+          variant="ghost"
+          styleAlignItems="center"
+          styleJustifyContent="center">
+          <div
+            class="global-flex"
+            style:height="74px"
+            style:justify-content="center">
+            <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
+              <Icon name="none" />
+              {#if status === undefined}
+                No patches.
+              {:else}
+                No {status} patches.
+              {/if}
+            </div>
+          </div>
+        </Border>
+      {/if}
     </div>
   {/snippet}
 

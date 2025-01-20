@@ -31,15 +31,34 @@
     status: IssueStatus;
   }
 
-  const { repo, issues, config, status }: Props = $props();
+  const {
+    repo,
+    issues: initialIssues,
+    config,
+    status: initialStatus,
+  }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
   let preview: boolean = $state(false);
   let title: string = $state("");
+  let status = $state(initialStatus);
+  let issues = $state(initialIssues);
 
   let assignees: Author[] = $state([]);
   let labels: string[] = $state([]);
+
+  async function loadIssues(filter: IssueStatus) {
+    try {
+      issues = await invoke<Issue[]>("list_issues", {
+        rid: repo.rid,
+        status: filter,
+      });
+      status = filter;
+    } catch (error) {
+      console.error("Loading issue list failed", error);
+    }
+  }
 
   async function createIssue(
     description: string,
@@ -97,7 +116,14 @@
   {/snippet}
 
   {#snippet secondColumn()}
-    <IssueSecondColumn {repo} {issues} {status} title={project.data.name} />
+    <IssueSecondColumn
+      {repo}
+      {issues}
+      {status}
+      title={project.data.name}
+      changeFilter={async filter => {
+        await loadIssues(filter);
+      }} />
   {/snippet}
 
   <div class="content">

@@ -8,13 +8,13 @@
 
   import Layout from "./Layout.svelte";
 
+  import Border from "@app/components/Border.svelte";
   import Button from "@app/components/Button.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import IssuesSecondColumn from "@app/components/IssuesSecondColumn.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
-  import Border from "@app/components/Border.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -24,8 +24,6 @@
   }
 
   const { repo, issues, config, status }: Props = $props();
-
-  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>
@@ -61,7 +59,7 @@
   {/snippet}
 
   {#snippet secondColumn()}
-    <IssuesSecondColumn {project} {status} {repo} />
+    <IssuesSecondColumn {status} {repo} />
   {/snippet}
 
   <div class="container">

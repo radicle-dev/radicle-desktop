@@ -60,12 +60,12 @@
     activity,
     config,
     threads,
-    status,
+    status: initialStatus,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
-  const issues = $state(initialIssues);
-
+  let issues = $state(initialIssues);
+  let status = $state(initialStatus);
   let topLevelReplyOpen = $state(false);
   let editingTitle = $state(false);
   let updatedTitle = $state("");
@@ -93,6 +93,18 @@
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
+
+  async function loadIssues(filter: IssueStatus) {
+    try {
+      issues = await invoke<Issue[]>("list_issues", {
+        rid: repo.rid,
+        status: filter,
+      });
+      status = filter;
+    } catch (error) {
+      console.error("Loading issue list failed", error);
+    }
+  }
 
   async function saveLabels(labels: string[]) {
     try {
@@ -318,7 +330,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    word-break: break-all;
+    word-break: break-word;
     min-height: 40px;
   }
   .status {
@@ -397,6 +409,9 @@
       selectedIssueId={issue.id}
       {issues}
       {status}
+      changeFilter={async filter => {
+        await loadIssues(filter);
+      }}
       title={project.data.name} />
   {/snippet}
 

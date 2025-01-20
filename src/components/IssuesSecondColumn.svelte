@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { IssueStatus } from "@app/views/repo/router";
-  import type { ProjectPayload } from "@bindings/repo/ProjectPayload";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import Border from "./Border.svelte";
@@ -10,12 +9,13 @@
   import Settings from "./Settings.svelte";
 
   interface Props {
-    project: ProjectPayload;
     status: IssueStatus;
     repo: RepoInfo;
   }
 
-  const { project, status, repo }: Props = $props();
+  const { status, repo }: Props = $props();
+
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>

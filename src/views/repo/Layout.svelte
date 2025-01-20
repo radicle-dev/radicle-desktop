@@ -117,7 +117,7 @@
 
   .secondColumn {
     grid-column: 2 / 3;
-    max-width: 28rem;
+    max-width: 29rem;
     min-width: 14rem;
     padding: 1rem 1rem 1rem 0;
   }

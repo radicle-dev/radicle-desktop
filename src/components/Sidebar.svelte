@@ -2,8 +2,6 @@
   import type { IssueStatus, PatchStatus } from "@app/views/repo/router";
 
   import * as router from "@app/lib/router";
-  import { patchStatusColor } from "@app/lib/utils";
-  import { issueStatusColor } from "@app/lib/utils";
 
   import { storeLayout, getLayout } from "@app/views/repo/Layout.svelte";
 
@@ -61,16 +59,7 @@
       styleWidth="40px"
       styleHeight="40px"
       styleJustifyContent="center">
-      <div
-        style:color={activeTab.status === "all"
-          ? undefined
-          : issueStatusColor[activeTab.status]}>
-        {#if activeTab.status === "open"}
-          <Icon name="issue" />
-        {:else}
-          <Icon name="issue-closed" />
-        {/if}
-      </div>
+      <Icon name="issue" />
     </Border>
   {:else}
     <button
@@ -100,16 +89,7 @@
       styleWidth="40px"
       styleHeight="40px"
       styleJustifyContent="center">
-      <div
-        style:color={activeTab.status
-          ? patchStatusColor[activeTab.status]
-          : undefined}>
-        {#if activeTab.status === "open" || activeTab.status === undefined}
-          <Icon name="patch" />
-        {:else}
-          <Icon name={`patch-${activeTab.status}`} />
-        {/if}
-      </div>
+      <Icon name="patch" />
     </Border>
   {:else}
     <button
