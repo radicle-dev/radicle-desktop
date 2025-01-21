@@ -1,12 +1,19 @@
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::path::Path;
 
 use serde::Deserialize;
 use serde_json as json;
 
-use radicle::cob::{Manifest, TypeName};
+use radicle::cob::change::Storage;
+use radicle::cob::{Manifest, Op, TypeName};
 use radicle::git::raw as git2;
 use radicle::git::{Oid, PatternString};
+use radicle::profile::Aliases;
+use radicle::storage::git::Repository;
+
+use crate::cobs::Author;
+use crate::domain::inbox::models::notification::ActionWithAuthor;
 
 use super::error;
 use super::CobRange;
@@ -42,7 +49,7 @@ impl From<PatternString> for Until {
 /// from.
 pub(super) struct WalkIter<'a> {
     /// Git repository for looking up the commit object during the revwalk.
-    repo: &'a git2::Repository,
+    repo: &'a Repository,
     /// The root commit that is being walked from.
     ///
     /// N.b. This is required since ranges are non-inclusive in Git, and if the
@@ -79,8 +86,8 @@ impl Walk {
     }
 
     /// Get the iterator for the walk.
-    pub(super) fn iter(self, repo: &git2::Repository) -> Result<WalkIter<'_>, git2::Error> {
-        let mut walk = repo.revwalk()?;
+    pub(super) fn iter(self, repo: &Repository) -> Result<WalkIter<'_>, git2::Error> {
+        let mut walk = repo.backend.revwalk()?;
         // N.b. ensure that we start from the `self.from` commit.
         walk.set_sorting(git2::Sort::TOPOLOGICAL.union(git2::Sort::REVERSE))?;
         match self.until {
@@ -106,10 +113,10 @@ impl<'a> Iterator for WalkIter<'a> {
         // N.b. ensure that we start using the `from` commit and use the revwalk
         // after that.
         if let Some(from) = self.from.take() {
-            return Some(self.repo.find_commit(*from));
+            return Some(self.repo.backend.find_commit(*from));
         }
         let oid = self.inner.next()?;
-        Some(oid.and_then(|oid| self.repo.find_commit(oid)))
+        Some(oid.and_then(|oid| self.repo.backend.find_commit(oid)))
     }
 }
 
@@ -124,14 +131,23 @@ pub struct ActionsIter<'a, A> {
     /// The walk can iterate over other COBs, e.g. an Identity COB, so this is
     /// used to filter for the correct type.
     typename: TypeName,
+    repo: &'a Repository,
+    aliases: &'a Aliases,
 }
 
 impl<'a, A> ActionsIter<'a, A> {
-    pub(super) fn new(walk: WalkIter<'a>, typename: TypeName) -> Self {
+    pub(super) fn new(
+        walk: WalkIter<'a>,
+        typename: TypeName,
+        repo: &'a Repository,
+        aliases: &'a Aliases,
+    ) -> Self {
         Self {
             walk,
             tree: None,
             typename,
+            repo,
+            aliases,
         }
     }
 
@@ -147,7 +163,7 @@ impl<'a, A> ActionsIter<'a, A> {
             }
         };
         let object = entry
-            .to_object(self.walk.repo)
+            .to_object(&self.walk.repo.backend)
             .map_err(|err| error::TreeAction::InvalidEntry { err })?;
         let blob = object
             .into_blob()
@@ -169,8 +185,9 @@ impl<'a, A> ActionsIter<'a, A> {
 impl<'a, A> Iterator for ActionsIter<'a, A>
 where
     A: for<'de> Deserialize<'de>,
+    A: Debug,
 {
-    type Item = Result<A, error::Actions>;
+    type Item = Result<ActionWithAuthor<A>, error::Actions>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // Are we currently iterating over a tree?
@@ -202,8 +219,13 @@ where
                             }
                             log::trace!(target: "radicle", "Iterating over commit {}", commit.id());
                             log::trace!(target: "radicle", "Iterating over tree {}", tree.id());
+
+                            let entry = self.repo.load(commit.id().into()).ok()?;
+                            let op = Op::from(entry);
+                            let author = Author::new(&op.author.into(), self.aliases);
                             // Set the tree iterator and walk over that
-                            self.tree = Some(TreeActionsIter::new(self.walk.repo, tree));
+                            self.tree =
+                                Some(TreeActionsIter::new(self.walk.repo, tree, op, author));
                             // Hide this commit so we do not double process it
                             self.walk.inner.hide(commit.id()).ok();
                             self.next()
@@ -227,9 +249,11 @@ where
 struct TreeActionsIter<'a, A> {
     /// The repository is required to get the underlying object of the tree
     /// entry.
-    repo: &'a git2::Repository,
+    repo: &'a Repository,
     /// The Git tree from which the actions are being extracted.
     tree: git2::Tree<'a>,
+    op: Op<Vec<u8>>,
+    author: Author,
     /// Use an index to keep track of which entry is being processed. Note that
     /// `TreeIter` is *not* used since it poses many borrow-checker challenge.
     /// Instead, `self.tree.iter()` is called and the iterator is indexed into.
@@ -239,13 +263,15 @@ struct TreeActionsIter<'a, A> {
 }
 
 impl<'a, A> TreeActionsIter<'a, A> {
-    fn new(repo: &'a git2::Repository, tree: git2::Tree<'a>) -> Self
+    fn new(repo: &'a Repository, tree: git2::Tree<'a>, op: Op<Vec<u8>>, author: Author) -> Self
     where
         A: for<'de> Deserialize<'de>,
     {
         Self {
             repo,
             tree,
+            op,
+            author,
             index: 0,
             marker: PhantomData,
         }
@@ -256,14 +282,15 @@ impl<'a, A> Iterator for TreeActionsIter<'a, A>
 where
     A: for<'de> Deserialize<'de>,
 {
-    type Item = Result<A, error::TreeAction>;
+    type Item = Result<ActionWithAuthor<A>, error::TreeAction>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let entry = self.tree.iter().nth(self.index)?;
         self.index += 1;
         // N.b. if `from_tree_entry` is `None` we have filtered the entry so we
         // go the `next` entry
-        from_tree_entry(self.repo, entry).or_else(|| self.next())
+        from_tree_entry(self.repo, entry, self.op.clone(), self.author.clone())
+            .or_else(|| self.next())
     }
 }
 
@@ -272,15 +299,17 @@ where
 ///
 /// The entry is only an action if it is a blob and its name is numerical.
 fn from_tree_entry<A>(
-    repo: &git2::Repository,
+    repo: &Repository,
     entry: git2::TreeEntry,
-) -> Option<Result<A, error::TreeAction>>
+    op: Op<Vec<u8>>,
+    author: Author,
+) -> Option<Result<ActionWithAuthor<A>, error::TreeAction>>
 where
     A: for<'de> Deserialize<'de>,
 {
-    let as_action = |entry: git2::TreeEntry| -> Result<A, error::TreeAction> {
+    let as_action = |entry: git2::TreeEntry| -> Result<ActionWithAuthor<A>, error::TreeAction> {
         let object = entry
-            .to_object(repo)
+            .to_object(&repo.backend)
             .map_err(|err| error::TreeAction::InvalidEntry { err })?;
         let blob = object
             .into_blob()
@@ -289,7 +318,7 @@ where
                     .kind()
                     .map_or("unknown".to_string(), |kind| kind.to_string()),
             })?;
-        action(&blob).map_err(error::TreeAction::from)
+        action(&blob, op, author).map_err(error::TreeAction::from)
     };
     let name = entry.name()?;
     // An entry is only considered an action if it:
@@ -301,10 +330,22 @@ where
 }
 
 /// Helper to deserialize an action from a blob's contents.
-fn action<A>(blob: &git2::Blob) -> Result<A, error::Action>
+fn action<A>(
+    blob: &git2::Blob,
+    op: Op<Vec<u8>>,
+    author: Author,
+) -> Result<ActionWithAuthor<A>, error::Action>
 where
     A: for<'de> Deserialize<'de>,
 {
     log::trace!(target: "radicle", "Deserializing action {}", blob.id());
-    json::from_slice::<A>(blob.content()).map_err(|err| error::Action::new(blob.id().into(), err))
+    let action = json::from_slice::<A>(blob.content())
+        .map_err(|err| error::Action::new(blob.id().into(), err))?;
+
+    Ok(ActionWithAuthor {
+        author,
+        timestamp: op.timestamp,
+        oid: op.id,
+        action,
+    })
 }

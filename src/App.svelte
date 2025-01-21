@@ -13,11 +13,12 @@
 
   import AuthenticationError from "@app/views/AuthenticationError.svelte";
   import CreateIssue from "@app/views/repo/CreateIssue.svelte";
-  import Home from "@app/views/Home.svelte";
+  import Inbox from "./views/home/Inbox.svelte";
   import Issue from "@app/views/repo/Issue.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
+  import Repos from "./views/home/Repos.svelte";
   import { dynamicInterval, checkAuth } from "./lib/auth";
 
   const activeRouteStore = router.activeRouteStore;
@@ -71,7 +72,9 @@
 {#if $activeRouteStore.resource === "booting"}
   <!-- Don't show anything -->
 {:else if $activeRouteStore.resource === "home"}
-  <Home {...$activeRouteStore.params} />
+  <Repos {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "inbox"}
+  <Inbox {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.createIssue"}
   <CreateIssue {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.issue"}

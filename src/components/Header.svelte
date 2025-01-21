@@ -55,9 +55,7 @@
         <NakedButton
           variant="ghost"
           onclick={() => {
-            void router.push({
-              resource: "home",
-            });
+            void router.push({ resource: "home" });
           }}>
           <Avatar {publicKey} />
         </NakedButton>

@@ -11,7 +11,7 @@ pub mod patch;
 pub mod stream;
 pub mod thread;
 
-#[derive(Debug, Serialize, TS)]
+#[derive(Debug, Clone, Serialize, TS, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "cob/")]

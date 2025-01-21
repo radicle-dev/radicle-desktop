@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { ComponentProps, Snippet } from "svelte";
 
-  import { debounce } from "lodash";
+  import debounce from "lodash/debounce";
   import { writeToClipboard } from "@app/lib/invoke";
 
   import { formatOid } from "@app/lib/utils";

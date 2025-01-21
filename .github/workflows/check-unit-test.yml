@@ -1,0 +1,15 @@
+name: check-unit-test
+on: push
+
+jobs:
+  check-unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.9.0"
+      - name: Checkout
+        uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run test:unit

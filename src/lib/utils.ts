@@ -47,6 +47,10 @@ export function truncateDid(did: string): string {
   return `did:key:${truncateId(publicKeyFromDid(did))}`;
 }
 
+export function didFromPublicKey(publicKey: string) {
+  return `did:key:${publicKey}`;
+}
+
 export function publicKeyFromDid(did: string) {
   return did.replace("did:key:", "");
 }
@@ -163,6 +167,10 @@ export function absoluteTimestamp(timestamp: number) {
 
 export function formatEditedCaption(author: Author, timestamp: number) {
   return `${author.alias ? author.alias : truncateDid(author.did)} edited ${absoluteTimestamp(timestamp)}`;
+}
+
+export function pluralize(singular: string, count: number): string {
+  return count === 1 ? singular : `${singular}s`;
 }
 
 export function isMac() {

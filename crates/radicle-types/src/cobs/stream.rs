@@ -1,16 +1,19 @@
-mod error;
+pub mod error;
 mod iter;
 
 pub use iter::ActionsIter;
 use iter::Walk;
 
+use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use radicle::cob::{ObjectId, TypeName};
+use radicle::git::Oid;
+use radicle::profile::Aliases;
+use radicle::storage::git::Repository;
 use serde::Deserialize;
 
-use radicle::cob::{ObjectId, TypeName};
-use radicle::git::raw as git2;
-use radicle::git::Oid;
+use crate::domain::inbox::models::notification::ActionWithAuthor;
 
 /// Helper trait for anything can provide its initial commit. Generally, this is
 /// the root of a COB object.
@@ -92,7 +95,8 @@ impl HasRoot for CobRange {
 ///
 /// To construct a `Stream`, use [`Stream::new`].
 pub struct Stream<'a, A> {
-    repo: &'a git2::Repository,
+    repo: &'a Repository,
+    aliases: &'a Aliases,
     range: CobRange,
     typename: TypeName,
     marker: PhantomData<A>,
@@ -101,11 +105,17 @@ pub struct Stream<'a, A> {
 impl<'a, A> Stream<'a, A> {
     /// Construct a new stream providing the underlying `repo`, a [`CobRange`],
     /// and the [`TypeName`] of the COB that is being streamed.
-    pub fn new(repo: &'a git2::Repository, range: CobRange, typename: TypeName) -> Self {
+    pub fn new(
+        repo: &'a Repository,
+        range: CobRange,
+        typename: TypeName,
+        aliases: &'a Aliases,
+    ) -> Self {
         Self {
             repo,
             range,
             typename,
+            aliases,
             marker: PhantomData,
         }
     }
@@ -120,9 +130,10 @@ impl<'a, A> HasRoot for Stream<'a, A> {
 impl<'a, A> CobStream for Stream<'a, A>
 where
     A: for<'de> Deserialize<'de>,
+    A: Debug,
 {
     type IterError = error::Actions;
-    type Action = A;
+    type Action = ActionWithAuthor<A>;
     type Iter = ActionsIter<'a, A>;
 
     fn all(&self) -> Result<Self::Iter, error::Stream> {
@@ -131,6 +142,8 @@ where
                 .iter(self.repo)
                 .map_err(error::Stream::new)?,
             self.typename.clone(),
+            self.repo,
+            self.aliases,
         ))
     }
 
@@ -141,6 +154,8 @@ where
                 .iter(self.repo)
                 .map_err(error::Stream::new)?,
             self.typename.clone(),
+            self.repo,
+            self.aliases,
         ))
     }
 
@@ -151,6 +166,8 @@ where
                 .iter(self.repo)
                 .map_err(error::Stream::new)?,
             self.typename.clone(),
+            self.repo,
+            self.aliases,
         ))
     }
 
@@ -160,6 +177,8 @@ where
                 .iter(self.repo)
                 .map_err(error::Stream::new)?,
             self.typename.clone(),
+            self.repo,
+            self.aliases,
         ))
     }
 }

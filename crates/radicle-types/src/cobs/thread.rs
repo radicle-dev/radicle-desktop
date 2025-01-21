@@ -194,7 +194,7 @@ pub struct NewPatchComment {
     pub embeds: Vec<Embed>,
 }
 
-#[derive(Clone, TS, Serialize, Deserialize)]
+#[derive(Debug, Clone, TS, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "cob/thread/")]
@@ -239,7 +239,7 @@ impl From<CodeLocation> for cob::CodeLocation {
     }
 }
 
-#[derive(Clone, TS, Serialize, Deserialize)]
+#[derive(Debug, Clone, TS, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type")]
 #[ts(export)]
 #[ts(export_to = "cob/thread/")]
@@ -273,7 +273,7 @@ impl From<CodeRange> for cob::CodeRange {
     }
 }
 
-#[derive(TS, Clone, Deserialize, Serialize)]
+#[derive(Debug, TS, Clone, Deserialize, Serialize)]
 #[ts(export)]
 #[ts(export_to = "cob/thread/")]
 pub struct Embed {

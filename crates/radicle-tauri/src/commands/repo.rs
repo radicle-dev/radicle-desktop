@@ -16,6 +16,11 @@ pub fn list_repos(
 }
 
 #[tauri::command]
+pub fn repo_count(ctx: tauri::State<AppState>) -> Result<types::repo::RepoCount, Error> {
+    ctx.repo_count()
+}
+
+#[tauri::command]
 pub fn repo_by_id(
     ctx: tauri::State<AppState>,
     rid: RepoId,

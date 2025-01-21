@@ -1,14 +1,15 @@
 mod commands;
 
-use tauri::Emitter;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
-use radicle::node::Handle;
+use radicle::node::{Handle, NOTIFICATIONS_DB_FILE};
 use radicle::Node;
+
+use radicle_types::domain;
 use radicle_types::error::Error;
 use radicle_types::AppState;
 
-use commands::{auth, cob, diff, profile, repo, thread};
+use commands::{auth, cob, diff, inbox, profile, repo, thread};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -33,12 +34,18 @@ pub fn run() {
                 }),
             }?;
 
+            let inbox_db = radicle_types::outbound::sqlite::Sqlite::reader(
+                profile.node().join(NOTIFICATIONS_DB_FILE),
+            )?;
+            let inbox_service = domain::inbox::service::Service::new(inbox_db);
+
             let events_handler = app.handle().clone();
             let node_handler = app.handle().clone();
 
             let node = Node::new(profile.socket());
             let node_status = node.clone();
 
+            app.manage(inbox_service);
             app.manage(AppState { profile });
 
             tauri::async_runtime::spawn(async move {
@@ -71,11 +78,15 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             auth::authenticate,
+            repo::repo_count,
             repo::list_repos,
             repo::repo_by_id,
             repo::diff_stats,
             repo::list_commits,
             diff::get_diff,
+            inbox::list_notifications,
+            inbox::count_notifications_by_repo,
+            inbox::clear_notifications,
             cob::get_embed,
             cob::save_embed_to_disk,
             cob::save_embed_by_path,

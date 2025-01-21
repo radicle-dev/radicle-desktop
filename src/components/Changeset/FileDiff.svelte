@@ -4,7 +4,7 @@
   import type { Modification } from "@bindings/diff/Modification";
 
   import File from "@app/components/File.svelte";
-  import { escape } from "lodash";
+  import escape from "lodash/escape";
 
   interface Props {
     filePath: string;

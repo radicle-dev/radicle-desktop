@@ -103,7 +103,12 @@ function urlToRoute(url: URL): Route | null {
 
   switch (resource) {
     case "": {
-      return { resource: "home" };
+      return {
+        resource: "home",
+      };
+    }
+    case "inbox": {
+      return { resource: "inbox" };
     }
     case "repos": {
       return repoUrlToRoute(segments, url.searchParams);
@@ -120,6 +125,8 @@ function urlToRoute(url: URL): Route | null {
 export function routeToPath(route: Route): string {
   if (route.resource === "home") {
     return "/";
+  } else if (route.resource === "inbox") {
+    return "/inbox";
   } else if (route.resource === "authenticationError") {
     return "/authenticationError";
   } else if (

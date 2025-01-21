@@ -3,7 +3,7 @@
 
   interface Props {
     size?: "16" | "32";
-    onclick?: () => void;
+    onclick?: (e: MouseEvent) => void;
     disabled?: boolean;
     styleDisplay?: string;
     styleVerticalAlign?: string;
@@ -12,6 +12,9 @@
       | "arrow-right"
       | "arrow-right-hollow"
       | "attachment"
+      | "branch"
+      | "broom"
+      | "broom-double"
       | "checkmark"
       | "chevron-down"
       | "chevron-right"
@@ -95,9 +98,9 @@
   class:hoverable={onclick}
   class:disabled
   role="img"
-  onclick={() => {
+  onclick={e => {
     if (onclick && !disabled) {
-      onclick();
+      onclick(e);
     }
   }}
   aria-label={`icon-${name}`}
@@ -156,6 +159,47 @@
     <path d="M4 8H5V9L4 9V8Z" />
     <path d="M5 6H11V7H5V6Z" />
     <path d="M4 7H5L5 8H4L4 7Z" />
+  {:else if name === "branch"}
+    <path d="M11 5L10 5V2L13 2V5L12 5V8L11 8V5ZM11 3H12V4H11V3Z" />
+    <path
+      d="M11 9L5 9L5 11H6L6 14H3L3 11H4L4 5H3L3 2L6 2L6 5H5L5 8H11V9ZM4 4L5 4V3H4L4 4ZM4 13V12H5L5 13H4Z" />
+  {:else if name === "broom"}
+    <path d="M11 13H12V14H11V13Z" />
+    <path d="M11 13H12V14H11V13Z" />
+    <path d="M11 12H12V13H11V12Z" />
+    <path d="M10 12H11V14H10V12Z" />
+    <path d="M8 12H9V14H8V12Z" />
+    <path d="M4 12H11V14H4V12Z" />
+    <path d="M9 12H10V13H9V12Z" />
+    <path d="M7 12H8V13H7V12Z" />
+    <path d="M4 10H12V11H4V10Z" />
+    <path d="M7 3H8V10H7V3Z" />
+    <path d="M8 3H9V10H8V3Z" />
+    <path d="M7 2H9V3H7V2Z" />
+  {:else if name === "broom-double"}
+    <path d="M9 13H10V14H9V13Z" />
+    <path d="M9 13H10V14H9V13Z" />
+    <path d="M9 12H10V13H9V12Z" />
+    <path d="M8 12H9V14H8V12Z" />
+    <path d="M6 12H7V14H6V12Z" />
+    <path d="M2 12H9V14H2V12Z" />
+    <path d="M7 12H8V13H7V12Z" />
+    <path d="M5 12H6V13H5V12Z" />
+    <path d="M2 10H10V11H2V10Z" />
+    <path d="M5 3H6V10H5V3Z" />
+    <path d="M6 3H7V10H6V3Z" />
+    <path d="M5 2H7V3H5V2Z" />
+    <path d="M13 13H14V14H13V13Z" />
+    <path d="M13 13H14V14H13V13Z" />
+    <path d="M13 12H14V13H13V12Z" />
+    <path d="M12 12H13V14H12V12Z" />
+    <path d="M11 12H13V14H11V12Z" />
+    <path d="M11 12H12V13H11V12Z" />
+    <path d="M9 12H10V13H9V12Z" />
+    <path d="M11 10H14V11H11V10Z" />
+    <path d="M9 3H10V9H9V3Z" />
+    <path d="M10 3H11V9H10V3Z" />
+    <path d="M9 2H11V3H9V2Z" />
   {:else if name === "checkmark"}
     <path d="M7 11V12H6V11H7Z" />
     <path d="M8 10V11L7 11L7 10H8Z" />

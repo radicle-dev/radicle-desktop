@@ -3,11 +3,19 @@ use axum::http::{Response, StatusCode};
 use axum::response::IntoResponse;
 use serde::Serialize;
 
+use crate::cobs::stream;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Profile error.
     #[error(transparent)]
     Profile(#[from] radicle::profile::Error),
+
+    /// List notification error.
+    #[error(transparent)]
+    ListNotificationsError(
+        #[from] crate::domain::inbox::models::notification::ListNotificationsError,
+    ),
 
     /// CobStore error.
     #[error(transparent)]
@@ -21,9 +29,21 @@ pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
 
-    /// Io error.
+    /// Sqlite error.
     #[error(transparent)]
     Sqlite(#[from] sqlite::Error),
+
+    /// Io error.
+    #[error(transparent)]
+    Actions(#[from] stream::error::Actions),
+
+    /// CobStream error.
+    #[error(transparent)]
+    CobStream(#[from] stream::error::Stream),
+
+    /// Inbox error.
+    #[error(transparent)]
+    Inbox(#[from] radicle::node::notifications::Error),
 
     /// Crypto error.
     #[error(transparent)]

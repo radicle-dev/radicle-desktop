@@ -35,7 +35,7 @@
     publicKey: string;
     headerCenter?: Snippet;
     secondColumn: Snippet;
-    sidebar: Snippet;
+    sidebar?: Snippet;
     loadMoreContent?: () => Promise<void>;
     loadMoreSecondColumn?: () => Promise<void>;
     hideSidebar?: boolean;
@@ -47,7 +47,7 @@
     publicKey,
     headerCenter = undefined,
     secondColumn,
-    sidebar,
+    sidebar = undefined,
     loadMoreContent = undefined,
     loadMoreSecondColumn = undefined,
     hideSidebar = false,
@@ -65,7 +65,7 @@
         if (
           contentContainer &&
           contentContainer.scrollTop + contentContainer.clientHeight >=
-            contentContainer.scrollHeight - 600 &&
+            contentContainer.scrollHeight / 2 &&
           loadingContent === false
         ) {
           loadingContent = true;
@@ -80,7 +80,7 @@
           secondColumnContainer &&
           secondColumnContainer.scrollTop +
             secondColumnContainer.clientHeight >=
-            secondColumnContainer.scrollHeight - 600 &&
+            secondColumnContainer.scrollHeight / 2 &&
           loadingSecondColumn === false
         ) {
           loadingSecondColumn = true;
@@ -135,12 +135,14 @@
     <Header {publicKey} center={headerCenter}></Header>
   </div>
 
-  <div
-    class="sidebar"
-    style:display={hideSidebar ? "none" : "flex"}
-    style:padding-right="1rem">
-    {@render sidebar()}
-  </div>
+  {#if sidebar}
+    <div
+      class="sidebar"
+      style:display={hideSidebar ? "none" : "flex"}
+      style:padding-right="1rem">
+      {@render sidebar()}
+    </div>
+  {/if}
 
   <div
     class="secondColumn"

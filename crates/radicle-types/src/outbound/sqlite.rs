@@ -3,7 +3,6 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time;
 
-use radicle::git::Qualified;
 use radicle::{git, identity};
 use sqlite as sql;
 
@@ -38,8 +37,9 @@ impl InboxStorage for Sqlite {
         notification::ListNotificationsError,
     > {
         let stmt = self.db.prepare(
-            "SELECT repo, COUNT(*) as count
+            "SELECT ref, repo, COUNT(*) as count
                  FROM `repository-notifications`
+                 WHERE ref LIKE '%cobs%'
                  GROUP BY repo",
         )?;
 
@@ -79,7 +79,7 @@ impl InboxStorage for Sqlite {
                 Ok((reference.to_owned(), items))
             })
             .collect::<Result<
-                BTreeMap<Qualified<'static>, Vec<notification::NotificationRow>>,
+                BTreeMap<git::Qualified<'static>, Vec<notification::NotificationRow>>,
                 notification::ListNotificationsError,
             >>()
     }

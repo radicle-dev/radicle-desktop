@@ -8,6 +8,7 @@ use axum::routing::post;
 use axum::Router;
 use hyper::header::CONTENT_TYPE;
 use hyper::Method;
+use radicle_types::domain::inbox::models::notification::NotificationCount;
 use serde::{Deserialize, Serialize};
 use tower_http::cors::{self, CorsLayer};
 
@@ -55,6 +56,11 @@ pub fn router(ctx: Context) -> Router {
     Router::new()
         .route("/config", post(config_handler))
         .route("/authenticate", post(auth_handler))
+        .route(
+            "/count_notifications_by_repo",
+            post(repo_count_notifications_handler),
+        )
+        .route("/repo_count", post(repo_count_handler))
         .route("/list_repos", post(repo_root_handler))
         .route("/repo_by_id", post(repo_handler))
         .route("/diff_stats", post(diff_stats_handler))
@@ -114,6 +120,15 @@ async fn repo_root_handler(
     let repos = ctx.list_repos(show)?;
 
     Ok::<_, Error>(Json(repos))
+}
+
+async fn repo_count_handler(State(ctx): State<Context>) -> impl IntoResponse {
+    let repos = ctx.repo_count()?;
+    Ok::<_, Error>(Json(repos))
+}
+
+async fn repo_count_notifications_handler() -> impl IntoResponse {
+    Ok::<_, Error>(Json(Vec::<NotificationCount>::new()))
 }
 
 #[derive(Serialize, Deserialize)]

@@ -6,7 +6,7 @@ test("removing identities from ssh-agent and re-adding them", async ({
 }) => {
   await page.goto("/");
   await expect(
-    page.getByText("did:key:z6MktULudTtAsAhRegYPiZ6631RV3viv12qd4GQF8z1xB22S"),
+    page.getByText("z6MktULudTtAsAhRegYPiZ6631RV3viv12qd4GQF8z1xB22S"),
   ).toBeVisible();
 
   await peer.logOut();
@@ -16,6 +16,6 @@ test("removing identities from ssh-agent and re-adding them", async ({
 
   await peer.authenticate();
   await expect(
-    page.getByText("did:key:z6MktULudTtAsAhRegYPiZ6631RV3viv12qd4GQF8z1xB22S"),
+    page.getByText("z6MktULudTtAsAhRegYPiZ6631RV3viv12qd4GQF8z1xB22S"),
   ).toBeVisible();
 });

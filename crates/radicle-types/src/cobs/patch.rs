@@ -294,7 +294,7 @@ impl From<Verdict> for cob::patch::Verdict {
     }
 }
 
-#[derive(Serialize, Deserialize, TS)]
+#[derive(Debug, Serialize, Deserialize, TS)]
 #[serde(tag = "type", rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "cob/patch/")]

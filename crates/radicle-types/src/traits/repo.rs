@@ -12,7 +12,7 @@ use radicle::{git, identity};
 use crate::cobs;
 use crate::diff::Diff;
 use crate::error::Error;
-use crate::repo;
+use crate::repo::{self, RepoCount};
 use crate::syntax::{Highlighter, ToPretty};
 use crate::traits::Profile;
 
@@ -22,6 +22,7 @@ pub enum Show {
     Delegate,
     All,
     Seeded,
+    Private,
 }
 
 pub trait Repo: Profile {
@@ -41,6 +42,10 @@ pub trait Repo: Profile {
                 continue;
             }
 
+            if !doc.is_private() && show == Show::Private {
+                continue;
+            }
+
             if !doc.delegates().contains(&profile.public_key.into()) && show == Show::Delegate {
                 continue;
             }
@@ -54,6 +59,42 @@ pub trait Repo: Profile {
         entries.sort_by(|a, b| b.last_commit_timestamp.cmp(&a.last_commit_timestamp));
 
         Ok::<_, Error>(entries)
+    }
+
+    fn repo_count(&self) -> Result<repo::RepoCount, Error> {
+        let profile = self.profile();
+        let storage = &profile.storage;
+        let policies = profile.policies()?;
+        let repos = storage.repositories()?;
+        let mut total = 0;
+        let mut delegate = 0;
+        let mut private = 0;
+        let mut seeding = 0;
+
+        for RepositoryInfo { rid, doc, refs, .. } in repos {
+            if policies.is_seeding(&rid)? {
+                seeding += 1;
+            }
+
+            if doc.is_private() {
+                private += 1;
+            }
+
+            if doc.delegates().contains(&profile.public_key.into()) {
+                delegate += 1;
+            }
+
+            if refs.is_some() {
+                total += 1;
+            }
+        }
+
+        Ok::<_, Error>(RepoCount {
+            total,
+            seeding,
+            private,
+            delegate,
+        })
     }
 
     fn repo_by_id(&self, rid: identity::RepoId) -> Result<repo::RepoInfo, Error> {

@@ -54,7 +54,7 @@ impl Issue {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, TS)]
+#[derive(Debug, Default, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", tag = "status")]
 #[ts(export)]
 #[ts(export_to = "cob/issue/")]
@@ -88,7 +88,7 @@ impl From<issue::State> for State {
     }
 }
 
-#[derive(Serialize, Deserialize, TS)]
+#[derive(Debug, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "cob/issue/")]
@@ -130,7 +130,7 @@ pub struct NewIssue {
     pub embeds: Vec<cobs::thread::Embed>,
 }
 
-#[derive(Serialize, Deserialize, TS)]
+#[derive(Debug, Serialize, Deserialize, TS)]
 #[serde(tag = "type", rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "cob/issue/")]
