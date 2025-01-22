@@ -55,6 +55,16 @@
     width: 100%;
   }
 
+  .wrapper:hover:not(.active)::after {
+    position: absolute;
+    z-index: 1;
+    content: " ";
+    background-color: var(--color-foreground-dim);
+    height: 2px;
+    bottom: -4px;
+    width: 100%;
+  }
+
   .container.disabled {
     color: var(--color-foreground-disabled);
   }
