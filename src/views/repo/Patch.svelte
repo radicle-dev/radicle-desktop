@@ -76,7 +76,6 @@
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let tab: "patch" | "revisions" | "timeline" = $state("patch");
-  let hideTimeline = $state(false);
   let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
 
   $effect(() => {
@@ -93,7 +92,6 @@
     editingTitle = false;
     updatedTitle = patch.title;
     selectedRevision = revisions.slice(-1)[0];
-    hideTimeline = false;
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
@@ -305,9 +303,6 @@
   .metadata-section-title {
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
-  }
-  .hide {
-    display: none;
   }
 </style>
 
@@ -608,22 +603,7 @@
           revision={revisions[0]}
           {config} />
       {:else if tab === "timeline"}
-        <div>
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <div
-            role="button"
-            tabindex="0"
-            class="txt-semibold global-flex"
-            style:margin-bottom={hideTimeline ? undefined : "1rem"}
-            style:cursor="pointer"
-            onclick={() => (hideTimeline = !hideTimeline)}>
-            <Icon
-              name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
-          </div>
-          <div class:hide={hideTimeline}>
-            <PatchTimeline {activity} patchId={patch.id} />
-          </div>
-        </div>
+        <PatchTimeline {activity} patchId={patch.id} />
       {:else}
         <RevisionComponent
           rid={repo.rid}
