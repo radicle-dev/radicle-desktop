@@ -97,7 +97,7 @@ pub fn get_draft_review(
     rid: identity::RepoId,
     cob_id: git::Oid,
     revision_id: patch::RevisionId,
-) -> Option<patch::Review> {
+) -> Option<types::cobs::patch::Review> {
     ctx.get_draft_review(rid, cob_id, revision_id)
 }
 

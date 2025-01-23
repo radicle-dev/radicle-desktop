@@ -302,8 +302,9 @@ pub trait PatchesMut: Profile {
         rid: identity::RepoId,
         cob_id: git::Oid,
         revision_id: patch::RevisionId,
-    ) -> Option<patch::Review> {
+    ) -> Option<cobs::patch::Review> {
         let profile = self.profile();
+        let aliases = profile.aliases();
         let repo = profile.storage.repository(rid).ok()?;
         let signer = profile.signer().ok()?;
         let drafts = storage::git::cob::DraftStore::new(&repo, *signer.public_key());
@@ -311,9 +312,10 @@ pub trait PatchesMut: Profile {
 
         let patch = patches.get(&cob_id.into()).ok()?;
         let revision = patch.and_then(|p| p.revision(&revision_id).cloned());
-        let review = revision.and_then(|rev| rev.review_by(signer.public_key()).cloned());
+        let review: Option<patch::Review> =
+            revision.and_then(|rev| rev.review_by(signer.public_key()).cloned());
 
-        review
+        review.map(|r| cobs::patch::Review::new(r, &aliases))
     }
 
     /// Edits a draft review for a specific patch revision in a repository.
@@ -371,20 +373,16 @@ pub trait PatchesMut: Profile {
                 hint: "Not able to find the specified patch revision.",
             })?;
 
-        revision
-            .review_by(signer.public_key())
-            .ok_or(Error::WithHint {
-                err: anyhow::anyhow!("duplicate patch review found"),
-                hint: "Found an existing draft patch review on this patch revision and repo.",
-            })?;
-
-        let review_id = patch.review(
-            revision.id(),
-            Some(cob::patch::Verdict::Reject),
-            None,
-            labels,
-            &signer,
-        )?;
+        let review_id = match revision.review_by(signer.public_key()) {
+            Some(review) => review.id(),
+            None => patch.review(
+                revision.id(),
+                Some(cob::patch::Verdict::Reject),
+                None,
+                labels,
+                &signer,
+            )?,
+        };
 
         patches.write(&cob_id.into())?;
 
