@@ -107,8 +107,10 @@ impl From<patch::State> for State {
 pub struct ReviewEdit {
     #[ts(as = "String")]
     pub review_id: cob::patch::ReviewId,
-    #[ts(as = "Option<String>", optional)]
-    pub verdict: Option<cob::patch::Verdict>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub verdict: Option<Verdict>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub summary: Option<String>,
     #[ts(as = "Option<Vec<String>>", optional)]
@@ -232,9 +234,10 @@ pub struct Review {
     #[ts(as = "String")]
     id: identity::PublicKey,
     author: cobs::Author,
-    #[ts(type = "'accept' | 'reject'")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
-    verdict: Option<cob::patch::Verdict>,
+    verdict: Option<Verdict>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     summary: Option<String>,
     #[ts(as = "Option<_>", optional)]
@@ -252,7 +255,7 @@ impl Review {
         Self {
             id,
             author: cobs::Author::new(&review.author().id, aliases),
-            verdict: review.verdict(),
+            verdict: review.verdict().map(|v| v.into()),
             summary: review.summary().map(|s| s.to_string()),
             comments: review
                 .comments()
@@ -265,6 +268,33 @@ impl Review {
                 })
                 .collect::<Vec<_>>(),
             timestamp: review.timestamp(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/patch/")]
+pub enum Verdict {
+    Accept,
+    Reject,
+}
+
+impl From<cob::patch::Verdict> for Verdict {
+    fn from(value: cob::patch::Verdict) -> Self {
+        match value {
+            cob::patch::Verdict::Accept => Self::Accept,
+            cob::patch::Verdict::Reject => Self::Reject,
+        }
+    }
+}
+
+impl From<Verdict> for cob::patch::Verdict {
+    fn from(value: Verdict) -> Self {
+        match value {
+            Verdict::Accept => Self::Accept,
+            Verdict::Reject => Self::Reject,
         }
     }
 }
@@ -311,8 +341,8 @@ pub enum Action {
         #[ts(optional)]
         summary: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        #[ts(as = "Option<String>", optional)]
-        verdict: Option<patch::Verdict>,
+        #[ts(optional)]
+        verdict: Option<Verdict>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         #[ts(as = "Option<Vec<String>>", optional)]
         labels: Vec<cob::Label>,
@@ -325,8 +355,8 @@ pub enum Action {
         #[ts(optional)]
         summary: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        #[ts(as = "Option<String>", optional)]
-        verdict: Option<patch::Verdict>,
+        #[ts(optional)]
+        verdict: Option<Verdict>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         #[ts(as = "Option<Vec<String>>", optional)]
         labels: Vec<cob::Label>,

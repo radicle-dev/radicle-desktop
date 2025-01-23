@@ -258,7 +258,7 @@
               {formatTimestamp(op.timestamp)}
             </div>
           </div>
-        {:else}
+        {:else if op.verdict === "reject"}
           <div class="icon" style:color="var(--color-foreground-red)">
             <Icon name="comment-cross" />
           </div>

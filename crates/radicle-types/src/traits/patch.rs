@@ -161,7 +161,7 @@ pub trait PatchesMut: Profile {
                 verdict,
                 labels,
             } => {
-                patch.review_edit(review, verdict, summary, labels, &signer)?;
+                patch.review_edit(review, verdict.map(|v| v.into()), summary, labels, &signer)?;
             }
             cobs::patch::Action::Review {
                 revision,
@@ -169,7 +169,13 @@ pub trait PatchesMut: Profile {
                 verdict,
                 labels,
             } => {
-                patch.review(revision, verdict, summary, labels, &signer)?;
+                patch.review(
+                    revision,
+                    verdict.map(|v| v.into()),
+                    summary,
+                    labels,
+                    &signer,
+                )?;
             }
             cobs::patch::Action::ReviewRedact { review } => {
                 patch.redact_review(review, &signer)?;
@@ -329,7 +335,7 @@ pub trait PatchesMut: Profile {
         let mut patch = patches.get_mut(&cob_id.into())?;
         patch.review_edit(
             edit.review_id,
-            edit.verdict,
+            edit.verdict.map(|v| v.into()),
             edit.summary,
             edit.labels,
             &signer,

@@ -2,11 +2,12 @@
 import type { Author } from "../Author";
 import type { CodeLocation } from "../thread/CodeLocation";
 import type { Comment } from "../thread/Comment";
+import type { Verdict } from "./Verdict";
 
 export type Review = {
   id: string;
   author: Author;
-  verdict?: "accept" | "reject";
+  verdict?: Verdict;
   summary?: string;
   comments?: Array<Comment<CodeLocation>>;
   timestamp: number;
