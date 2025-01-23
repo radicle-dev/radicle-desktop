@@ -118,7 +118,7 @@
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            <div>created a new revision <Id id={op.id} variant="oid" /></div>
+            <div>created revision <Id id={op.id} variant="oid" /></div>
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>

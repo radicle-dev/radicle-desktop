@@ -254,9 +254,9 @@
 
 <div class="txt-small patch-body">
   <CommentComponent
-    caption="opened"
+    caption={revision.id === patchId ? "opened patch" : "created revision"}
     {rid}
-    id={patchId}
+    id={revision.id}
     lastEdit={revision.description.length > 1
       ? revision.description.at(-1)
       : undefined}
