@@ -240,7 +240,6 @@ pub struct Review {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     summary: Option<String>,
-    #[ts(as = "Option<_>", optional)]
     comments: Vec<cobs::thread::Comment<cobs::thread::CodeLocation>>,
     #[ts(type = "number")]
     timestamp: cob::common::Timestamp,

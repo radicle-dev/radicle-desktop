@@ -9,6 +9,6 @@ export type Review = {
   author: Author;
   verdict?: Verdict;
   summary?: string;
-  comments?: Array<Comment<CodeLocation>>;
+  comments: Array<Comment<CodeLocation>>;
   timestamp: number;
 };
