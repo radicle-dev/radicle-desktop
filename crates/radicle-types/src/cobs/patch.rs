@@ -153,7 +153,7 @@ impl Revision {
             head: value.head(),
             reviews: value
                 .reviews()
-                .map(|(id, r)| Review::new(*id, r.clone(), aliases))
+                .map(|(_, r)| Review::new(r.clone(), aliases))
                 .collect::<Vec<_>>(),
             timestamp: value.timestamp(),
             discussion: value
@@ -232,7 +232,7 @@ impl Edit {
 #[ts(export_to = "cob/patch/")]
 pub struct Review {
     #[ts(as = "String")]
-    id: identity::PublicKey,
+    id: cob::patch::ReviewId,
     author: cobs::Author,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
@@ -246,13 +246,9 @@ pub struct Review {
 }
 
 impl Review {
-    pub fn new(
-        id: identity::PublicKey,
-        review: cob::patch::Review,
-        aliases: &impl AliasStore,
-    ) -> Self {
+    pub fn new(review: cob::patch::Review, aliases: &impl AliasStore) -> Self {
         Self {
-            id,
+            id: review.id(),
             author: cobs::Author::new(&review.author().id, aliases),
             verdict: review.verdict().map(|v| v.into()),
             summary: review.summary().map(|s| s.to_string()),
