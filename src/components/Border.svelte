@@ -74,11 +74,11 @@
       "p5-1 p5-2 p5-3 p5-4 p5-5";
   }
 
-  .container:hover .p2-3,
-  .container:hover .p3-2,
-  .container:hover .p3-3,
-  .container:hover .p3-4,
-  .container:hover .p4-3 {
+  .container:hover > .p2-3,
+  .container:hover > .p3-2,
+  .container:hover > .p3-3,
+  .container:hover > .p3-4,
+  .container:hover > .p4-3 {
     background-color: var(--local-hover-background-color);
   }
 
