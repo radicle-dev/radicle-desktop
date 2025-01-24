@@ -46,6 +46,7 @@
     padding-right: 1.5rem;
     align-items: center;
     min-height: 40px;
+    margin-bottom: 0.5rem;
   }
 </style>
 
@@ -64,36 +65,38 @@
   {/snippet}
   <div class="container">
     <div class="header">Repositories</div>
-    <div class="repo-grid">
-      {#each repos as repo}
-        {#if repo.payloads["xyz.radicle.project"]}
-          <RepoCard
-            {repo}
-            selfDid={didFromPublicKey(config.publicKey)}
-            onclick={() => {
-              void router.push({
-                resource: "repo.issues",
-                rid: repo.rid,
-                status: "open",
-              });
-            }} />
-        {/if}
-      {:else}
-        <Border
-          variant="ghost"
-          styleAlignItems="center"
-          styleJustifyContent="center">
-          <div
-            class="global-flex"
-            style:height="74px"
-            style:justify-content="center">
-            <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
-              <Icon name="none" />
-              No repositories.
-            </div>
+    {#if repos.length}
+      <div class="repo-grid">
+        {#each repos as repo}
+          {#if repo.payloads["xyz.radicle.project"]}
+            <RepoCard
+              {repo}
+              selfDid={didFromPublicKey(config.publicKey)}
+              onclick={() => {
+                void router.push({
+                  resource: "repo.issues",
+                  rid: repo.rid,
+                  status: "open",
+                });
+              }} />
+          {/if}
+        {/each}
+      </div>
+    {:else}
+      <Border
+        variant="ghost"
+        styleAlignItems="center"
+        styleJustifyContent="center">
+        <div
+          class="global-flex"
+          style:height="74px"
+          style:justify-content="center">
+          <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
+            <Icon name="none" />
+            No repositories.
           </div>
-        </Border>
-      {/each}
-    </div>
+        </div>
+      </Border>
+    {/if}
   </div>
 </Layout>
