@@ -30,6 +30,7 @@
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import Layout from "./Layout.svelte";
+  import Link from "@app/components/Link.svelte";
   import OutlineButton from "@app/components/OutlineButton.svelte";
   import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
@@ -345,7 +346,15 @@
       <div class="global-flex" style:gap="4px">
         {project.data.name}
         <Icon name="chevron-right" />
-        Patches
+        <Link
+          underline={false}
+          route={{
+            resource: "repo.patches",
+            rid: repo.rid,
+            status: "open",
+          }}>
+          Patches
+        </Link>
       </div>
 
       <Popover popoverPositionRight="0" popoverPositionTop="2.5rem">

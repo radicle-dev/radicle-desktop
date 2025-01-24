@@ -13,6 +13,7 @@
   import DropdownListItem from "./DropdownListItem.svelte";
   import Icon from "./Icon.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
+  import Link from "./Link.svelte";
   import OutlineButton from "./OutlineButton.svelte";
   import Popover, { closeFocused } from "./Popover.svelte";
 
@@ -76,7 +77,15 @@
     style:white-space="nowrap">
     {title}
     <Icon name="chevron-right" />
-    Issues
+    <Link
+      underline={false}
+      route={{
+        resource: "repo.issues",
+        rid: repo.rid,
+        status: "open",
+      }}>
+      Issues
+    </Link>
   </div>
 
   <div class="global-flex" style:margin-left="1rem">
