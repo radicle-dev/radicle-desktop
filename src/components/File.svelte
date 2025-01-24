@@ -18,6 +18,7 @@
     padding-left: 1rem;
     z-index: 2;
     font-size: var(--font-size-small);
+    background-color: var(--color-background-default);
   }
   .header::after {
     position: absolute;
