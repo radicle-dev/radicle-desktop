@@ -172,6 +172,7 @@
     width: 1px;
   }
   .selection-indicator-right {
+    display: none; /* FIXME: fix the selection indicator */
     position: absolute;
     right: 0;
     top: 0;
