@@ -5,8 +5,9 @@
     children: Snippet;
     title?: string;
     variant: "primary" | "secondary" | "ghost";
-    onclick?: () => void;
+    onclick?: (e: MouseEvent) => void;
     styleHeight?: string;
+    stylePadding?: string;
   }
 
   const {
@@ -15,6 +16,7 @@
     variant,
     onclick,
     styleHeight = "2rem",
+    stylePadding = "0 8px",
   }: Props = $props();
 
   const style = $derived(
@@ -71,7 +73,6 @@
   }
   .p3-3 {
     grid-area: p3-3;
-    padding: 0 8px;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -232,7 +233,7 @@
 
   <div class="pixel p3-1"></div>
   <div class="pixel p3-2"></div>
-  <div class="pixel p3-3 txt-semibold txt-small">
+  <div class="pixel p3-3 txt-semibold txt-small" style:padding={stylePadding}>
     {@render children()}
   </div>
   <div class="pixel p3-4"></div>

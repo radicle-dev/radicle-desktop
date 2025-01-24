@@ -546,7 +546,7 @@
             {formatOid(patch.id)}
             <span
               class="global-counter"
-              style:height="22px"
+              style:height="24px"
               style:color="var(--color-foreground-contrast)">
               Initial
             </span>
@@ -558,17 +558,18 @@
                 tab = "revisions";
               }}>
               {formatOid(selectedRevision.id)}
-              <RevisionBadges revision={selectedRevision} {revisions} />
+              <div class="global-flex" style:gap="0.25rem">
+                <RevisionBadges revision={selectedRevision} {revisions} />
+                <RevisionSelector
+                  {patch}
+                  {revisions}
+                  {selectedRevision}
+                  selectRevision={rev => {
+                    selectedRevision = rev;
+                    tab = "revisions";
+                  }} />
+              </div>
             </Tab>
-
-            <RevisionSelector
-              {patch}
-              {revisions}
-              {selectedRevision}
-              selectRevision={rev => {
-                selectedRevision = rev;
-                tab = "revisions";
-              }} />
           {/if}
 
           <div style:margin-left="auto">

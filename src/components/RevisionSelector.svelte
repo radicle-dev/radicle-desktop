@@ -54,10 +54,19 @@
   }
 </style>
 
-<Popover popoverPadding="0" popoverPositionTop="2.5rem" popoverPositionLeft="0">
+<Popover popoverPadding="0" popoverPositionTop="37px" popoverPositionLeft="0">
   {#snippet toggle(onclick)}
-    <NakedButton variant="ghost" {onclick}>
-      <Icon name="chevron-down" />
+    <NakedButton
+      variant="ghost"
+      onclick={(e: MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onclick();
+      }}
+      stylePadding="0 4px">
+      <div style:color="var(--color-foreground-contrast)">
+        <Icon name="chevron-down" />
+      </div>
     </NakedButton>
   {/snippet}
 
