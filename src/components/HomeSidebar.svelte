@@ -153,6 +153,22 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="tab"
+          class:active={activeTab.filter === "contributor"}
+          onclick={() =>
+            router.push({
+              resource: "home",
+              activeTab: "contributor",
+            })}>
+          <div class="global-flex">
+            <Icon name="user" />
+            <div>Contributor</div>
+          </div>
+          <div class="global-counter">{repoCount.contributor}</div>
+        </div>
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="tab"
           class:active={activeTab.filter === "private"}
           onclick={() =>
             router.push({

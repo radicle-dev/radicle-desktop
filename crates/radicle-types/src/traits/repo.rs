@@ -21,6 +21,7 @@ use crate::traits::Profile;
 pub enum Show {
     Delegate,
     All,
+    Contributor,
     Seeded,
     Private,
 }
@@ -34,7 +35,7 @@ pub trait Repo: Profile {
         let mut entries = Vec::new();
 
         for RepositoryInfo { rid, doc, refs, .. } in repos {
-            if refs.is_none() && show == Show::All {
+            if refs.is_none() && show == Show::Contributor {
                 continue;
             }
 
@@ -69,9 +70,11 @@ pub trait Repo: Profile {
         let mut total = 0;
         let mut delegate = 0;
         let mut private = 0;
+        let mut contributor = 0;
         let mut seeding = 0;
 
         for RepositoryInfo { rid, doc, refs, .. } in repos {
+            total += 1;
             if policies.is_seeding(&rid)? {
                 seeding += 1;
             }
@@ -85,12 +88,13 @@ pub trait Repo: Profile {
             }
 
             if refs.is_some() {
-                total += 1;
+                contributor += 1;
             }
         }
 
         Ok::<_, Error>(RepoCount {
             total,
+            contributor,
             seeding,
             private,
             delegate,

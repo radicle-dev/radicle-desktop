@@ -15,6 +15,7 @@ use crate::error;
 #[ts(export_to = "repo/")]
 pub struct RepoCount {
     pub total: usize,
+    pub contributor: usize,
     pub delegate: usize,
     pub private: usize,
     pub seeding: usize,

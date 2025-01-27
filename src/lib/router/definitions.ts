@@ -17,7 +17,7 @@ import {
   loadPatches,
 } from "@app/views/repo/router";
 
-export type HomeReposTab = "delegate" | "private";
+export type HomeReposTab = "delegate" | "private" | "contributor";
 
 export interface HomeInboxTab {
   rid: string;
@@ -106,6 +106,8 @@ export async function loadRoute(
     if (route.resource === "home") {
       if (route.activeTab === "delegate") {
         show = "delegate";
+      } else if (route.activeTab === "contributor") {
+        show = "contributor";
       } else if (route.activeTab === "private") {
         show = "private";
       }

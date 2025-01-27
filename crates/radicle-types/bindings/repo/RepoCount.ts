@@ -2,6 +2,7 @@
 
 export type RepoCount = {
   total: number;
+  contributor: number;
   delegate: number;
   private: number;
   seeding: number;
