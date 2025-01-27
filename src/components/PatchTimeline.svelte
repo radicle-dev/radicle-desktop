@@ -269,6 +269,17 @@
               {formatTimestamp(op.timestamp)}
             </div>
           </div>
+        {:else if op.verdict === undefined}
+          <div class="icon">
+            <Icon name="comment" />
+          </div>
+          <div class="wrapper">
+            <NodeId {...authorForNodeId(op.author)} />
+            reviewed revision <Id id={op.revision} variant="oid" />
+            <div title={absoluteTimestamp(op.timestamp)}>
+              {formatTimestamp(op.timestamp)}
+            </div>
+          </div>
         {/if}
       </div>
     {:else if op.type === "review.comment"}
