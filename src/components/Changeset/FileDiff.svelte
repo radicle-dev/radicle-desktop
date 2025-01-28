@@ -201,28 +201,46 @@
     padding-left: 0.5rem;
     color: var(--color-foreground-dim);
   }
+  .added {
+    color: var(--color-foreground-success);
+    background-color: var(--color-fill-diff-green-light);
+  }
+  .deleted {
+    color: var(--color-foreground-red);
+    background-color: var(--color-fill-diff-red-light);
+  }
+  .moved,
+  .copied {
+    color: var(--color-foreground-dim);
+    background: var(--color-fill-ghost);
+  }
 </style>
+
+{#snippet styledPath(fullPath: string)}
+  <!-- prettier-ignore -->
+  <span class="txt-small" style:white-space="nowrap"><span style:color="var(--color-fill-gray)" style:font-weight="var(--font-weight-regular)">{fullPath.match(/^.*\/|/)?.values().next().value}</span><span style:font-weight="var(--font-weight-semibold)">{fullPath.split("/").slice(-1)}</span></span>
+{/snippet}
 
 <File {expanded}>
   {#snippet leftHeader()}
     {#if (headerBadgeCaption === "moved" || headerBadgeCaption === "copied") && oldFilePath}
       <span style="display: flex; align-items: center; flex-wrap: wrap;">
-        {oldFilePath}
+        {@render styledPath(filePath)}
         <span style:padding="0 0.5rem">→</span>
-        {filePath}
+        {@render styledPath(filePath)}
       </span>
     {:else}
-      {filePath}
+      {@render styledPath(filePath)}
     {/if}
 
     {#if headerBadgeCaption === "added"}
-      added
+      <span class="global-counter added">added</span>
     {:else if headerBadgeCaption === "deleted"}
-      deleted
+      <span class="global-counter deleted">deleted</span>
     {:else if headerBadgeCaption === "moved"}
-      moved
+      <span class="global-counter moved">moved</span>
     {:else if headerBadgeCaption === "copied"}
-      copied
+      <span class="global-counter copied">copied</span>
     {/if}
   {/snippet}
 
