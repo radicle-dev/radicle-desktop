@@ -51,26 +51,29 @@
 <div class="header global-flex">
   <div class="wrapper">
     <div class="top-row">
-      <div class="global-flex" style:gap="0">
+      <div class="global-flex" style:gap="0.25rem">
         <NakedButton
           variant="ghost"
           onclick={() => {
             void router.push({ resource: "home" });
-          }}>
+          }}
+          stylePadding="0 4px">
           <Avatar {publicKey} />
         </NakedButton>
         <NakedButton
           variant="ghost"
           onclick={() => {
             window.history.back();
-          }}>
+          }}
+          stylePadding="0 4px">
           <Icon name="arrow-left" />
         </NakedButton>
         <NakedButton
           variant="ghost"
           onclick={() => {
             window.history.forward();
-          }}>
+          }}
+          stylePadding="0 4px">
           <Icon name="arrow-right" />
         </NakedButton>
       </div>
