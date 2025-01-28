@@ -28,6 +28,7 @@
   import NodeId from "@app/components/NodeId.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
   import Markdown from "./Markdown.svelte";
+  import NakedButton from "./NakedButton.svelte";
 
   interface Props {
     rid: string;
@@ -48,6 +49,7 @@
   let hideDiscussion = $state(false);
   let hideReviews = $state(false);
   let topLevelReplyOpen = $state(false);
+  let filesExpanded = $state(true);
 
   const threads = $derived(
     ((revision.discussion &&
@@ -385,18 +387,37 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
-  role="button"
-  tabindex="0"
   class="txt-semibold global-flex"
-  style:margin-bottom={hideChanges ? undefined : "1rem"}
-  style:cursor="pointer"
-  onclick={() => (hideChanges = !hideChanges)}>
-  <Icon name={hideChanges ? "chevron-right" : "chevron-down"} />Changes
+  style:margin-bottom={hideChanges ? undefined : "1rem"}>
+  <div
+    style:cursor="pointer"
+    style:min-height="2rem"
+    class="global-flex"
+    role="button"
+    tabindex="0"
+    onclick={() => (hideChanges = !hideChanges)}>
+    <Icon name={hideChanges ? "chevron-right" : "chevron-down"} />Changes
+  </div>
+  {#if !hideChanges}
+    <div style:margin-left="auto">
+      <NakedButton
+        variant="ghost"
+        onclick={() => (filesExpanded = !filesExpanded)}>
+        {#if filesExpanded === true}
+          <Icon name="collapse" />
+          Collapse all
+        {:else}
+          <Icon name="expand" />
+          Expand all
+        {/if}
+      </NakedButton>
+    </div>
+  {/if}
 </div>
 <div class:hide={hideChanges}>
   {#await loadHighlightedDiff(rid, revision.base, revision.head)}
     <span class="txt-small">Loading…</span>
   {:then diff}
-    <Changeset {diff} repoId={rid} />
+    <Changeset {diff} repoId={rid} expanded={filesExpanded} />
   {/await}
 </div>

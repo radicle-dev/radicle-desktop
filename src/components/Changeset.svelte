@@ -6,9 +6,10 @@
   interface Props {
     diff: Diff;
     repoId: string;
+    expanded?: boolean;
   }
 
-  const { diff }: Props = $props();
+  const { diff, expanded = true }: Props = $props();
 </script>
 
 <style>
@@ -26,6 +27,7 @@
   {#each diff.files as file}
     <div class="diff">
       <FileDiff
+        {expanded}
         filePath={"path" in file ? file.path : file.newPath}
         oldFilePath={"oldPath" in file ? file.oldPath : undefined}
         fileDiff={file.diff}

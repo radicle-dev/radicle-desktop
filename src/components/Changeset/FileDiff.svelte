@@ -11,6 +11,7 @@
     oldFilePath?: string | undefined;
     fileDiff: DiffContent;
     headerBadgeCaption: FileDiff["status"];
+    expanded: boolean;
   }
 
   const {
@@ -18,6 +19,7 @@
     oldFilePath = undefined,
     fileDiff,
     headerBadgeCaption,
+    expanded,
   }: Props = $props();
 
   function lineNumberR(line: Modification): string | number {
@@ -201,7 +203,7 @@
   }
 </style>
 
-<File>
+<File {expanded}>
   {#snippet leftHeader()}
     {#if (headerBadgeCaption === "moved" || headerBadgeCaption === "copied") && oldFilePath}
       <span style="display: flex; align-items: center; flex-wrap: wrap;">

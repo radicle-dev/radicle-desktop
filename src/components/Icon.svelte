@@ -19,6 +19,7 @@
       | "chevron-down"
       | "chevron-right"
       | "clock"
+      | "collapse"
       | "collapse-panel"
       | "comment"
       | "comment-checkmark"
@@ -28,6 +29,7 @@
       | "dashboard"
       | "delegate"
       | "diff"
+      | "expand"
       | "expand-panel"
       | "eye"
       | "face"
@@ -256,6 +258,20 @@
     <path d="M7 7H8V8L7 8V7Z" />
     <path d="M6 6H7V7L6 7V6Z" />
     <path d="M5 5H6V6H5V5Z" />
+  {:else if name === "collapse"}
+    <path d="M7 5.5L8 5.5L8 4.5L7 4.5L7 5.5Z" />
+    <path d="M6 4.5L7 4.5L7 3.5L6 3.5L6 4.5Z" />
+    <path d="M9 4.5L9 1.5L7 1.5L7 4.5L9 4.5Z" />
+    <path d="M11 3.5L11 2.5L5 2.5L5 3.5L11 3.5Z" />
+    <path d="M10 4.5L10 3.5L9 3.5L9 4.5L10 4.5Z" />
+    <path d="M9 5.5L9 4.5L8 4.5L8 5.5L9 5.5Z" />
+    <path d="M9 10.5L8 10.5L8 11.5L9 11.5L9 10.5Z" />
+    <path d="M10 11.5L9 11.5L9 12.5L10 12.5L10 11.5Z" />
+    <path d="M7 11.5L7 14.5L9 14.5L9 11.5L7 11.5Z" />
+    <path d="M5 12.5L5 13.5L11 13.5L11 12.5L5 12.5Z" />
+    <path d="M6 11.5L6 12.5L7 12.5L8 12.5L8 11.5L7 11.5L6 11.5Z" />
+    <path d="M7 10.5L7 11.5L8 11.5L8 10.5L7 10.5Z" />
+    <path d="M2 7.5H14V8.5H2V7.5Z" />
   {:else if name === "collapse-panel"}
     <path d="M2 3.00002H3V13H2V3.00002Z" />
     <path d="M13 3.00002H14V6.00002H13V3.00002Z" />
@@ -416,6 +432,20 @@
     <path d="M7 4H8V9H7V4Z" />
     <path d="M5 6H10V7H5V6Z" />
     <path d="M5 10H10V11H5V10Z" />
+  {:else if name === "expand"}
+    <path d="M9 1.5H8V2.5H9V1.5Z" />
+    <path d="M10 2.5H9V3.5H10V2.5Z" />
+    <path d="M7 2.5V5.5H9V2.5H7Z" />
+    <path d="M5 3.5V4.5H11V3.5H5Z" />
+    <path d="M6 2.5V3.5H7V2.5H6Z" />
+    <path d="M7 1.5V2.5H8V1.5H7Z" />
+    <path d="M7 14.5H8V13.5H7V14.5Z" />
+    <path d="M6 13.5H7V12.5H6V13.5Z" />
+    <path d="M9 13.5V10.5H7V13.5H9Z" />
+    <path d="M11 12.5V11.5H5V12.5H11Z" />
+    <path d="M10 13.5V12.5H9H8V13.5H9H10Z" />
+    <path d="M9 14.5V13.5H8V14.5H9Z" />
+    <path d="M2 7.5H14V8.5H2V7.5Z" />
   {:else if name === "expand-panel"}
     <path d="M2 3.00002H3V13H2V3.00002Z" />
     <path d="M13 3.00002H14V5.00002H13V3.00002Z" />
