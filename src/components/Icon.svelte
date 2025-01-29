@@ -29,6 +29,7 @@
       | "dashboard"
       | "delegate"
       | "diff"
+      | "ellipsis"
       | "expand"
       | "expand-panel"
       | "eye"
@@ -432,6 +433,10 @@
     <path d="M7 4H8V9H7V4Z" />
     <path d="M5 6H10V7H5V6Z" />
     <path d="M5 10H10V11H5V10Z" />
+  {:else if name === "ellipsis"}
+    <path d="M2 7H4V9H2V7Z" />
+    <path d="M7 7H9V9H7V7Z" />
+    <path d="M12 7H14V9H12V7Z" />
   {:else if name === "expand"}
     <path d="M9 1.5H8V2.5H9V1.5Z" />
     <path d="M10 2.5H9V3.5H10V2.5Z" />

@@ -6,6 +6,7 @@ import type { Patch } from "@bindings/cob/patch/Patch";
 
 import bs58 from "bs58";
 import twemojiModule from "twemoji";
+import md5 from "md5";
 
 import NodeId from "@app/components/NodeId.svelte";
 
@@ -210,4 +211,12 @@ export function parseNodeId(
   }
 
   return undefined;
+}
+
+// Get the gravatar URL of an email.
+export function gravatarURL(email: string): string {
+  const address = email.trim().toLowerCase();
+  const hash = md5(address);
+
+  return `https://www.gravatar.com/avatar/${hash}`;
 }
