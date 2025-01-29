@@ -2,6 +2,8 @@
   import type { Author } from "@bindings/cob/Author";
   import type { Reaction } from "@bindings/cob/Reaction";
 
+  import { twemoji } from "@app/lib/utils";
+
   interface Props {
     reactions: Reaction[];
     handleReaction?: (authors: Author[], reaction: string) => Promise<void>;
@@ -42,12 +44,12 @@
               await handleReaction(authors, emoji);
             }
           }}>
-          <span>{emoji}</span>
+          <span use:twemoji={{ exclude: ["21a9"] }}>{emoji}</span>
           <span>{authors.length}</span>
         </div>
       {:else}
         <div class="reaction txt-tiny" style="padding: 2px 4px;">
-          <span>{emoji}</span>
+          <span use:twemoji={{ exclude: ["21a9"] }}>{emoji}</span>
           <span>{authors.length}</span>
         </div>
       {/if}

@@ -4,6 +4,7 @@
   import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
   import Popover from "./Popover.svelte";
+  import { twemoji } from "@app/lib/utils";
 
   interface Props {
     reactions?: Reaction[];
@@ -62,6 +63,7 @@
             ({ emoji }) => emoji === reaction,
           )}
           <button
+            use:twemoji={{ exclude: ["21a9"] }}
             class:active={Boolean(lookedUpReaction)}
             onclick={() =>
               select(lookedUpReaction || { emoji: reaction, authors: [] })}>
