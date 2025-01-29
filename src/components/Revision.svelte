@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
+  import type { Commit } from "@bindings/repo/commit";
   import type { Config } from "@bindings/config/Config";
   import type { Diff } from "@bindings/diff/Diff";
   import type { Embed } from "@bindings/cob/thread/Embed";
@@ -29,6 +30,7 @@
   import ThreadComponent from "@app/components/Thread.svelte";
   import Markdown from "./Markdown.svelte";
   import NakedButton from "./NakedButton.svelte";
+  import CobCommitTeaser from "./CobCommitTeaser.svelte";
 
   interface Props {
     rid: string;
@@ -46,6 +48,7 @@
 
   let focusReply: boolean = $state(false);
   let hideChanges = $state(false);
+  let hideCommits = $state(false);
   let hideDiscussion = $state(false);
   let hideReviews = $state(false);
   let topLevelReplyOpen = $state(false);
@@ -78,6 +81,7 @@
     hideReviews = false;
     hideDiscussion = false;
     hideChanges = false;
+    hideCommits = false;
   });
 
   async function editRevision(
@@ -233,6 +237,14 @@
       },
     });
   }
+
+  async function loadCommits(rid: string, base: string, head: string) {
+    return invoke<Commit[]>("list_commits", {
+      rid,
+      base,
+      head,
+    });
+  }
 </script>
 
 <style>
@@ -269,6 +281,32 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+  .commits {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.875rem;
+    margin-left: 0.5rem;
+    gap: 0.5rem;
+    padding: 1rem 0.5rem 1rem 1rem;
+    border-left: 1px solid var(--color-fill-separator);
+  }
+  .commit:last-of-type::after {
+    content: "";
+    position: absolute;
+    left: -18.5px;
+    top: 14px;
+    bottom: -1rem;
+    border-left: 4px solid var(--color-background-default);
+  }
+  .commit-dot {
+    width: 4px;
+    height: 4px;
+    position: absolute;
+    top: 0.625rem;
+    left: -18.5px;
+    background-color: var(--color-fill-separator);
   }
 </style>
 
@@ -384,6 +422,32 @@
     </div>
   </div>
 {/if}
+
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div class="txt-semibold global-flex" style:margin-bottom="1rem">
+  <div
+    style:cursor="pointer"
+    class="global-flex"
+    role="button"
+    tabindex="0"
+    onclick={() => (hideCommits = !hideCommits)}>
+    <Icon name={hideCommits ? "chevron-right" : "chevron-down"} />Commits
+  </div>
+</div>
+<div class:hide={hideCommits}>
+  {#await loadCommits(rid, revision.base, revision.head)}
+    <span class="txt-small">Loading…</span>
+  {:then commits}
+    <div class="commits">
+      {#each commits.reverse() as commit}
+        <div class="commit" style:position="relative">
+          <div class="commit-dot"></div>
+          <CobCommitTeaser {commit} />
+        </div>
+      {/each}
+    </div>
+  {/await}
+</div>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div

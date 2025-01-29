@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { tick, type Snippet } from "svelte";
-  import Icon from "./Icon.svelte";
-  import NakedButton from "./NakedButton.svelte";
+  import type { Snippet } from "svelte";
 
   import { tick } from "svelte";
 

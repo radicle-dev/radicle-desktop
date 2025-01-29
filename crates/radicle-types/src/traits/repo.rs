@@ -210,158 +210,26 @@ pub trait Repo: Profile {
     fn list_commits(
         &self,
         rid: identity::RepoId,
-        parent: Option<String>,
-        skip: Option<usize>,
-        take: Option<usize>,
-    ) -> Result<cobs::PaginatedQuery<Vec<repo::Commit>>, Error> {
+        base: String,
+        head: String,
+    ) -> Result<Vec<repo::Commit>, Error> {
         let profile = self.profile();
-        let cursor = skip.unwrap_or(0);
-        let take = take.unwrap_or(20);
         let repo = profile.storage.repository(rid)?;
 
-        let sha = match parent {
-            Some(commit) => commit,
-            None => repo.head()?.1.to_string(),
-        };
-
         let repo = surf::Repository::open(repo.path())?;
-        let history = repo.history(&sha)?;
+        let history = repo.history(&head)?;
 
-        let mut commits = history
+        let commits = history
+            .take_while(|c| {
+                if let Ok(c) = c {
+                    c.id.to_string() != base
+                } else {
+                    false
+                }
+            })
             .filter_map(|c| c.map(Into::into).ok())
-            .skip(cursor)
-            .take(take + 1); // Take one extra item to check if there's more.
+            .collect();
 
-        let paginated_commits: Vec<_> = commits.by_ref().take(take).collect();
-        let more = commits.next().is_some();
-
-        Ok::<_, Error>(cobs::PaginatedQuery {
-            cursor,
-            more,
-            content: paginated_commits.to_vec(),
-        })
-    }
-}
-
-#[cfg(test)]
-#[allow(clippy::unwrap_used)]
-mod test {
-    use std::str::FromStr;
-    use std::vec;
-
-    use radicle::crypto::test::signer::MockSigner;
-    use radicle::{git, test};
-    use radicle_surf::Author;
-
-    use crate::cobs;
-    use crate::repo;
-    use crate::traits::repo::Repo;
-    use crate::AppState;
-
-    #[test]
-    fn list_commits_pagination() {
-        let signer = MockSigner::from_seed([0xff; 32]);
-        let tempdir = tempfile::tempdir().unwrap();
-        let profile = crate::test::profile(tempdir.path(), [0xff; 32]);
-        let (rid, _, _, _) =
-            test::fixtures::project(tempdir.path().join("original"), &profile.storage, &signer)
-                .unwrap();
-        let state = AppState { profile };
-        let commits = Repo::list_commits(&state, rid, None, None, Some(1)).unwrap();
-
-        assert_eq!(
-            commits,
-            cobs::PaginatedQuery {
-                cursor: 0,
-                more: true,
-                content: vec![repo::Commit {
-                    id: git::Oid::from_str("f2de534b5e81d7c6e2dcaf58c3dd91573c0a0354").unwrap(),
-                    author: Author {
-                        name: "anonymous".to_string(),
-                        email: "anonymous@radicle.xyz".to_string(),
-                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
-                    },
-                    committer: Author {
-                        name: "anonymous".to_string(),
-                        email: "anonymous@radicle.xyz".to_string(),
-                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
-                    },
-                    message: "Second commit".to_string(),
-                    summary: "Second commit".to_string(),
-                    parents: vec![
-                        git::Oid::from_str("08c788dd1be6315de09e3fe09b5b1b7a2b8711d9").unwrap()
-                    ],
-                }],
-            }
-        );
-
-        let commits = Repo::list_commits(&state, rid, None, Some(1), None).unwrap();
-
-        assert_eq!(
-            commits,
-            cobs::PaginatedQuery {
-                cursor: 1,
-                more: false,
-                content: vec![repo::Commit {
-                    id: git::Oid::from_str("08c788dd1be6315de09e3fe09b5b1b7a2b8711d9").unwrap(),
-                    author: Author {
-                        name: "anonymous".to_string(),
-                        email: "anonymous@radicle.xyz".to_string(),
-                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
-                    },
-                    committer: Author {
-                        name: "anonymous".to_string(),
-                        email: "anonymous@radicle.xyz".to_string(),
-                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
-                    },
-                    message: "Initial commit".to_string(),
-                    summary: "Initial commit".to_string(),
-                    parents: vec![],
-                }],
-            }
-        );
-    }
-
-    #[test]
-    fn list_commits_with_head() {
-        let signer = MockSigner::from_seed([0xff; 32]);
-        let tempdir = tempfile::tempdir().unwrap();
-        let profile = crate::test::profile(tempdir.path(), [0xff; 32]);
-        let (rid, _, _, _) =
-            test::fixtures::project(tempdir.path().join("original"), &profile.storage, &signer)
-                .unwrap();
-        let state = AppState { profile };
-        let commits = Repo::list_commits(
-            &state,
-            rid,
-            Some("08c788dd1be6315de09e3fe09b5b1b7a2b8711d9".to_string()),
-            None,
-            None,
-        )
-        .unwrap();
-
-        assert_eq!(
-            commits,
-            cobs::PaginatedQuery {
-                cursor: 0,
-                more: false,
-                content: vec![repo::Commit {
-                    id: git::Oid::from_str("08c788dd1be6315de09e3fe09b5b1b7a2b8711d9").unwrap(),
-                    author: Author {
-                        name: "anonymous".to_string(),
-                        email: "anonymous@radicle.xyz".to_string(),
-                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
-                    },
-                    committer: Author {
-                        name: "anonymous".to_string(),
-                        email: "anonymous@radicle.xyz".to_string(),
-                        time: radicle::git::raw::Time::new(1514817556, 0).into(),
-                    },
-                    message: "Initial commit".to_string(),
-                    summary: "Initial commit".to_string(),
-                    parents: vec![],
-                }],
-            }
-        );
+        Ok(commits)
     }
 }
