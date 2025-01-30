@@ -13,22 +13,15 @@
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
-  import {
-    absoluteTimestamp,
-    authorForNodeId,
-    formatTimestamp,
-    publicKeyFromDid,
-    scrollIntoView,
-  } from "@app/lib/utils";
+  import { publicKeyFromDid, scrollIntoView } from "@app/lib/utils";
 
   import Changeset from "@app/components/Changeset.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
-  import ThreadComponent from "@app/components/Thread.svelte";
-  import Markdown from "./Markdown.svelte";
   import NakedButton from "./NakedButton.svelte";
+  import ReviewTeaser from "@app/components/ReviewTeaser.svelte";
+  import ThreadComponent from "@app/components/Thread.svelte";
 
   interface Props {
     rid: string;
@@ -262,14 +255,6 @@
     margin-left: 1.25rem;
     background-color: var(--color-background-float);
   }
-  .review {
-    clip-path: var(--2px-corner-fill);
-    padding: 0.5rem 0.75rem;
-    font-size: var(--font-size-small);
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
 </style>
 
 <div class="txt-small patch-body">
@@ -352,34 +337,7 @@
     </div>
     <div class:hide={hideReviews}>
       {#each revision.reviews as review}
-        <div
-          class="review"
-          style:background-color={review.verdict === "accept"
-            ? "var(--color-fill-diff-green-light)"
-            : "var(--color-fill-diff-red-light)"}>
-          <div class="global-flex">
-            <NodeId {...authorForNodeId(review.author)} />
-            {review.verdict === "accept" ? "accepted" : "rejected"} revision
-            <div title={absoluteTimestamp(review.timestamp)}>
-              {formatTimestamp(review.timestamp)}
-            </div>
-            {#if review.comments.length > 0}
-              <div
-                class="global-flex"
-                style:gap="0.25rem"
-                style:margin-left="auto">
-                <Icon name="comment" />{review.comments.length}
-              </div>
-            {/if}
-          </div>
-          <div>
-            {#if review.summary?.trim()}
-              <Markdown {rid} breaks content={review.summary} />
-            {:else}
-              <span class="txt-missing">No summary.</span>
-            {/if}
-          </div>
-        </div>
+        <ReviewTeaser {rid} {review} />
       {/each}
     </div>
   </div>
