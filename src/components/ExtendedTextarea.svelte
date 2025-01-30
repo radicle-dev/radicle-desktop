@@ -100,14 +100,16 @@
 
         return Promise.all(
           event.payload.paths.map(async path => {
-            const name = path.split("/").at(-1);
+            const pathSegments = path.split("/");
+            const name = pathSegments[pathSegments.length - 1];
             const uploadLabel = `[Uploading ${name}...]()\n`;
 
             body = preBody.concat(uploadLabel, afterBody);
             const oid = await invoke<string>("save_embed_by_path", {
               rid,
               path,
-            }).catch(console.error);
+            });
+            embeds.set(oid, { name, content: `git:${oid}` });
             return `[${name}](${oid})\n`;
           }),
         ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
@@ -126,13 +128,15 @@
 
     return Promise.all(
       paths.map(async path => {
-        const name = path.split("/").at(-1);
+        const pathSegments = path.split("/");
+        const name = pathSegments[pathSegments.length - 1];
         const uploadLabel = `[Uploading ${name}...]()\n`;
         body = preBody.concat(uploadLabel, afterBody);
         const oid = await invoke<string>("save_embed_by_path", {
           rid,
           path,
-        }).catch(console.error);
+        });
+        embeds.set(oid, { name: name ?? path, content: `git:${oid}` });
         return `[${name}](${oid})\n`;
       }),
     ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
@@ -150,7 +154,8 @@
         const oid = await invoke<string>("save_embed_by_clipboard", {
           name: file.name,
           rid,
-        }).catch(console.error);
+        });
+        embeds.set(oid, { name: file.name, content: `git:${oid}` });
         body = preBody.concat(`[${file.name}](${oid})\n`, afterBody);
       } else {
         return Promise.all(
@@ -163,7 +168,8 @@
               rid,
               name: file.name,
               bytes,
-            }).catch(console.error);
+            });
+            embeds.set(oid, { name: file.name, content: `git:${oid}` });
             return `[${file.name}](${oid})\n`;
           }),
         ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
