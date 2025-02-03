@@ -5,6 +5,7 @@ use radicle::node::AliasStore;
 use radicle::{cob, git, identity};
 
 use crate::cobs;
+use crate::domain::patch::models;
 
 #[derive(TS, Serialize, Deserialize)]
 #[ts(export)]
@@ -39,7 +40,7 @@ pub struct Comment<T = cobs::Never> {
     #[ts(as = "String")]
     id: cob::thread::CommentId,
     author: cobs::Author,
-    edits: Vec<cobs::patch::Edit>,
+    edits: Vec<models::patch::Edit>,
     reactions: Vec<cobs::thread::Reaction>,
     #[ts(as = "Option<String>", optional)]
     reply_to: Option<cob::thread::CommentId>,
@@ -62,7 +63,7 @@ impl Comment<CodeLocation> {
             author: cobs::Author::new(&comment.author().into(), aliases),
             edits: comment
                 .edits()
-                .map(|e| cobs::patch::Edit::new(e, aliases))
+                .map(|e| models::patch::Edit::new(e, aliases))
                 .collect::<Vec<_>>(),
             reactions: comment
                 .reactions()
@@ -100,7 +101,7 @@ impl Comment<cobs::Never> {
             author: cobs::Author::new(&comment.author().into(), aliases),
             edits: comment
                 .edits()
-                .map(|e| cobs::patch::Edit::new(e, aliases))
+                .map(|e| models::patch::Edit::new(e, aliases))
                 .collect::<Vec<_>>(),
             reactions: comment
                 .reactions()

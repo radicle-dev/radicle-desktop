@@ -4,7 +4,10 @@ use std::sync::Arc;
 use axum::Router;
 use tokio::net::TcpListener;
 
+use radicle::cob::cache::COBS_DB_FILE;
 use radicle::Profile;
+
+use radicle_types::domain::patch::service::Service as PatchService;
 
 mod api;
 
@@ -25,7 +28,12 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
 
 fn router(profile: Profile) -> anyhow::Result<Router> {
     let profile = Arc::new(profile);
-    let ctx = api::Context::new(profile);
+
+    let patch_db =
+        radicle_types::outbound::sqlite::Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
+    let patch_service = PatchService::new(patch_db);
+
+    let ctx = api::Context::new(profile, Arc::new(patch_service));
 
     Ok(api::router(ctx))
 }

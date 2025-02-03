@@ -19,6 +19,10 @@ pub enum Error {
 
     /// CobStore error.
     #[error(transparent)]
+    ListPatchesError(#[from] crate::domain::patch::models::patch::ListPatchesError),
+
+    /// CobStore error.
+    #[error(transparent)]
     CobStore(#[from] radicle::cob::store::Error),
 
     /// Anyhow error.

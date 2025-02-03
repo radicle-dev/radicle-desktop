@@ -9,6 +9,7 @@ use ts_rs::TS;
 
 use crate::cobs::stream::{self, CobStream};
 use crate::cobs::{self, Author};
+use crate::domain::patch::models;
 
 #[derive(Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -157,8 +158,8 @@ pub struct Patch {
     #[ts(type = "number")]
     pub timestamp: localtime::LocalTime,
     pub title: String,
-    pub status: cobs::patch::State,
-    pub actions: Vec<ActionWithAuthor<cobs::patch::Action>>,
+    pub status: models::patch::State,
+    pub actions: Vec<ActionWithAuthor<models::patch::Action>>,
 }
 
 /// Type of notification.

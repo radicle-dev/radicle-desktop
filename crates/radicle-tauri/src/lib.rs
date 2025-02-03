@@ -2,6 +2,7 @@ mod commands;
 
 use tauri::{Emitter, Manager};
 
+use radicle::cob::cache::COBS_DB_FILE;
 use radicle::node::{Handle, NOTIFICATIONS_DB_FILE};
 use radicle::Node;
 
@@ -39,6 +40,10 @@ pub fn run() {
             )?;
             let inbox_service = domain::inbox::service::Service::new(inbox_db);
 
+            let patch_db =
+                radicle_types::outbound::sqlite::Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
+            let patch_service = domain::patch::service::Service::new(patch_db);
+
             let events_handler = app.handle().clone();
             let node_handler = app.handle().clone();
 
@@ -46,6 +51,7 @@ pub fn run() {
             let node_status = node.clone();
 
             app.manage(inbox_service);
+            app.manage(patch_service);
             app.manage(AppState { profile });
 
             tauri::async_runtime::spawn(async move {

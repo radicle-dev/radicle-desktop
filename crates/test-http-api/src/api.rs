@@ -8,17 +8,21 @@ use axum::routing::post;
 use axum::Router;
 use hyper::header::CONTENT_TYPE;
 use hyper::Method;
-use radicle_types::domain::inbox::models::notification::NotificationCount;
 use serde::{Deserialize, Serialize};
 use tower_http::cors::{self, CorsLayer};
 
 use radicle::{git, identity};
 use radicle_types as types;
+use radicle_types::cobs;
 use radicle_types::cobs::issue;
 use radicle_types::cobs::issue::NewIssue;
-use radicle_types::cobs::patch;
 use radicle_types::cobs::CobOptions;
+use radicle_types::domain::inbox::models::notification::NotificationCount;
+use radicle_types::domain::patch::models;
+use radicle_types::domain::patch::service::Service;
+use radicle_types::domain::patch::traits::PatchService;
 use radicle_types::error::Error;
+use radicle_types::outbound::sqlite::Sqlite;
 use radicle_types::traits::auth::Auth;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::issue::{Issues, IssuesMut};
@@ -30,6 +34,7 @@ use radicle_types::traits::Profile;
 #[derive(Clone)]
 pub struct Context {
     profile: Arc<radicle::Profile>,
+    patches: Arc<Service<Sqlite>>,
 }
 
 impl Auth for Context {}
@@ -47,8 +52,8 @@ impl Profile for Context {
 }
 
 impl Context {
-    pub fn new(profile: Arc<radicle::Profile>) -> Self {
-        Self { profile }
+    pub fn new(profile: Arc<radicle::Profile>, patches: Arc<Service<Sqlite>>) -> Self {
+        Self { profile, patches }
     }
 }
 
@@ -70,7 +75,7 @@ pub fn router(ctx: Context) -> Router {
         )
         .route(
             "/activity_by_patch",
-            post(activity_patch_handler::<patch::Action>),
+            post(activity_patch_handler::<models::patch::Action>),
         )
         .route("/get_diff", post(diff_handler))
         .route("/list_issues", post(issues_handler))
@@ -345,9 +350,31 @@ async fn patches_handler(
         status,
     }): Json<PatchesBody>,
 ) -> impl IntoResponse {
-    let patches = ctx.list_patches(rid, status, skip, take)?;
+    let profile = ctx.profile;
+    let cursor = skip.unwrap_or(0);
+    let take = take.unwrap_or(20);
+    let aliases = profile.aliases();
+    let patches = match status {
+        None => ctx.patches.list(rid)?.collect::<Vec<_>>(),
+        Some(s) => ctx
+            .patches
+            .list_by_status(rid, s.into())?
+            .collect::<Vec<_>>(),
+    };
+    let more = cursor + take < patches.len();
 
-    Ok::<_, Error>(Json(patches))
+    let patches = patches
+        .into_iter()
+        .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
+        .skip(cursor)
+        .take(take)
+        .collect::<Vec<_>>();
+
+    Ok::<_, Error>(Json(cobs::PaginatedQuery {
+        cursor,
+        more,
+        content: patches,
+    }))
 }
 
 #[derive(Serialize, Deserialize)]

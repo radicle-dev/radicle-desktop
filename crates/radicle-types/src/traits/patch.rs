@@ -5,59 +5,22 @@ use radicle::storage::ReadStorage;
 use radicle::{cob, git, identity, patch, Node};
 
 use crate::cobs;
+use crate::domain::patch::models;
 use crate::error::Error;
 use crate::traits::Profile;
 
 pub trait Patches: Profile {
-    fn list_patches(
-        &self,
-        rid: identity::RepoId,
-        status: Option<cobs::query::PatchStatus>,
-        skip: Option<usize>,
-        take: Option<usize>,
-    ) -> Result<cobs::PaginatedQuery<Vec<cobs::patch::Patch>>, Error> {
-        let profile = self.profile();
-        let cursor = skip.unwrap_or(0);
-        let take = take.unwrap_or(20);
-        let repo = profile.storage.repository(rid)?;
-        let aliases = &profile.aliases();
-        let cache = profile.patches(&repo)?;
-        let patches = match status {
-            None => cache.list()?.collect::<Vec<_>>(),
-            Some(s) => cache.list_by_status(&s.into())?.collect::<Vec<_>>(),
-        };
-        let more = cursor + take < patches.len();
-
-        let mut patches = patches
-            .into_iter()
-            .filter_map(|p| {
-                p.map(|(id, patch)| cobs::patch::Patch::new(id, &patch, aliases))
-                    .ok()
-            })
-            .skip(cursor)
-            .take(take)
-            .collect::<Vec<_>>();
-
-        patches.sort_by_key(|b| std::cmp::Reverse(b.timestamp()));
-
-        Ok::<_, Error>(cobs::PaginatedQuery {
-            cursor,
-            more,
-            content: patches,
-        })
-    }
-
     fn get_patch(
         &self,
         rid: identity::RepoId,
         id: git::Oid,
-    ) -> Result<Option<cobs::patch::Patch>, Error> {
+    ) -> Result<Option<models::patch::Patch>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let patches = profile.patches(&repo)?;
         let patch = patches.get(&id.into())?;
         let aliases = &profile.aliases();
-        let patches = patch.map(|patch| cobs::patch::Patch::new(id.into(), &patch, aliases));
+        let patches = patch.map(|patch| models::patch::Patch::new(id.into(), &patch, aliases));
 
         Ok::<_, Error>(patches)
     }
@@ -66,7 +29,7 @@ pub trait Patches: Profile {
         &self,
         rid: identity::RepoId,
         id: git::Oid,
-    ) -> Result<Option<Vec<cobs::patch::Revision>>, Error> {
+    ) -> Result<Option<Vec<models::patch::Revision>>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let patches = profile.patches(&repo)?;
@@ -75,7 +38,7 @@ pub trait Patches: Profile {
 
             patch
                 .revisions()
-                .map(|(_, r)| cobs::patch::Revision::new(r.clone(), aliases))
+                .map(|(_, r)| models::patch::Revision::new(r.clone(), aliases))
                 .collect::<Vec<_>>()
         });
 
@@ -87,7 +50,7 @@ pub trait Patches: Profile {
         rid: identity::RepoId,
         id: git::Oid,
         revision_id: git::Oid,
-    ) -> Result<Option<cobs::patch::Revision>, Error> {
+    ) -> Result<Option<models::patch::Revision>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let patches = profile.patches(&repo)?;
@@ -96,7 +59,7 @@ pub trait Patches: Profile {
 
             patch
                 .revision(&revision_id.into())
-                .map(|r| cobs::patch::Revision::new(r.clone(), aliases))
+                .map(|r| models::patch::Revision::new(r.clone(), aliases))
         });
 
         Ok::<_, Error>(revision)
@@ -108,9 +71,9 @@ pub trait PatchesMut: Profile {
         &self,
         rid: identity::RepoId,
         cob_id: git::Oid,
-        action: cobs::patch::Action,
+        action: models::patch::Action,
         opts: cobs::CobOptions,
-    ) -> Result<cobs::patch::Patch, Error> {
+    ) -> Result<models::patch::Patch, Error> {
         let profile = self.profile();
         let mut node = Node::new(profile.socket());
         let repo = profile.storage.repository(rid)?;
@@ -120,7 +83,7 @@ pub trait PatchesMut: Profile {
         let mut patch = patches.get_mut(&cob_id.into())?;
 
         match action {
-            cobs::patch::Action::RevisionEdit {
+            models::patch::Action::RevisionEdit {
                 revision,
                 description,
                 embeds,
@@ -132,13 +95,13 @@ pub trait PatchesMut: Profile {
                     &signer,
                 )?;
             }
-            cobs::patch::Action::RevisionCommentRedact { revision, comment } => {
+            models::patch::Action::RevisionCommentRedact { revision, comment } => {
                 patch.comment_redact(revision, comment, &signer)?;
             }
-            cobs::patch::Action::ReviewCommentRedact { review, comment } => {
+            models::patch::Action::ReviewCommentRedact { review, comment } => {
                 patch.redact_review_comment(review, comment, &signer)?;
             }
-            cobs::patch::Action::ReviewCommentReact {
+            models::patch::Action::ReviewCommentReact {
                 review,
                 comment,
                 reaction,
@@ -146,16 +109,16 @@ pub trait PatchesMut: Profile {
             } => {
                 patch.react_review_comment(review, comment, reaction, active, &signer)?;
             }
-            cobs::patch::Action::ReviewCommentResolve { review, comment } => {
+            models::patch::Action::ReviewCommentResolve { review, comment } => {
                 patch.resolve_review_comment(review, comment, &signer)?;
             }
-            cobs::patch::Action::ReviewCommentUnresolve { review, comment } => {
+            models::patch::Action::ReviewCommentUnresolve { review, comment } => {
                 patch.unresolve_review_comment(review, comment, &signer)?;
             }
-            cobs::patch::Action::Edit { title, target } => {
+            models::patch::Action::Edit { title, target } => {
                 patch.edit(title, target, &signer)?;
             }
-            cobs::patch::Action::ReviewEdit {
+            models::patch::Action::ReviewEdit {
                 review,
                 summary,
                 verdict,
@@ -163,7 +126,7 @@ pub trait PatchesMut: Profile {
             } => {
                 patch.review_edit(review, verdict.map(|v| v.into()), summary, labels, &signer)?;
             }
-            cobs::patch::Action::Review {
+            models::patch::Action::Review {
                 revision,
                 summary,
                 verdict,
@@ -177,10 +140,10 @@ pub trait PatchesMut: Profile {
                     &signer,
                 )?;
             }
-            cobs::patch::Action::ReviewRedact { review } => {
+            models::patch::Action::ReviewRedact { review } => {
                 patch.redact_review(review, &signer)?;
             }
-            cobs::patch::Action::ReviewComment {
+            models::patch::Action::ReviewComment {
                 review,
                 body,
                 location,
@@ -196,7 +159,7 @@ pub trait PatchesMut: Profile {
                     &signer,
                 )?;
             }
-            cobs::patch::Action::ReviewCommentEdit {
+            models::patch::Action::ReviewCommentEdit {
                 review,
                 comment,
                 body,
@@ -210,16 +173,16 @@ pub trait PatchesMut: Profile {
                     &signer,
                 )?;
             }
-            cobs::patch::Action::Lifecycle { state } => {
+            models::patch::Action::Lifecycle { state } => {
                 patch.lifecycle(state, &signer)?;
             }
-            cobs::patch::Action::Assign { assignees } => {
+            models::patch::Action::Assign { assignees } => {
                 patch.assign(assignees, &signer)?;
             }
-            cobs::patch::Action::Label { labels } => {
+            models::patch::Action::Label { labels } => {
                 patch.label(labels, &signer)?;
             }
-            cobs::patch::Action::RevisionReact {
+            models::patch::Action::RevisionReact {
                 revision,
                 reaction,
                 location,
@@ -233,7 +196,7 @@ pub trait PatchesMut: Profile {
                     &signer,
                 )?;
             }
-            cobs::patch::Action::RevisionComment {
+            models::patch::Action::RevisionComment {
                 revision,
                 location,
                 body,
@@ -249,7 +212,7 @@ pub trait PatchesMut: Profile {
                     &signer,
                 )?;
             }
-            cobs::patch::Action::RevisionCommentEdit {
+            models::patch::Action::RevisionCommentEdit {
                 revision,
                 comment,
                 body,
@@ -263,7 +226,7 @@ pub trait PatchesMut: Profile {
                     &signer,
                 )?;
             }
-            cobs::patch::Action::RevisionCommentReact {
+            models::patch::Action::RevisionCommentReact {
                 revision,
                 comment,
                 reaction,
@@ -271,13 +234,13 @@ pub trait PatchesMut: Profile {
             } => {
                 patch.comment_react(revision, comment, reaction, active, &signer)?;
             }
-            cobs::patch::Action::RevisionRedact { revision } => {
+            models::patch::Action::RevisionRedact { revision } => {
                 patch.redact(revision, &signer)?;
             }
-            cobs::patch::Action::Merge { .. } => {
+            models::patch::Action::Merge { .. } => {
                 unimplemented!("We don't support merging of patches through the desktop")
             }
-            cobs::patch::Action::Revision { .. } => {
+            models::patch::Action::Revision { .. } => {
                 unimplemented!("We don't support creating new revisions through the desktop")
             }
         }
@@ -288,7 +251,7 @@ pub trait PatchesMut: Profile {
             }
         }
 
-        Ok::<_, Error>(cobs::patch::Patch::new(*patch.id(), &patch, &aliases))
+        Ok::<_, Error>(models::patch::Patch::new(*patch.id(), &patch, &aliases))
     }
 
     /// Gets the draft review of the local user for a specific patch revision in a repository.
@@ -302,7 +265,7 @@ pub trait PatchesMut: Profile {
         rid: identity::RepoId,
         cob_id: git::Oid,
         revision_id: patch::RevisionId,
-    ) -> Option<cobs::patch::Review> {
+    ) -> Option<models::patch::Review> {
         let profile = self.profile();
         let aliases = profile.aliases();
         let repo = profile.storage.repository(rid).ok()?;
@@ -315,7 +278,7 @@ pub trait PatchesMut: Profile {
         let review: Option<patch::Review> =
             revision.and_then(|rev| rev.review_by(signer.public_key()).cloned());
 
-        review.map(|r| cobs::patch::Review::new(r, &aliases))
+        review.map(|r| models::patch::Review::new(r, &aliases))
     }
 
     /// Edits a draft review for a specific patch revision in a repository.
@@ -326,7 +289,7 @@ pub trait PatchesMut: Profile {
         &self,
         rid: identity::RepoId,
         cob_id: git::Oid,
-        edit: cobs::patch::ReviewEdit,
+        edit: models::patch::ReviewEdit,
     ) -> Result<(), Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;

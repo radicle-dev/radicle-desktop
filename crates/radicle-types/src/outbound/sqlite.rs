@@ -1,13 +1,17 @@
 use std::collections::BTreeMap;
 use std::path::Path;
+use std::str::FromStr;
 use std::sync::Arc;
 use std::time;
 
+use radicle::patch::{Patch, PatchId, Status};
 use radicle::{git, identity};
 use sqlite as sql;
 
 use crate::domain::inbox::models::notification;
 use crate::domain::inbox::traits::InboxStorage;
+use crate::domain::patch::models::patch::ListPatchesError;
+use crate::domain::patch::traits::PatchStorage;
 use crate::error::Error;
 
 pub struct Sqlite {
@@ -26,6 +30,57 @@ impl Sqlite {
         db.set_busy_timeout(Self::DB_READ_TIMEOUT.as_millis() as usize)?;
 
         Ok(Self { db: Arc::new(db) })
+    }
+}
+
+impl PatchStorage for Sqlite {
+    fn list(
+        &self,
+        rid: identity::RepoId,
+    ) -> Result<impl Iterator<Item = (PatchId, Patch)>, ListPatchesError> {
+        let mut stmt = self.db.prepare(
+            "SELECT id, patch, (
+                 SELECT MIN(JSON_EXTRACT(revision.value, '$.timestamp'))
+                 FROM JSON_EACH(JSON_EXTRACT(p.patch, '$.revisions')) AS revision
+             ) AS last_revision_timestamp
+             FROM patches AS p
+             WHERE repo = ?1
+             ORDER BY last_revision_timestamp DESC;
+             ",
+        )?;
+        stmt.bind((1, &rid))?;
+        Ok(stmt.into_iter().filter_map(|row| {
+            let row = row.ok()?;
+            let id = PatchId::from_str(row.read::<&str, _>("id")).ok()?;
+            let patch = serde_json::from_str::<Patch>(row.read::<&str, _>("patch")).ok()?;
+            Some((id, patch))
+        }))
+    }
+
+    fn list_by_status(
+        &self,
+        rid: identity::RepoId,
+        status: Status,
+    ) -> Result<impl Iterator<Item = (PatchId, Patch)>, ListPatchesError> {
+        let mut stmt = self.db.prepare(
+            "SELECT id, patch, (
+                 SELECT MIN(JSON_EXTRACT(revision.value, '$.timestamp'))
+                 FROM JSON_EACH(JSON_EXTRACT(p.patch, '$.revisions')) AS revision
+             ) AS last_revision_timestamp
+             FROM patches AS p
+             WHERE repo = ?1
+             AND patch->>'$.state.status' = ?2
+             ORDER BY last_revision_timestamp DESC;
+             ",
+        )?;
+        stmt.bind((1, &rid))?;
+        stmt.bind((2, sql::Value::String(status.to_string())))?;
+        Ok(stmt.into_iter().filter_map(|row| {
+            let row = row.ok()?;
+            let id = PatchId::from_str(row.read::<&str, _>("id")).ok()?;
+            let patch = serde_json::from_str::<Patch>(row.read::<&str, _>("patch")).ok()?;
+            Some((id, patch))
+        }))
     }
 }
 
