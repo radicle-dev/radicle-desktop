@@ -115,6 +115,10 @@
                         <div style:color="var(--color-foreground-dim)">
                           <Icon name="none" />
                         </div>
+                      {:else if revision?.discussion?.length}
+                        <div style:color="var(--color-foreground-dim)">
+                          <Icon name="comment" />
+                        </div>
                       {/if}
                     </div>
                     <span class="global-oid">
