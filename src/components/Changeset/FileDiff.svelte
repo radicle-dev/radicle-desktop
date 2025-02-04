@@ -89,6 +89,9 @@
     table-layout: fixed;
     border-collapse: collapse;
     margin: 0.5rem 0;
+    -webkit-touch-callout: initial;
+    -webkit-user-select: text;
+    user-select: text;
   }
   .diff-line {
     vertical-align: top;
@@ -159,8 +162,9 @@
     user-select: none;
     line-height: 1.5rem;
     min-width: 3rem;
-    cursor: pointer;
     color: var(--color-foreground-disabled);
+    -webkit-user-select: none;
+    user-select: none;
   }
   .diff-line-number.left {
     position: relative;
@@ -195,6 +199,7 @@
     text-align: center;
     padding-left: 0.75rem;
     padding-right: 0.75rem;
+    -webkit-user-select: none;
     user-select: none;
   }
   .diff-expand-header {
@@ -218,7 +223,7 @@
 
 {#snippet styledPath(fullPath: string)}
   <!-- prettier-ignore -->
-  <span class="txt-small" style:white-space="nowrap"><span style:color="var(--color-fill-gray)" style:font-weight="var(--font-weight-regular)">{fullPath.match(/^.*\/|/)?.values().next().value}</span><span style:font-weight="var(--font-weight-semibold)">{fullPath.split("/").slice(-1)}</span></span>
+  <span class="txt-small" style:white-space="nowrap" style:-webkit-touch-callout="initial" style:-webkit-user-select="text" style:user-select="text"><span style:color="var(--color-fill-gray)" style:font-weight="var(--font-weight-regular)">{fullPath.match(/^.*\/|/)?.values().next().value}</span><span style:font-weight="var(--font-weight-semibold)">{fullPath.split("/").slice(-1)}</span></span>
 {/snippet}
 
 <File {expanded}>
@@ -281,7 +286,9 @@
                     {lineSign(line)}
                   </td>
                   <td class="diff-line-content">
-                    {#if line.highlight}
+                    {#if line.highlight?.items.length === 0 || line.line === ""}
+                      <br />
+                    {:else if line.highlight}
                       {@html line.highlight.items
                         .map(
                           s =>

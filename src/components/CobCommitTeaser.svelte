@@ -30,6 +30,9 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    -webkit-touch-callout: initial;
+    -webkit-user-select: text;
+    user-select: text;
   }
   .left {
     display: flex;
@@ -46,6 +49,9 @@
   }
   .commit-message {
     font-size: var(--font-size-tiny);
+    -webkit-touch-callout: initial;
+    -webkit-user-select: text;
+    user-select: text;
   }
   .commit-expand-button {
     height: 21px;
