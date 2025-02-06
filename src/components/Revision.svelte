@@ -14,7 +14,11 @@
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
-  import { publicKeyFromDid, scrollIntoView } from "@app/lib/utils";
+  import {
+    didFromPublicKey,
+    publicKeyFromDid,
+    scrollIntoView,
+  } from "@app/lib/utils";
 
   import Changeset from "@app/components/Changeset.svelte";
   import CobCommitTeaser from "./CobCommitTeaser.svelte";
@@ -40,6 +44,15 @@
   let { rid, repoDelegates, patchId, revision, config, reload }: Props =
     $props();
   /* eslint-enable prefer-const */
+
+  const hasOwnReview = $derived(
+    Boolean(
+      revision.reviews &&
+        revision.reviews.some(
+          value => value.author.did === didFromPublicKey(config.publicKey),
+        ),
+    ),
+  );
 
   let focusReply: boolean = $state(false);
   let hideChanges = $state(false);
@@ -128,6 +141,27 @@
     }
   }
 
+  async function createReview() {
+    try {
+      await invoke("edit_patch", {
+        rid: rid,
+        cobId: patchId,
+        action: {
+          type: "review",
+          revision: revision.id,
+          // We need to pass an empty string to create a review without a verdict.
+          summary: "",
+          labels: [],
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Creating a review failed: ", error);
+    } finally {
+      await reload();
+    }
+  }
+
   async function editComment(commentId: string, body: string, embeds: Embed[]) {
     try {
       await invoke("edit_patch", {
@@ -143,7 +177,7 @@
         opts: { announce: $nodeRunning && $announce },
       });
     } catch (error) {
-      console.error("Eediting comment failed: ", error);
+      console.error("Editing comment failed: ", error);
     } finally {
       await reload();
     }
@@ -293,6 +327,11 @@
     left: -18.5px;
     background-color: var(--color-fill-separator);
   }
+  .review-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
 </style>
 
 <div class="txt-small patch-body">
@@ -360,24 +399,38 @@
   </div>
 </div>
 
-{#if revision.reviews && revision.reviews.length}
-  <div style:margin="1rem 0">
-    <div class="global-flex" style:margin-bottom="1rem">
+<div style:margin="1rem 0">
+  <div class="review-row">
+    <div
+      class="global-flex"
+      style:margin-bottom={hideReviews || revision.reviews?.length === 0
+        ? undefined
+        : "1rem"}>
       <NakedButton
         stylePadding="0 4px"
         variant="ghost"
         onclick={() => (hideReviews = !hideReviews)}>
-        <Icon name={hideReviews ? "chevron-right" : "chevron-down"} />
+        <Icon
+          name={hideReviews || revision.reviews?.length === 0
+            ? "chevron-right"
+            : "chevron-down"} />
         <div class="txt-semibold global-flex txt-regular">Reviews</div>
       </NakedButton>
     </div>
-    <div class:hide={hideReviews} style:margin-top="1rem">
+    <NakedButton variant="ghost" disabled={hasOwnReview} onclick={createReview}>
+      <Icon name="plus" />
+      <span class="txt-small">New Review</span>
+    </NakedButton>
+  </div>
+
+  {#if revision.reviews && revision.reviews.length}
+    <div class:hide={hideReviews}>
       {#each revision.reviews as review}
         <ReviewTeaser {rid} {review} />
       {/each}
     </div>
-  </div>
-{/if}
+  {/if}
+</div>
 
 <div
   class="txt-semibold global-flex"
