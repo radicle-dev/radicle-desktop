@@ -861,8 +861,12 @@
     <path d="M3 12H4V13H3V12Z" />
     <path d="M3 13H4V14H3V13Z" />
   {:else if name === "plus"}
-    <path d="M7.00002 2H9.00002V14H7.00002V2Z" />
-    <path d="M14 7V9L2.00002 9L2.00002 7L14 7Z" />
+    <path d="M2 3H3V13H2V3Z" />
+    <path d="M3 13H13V14H3L3 13Z" />
+    <path d="M3 2H13V3L3 3L3 2Z" />
+    <path d="M13 3L14 3V13H13V3Z" />
+    <path d="M7 5H9V11H7V5Z" />
+    <path d="M5 7H11V9H5V7Z" />
   {:else if name === "reply"}
     <path d="M2.5 9V8H3.5V9H2.5Z" />
     <path d="M3.5 10L3.5 9L4.5 9V10L3.5 10Z" />
