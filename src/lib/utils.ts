@@ -102,6 +102,10 @@ export const formatTimestamp = (
   return new Date(timestamp).toUTCString();
 };
 
+// Svelte action for replacing emojis within an element with Twemoji SVGs.
+// This action is non-reactive; it only runs when the element is mounted.
+//
+// Usage: <span use:twemoji>👍</span>
 export function twemoji(
   node: HTMLElement,
   { exclude }: { exclude: string[] } = { exclude: [] },
@@ -119,6 +123,19 @@ export function twemoji(
     ext: ".svg",
     className: `txt-emoji`,
   });
+}
+
+// Converts a single emoji character to an <img> tag using Twemoji SVG assets.
+// This function is useful in reactive contexts where Svelte actions won't
+// re-run automatically.
+//
+// Usage: <span>{@html emojiToTwemoji("👍")}</span>
+export function emojiToTwemoji(emoji: string, exclude?: string[]) {
+  const filename = emoji.codePointAt(0)?.toString(16);
+  if (!filename || exclude?.includes(filename)) {
+    return "";
+  }
+  return `<img alt="${emoji}" src="/twemoji/${filename}.svg" class="txt-emoji">`;
 }
 
 export function scrollIntoView(id: string, options?: ScrollIntoViewOptions) {
