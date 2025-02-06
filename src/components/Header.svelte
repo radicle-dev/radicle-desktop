@@ -4,17 +4,16 @@
   import * as router from "@app/lib/router";
   import { nodeRunning } from "@app/lib/events";
 
+  import Avatar from "./Avatar.svelte";
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
-  import Avatar from "./Avatar.svelte";
 
   interface Props {
     publicKey: string;
     center?: Snippet;
-    settingsButton?: Snippet;
   }
 
-  const { center, settingsButton, publicKey }: Props = $props();
+  const { center, publicKey }: Props = $props();
 </script>
 
 <style>
@@ -92,7 +91,12 @@
             Offline
           {/if}
         </div>
-        {@render settingsButton?.()}
+        <NakedButton
+          variant="ghost"
+          stylePadding="0 4px"
+          onclick={() => router.push({ resource: "inbox" })}>
+          <Icon name="inbox" />
+        </NakedButton>
       </div>
     </div>
   </div>
