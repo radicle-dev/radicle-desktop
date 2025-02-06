@@ -3,8 +3,10 @@
   import type { FileDiff } from "@bindings/diff/FileDiff";
   import type { Modification } from "@bindings/diff/Modification";
 
-  import File from "@app/components/File.svelte";
   import escape from "lodash/escape";
+
+  import File from "@app/components/File.svelte";
+  import Icon from "@app/components/Icon.svelte";
 
   interface Props {
     filePath: string;
@@ -226,6 +228,12 @@
   <span class="txt-small" style:white-space="nowrap" style:-webkit-touch-callout="initial" style:-webkit-user-select="text" style:user-select="text"><span style:color="var(--color-fill-gray)" style:font-weight="var(--font-weight-regular)">{fullPath.match(/^.*\/|/)?.values().next().value}</span><span style:font-weight="var(--font-weight-semibold)">{fullPath.split("/").slice(-1)}</span></span>
 {/snippet}
 
+{#snippet emptyPlaceholder()}
+  <div class="global-flex" style:margin="1rem 0" style:justify-content="center">
+    <Icon name="none" />Empty file
+  </div>
+{/snippet}
+
 <File {expanded}>
   {#snippet leftHeader()}
     {#if (headerBadgeCaption === "moved" || headerBadgeCaption === "copied") && oldFilePath}
@@ -305,10 +313,10 @@
             {/each}
           </table>
         {:else}
-          <div style:margin="1rem 0">Empty file</div>
+          {@render emptyPlaceholder()}
         {/if}
       {:else}
-        <div style:margin="1rem 0">Empty file</div>
+        {@render emptyPlaceholder()}
       {/if}
     </div>
   {/snippet}
