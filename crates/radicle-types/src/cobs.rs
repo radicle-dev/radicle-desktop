@@ -7,7 +7,6 @@ use radicle::node::{Alias, AliasStore};
 
 pub mod diff;
 pub mod issue;
-pub mod patch;
 pub mod stream;
 pub mod thread;
 

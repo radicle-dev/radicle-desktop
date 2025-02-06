@@ -12,7 +12,6 @@ use tauri_plugin_dialog::DialogExt;
 
 use crate::AppState;
 
-pub mod draft;
 pub mod issue;
 pub mod patch;
 

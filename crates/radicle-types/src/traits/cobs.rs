@@ -1,6 +1,4 @@
-use radicle::cob::object::Storage;
-use radicle::storage::refs::draft;
-use radicle::storage::{self, ReadStorage};
+use radicle::storage::ReadStorage;
 use radicle::{cob, git, identity};
 use serde::de::DeserializeOwned;
 
@@ -38,38 +36,5 @@ pub trait Cobs: Profile {
             .collect::<Vec<_>>();
 
         Ok::<_, Error>(ops)
-    }
-
-    fn publish_draft(
-        &self,
-        rid: identity::RepoId,
-        cob_id: git::Oid,
-        type_name: cob::TypeName,
-    ) -> Result<(), Error> {
-        let profile = self.profile();
-        let signer = profile.signer()?;
-        let repo = profile.storage.repository(rid)?;
-        let draft_oid = repo.backend.refname_to_id(&draft::cob(
-            signer.public_key(),
-            &type_name,
-            &cob_id.into(),
-        ))?;
-        repo.update(
-            signer.public_key(),
-            &type_name,
-            &cob_id.into(),
-            &draft_oid.into(),
-        )?;
-
-        let mut patches = profile.patches_mut(&repo)?;
-        patches.write(&cob_id.into())?;
-
-        storage::git::cob::DraftStore::new(&repo, *signer.public_key()).remove(
-            signer.public_key(),
-            &type_name,
-            &cob_id.into(),
-        )?;
-
-        Ok::<_, Error>(())
     }
 }
