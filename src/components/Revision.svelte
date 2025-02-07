@@ -359,7 +359,7 @@
   </CommentComponent>
 </div>
 
-<div style:margin="1rem 0">
+<div style:margin={hideReviews ? "1.5rem 0 1.5rem 0" : "1.5rem 0 2.5rem 0"}>
   <div class="global-flex">
     <NakedButton
       disabled={revision.reviews?.length === 0}
@@ -413,7 +413,7 @@
   {/if}
 </div>
 
-<div style:margin="1rem 0">
+<div style:margin={hideDiscussion ? "1.5rem 0" : "0 0 2.5rem 0"}>
   <div class="global-flex">
     <NakedButton
       variant="ghost"
