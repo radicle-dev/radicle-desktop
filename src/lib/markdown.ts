@@ -30,6 +30,7 @@ dompurify.setConfig({
     "br",
     "code",
     "dd",
+    "del",
     "div",
     "dl",
     "dt",
