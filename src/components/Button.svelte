@@ -9,6 +9,7 @@
     active?: boolean;
     flatLeft?: boolean;
     flatRight?: boolean;
+    title?: string;
   }
 
   const {
@@ -19,6 +20,7 @@
     active = false,
     flatLeft = false,
     flatRight = false,
+    title,
   }: Props = $props();
 
   const style = $derived(
@@ -370,6 +372,7 @@
   onclick={!disabled ? onclick : undefined}
   role="button"
   tabindex="0"
+  {title}
   {style}>
   <div class="p1-1"></div>
   <div class="p1-2"></div>

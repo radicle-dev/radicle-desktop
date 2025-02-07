@@ -330,11 +330,6 @@
     left: -18.5px;
     background-color: var(--color-fill-separator);
   }
-  .review-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
 </style>
 
 <div class="txt-small patch-body">
@@ -362,50 +357,52 @@
 </div>
 
 <div style:margin="1rem 0">
-  <div class="review-row">
-    <div
-      class="global-flex"
-      style:margin-bottom={hideReviews || revision.reviews?.length === 0
-        ? undefined
-        : "1rem"}>
+  <div class="global-flex">
+    <NakedButton
+      disabled={revision.reviews?.length === 0}
+      variant="ghost"
+      onclick={() => (hideReviews = !hideReviews)}>
+      <Icon
+        name={hideReviews || revision.reviews?.length === 0
+          ? "chevron-right"
+          : "chevron-down"} />
+      <div class="txt-semibold global-flex txt-regular">
+        Reviews <span style:font-weight="var(--font-weight-regular)">
+          {revision.reviews?.length ?? 0}
+        </span>
+      </div>
+    </NakedButton>
+
+    <div class="global-flex" style:margin-left="auto">
       <NakedButton
-        stylePadding="0 4px"
-        variant="ghost"
-        onclick={() => (hideReviews = !hideReviews)}>
-        <Icon
-          name={hideReviews || revision.reviews?.length === 0
-            ? "chevron-right"
-            : "chevron-down"} />
-        <div class="txt-semibold global-flex txt-regular">Reviews</div>
-      </NakedButton>
-    </div>
-    <div class="global-flex">
-      <Button
-        variant="success"
+        variant="secondary"
         disabled={hasOwnReview}
-        onclick={() => createReview("accept")}>
-        <Icon name="comment-checkmark" />
-        <span class="txt-small">Accept</span>
-      </Button>
+        title={hasOwnReview ? "You already published a review" : undefined}
+        onclick={() => createReview()}>
+        <Icon name="plus" />
+        <span class="txt-small">Write Review</span>
+      </NakedButton>
       <Button
         variant="danger"
         disabled={hasOwnReview}
+        title={hasOwnReview ? "You already published a review" : undefined}
         onclick={() => createReview("reject")}>
         <Icon name="comment-cross" />
         <span class="txt-small">Reject</span>
       </Button>
       <Button
-        variant="secondary"
+        variant="success"
         disabled={hasOwnReview}
-        onclick={() => createReview()}>
-        <Icon name="plus" />
-        <span class="txt-small">New Review</span>
+        title={hasOwnReview ? "You already published a review" : undefined}
+        onclick={() => createReview("accept")}>
+        <Icon name="comment-checkmark" />
+        <span class="txt-small">Accept</span>
       </Button>
     </div>
   </div>
 
   {#if revision.reviews && revision.reviews.length}
-    <div class:hide={hideReviews}>
+    <div class:hide={hideReviews} style:margin-top="1rem">
       {#each revision.reviews as review}
         <ReviewTeaser {rid} {review} />
       {/each}

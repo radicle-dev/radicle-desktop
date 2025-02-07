@@ -18,33 +18,43 @@
 
   const { rid, review }: Props = $props();
 
-  const backgroundColor = $derived.by(() => {
-    if (review.verdict === "accept") {
-      return "var(--color-fill-diff-green-light)";
-    } else if (review.verdict === "reject") {
-      return "var(--color-fill-diff-red-light)";
-    } else {
-      return "var(--color-fill-float-hover)";
-    }
-  });
-
   const header = $derived.by(() => {
     if (!review.verdict) {
       return "published a review";
     }
 
-    return `${review.verdict ? `${review.verdict}ed` : "reviewed"} revision with a review`;
+    return `${review.verdict ? `${review.verdict}ed` : "reviewed"} revision`;
   });
 
-  const icon = $derived.by(() => {
-    if (review.verdict === "accept") {
+  function icon(verdict: Review["verdict"]) {
+    if (verdict === "accept") {
       return "comment-checkmark";
-    } else if (review.verdict === "reject") {
+    } else if (verdict === "reject") {
       return "comment-cross";
     } else {
       return "comment";
     }
-  });
+  }
+
+  function backgroundColor(verdict: Review["verdict"]) {
+    if (verdict === undefined) {
+      return "var(--color-fill-float)";
+    } else if (verdict === "accept") {
+      return "var(--color-fill-diff-green-light)";
+    } else if (verdict === "reject") {
+      return "var(--color-fill-diff-red-light)";
+    }
+  }
+
+  function color(verdict: Review["verdict"]) {
+    if (verdict === undefined) {
+      return "var(--color-foreground-dim)";
+    } else if (verdict === "accept") {
+      return "var(--color-foreground-success)";
+    } else if (verdict === "reject") {
+      return "var(--color-foreground-red)";
+    }
+  }
 </script>
 
 <style>
@@ -53,7 +63,7 @@
     display: flex;
     align-items: flex-start;
     padding: 0.5rem 0.75rem;
-    gap: 1rem;
+    gap: 0.75rem;
   }
   .review-content {
     width: 100%;
@@ -76,9 +86,9 @@
   }
 </style>
 
-<div class="review" style:background-color={backgroundColor}>
-  <div class="icon">
-    <Icon name={icon} />
+<div class="review" style:background-color={backgroundColor(review.verdict)}>
+  <div class="icon" style:color={color(review.verdict)}>
+    <Icon name={icon(review.verdict)} />
   </div>
   <div class="review-content">
     <div class="review-header">
@@ -95,12 +105,10 @@
         {/if}
       </div>
     </div>
-    <div>
-      {#if review.summary?.trim()}
+    {#if review.summary?.trim()}
+      <div>
         <Markdown {rid} breaks content={review.summary} />
-      {:else}
-        <span class="txt-missing">No summary.</span>
-      {/if}
-    </div>
+      </div>
+    {/if}
   </div>
 </div>
