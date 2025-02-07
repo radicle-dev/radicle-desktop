@@ -8,6 +8,7 @@
 
   import { invoke } from "@app/lib/invoke";
 
+  import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
   import { nodeRunning } from "@app/lib/events";
 
@@ -141,31 +142,39 @@
       </div>
     {/if}
 
-    <div style:margin-bottom="1rem">
-      <Border variant="ghost" styleGap="0">
-        <div class="metadata-section" style:flex="1">
-          <LabelInput
-            allowedToEdit={true}
-            {labels}
-            submitInProgress={false}
-            save={newLabels => {
-              labels = newLabels;
-            }} />
-        </div>
+    {#if !!roles.isDelegate( config.publicKey, repo.delegates.map(delegate => delegate.did), )}
+      <div style:margin-bottom="1rem">
+        <Border variant="ghost" styleGap="0">
+          <div class="metadata-section" style:flex="1">
+            <LabelInput
+              allowedToEdit={!!roles.isDelegate(
+                config.publicKey,
+                repo.delegates.map(delegate => delegate.did),
+              )}
+              {labels}
+              submitInProgress={false}
+              save={newLabels => {
+                labels = newLabels;
+              }} />
+          </div>
 
-        <div class="metadata-divider"></div>
+          <div class="metadata-divider"></div>
 
-        <div class="metadata-section" style:flex="1">
-          <AssigneeInput
-            allowedToEdit={true}
-            bind:assignees
-            submitInProgress={false}
-            save={newAssignees => {
-              assignees = newAssignees;
-            }} />
-        </div>
-      </Border>
-    </div>
+          <div class="metadata-section" style:flex="1">
+            <AssigneeInput
+              allowedToEdit={!!roles.isDelegate(
+                config.publicKey,
+                repo.delegates.map(delegate => delegate.did),
+              )}
+              bind:assignees
+              submitInProgress={false}
+              save={newAssignees => {
+                assignees = newAssignees;
+              }} />
+          </div>
+        </Border>
+      </div>
+    {/if}
 
     <ExtendedTextarea
       textAreaSize="fixed-height"
