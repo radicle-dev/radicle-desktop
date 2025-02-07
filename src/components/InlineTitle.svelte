@@ -10,7 +10,9 @@
   const { content, fontSize = "small" }: Props = $props();
 
   function formatInlineTitle(input: string): string {
-    return input.replaceAll(/`([^`]+)`/g, "<code>$1</code>");
+    return input
+      .replaceAll(/`([^`]+)`/g, "<code>$1</code>")
+      .replaceAll(/~~([^~~]+)~~/g, "<del>$1</del>");
   }
 </script>
 
