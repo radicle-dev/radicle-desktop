@@ -1,10 +1,13 @@
 mod commands;
 
+use std::collections::BTreeMap;
+
 use tauri::{Emitter, Manager};
 
 use radicle::cob::cache::COBS_DB_FILE;
-use radicle::node::{Handle, NOTIFICATIONS_DB_FILE};
-use radicle::Node;
+use radicle::identity::RepoId;
+use radicle::node::{Handle, Node, NOTIFICATIONS_DB_FILE};
+use radicle::storage::ReadStorage;
 
 use radicle_types::domain;
 use radicle_types::error::Error;
@@ -34,6 +37,8 @@ pub fn run() {
                     hint: "Could not load radicle profile",
                 }),
             }?;
+            let public_key = profile.public_key;
+            let repositories = profile.storage.repositories()?;
 
             let inbox_db = radicle_types::outbound::sqlite::Sqlite::reader(
                 profile.node().join(NOTIFICATIONS_DB_FILE),
@@ -46,9 +51,11 @@ pub fn run() {
 
             let events_handler = app.handle().clone();
             let node_handler = app.handle().clone();
+            let seed_handler = app.handle().clone();
 
             let node = Node::new(profile.socket());
             let node_status = node.clone();
+            let mut node_seeds = node.clone();
 
             app.manage(inbox_service);
             app.manage(patch_service);
@@ -58,6 +65,29 @@ pub fn run() {
                 loop {
                     let _ = node_handler.emit("node_running", node_status.is_running());
                     tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                }
+            });
+
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    let mut sync_status =
+                        BTreeMap::<RepoId, Option<radicle_types::cobs::repo::SyncStatus>>::new();
+                    for repo in &repositories {
+                        if let Ok(seeds) = node_seeds.seeds(repo.rid).map(Into::<Vec<_>>::into) {
+                            if let Some(status) = seeds.iter().find_map(
+                                |radicle::node::Seed { nid, sync, .. }| {
+                                    (*nid == public_key).then_some(sync.clone())
+                                },
+                            ) {
+                                sync_status.insert(repo.rid, status.map(Into::into));
+                            } else {
+                                // The local node wasn't found in the seed nodes table.
+                                sync_status.insert(repo.rid, None);
+                            }
+                        }
+                    }
+                    let _ = seed_handler.emit("sync_status", sync_status);
+                    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                 }
             });
 

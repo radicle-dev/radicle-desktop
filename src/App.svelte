@@ -1,13 +1,15 @@
 <script lang="ts">
   import type { UnlistenFn } from "@tauri-apps/api/event";
+  import type { SyncStatus } from "@bindings/repo/SyncStatus";
 
+  import { SvelteMap } from "svelte/reactivity";
   import { onDestroy, onMount } from "svelte";
 
   import { invoke } from "@app/lib/invoke";
   import { listen } from "@tauri-apps/api/event";
 
   import * as router from "@app/lib/router";
-  import { nodeRunning } from "@app/lib/events";
+  import { nodeRunning, syncStatus } from "@app/lib/events";
   import { theme } from "@app/components/ThemeSwitch.svelte";
   import { unreachable } from "@app/lib/utils";
 
@@ -25,12 +27,20 @@
 
   let unlistenEvents: UnlistenFn | undefined = undefined;
   let unlistenNodeEvents: UnlistenFn | undefined = undefined;
+  let unlistenSyncStatus: UnlistenFn | undefined = undefined;
 
   onMount(async () => {
     if (window.__TAURI_INTERNALS__) {
       unlistenEvents = await listen("event", () => {
         // Add handler for incoming events
       });
+
+      unlistenSyncStatus = await listen<Record<string, SyncStatus>>(
+        "sync_status",
+        event => {
+          syncStatus.set(new SvelteMap(Object.entries(event.payload)));
+        },
+      );
 
       unlistenNodeEvents = await listen<boolean>("node_running", event => {
         nodeRunning.set(event.payload);
@@ -60,6 +70,9 @@
   onDestroy(() => {
     if (unlistenEvents) {
       unlistenEvents();
+    }
+    if (unlistenSyncStatus) {
+      unlistenSyncStatus();
     }
     if (unlistenNodeEvents) {
       unlistenNodeEvents();
