@@ -362,47 +362,6 @@
 </div>
 
 <div style:margin="1rem 0">
-  <div class="global-flex" style:margin-bottom="1rem">
-    <NakedButton
-      stylePadding="0 4px"
-      variant="ghost"
-      onclick={() => (hideDiscussion = !hideDiscussion)}>
-      <Icon name={hideDiscussion ? "chevron-right" : "chevron-down"} />
-      <div class="txt-semibold global-flex txt-regular">Discussion</div>
-    </NakedButton>
-  </div>
-  <div class:hide={hideDiscussion}>
-    {#each threads as thread}
-      <ThreadComponent
-        {thread}
-        {rid}
-        canEditComment={partial(
-          roles.isDelegateOrAuthor,
-          config.publicKey,
-          repoDelegates.map(delegate => delegate.did),
-        )}
-        editComment={partial(editComment)}
-        createReply={partial(createReply)}
-        reactOnComment={partial(reactOnComment, config.publicKey)} />
-      <div class="connector"></div>
-    {/each}
-
-    <div id={`reply-${patchId}`}>
-      <CommentToggleInput
-        disallowEmptyBody
-        {rid}
-        focus={focusReply}
-        onexpand={toggleReply}
-        onclose={topLevelReplyOpen
-          ? () => (topLevelReplyOpen = false)
-          : undefined}
-        placeholder="Leave a comment"
-        submit={partial(createComment)} />
-    </div>
-  </div>
-</div>
-
-<div style:margin="1rem 0">
   <div class="review-row">
     <div
       class="global-flex"
@@ -452,6 +411,47 @@
       {/each}
     </div>
   {/if}
+</div>
+
+<div style:margin="1rem 0">
+  <div class="global-flex" style:margin-bottom="1rem">
+    <NakedButton
+      stylePadding="0 4px"
+      variant="ghost"
+      onclick={() => (hideDiscussion = !hideDiscussion)}>
+      <Icon name={hideDiscussion ? "chevron-right" : "chevron-down"} />
+      <div class="txt-semibold global-flex txt-regular">Discussion</div>
+    </NakedButton>
+  </div>
+  <div class:hide={hideDiscussion}>
+    {#each threads as thread}
+      <ThreadComponent
+        {thread}
+        {rid}
+        canEditComment={partial(
+          roles.isDelegateOrAuthor,
+          config.publicKey,
+          repoDelegates.map(delegate => delegate.did),
+        )}
+        editComment={partial(editComment)}
+        createReply={partial(createReply)}
+        reactOnComment={partial(reactOnComment, config.publicKey)} />
+      <div class="connector"></div>
+    {/each}
+
+    <div id={`reply-${patchId}`}>
+      <CommentToggleInput
+        disallowEmptyBody
+        {rid}
+        focus={focusReply}
+        onexpand={toggleReply}
+        onclose={topLevelReplyOpen
+          ? () => (topLevelReplyOpen = false)
+          : undefined}
+        placeholder="Leave a comment"
+        submit={partial(createComment)} />
+    </div>
+  </div>
 </div>
 
 <div
