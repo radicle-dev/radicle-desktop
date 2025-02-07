@@ -3,7 +3,7 @@
 
   interface Props {
     children: Snippet;
-    variant: "primary" | "secondary" | "ghost";
+    variant: "primary" | "secondary" | "ghost" | "success" | "danger";
     onclick?: () => void;
     disabled?: boolean;
     active?: boolean;

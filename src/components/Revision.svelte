@@ -6,6 +6,7 @@
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Thread } from "@bindings/cob/thread/Thread";
+  import type { Verdict } from "@bindings/cob/patch/Verdict";
 
   import partial from "lodash/partial";
   import { tick } from "svelte";
@@ -20,6 +21,7 @@
     scrollIntoView,
   } from "@app/lib/utils";
 
+  import Button from "@app/components/Button.svelte";
   import Changeset from "@app/components/Changeset.svelte";
   import CobCommitTeaser from "./CobCommitTeaser.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
@@ -141,7 +143,7 @@
     }
   }
 
-  async function createReview() {
+  async function createReview(verdict?: Verdict) {
     try {
       await invoke("edit_patch", {
         rid: rid,
@@ -149,6 +151,7 @@
         action: {
           type: "review",
           revision: revision.id,
+          verdict,
           // We need to pass an empty string to create a review without a verdict.
           summary: "",
           labels: [],
@@ -417,10 +420,29 @@
         <div class="txt-semibold global-flex txt-regular">Reviews</div>
       </NakedButton>
     </div>
-    <NakedButton variant="ghost" disabled={hasOwnReview} onclick={createReview}>
-      <Icon name="plus" />
-      <span class="txt-small">New Review</span>
-    </NakedButton>
+    <div class="global-flex">
+      <Button
+        variant="success"
+        disabled={hasOwnReview}
+        onclick={() => createReview("accept")}>
+        <Icon name="comment-checkmark" />
+        <span class="txt-small">Accept</span>
+      </Button>
+      <Button
+        variant="danger"
+        disabled={hasOwnReview}
+        onclick={() => createReview("reject")}>
+        <Icon name="comment-cross" />
+        <span class="txt-small">Reject</span>
+      </Button>
+      <Button
+        variant="secondary"
+        disabled={hasOwnReview}
+        onclick={() => createReview()}>
+        <Icon name="plus" />
+        <span class="txt-small">New Review</span>
+      </Button>
+    </div>
   </div>
 
   {#if revision.reviews && revision.reviews.length}
