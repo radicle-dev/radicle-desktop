@@ -58,7 +58,9 @@
 
   let focusReply: boolean = $state(false);
   let hideChanges = $state(false);
-  let hideDiscussion = $state(false);
+  let hideDiscussion = $state(
+    revision.discussion === undefined || revision.discussion.length === 0,
+  );
   let hideReviews = $state(false);
   let topLevelReplyOpen = $state(false);
   let filesExpanded = $state(true);
@@ -88,7 +90,10 @@
     patchId;
 
     hideReviews = false;
-    hideDiscussion = false;
+    hideDiscussion =
+      revision.discussion === undefined || revision.discussion.length === 0;
+    focusReply = false;
+    topLevelReplyOpen = false;
     hideChanges = false;
   });
 
@@ -253,6 +258,7 @@
       behavior: "smooth",
       block: "center",
     });
+    await tick();
     focusReply = true;
   }
 
@@ -350,9 +356,6 @@
       repoDelegates.map(delegate => delegate.did),
       revision.author.did,
     ) && partial(editRevision, revision.id)}>
-    {#snippet actions()}
-      <Icon name="reply" onclick={toggleReply} />
-    {/snippet}
   </CommentComponent>
 </div>
 
@@ -411,16 +414,41 @@
 </div>
 
 <div style:margin="1rem 0">
-  <div class="global-flex" style:margin-bottom="1rem">
+  <div class="global-flex">
     <NakedButton
-      stylePadding="0 4px"
       variant="ghost"
+      disabled={revision.discussion === undefined ||
+        revision.discussion.length === 0}
       onclick={() => (hideDiscussion = !hideDiscussion)}>
       <Icon name={hideDiscussion ? "chevron-right" : "chevron-down"} />
-      <div class="txt-semibold global-flex txt-regular">Discussion</div>
+      <div class="txt-semibold global-flex txt-regular">
+        Discussion <span style:font-weight="var(--font-weight-regular)">
+          {revision.discussion?.length ?? 0}
+        </span>
+      </div>
     </NakedButton>
+    <div style:margin-left="auto">
+      <NakedButton
+        variant="secondary"
+        onclick={async () => {
+          if (hideDiscussion) {
+            hideDiscussion = false;
+          } else {
+            if (
+              revision.discussion === undefined ||
+              revision.discussion.length === 0
+            ) {
+              hideDiscussion = true;
+            }
+          }
+          await toggleReply();
+        }}>
+        <Icon name="comment" />
+        <span class="txt-small">Comment</span>
+      </NakedButton>
+    </div>
   </div>
-  <div class:hide={hideDiscussion}>
+  <div class:hide={hideDiscussion} style:margin-top="1rem">
     {#each threads as thread}
       <ThreadComponent
         {thread}
@@ -443,7 +471,15 @@
         focus={focusReply}
         onexpand={toggleReply}
         onclose={topLevelReplyOpen
-          ? () => (topLevelReplyOpen = false)
+          ? () => {
+              if (
+                revision.discussion === undefined ||
+                revision.discussion.length === 0
+              ) {
+                hideDiscussion = !hideDiscussion;
+              }
+              topLevelReplyOpen = false;
+            }
           : undefined}
         placeholder="Leave a comment"
         submit={partial(createComment)} />
@@ -454,10 +490,7 @@
 <div
   class="txt-semibold global-flex"
   style:margin-bottom={hideChanges ? undefined : "1rem"}>
-  <NakedButton
-    stylePadding="0 4px"
-    variant="ghost"
-    onclick={() => (hideChanges = !hideChanges)}>
+  <NakedButton variant="ghost" onclick={() => (hideChanges = !hideChanges)}>
     <Icon name={hideChanges ? "chevron-right" : "chevron-down"} />
     <div class="txt-semibold global-flex txt-regular">Changes</div>
   </NakedButton>
