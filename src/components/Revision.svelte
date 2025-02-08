@@ -61,7 +61,9 @@
   let hideDiscussion = $state(
     revision.discussion === undefined || revision.discussion.length === 0,
   );
-  let hideReviews = $state(false);
+  let hideReviews = $state(
+    revision.reviews === undefined || revision.reviews.length === 0,
+  );
   let topLevelReplyOpen = $state(false);
   let filesExpanded = $state(true);
 
@@ -89,7 +91,8 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     patchId;
 
-    hideReviews = false;
+    hideReviews =
+      revision.reviews === undefined || revision.reviews.length === 0;
     hideDiscussion =
       revision.discussion === undefined || revision.discussion.length === 0;
     focusReply = false;
@@ -359,16 +362,13 @@
   </CommentComponent>
 </div>
 
-<div style:margin={hideReviews ? "1.5rem 0 1.5rem 0" : "1.5rem 0 2.5rem 0"}>
+<div style:margin={hideReviews ? "1.5rem 0" : "1.5rem 0 2.5rem 0"}>
   <div class="global-flex">
     <NakedButton
-      disabled={revision.reviews?.length === 0}
+      disabled={revision.reviews === undefined || revision.reviews.length === 0}
       variant="ghost"
       onclick={() => (hideReviews = !hideReviews)}>
-      <Icon
-        name={hideReviews || revision.reviews?.length === 0
-          ? "chevron-right"
-          : "chevron-down"} />
+      <Icon name={hideReviews ? "chevron-right" : "chevron-down"} />
       <div class="txt-semibold global-flex txt-regular">
         Reviews <span style:font-weight="var(--font-weight-regular)">
           {revision.reviews?.length ?? 0}
