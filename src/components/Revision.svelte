@@ -4,6 +4,7 @@
   import type { Config } from "@bindings/config/Config";
   import type { Diff } from "@bindings/diff/Diff";
   import type { Embed } from "@bindings/cob/thread/Embed";
+  import type { PatchStatus } from "@app/views/repo/router";
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Verdict } from "@bindings/cob/patch/Verdict";
@@ -39,11 +40,12 @@
     patchId: string;
     revision: Revision;
     config: Config;
+    status: PatchStatus | undefined;
     reload: () => Promise<void>;
   }
 
   /* eslint-disable prefer-const */
-  let { rid, repoDelegates, patchId, revision, config, reload }: Props =
+  let { rid, repoDelegates, patchId, revision, config, status, reload }: Props =
     $props();
   /* eslint-enable prefer-const */
 
@@ -407,7 +409,7 @@
   {#if revision.reviews && revision.reviews.length}
     <div class:hide={hideReviews} style:margin-top="1rem">
       {#each revision.reviews as review}
-        <ReviewTeaser {rid} {review} />
+        <ReviewTeaser {rid} {review} {patchId} {status} />
       {/each}
     </div>
   {/if}

@@ -7,14 +7,14 @@
     publicKey: string;
     alias?: string;
     styleFontSize?: string;
-    styleFontFamily?: string;
+    styleFontWeight?: string;
   }
 
   const {
     publicKey,
     alias,
     styleFontSize = "var(--font-size-small)",
-    styleFontFamily = "var(--font-family-monospace)",
+    styleFontWeight = "var(--font-weight-semibold)",
   }: Props = $props();
 </script>
 
@@ -23,7 +23,6 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    font-weight: var(--font-weight-semibold);
   }
   .no-alias {
     color: var(--color-foreground-dim);
@@ -33,7 +32,7 @@
 <div
   class="avatar-alias"
   style:font-size={styleFontSize}
-  style:font-family={styleFontFamily}>
+  style:font-weight={styleFontWeight}>
   <Avatar {publicKey} />
   {#if alias}
     <span class="txt-overflow">

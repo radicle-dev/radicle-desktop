@@ -11,4 +11,5 @@ export type Review = {
   summary?: string;
   comments: Array<Comment<CodeLocation>>;
   timestamp: number;
+  labels: Array<string>;
 };

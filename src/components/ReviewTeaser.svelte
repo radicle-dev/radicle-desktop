@@ -1,71 +1,56 @@
 <script lang="ts">
+  import type { PatchStatus } from "@app/views/repo/router";
   import type { Review } from "@bindings/cob/patch/Review";
 
   import {
     absoluteTimestamp,
     authorForNodeId,
     formatTimestamp,
+    verdictIcon,
   } from "@app/lib/utils";
+  import { push } from "@app/lib/router";
 
-  import Icon from "./Icon.svelte";
-  import Markdown from "./Markdown.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import Id from "@app/components/Id.svelte";
+  import Label from "@app/components/Label.svelte";
+  import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
   interface Props {
-    rid: string;
+    patchId: string;
     review: Review;
+    rid: string;
+    status: PatchStatus | undefined;
   }
 
-  const { rid, review }: Props = $props();
-
-  const header = $derived.by(() => {
-    if (!review.verdict) {
-      return "published a review";
-    }
-
-    return `${review.verdict ? `${review.verdict}ed` : "reviewed"} revision`;
-  });
-
-  function icon(verdict: Review["verdict"]) {
-    if (verdict === "accept") {
-      return "comment-checkmark";
-    } else if (verdict === "reject") {
-      return "comment-cross";
-    } else {
-      return "comment";
-    }
-  }
-
-  function backgroundColor(verdict: Review["verdict"]) {
-    if (verdict === undefined) {
-      return "var(--color-fill-float)";
-    } else if (verdict === "accept") {
-      return "var(--color-fill-diff-green-light)";
-    } else if (verdict === "reject") {
-      return "var(--color-fill-diff-red-light)";
-    }
-  }
-
-  function color(verdict: Review["verdict"]) {
-    if (verdict === undefined) {
-      return "var(--color-foreground-dim)";
-    } else if (verdict === "accept") {
-      return "var(--color-foreground-success)";
-    } else if (verdict === "reject") {
-      return "var(--color-foreground-red)";
-    }
-  }
+  const { patchId, review, rid, status }: Props = $props();
 </script>
 
 <style>
   .review {
-    clip-path: var(--2px-corner-fill);
     display: flex;
     align-items: flex-start;
-    padding: 0.5rem 0.75rem;
     gap: 0.75rem;
+    z-index: 1;
+    position: relative;
+  }
+  /* We put the background and clip-path in a separate element to prevent
+     popovers being clipped in the main element. */
+  .review::after {
+    position: absolute;
+    z-index: -1;
+    content: " ";
+    background-color: var(--color-fill-float);
+    clip-path: var(--2px-corner-fill);
+    width: 100%;
+    height: 100%;
+    top: 0;
+  }
+  .review:hover::after {
+    background-color: var(--color-fill-float-hover);
   }
   .review-content {
+    padding: 10px 0.75rem 0.5rem 0;
     width: 100%;
     font-size: var(--font-size-small);
     display: flex;
@@ -81,29 +66,68 @@
     align-items: center;
     width: 100%;
   }
-  .icon {
-    padding-top: 0.25rem;
+  .status {
+    padding: 0;
+    margin: 0.5rem 0 0 0.5rem;
+  }
+
+  .accepted {
+    background-color: var(--color-fill-diff-green-light);
+  }
+
+  .rejected {
+    background-color: var(--color-fill-diff-red-light);
+  }
+
+  .no-verdict {
+    background-color: var(--color-fill-ghost);
   }
 </style>
 
-<div class="review" style:background-color={backgroundColor(review.verdict)}>
-  <div class="icon" style:color={color(review.verdict)}>
-    <Icon name={icon(review.verdict)} />
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div
+  tabindex="0"
+  role="button"
+  class="review"
+  style:cursor="pointer"
+  onclick={() => {
+    void push({
+      resource: "repo.patch",
+      rid,
+      patch: patchId,
+      status,
+      reviewId: review.id,
+    });
+  }}>
+  <div
+    class:accepted={review.verdict === "accept"}
+    class:rejected={review.verdict === "reject"}
+    class:no-verdict={review.verdict === undefined}
+    class="global-counter status">
+    <Icon name={verdictIcon(review.verdict)} />
   </div>
   <div class="review-content">
     <div class="review-header">
       <div class="global-flex">
         <NodeId {...authorForNodeId(review.author)} />
-        <span>{header}</span>
+        <span>published review</span>
+        <Id id={review.id} variant="oid" />
         <div class="timestamp" title={absoluteTimestamp(review.timestamp)}>
           {formatTimestamp(review.timestamp)}
         </div>
-        {#if review.comments.length > 0}
-          <div class="global-flex" style:gap="0.25rem" style:margin-left="auto">
-            <Icon name="comment" />{review.comments.length}
-          </div>
-        {/if}
       </div>
+      {#if review.comments.length > 0}
+        <div class="global-flex" style:gap="0.25rem" style:margin-left="auto">
+          <Icon name="comment" />{review.comments.length}
+        </div>
+      {/if}
+      {#if review.labels.length > 0}
+        <div class="global-flex" style:margin-left="auto">
+          {#each review.labels as label}
+            <Label {label} />
+          {/each}
+        </div>
+      {/if}
     </div>
     {#if review.summary?.trim()}
       <div>

@@ -67,6 +67,11 @@
   class:disabled
   {style}
   {title}
-  {onclick}>
+  onclick={() => {
+    if (disabled) {
+      return;
+    }
+    onclick();
+  }}>
   {@render children()}
 </div>

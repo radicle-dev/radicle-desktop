@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Patch } from "@bindings/cob/patch/Patch";
-  import type { Stats } from "@bindings/cob/Stats";
   import type { PatchStatus } from "@app/views/repo/router";
+  import type { Stats } from "@bindings/cob/Stats";
 
   import {
     authorForNodeId,
@@ -12,27 +12,28 @@
   import { invoke } from "@app/lib/invoke";
   import { push } from "@app/lib/router";
 
-  import DiffStatBadge from "./DiffStatBadge.svelte";
-  import Icon from "./Icon.svelte";
-  import Id from "./Id.svelte";
-  import InlineTitle from "./InlineTitle.svelte";
-  import NodeId from "./NodeId.svelte";
+  import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import Id from "@app/components/Id.svelte";
+  import InlineTitle from "@app/components/InlineTitle.svelte";
+  import Label from "@app/components/Label.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
 
   interface Props {
+    compact?: boolean;
+    loadPatch?: (rid: string, patchId: string) => void;
     patch: Patch;
     rid: string;
     selected?: boolean;
-    compact?: boolean;
-    loadPatch?: (rid: string, patchId: string) => void;
     status: PatchStatus | undefined;
   }
 
   const {
+    compact = false,
+    loadPatch,
     patch,
     rid,
     selected = false,
-    compact = false,
-    loadPatch,
     status,
   }: Props = $props();
 </script>
@@ -82,7 +83,13 @@
     if (loadPatch) {
       loadPatch(rid, patch.id);
     } else {
-      void push({ resource: "repo.patch", rid, patch: patch.id, status });
+      void push({
+        resource: "repo.patch",
+        rid,
+        patch: patch.id,
+        status,
+        reviewId: undefined,
+      });
     }
   }}>
   <div class="global-flex" style:align-items="flex-start">
@@ -116,7 +123,7 @@
       {/await}
 
       {#each patch.labels as label}
-        <div class="global-counter txt-small">{label}</div>
+        <Label {label} />
       {/each}
     {/if}
     <div

@@ -3,6 +3,7 @@ import type { ComponentProps } from "svelte";
 import type { Author } from "@bindings/cob/Author";
 import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Patch } from "@bindings/cob/patch/Patch";
+import type { Review } from "@bindings/cob/patch/Review";
 
 import bs58 from "bs58";
 import twemojiModule from "twemoji";
@@ -236,4 +237,24 @@ export function gravatarURL(email: string): string {
   const hash = md5(address);
 
   return `https://www.gravatar.com/avatar/${hash}`;
+}
+
+export function verdictIcon(verdict: Review["verdict"]) {
+  if (verdict === "accept") {
+    return "comment-checkmark";
+  } else if (verdict === "reject") {
+    return "comment-cross";
+  } else {
+    return "comment";
+  }
+}
+
+export function verdictIconColor(verdict: Review["verdict"]) {
+  if (verdict === "accept") {
+    return "var(--color-foreground-success)";
+  } else if (verdict === "reject") {
+    return "var(--color-foreground-red)";
+  } else {
+    return "var(--color-foreground-dim)";
+  }
 }

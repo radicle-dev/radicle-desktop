@@ -20,23 +20,27 @@
 
   interface Props {
     actions?: Snippet;
+    beforeTimestamp?: Snippet;
     id?: string;
     rid: string;
     author: Author;
-    body: string;
+    body?: string;
     reactions?: Reaction[];
     embeds?: Map<string, Embed>;
     caption?: string;
     timestamp: number;
     lastEdit?: Edit;
     disallowEmptyBody?: boolean;
+    emptyBodyTooltip?: string;
     editComment?: (body: string, embeds: Embed[]) => Promise<void>;
     reactOnComment?: (authors: Author[], reaction: string) => Promise<void>;
+    styleWidth?: string;
   }
 
   /* eslint-disable prefer-const */
   let {
     actions,
+    beforeTimestamp,
     id,
     rid,
     author,
@@ -49,6 +53,8 @@
     disallowEmptyBody = false,
     editComment,
     reactOnComment,
+    styleWidth,
+    emptyBodyTooltip,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -120,13 +126,16 @@
   }
 </style>
 
-<div class="card" {id}>
+<div class="card" {id} style:width={styleWidth}>
   <div style:position="relative">
     <div class="card-header">
       <NodeId {...utils.authorForNodeId(author)} />
       {caption}
       {#if id}
         <Id {id} variant="oid" />
+      {/if}
+      {#if beforeTimestamp}
+        {@render beforeTimestamp()}
       {/if}
       <span class="timestamp" title={utils.absoluteTimestamp(timestamp)}>
         {utils.formatTimestamp(timestamp)}
@@ -165,7 +174,7 @@
     </div>
   </div>
 
-  {#if body.trim() === "" && state === "read"}
+  {#if (body === undefined || body?.trim() === "") && state === "read"}
     <div class="card-body">
       <span class="txt-missing txt-small" style:line-height="1.625rem">
         No description.
@@ -181,6 +190,7 @@
             {rid}
             {embeds}
             {disallowEmptyBody}
+            {emptyBodyTooltip}
             borderVariant="ghost"
             submitInProgress={state === "submit"}
             submitCaption="Save"
@@ -202,7 +212,7 @@
       {:else}
         <div style:width="100%">
           <div style:overflow="hidden">
-            <Markdown {rid} breaks content={body} />
+            <Markdown {rid} breaks content={body ?? ""} />
           </div>
         </div>
       {/if}

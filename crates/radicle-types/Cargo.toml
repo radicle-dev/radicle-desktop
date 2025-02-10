@@ -11,7 +11,7 @@ localtime = { version = "1.3.1" }
 log = { version = "0.4.22" }
 infer = { version = "0.3" }
 mime-infer = { version = "3.0.0" }
-radicle = { version = "0.14.0", features = ["test"] }
+radicle = { git = "https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git", package = "radicle", rev = "7c902b6905724345ba850eb6cca8f8becc9a9c72", features = ["test"] }
 radicle-surf = { version = "0.22.1", features = ["serde"] }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = { version = "1.0.132" }

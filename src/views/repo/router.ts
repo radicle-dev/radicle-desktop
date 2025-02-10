@@ -1,13 +1,14 @@
 import type { Action as IssueAction } from "@bindings/cob/issue/Action";
 import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 import type { Config } from "@bindings/config/Config";
-import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Operation } from "@bindings/cob/Operation";
 import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
+import type { Review } from "@bindings/cob/patch/Review";
 import type { Revision } from "@bindings/cob/patch/Revision";
+import type { Thread } from "@bindings/cob/thread/Thread";
 
 import { invoke } from "@app/lib/invoke";
 import { unreachable } from "@app/lib/utils";
@@ -73,6 +74,7 @@ export interface RepoPatchRoute {
   rid: string;
   patch: string;
   status: PatchStatus | undefined;
+  reviewId: string | undefined;
 }
 
 export interface LoadedRepoPatchRoute {
@@ -83,6 +85,7 @@ export interface LoadedRepoPatchRoute {
     patch: Patch;
     patches: PaginatedQuery<Patch[]>;
     status: PatchStatus | undefined;
+    review: Review | undefined;
     revisions: Revision[];
     activity: Operation<PatchAction>[];
   };
@@ -145,6 +148,10 @@ export async function loadPatch(
     ],
   );
 
+  const review = revisions
+    .flatMap(r => r.reviews || [])
+    .find(review => review.id === route.reviewId);
+
   return {
     resource: "repo.patch",
     params: {
@@ -154,6 +161,7 @@ export async function loadPatch(
       patches,
       revisions,
       status: route.status,
+      review,
       activity,
     },
   };
@@ -332,12 +340,14 @@ export function repoUrlToRoute(
       const status = (searchParams.get("status") ?? undefined) as
         | PatchStatus
         | undefined;
+      const reviewId = searchParams.get("reviewId") ?? undefined;
       if (id) {
         return {
           resource: "repo.patch",
           rid,
           patch: id,
           status,
+          reviewId,
         };
       } else {
         return { resource: "repo.patches", rid, status };

@@ -29,6 +29,7 @@
     submitInProgress?: boolean;
     disableSubmit?: boolean;
     disallowEmptyBody?: boolean;
+    emptyBodyTooltip?: string;
     isValid?: () => boolean;
     preview?: boolean;
     stylePadding?: string;
@@ -55,6 +56,7 @@
     submitInProgress = false,
     disableSubmit = false,
     disallowEmptyBody = false,
+    emptyBodyTooltip,
     isValid = () => true,
     stylePadding,
     borderVariant = "float",
@@ -293,6 +295,7 @@
       </OutlineButton>
       <Button
         variant="ghost"
+        title={emptyBodyTooltip}
         disabled={!isValid() ||
           submitInProgress ||
           disableSubmit ||

@@ -3,7 +3,7 @@
 
   interface Props {
     children: Snippet;
-    variant: "primary" | "secondary" | "ghost" | "float" | "danger";
+    variant: "primary" | "secondary" | "ghost" | "float" | "danger" | "success";
     hoverable?: boolean;
     onclick?: () => void;
     stylePosition?: string;

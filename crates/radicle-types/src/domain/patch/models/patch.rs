@@ -253,6 +253,8 @@ pub struct Review {
     comments: Vec<cobs::thread::Comment<cobs::thread::CodeLocation>>,
     #[ts(type = "number")]
     timestamp: cob::common::Timestamp,
+    #[ts(as = "Vec<String>")]
+    labels: Vec<cob::Label>,
 }
 
 impl Review {
@@ -262,6 +264,7 @@ impl Review {
             author: cobs::Author::new(&review.author().id, aliases),
             verdict: review.verdict().map(|v| v.into()),
             summary: review.summary().map(|s| s.to_string()),
+            labels: review.labels().cloned().collect::<Vec<_>>(),
             comments: review
                 .comments()
                 .map(|(id, c)| {

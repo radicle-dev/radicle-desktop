@@ -7,6 +7,7 @@
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { PatchStatus } from "./router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
   import capitalize from "lodash/capitalize";
@@ -37,6 +38,7 @@
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchTimeline from "@app/components/PatchTimeline.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
+  import ReviewComponent from "@app/components/Review.svelte";
   import RevisionBadges from "@app/components/RevisionBadges.svelte";
   import RevisionComponent from "@app/components/Revision.svelte";
   import RevisionSelector from "@app/components/RevisionSelector.svelte";
@@ -52,6 +54,7 @@
     config: Config;
     activity: Operation<Action>[];
     status: PatchStatus | undefined;
+    review: Review | undefined;
   }
 
   /* eslint-disable prefer-const */
@@ -63,6 +66,7 @@
     config,
     status: initialStatus,
     activity,
+    review,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -110,6 +114,7 @@
       rid: repo.rid,
       id: patch.id,
     });
+    review = undefined;
   }
 
   async function editTitle(rid: string, patchId: string, title: string) {
@@ -213,7 +218,7 @@
     }
   }
 
-  async function reload() {
+  async function reload(reviewId?: string) {
     [config, repo, patches, patch, revisions, activity] = await Promise.all([
       invoke<Config>("config"),
       invoke<RepoInfo>("repo_by_id", {
@@ -236,6 +241,9 @@
         id: patch.id,
       }),
     ]);
+    review = revisions
+      .flatMap(r => r.reviews || [])
+      .find(review => review.id === reviewId);
   }
 
   async function loadPatches(filter: PatchStatus | undefined) {
@@ -430,55 +438,22 @@
     </div>
   {/snippet}
 
-  <div class="content">
-    <div style:margin-bottom="0.5rem">
-      {#if editingTitle}
-        <div class="title">
-          <div
-            class="global-counter status"
-            style:color={patchStatusColor[patch.state.status]}
-            style:background-color={patchStatusBackgroundColor[
-              patch.state.status
-            ]}>
-            <Icon
-              name={patch.state.status === "open"
-                ? "patch"
-                : `patch-${patch.state.status}`} />
-          </div>
-
-          <TextInput
-            valid={updatedTitle.trim().length > 0}
-            bind:value={updatedTitle}
-            autofocus
-            onSubmit={async () => {
-              if (updatedTitle.trim().length > 0) {
-                await editTitle(repo.rid, patch.id, updatedTitle);
-              }
-            }}
-            onDismiss={() => {
-              updatedTitle = patch.title;
-              editingTitle = !editingTitle;
-            }} />
-          <div class="title-icons">
-            <Icon
-              name="checkmark"
-              onclick={async () => {
-                if (updatedTitle.trim().length > 0) {
-                  await editTitle(repo.rid, patch.id, updatedTitle);
-                }
-              }} />
-            <Icon
-              name="cross"
-              onclick={() => {
-                updatedTitle = patch.title;
-                editingTitle = !editingTitle;
-              }} />
-            <PatchStateButton patchState={patch.state} save={saveState} />
-          </div>
-        </div>
-      {:else}
-        <div class="title">
-          <div class="global-flex" style:gap="0">
+  {#if review}
+    <ReviewComponent
+      {config}
+      patchId={patch.id}
+      {repo}
+      {reload}
+      {review}
+      revision={selectedRevision}
+      onNavigateBack={() => {
+        review = undefined;
+      }} />
+  {:else}
+    <div class="content">
+      <div style:margin-bottom="0.5rem">
+        {#if editingTitle}
+          <div class="title">
             <div
               class="global-counter status"
               style:color={patchStatusColor[patch.state.status]}
@@ -490,139 +465,189 @@
                   ? "patch"
                   : `patch-${patch.state.status}`} />
             </div>
-            <InlineTitle content={patch.title} fontSize="medium" />
-          </div>
-          {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), patch.author.did, )}
+
+            <TextInput
+              valid={updatedTitle.trim().length > 0}
+              bind:value={updatedTitle}
+              autofocus
+              onSubmit={async () => {
+                if (updatedTitle.trim().length > 0) {
+                  await editTitle(repo.rid, patch.id, updatedTitle);
+                }
+              }}
+              onDismiss={() => {
+                updatedTitle = patch.title;
+                editingTitle = !editingTitle;
+              }} />
             <div class="title-icons">
-              <Icon name="pen" onclick={() => (editingTitle = !editingTitle)} />
+              <Icon
+                name="checkmark"
+                onclick={async () => {
+                  if (updatedTitle.trim().length > 0) {
+                    await editTitle(repo.rid, patch.id, updatedTitle);
+                  }
+                }} />
+              <Icon
+                name="cross"
+                onclick={() => {
+                  updatedTitle = patch.title;
+                  editingTitle = !editingTitle;
+                }} />
               <PatchStateButton patchState={patch.state} save={saveState} />
             </div>
-          {/if}
-        </div>
-      {/if}
-    </div>
-    <Border variant="ghost" styleGap="0">
-      <div class="metadata-section" style:min-width="8rem">
-        <div class="metadata-section-title">Status</div>
-        <PatchStateBadge state={patch.state} />
-      </div>
-
-      <div class="metadata-divider"></div>
-
-      <div class="metadata-section" style:flex="1">
-        <LabelInput
-          allowedToEdit={!!roles.isDelegateOrAuthor(
-            config.publicKey,
-            repo.delegates.map(delegate => delegate.did),
-            patch.author.did,
-          )}
-          labels={patch.labels}
-          submitInProgress={labelSaveInProgress}
-          save={saveLabels} />
-      </div>
-
-      <div class="metadata-divider"></div>
-
-      <div class="metadata-section" style:flex="1">
-        <AssigneeInput
-          allowedToEdit={!!roles.isDelegateOrAuthor(
-            config.publicKey,
-            repo.delegates.map(delegate => delegate.did),
-            patch.author.did,
-          )}
-          assignees={patch.assignees}
-          submitInProgress={assigneesSaveInProgress}
-          save={saveAssignees} />
-      </div>
-    </Border>
-
-    <div class="global-flex" style:gap="0.5rem" style:margin-top="1rem">
-      <Border stylePosition="relative" variant="ghost" flatBottom>
-        <div
-          class="global-flex"
-          style:z-index="10"
-          style:gap="1rem"
-          style:padding="0 1rem"
-          style:width="100%">
-          <span class="txt-small" style:color="var(--color-foreground-dim)">
-            Revisions
-          </span>
-          <Tab
-            active={tab === "patch"}
-            onclick={() => {
-              tab = "patch";
-            }}>
-            {formatOid(patch.id)}
-            <span
-              class="global-counter"
-              style:height="24px"
-              style:color="var(--color-foreground-contrast)">
-              Initial
-            </span>
-          </Tab>
-          {#if revisions.length > 1}
-            <Tab
-              active={tab === "revisions"}
-              onclick={() => {
-                tab = "revisions";
-              }}>
-              {formatOid(selectedRevision.id)}
-              <div class="global-flex" style:gap="0.25rem">
-                <RevisionBadges revision={selectedRevision} {revisions} />
-                <RevisionSelector
-                  {patch}
-                  {revisions}
-                  {selectedRevision}
-                  selectRevision={rev => {
-                    selectedRevision = rev;
-                    tab = "revisions";
-                  }} />
-              </div>
-            </Tab>
-          {/if}
-
-          <div style:margin-left="auto">
-            <Tab
-              active={tab === "timeline"}
-              onclick={() => {
-                tab = "timeline";
-              }}>
-              <Icon name="clock" />
-              Timeline
-            </Tab>
           </div>
+        {:else}
+          <div class="title">
+            <div class="global-flex" style:gap="0">
+              <div
+                class="global-counter status"
+                style:color={patchStatusColor[patch.state.status]}
+                style:background-color={patchStatusBackgroundColor[
+                  patch.state.status
+                ]}>
+                <Icon
+                  name={patch.state.status === "open"
+                    ? "patch"
+                    : `patch-${patch.state.status}`} />
+              </div>
+              <InlineTitle content={patch.title} fontSize="medium" />
+            </div>
+            {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), patch.author.did, )}
+              <div class="title-icons">
+                <Icon
+                  name="pen"
+                  onclick={() => (editingTitle = !editingTitle)} />
+                <PatchStateButton patchState={patch.state} save={saveState} />
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+      <Border variant="ghost" styleGap="0">
+        <div class="metadata-section" style:min-width="8rem">
+          <div class="metadata-section-title">Status</div>
+          <PatchStateBadge state={patch.state} />
+        </div>
+
+        <div class="metadata-divider"></div>
+
+        <div class="metadata-section" style:flex="1">
+          <LabelInput
+            allowedToEdit={!!roles.isDelegateOrAuthor(
+              config.publicKey,
+              repo.delegates.map(delegate => delegate.did),
+              patch.author.did,
+            )}
+            labels={patch.labels}
+            submitInProgress={labelSaveInProgress}
+            save={saveLabels} />
+        </div>
+
+        <div class="metadata-divider"></div>
+
+        <div class="metadata-section" style:flex="1">
+          <AssigneeInput
+            allowedToEdit={!!roles.isDelegateOrAuthor(
+              config.publicKey,
+              repo.delegates.map(delegate => delegate.did),
+              patch.author.did,
+            )}
+            assignees={patch.assignees}
+            submitInProgress={assigneesSaveInProgress}
+            save={saveAssignees} />
         </div>
       </Border>
-    </div>
 
-    <Border
-      variant="ghost"
-      flatTop
-      styleWidth="100%"
-      stylePadding="1rem"
-      styleMinWidth="0"
-      styleDisplay="block"
-      styleFlexDirection="column"
-      styleAlignItems="flex-start">
-      {#if tab === "patch"}
-        <RevisionComponent
-          rid={repo.rid}
-          repoDelegates={repo.delegates}
-          patchId={patch.id}
-          {reload}
-          revision={revisions[0]}
-          {config} />
-      {:else if tab === "timeline"}
-        <PatchTimeline {activity} patchId={patch.id} />
-      {:else}
-        <RevisionComponent
-          rid={repo.rid}
-          repoDelegates={repo.delegates}
-          patchId={patch.id}
-          {reload}
-          revision={selectedRevision}
-          {config} />
-      {/if}
-    </Border>
-  </div>
+      <div class="global-flex" style:gap="0.5rem" style:margin-top="1rem">
+        <Border stylePosition="relative" variant="ghost" flatBottom>
+          <div
+            class="global-flex"
+            style:z-index="10"
+            style:gap="1rem"
+            style:padding="0 1rem"
+            style:width="100%">
+            <span class="txt-small" style:color="var(--color-foreground-dim)">
+              Revisions
+            </span>
+            <Tab
+              active={tab === "patch"}
+              onclick={() => {
+                tab = "patch";
+              }}>
+              {formatOid(patch.id)}
+              <span
+                class="global-counter"
+                style:height="24px"
+                style:color="var(--color-foreground-contrast)">
+                Initial
+              </span>
+            </Tab>
+            {#if revisions.length > 1}
+              <Tab
+                active={tab === "revisions"}
+                onclick={() => {
+                  tab = "revisions";
+                }}>
+                {formatOid(selectedRevision.id)}
+                <div class="global-flex" style:gap="0.25rem">
+                  <RevisionBadges revision={selectedRevision} {revisions} />
+                  <RevisionSelector
+                    {patch}
+                    {revisions}
+                    {selectedRevision}
+                    selectRevision={rev => {
+                      selectedRevision = rev;
+                      tab = "revisions";
+                    }} />
+                </div>
+              </Tab>
+            {/if}
+
+            <div style:margin-left="auto">
+              <Tab
+                active={tab === "timeline"}
+                onclick={() => {
+                  tab = "timeline";
+                }}>
+                <Icon name="clock" />
+                Timeline
+              </Tab>
+            </div>
+          </div>
+        </Border>
+      </div>
+
+      <Border
+        variant="ghost"
+        flatTop
+        styleWidth="100%"
+        stylePadding="1rem"
+        styleMinWidth="0"
+        styleDisplay="block"
+        styleFlexDirection="column"
+        styleAlignItems="flex-start">
+        {#if tab === "patch"}
+          <RevisionComponent
+            rid={repo.rid}
+            repoDelegates={repo.delegates}
+            patchId={patch.id}
+            {reload}
+            {status}
+            revision={revisions[0]}
+            {config} />
+        {:else if tab === "timeline"}
+          <PatchTimeline {activity} patchId={patch.id} />
+        {:else}
+          <RevisionComponent
+            rid={repo.rid}
+            repoDelegates={repo.delegates}
+            patchId={patch.id}
+            {reload}
+            {status}
+            revision={selectedRevision}
+            {config} />
+        {/if}
+      </Border>
+    </div>
+  {/if}
 </Layout>
