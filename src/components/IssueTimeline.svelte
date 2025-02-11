@@ -17,6 +17,7 @@
     authorForNodeId,
     formatTimestamp,
     issueStatusColor,
+    pluralize,
     publicKeyFromDid,
   } from "@app/lib/utils";
   import Icon from "./Icon.svelte";
@@ -126,72 +127,95 @@
           </div>
         </div>
       </div>
-    {:else if op.type === "label" && op.previous && op.previous.type === op.type}
-      {@const changed = itemDiff(op.previous?.labels ?? [], op.labels)}
-      {#if changed.added.length || changed.removed.length}
-        <div class="timeline-item">
-          <div class="icon">
-            <Icon name="label" />
-          </div>
-          <div class="wrapper">
-            <NodeId {...authorForNodeId(op.author)} />
-            {#if changed.added.length}
-              added label{changed.added.length > 1 ? "s" : ""}
-              {#each changed.added as label}
-                <b>{label}</b>
-              {/each}
+    {:else if op.type === "label"}
+      <div class="timeline-item">
+        <div class="icon">
+          <Icon name="label" />
+        </div>
+        <div class="wrapper">
+          <NodeId {...authorForNodeId(op.author)} />
+          {#if op.previous && op.previous.type === op.type}
+            {@const changed = itemDiff(op.previous?.labels ?? [], op.labels)}
+            {#if changed.added.length || changed.removed.length}
+              {#if changed.added.length}
+                added {pluralize("label", changed.removed.length)}
+                {#each changed.added as label}
+                  <b>{label}</b>
+                {/each}
+              {/if}
+              {#if changed.removed.length}
+                removed {pluralize("label", changed.removed.length)}
+                {#each changed.removed as label}
+                  <b>{label}</b>
+                {/each}
+              {/if}
             {/if}
-            {#if changed.removed.length}
-              removed label{changed.removed.length > 1 ? "s" : ""}
-              {#each changed.removed as label}
-                <b>{label}</b>
-              {/each}
-            {/if}
-            <div title={absoluteTimestamp(op.timestamp)}>
-              {formatTimestamp(op.timestamp)}
-            </div>
+          {:else}
+            added {pluralize("label", op.labels.length)}
+            {#each op.labels as label}
+              <b>{label}</b>
+            {/each}
+          {/if}
+          <div title={absoluteTimestamp(op.timestamp)}>
+            {formatTimestamp(op.timestamp)}
           </div>
         </div>
-      {/if}
-    {:else if op.type === "assign" && op.previous && op.previous.type === op.type}
-      {@const changed = itemDiff(op.previous?.assignees ?? [], op.assignees)}
-      {#if changed.added.length || changed.removed.length}
-        <div class="timeline-item">
-          <div class="icon">
-            <Icon name="user" />
-          </div>
-          <div class="wrapper">
-            <NodeId {...authorForNodeId(op.author)} />
-            {#if changed.added.length}
-              assigned
-              {#each changed.added as assignee}
-                {#await invoke<string | null>( "alias", { nid: publicKeyFromDid(assignee) }, ) then alias}
-                  <NodeId
-                    {...authorForNodeId({
-                      did: assignee,
-                      alias: alias ?? undefined,
-                    })} />
-                {/await}
-              {/each}
+      </div>
+    {:else if op.type === "assign"}
+      <div class="timeline-item">
+        <div class="icon">
+          <Icon name="user" />
+        </div>
+        <div class="wrapper">
+          <NodeId {...authorForNodeId(op.author)} />
+          {#if op.previous && op.previous.type === op.type}
+            {@const changed = itemDiff(
+              op.previous?.assignees ?? [],
+              op.assignees,
+            )}
+            {#if changed.added.length || changed.removed.length}
+              {#if changed.added.length}
+                assigned
+                {#each changed.added as assignee}
+                  {#await invoke<string | null>( "alias", { nid: publicKeyFromDid(assignee) }, ) then alias}
+                    <NodeId
+                      {...authorForNodeId({
+                        did: assignee,
+                        alias: alias ?? undefined,
+                      })} />
+                  {/await}
+                {/each}
+              {/if}
+              {#if changed.removed.length}
+                unassigned
+                {#each changed.removed as assignee}
+                  {#await invoke<string | null>( "alias", { nid: publicKeyFromDid(assignee) }, ) then alias}
+                    <NodeId
+                      {...authorForNodeId({
+                        did: assignee,
+                        alias: alias ?? undefined,
+                      })} />
+                  {/await}
+                {/each}
+              {/if}
             {/if}
-            {#if changed.removed.length}
-              unassigned
-              {#each changed.removed as assignee}
-                {#await invoke<string | null>( "alias", { nid: publicKeyFromDid(assignee) }, ) then alias}
-                  <NodeId
-                    {...authorForNodeId({
-                      did: assignee,
-                      alias: alias ?? undefined,
-                    })} />
-                {/await}
-              {/each}
-            {/if}
-            <div title={absoluteTimestamp(op.timestamp)}>
-              {formatTimestamp(op.timestamp)}
-            </div>
+          {:else}
+            assigned
+            {#each op.assignees as assignee}
+              {#await invoke<string | null>( "alias", { nid: publicKeyFromDid(assignee) }, ) then alias}
+                <NodeId
+                  {...authorForNodeId({
+                    did: assignee,
+                    alias: alias ?? undefined,
+                  })} />
+              {/await}
+            {/each}
+          {/if}
+          <div title={absoluteTimestamp(op.timestamp)}>
+            {formatTimestamp(op.timestamp)}
           </div>
         </div>
-      {/if}
+      </div>
     {:else if op.type === "edit"}
       {#if op.previous && op.previous.type === op.type}
         <div class="timeline-item">
