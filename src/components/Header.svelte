@@ -8,6 +8,8 @@
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
 
+  const activeRouteStore = router.activeRouteStore;
+
   interface Props {
     publicKey: string;
     center?: Snippet;
@@ -94,6 +96,7 @@
         <NakedButton
           variant="ghost"
           stylePadding="0 4px"
+          active={$activeRouteStore.resource === "inbox"}
           onclick={() => router.push({ resource: "inbox" })}>
           <Icon name="inbox" />
         </NakedButton>

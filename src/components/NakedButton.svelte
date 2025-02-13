@@ -9,6 +9,7 @@
     onclick?: (e: MouseEvent) => void;
     styleHeight?: string;
     stylePadding?: string;
+    active?: boolean;
   }
 
   const {
@@ -19,6 +20,7 @@
     onclick,
     styleHeight = "2rem",
     stylePadding = "0 8px",
+    active = false,
   }: Props = $props();
 
   const style = $derived(
@@ -147,46 +149,59 @@
     background-color: var(--button-color-1);
   }
 
-  .container:active:not(.disabled) .p1-3 {
+  .container:active:not(.disabled) .p1-3,
+  .container.active:not(.disabled) .p1-3 {
     background-color: var(--button-color-1);
   }
 
-  .container:active:not(.disabled) .p2-2 {
+  .container:active:not(.disabled) .p2-2,
+  .container.active:not(.disabled) .p2-2 {
     background-color: var(--button-color-1);
   }
-  .container:active:not(.disabled) .p2-3 {
+  .container:active:not(.disabled) .p2-3,
+  .container.active:not(.disabled) .p2-3 {
     background-color: var(--button-color-3);
   }
-  .container:active:not(.disabled) .p2-4 {
+  .container:active:not(.disabled) .p2-4,
+  .container.active:not(.disabled) .p2-4 {
     background-color: var(--button-color-1);
   }
 
-  .container:active:not(.disabled) .p3-1 {
+  .container:active:not(.disabled) .p3-1,
+  .container.active:not(.disabled) .p3-1 {
     background-color: var(--button-color-1);
   }
-  .container:active:not(.disabled) .p3-2 {
+  .container:active:not(.disabled) .p3-2,
+  .container.active:not(.disabled) .p3-2 {
     background-color: var(--button-color-3);
   }
-  .container:active:not(.disabled) .p3-3 {
+  .container:active:not(.disabled) .p3-3,
+  .container.active:not(.disabled) .p3-3 {
     background-color: var(--button-color-1);
   }
-  .container:active:not(.disabled) .p3-4 {
+  .container:active:not(.disabled) .p3-4,
+  .container.active:not(.disabled) .p3-4 {
     background-color: var(--button-color-2);
   }
-  .container:active:not(.disabled) .p3-5 {
+  .container:active:not(.disabled) .p3-5,
+  .container.active:not(.disabled) .p3-5 {
     background-color: var(--button-color-1);
   }
 
-  .container:active:not(.disabled) .p4-2 {
+  .container:active:not(.disabled) .p4-2,
+  .container.active:not(.disabled) .p4-2 {
     background-color: var(--button-color-1);
   }
-  .container:active:not(.disabled) .p4-3 {
+  .container:active:not(.disabled) .p4-3,
+  .container.active:not(.disabled) .p4-3 {
     background-color: var(--button-color-2);
   }
-  .container:active:not(.disabled) .p4-4 {
+  .container:active:not(.disabled) .p4-4,
+  .container.active:not(.disabled) .p4-4 {
     background-color: var(--button-color-1);
   }
-  .container:active:not(.disabled) .p5-3 {
+  .container:active:not(.disabled) .p5-3,
+  .container.active:not(.disabled) .p5-3 {
     background-color: var(--button-color-1);
   }
 
@@ -221,6 +236,7 @@
 <div
   class="container"
   class:disabled
+  class:active
   onclick={!disabled ? onclick : undefined}
   {title}
   role="button"
