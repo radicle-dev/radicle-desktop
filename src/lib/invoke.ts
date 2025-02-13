@@ -13,6 +13,10 @@ export async function invoke<T = null>(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(args),
     }).then(async response => {
+      if (response.status === 404) {
+        console.log("Got a 404 response:", response);
+        return null;
+      }
       const json = await response.json();
       if (!response.ok) {
         throw json;
