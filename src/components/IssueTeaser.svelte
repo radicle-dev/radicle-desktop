@@ -73,10 +73,11 @@
   role="button"
   class="issue-teaser"
   class:selected
+  style:align-items="flex-start"
   onclick={() => {
     void push({ resource: "repo.issue", rid, issue: issue.id, status });
   }}>
-  <div class="global-flex">
+  <div class="global-flex" style:align-items="flex-start">
     <div
       class="global-counter status"
       style:color={issueStatusColor[issue.state.status]}

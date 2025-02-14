@@ -77,6 +77,7 @@
   role="button"
   class:selected
   class="patch-teaser"
+  style:align-items="flex-start"
   onclick={() => {
     if (loadPatch) {
       loadPatch(rid, patch.id);
@@ -84,7 +85,7 @@
       void push({ resource: "repo.patch", rid, patch: patch.id, status });
     }
   }}>
-  <div class="global-flex">
+  <div class="global-flex" style:align-items="flex-start">
     <div
       class="global-counter status"
       style:color={patchStatusColor[patch.state.status]}
