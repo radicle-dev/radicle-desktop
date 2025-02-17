@@ -182,7 +182,7 @@ impl<'a, A> ActionsIter<'a, A> {
     }
 }
 
-impl<'a, A> Iterator for ActionsIter<'a, A>
+impl<A> Iterator for ActionsIter<'_, A>
 where
     A: for<'de> Deserialize<'de>,
     A: Debug,
@@ -278,7 +278,7 @@ impl<'a, A> TreeActionsIter<'a, A> {
     }
 }
 
-impl<'a, A> Iterator for TreeActionsIter<'a, A>
+impl<A> Iterator for TreeActionsIter<'_, A>
 where
     A: for<'de> Deserialize<'de>,
 {

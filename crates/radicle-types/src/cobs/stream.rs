@@ -121,7 +121,7 @@ impl<'a, A> Stream<'a, A> {
     }
 }
 
-impl<'a, A> HasRoot for Stream<'a, A> {
+impl<A> HasRoot for Stream<'_, A> {
     fn root(&self) -> Oid {
         self.range.root()
     }
