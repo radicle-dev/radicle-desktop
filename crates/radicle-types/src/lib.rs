@@ -17,6 +17,7 @@ pub mod syntax;
 pub mod test;
 pub mod traits;
 
+#[derive(Clone)]
 pub struct AppState {
     pub profile: radicle::Profile,
 }

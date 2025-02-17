@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Config } from "@bindings/config/Config";
   import type { UnlistenFn } from "@tauri-apps/api/event";
   import type { SyncStatus } from "@bindings/repo/SyncStatus";
 
@@ -29,7 +30,16 @@
   let unlistenNodeEvents: UnlistenFn | undefined = undefined;
   let unlistenSyncStatus: UnlistenFn | undefined = undefined;
 
+  let error = $state<undefined | unknown>();
+
   onMount(async () => {
+    try {
+      await invoke<Config>("startup");
+    } catch (e: unknown) {
+      error = e;
+      return;
+    }
+
     if (window.__TAURI_INTERNALS__) {
       unlistenEvents = await listen("event", () => {
         // Add handler for incoming events
@@ -83,6 +93,9 @@
 </script>
 
 {#if $activeRouteStore.resource === "booting"}
+  {#if error && typeof error === "object" && "err" in error && typeof error.err === "string"}
+    <AuthenticationError error={error.err} />
+  {/if}
   <!-- Don't show anything -->
 {:else if $activeRouteStore.resource === "home"}
   <Repos {...$activeRouteStore.params} />
