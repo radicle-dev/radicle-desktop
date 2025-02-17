@@ -23,15 +23,15 @@ radicle-types = { version = "0.1.0", path = "../radicle-types" }
 radicle-surf = { version = "0.22.1", features = ["serde"] }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = { version = "1.0.132" }
-tauri = { version = "2.0.4", features = ["isolation"] }
-tauri-plugin-clipboard-manager = { version = "2.0.1" }
-tauri-plugin-log = { version = "2.0.0" }
-tauri-plugin-shell = { version = "2.0.1" }
-tauri-plugin-window-state = { version = "2.0.1" }
-thiserror = { version = "1.0.64" }
-ts-rs = { version = "10.0.0", features = ["serde-json-impl", "no-serde-warnings"] }
-tokio = { version = "1.40.0", features = ["time"] }
+tauri = { version = "2.2.5", features = ["isolation"] }
+tauri-plugin-clipboard-manager = { version = "2.2.1" }
 tauri-plugin-dialog = { version = "2.2.0" }
+tauri-plugin-log = { version = "2.2.1" }
+tauri-plugin-shell = { version = "2.2.0" }
+tauri-plugin-window-state = { version = "2.2.1" }
+thiserror = { version = "1.0.64" }
+tokio = { version = "1.40.0", features = ["time"] }
+ts-rs = { version = "10.0.0", features = ["serde-json-impl", "no-serde-warnings"] }
 
 [features]
 # by default Tauri runs in production mode
