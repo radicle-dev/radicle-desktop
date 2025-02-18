@@ -6,33 +6,26 @@
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { PatchStatus } from "@app/views/repo/router";
   import type { Revision } from "@bindings/cob/patch/Revision";
-  import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Verdict } from "@bindings/cob/patch/Verdict";
 
   import partial from "lodash/partial";
-  import { tick } from "svelte";
 
   import * as roles from "@app/lib/roles";
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
-  import {
-    didFromPublicKey,
-    publicKeyFromDid,
-    scrollIntoView,
-  } from "@app/lib/utils";
+  import { didFromPublicKey, publicKeyFromDid } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import Changeset from "@app/components/Changeset.svelte";
   import CobCommitTeaser from "./CobCommitTeaser.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
-  import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import CommitsContainer from "@app/components/CommitsContainer.svelte";
+  import Discussion from "./Discussion.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "./Id.svelte";
   import NakedButton from "./NakedButton.svelte";
   import ReviewTeaser from "@app/components/ReviewTeaser.svelte";
-  import ThreadComponent from "@app/components/Thread.svelte";
 
   interface Props {
     rid: string;
@@ -58,36 +51,11 @@
     ),
   );
 
-  let focusReply: boolean = $state(false);
   let hideChanges = $state(false);
-  let hideDiscussion = $state(
-    revision.discussion === undefined || revision.discussion.length === 0,
-  );
   let hideReviews = $state(
     revision.reviews === undefined || revision.reviews.length === 0,
   );
-  let topLevelReplyOpen = $state(false);
   let filesExpanded = $state(true);
-
-  const threads = $derived(
-    ((revision.discussion &&
-      revision.discussion
-        .filter(
-          comment =>
-            (comment.id !== revision.id && !comment.replyTo) ||
-            comment.replyTo === revision.id,
-        )
-        .map(thread => {
-          return {
-            root: thread,
-            replies:
-              revision.discussion &&
-              revision.discussion
-                .filter(comment => comment.replyTo === thread.id)
-                .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
-          };
-        }, [])) as Thread[]) || [],
-  );
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -95,10 +63,6 @@
 
     hideReviews =
       revision.reviews === undefined || revision.reviews.length === 0;
-    hideDiscussion =
-      revision.discussion === undefined || revision.discussion.length === 0;
-    focusReply = false;
-    topLevelReplyOpen = false;
     hideChanges = false;
   });
 
@@ -175,98 +139,6 @@
     }
   }
 
-  async function editComment(commentId: string, body: string, embeds: Embed[]) {
-    try {
-      await invoke("edit_patch", {
-        rid: rid,
-        cobId: patchId,
-        action: {
-          type: "revision.comment.edit",
-          comment: commentId,
-          body,
-          revision: revision.id,
-          embeds,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Editing comment failed: ", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function createReply(replyTo: string, body: string, embeds: Embed[]) {
-    try {
-      await invoke("create_patch_comment", {
-        rid: rid,
-        new: { id: patchId, body, embeds, replyTo, revision: revision.id },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Creating reply failed", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function reactOnComment(
-    publicKey: string,
-    commentId: string,
-    authors: Author[],
-    reaction: string,
-  ) {
-    try {
-      await invoke("edit_patch", {
-        rid: rid,
-        cobId: patchId,
-        action: {
-          type: "revision.comment.react",
-          comment: commentId,
-          reaction,
-          revision: revision.id,
-          active: !authors.find(
-            ({ did }) => publicKeyFromDid(did) === publicKey,
-          ),
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Editing comment reactions failed", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function createComment(body: string, embeds: Embed[]) {
-    try {
-      await invoke("create_patch_comment", {
-        rid: rid,
-        new: { id: patchId, body, embeds, revision: revision.id },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Creating comment failed: ", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function toggleReply() {
-    topLevelReplyOpen = !topLevelReplyOpen;
-    if (!topLevelReplyOpen) {
-      return;
-    }
-
-    await tick();
-    scrollIntoView(`reply-${patchId}`, {
-      behavior: "smooth",
-      block: "center",
-    });
-    await tick();
-    focusReply = true;
-  }
-
   async function loadHighlightedDiff(rid: string, base: string, head: string) {
     return invoke<Diff>("get_diff", {
       rid,
@@ -308,12 +180,6 @@
   }
   .hide {
     display: none;
-  }
-  .connector {
-    width: 2px;
-    height: 1rem;
-    margin-left: 1.25rem;
-    background-color: var(--color-background-float);
   }
   .commits {
     position: relative;
@@ -415,79 +281,14 @@
   {/if}
 </div>
 
-<div style:margin={hideDiscussion ? "1.5rem 0" : "0 0 2.5rem 0"}>
-  <div class="global-flex">
-    <NakedButton
-      variant="ghost"
-      disabled={revision.discussion === undefined ||
-        revision.discussion.length === 0}
-      onclick={() => (hideDiscussion = !hideDiscussion)}>
-      <Icon name={hideDiscussion ? "chevron-right" : "chevron-down"} />
-      <div class="txt-semibold global-flex txt-regular">
-        Discussion <span style:font-weight="var(--font-weight-regular)">
-          {revision.discussion?.length ?? 0}
-        </span>
-      </div>
-    </NakedButton>
-    <div style:margin-left="auto">
-      <NakedButton
-        variant="secondary"
-        onclick={async () => {
-          if (hideDiscussion) {
-            hideDiscussion = false;
-          } else {
-            if (
-              revision.discussion === undefined ||
-              revision.discussion.length === 0
-            ) {
-              hideDiscussion = true;
-            }
-          }
-          await toggleReply();
-        }}>
-        <Icon name="comment" />
-        <span class="txt-small">Comment</span>
-      </NakedButton>
-    </div>
-  </div>
-  <div class:hide={hideDiscussion} style:margin-top="1rem">
-    {#each threads as thread}
-      <ThreadComponent
-        {thread}
-        {rid}
-        canEditComment={partial(
-          roles.isDelegateOrAuthor,
-          config.publicKey,
-          repoDelegates.map(delegate => delegate.did),
-        )}
-        editComment={partial(editComment)}
-        createReply={partial(createReply)}
-        reactOnComment={partial(reactOnComment, config.publicKey)} />
-      <div class="connector"></div>
-    {/each}
-
-    <div id={`reply-${patchId}`}>
-      <CommentToggleInput
-        disallowEmptyBody
-        {rid}
-        focus={focusReply}
-        onexpand={toggleReply}
-        onclose={topLevelReplyOpen
-          ? () => {
-              if (
-                revision.discussion === undefined ||
-                revision.discussion.length === 0
-              ) {
-                hideDiscussion = !hideDiscussion;
-              }
-              topLevelReplyOpen = false;
-            }
-          : undefined}
-        placeholder="Leave a comment"
-        submit={partial(createComment)} />
-    </div>
-  </div>
-</div>
+<Discussion
+  {config}
+  discussion={revision.discussion}
+  {patchId}
+  {reload}
+  {repoDelegates}
+  revisionId={revision.id}
+  {rid} />
 
 <div
   class="txt-semibold global-flex"
