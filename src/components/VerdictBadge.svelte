@@ -3,7 +3,7 @@
   import type { Snippet } from "svelte";
 
   import capitalize from "lodash/capitalize.js";
-  import { verdictIcon, verdictIconColor } from "@app/lib/utils";
+  import { verdictIcon } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
 
@@ -23,6 +23,7 @@
   }
   .no-verdict {
     background-color: var(--color-fill-ghost);
+    color: var(--color-foreground-dim);
   }
   .no-verdict.hoverable:hover {
     background-color: var(--color-fill-ghost-hover);
@@ -30,6 +31,7 @@
 
   .accepted {
     background-color: var(--color-fill-diff-green-light);
+    color: var(--color-foreground-success);
   }
   .accepted.hoverable:hover {
     background-color: var(--color-fill-diff-green);
@@ -37,6 +39,7 @@
 
   .rejected {
     background-color: var(--color-fill-diff-red-light);
+    color: var(--color-foreground-red);
   }
   .rejected.hoverable:hover {
     background-color: var(--color-fill-diff-red);
@@ -45,7 +48,6 @@
 
 <span
   class="global-counter badge"
-  style:color={verdictIconColor(verdict)}
   class:hoverable
   class:no-verdict={verdict === undefined}
   class:accepted={verdict === "accept"}

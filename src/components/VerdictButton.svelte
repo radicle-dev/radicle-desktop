@@ -4,7 +4,7 @@
   import capitalize from "lodash/capitalize.js";
 
   import { closeFocused } from "./Popover.svelte";
-  import { verdictIcon, verdictIconColor } from "@app/lib/utils";
+  import { verdictIcon } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
@@ -34,6 +34,17 @@
     justify-content: center;
     font-size: var(--font-size-small);
   }
+  .accepted {
+    color: var(--color-foreground-success);
+  }
+
+  .rejected {
+    color: var(--color-foreground-red);
+  }
+
+  .no-verdict {
+    color: var(--color-foreground-dim);
+  }
 </style>
 
 <Popover popoverPadding="0" popoverPositionLeft="0" popoverPositionTop="2rem">
@@ -58,7 +69,11 @@
               await onSelect(action);
               closeFocused();
             }}>
-            <span class="global-flex" style:color={verdictIconColor(action)}>
+            <span
+              class="global-flex"
+              class:accepted={action === "accept"}
+              class:rejected={action === "reject"}
+              class:no-verdict={action === undefined}>
               <Icon name={verdictIcon(action)} />
               {action ? capitalize(`${action}ed`) : "None"}
             </span>

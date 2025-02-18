@@ -73,14 +73,17 @@
 
   .accepted {
     background-color: var(--color-fill-diff-green-light);
+    color: var(--color-foreground-success);
   }
 
   .rejected {
     background-color: var(--color-fill-diff-red-light);
+    color: var(--color-foreground-red);
   }
 
   .no-verdict {
     background-color: var(--color-fill-ghost);
+    color: var(--color-foreground-dim);
   }
 </style>
 

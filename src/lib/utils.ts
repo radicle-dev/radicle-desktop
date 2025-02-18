@@ -248,13 +248,3 @@ export function verdictIcon(verdict: Review["verdict"]) {
     return "comment";
   }
 }
-
-export function verdictIconColor(verdict: Review["verdict"]) {
-  if (verdict === "accept") {
-    return "var(--color-foreground-success)";
-  } else if (verdict === "reject") {
-    return "var(--color-foreground-red)";
-  } else {
-    return "var(--color-foreground-dim)";
-  }
-}
