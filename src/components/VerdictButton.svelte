@@ -14,12 +14,12 @@
   import VerdictBadge from "@app/components/VerdictBadge.svelte";
 
   interface Props {
-    onSelect: (verdict: Review["verdict"]) => Promise<void>;
+    onSelect: (selectedVerdict: Review["verdict"]) => Promise<void>;
     summaryMissing: boolean;
-    verdict: Review["verdict"];
+    selectedVerdict: Review["verdict"];
   }
 
-  const { onSelect, summaryMissing, verdict }: Props = $props();
+  const { onSelect, summaryMissing, selectedVerdict }: Props = $props();
 </script>
 
 <style>
@@ -50,7 +50,7 @@
 <Popover popoverPadding="0" popoverPositionLeft="0" popoverPositionTop="2rem">
   {#snippet toggle(onclick)}
     <button {onclick}>
-      <VerdictBadge {verdict} hoverable>
+      <VerdictBadge verdict={selectedVerdict} hoverable>
         <Icon name="chevron-down" />
       </VerdictBadge>
     </button>
@@ -58,24 +58,24 @@
   {#snippet popover()}
     <Border variant="ghost">
       <DropdownList items={[undefined, "accept", "reject"] as const}>
-        {#snippet item(action)}
+        {#snippet item(verdict)}
           <DropdownListItem
-            title={action === undefined && summaryMissing
+            title={verdict === undefined && summaryMissing
               ? "Set a summary to select verdict None"
               : undefined}
-            disabled={action === undefined && summaryMissing}
-            selected={verdict === action}
+            disabled={verdict === undefined && summaryMissing}
+            selected={selectedVerdict === verdict}
             onclick={async () => {
-              await onSelect(action);
+              await onSelect(verdict);
               closeFocused();
             }}>
             <span
               class="global-flex"
-              class:accepted={action === "accept"}
-              class:rejected={action === "reject"}
-              class:no-verdict={action === undefined}>
-              <Icon name={verdictIcon(action)} />
-              {action ? capitalize(`${action}ed`) : "None"}
+              class:accepted={verdict === "accept"}
+              class:rejected={verdict === "reject"}
+              class:no-verdict={verdict === undefined}>
+              <Icon name={verdictIcon(verdict)} />
+              {verdict ? capitalize(`${verdict}ed`) : "None"}
             </span>
           </DropdownListItem>
         {/snippet}

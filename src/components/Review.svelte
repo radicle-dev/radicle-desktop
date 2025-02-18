@@ -165,7 +165,7 @@
         <div class="metadata-section-title">Verdict</div>
         {#if !!roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), review.author.did, )}
           <VerdictButton
-            {verdict}
+            selectedVerdict={verdict}
             summaryMissing={review.summary === undefined ||
               review.summary.trim() === ""}
             onSelect={async newVerdict => {
