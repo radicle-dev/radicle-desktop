@@ -6,6 +6,7 @@
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { PatchStatus } from "@app/views/repo/router";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Verdict } from "@bindings/cob/patch/Verdict";
 
   import partial from "lodash/partial";
@@ -65,6 +66,26 @@
       revision.reviews === undefined || revision.reviews.length === 0;
     hideChanges = false;
   });
+
+  const commentThreads = $derived(
+    ((revision.discussion &&
+      revision.discussion
+        .filter(
+          comment =>
+            (comment.id !== revision.id && !comment.replyTo) ||
+            comment.replyTo === revision.id,
+        )
+        .map(thread => {
+          return {
+            root: thread,
+            replies:
+              revision.discussion &&
+              revision.discussion
+                .filter(comment => comment.replyTo === thread.id)
+                .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
+          };
+        }, [])) as Thread[]) || [],
+  );
 
   async function editRevision(
     revisionId: string,
@@ -134,6 +155,73 @@
       });
     } catch (error) {
       console.error("Creating a review failed: ", error);
+    } finally {
+      await reload();
+    }
+  }
+
+  async function createComment(
+    body: string,
+    embeds: Embed[],
+    replyTo?: string,
+  ) {
+    try {
+      await invoke("create_patch_comment", {
+        rid: rid,
+        new: { id: patchId, body, embeds, replyTo, revision: revision.id },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Creating comment failed", error);
+    } finally {
+      await reload();
+    }
+  }
+
+  async function editComment(commentId: string, body: string, embeds: Embed[]) {
+    try {
+      await invoke("edit_patch", {
+        rid: rid,
+        cobId: patchId,
+        action: {
+          type: "revision.comment.edit",
+          comment: commentId,
+          body,
+          revision: revision.id,
+          embeds,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing comment failed: ", error);
+    } finally {
+      await reload();
+    }
+  }
+
+  async function reactOnComment(
+    publicKey: string,
+    commentId: string,
+    authors: Author[],
+    reaction: string,
+  ) {
+    try {
+      await invoke("edit_patch", {
+        rid: rid,
+        cobId: patchId,
+        action: {
+          type: "revision.comment.react",
+          comment: commentId,
+          reaction,
+          revision: revision.id,
+          active: !authors.find(
+            ({ did }) => publicKeyFromDid(did) === publicKey,
+          ),
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing comment reactions failed", error);
     } finally {
       await reload();
     }
@@ -282,12 +370,13 @@
 </div>
 
 <Discussion
+  cobId={patchId}
+  {commentThreads}
   {config}
-  discussion={revision.discussion}
-  {patchId}
-  {reload}
+  {createComment}
+  {editComment}
+  {reactOnComment}
   {repoDelegates}
-  revisionId={revision.id}
   {rid} />
 
 <div

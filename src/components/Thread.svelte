@@ -26,9 +26,9 @@
       embeds: Embed[],
     ) => Promise<void>;
     createReply?: (
-      commentId: string,
       comment: string,
       embeds: Embed[],
+      commentId: string,
     ) => Promise<void>;
     reactOnComment?: (
       commentId: string,
@@ -154,9 +154,9 @@
                 try {
                   submitInProgress = true;
                   await createReply(
-                    root.id,
                     comment,
                     Array.from(embeds.values()),
+                    root.id,
                   );
                 } finally {
                   showReplyForm = false;

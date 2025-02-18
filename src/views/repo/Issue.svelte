@@ -200,26 +200,6 @@
     }
   }
 
-  async function createReply(replyTo: string, body: string, embeds: Embed[]) {
-    try {
-      await invoke("create_issue_comment", {
-        rid: repo.rid,
-        new: { id: issue.id, body, embeds, replyTo },
-        opts: { announce: $nodeRunning && $announce },
-      });
-      // Update second column issue comment count without reloading the whole
-      // issue list.
-      const issueIndex = issues.findIndex(i => i.id === issue.id);
-      if (issueIndex !== -1) {
-        issues[issueIndex].commentCount += 1;
-      }
-    } catch (error) {
-      console.error("Comment reply creation failed", error);
-    } finally {
-      await reload();
-    }
-  }
-
   async function editComment(id: string, body: string, embeds: Embed[]) {
     try {
       await invoke("edit_issue", {
@@ -574,7 +554,7 @@
               repo.delegates.map(delegate => delegate.did),
             )}
             {editComment}
-            createReply={partial(createReply)}
+            createReply={createComment}
             reactOnComment={partial(reactOnComment, config.publicKey)} />
           <div class="connector"></div>
         {/each}
@@ -589,7 +569,7 @@
               ? () => (topLevelReplyOpen = false)
               : undefined}
             placeholder="Leave a comment"
-            submit={partial(createComment)} />
+            submit={createComment} />
         </div>
       </div>
     </div>
