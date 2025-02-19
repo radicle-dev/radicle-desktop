@@ -80,7 +80,9 @@
   let updatedTitle = $state("");
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
-  let tab: "patch" | "revisions" | "timeline" = $state("patch");
+  let tab: "patch" | "revisions" | "timeline" = $state(
+    revisions.length > 1 ? "revisions" : "patch",
+  );
   let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
 
   $effect(() => {
@@ -93,7 +95,7 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     patch.id;
 
-    tab = "patch";
+    tab = revisions.length > 1 ? "revisions" : "patch";
     editingTitle = false;
     updatedTitle = patch.title;
     selectedRevision = revisions.slice(-1)[0];
