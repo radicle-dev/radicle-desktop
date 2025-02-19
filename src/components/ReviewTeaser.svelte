@@ -119,18 +119,21 @@
           {formatTimestamp(review.timestamp)}
         </div>
       </div>
-      {#if review.comments.length > 0}
-        <div class="global-flex" style:gap="0.25rem" style:margin-left="auto">
-          <Icon name="comment" />{review.comments.length}
-        </div>
-      {/if}
-      {#if review.labels.length > 0}
-        <div class="global-flex" style:margin-left="auto">
-          {#each review.labels as label}
-            <Label {label} />
-          {/each}
-        </div>
-      {/if}
+
+      <div class="global-flex" style:gap="1rem">
+        {#if review.labels.length > 0}
+          <div class="global-flex" style:margin-left="auto">
+            {#each review.labels as label}
+              <Label {label} />
+            {/each}
+          </div>
+        {/if}
+        {#if review.comments.length > 0}
+          <div class="global-flex" style:gap="0.25rem" style:margin-left="auto">
+            <Icon name="comment" />{review.comments.length}
+          </div>
+        {/if}
+      </div>
     </div>
     {#if review.summary?.trim()}
       <div>
