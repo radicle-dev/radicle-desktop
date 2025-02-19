@@ -56,7 +56,7 @@ test("creation of top level comments", async ({ page }) => {
       .last(),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "Leave a comment" }).click();
+  await page.getByRole("button", { name: "icon-comment Comment" }).click();
   await page
     .getByPlaceholder("Leave a comment")
     .fill("A top level comment by playwright");
@@ -67,7 +67,7 @@ test("creation of top level comments", async ({ page }) => {
 
   await page.getByLabel("icon-reply").first().click();
   await page
-    .getByPlaceholder("Leave a comment")
+    .getByPlaceholder("Reply to comment")
     .fill(
       "A top level comment by playwright created by replying to the issue body",
     );
@@ -78,7 +78,7 @@ test("creation of top level comments", async ({ page }) => {
     ),
   ).toBeVisible();
 
-  await page.getByLabel("icon-reply").nth(1).click();
+  await page.getByLabel("icon-reply").click();
   await page
     .getByPlaceholder("Reply to comment")
     .fill("A reply comment by playwright replying to the first comment");

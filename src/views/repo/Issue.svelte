@@ -4,13 +4,12 @@
   import type { Config } from "@bindings/config/Config";
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Issue } from "@bindings/cob/issue/Issue";
+  import type { IssueStatus } from "./router";
   import type { Operation } from "@bindings/cob/Operation";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Thread } from "@bindings/cob/thread/Thread";
-  import type { IssueStatus } from "./router";
 
   import partial from "lodash/partial";
-  import { tick } from "svelte";
 
   import * as roles from "@app/lib/roles";
   import { invoke } from "@app/lib/invoke";
@@ -19,7 +18,6 @@
     issueStatusBackgroundColor,
     issueStatusColor,
     publicKeyFromDid,
-    scrollIntoView,
   } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
@@ -27,7 +25,6 @@
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
-  import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
@@ -38,9 +35,9 @@
   import LabelInput from "@app/components/LabelInput.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
   import TextInput from "@app/components/TextInput.svelte";
-  import ThreadComponent from "@app/components/Thread.svelte";
 
   import Layout from "./Layout.svelte";
+  import Discussion from "@app/components/Discussion.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -66,13 +63,10 @@
 
   let issues = $state(initialIssues);
   let status = $state(initialStatus);
-  let topLevelReplyOpen = $state(false);
   let editingTitle = $state(false);
   let updatedTitle = $state("");
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
-  let focusReply: boolean = $state(false);
-  let hideDiscussion = $state(false);
   let hideTimeline = $state(false);
 
   $effect(() => {
@@ -84,11 +78,8 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     issue.id;
 
-    topLevelReplyOpen = false;
     editingTitle = false;
     updatedTitle = issue.title;
-    focusReply = false;
-    hideDiscussion = false;
     hideTimeline = false;
   });
 
@@ -146,20 +137,6 @@
     }
   }
 
-  async function toggleReply() {
-    topLevelReplyOpen = !topLevelReplyOpen;
-    if (!topLevelReplyOpen) {
-      return;
-    }
-
-    await tick();
-    scrollIntoView(`reply-${issue.id}`, {
-      behavior: "smooth",
-      block: "center",
-    });
-    focusReply = true;
-  }
-
   async function reload() {
     [issue, activity, threads] = await Promise.all([
       invoke<Issue>("issue_by_id", {
@@ -176,15 +153,18 @@
       }),
     ]);
 
-    topLevelReplyOpen = false;
     editingTitle = false;
   }
 
-  async function createComment(body: string, embeds: Embed[]) {
+  async function createComment(
+    body: string,
+    embeds: Embed[],
+    replyTo?: string,
+  ) {
     try {
       await invoke("create_issue_comment", {
         rid: repo.rid,
-        new: { id: issue.id, body, embeds },
+        new: { id: issue.id, body, embeds, replyTo },
         opts: { announce: $nodeRunning && $announce },
       });
       // Update second column issue comment count without reloading the whole
@@ -337,12 +317,6 @@
   }
   .content {
     padding: 1rem 1rem 1rem 0;
-  }
-  .connector {
-    width: 2px;
-    height: 1rem;
-    margin-left: 1.25rem;
-    background-color: var(--color-background-float);
   }
   .title-icons {
     display: flex;
@@ -525,54 +499,18 @@
           config.publicKey,
           issue.body.id,
         )}>
-        {#snippet actions()}
-          <Icon name="reply" onclick={toggleReply} />
-        {/snippet}
       </CommentComponent>
     </div>
 
-    <div style:margin-bottom="1rem">
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <div
-        role="button"
-        tabindex="0"
-        class="txt-semibold global-flex"
-        style:margin-bottom="1rem"
-        style:cursor="pointer"
-        onclick={() => (hideDiscussion = !hideDiscussion)}>
-        <Icon
-          name={hideDiscussion ? "chevron-right" : "chevron-down"} />Discussion
-      </div>
-      <div class:hide={hideDiscussion}>
-        {#each threads as thread}
-          <ThreadComponent
-            {thread}
-            rid={repo.rid}
-            canEditComment={partial(
-              roles.isDelegateOrAuthor,
-              config.publicKey,
-              repo.delegates.map(delegate => delegate.did),
-            )}
-            {editComment}
-            createReply={createComment}
-            reactOnComment={partial(reactOnComment, config.publicKey)} />
-          <div class="connector"></div>
-        {/each}
-
-        <div id={`reply-${issue.id}`}>
-          <CommentToggleInput
-            disallowEmptyBody
-            rid={repo.rid}
-            focus={focusReply}
-            onexpand={toggleReply}
-            onclose={topLevelReplyOpen
-              ? () => (topLevelReplyOpen = false)
-              : undefined}
-            placeholder="Leave a comment"
-            submit={createComment} />
-        </div>
-      </div>
-    </div>
+    <Discussion
+      cobId={issue.id}
+      commentThreads={threads}
+      {config}
+      {createComment}
+      {editComment}
+      {reactOnComment}
+      repoDelegates={repo.delegates}
+      rid={repo.rid} />
 
     <div>
       <!-- svelte-ignore a11y_click_events_have_key_events -->
