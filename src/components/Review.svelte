@@ -1,10 +1,14 @@
 <script lang="ts">
+  import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
+  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { Thread } from "@bindings/cob/thread/Thread";
 
   import partial from "lodash/partial";
+  import uniqBy from "lodash/uniqBy";
 
   import * as roles from "@app/lib/roles";
 
@@ -22,6 +26,7 @@
   import NodeId from "@app/components/NodeId.svelte";
   import VerdictButton from "@app/components/VerdictButton.svelte";
   import VerdictBadge from "./VerdictBadge.svelte";
+  import Discussion from "./Discussion.svelte";
 
   interface Props {
     config: Config;
@@ -43,12 +48,37 @@
     repo,
   }: Props = $props();
 
-  const contributors = [
-    review.author,
-    ...review.comments.map(c => {
-      return c.author;
-    }),
-  ];
+  const contributors = $derived(
+    uniqBy(
+      [
+        review.author,
+        ...review.comments.map(c => {
+          return c.author;
+        }),
+      ],
+      "did",
+    ),
+  );
+
+  const commentThreads = $derived(
+    ((review.comments &&
+      review.comments
+        .filter(
+          comment =>
+            (comment.id !== review.id && !comment.replyTo) ||
+            comment.replyTo === review.id,
+        )
+        .map(thread => {
+          return {
+            root: thread,
+            replies:
+              review.comments &&
+              review.comments
+                .filter(comment => comment.replyTo === thread.id)
+                .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
+          };
+        }, [])) as Thread[]) || [],
+  );
 
   let verdict: Review["verdict"] = $state(review.verdict);
   let labelSaveInProgress: boolean = $state(false);
@@ -84,6 +114,81 @@
     } finally {
       labelSaveInProgress = false;
       await reload(reviewId);
+    }
+  }
+
+  async function createComment(
+    body: string,
+    embeds: Embed[],
+    replyTo?: string,
+  ) {
+    console.log({ replyTo });
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patchId,
+        action: {
+          type: "review.comment",
+          review: review.id,
+          body,
+          embeds,
+          replyTo,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Creating comment failed", error);
+    } finally {
+      await reload(review.id);
+    }
+  }
+
+  async function editComment(commentId: string, body: string, embeds: Embed[]) {
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patchId,
+        action: {
+          type: "review.comment.edit",
+          comment: commentId,
+          body,
+          review: review.id,
+          embeds,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing comment failed: ", error);
+    } finally {
+      await reload(review.id);
+    }
+  }
+
+  async function reactOnComment(
+    publicKey: string,
+    commentId: string,
+    authors: Author[],
+    reaction: string,
+  ) {
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patchId,
+        action: {
+          type: "review.comment.react",
+          comment: commentId,
+          reaction,
+          review: review.id,
+          active: !authors.find(
+            ({ did }) => publicKeyFromDid(did) === publicKey,
+          ),
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing comment reactions failed", error);
+    } finally {
+      await reload(review.id);
     }
   }
 </script>
@@ -202,9 +307,11 @@
 
       <div class="metadata-section" style:flex="1">
         <div class="metadata-section-title">Participants</div>
-        {#each contributors as contributor}
-          <NodeId {...authorForNodeId(contributor)} />
-        {/each}
+        <div class="global-flex">
+          {#each contributors as contributor}
+            <NodeId {...authorForNodeId(contributor)} />
+          {/each}
+        </div>
       </div>
     </Border>
 
@@ -231,4 +338,14 @@
       </CommentComponent>
     </div>
   </div>
+
+  <Discussion
+    cobId={patchId}
+    repoDelegates={repo.delegates}
+    rid={repo.rid}
+    {commentThreads}
+    {config}
+    {createComment}
+    {editComment}
+    {reactOnComment} />
 </div>

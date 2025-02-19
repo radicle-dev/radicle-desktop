@@ -375,6 +375,7 @@ pub enum Action {
         review: patch::ReviewId,
     },
     #[serde(rename = "review.comment")]
+    #[serde(rename_all = "camelCase")]
     ReviewComment {
         #[ts(as = "String")]
         review: patch::ReviewId,
