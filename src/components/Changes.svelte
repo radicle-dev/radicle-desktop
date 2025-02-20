@@ -13,13 +13,14 @@
   import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {
-    rid: string;
     patchId: string;
     revision: Revision;
+    rid: string;
+    showCommits?: boolean;
   }
 
   /* eslint-disable prefer-const */
-  let { rid, patchId, revision }: Props = $props();
+  let { patchId, revision, rid, showCommits = true }: Props = $props();
   /* eslint-enable prefer-const */
 
   let hideChanges = $state(false);
@@ -110,33 +111,35 @@
 </div>
 
 <div class:hide={hideChanges}>
-  {#await loadCommits(rid, revision.base, revision.head) then commits}
-    <div style:margin-bottom="1rem">
-      <CommitsContainer expanded={filesExpanded}>
-        {#snippet leftHeader()}
-          <div class="txt-semibold">Commits</div>
-        {/snippet}
-        {#snippet children()}
-          <div style:padding="0 1rem">
-            <div
-              class="global-flex txt-small"
-              style:color="var(--color-foreground-dim)">
-              <Icon name="branch" /><Id id={revision.base} variant="commit" />
-              <div class="global-counter">base</div>
+  {#if showCommits}
+    {#await loadCommits(rid, revision.base, revision.head) then commits}
+      <div style:margin-bottom="1rem">
+        <CommitsContainer expanded={filesExpanded}>
+          {#snippet leftHeader()}
+            <div class="txt-semibold">Commits</div>
+          {/snippet}
+          {#snippet children()}
+            <div style:padding="0 1rem">
+              <div
+                class="global-flex txt-small"
+                style:color="var(--color-foreground-dim)">
+                <Icon name="branch" /><Id id={revision.base} variant="commit" />
+                <div class="global-counter">base</div>
+              </div>
+              <div class="commits">
+                {#each commits.reverse() as commit}
+                  <div class="commit" style:position="relative">
+                    <div class="commit-dot"></div>
+                    <CobCommitTeaser {commit} />
+                  </div>
+                {/each}
+              </div>
             </div>
-            <div class="commits">
-              {#each commits.reverse() as commit}
-                <div class="commit" style:position="relative">
-                  <div class="commit-dot"></div>
-                  <CobCommitTeaser {commit} />
-                </div>
-              {/each}
-            </div>
-          </div>
-        {/snippet}
-      </CommitsContainer>
-    </div>
-  {/await}
+          {/snippet}
+        </CommitsContainer>
+      </div>
+    {/await}
+  {/if}
 
   {#await loadHighlightedDiff(rid, revision.base, revision.head)}
     <span class="txt-small">Loading…</span>
