@@ -47,6 +47,11 @@
     content;
 
     void tick().then(() => {
+      // Don't run this if the component hasn't mounted yet.
+      if (container === null) {
+        return;
+      }
+
       for (const e of container.querySelectorAll("a")) {
         try {
           const url = new URL(e.href);
