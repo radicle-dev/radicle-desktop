@@ -19,9 +19,7 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             init::startup,
-            init::node_status_events,
-            init::repo_sync_events,
-            init::node_events,
+            auth::init,
             auth::authenticate,
             repo::repo_count,
             repo::list_repos,
