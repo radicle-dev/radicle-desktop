@@ -18,24 +18,25 @@
   import { nodeRunning } from "@app/lib/events";
 
   import Border from "@app/components/Border.svelte";
+  import Changes from "@app/components/Changes.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
+  import Discussion from "@app/components/Discussion.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import VerdictBadge from "@app/components/VerdictBadge.svelte";
   import VerdictButton from "@app/components/VerdictButton.svelte";
-  import VerdictBadge from "./VerdictBadge.svelte";
-  import Discussion from "./Discussion.svelte";
 
   interface Props {
     config: Config;
     onNavigateBack: () => void;
     patchId: string;
     reload: (reviewId?: string) => Promise<void>;
+    repo: RepoInfo;
     review: Review;
     revision: Revision;
-    repo: RepoInfo;
   }
 
   const {
@@ -43,9 +44,9 @@
     onNavigateBack,
     patchId,
     reload,
+    repo,
     review,
     revision,
-    repo,
   }: Props = $props();
 
   const contributors = $derived(
@@ -348,4 +349,6 @@
     {createComment}
     {editComment}
     {reactOnComment} />
+
+  <Changes rid={repo.rid} showCommits={false} {patchId} {revision} />
 </div>
