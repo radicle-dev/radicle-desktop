@@ -26,6 +26,7 @@
   import Border from "@app/components/Border.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
+  import Discussion from "@app/components/Discussion.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
@@ -33,11 +34,11 @@
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimeline from "@app/components/IssueTimeline.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   import Layout from "./Layout.svelte";
-  import Discussion from "@app/components/Discussion.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -67,7 +68,7 @@
   let updatedTitle = $state("");
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
-  let hideTimeline = $state(false);
+  let hideTimeline = $state(true);
 
   $effect(() => {
     // The component doesn't get destroyed when we switch between different
@@ -80,7 +81,7 @@
 
     editingTitle = false;
     updatedTitle = issue.title;
-    hideTimeline = false;
+    hideTimeline = true;
   });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
@@ -512,20 +513,16 @@
       repoDelegates={repo.delegates}
       rid={repo.rid} />
 
-    <div>
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <div
-        role="button"
-        tabindex="0"
-        class="txt-semibold global-flex"
-        style:margin-bottom="1rem"
-        style:cursor="pointer"
+    <div class="global-flex">
+      <NakedButton
+        variant="ghost"
         onclick={() => (hideTimeline = !hideTimeline)}>
-        <Icon name={hideTimeline ? "chevron-right" : "chevron-down"} />Timeline
-      </div>
-      <div class:hide={hideTimeline}>
-        <IssueTimeline {activity} />
-      </div>
+        <Icon name={hideTimeline ? "chevron-right" : "chevron-down"} />
+        <div class="txt-semibold global-flex txt-regular">Timeline</div>
+      </NakedButton>
+    </div>
+    <div class:hide={hideTimeline} style:margin-top="1rem">
+      <IssueTimeline {activity} />
     </div>
   </div>
 </Layout>
