@@ -6,7 +6,7 @@
   import { tick } from "svelte";
   import partial from "lodash/partial";
 
-  import { scrollIntoView } from "@app/lib/utils";
+  import { modifierKey, scrollIntoView } from "@app/lib/utils";
 
   import Border from "./Border.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
@@ -145,7 +145,7 @@
               {submitInProgress}
               {rid}
               inline
-              placeholder="Reply to comment"
+              placeholder={`Reply to comment, Markdown is supported. Press ${modifierKey()}↵ to submit. Drag and drop files.`}
               submitCaption="Reply"
               focus
               stylePadding="0.5rem 0.75rem"

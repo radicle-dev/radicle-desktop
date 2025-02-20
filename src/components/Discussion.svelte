@@ -9,7 +9,7 @@
   import { tick } from "svelte";
 
   import * as roles from "@app/lib/roles";
-  import { scrollIntoView } from "@app/lib/utils";
+  import { modifierKey, scrollIntoView } from "@app/lib/utils";
 
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -160,6 +160,7 @@
               topLevelReplyOpen = false;
             }
           : undefined}
+        expandedPlaceholder={`Leave a comment, Markdown is supported. Press ${modifierKey()}↵ to submit. Drag and drop files.`}
         placeholder="Leave a comment"
         submit={createComment} />
     </div>

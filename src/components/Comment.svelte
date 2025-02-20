@@ -194,7 +194,7 @@
             borderVariant="ghost"
             submitInProgress={state === "submit"}
             submitCaption="Save"
-            placeholder="Leave a comment"
+            placeholder={`Leave a comment, Markdown is supported. Press ${utils.modifierKey()}↵ to submit. Drag and drop files.`}
             submit={async ({ comment, embeds }) => {
               state = "submit";
               try {

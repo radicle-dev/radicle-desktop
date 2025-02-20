@@ -2,8 +2,6 @@
   import type { UnlistenFn } from "@tauri-apps/api/event";
   import type { ComponentProps } from "svelte";
 
-  import * as utils from "@app/lib/utils";
-
   import type { Embed } from "@bindings/cob/thread/Embed";
   import { invoke } from "@app/lib/invoke";
   import { listen } from "@tauri-apps/api/event";
@@ -272,18 +270,6 @@
       <Icon name="cross" />
       <span class="global-hide-on-small-desktop-down">Discard</span>
     </OutlineButton>
-    {#if !preview}
-      <div
-        class="txt-overflow txt-small txt-missing"
-        title={`Drag and drop files to add them. Markdown is supported. Press ${utils.modifierKey()}↵ to submit.`}>
-        Drag and drop files to add them.
-        <Icon
-          name="markdown"
-          styleDisplay="inline"
-          styleVerticalAlign="text-top" />
-        Markdown is supported. Press {utils.modifierKey()}↵ to submit.
-      </div>
-    {/if}
     <div class="buttons">
       <OutlineButton variant="ghost" onclick={selectFiles} disabled={preview}>
         <Icon name="attachment" />

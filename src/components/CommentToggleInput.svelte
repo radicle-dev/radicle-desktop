@@ -7,6 +7,7 @@
   interface Props {
     rid: string;
     placeholder?: string;
+    expandedPlaceholder?: string;
     focus?: boolean;
     submit: (comment: string, embeds: Embed[]) => Promise<void>;
     onclose?: () => void;
@@ -18,6 +19,7 @@
   let {
     rid,
     placeholder,
+    expandedPlaceholder,
     focus = false,
     submit,
     onclose,
@@ -45,7 +47,7 @@
   <ExtendedTextarea
     {disallowEmptyBody}
     {rid}
-    {placeholder}
+    placeholder={expandedPlaceholder}
     submitInProgress={state === "submit"}
     {focus}
     stylePadding="0.5rem 0.75rem"
