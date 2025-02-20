@@ -103,7 +103,7 @@ export function createSummary(
   } else if (lastAction.type === "review.comment.unresolve") {
     summary = `unresolved ${count > 1 ? count : "a"} review ${pluralize("comment", count)}`;
   } else if (lastAction.type === "review.edit") {
-    summary = `edited ${count > 1 ? count : "a"} ${pluralize("review", count)}`;
+    summary = `edited review ${times(count)}`;
   } else if (lastAction.type === "review.redact") {
     summary = `redacted ${count > 1 ? count : "a"} ${pluralize("review", count)}`;
   } else if (lastAction.type === "revision.comment.react") {
