@@ -5,7 +5,6 @@
   import type { PatchStatus } from "@app/views/repo/router";
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Thread } from "@bindings/cob/thread/Thread";
-  import type { Verdict } from "@bindings/cob/patch/Verdict";
 
   import partial from "lodash/partial";
 
@@ -13,15 +12,12 @@
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
-  import { didFromPublicKey, publicKeyFromDid } from "@app/lib/utils";
+  import { publicKeyFromDid } from "@app/lib/utils";
 
-  import Button from "@app/components/Button.svelte";
   import Changes from "@app/components/Changes.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
-  import Discussion from "./Discussion.svelte";
-  import Icon from "@app/components/Icon.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
-  import ReviewTeaser from "@app/components/ReviewTeaser.svelte";
+  import Discussion from "@app/components/Discussion.svelte";
+  import Reviews from "@app/components/Reviews.svelte";
 
   interface Props {
     rid: string;
@@ -37,27 +33,6 @@
   let { rid, repoDelegates, patchId, revision, config, status, reload }: Props =
     $props();
   /* eslint-enable prefer-const */
-
-  const hasOwnReview = $derived(
-    Boolean(
-      revision.reviews &&
-        revision.reviews.some(
-          value => value.author.did === didFromPublicKey(config.publicKey),
-        ),
-    ),
-  );
-
-  let hideReviews = $state(
-    revision.reviews === undefined || revision.reviews.length === 0,
-  );
-
-  $effect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    patchId;
-
-    hideReviews =
-      revision.reviews === undefined || revision.reviews.length === 0;
-  });
 
   const commentThreads = $derived(
     ((revision.discussion &&
@@ -125,28 +100,6 @@
       });
     } catch (error) {
       console.error("Editing reactions failed", error);
-    } finally {
-      await reload();
-    }
-  }
-
-  async function createReview(verdict?: Verdict) {
-    try {
-      await invoke("edit_patch", {
-        rid: rid,
-        cobId: patchId,
-        action: {
-          type: "review",
-          revision: revision.id,
-          verdict,
-          // We need to pass an empty string to create a review without a verdict.
-          summary: "",
-          labels: [],
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Creating a review failed: ", error);
     } finally {
       await reload();
     }
@@ -238,9 +191,6 @@
     height: 100%;
     top: 0;
   }
-  .hide {
-    display: none;
-  }
 </style>
 
 <div class="txt-small patch-body">
@@ -264,56 +214,7 @@
   </CommentComponent>
 </div>
 
-<div style:margin={hideReviews ? "1.5rem 0" : "1.5rem 0 2.5rem 0"}>
-  <div class="global-flex">
-    <NakedButton
-      disabled={revision.reviews === undefined || revision.reviews.length === 0}
-      variant="ghost"
-      onclick={() => (hideReviews = !hideReviews)}>
-      <Icon name={hideReviews ? "chevron-right" : "chevron-down"} />
-      <div class="txt-semibold global-flex txt-regular">
-        Reviews <span style:font-weight="var(--font-weight-regular)">
-          {revision.reviews?.length ?? 0}
-        </span>
-      </div>
-    </NakedButton>
-
-    <div class="global-flex" style:margin-left="auto">
-      <NakedButton
-        variant="secondary"
-        disabled={hasOwnReview}
-        title={hasOwnReview ? "You already published a review" : undefined}
-        onclick={() => createReview()}>
-        <Icon name="plus" />
-        <span class="txt-small">Write Review</span>
-      </NakedButton>
-      <Button
-        variant="danger"
-        disabled={hasOwnReview}
-        title={hasOwnReview ? "You already published a review" : undefined}
-        onclick={() => createReview("reject")}>
-        <Icon name="comment-cross" />
-        <span class="txt-small">Reject</span>
-      </Button>
-      <Button
-        variant="success"
-        disabled={hasOwnReview}
-        title={hasOwnReview ? "You already published a review" : undefined}
-        onclick={() => createReview("accept")}>
-        <Icon name="comment-checkmark" />
-        <span class="txt-small">Accept</span>
-      </Button>
-    </div>
-  </div>
-
-  {#if revision.reviews && revision.reviews.length}
-    <div class:hide={hideReviews} style:margin-top="1rem">
-      {#each revision.reviews as review}
-        <ReviewTeaser {rid} {review} {patchId} {status} />
-      {/each}
-    </div>
-  {/if}
-</div>
+<Reviews {config} {patchId} {reload} {revision} {rid} {status} />
 
 <Discussion
   cobId={patchId}
