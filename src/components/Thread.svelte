@@ -65,7 +65,7 @@
   const root = $derived(thread.root);
   const replies = $derived(thread.replies);
   const style = $derived(
-    replies.length > 0
+    replies.length > 0 || showReplyForm
       ? "--local-clip-path: var(--2px-top-corner-fill)"
       : "--local-clip-path: var(--2px-corner-fill)",
   );
@@ -144,11 +144,9 @@
               disallowEmptyBody
               {submitInProgress}
               {rid}
-              inline
               placeholder="Reply to comment"
               submitCaption="Reply"
               focus
-              stylePadding="0.5rem 0.75rem"
               close={() => (showReplyForm = false)}
               submit={async ({ comment, embeds }) => {
                 try {
@@ -165,7 +163,6 @@
               }} />
           </div>
         {/if}
-        <div></div>
       </div>
     </Border>
   {/if}

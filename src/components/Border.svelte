@@ -38,7 +38,7 @@
     styleCursor = "default",
     styleGap = "0.5rem",
     styleMinWidth,
-    styleOverflow,
+    styleOverflow = "hidden",
     flatTop = false,
     flatBottom = false,
     styleBackgroundColor = "var(--color-background-default)",
