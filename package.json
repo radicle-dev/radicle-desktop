@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
-    "@playwright/test": "^1.49.1",
+    "@playwright/test": "=1.47.0",
     "@radicle/gray-matter": "4.1.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.2",
     "@tauri-apps/cli": "^2.1.0",

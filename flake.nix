@@ -76,6 +76,7 @@
             openssl,
             webkitgtk_4_1,
             git,
+            openssh,
             playwright-browsers_v1_47_0,
           }: let
             rTc = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain;
@@ -89,12 +90,17 @@
 
             src = ./.;
 
-            cargoDeps = rustPlatform.importCargoLock { lockFile = ./Cargo.lock; };
+            cargoDeps = rustPlatform.importCargoLock { 
+              lockFile = ./Cargo.lock; 
+              outputHashes = {
+                "radicle-0.14.0" = "sha256-F7pJ+yLhlRXg03A+pNXwsqNSOG3qJs6bEO9YUUXs4f0=";
+              };
+            };
 
             npmDeps = fetchNpmDeps {
               name = pname + "-npm-deps-" + version;
               inherit src;
-              hash = "sha256-CnuO8aVA87s1E03Uj8tSFDiiA7dO5m2Ww7E6C78fpkI="; # npmDepsHash : Update canary, don't touch!
+              hash = "sha256-11qBh/Lr10X5sFgM6FJOFqQYnAsnC+avkbXdABYOtTE="; # npmDepsHash : Update canary, don't touch!
             };
 
             nativeBuildInputs = [
@@ -117,7 +123,7 @@
             '';
 
             doCheck = false;
-            nativeCheckInputs = [ git ];
+            nativeCheckInputs = [ git openssh ];
 
             env = {
               HW_RELEASE = "nix-" + (heartwood.shortRev or "unknown-ref");
@@ -128,6 +134,9 @@
             };
 
             preCheck = ''
+              export RAD_HOME="$PWD/_rad-home"
+              export RAD_PASSPHRASE=""
+              rad auth --alias test
               bins="tests/tmp/bin/heartwood/$HW_RELEASE"
               mkdir -p "$bins"
               cp -t "$bins" -- ${heartwood.packages.${system}.radicle}/bin/*
@@ -135,6 +144,7 @@
             '';
 
             checkPhase = ''
+              npm run build:http
               npm run test:unit
               scripts/check-js
               scripts/check-rs
