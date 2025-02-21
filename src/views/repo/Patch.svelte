@@ -259,6 +259,16 @@
       console.error("Loading patch list failed", error);
     }
   }
+
+  function findReviewRevision(review: Review): Revision {
+    // Every review is guaranteed to have a revision according to the protocol
+    // model, so using type assertions here is safe.
+    return revisions.find(revision => {
+      return revision.reviews!.find(rev => {
+        return rev.id === review.id;
+      });
+    }) as Revision;
+  }
 </script>
 
 <style>
@@ -447,7 +457,7 @@
       {repo}
       {reload}
       {review}
-      revision={selectedRevision}
+      revision={findReviewRevision(review)}
       onNavigateBack={() => {
         review = undefined;
       }} />

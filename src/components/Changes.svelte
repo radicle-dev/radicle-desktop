@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Commit } from "@bindings/repo/Commit";
   import type { Diff } from "@bindings/diff/Diff";
+  import type { CodeComments } from "./Diff.svelte";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
   import { invoke } from "@app/lib/invoke";
@@ -17,10 +18,17 @@
     revision: Revision;
     rid: string;
     showCommits?: boolean;
+    codeComments?: CodeComments;
   }
 
   /* eslint-disable prefer-const */
-  let { patchId, revision, rid, showCommits = true }: Props = $props();
+  let {
+    patchId,
+    revision,
+    rid,
+    showCommits = true,
+    codeComments,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 
   let hideChanges = $state(false);
@@ -39,7 +47,7 @@
       options: {
         base,
         head,
-        unified: 5,
+        unified: 3,
         highlight: true,
       },
     });
@@ -144,6 +152,10 @@
   {#await loadHighlightedDiff(rid, revision.base, revision.head)}
     <span class="txt-small">Loading…</span>
   {:then diff}
-    <Changeset {diff} repoId={rid} expanded={filesExpanded} />
+    <Changeset
+      expanded={filesExpanded}
+      head={revision.head}
+      {diff}
+      {codeComments} />
   {/await}
 </div>

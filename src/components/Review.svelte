@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
+  import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
   import type { Config } from "@bindings/config/Config";
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
@@ -66,7 +67,9 @@
       review.comments
         .filter(
           comment =>
-            (comment.id !== review.id && !comment.replyTo) ||
+            (!comment.location &&
+              comment.id !== review.id &&
+              !comment.replyTo) ||
             comment.replyTo === review.id,
         )
         .map(thread => {
@@ -79,6 +82,28 @@
                 .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
           };
         }, [])) as Thread[]) || [],
+  );
+
+  const codeCommentThreads = $derived(
+    ((review.comments &&
+      review.comments
+        .filter(
+          comment =>
+            (comment.location &&
+              comment.id !== review.id &&
+              !comment.replyTo) ||
+            comment.replyTo === review.id,
+        )
+        .map(thread => {
+          return {
+            root: thread,
+            replies:
+              review.comments &&
+              review.comments
+                .filter(comment => comment.replyTo === thread.id)
+                .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
+          };
+        }, [])) as Thread<CodeLocation>[]) || [],
   );
 
   let verdict: Review["verdict"] = $state(review.verdict);
@@ -122,8 +147,8 @@
     body: string,
     embeds: Embed[],
     replyTo?: string,
+    location?: CodeLocation,
   ) {
-    console.log({ replyTo });
     try {
       await invoke("edit_patch", {
         rid: repo.rid,
@@ -134,6 +159,7 @@
           body,
           embeds,
           replyTo,
+          location,
         },
         opts: { announce: $nodeRunning && $announce },
       });
@@ -350,5 +376,18 @@
     {editComment}
     {reactOnComment} />
 
-  <Changes rid={repo.rid} showCommits={false} {patchId} {revision} />
+  <Changes
+    codeComments={{
+      config,
+      createComment,
+      editComment,
+      reactOnComment,
+      repoDelegates: repo.delegates,
+      rid: repo.rid,
+      threads: codeCommentThreads,
+    }}
+    rid={repo.rid}
+    showCommits={false}
+    {patchId}
+    {revision} />
 </div>

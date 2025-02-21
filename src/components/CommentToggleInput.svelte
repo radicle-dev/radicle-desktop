@@ -38,6 +38,7 @@
     padding: 0 0.75rem;
     font-size: var(--font-size-small);
     color: var(--color-fill-gray);
+    font-family: var(--font-family-sans-serif);
   }
 </style>
 
@@ -71,7 +72,10 @@
     variant="float"
     styleHeight="40px"
     styleWidth="100%"
-    onclick={() => {
+    onclick={e => {
+      e.preventDefault();
+      e.stopPropagation();
+
       state = "expanded";
       if (onexpand !== undefined) {
         onexpand();

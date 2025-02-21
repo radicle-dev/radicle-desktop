@@ -12,6 +12,7 @@
       | "arrow-right"
       | "arrow-right-hollow"
       | "attachment"
+      | "binary"
       | "branch"
       | "broom"
       | "broom-double"
@@ -162,6 +163,26 @@
     <path d="M4 8H5V9L4 9V8Z" />
     <path d="M5 6H11V7H5V6Z" />
     <path d="M4 7H5L5 8H4L4 7Z" />
+  {:else if name === "binary"}
+    <path d="M10 3.5H11V4.5H10V3.5Z" />
+    <path d="M11 4.5L12 4.5V5.5H11V4.5Z" />
+    <path d="M10 5.5L12 5.5V6.5H10V5.5Z" />
+    <path d="M9 5.5H10V6.5H9V5.5Z" />
+    <path d="M8 4.5H9V5.5L8 5.5V4.5Z" />
+    <path d="M8 2.5H9L9 4.5H8L8 2.5Z" />
+    <path d="M9 2.5L10 2.5V3.5H9V2.5Z" />
+    <path d="M4 13.5H12V14.5H4V13.5Z" />
+    <path d="M4 1.5H9V2.5L4 2.5V1.5Z" />
+    <path d="M13 5.5V13.5L12 13.5L12 5.5L13 5.5Z" />
+    <path d="M4 2.5L4 13.5H3L3 2.5L4 2.5Z" />
+    <path d="M5 9.5H6V11.5H5V9.5Z" />
+    <path d="M7 9.5H8V11.5H7V9.5Z" />
+    <path d="M6 11.5H7L7 12.5H6L6 11.5Z" />
+    <path d="M6 8.5H7V9.5L6 9.5L6 8.5Z" />
+    <path d="M9 9.5H10V10.5H9V9.5Z" />
+    <path d="M10 8.5H11V12.5H10V8.5Z" />
+    <path d="M5 4.5H6V5.5H5V4.5Z" />
+    <path d="M6 3.5H7V7.5H6V3.5Z" />
   {:else if name === "branch"}
     <path d="M11 5L10 5V2L13 2V5L12 5V8L11 8V5ZM11 3H12V4H11V3Z" />
     <path

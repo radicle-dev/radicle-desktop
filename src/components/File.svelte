@@ -7,14 +7,21 @@
   import NakedButton from "./NakedButton.svelte";
 
   interface Props {
-    sticky?: boolean;
-    leftHeader: Snippet;
     children: Snippet;
     expanded: boolean;
+    leftHeader: Snippet;
+    rightHeader?: Snippet;
+    sticky?: boolean;
   }
 
   /* eslint-disable prefer-const */
-  let { sticky = true, leftHeader, children, expanded }: Props = $props();
+  let {
+    children,
+    expanded,
+    leftHeader,
+    rightHeader,
+    sticky = true,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 
   let header: HTMLElement | undefined = $state();
@@ -91,6 +98,15 @@
     </NakedButton>
     {@render leftHeader()}
   </div>
+  {#if rightHeader}
+    <div
+      class="global-flex"
+      style:gap="1rem"
+      style:margin-left="auto"
+      style:margin-right="1rem">
+      {@render rightHeader()}
+    </div>
+  {/if}
 </div>
 
 {#if expanded}

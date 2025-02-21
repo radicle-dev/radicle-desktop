@@ -1,15 +1,17 @@
 <script lang="ts">
   import type { Diff } from "@bindings/diff/Diff";
+  import type { CodeComments } from "./Diff.svelte";
 
-  import FileDiff from "./Changeset/FileDiff.svelte";
+  import FileDiffComponent from "./FileDiff.svelte";
 
   interface Props {
+    codeComments?: CodeComments;
     diff: Diff;
-    repoId: string;
     expanded?: boolean;
+    head: string;
   }
 
-  const { diff, expanded = true }: Props = $props();
+  const { codeComments, diff, expanded = true, head }: Props = $props();
 </script>
 
 <style>
@@ -26,12 +28,7 @@
 <div class="diff-list">
   {#each diff.files as file}
     <div class="diff">
-      <FileDiff
-        {expanded}
-        filePath={"path" in file ? file.path : file.newPath}
-        oldFilePath={"oldPath" in file ? file.oldPath : undefined}
-        fileDiff={file.diff}
-        headerBadgeCaption={file.status} />
+      <FileDiffComponent {codeComments} {expanded} {file} {head} />
     </div>
   {/each}
 </div>

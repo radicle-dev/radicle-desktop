@@ -1,67 +1,67 @@
-.syntax.operator,
-.syntax.keyword\.repeat,
-.syntax.keyword {
+.global-syntax.operator,
+.global-syntax.keyword\.repeat,
+.global-syntax.keyword {
   color: var(--color-prettylights-syntax-keyword);
 }
-.syntax.type {
+.global-syntax.type {
   color: var(--color-prettylights-syntax-entity);
 }
-.syntax.property,
-.syntax.variable\.parameter {
+.global-syntax.property,
+.global-syntax.variable\.parameter {
   color: var(--color-prettylights-syntax-variable);
 }
-.syntax.punctuation\.delimiter {
+.global-syntax.punctuation\.delimiter {
 }
-.syntax.punctuation\.bracket {
+.global-syntax.punctuation\.bracket {
 }
-.syntax.attribute {
+.global-syntax.attribute {
 }
-.syntax.number,
-.syntax.constant,
-.syntax.type\.builtin,
-.syntax.constant\.builtin,
-.syntax.variable\.builtin,
-.syntax.function {
+.global-syntax.number,
+.global-syntax.constant,
+.global-syntax.type\.builtin,
+.global-syntax.constant\.builtin,
+.global-syntax.variable\.builtin,
+.global-syntax.function {
   color: var(--color-prettylights-syntax-constant);
 }
-.syntax.comment,
-.syntax.comment\.documentation {
+.global-syntax.comment,
+.global-syntax.comment\.documentation {
   color: var(--color-prettylights-syntax-comment);
 }
-.syntax.string {
+.global-syntax.string {
   color: var(--color-prettylights-syntax-string);
 }
-.syntax.string.special {
+.global-syntax.string.special {
 }
-.syntax.function\.method {
+.global-syntax.function\.method {
   color: var(--color-prettylights-syntax-entity);
 }
-.syntax.type.builtin {
+.global-syntax.type.builtin {
 }
-.syntax.punctuation.bracket {
+.global-syntax.punctuation.bracket {
 }
-.syntax.punctuation.delimiter {
+.global-syntax.punctuation.delimiter {
 }
-.syntax.punctuation.special {
+.global-syntax.punctuation.special {
 }
-.syntax.text.literal {
+.global-syntax.text.literal {
 }
-.syntax.text.title {
+.global-syntax.text.title {
 }
-.syntax.variable {
+.global-syntax.variable {
   color: var(--color-prettylights-syntax-storage-modifier-import);
 }
-.syntax.attribute {
+.global-syntax.attribute {
 }
-.syntax.label {
+.global-syntax.label {
 }
-.syntax.type {
+.global-syntax.type {
 }
-.syntax.variable.parameter {
+.global-syntax.variable.parameter {
 }
-.syntax.constructor {
+.global-syntax.constructor {
   color: var(--color-prettylights-syntax-entity);
 }
-.syntax.tag\.delimiter {
+.global-syntax.tag\.delimiter {
   color: var(--color-prettylights-syntax-keyword);
 }

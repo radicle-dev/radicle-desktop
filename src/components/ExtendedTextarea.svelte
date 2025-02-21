@@ -207,6 +207,7 @@
     gap: 1rem;
     width: 100%;
     flex: 1;
+    font-family: var(--font-family-sans-serif);
   }
   .inline {
     border: 0;

@@ -5,7 +5,7 @@
     children: Snippet;
     variant: "primary" | "secondary" | "ghost" | "float" | "danger" | "success";
     hoverable?: boolean;
-    onclick?: () => void;
+    onclick?: (e: MouseEvent) => void;
     stylePosition?: string;
     stylePadding?: string;
     styleHeight?: string;

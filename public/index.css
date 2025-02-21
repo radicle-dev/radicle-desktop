@@ -22,6 +22,11 @@ body {
   background-color: var(--color-background-default);
 }
 
+::selection {
+  background: var(--color-fill-yellow);
+  color: var(--color-foreground-black);
+}
+
 .global-oid {
   color: var(--color-foreground-emphasized);
   font-size: var(--font-size-small);
