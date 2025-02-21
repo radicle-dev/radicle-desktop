@@ -29,7 +29,7 @@ export type Action =
     review: string;
     body: string;
     location?: CodeLocation;
-    reply_to?: string;
+    replyTo?: string;
     embeds?: Array<Embed>;
   }
   | {

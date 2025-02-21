@@ -311,7 +311,7 @@
         </div>
         <div class="wrapper">
           <NodeId {...authorForNodeId(op.author)} />
-          {op.reply_to ? "replied to a comment" : "commented"} on review <Id
+          {op.replyTo ? "replied to a comment" : "commented"} on review <Id
             id={op.review}
             variant="oid" />
           <div title={absoluteTimestamp(op.timestamp)}>
