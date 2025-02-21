@@ -1,9 +1,17 @@
 <script lang="ts">
+  interface Selection {
+    startHunk: number;
+    startLine: number;
+    endHunk: number | undefined;
+    endLine: number | undefined;
+  }
+
   import type { DiffContent } from "@bindings/diff/DiffContent";
   import type { FileDiff } from "@bindings/diff/FileDiff";
   import type { Modification } from "@bindings/diff/Modification";
 
   import escape from "lodash/escape";
+  import { onDestroy, onMount } from "svelte";
 
   import File from "@app/components/File.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -23,6 +31,30 @@
     headerBadgeCaption,
     expanded,
   }: Props = $props();
+
+  let selection: Selection | undefined = $state(undefined);
+
+  onMount(() => {
+    window.addEventListener("click", deselectHandler);
+    window.addEventListener("hashchange", updateSelection);
+
+    updateSelection();
+
+    if (selection) {
+      document
+        .getElementById(
+          [filePath, "H" + selection.startHunk, "L" + selection.startLine].join(
+            "-",
+          ),
+        )
+        ?.scrollIntoView({ block: "center" });
+    }
+  });
+
+  onDestroy(() => {
+    window.removeEventListener("click", deselectHandler);
+    window.removeEventListener("hashchange", updateSelection);
+  });
 
   function lineNumberR(line: Modification): string | number {
     switch (line.type) {
@@ -64,6 +96,110 @@
         return "-";
       }
     }
+  }
+
+  function deselectHandler(e: MouseEvent) {
+    if (
+      !(
+        e.target instanceof HTMLElement &&
+        e.target.closest("[data-file-diff-select]")
+      )
+    ) {
+      updateHash("");
+    }
+  }
+
+  function updateSelection() {
+    const fragment = window.location.hash.substring(1);
+    const match = fragment.match(/(.+):H(\d+)L(\d+)(H(\d+)L(\d+))?/);
+    if (match && match[1] === filePath) {
+      selection = {
+        startHunk: parseInt(match[2]),
+        startLine: parseInt(match[3]),
+        endHunk: match[4] ? parseInt(match[5]) : undefined,
+        endLine: match[4] ? parseInt(match[6]) : undefined,
+      };
+    } else {
+      selection = undefined;
+    }
+  }
+
+  function isLineSelected(
+    selection: Selection | undefined,
+    hunkIdx: number,
+    lineIdx: number,
+  ): boolean {
+    if (!selection) {
+      return false;
+    }
+
+    if (selection.endHunk !== undefined && selection.endLine !== undefined) {
+      return (
+        hunkIdx >= selection.startHunk &&
+        hunkIdx <= selection.endHunk &&
+        (hunkIdx === selection.startHunk
+          ? lineIdx >= selection.startLine
+          : true) &&
+        (hunkIdx === selection.endHunk ? lineIdx <= selection.endLine : true)
+      );
+    } else {
+      return hunkIdx === selection.startHunk && lineIdx === selection.startLine;
+    }
+  }
+
+  function hashFromSelection(
+    hunkIdx: number,
+    lineIdx: number,
+    event: MouseEvent,
+  ): string {
+    const path = filePath;
+    // single line selection
+    if (!event.shiftKey) {
+      return path + ":H" + hunkIdx + "L" + lineIdx;
+    }
+
+    if (!selection) {
+      return "";
+    }
+
+    // range selection
+    if (hunkIdx === selection.startHunk) {
+      if (lineIdx >= selection.startLine) {
+        return `${path}:H${hunkIdx}L${selection.startLine}H${hunkIdx}L${lineIdx}`;
+      } else {
+        return `${path}:H${hunkIdx}L${lineIdx}H${hunkIdx}L${selection.startLine}`;
+      }
+    } else if (hunkIdx < selection.startHunk) {
+      return `${path}:H${hunkIdx}L${lineIdx}H${selection.startHunk}L${selection.startLine}`;
+    } else {
+      return `${path}:H${selection.startHunk}L${selection.startLine}H${hunkIdx}L${lineIdx}`;
+    }
+  }
+
+  function selectLine(hunkIdx: number, lineIdx: number, event: MouseEvent) {
+    updateHash(hashFromSelection(hunkIdx, lineIdx, event));
+  }
+
+  function updateHash(newHash: string) {
+    if (newHash !== "") {
+      window.location.hash = newHash;
+    } else {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        window.location.pathname + window.location.search,
+      );
+      selection = undefined;
+    }
+  }
+
+  function hunkHeaderSelected(selection: Selection | undefined, hunk: number) {
+    return (
+      selection &&
+      selection.endHunk !== undefined &&
+      hunk > selection.startHunk &&
+      hunk <= selection.endHunk
+    );
   }
 </script>
 
@@ -159,9 +295,9 @@
   }
 
   .diff-line-number {
+    cursor: pointer;
     font-family: var(--font-family-monospace);
     text-align: right;
-    user-select: none;
     line-height: 1.5rem;
     min-width: 3rem;
     color: var(--color-foreground-disabled);
@@ -180,7 +316,6 @@
     width: 1px;
   }
   .selection-indicator-right {
-    display: none; /* FIXME: fix the selection indicator */
     position: absolute;
     right: 0;
     top: 0;
@@ -264,7 +399,9 @@
           <table class="diff" data-file-diff-select>
             {#each fileDiff.hunks as hunk, hunkIdx}
               <!-- svelte-ignore node_invalid_placement_ssr -->
-              <tr class="diff-line hunk-header">
+              <tr
+                class="diff-line hunk-header"
+                class:selected={hunkHeaderSelected(selection, hunkIdx)}>
                 <td colspan={2} style:position="relative">
                   <div class="selection-indicator-left"></div>
                 </td>
@@ -280,14 +417,25 @@
                 <!-- svelte-ignore node_invalid_placement_ssr -->
                 <tr
                   style="position: relative;"
-                  class={`diff-line type-${line.type}`}>
+                  class={`diff-line type-${line.type}`}
+                  class:selection-start={selection?.startHunk === hunkIdx &&
+                    selection.startLine === lineIdx}
+                  class:selection-end={(selection?.endHunk === hunkIdx &&
+                    selection.endLine === lineIdx) ||
+                    (selection?.startHunk === hunkIdx &&
+                      selection.startLine === lineIdx &&
+                      selection?.endHunk === undefined)}
+                  class:selected={isLineSelected(selection, hunkIdx, lineIdx)}>
                   <td
                     id={[filePath, "H" + hunkIdx, "L" + lineIdx].join("-")}
-                    class="diff-line-number left">
+                    class="diff-line-number left"
+                    onclick={e => selectLine(hunkIdx, lineIdx, e)}>
                     <div class="selection-indicator-left"></div>
                     {lineNumberL(line)}
                   </td>
-                  <td class="diff-line-number right">
+                  <td
+                    class="diff-line-number right"
+                    onclick={e => selectLine(hunkIdx, lineIdx, e)}>
                     {lineNumberR(line)}
                   </td>
                   <td class="diff-line-type" data-line-type={line.type}>
@@ -307,7 +455,9 @@
                       {line.line}
                     {/if}
                   </td>
-                  <td class="selection-indicator-right"></td>
+                  <td style="position: relative;">
+                    <div class="selection-indicator-right"></div>
+                  </td>
                 </tr>
               {/each}
             {/each}
