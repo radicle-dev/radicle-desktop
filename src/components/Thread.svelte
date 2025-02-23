@@ -117,7 +117,7 @@
     </CommentComponent>
   </div>
   {#if replies.length > 0 || (createReply && showReplyForm)}
-    <Border variant="float" flatTop>
+    <Border variant="float" styleOverflow="hidden" flatTop>
       <div style:width="100%">
         {#if replies.length > 0}
           {#each replies as reply}
