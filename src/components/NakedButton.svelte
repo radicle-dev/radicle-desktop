@@ -4,6 +4,7 @@
   interface Props {
     children: Snippet;
     title?: string;
+    keyShortcuts?: string;
     disabled?: boolean;
     variant: "primary" | "secondary" | "ghost";
     onclick?: (e: MouseEvent) => void;
@@ -16,6 +17,7 @@
     children,
     title,
     disabled,
+    keyShortcuts,
     variant,
     onclick,
     styleHeight = "2rem",
@@ -238,6 +240,7 @@
   class:disabled
   class:active
   onclick={!disabled ? onclick : undefined}
+  aria-keyshortcuts={keyShortcuts}
   {title}
   role="button"
   tabindex="0"

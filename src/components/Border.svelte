@@ -6,6 +6,7 @@
     variant: "primary" | "secondary" | "ghost" | "float" | "danger" | "success";
     hoverable?: boolean;
     onclick?: () => void;
+    keyShortcuts?: string;
     stylePosition?: string;
     stylePadding?: string;
     styleHeight?: string;
@@ -29,6 +30,7 @@
     variant,
     hoverable = false,
     onclick,
+    keyShortcuts,
     stylePadding,
     styleHeight,
     styleMinHeight,
@@ -226,6 +228,7 @@
   {onclick}
   role="button"
   tabindex={onclick !== undefined ? 0 : -1}
+  aria-keyshortcuts={keyShortcuts}
   {style}
   style:min-height={styleMinHeight}
   style:height={styleHeight}>

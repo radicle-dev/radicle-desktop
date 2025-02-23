@@ -132,6 +132,9 @@ p {
 .txt-missing {
   color: var(--color-foreground-dim);
 }
+.txt-hotkey::first-letter {
+  text-decoration: underline;
+}
 .txt-emoji {
   height: 1em;
   width: 1em;

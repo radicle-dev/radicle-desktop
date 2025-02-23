@@ -4,6 +4,7 @@
   interface Props {
     children: Snippet;
     variant: "primary" | "secondary" | "ghost" | "success" | "danger";
+    keyShortcuts?: string;
     onclick?: () => void;
     disabled?: boolean;
     active?: boolean;
@@ -15,6 +16,7 @@
   const {
     children,
     variant,
+    keyShortcuts,
     onclick = undefined,
     disabled = false,
     active = false,
@@ -372,6 +374,7 @@
   onclick={!disabled ? onclick : undefined}
   role="button"
   tabindex="0"
+  aria-keyshortcuts={keyShortcuts}
   {title}
   {style}>
   <div class="p1-1"></div>

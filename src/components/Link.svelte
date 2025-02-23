@@ -7,6 +7,7 @@
   interface Props {
     children: Snippet;
     route: Route;
+    keyShortcuts?: string;
     disabled?: boolean;
     underline?: boolean;
     styleWidth?: string;
@@ -16,6 +17,7 @@
   const {
     children,
     route,
+    keyShortcuts,
     disabled = false,
     underline = true,
     styleWidth,
@@ -46,6 +48,7 @@
 
 <a
   onclick={navigateToRoute}
+  aria-keyshortcuts={keyShortcuts}
   href={routeToPath(route)}
   class:underline
   style:color={styleColor}

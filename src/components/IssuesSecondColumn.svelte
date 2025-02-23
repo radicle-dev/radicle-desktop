@@ -68,11 +68,15 @@
       styleGap="2px"
       styleBackgroundColor="var(--color-background-float)">
       <Link
+        keyShortcuts="i"
         styleWidth="100%"
         underline={false}
         route={{ resource: "repo.issues", rid: repo.rid, status: "all" }}>
         <div class="tab active">
-          <div class="global-flex"><Icon name="issue" />Issues</div>
+          <div class="global-flex">
+            <Icon name="issue" />
+            <span class="txt-hotkey">Issues</span>
+          </div>
           <div class="global-counter">
             {project.meta.issues.open + project.meta.issues.closed}
           </div>
@@ -82,6 +86,7 @@
       <Link
         styleWidth="100%"
         underline={false}
+        keyShortcuts="o"
         route={{
           resource: "repo.issues",
           rid: repo.rid,
@@ -91,7 +96,8 @@
           <div
             class="global-flex"
             class:open={["open", "all"].includes(status)}>
-            <Icon name="issue" />Open
+            <Icon name="issue" />
+            <span class="txt-hotkey">Open</span>
           </div>
           <div class="global-counter" class:highlight={status === "all"}>
             {project.meta.issues.open}
@@ -102,6 +108,7 @@
       <Link
         styleWidth="100%"
         underline={false}
+        keyShortcuts="c"
         route={{
           resource: "repo.issues",
           rid: repo.rid,
@@ -111,7 +118,8 @@
           <div
             class="global-flex"
             class:closed={["closed", "all"].includes(status)}>
-            <Icon name="issue-closed" />Closed
+            <Icon name="issue-closed" />
+            <span class="txt-hotkey">Closed</span>
           </div>
           <div class="global-counter" class:highlight={status === "all"}>
             {project.meta.issues.closed}
@@ -122,6 +130,7 @@
 
     <div style:margin-top="0.5rem">
       <Link
+        keyShortcuts="p"
         styleWidth="100%"
         underline={false}
         route={{ resource: "repo.patches", rid: repo.rid, status: "open" }}>
@@ -129,7 +138,10 @@
           class="tab"
           style:color="var(--color-foreground-contrast)"
           style:padding-left="12px">
-          <div class="global-flex"><Icon name="patch" />Patches</div>
+          <div class="global-flex">
+            <Icon name="patch" />
+            <span class="txt-hotkey">Patches</span>
+          </div>
           <div class="global-counter">
             {project.meta.patches.draft +
               project.meta.patches.open +

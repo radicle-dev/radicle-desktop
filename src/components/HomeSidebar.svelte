@@ -68,10 +68,14 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
+            aria-keyshortcuts="i"
             class="tab"
             class:active={!activeTab.repo}
             onclick={() => router.push({ resource: "inbox" })}>
-            <div class="global-flex"><Icon name="inbox" />Inbox</div>
+            <div class="global-flex">
+              <Icon name="inbox" />
+              <span class="txt-hotkey">Inbox</span>
+            </div>
             <div class="global-counter">
               {sum(Array.from(notificationCount.values()).map(c => c.count))}
             </div>
@@ -104,10 +108,14 @@
         <div
           class="tab"
           style:cursor="pointer"
+          aria-keyshortcuts="i"
           onclick={() => router.push({ resource: "inbox" })}
           style:color="var(--color-foreground-contrast)"
           style:padding-left="12px">
-          <div class="global-flex"><Icon name="inbox" />Inbox</div>
+          <div class="global-flex">
+            <Icon name="inbox" />
+            <span class="txt-hotkey">Inbox</span>
+          </div>
           <div class="global-counter">
             {sum(Array.from(notificationCount.values()).map(c => c.count))}
           </div>
@@ -126,9 +134,13 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="tab txt-small"
+          aria-keyshortcuts="r"
           class:active={!activeTab.filter}
           onclick={() => router.push({ resource: "home" })}>
-          <div class="global-flex"><Icon name="repo" />Repositories</div>
+          <div class="global-flex">
+            <Icon name="repo" />
+            <span class="txt-hotkey">Repositories</span>
+          </div>
           <div class="global-counter">
             {repoCount.total}
           </div>
@@ -137,6 +149,7 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="tab"
+          aria-keyshortcuts="d"
           class:active={activeTab.filter === "delegate"}
           onclick={() =>
             router.push({
@@ -145,7 +158,7 @@
             })}>
           <div class="global-flex">
             <Icon name="delegate" />
-            <div>Delegate</div>
+            <span class="txt-hotkey">Delegate</span>
           </div>
           <div class="global-counter">{repoCount.delegate}</div>
         </div>
@@ -153,6 +166,7 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="tab"
+          aria-keyshortcuts="c"
           class:active={activeTab.filter === "contributor"}
           onclick={() =>
             router.push({
@@ -161,7 +175,7 @@
             })}>
           <div class="global-flex">
             <Icon name="user" />
-            <div>Contributor</div>
+            <span class="txt-hotkey">Contributor</span>
           </div>
           <div class="global-counter">{repoCount.contributor}</div>
         </div>
@@ -169,6 +183,7 @@
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="tab"
+          aria-keyshortcuts="p"
           class:active={activeTab.filter === "private"}
           onclick={() =>
             router.push({
@@ -177,7 +192,7 @@
             })}>
           <div class="global-flex">
             <Icon name="lock" />
-            <div>Private</div>
+            <span class="txt-hotkey">Private</span>
           </div>
           <div class="global-counter">{repoCount.private}</div>
         </div>
@@ -188,6 +203,7 @@
         variant="float">
         <Link
           styleWidth="100%"
+          keyShortcuts="r"
           underline={false}
           route={{
             resource: "home",
@@ -198,7 +214,7 @@
             class="tab">
             <div class="global-flex">
               <Icon name="repo" />
-              Repositories
+              <span class="txt-hotkey">Repositories</span>
             </div>
             <div class="global-counter">
               {repoCount.total}

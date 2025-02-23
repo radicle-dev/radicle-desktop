@@ -71,12 +71,16 @@
       <Link
         styleWidth="100%"
         underline={false}
+        keyShortcuts="i"
         route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}>
         <div
           class="tab"
           style:color="var(--color-foreground-contrast)"
           style:padding-left="12px">
-          <div class="global-flex"><Icon name="issue" />Issues</div>
+          <div class="global-flex">
+            <Icon name="issue" />
+            <span class="txt-hotkey">Issues</span>
+          </div>
           <div class="global-counter">
             {project.meta.issues.open + project.meta.issues.closed}
           </div>
@@ -92,9 +96,13 @@
       <Link
         styleWidth="100%"
         underline={false}
+        keyShortcuts="p"
         route={{ resource: "repo.patches", rid: repo.rid, status: undefined }}>
         <div class="tab active">
-          <div class="global-flex"><Icon name="patch" />Patches</div>
+          <div class="global-flex">
+            <Icon name="patch" />
+            <span class="txt-hotkey">Patches</span>
+          </div>
           <div class="global-counter">
             {project.meta.patches.draft +
               project.meta.patches.open +
@@ -107,6 +115,7 @@
       <Link
         styleWidth="100%"
         underline={false}
+        keyShortcuts="o"
         route={{
           resource: "repo.patches",
           rid: repo.rid,
@@ -117,7 +126,7 @@
             class="global-flex"
             class:open={["open", undefined].includes(status)}>
             <Icon name="patch" />
-            Open
+            <span class="txt-hotkey">Open</span>
           </div>
           <div class="global-counter" class:highlight={status === undefined}>
             {project.meta.patches.open}
@@ -128,6 +137,7 @@
       <Link
         styleWidth="100%"
         underline={false}
+        keyShortcuts="m"
         route={{
           resource: "repo.patches",
           rid: repo.rid,
@@ -137,7 +147,8 @@
           <div
             class="global-flex"
             class:merged={["merged", undefined].includes(status)}>
-            <Icon name="patch-merged" />Merged
+            <Icon name="patch-merged" />
+            <span class="txt-hotkey">Merged</span>
           </div>
           <div class="global-counter" class:highlight={status === undefined}>
             {project.meta.patches.merged}
@@ -148,6 +159,7 @@
       <Link
         styleWidth="100%"
         underline={false}
+        keyShortcuts="a"
         route={{
           resource: "repo.patches",
           rid: repo.rid,
@@ -157,7 +169,8 @@
           <div
             class="global-flex"
             class:archived={["archived", undefined].includes(status)}>
-            <Icon name="patch-archived" />Archived
+            <Icon name="patch-archived" />
+            <span class="txt-hotkey">Archived</span>
           </div>
           <div class="global-counter" class:highlight={status === undefined}>
             {project.meta.patches.archived}
@@ -165,6 +178,7 @@
         </div>
       </Link>
       <Link
+        keyShortcuts="d"
         styleWidth="100%"
         underline={false}
         route={{
@@ -177,7 +191,7 @@
             class="global-flex"
             class:draft={["draft", undefined].includes(status)}>
             <Icon name="patch-draft" />
-            Draft
+            <span class="txt-hotkey">Draft</span>
           </div>
           <div class="global-counter" class:highlight={status === undefined}>
             {project.meta.patches.draft}
