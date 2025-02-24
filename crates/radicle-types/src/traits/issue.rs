@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use radicle::issue::cache::Issues as _;
 use radicle::node::Handle;
 use radicle::storage::ReadStorage;
@@ -142,7 +144,10 @@ pub trait IssuesMut: Profile {
                 issue.lifecycle(state.into(), &signer)?;
             }
             cobs::issue::Action::Assign { assignees } => {
-                issue.assign(assignees, &signer)?;
+                issue.assign(
+                    assignees.iter().map(|a| *a.did()).collect::<BTreeSet<_>>(),
+                    &signer,
+                )?;
             }
             cobs::issue::Action::Label { labels } => {
                 issue.label(labels, &signer)?;
