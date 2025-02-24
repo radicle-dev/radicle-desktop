@@ -268,7 +268,7 @@ pub trait PatchesMut: Profile {
 
         if opts.announce() {
             if let Err(e) = node.announce_refs(rid) {
-                eprintln!("Not able to announce changes: {}", e)
+                log::error!("Not able to announce changes: {}", e)
             }
         }
 

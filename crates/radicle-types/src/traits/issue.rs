@@ -115,7 +115,7 @@ pub trait IssuesMut: Profile {
 
         if opts.announce() {
             if let Err(e) = node.announce_refs(rid) {
-                eprintln!("Not able to announce changes: {}", e)
+                log::error!("Not able to announce changes: {}", e)
             }
         }
 
@@ -184,7 +184,7 @@ pub trait IssuesMut: Profile {
 
         if opts.announce() {
             if let Err(e) = node.announce_refs(rid) {
-                eprintln!("Not able to announce changes: {}", e)
+                log::error!("Not able to announce changes: {}", e)
             }
         }
 
