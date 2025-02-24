@@ -1,3 +1,4 @@
+use radicle::profile::Aliases;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -11,7 +12,7 @@ pub mod repo;
 pub mod stream;
 pub mod thread;
 
-#[derive(Debug, Clone, Serialize, TS, Deserialize)]
+#[derive(Debug, Clone, Serialize, TS, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "cob/")]
@@ -30,6 +31,14 @@ impl Author {
             alias: aliases.alias(did),
         }
     }
+
+    pub fn did(&self) -> &identity::Did {
+        &self.did
+    }
+}
+
+pub trait FromRadicleAction<A> {
+    fn from_radicle_action(value: A, aliases: &Aliases) -> Self;
 }
 
 /// Everything that can be done in the system is represented by an `Op`.

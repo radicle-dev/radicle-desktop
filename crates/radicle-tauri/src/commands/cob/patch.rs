@@ -1,4 +1,4 @@
-use radicle::patch::{Action, TYPENAME};
+use radicle::patch::TYPENAME;
 use radicle::{cob, git, identity};
 
 use radicle_types as types;
@@ -105,6 +105,6 @@ pub fn activity_by_patch(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,
     id: git::Oid,
-) -> Result<Vec<types::cobs::Operation<Action>>, Error> {
+) -> Result<Vec<types::cobs::Operation<models::patch::Action>>, Error> {
     ctx.activity_by_id(rid, &TYPENAME, id)
 }

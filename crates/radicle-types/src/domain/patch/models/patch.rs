@@ -2,15 +2,17 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
 use radicle::node::AliasStore;
+use radicle::profile::Aliases;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use radicle::cob;
 use radicle::git;
-use radicle::identity;
 use radicle::patch;
 
 use crate::cobs;
+use crate::cobs::Author;
+use crate::cobs::FromRadicleAction;
 
 #[derive(Debug, TS, Serialize)]
 #[ts(export)]
@@ -329,10 +331,7 @@ pub enum Action {
         state: patch::Lifecycle,
     },
     #[serde(rename = "assign")]
-    Assign {
-        #[ts(as = "Vec<String>")]
-        assignees: BTreeSet<identity::Did>,
-    },
+    Assign { assignees: BTreeSet<cobs::Author> },
     #[serde(rename = "merge")]
     Merge {
         #[ts(as = "String")]
@@ -511,4 +510,161 @@ pub enum Action {
         reaction: cob::Reaction,
         active: bool,
     },
+}
+
+impl FromRadicleAction<radicle::patch::Action> for Action {
+    fn from_radicle_action(value: radicle::patch::Action, aliases: &Aliases) -> Self {
+        match value {
+            radicle::patch::Action::ReviewRedact { review } => Self::ReviewRedact { review },
+            radicle::patch::Action::RevisionCommentReact {
+                revision,
+                comment,
+                reaction,
+                active,
+            } => Self::RevisionCommentReact {
+                revision,
+                comment,
+                reaction,
+                active,
+            },
+            radicle::patch::Action::RevisionCommentRedact { revision, comment } => {
+                Self::RevisionCommentRedact { revision, comment }
+            }
+            radicle::patch::Action::RevisionCommentEdit {
+                revision,
+                comment,
+                body,
+                embeds,
+            } => Self::RevisionCommentEdit {
+                revision,
+                comment,
+                body,
+                embeds: embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+            },
+            radicle::patch::Action::RevisionComment {
+                revision,
+                location,
+                body,
+                reply_to,
+                embeds,
+            } => Self::RevisionComment {
+                revision,
+                location: location.map(Into::into),
+                body,
+                reply_to,
+                embeds: embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+            },
+            radicle::patch::Action::RevisionRedact { revision } => {
+                Self::RevisionRedact { revision }
+            }
+            radicle::patch::Action::RevisionReact {
+                revision,
+                location,
+                reaction,
+                active,
+            } => Self::RevisionReact {
+                revision,
+                location: location.map(Into::into),
+                reaction,
+                active,
+            },
+            radicle::patch::Action::RevisionEdit {
+                revision,
+                description,
+                embeds,
+            } => Self::RevisionEdit {
+                revision,
+                description,
+                embeds: embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+            },
+            radicle::patch::Action::Assign { assignees } => Self::Assign {
+                assignees: assignees
+                    .iter()
+                    .map(|a| Author::new(a, aliases))
+                    .collect::<BTreeSet<_>>(),
+            },
+            radicle::patch::Action::Edit { title, target } => Self::Edit { title, target },
+            radicle::patch::Action::Label { labels } => Self::Label { labels },
+            radicle::patch::Action::Lifecycle { state } => Self::Lifecycle { state },
+            radicle::patch::Action::Merge { revision, commit } => Self::Merge { revision, commit },
+            radicle::patch::Action::Revision {
+                description,
+                base,
+                oid,
+                resolves,
+            } => Self::Revision {
+                description,
+                base,
+                oid,
+                resolves,
+            },
+
+            radicle::patch::Action::Review {
+                revision,
+                summary,
+                verdict,
+                labels,
+            } => Self::Review {
+                revision,
+                summary,
+                verdict: verdict.map(Into::into),
+                labels,
+            },
+            radicle::patch::Action::ReviewComment {
+                review,
+                body,
+                location,
+                reply_to,
+                embeds,
+            } => Self::ReviewComment {
+                review,
+                body,
+                location: location.map(Into::into),
+                reply_to,
+                embeds: embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+            },
+            radicle::patch::Action::ReviewCommentEdit {
+                review,
+                comment,
+                body,
+                embeds,
+            } => Self::ReviewCommentEdit {
+                review,
+                comment,
+                body,
+                embeds: embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+            },
+            radicle::patch::Action::ReviewCommentReact {
+                review,
+                comment,
+                reaction,
+                active,
+            } => Self::ReviewCommentReact {
+                review,
+                comment,
+                reaction,
+                active,
+            },
+            radicle::patch::Action::ReviewCommentRedact { review, comment } => {
+                Self::ReviewCommentRedact { review, comment }
+            }
+            radicle::patch::Action::ReviewCommentResolve { review, comment } => {
+                Self::ReviewCommentResolve { review, comment }
+            }
+            radicle::patch::Action::ReviewCommentUnresolve { review, comment } => {
+                Self::ReviewCommentUnresolve { review, comment }
+            }
+            radicle::patch::Action::ReviewEdit {
+                review,
+                summary,
+                verdict,
+                labels,
+            } => Self::ReviewEdit {
+                review,
+                summary,
+                verdict: verdict.map(Into::into),
+                labels,
+            },
+        }
+    }
 }

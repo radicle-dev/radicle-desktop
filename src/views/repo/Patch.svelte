@@ -157,7 +157,7 @@
         cobId: patch.id,
         action: {
           type: "assign",
-          assignees: assignees.map(a => a.did),
+          assignees,
         },
         opts: { announce: $nodeRunning && $announce },
       });

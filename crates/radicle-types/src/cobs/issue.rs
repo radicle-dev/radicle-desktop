@@ -10,6 +10,9 @@ use radicle::issue;
 
 use crate::cobs;
 
+use super::Author;
+use super::FromRadicleAction;
+
 #[derive(TS, Serialize)]
 #[ts(export)]
 #[ts(export_to = "cob/issue/")]
@@ -136,10 +139,7 @@ pub struct NewIssue {
 #[ts(export_to = "cob/issue/")]
 pub enum Action {
     #[serde(rename = "assign")]
-    Assign {
-        #[ts(as = "Vec<String>")]
-        assignees: BTreeSet<identity::Did>,
-    },
+    Assign { assignees: BTreeSet<Author> },
 
     #[serde(rename = "edit")]
     Edit { title: String },
@@ -188,4 +188,49 @@ pub enum Action {
         reaction: cob::Reaction,
         active: bool,
     },
+}
+
+impl FromRadicleAction<radicle::issue::Action> for Action {
+    fn from_radicle_action(
+        value: radicle::issue::Action,
+        aliases: &radicle::profile::Aliases,
+    ) -> Self {
+        match value {
+            radicle::issue::Action::Assign { assignees } => Self::Assign {
+                assignees: assignees
+                    .iter()
+                    .map(|a| Author::new(a, aliases))
+                    .collect::<BTreeSet<_>>(),
+            },
+            radicle::issue::Action::Comment {
+                body,
+                reply_to,
+                embeds,
+            } => Self::Comment {
+                body,
+                reply_to,
+                embeds: embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+            },
+            radicle::issue::Action::CommentEdit { id, body, embeds } => Self::CommentEdit {
+                id,
+                body,
+                embeds: embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+            },
+            radicle::issue::Action::CommentReact {
+                id,
+                reaction,
+                active,
+            } => Self::CommentReact {
+                id,
+                reaction,
+                active,
+            },
+            radicle::issue::Action::CommentRedact { id } => Self::CommentRedact { id },
+            radicle::issue::Action::Label { labels } => Self::Label { labels },
+            radicle::issue::Action::Lifecycle { state } => Self::Lifecycle {
+                state: state.into(),
+            },
+            radicle::issue::Action::Edit { title } => Self::Edit { title },
+        }
+    }
 }

@@ -2,17 +2,18 @@ use radicle::storage::ReadStorage;
 use radicle::{cob, git, identity};
 use serde::de::DeserializeOwned;
 
+use crate::cobs::FromRadicleAction;
 use crate::error::Error;
 use crate::traits::Profile;
 
 pub trait Cobs: Profile {
     #[allow(clippy::unnecessary_filter_map)]
-    fn activity_by_id<A: DeserializeOwned>(
+    fn activity_by_id<A: DeserializeOwned, B: FromRadicleAction<A>>(
         &self,
         rid: identity::RepoId,
         type_name: &cob::TypeName,
         id: git::Oid,
-    ) -> Result<Vec<crate::cobs::Operation<A>>, Error> {
+    ) -> Result<Vec<crate::cobs::Operation<B>>, Error> {
         let profile = self.profile();
         let aliases = profile.aliases();
         let repo = profile.storage.repository(rid)?;
@@ -23,7 +24,16 @@ pub trait Cobs: Profile {
                 let actions = op
                     .actions
                     .iter()
-                    .filter_map(|a| serde_json::from_slice(a).ok())
+                    .filter_map(|a| {
+                        if let Ok(r) = serde_json::from_slice::<A>(a) {
+                            let x = B::from_radicle_action(r, &aliases);
+                            Some(x)
+                        } else {
+                            log::error!("Not able to deserialize the action");
+
+                            None
+                        }
+                    })
                     .collect::<Vec<_>>();
 
                 Some(crate::cobs::Operation {

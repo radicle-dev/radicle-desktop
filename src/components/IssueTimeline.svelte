@@ -18,11 +18,9 @@
     formatTimestamp,
     issueStatusColor,
     pluralize,
-    publicKeyFromDid,
   } from "@app/lib/utils";
   import Icon from "./Icon.svelte";
   import NodeId from "./NodeId.svelte";
-  import { invoke } from "@app/lib/invoke";
   import Id from "./Id.svelte";
 
   interface Props {
@@ -66,7 +64,7 @@
     return result;
   }
 
-  function itemDiff(previousState: string[], newState: string[]) {
+  function itemDiff<A>(previousState: A[], newState: A[]) {
     const removed = previousState.filter(x => !newState.includes(x));
     const added = newState.filter(x => !previousState.includes(x));
     return { removed, added };
@@ -169,7 +167,7 @@
         <div class="wrapper">
           <NodeId {...authorForNodeId(op.author)} />
           {#if op.previous && op.previous.type === op.type}
-            {@const changed = itemDiff(
+            {@const changed = itemDiff<Author>(
               op.previous?.assignees ?? [],
               op.assignees,
             )}
@@ -177,38 +175,20 @@
               {#if changed.added.length}
                 assigned
                 {#each changed.added as assignee}
-                  {#await invoke<string | null>( "alias", { nid: publicKeyFromDid(assignee) }, ) then alias}
-                    <NodeId
-                      {...authorForNodeId({
-                        did: assignee,
-                        alias: alias ?? undefined,
-                      })} />
-                  {/await}
+                  <NodeId {...authorForNodeId(assignee)} />
                 {/each}
               {/if}
               {#if changed.removed.length}
                 unassigned
                 {#each changed.removed as assignee}
-                  {#await invoke<string | null>( "alias", { nid: publicKeyFromDid(assignee) }, ) then alias}
-                    <NodeId
-                      {...authorForNodeId({
-                        did: assignee,
-                        alias: alias ?? undefined,
-                      })} />
-                  {/await}
+                  <NodeId {...authorForNodeId(assignee)} />
                 {/each}
               {/if}
             {/if}
           {:else}
             assigned
             {#each op.assignees as assignee}
-              {#await invoke<string | null>( "alias", { nid: publicKeyFromDid(assignee) }, ) then alias}
-                <NodeId
-                  {...authorForNodeId({
-                    did: assignee,
-                    alias: alias ?? undefined,
-                  })} />
-              {/await}
+              <NodeId {...authorForNodeId(assignee)} />
             {/each}
           {/if}
           <div title={absoluteTimestamp(op.timestamp)}>

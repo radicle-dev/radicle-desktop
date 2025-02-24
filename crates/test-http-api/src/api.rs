@@ -13,10 +13,10 @@ use tower_http::cors::{self, CorsLayer};
 
 use radicle::{git, identity};
 use radicle_types as types;
-use radicle_types::cobs;
 use radicle_types::cobs::issue;
 use radicle_types::cobs::issue::NewIssue;
 use radicle_types::cobs::CobOptions;
+use radicle_types::cobs::{self, FromRadicleAction};
 use radicle_types::domain::inbox::models::notification::NotificationCount;
 use radicle_types::domain::patch::models;
 use radicle_types::domain::patch::service::Service;
@@ -71,11 +71,11 @@ pub fn router(ctx: Context) -> Router {
         .route("/diff_stats", post(diff_stats_handler))
         .route(
             "/activity_by_issue",
-            post(activity_issue_handler::<issue::Action>),
+            post(activity_issue_handler::<radicle::issue::Action, issue::Action>),
         )
         .route(
             "/activity_by_patch",
-            post(activity_patch_handler::<models::patch::Action>),
+            post(activity_patch_handler::<radicle::patch::Action, models::patch::Action>),
         )
         .route("/get_diff", post(diff_handler))
         .route("/list_issues", post(issues_handler))
@@ -259,20 +259,26 @@ struct ActivityBody {
     pub id: git::Oid,
 }
 
-async fn activity_issue_handler<A: serde::Serialize + serde::de::DeserializeOwned>(
+async fn activity_issue_handler<
+    A: serde::Serialize + serde::de::DeserializeOwned,
+    B: FromRadicleAction<A> + serde::Serialize,
+>(
     State(ctx): State<Context>,
     Json(ActivityBody { rid, id }): Json<ActivityBody>,
 ) -> impl IntoResponse {
-    let activity = ctx.activity_by_id::<A>(rid, &radicle::cob::issue::TYPENAME, id)?;
+    let activity = ctx.activity_by_id::<A, B>(rid, &radicle::cob::issue::TYPENAME, id)?;
 
     Ok::<_, Error>(Json(activity))
 }
 
-async fn activity_patch_handler<A: serde::Serialize + serde::de::DeserializeOwned>(
+async fn activity_patch_handler<
+    A: serde::Serialize + serde::de::DeserializeOwned,
+    B: FromRadicleAction<A> + serde::Serialize,
+>(
     State(ctx): State<Context>,
     Json(ActivityBody { rid, id }): Json<ActivityBody>,
 ) -> impl IntoResponse {
-    let activity = ctx.activity_by_id::<A>(rid, &radicle::cob::patch::TYPENAME, id)?;
+    let activity = ctx.activity_by_id::<A, B>(rid, &radicle::cob::patch::TYPENAME, id)?;
 
     Ok::<_, Error>(Json(activity))
 }

@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use radicle::node::Handle;
 use radicle::patch::cache::Patches as _;
 use radicle::storage::ReadStorage;
@@ -198,7 +200,10 @@ pub trait PatchesMut: Profile {
                 patch.lifecycle(state, &signer)?;
             }
             models::patch::Action::Assign { assignees } => {
-                patch.assign(assignees, &signer)?;
+                patch.assign(
+                    assignees.iter().map(|a| *a.did()).collect::<BTreeSet<_>>(),
+                    &signer,
+                )?;
             }
             models::patch::Action::Label { labels } => {
                 patch.label(labels, &signer)?;

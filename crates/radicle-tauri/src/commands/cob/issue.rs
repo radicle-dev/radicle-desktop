@@ -1,7 +1,7 @@
 use radicle::git;
 use radicle::identity;
 
-use radicle::issue::{Action, TYPENAME};
+use radicle::issue::TYPENAME;
 use radicle_types as types;
 use radicle_types::error::Error;
 use radicle_types::traits::cobs::Cobs;
@@ -63,6 +63,6 @@ pub fn activity_by_issue(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,
     id: git::Oid,
-) -> Result<Vec<types::cobs::Operation<Action>>, Error> {
+) -> Result<Vec<types::cobs::Operation<types::cobs::issue::Action>>, Error> {
     ctx.activity_by_id(rid, &TYPENAME, id)
 }
