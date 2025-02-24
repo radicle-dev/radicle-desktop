@@ -217,8 +217,6 @@ where
                                 }
                                 Err(err) => return Some(Err(err)),
                             }
-                            log::trace!(target: "radicle", "Iterating over commit {}", commit.id());
-                            log::trace!(target: "radicle", "Iterating over tree {}", tree.id());
 
                             let entry = self.repo.load(commit.id().into()).ok()?;
                             let op = Op::from(entry);
@@ -338,7 +336,6 @@ fn action<A>(
 where
     A: for<'de> Deserialize<'de>,
 {
-    log::trace!(target: "radicle", "Deserializing action {}", blob.id());
     let action = json::from_slice::<A>(blob.content())
         .map_err(|err| error::Action::new(blob.id().into(), err))?;
 
