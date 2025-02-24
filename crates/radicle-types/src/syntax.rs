@@ -188,7 +188,6 @@ impl Builder {
         for event in highlights {
             match event? {
                 ts::HighlightEvent::Source { start, end } => {
-                    println!("highlightEvent::source {start} {end}");
                     for (i, byte) in code.iter().enumerate().skip(start).take(end - start) {
                         if *byte == b'\n' {
                             self.advance();
@@ -208,7 +207,6 @@ impl Builder {
                 }
                 ts::HighlightEvent::HighlightStart(h) => {
                     let name = HIGHLIGHTS[h.0];
-                    println!("highlightEvent::HighlightStart {name}");
 
                     self.advance();
                     self.styles.push(name.to_string());
@@ -282,7 +280,6 @@ impl Highlighter {
             let Ok(code) = std::str::from_utf8(code) else {
                 return Err(ts::Error::Unknown);
             };
-            println!("Not able to detect language?");
             return Ok(code.lines().map(Line::new).collect());
         };
 
@@ -291,7 +288,6 @@ impl Highlighter {
             let Ok(code) = std::str::from_utf8(code) else {
                 return Err(ts::Error::Unknown);
             };
-            println!("Not found a configuration?");
             return Ok(code.lines().map(Line::new).collect());
         };
 
