@@ -1,12 +1,12 @@
 use std::collections::BTreeSet;
 
-use radicle::node::AliasStore;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use radicle::cob;
 use radicle::identity;
 use radicle::issue;
+use radicle::node::AliasStore;
 
 use crate::cobs;
 

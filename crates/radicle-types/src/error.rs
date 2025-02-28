@@ -1,6 +1,8 @@
 use axum::body::Body;
 use axum::http::{Response, StatusCode};
 use axum::response::IntoResponse;
+use radicle::crypto::ssh::keystore::MemorySignerError;
+use radicle::identity::PayloadError;
 use serde::Serialize;
 
 use crate::cobs::stream;
@@ -17,9 +19,33 @@ pub enum Error {
         #[from] crate::domain::inbox::models::notification::ListNotificationsError,
     ),
 
+    /// MemorySigner error.
+    #[error(transparent)]
+    MemorySignerError(#[from] MemorySignerError),
+
+    /// Runtime error.
+    #[error(transparent)]
+    RuntimeError(#[from] radicle_node::runtime::Error),
+
+    /// Config error.
+    #[error(transparent)]
+    ConfigError(#[from] radicle::profile::ConfigError),
+
     /// CobStore error.
     #[error(transparent)]
     ListPatchesError(#[from] crate::domain::patch::models::patch::ListPatchesError),
+
+    /// Project error.
+    #[error(transparent)]
+    ProjectError(#[from] radicle::rad::InitError),
+
+    /// Project error.
+    #[error(transparent)]
+    PayloadError(#[from] PayloadError),
+
+    /// GitRefFormat error.
+    #[error(transparent)]
+    GitRefFormat(#[from] radicle::git::fmt::Error),
 
     /// CobStore error.
     #[error(transparent)]

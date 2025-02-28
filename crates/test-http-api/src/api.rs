@@ -108,7 +108,7 @@ async fn config_handler(State(ctx): State<Context>) -> impl IntoResponse {
 }
 
 async fn auth_handler(State(ctx): State<Context>) -> impl IntoResponse {
-    ctx.authenticate()?;
+    ctx.authenticate(Some("asdf".to_owned()))?;
 
     Ok::<_, Error>(Json(()))
 }

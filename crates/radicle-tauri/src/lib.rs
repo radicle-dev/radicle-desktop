@@ -2,7 +2,7 @@ mod commands;
 
 use radicle_types::AppState;
 
-use commands::{auth, cob, diff, inbox, init, profile, repo, thread};
+use commands::{auth, cob, diff, inbox, init, node, profile, repo, thread};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -19,6 +19,11 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             init::startup,
+            repo::create_repo,
+            node::connect_node,
+            node::fetch_repo,
+            node::start_node,
+            node::stop_node,
             auth::init,
             auth::authenticate,
             repo::repo_count,

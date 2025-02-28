@@ -17,10 +17,13 @@ tauri-build = { version = "2.0.1", features = ["isolation"] }
 [dependencies]
 anyhow = { version = "1.0.90" }
 base64 = { version = "0.22.1" }
+crossbeam-channel = { version = "0.5.14" }
 log = { version = "0.4.22" }
 radicle = { git = "https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git", package = "radicle", rev = "7c902b6905724345ba850eb6cca8f8becc9a9c72" }
-radicle-types = { version = "0.1.0", path = "../radicle-types" }
+radicle-node = { git = "https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git", package = "radicle-node", rev = "7c902b6905724345ba850eb6cca8f8becc9a9c72" }
+radicle-signals = { git = "https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git", package = "radicle-signals", rev = "7c902b6905724345ba850eb6cca8f8becc9a9c72" }
 radicle-surf = { version = "0.22.1", features = ["serde"] }
+radicle-types = { version = "0.1.0", path = "../radicle-types" }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_json = { version = "1.0.132" }
 tauri = { version = "2.2.5", features = ["isolation"] }

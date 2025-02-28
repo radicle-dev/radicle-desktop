@@ -3,6 +3,7 @@ pub mod cob;
 pub mod diff;
 pub mod inbox;
 pub mod init;
+pub mod node;
 pub mod profile;
 pub mod repo;
 pub mod thread;
