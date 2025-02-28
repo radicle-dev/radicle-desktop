@@ -43,6 +43,7 @@
       | "lock"
       | "markdown"
       | "moon"
+      | "more-horizontal"
       | "more-vertical"
       | "none"
       | "offline"
@@ -690,6 +691,10 @@
     <path d="M11 4H12V7H11V4Z" />
     <path d="M10 5H13V6H10V5Z" />
     <path d="M9 3H10V4H9V3Z" />
+  {:else if name === "more-horizontal"}
+    <path d="M2 7H4V9H2L2 7Z" />
+    <path d="M7 7H9V9H7V7Z" />
+    <path d="M12 7L14 7V9H12V7Z" />
   {:else if name === "more-vertical"}
     <path d="M9 2V4L7 4L7 2L9 2Z" />
     <path d="M9 7L9 9H7L7 7H9Z" />
