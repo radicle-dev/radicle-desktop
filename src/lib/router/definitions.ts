@@ -29,14 +29,6 @@ interface BootingRoute {
   resource: "booting";
 }
 
-interface AuthenticationErrorRoute {
-  resource: "authenticationError";
-  params: {
-    error: string;
-    hint?: string;
-  };
-}
-
 interface HomeRoute {
   resource: "home";
   activeTab?: HomeReposTab;
@@ -76,15 +68,9 @@ interface LoadedHomeRoute {
   };
 }
 
-export type Route =
-  | AuthenticationErrorRoute
-  | InboxRoute
-  | BootingRoute
-  | HomeRoute
-  | RepoRoute;
+export type Route = InboxRoute | BootingRoute | HomeRoute | RepoRoute;
 
 export type LoadedRoute =
-  | AuthenticationErrorRoute
   | LoadedInboxRoute
   | BootingRoute
   | LoadedHomeRoute
