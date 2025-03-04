@@ -14,7 +14,6 @@
   import { theme } from "@app/components/ThemeSwitch.svelte";
   import { unreachable } from "@app/lib/utils";
 
-  import AuthenticationError from "@app/views/AuthenticationError.svelte";
   import CreateIssue from "@app/views/repo/CreateIssue.svelte";
   import Inbox from "./views/home/Inbox.svelte";
   import Issue from "@app/views/repo/Issue.svelte";
@@ -93,10 +92,7 @@
 </script>
 
 {#if $activeRouteStore.resource === "booting"}
-  {#if error && typeof error === "object" && "err" in error && typeof error.err === "string"}
-    <AuthenticationError error={error.err} />
   {/if}
-  <!-- Don't show anything -->
 {:else if $activeRouteStore.resource === "home"}
   <Repos {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "inbox"}
@@ -111,8 +107,6 @@
   <Patch {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.patches"}
   <Patches {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "authenticationError"}
-  <AuthenticationError {...$activeRouteStore.params} />
 {:else}
   {unreachable($activeRouteStore)}
 {/if}

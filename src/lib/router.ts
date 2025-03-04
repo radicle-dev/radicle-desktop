@@ -113,9 +113,6 @@ function urlToRoute(url: URL): Route | null {
     case "repos": {
       return repoUrlToRoute(segments, url.searchParams);
     }
-    case "authenticationError": {
-      return { resource: "authenticationError", params: { error: "" } };
-    }
     default: {
       return null;
     }
@@ -127,8 +124,6 @@ export function routeToPath(route: Route): string {
     return "/";
   } else if (route.resource === "inbox") {
     return "/inbox";
-  } else if (route.resource === "authenticationError") {
-    return "/authenticationError";
   } else if (
     route.resource === "repo.createIssue" ||
     route.resource === "repo.issue" ||
