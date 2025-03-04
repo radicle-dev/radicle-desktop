@@ -2,32 +2,72 @@ use axum::body::Body;
 use axum::http::{Response, StatusCode};
 use axum::response::IntoResponse;
 use serde::Serialize;
+use strum::{AsRefStr, EnumDiscriminants};
+use ts_rs::TS;
 
 use crate::cobs::stream;
 
-#[derive(Debug, thiserror::Error)]
+pub mod auth;
+pub mod cob;
+pub mod crypto;
+pub mod fs;
+pub mod git;
+pub mod inbox;
+pub mod node;
+pub mod repo;
+
+#[derive(Debug, AsRefStr, EnumDiscriminants, thiserror::Error)]
+#[strum_discriminants(derive(TS))]
+#[strum_discriminants(ts(export))]
+#[strum_discriminants(ts(export_to = "error/"))]
 pub enum Error {
+    /// Embeds error.
+    #[error(transparent)]
+    EmbedsError(#[from] fs::EmbedsError),
+
+    /// Git error.
+    #[error(transparent)]
+    GitError(#[from] git::GitError),
+
+    /// Node error.
+    #[error(transparent)]
+    NodeError(#[from] node::NodeError),
+
+    /// Identity error.
+    #[error(transparent)]
+    IdentityError(#[from] auth::IdentityError),
+
+    /// Repo error.
+    #[error(transparent)]
+    RepoError(#[from] repo::RepoError),
+
+    /// Issue Cob error.
+    #[error(transparent)]
+    IssueError(#[from] cob::IssueError),
+
+    /// Patch Cob error.
+    #[error(transparent)]
+    PatchError(#[from] cob::PatchError),
+
+    /// Issue Cob error.
+    #[error(transparent)]
+    CryptoError(#[from] crypto::CryptoError),
+
+    /// Inbox error.
+    #[error(transparent)]
+    InboxError(#[from] inbox::InboxError),
+
     /// Profile error.
     #[error(transparent)]
-    Profile(#[from] radicle::profile::Error),
+    ProfileError(#[from] radicle::profile::Error),
 
-    /// List notification error.
+    /// Config error.
     #[error(transparent)]
-    ListNotificationsError(
-        #[from] crate::domain::inbox::models::notification::ListNotificationsError,
-    ),
-
-    /// CobStore error.
-    #[error(transparent)]
-    ListPatchesError(#[from] crate::domain::patch::models::patch::ListPatchesError),
+    ConfigError(#[from] radicle::profile::ConfigError),
 
     /// CobStore error.
     #[error(transparent)]
     CobStore(#[from] radicle::cob::store::Error),
-
-    /// Anyhow error.
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
 
     /// Io error.
     #[error(transparent)]
@@ -45,18 +85,6 @@ pub enum Error {
     #[error(transparent)]
     CobStream(#[from] stream::error::Stream),
 
-    /// Inbox error.
-    #[error(transparent)]
-    Inbox(#[from] radicle::node::notifications::Error),
-
-    /// Crypto error.
-    #[error(transparent)]
-    Crypto(#[from] radicle::crypto::ssh::keystore::Error),
-
-    /// SSH Agent error.
-    #[error(transparent)]
-    Agent(#[from] radicle::crypto::ssh::agent::Error),
-
     /// Node database error.
     #[error(transparent)]
     Database(#[from] radicle::node::db::Error),
@@ -65,71 +93,21 @@ pub enum Error {
     #[error(transparent)]
     Repository(#[from] radicle::storage::RepositoryError),
 
-    /// Policy store error.
-    #[error(transparent)]
-    PolicyStore(#[from] radicle::node::policy::store::Error),
-
-    /// Cob patch cache error.
-    #[error(transparent)]
-    CachePatch(#[from] radicle::cob::patch::cache::Error),
-
-    /// Diff error.
-    #[error(transparent)]
-    Diff(#[from] radicle_surf::diff::git::error::Diff),
-
     /// Storage error.
     #[error(transparent)]
     Storage(#[from] radicle::storage::Error),
-
-    /// Radicle Git error.
-    #[error(transparent)]
-    Git(#[from] radicle::git::Error),
-
-    /// Surf error.
-    #[error(transparent)]
-    Surf(#[from] radicle_surf::Error),
-
-    /// Git2 error.
-    #[error(transparent)]
-    Git2(#[from] radicle::git::raw::Error),
-
-    /// Cob issue cache error.
-    #[error(transparent)]
-    CacheIssue(#[from] radicle::cob::issue::cache::Error),
-
-    /// Patch error.
-    #[error(transparent)]
-    Patch(#[from] radicle::patch::Error),
-
-    /// Issue error.
-    #[error(transparent)]
-    Issue(#[from] radicle::issue::Error),
-
-    /// Node error.
-    #[error(transparent)]
-    Node(#[from] radicle::node::Error),
-
-    /// An error with a hint.
-    #[error("{err} {hint}")]
-    WithHint {
-        err: anyhow::Error,
-        hint: &'static str,
-    },
 
     /// Serde JSON error.
     #[error(transparent)]
     SerdeJSON(#[from] serde_json::error::Error),
 }
 
-#[derive(Serialize)]
-struct ErrorWrapperWithHint {
-    err: String,
-    hint: String,
-}
-
-#[derive(Serialize)]
-struct ErrorWrapper {
-    err: String,
+#[derive(Serialize, TS, Debug)]
+#[ts(export)]
+#[ts(export_to = "error/")]
+pub struct ErrorWrapper {
+    r#type: String,
+    message: String,
 }
 
 impl Serialize for Error {
@@ -137,17 +115,23 @@ impl Serialize for Error {
     where
         S: serde::ser::Serializer,
     {
-        match self {
-            Error::WithHint { err, hint } => ErrorWrapperWithHint {
-                err: err.to_string(),
-                hint: hint.to_string(),
-            }
-            .serialize(serializer),
-            err => ErrorWrapper {
-                err: err.to_string(),
-            }
-            .serialize(serializer),
+        let error_type = match self {
+            Error::NodeError(error) => format!("{}.{}", self.as_ref(), error.as_ref()),
+            Error::IdentityError(error) => format!("{}.{}", self.as_ref(), error.as_ref()),
+            Error::GitError(error) => format!("{}.{}", self.as_ref(), error.as_ref()),
+            Error::EmbedsError(error) => format!("{}.{}", self.as_ref(), error.as_ref()),
+            Error::RepoError(error) => format!("{}.{}", self.as_ref(), error.as_ref()),
+            Error::IssueError(error) => format!("{}.{}", self.as_ref(), error.as_ref()),
+            Error::PatchError(error) => format!("{}.{}", self.as_ref(), error.as_ref()),
+            Error::InboxError(error) => format!("{}.{}", self.as_ref(), error.as_ref()),
+            _ => self.as_ref().to_string(),
+        };
+
+        ErrorWrapper {
+            r#type: error_type,
+            message: self.to_string(),
         }
+        .serialize(serializer)
     }
 }
 
@@ -164,14 +148,15 @@ impl IntoResponse for Error {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod test {
-    use super::Error;
-    use anyhow::anyhow;
+    use crate::error::{auth::IdentityError, Error};
 
     #[test]
-    fn serialize_errors() {
-        assert_eq!(serde_json::to_string(&Error::WithHint {
-            err: anyhow!("Not able to find your keys in the ssh agent"),
-            hint: "Make sure to run <code>rad auth</code> in your terminal to add your keys to the ssh-agent.",
-        }).unwrap(),"{\"err\":\"Not able to find your keys in the ssh agent\",\"hint\":\"Make sure to run <code>rad auth</code> in your terminal to add your keys to the ssh-agent.\"}");
+    fn serialize_nested_errors() {
+        let serialized =
+            serde_json::to_string(&Error::IdentityError(IdentityError::InvalidPassphrase)).unwrap();
+        assert_eq!(
+            serialized,
+            "{\"type\":\"IdentityError.InvalidPassphrase\",\"message\":\"invalid passphrase\"}"
+        );
     }
 }

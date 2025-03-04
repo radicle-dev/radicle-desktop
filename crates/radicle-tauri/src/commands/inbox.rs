@@ -7,6 +7,7 @@ use radicle::patch::cache::Patches;
 use radicle::storage::{ReadRepository, ReadStorage};
 use radicle::{git, identity};
 
+use radicle_types as types;
 use radicle_types::cobs::PaginatedQuery;
 use radicle_types::domain::inbox::models::notification;
 use radicle_types::domain::inbox::service::Service;
@@ -29,7 +30,9 @@ pub fn list_notifications(
     let cursor = params.skip.unwrap_or(0);
     let take = params.take.unwrap_or(20);
 
-    let all = sqlite_service.repo_group(params.clone())?;
+    let all = sqlite_service
+        .repo_group(params.clone())
+        .map_err(types::error::inbox::InboxError::ListNotificationsError)?;
     let more = cursor + take < all.len();
     let repo = profile.storage.repository(params.repo)?;
     let patches = profile.patches(&repo)?;
@@ -143,7 +146,8 @@ pub fn count_notifications_by_repo(
 ) -> Result<BTreeMap<identity::RepoId, notification::NotificationCount>, Error> {
     let profile = &ctx.profile;
     let result = inbox
-        .counts_by_repo()?
+        .counts_by_repo()
+        .map_err(types::error::inbox::InboxError::ListNotificationsError)?
         .filter_map(|s| {
             let (rid, count) = s.ok()?;
             let repo = profile.storage.repository(rid).ok()?;
@@ -170,11 +174,19 @@ pub fn clear_notifications(
     params: notification::SetStatusNotifications,
 ) -> Result<(), Error> {
     let profile = &ctx.profile;
-    let mut notifications = profile.notifications_mut()?;
+    let mut notifications = profile
+        .notifications_mut()
+        .map_err(types::error::inbox::InboxError::Inbox)?;
     match params {
-        notification::SetStatusNotifications::Ids(ids) => notifications.clear(&ids)?,
-        notification::SetStatusNotifications::Repo(repo) => notifications.clear_by_repo(&repo)?,
-        notification::SetStatusNotifications::All => notifications.clear_all()?,
+        notification::SetStatusNotifications::Ids(ids) => notifications
+            .clear(&ids)
+            .map_err(types::error::inbox::InboxError::Inbox)?,
+        notification::SetStatusNotifications::Repo(repo) => notifications
+            .clear_by_repo(&repo)
+            .map_err(types::error::inbox::InboxError::Inbox)?,
+        notification::SetStatusNotifications::All => notifications
+            .clear_all()
+            .map_err(types::error::inbox::InboxError::Inbox)?,
     };
 
     Ok(())

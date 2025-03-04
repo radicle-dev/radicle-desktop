@@ -9,6 +9,7 @@ use radicle::storage;
 use radicle::storage::{ReadRepository, ReadStorage, RepositoryInfo};
 use radicle::{git, identity};
 
+use crate as types;
 use crate::cobs;
 use crate::diff::Diff;
 use crate::error::Error;
@@ -30,7 +31,9 @@ pub trait Repo: Profile {
     fn list_repos(&self, show: Show) -> Result<Vec<repo::RepoInfo>, Error> {
         let profile = self.profile();
         let storage = &profile.storage;
-        let policies = profile.policies()?;
+        let policies = profile
+            .policies()
+            .map_err(types::error::node::NodeError::PolicyStore)?;
         let repos = storage.repositories()?;
         let mut entries = Vec::new();
 
@@ -39,7 +42,11 @@ pub trait Repo: Profile {
                 continue;
             }
 
-            if !policies.is_seeding(&rid)? && show == Show::Seeded {
+            if !policies
+                .is_seeding(&rid)
+                .map_err(types::error::node::NodeError::PolicyStore)?
+                && show == Show::Seeded
+            {
                 continue;
             }
 
@@ -65,7 +72,9 @@ pub trait Repo: Profile {
     fn repo_count(&self) -> Result<repo::RepoCount, Error> {
         let profile = self.profile();
         let storage = &profile.storage;
-        let policies = profile.policies()?;
+        let policies = profile
+            .policies()
+            .map_err(types::error::node::NodeError::PolicyStore)?;
         let repos = storage.repositories()?;
         let mut total = 0;
         let mut delegate = 0;
@@ -75,7 +84,10 @@ pub trait Repo: Profile {
 
         for RepositoryInfo { rid, doc, refs, .. } in repos {
             total += 1;
-            if policies.is_seeding(&rid)? {
+            if policies
+                .is_seeding(&rid)
+                .map_err(types::error::node::NodeError::PolicyStore)?
+            {
                 seeding += 1;
             }
 
@@ -118,13 +130,18 @@ pub trait Repo: Profile {
         head: git::Oid,
     ) -> Result<cobs::Stats, Error> {
         let profile = self.profile();
-        let repo = radicle_surf::Repository::open(storage::git::paths::repository(
-            &profile.storage,
-            &rid,
-        ))?;
-        let base = repo.commit(base)?;
-        let commit = repo.commit(head)?;
-        let diff = repo.diff(base.id, commit.id)?;
+        let repo =
+            radicle_surf::Repository::open(storage::git::paths::repository(&profile.storage, &rid))
+                .map_err(types::error::git::GitError::Surf)?;
+        let base = repo
+            .commit(base)
+            .map_err(types::error::git::GitError::Surf)?;
+        let commit = repo
+            .commit(head)
+            .map_err(types::error::git::GitError::Surf)?;
+        let diff = repo
+            .diff(base.id, commit.id)
+            .map_err(types::error::git::GitError::Surf)?;
         let stats = diff.stats();
 
         Ok::<_, Error>(cobs::Stats::new(stats))
@@ -145,7 +162,9 @@ pub trait Repo: Profile {
         let db = profile.database()?;
         let seeding = db.count(&repo.id).unwrap_or_default();
         let (_, head) = repo.head()?;
-        let commit = repo.commit(head)?;
+        let commit = repo
+            .commit(head)
+            .map_err(types::error::git::GitError::Git)?;
         let project = doc
             .payload()
             .get(&doc::PayloadId::project())
@@ -181,8 +200,12 @@ pub trait Repo: Profile {
         let highlight = options.highlight.unwrap_or(true);
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?.backend;
-        let base = repo.find_commit(*options.base)?;
-        let head = repo.find_commit(*options.head)?;
+        let base = repo
+            .find_commit(*options.base)
+            .map_err(types::error::git::GitError::Git2)?;
+        let head = repo
+            .find_commit(*options.head)
+            .map_err(types::error::git::GitError::Git2)?;
 
         let mut opts = git::raw::DiffOptions::new();
         opts.patience(true).minimal(true).context_lines(unified);
@@ -191,12 +214,15 @@ pub trait Repo: Profile {
         find_opts.exact_match_only(true);
         find_opts.all(true);
 
-        let left = base.tree()?;
-        let right = head.tree()?;
+        let left = base.tree().map_err(types::error::git::GitError::Git2)?;
+        let right = head.tree().map_err(types::error::git::GitError::Git2)?;
 
-        let mut diff = repo.diff_tree_to_tree(Some(&left), Some(&right), Some(&mut opts))?;
-        diff.find_similar(Some(&mut find_opts))?;
-        let diff = surf::diff::Diff::try_from(diff)?;
+        let mut diff = repo
+            .diff_tree_to_tree(Some(&left), Some(&right), Some(&mut opts))
+            .map_err(types::error::git::GitError::Git2)?;
+        diff.find_similar(Some(&mut find_opts))
+            .map_err(types::error::git::GitError::Git2)?;
+        let diff = surf::diff::Diff::try_from(diff).map_err(types::error::git::GitError::Diff)?;
 
         if highlight {
             let mut hi = Highlighter::new();
@@ -216,8 +242,11 @@ pub trait Repo: Profile {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
 
-        let repo = surf::Repository::open(repo.path())?;
-        let history = repo.history(&head)?;
+        let repo =
+            surf::Repository::open(repo.path()).map_err(types::error::git::GitError::Surf)?;
+        let history = repo
+            .history(&head)
+            .map_err(types::error::git::GitError::Surf)?;
 
         let commits = history
             .take_while(|c| {

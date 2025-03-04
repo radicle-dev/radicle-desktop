@@ -108,7 +108,7 @@ async fn config_handler(State(ctx): State<Context>) -> impl IntoResponse {
 }
 
 async fn auth_handler(State(ctx): State<Context>) -> impl IntoResponse {
-    ctx.authenticate()?;
+    ctx.authenticate(Some("asdf".to_owned()))?;
 
     Ok::<_, Error>(Json(()))
 }
@@ -355,10 +355,15 @@ async fn patches_handler(
     let take = take.unwrap_or(20);
     let aliases = profile.aliases();
     let patches = match status {
-        None => ctx.patches.list(rid)?.collect::<Vec<_>>(),
+        None => ctx
+            .patches
+            .list(rid)
+            .map_err(types::error::cob::PatchError::ListPatchesError)?
+            .collect::<Vec<_>>(),
         Some(s) => ctx
             .patches
-            .list_by_status(rid, s.into())?
+            .list_by_status(rid, s.into())
+            .map_err(types::error::cob::PatchError::ListPatchesError)?
             .collect::<Vec<_>>(),
     };
     let more = cursor + take < patches.len();

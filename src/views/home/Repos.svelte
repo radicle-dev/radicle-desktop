@@ -7,13 +7,13 @@
 
   import * as router from "@app/lib/router";
   import { didFromPublicKey } from "@app/lib/utils";
+  import { invoke } from "@app/lib/invoke";
 
   import CopyableId from "@app/components/CopyableId.svelte";
   import HomeSidebar from "@app/components/HomeSidebar.svelte";
   import Layout from "@app/views/repo/Layout.svelte";
+  import Onboarding from "@app/views/home/Onboarding.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
-  import Border from "@app/components/Border.svelte";
-  import Icon from "@app/components/Icon.svelte";
 
   interface Props {
     activeTab?: HomeReposTab;
@@ -24,9 +24,25 @@
   }
 
   /* eslint-disable prefer-const */
-  let { config, repos, notificationCount, repoCount, activeTab }: Props =
+  let {
+    config,
+    repos: initialRepos,
+    notificationCount,
+    repoCount,
+    activeTab,
+  }: Props =
     /* eslint-enable prefer-const */
     $props();
+
+  let repos = $state(initialRepos);
+
+  async function reload() {
+    [repos, repoCount, config] = await Promise.all([
+      invoke<RepoInfo[]>("list_repos", { show: "all" }),
+      invoke<RepoCount>("repo_count"),
+      invoke<Config>("config"),
+    ]);
+  }
 </script>
 
 <style>
@@ -65,7 +81,7 @@
   {/snippet}
   <div class="container">
     <div class="header">Repositories</div>
-    {#if repos.length}
+    {#if repos.length > 0}
       <div class="repo-grid">
         {#each repos as repo}
           {#if repo.payloads["xyz.radicle.project"]}
@@ -83,20 +99,7 @@
         {/each}
       </div>
     {:else}
-      <Border
-        variant="ghost"
-        styleAlignItems="center"
-        styleJustifyContent="center">
-        <div
-          class="global-flex"
-          style:height="74px"
-          style:justify-content="center">
-          <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
-            <Icon name="none" />
-            No repositories.
-          </div>
-        </div>
-      </Border>
+      <Onboarding {reload} />
     {/if}
   </div>
 </Layout>

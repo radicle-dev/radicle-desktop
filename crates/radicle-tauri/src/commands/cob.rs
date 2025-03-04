@@ -1,7 +1,5 @@
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
-
 use radicle::git;
 use radicle::identity;
 use radicle_types as types;
@@ -45,7 +43,7 @@ pub async fn save_embed_by_clipboard(
         .clipboard()
         .read_image()
         .map(|i| i.rgba().to_vec())
-        .context("Not able to read the image from the clipboard")?;
+        .map_err(types::error::fs::EmbedsError::ClipboardError)?;
 
     ctx.save_embed_by_bytes(rid, name, content)
 }
@@ -68,16 +66,18 @@ pub async fn save_embed_to_disk(
     oid: git::Oid,
     name: String,
 ) -> Result<(), Error> {
-    let path = app_handle
+    if let Some(path) = app_handle
         .dialog()
         .file()
         .set_file_name(name)
         .blocking_save_file()
-        .context("no path defined")?;
+    {
+        let path = path
+            .into_path()
+            .map_err(radicle_types::error::fs::EmbedsError::Fs)?;
 
-    let path = path
-        .into_path()
-        .context("Not able to convert into PathBuf")?;
+        return ctx.save_embed_to_disk(rid, oid, path);
+    }
 
-    ctx.save_embed_to_disk(rid, oid, path)
+    Err(radicle_types::error::fs::EmbedsError::SaveEmbed.into())
 }
