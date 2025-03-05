@@ -1,13 +1,13 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 
-use radicle::node::AliasStore;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use radicle::cob;
 use radicle::git;
 use radicle::identity;
+use radicle::node::AliasStore;
 use radicle::patch;
 
 use crate::cobs;

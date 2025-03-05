@@ -6,6 +6,7 @@
 
   interface Props {
     name?: string;
+    type?: "text" | "password";
     placeholder?: string;
     value?: string;
     autofocus?: boolean;
@@ -19,6 +20,7 @@
 
   /* eslint-disable prefer-const */
   let {
+    type = "text",
     name,
     placeholder,
     value = $bindable(undefined),
@@ -84,6 +86,7 @@
   }
   input[disabled] {
     cursor: not-allowed;
+    color: var(--color-foreground-dim);
   }
 </style>
 
@@ -98,7 +101,7 @@
       focussed = false;
     }}
     bind:this={inputElement}
-    type="text"
+    {type}
     {name}
     {placeholder}
     {disabled}

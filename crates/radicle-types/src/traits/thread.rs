@@ -11,6 +11,7 @@ use radicle::storage::ReadStorage;
 use radicle::Node;
 
 use crate::cobs;
+use crate::error;
 use crate::error::Error;
 use crate::traits::Profile;
 
@@ -23,7 +24,7 @@ pub trait Thread: Profile {
     ) -> Result<cobs::EmbedWithMimeType, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let blob = repo.blob(oid)?;
+        let blob = repo.blob(oid).map_err(error::git::GitError::Git)?;
         let content = blob.content();
         let mime_type = match infer::get(content).map(|i| i.mime_type().to_string()) {
             Some(mime_type) => Some(mime_type),
@@ -50,7 +51,7 @@ pub trait Thread: Profile {
     ) -> Result<(), Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let blob = repo.blob(oid)?;
+        let blob = repo.blob(oid).map_err(error::git::GitError::Git)?;
         fs::write(path, blob.content())?;
 
         Ok::<_, Error>(())
@@ -65,7 +66,8 @@ pub trait Thread: Profile {
         let repo = profile.storage.repository(rid)?;
         let bytes = fs::read(path.clone())?;
         let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("embed");
-        let embed = radicle::cob::Embed::<git::Oid>::store(name, &bytes, &repo.backend)?;
+        let embed = radicle::cob::Embed::<git::Oid>::store(name, &bytes, &repo.backend)
+            .map_err(error::git::GitError::Git2)?;
 
         Ok(embed.oid())
     }
@@ -78,7 +80,8 @@ pub trait Thread: Profile {
     ) -> Result<git::Oid, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let embed = radicle::cob::Embed::<git::Oid>::store(&name, &bytes, &repo.backend)?;
+        let embed = radicle::cob::Embed::<git::Oid>::store(&name, &bytes, &repo.backend)
+            .map_err(error::git::GitError::Git2)?;
 
         Ok(embed.oid())
     }
@@ -95,18 +98,22 @@ pub trait Thread: Profile {
         let signer = profile.signer()?;
         let repo = profile.storage.repository(rid)?;
         let mut issues = profile.issues_mut(&repo)?;
-        let mut issue = issues.get_mut(&new.id.into())?;
+        let mut issue = issues
+            .get_mut(&new.id.into())
+            .map_err(error::cob::IssueError::CacheIssue)?;
         let id = new.reply_to.unwrap_or_else(|| {
             let (root_id, _) = issue.root();
             *root_id
         });
         let n = new.clone();
-        let oid = issue.comment(
-            n.body,
-            id,
-            n.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-            &signer,
-        )?;
+        let oid = issue
+            .comment(
+                n.body,
+                id,
+                n.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+                &signer,
+            )
+            .map_err(error::cob::IssueError::Issue)?;
 
         if opts.announce() {
             if let Err(e) = node.announce_refs(rid) {
@@ -140,16 +147,20 @@ pub trait Thread: Profile {
         let signer = profile.signer()?;
         let repo = profile.storage.repository(rid)?;
         let mut patches = profile.patches_mut(&repo)?;
-        let mut patch = patches.get_mut(&new.id.into())?;
+        let mut patch = patches
+            .get_mut(&new.id.into())
+            .map_err(error::cob::PatchError::CachePatch)?;
         let n = new.clone();
-        let oid = patch.comment(
-            new.revision.into(),
-            n.body,
-            n.reply_to,
-            n.location.map(|l| l.into()),
-            n.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-            &signer,
-        )?;
+        let oid = patch
+            .comment(
+                new.revision.into(),
+                n.body,
+                n.reply_to,
+                n.location.map(|l| l.into()),
+                n.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+                &signer,
+            )
+            .map_err(error::cob::PatchError::Patch)?;
 
         if opts.announce() {
             if let Err(e) = node.announce_refs(rid) {

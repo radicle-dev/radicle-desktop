@@ -30,9 +30,13 @@ pub async fn list_patches(
     let take = take.unwrap_or(20);
     let aliases = profile.aliases();
     let patches = match status {
-        None => sqlite_service.list(rid)?.collect::<Vec<_>>(),
+        None => sqlite_service
+            .list(rid)
+            .map_err(types::error::cob::PatchError::ListPatchesError)?
+            .collect::<Vec<_>>(),
         Some(s) => sqlite_service
-            .list_by_status(rid, s.into())?
+            .list_by_status(rid, s.into())
+            .map_err(types::error::cob::PatchError::ListPatchesError)?
             .collect::<Vec<_>>(),
     };
     let more = cursor + take < patches.len();

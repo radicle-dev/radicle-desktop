@@ -3,6 +3,7 @@ use radicle::node::Handle;
 use radicle::storage::ReadStorage;
 use radicle::{git, identity, Node};
 
+use crate as types;
 use crate::cobs;
 use crate::error::Error;
 use crate::traits::Profile;
@@ -18,7 +19,8 @@ pub trait Issues: Profile {
         let status = status.unwrap_or_default();
         let issues = profile.issues(&repo)?;
         let mut issues: Vec<_> = issues
-            .list()?
+            .list()
+            .map_err(types::error::cob::IssueError::CacheIssue)?
             .filter_map(|r| {
                 let (id, issue) = r.ok()?;
                 (status.matches(issue.state())).then_some((id, issue))
@@ -43,7 +45,9 @@ pub trait Issues: Profile {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let issues = profile.issues(&repo)?;
-        let issue = issues.get(&id.into())?;
+        let issue = issues
+            .get(&id.into())
+            .map_err(types::error::cob::IssueError::CacheIssue)?;
 
         let aliases = &profile.aliases();
         let issue = issue.map(|issue| cobs::issue::Issue::new(&id.into(), &issue, aliases));
@@ -59,7 +63,9 @@ pub trait Issues: Profile {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let issues = profile.issues(&repo)?;
-        let issue = issues.get(&id.into())?;
+        let issue = issues
+            .get(&id.into())
+            .map_err(types::error::cob::IssueError::CacheIssue)?;
 
         let aliases = &profile.aliases();
         let comments = issue.map(|issue| {
@@ -104,14 +110,16 @@ pub trait IssuesMut: Profile {
         let signer = profile.signer()?;
         let aliases = profile.aliases();
         let mut issues = profile.issues_mut(&repo)?;
-        let issue = issues.create(
-            new.title,
-            new.description,
-            &new.labels,
-            &new.assignees,
-            new.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-            &signer,
-        )?;
+        let issue = issues
+            .create(
+                new.title,
+                new.description,
+                &new.labels,
+                &new.assignees,
+                new.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+                &signer,
+            )
+            .map_err(types::error::cob::IssueError::Issue)?;
 
         if opts.announce() {
             if let Err(e) = node.announce_refs(rid) {
@@ -135,50 +143,68 @@ pub trait IssuesMut: Profile {
         let signer = profile.signer()?;
         let aliases = profile.aliases();
         let mut issues = profile.issues_mut(&repo)?;
-        let mut issue = issues.get_mut(&cob_id.into())?;
+        let mut issue = issues
+            .get_mut(&cob_id.into())
+            .map_err(types::error::cob::IssueError::CacheIssue)?;
 
         match action {
             cobs::issue::Action::Lifecycle { state } => {
-                issue.lifecycle(state.into(), &signer)?;
+                issue
+                    .lifecycle(state.into(), &signer)
+                    .map_err(types::error::cob::IssueError::Issue)?;
             }
             cobs::issue::Action::Assign { assignees } => {
-                issue.assign(assignees, &signer)?;
+                issue
+                    .assign(assignees, &signer)
+                    .map_err(types::error::cob::IssueError::Issue)?;
             }
             cobs::issue::Action::Label { labels } => {
-                issue.label(labels, &signer)?;
+                issue
+                    .label(labels, &signer)
+                    .map_err(types::error::cob::IssueError::Issue)?;
             }
             cobs::issue::Action::CommentReact {
                 id,
                 reaction,
                 active,
             } => {
-                issue.react(id, reaction, active, &signer)?;
+                issue
+                    .react(id, reaction, active, &signer)
+                    .map_err(types::error::cob::IssueError::Issue)?;
             }
             cobs::issue::Action::CommentRedact { id } => {
-                issue.redact_comment(id, &signer)?;
+                issue
+                    .redact_comment(id, &signer)
+                    .map_err(types::error::cob::IssueError::Issue)?;
             }
             cobs::issue::Action::Comment {
                 body,
                 reply_to,
                 embeds,
             } => {
-                issue.comment(
-                    body,
-                    reply_to.unwrap_or(cob_id),
-                    embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &signer,
-                )?;
+                issue
+                    .comment(
+                        body,
+                        reply_to.unwrap_or(cob_id),
+                        embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+                        &signer,
+                    )
+                    .map_err(types::error::cob::IssueError::Issue)?;
             }
             cobs::issue::Action::CommentEdit { id, body, embeds } => {
-                issue.edit_comment(
-                    id,
-                    body,
-                    embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &signer,
-                )?;
+                issue
+                    .edit_comment(
+                        id,
+                        body,
+                        embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
+                        &signer,
+                    )
+                    .map_err(types::error::cob::IssueError::Issue)?;
             }
             cobs::issue::Action::Edit { title } => {
-                issue.edit(title, &signer)?;
+                issue
+                    .edit(title, &signer)
+                    .map_err(types::error::cob::IssueError::Issue)?;
             }
         }
 

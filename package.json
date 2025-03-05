@@ -18,6 +18,7 @@
     "test:e2e": "TZ='UTC' playwright test",
     "format": "npx prettier '**/*.@(ts|js|svelte|json|css|html|yml)' --write",
     "generate-types": "cargo test --manifest-path ./crates/radicle-types/Cargo.toml",
+    "generate-errors": "scripts/generate-errors",
     "tauri": "npx tauri"
   },
   "engines": {

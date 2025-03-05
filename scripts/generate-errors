@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -e
+
+root=$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")
+
+# Define the directory containing error discriminant files
+ERROR_DIR="$root/crates/radicle-types/bindings/error"
+
+# Define the output file
+OUTPUT_FILE="$root/crates/radicle-types/bindings/error/Error.ts"
+
+# Start generating the file
+echo "// THIS FILE IS AUTO-GENERATED. DO NOT EDIT MANUALLY." >$OUTPUT_FILE
+echo "" >>$OUTPUT_FILE
+
+# Import base ErrorDiscriminants
+echo "import type { ErrorDiscriminants } from \"./ErrorDiscriminants\";" >>$OUTPUT_FILE
+echo "" >>$OUTPUT_FILE
+
+# Iterate over all TypeScript files in the directory
+ERROR_TYPES=()
+for file in "$ERROR_DIR"/*ErrorDiscriminants.ts; do
+    # Extract the base filename without path or extension
+    FILENAME=$(basename -- "$file")
+
+    if [[ "$FILENAME" == "ErrorDiscriminants.ts" ]]; then
+        continue
+    fi
+
+    TYPE_NAME="${FILENAME%.ts}" # Remove .ts extension
+
+    # Add import statement
+    echo "import type { $TYPE_NAME } from \"./$TYPE_NAME\";" >>$OUTPUT_FILE
+
+    # Store the extracted type for later use
+    ERROR_TYPES+=("$TYPE_NAME")
+done
+
+# Add the `Error` type declaration
+echo -e "\nexport type Error =" >>$OUTPUT_FILE
+for TYPE in "${ERROR_TYPES[@]}"; do
+    ERROR_NAME="${TYPE/ErrorDiscriminants/Error}"
+    echo "  | \`\${\"$ERROR_NAME\"}.\${$TYPE}\`" >>$OUTPUT_FILE
+done
+
+# Add `Exclude` types
+for TYPE in "${ERROR_TYPES[@]}"; do
+    ERROR_NAME="${TYPE/ErrorDiscriminants/Error}"
+    echo "  | Exclude<ErrorDiscriminants, \"$ERROR_NAME\">" >>$OUTPUT_FILE
+done
+
+# Add the `ErrorWrapper` type
+echo -e "\nexport type ErrorWrapper = { type: Error; message: string };" >>$OUTPUT_FILE
+
+echo "✅ Error types generated successfully!"
