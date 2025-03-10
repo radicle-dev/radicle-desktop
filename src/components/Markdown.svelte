@@ -134,20 +134,6 @@
         }
       }
 
-      // Replace standard HTML checkboxes with our custom radicle-icon-small element
-      for (const i of container.querySelectorAll('input[type="checkbox"]')) {
-        i.parentElement?.classList.add("task-item");
-
-        const checkbox = document.createElement("radicle-icon-small");
-        const checked = i.getAttribute("checked");
-        checkbox.setAttribute(
-          "name",
-          checked === null ? "checkbox-unchecked" : "checkbox-checked",
-        );
-        i.insertAdjacentElement("beforebegin", checkbox);
-        i.remove();
-      }
-
       // Replaces code blocks in the background with highlighted code.
       const prefix = "language-";
       const nodes = Array.from(document.body.querySelectorAll("pre code"));
