@@ -21,7 +21,6 @@
     "paths": {
       "@app/*": ["./src/*"],
       "@bindings/*": ["./crates/radicle-types/bindings/*"],
-      "@public/*": ["./public/*"],
       "@tests/*": ["./tests/*"]
     }
   }

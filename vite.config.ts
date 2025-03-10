@@ -26,7 +26,6 @@ export default defineConfig({
     alias: {
       "@app": path.resolve("./src"),
       "@bindings": path.resolve("./crates/radicle-types/bindings/"),
-      "@public": path.resolve("./public"),
     },
   },
 });
