@@ -1,0 +1,42 @@
+when:
+  - event: push
+    branch: main
+  - event: tag
+    ref: refs/namespaces/z6MkwPUeUS2fJMfc2HZN1RQTQcTTuhw4HhPySB8JeUg2mVvx/tags/v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z]+)?(\.[0-9]+)?  # Matches v1.2.3, v1.2.3-rc, v1.2.3-rc.1, etc.
+  - event: tag
+    ref: refs/namespaces/z6MkkfM3tPXNPrPevKr3uSiQtHPuwnNhu2yUVjgd2jXVsVz5/tags/v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z]+)?(\.[0-9]+)?  # Matches v1.2.3, v1.2.3-rc, v1.2.3-rc.1, etc.
+steps:
+  build:
+    image: docker.io/library/ubuntu:22.04
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+      - |
+        export ARTIFACT_DIR="$${CI_COMMIT_TAG:+$CI_COMMIT_TAG}$( [[ -z "$CI_COMMIT_TAG" ]] && echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)_${CI_COMMIT_SHA:0:8}" )"
+        mkdir -p "$ARTIFACT_DIR"
+        echo $ARTIFACT_DIR
+        # Install dependencies
+        apt-get update && apt-get install -y build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libwebkit2gtk-4.1-dev
+        curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+        . "$HOME/.cargo/env"
+        npm install
+        # Build the Tauri app
+        export CI=true
+        npm run tauri build
+        # Organize build artifacts for upload
+        cp target/release/bundle/deb/*.deb "$ARTIFACT_DIR"
+        cp target/release/bundle/rpm/*.rpm "$ARTIFACT_DIR"
+        cp target/release/bundle/appimage/*.AppImage "$ARTIFACT_DIR"
+  upload:
+    image: woodpeckerci/plugin-s3
+    settings:
+      endpoint: https://minio-api.radworks.garden
+      bucket: radworks-releases
+      source: radicle-desktop/*/*.{deb,rpm,AppImage}
+      target: ""
+      path_style: true
+      access_key:
+        from_secret: minio_access_key
+      secret_key:
+        from_secret: minio_secret_key
