@@ -10,8 +10,8 @@ export type Comment<T = Never> = {
   author: Author;
   edits: Array<Edit>;
   reactions: Array<Reaction>;
-  replyTo?: string;
-  location?: T;
+  replyTo: string | null;
+  location: T | null;
   embeds?: Array<Embed>;
   resolved: boolean;
 };

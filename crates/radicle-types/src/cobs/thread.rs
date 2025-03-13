@@ -42,9 +42,8 @@ pub struct Comment<T = cobs::Never> {
     author: cobs::Author,
     edits: Vec<models::patch::Edit>,
     reactions: Vec<cobs::thread::Reaction>,
-    #[ts(as = "Option<String>", optional)]
+    #[ts(as = "Option<String>")]
     reply_to: Option<cob::thread::CommentId>,
-    #[ts(optional)]
     location: Option<T>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     #[ts(as = "Option<_>", optional)]
