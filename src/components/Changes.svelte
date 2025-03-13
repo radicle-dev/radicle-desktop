@@ -39,6 +39,7 @@
     patchId;
 
     hideChanges = false;
+    filesExpanded = true;
   });
 
   async function loadHighlightedDiff(rid: string, base: string, head: string) {
