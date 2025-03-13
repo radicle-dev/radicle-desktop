@@ -194,6 +194,7 @@
     if (more) {
       const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
         rid: repo.rid,
+        status,
         skip: cursor + 20,
         take: 20,
       });
