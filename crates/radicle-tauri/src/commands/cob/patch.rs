@@ -1,6 +1,5 @@
-use radicle::git;
-use radicle::identity;
 use radicle::patch::{Action, TYPENAME};
+use radicle::{cob, git, identity};
 
 use radicle_types as types;
 use radicle_types::cobs;
@@ -77,6 +76,17 @@ pub fn revision_by_patch_and_id(
     revision_id: git::Oid,
 ) -> Result<Option<models::patch::Revision>, Error> {
     ctx.revision_by_id(rid, id, revision_id)
+}
+
+#[tauri::command]
+pub fn review_by_patch_and_revision_and_id(
+    ctx: tauri::State<AppState>,
+    rid: identity::RepoId,
+    id: git::Oid,
+    revision_id: git::Oid,
+    review_id: cob::patch::ReviewId,
+) -> Result<Option<models::patch::Review>, Error> {
+    ctx.review_by_id(rid, id, revision_id, review_id)
 }
 
 #[tauri::command]

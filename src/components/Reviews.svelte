@@ -21,11 +21,11 @@
     revision: Revision;
     config: Config;
     status: PatchStatus | undefined;
-    reload: () => Promise<void>;
+    loadPatch: () => Promise<void>;
   }
 
   /* eslint-disable prefer-const */
-  let { rid, patchId, revision, config, status, reload }: Props = $props();
+  let { rid, patchId, revision, config, status, loadPatch }: Props = $props();
   /* eslint-enable prefer-const */
 
   let hideReviews = $state(
@@ -67,7 +67,7 @@
     } catch (error) {
       console.error("Creating a review failed: ", error);
     } finally {
-      await reload();
+      await loadPatch();
     }
   }
 </script>

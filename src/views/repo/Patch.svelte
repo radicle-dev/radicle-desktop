@@ -86,12 +86,6 @@
   let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
 
   $effect(() => {
-    patchTeasers = patches.content;
-    cursor = patches.cursor;
-    more = patches.more;
-  });
-
-  $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     patch.id;
 
@@ -101,23 +95,13 @@
     selectedRevision = revisions.slice(-1)[0];
   });
 
-  const project = $derived(repo.payloads["xyz.radicle.project"]!);
+  $effect(() => {
+    patchTeasers = patches.content;
+    cursor = patches.cursor;
+    more = patches.more;
+  });
 
-  async function loadPatch(rid: string, patchId: string) {
-    patch = await invoke<Patch>("patch_by_id", {
-      rid: rid,
-      id: patchId,
-    });
-    revisions = await invoke<Revision[]>("revisions_by_patch", {
-      rid: rid,
-      id: patchId,
-    });
-    activity = await invoke<Operation<Action>[]>("activity_by_patch", {
-      rid: repo.rid,
-      id: patch.id,
-    });
-    review = undefined;
-  }
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
   async function editTitle(rid: string, patchId: string, title: string) {
     if (patch.title === updatedTitle) {
@@ -141,7 +125,7 @@
     } catch (error) {
       console.error("Editing title failed: ", error);
     } finally {
-      await reload();
+      await loadPatch();
     }
   }
 
@@ -161,7 +145,7 @@
       console.error("Editing labels failed", error);
     } finally {
       labelSaveInProgress = false;
-      await reload();
+      await loadPatch();
     }
   }
 
@@ -181,7 +165,7 @@
       console.error("Editing assignees failed", error);
     } finally {
       assigneesSaveInProgress = false;
-      await reload();
+      await loadPatch();
     }
   }
 
@@ -202,7 +186,7 @@
     } catch (error) {
       console.error("Changing state failed", error);
     } finally {
-      await reload();
+      await loadPatch();
     }
   }
 
@@ -220,32 +204,38 @@
     }
   }
 
-  async function reload(reviewId?: string) {
-    [config, repo, patches, patch, revisions, activity] = await Promise.all([
-      invoke<Config>("config"),
-      invoke<RepoInfo>("repo_by_id", {
+  async function loadPatch(patchId: string = patch.id) {
+    [patch, revisions, activity, patches] = await Promise.all([
+      invoke<Patch>("patch_by_id", {
         rid: repo.rid,
+        id: patchId,
+      }),
+      invoke<Revision[]>("revisions_by_patch", {
+        rid: repo.rid,
+        id: patchId,
+      }),
+      invoke<Operation<Action>[]>("activity_by_patch", {
+        rid: repo.rid,
+        id: patchId,
       }),
       invoke<PaginatedQuery<Patch[]>>("list_patches", {
         rid: repo.rid,
         status,
       }),
-      invoke<Patch>("patch_by_id", {
-        rid: repo.rid,
-        id: patch.id,
-      }),
-      invoke<Revision[]>("revisions_by_patch", {
-        rid: repo.rid,
-        id: patch.id,
-      }),
-      invoke<Operation<Action>[]>("activity_by_patch", {
-        rid: repo.rid,
-        id: patch.id,
-      }),
     ]);
-    review = revisions
-      .flatMap(r => r.reviews || [])
-      .find(review => review.id === reviewId);
+  }
+
+  async function loadReview(reviewId: string | undefined = review?.id) {
+    if (!reviewId) {
+      return;
+    }
+
+    review = await invoke<Review>("review_by_patch_and_revision_and_id", {
+      rid: repo.rid,
+      id: patch.id,
+      revisionId: findReviewRevision(reviewId).id,
+      reviewId,
+    });
   }
 
   async function loadPatches(filter: PatchStatus | undefined) {
@@ -260,12 +250,12 @@
     }
   }
 
-  function findReviewRevision(review: Review): Revision {
+  function findReviewRevision(reviewId: string): Revision {
     // Every review is guaranteed to have a revision according to the protocol
     // model, so using type assertions here is safe.
     return revisions.find(revision => {
       return revision.reviews!.find(rev => {
-        return rev.id === review.id;
+        return rev.id === reviewId;
       });
     }) as Revision;
   }
@@ -419,7 +409,10 @@
       {#each patchTeasers as teaser}
         <PatchTeaser
           compact
-          {loadPatch}
+          loadPatch={async (id: string) => {
+            review = undefined;
+            await loadPatch(id);
+          }}
           patch={teaser}
           rid={repo.rid}
           {status}
@@ -455,9 +448,9 @@
       {config}
       patchId={patch.id}
       {repo}
-      {reload}
+      {loadReview}
       {review}
-      revision={findReviewRevision(review)}
+      revision={findReviewRevision(review.id)}
       onNavigateBack={() => {
         review = undefined;
       }} />
@@ -643,7 +636,7 @@
             rid={repo.rid}
             repoDelegates={repo.delegates}
             patchId={patch.id}
-            {reload}
+            {loadPatch}
             {status}
             revision={revisions[0]}
             {config} />
@@ -654,7 +647,7 @@
             rid={repo.rid}
             repoDelegates={repo.delegates}
             patchId={patch.id}
-            {reload}
+            {loadPatch}
             {status}
             revision={selectedRevision}
             {config} />

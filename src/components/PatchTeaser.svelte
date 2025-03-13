@@ -21,7 +21,7 @@
 
   interface Props {
     compact?: boolean;
-    loadPatch?: (rid: string, patchId: string) => void;
+    loadPatch?: (patchId: string) => Promise<void>;
     patch: Patch;
     rid: string;
     selected?: boolean;
@@ -79,9 +79,9 @@
   class:selected
   class="patch-teaser"
   style:align-items="flex-start"
-  onclick={() => {
+  onclick={async () => {
     if (loadPatch) {
-      loadPatch(rid, patch.id);
+      await loadPatch(patch.id);
     } else {
       void push({
         resource: "repo.patch",

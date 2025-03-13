@@ -47,6 +47,7 @@ pub fn run() {
             cob::patch::list_patches,
             cob::patch::patch_by_id,
             cob::patch::edit_patch,
+            cob::patch::review_by_patch_and_revision_and_id,
             cob::patch::revisions_by_patch,
             cob::patch::revision_by_patch_and_id,
             thread::create_issue_comment,

@@ -26,12 +26,19 @@
     revision: Revision;
     config: Config;
     status: PatchStatus | undefined;
-    reload: () => Promise<void>;
+    loadPatch: () => Promise<void>;
   }
 
   /* eslint-disable prefer-const */
-  let { rid, repoDelegates, patchId, revision, config, status, reload }: Props =
-    $props();
+  let {
+    rid,
+    repoDelegates,
+    patchId,
+    revision,
+    config,
+    status,
+    loadPatch,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 
   const commentThreads = $derived(
@@ -74,7 +81,7 @@
     } catch (error) {
       console.error("Editing revision failed: ", error);
     } finally {
-      await reload();
+      await loadPatch();
     }
   }
 
@@ -101,7 +108,7 @@
     } catch (error) {
       console.error("Editing reactions failed", error);
     } finally {
-      await reload();
+      await loadPatch();
     }
   }
 
@@ -119,7 +126,7 @@
     } catch (error) {
       console.error("Creating comment failed", error);
     } finally {
-      await reload();
+      await loadPatch();
     }
   }
 
@@ -140,7 +147,7 @@
     } catch (error) {
       console.error("Editing comment failed: ", error);
     } finally {
-      await reload();
+      await loadPatch();
     }
   }
 
@@ -168,7 +175,7 @@
     } catch (error) {
       console.error("Editing comment reactions failed", error);
     } finally {
-      await reload();
+      await loadPatch();
     }
   }
 </script>
@@ -214,7 +221,7 @@
   </CommentComponent>
 </div>
 
-<Reviews {config} {patchId} {reload} {revision} {rid} {status} />
+<Reviews {config} {patchId} {loadPatch} {revision} {rid} {status} />
 
 <Discussion
   cobId={patchId}

@@ -34,7 +34,7 @@
     config: Config;
     onNavigateBack: () => void;
     patchId: string;
-    reload: (reviewId?: string) => Promise<void>;
+    loadReview: () => Promise<void>;
     repo: RepoInfo;
     review: Review;
     revision: Revision;
@@ -44,7 +44,7 @@
     config,
     onNavigateBack,
     patchId,
-    reload,
+    loadReview,
     repo,
     review,
     revision,
@@ -139,7 +139,7 @@
       console.error("Editing review failed: ", error);
     } finally {
       labelSaveInProgress = false;
-      await reload(reviewId);
+      await loadReview();
     }
   }
 
@@ -166,7 +166,7 @@
     } catch (error) {
       console.error("Creating comment failed", error);
     } finally {
-      await reload(review.id);
+      await loadReview();
     }
   }
 
@@ -187,7 +187,7 @@
     } catch (error) {
       console.error("Editing comment failed: ", error);
     } finally {
-      await reload(review.id);
+      await loadReview();
     }
   }
 
@@ -215,7 +215,7 @@
     } catch (error) {
       console.error("Editing comment reactions failed", error);
     } finally {
-      await reload(review.id);
+      await loadReview();
     }
   }
 </script>
