@@ -24,9 +24,7 @@
     loadPatch: () => Promise<void>;
   }
 
-  /* eslint-disable prefer-const */
-  let { rid, patchId, revision, config, status, loadPatch }: Props = $props();
-  /* eslint-enable prefer-const */
+  const { rid, patchId, revision, config, status, loadPatch }: Props = $props();
 
   let hideReviews = $state(
     revision.reviews === undefined || revision.reviews.length === 0,

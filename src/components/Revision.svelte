@@ -29,8 +29,7 @@
     loadPatch: () => Promise<void>;
   }
 
-  /* eslint-disable prefer-const */
-  let {
+  const {
     rid,
     repoDelegates,
     patchId,
@@ -39,7 +38,6 @@
     status,
     loadPatch,
   }: Props = $props();
-  /* eslint-enable prefer-const */
 
   const commentThreads = $derived(
     ((revision.discussion &&

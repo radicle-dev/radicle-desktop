@@ -21,15 +21,13 @@
     codeComments?: CodeComments;
   }
 
-  /* eslint-disable prefer-const */
-  let {
+  const {
     patchId,
     revision,
     rid,
     showCommits = true,
     codeComments,
   }: Props = $props();
-  /* eslint-enable prefer-const */
 
   let hideChanges = $state(false);
   let filesExpanded = $state(true);
