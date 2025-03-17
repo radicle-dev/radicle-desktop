@@ -1,78 +1,60 @@
 <script lang="ts">
+  import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
   import type { Config } from "@bindings/config/Config";
   import type { UnlistenFn } from "@tauri-apps/api/event";
-  import type { SyncStatus } from "@bindings/repo/SyncStatus";
 
-  import { SvelteMap } from "svelte/reactivity";
   import { onDestroy, onMount } from "svelte";
 
-  import { invoke } from "@app/lib/invoke";
-  import { listen } from "@tauri-apps/api/event";
-
   import * as router from "@app/lib/router";
-  import { nodeRunning, syncStatus } from "@app/lib/events";
+  import { checkAuth, startup } from "@app/lib/auth.svelte";
+  import { dynamicInterval } from "@app/lib/interval";
+  import { createEventEmittersOnce } from "@app/lib/startup.svelte";
+  import { invoke } from "@app/lib/invoke";
   import { theme } from "@app/components/ThemeSwitch.svelte";
   import { unreachable } from "@app/lib/utils";
 
+  import Auth from "@app/views/booting/Auth.svelte";
+  import CreateIdentity from "@app/views/booting/CreateIdentity.svelte";
   import CreateIssue from "@app/views/repo/CreateIssue.svelte";
-  import Inbox from "./views/home/Inbox.svelte";
+  import Inbox from "@app/views/home/Inbox.svelte";
   import Issue from "@app/views/repo/Issue.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
-  import Repos from "./views/home/Repos.svelte";
-  import { dynamicInterval, checkAuth } from "./lib/auth";
+  import Repos from "@app/views/home/Repos.svelte";
 
   const activeRouteStore = router.activeRouteStore;
 
+  let profile = $state<Config>();
   let unlistenEvents: UnlistenFn | undefined = undefined;
   let unlistenNodeEvents: UnlistenFn | undefined = undefined;
   let unlistenSyncStatus: UnlistenFn | undefined = undefined;
 
-  let error = $state<undefined | unknown>();
-
   onMount(async () => {
     try {
-      await invoke<Config>("startup");
-    } catch (e: unknown) {
-      error = e;
+      profile = await invoke<Config>("startup");
+    } catch (err) {
+      startup.error = err as ErrorWrapper;
       return;
     }
 
     if (window.__TAURI_INTERNALS__) {
-      unlistenEvents = await listen("event", () => {
-        // Add handler for incoming events
-      });
-
-      unlistenSyncStatus = await listen<Record<string, SyncStatus>>(
-        "sync_status",
-        event => {
-          syncStatus.set(new SvelteMap(Object.entries(event.payload)));
-        },
-      );
-
-      unlistenNodeEvents = await listen<boolean>("node_running", event => {
-        nodeRunning.set(event.payload);
-      });
+      [unlistenEvents, unlistenNodeEvents, unlistenSyncStatus] =
+        await createEventEmittersOnce();
     }
 
     try {
       await invoke("authenticate");
       void router.loadFromLocation();
-      void dynamicInterval(
+      dynamicInterval(
+        "auth",
         checkAuth,
         import.meta.env.VITE_AUTH_LONG_DELAY || 30_000,
       );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e: any) {
-      void router.push({
-        resource: "authenticationError",
-        params: {
-          error: e.err,
-          hint: e.hint,
-        },
-      });
-      void dynamicInterval(checkAuth, 1000);
+    } catch (err) {
+      startup.error = err as ErrorWrapper;
+      void router.push({ resource: "booting" });
+      dynamicInterval("auth", checkAuth, 5_000);
     }
   });
 
@@ -92,6 +74,10 @@
 </script>
 
 {#if $activeRouteStore.resource === "booting"}
+  {#if startup.error?.code === "IdentityError.MissingProfile"}
+    <CreateIdentity />
+  {:else if startup.error?.code === "PassphraseError.InvalidPassphrase" && profile}
+    <Auth profile={{ did: profile.publicKey, alias: profile.alias }} />
   {/if}
 {:else if $activeRouteStore.resource === "home"}
   <Repos {...$activeRouteStore.params} />

@@ -100,7 +100,7 @@ impl TryFrom<identity::doc::Payload> for ProjectPayloadData {
     type Error = error::Error;
 
     fn try_from(value: identity::doc::Payload) -> Result<Self, Self::Error> {
-        serde_json::from_value::<Self>((*value).clone()).map_err(error::Error::from)
+        serde_json::from_value::<Self>((*value).clone()).map_err(Into::into)
     }
 }
 

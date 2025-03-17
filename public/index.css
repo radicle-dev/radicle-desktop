@@ -76,6 +76,16 @@ body {
   flex-shrink: 0;
 }
 
+.global-link {
+  color: var(--color-foreground-default);
+  text-decoration: none;
+}
+.global-link:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
 :root {
   --elevation-low: 0 0 48px 0 #000000ee;
 }

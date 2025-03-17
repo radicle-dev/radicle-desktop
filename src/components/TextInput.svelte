@@ -8,6 +8,7 @@
     name?: string;
     placeholder?: string;
     value?: string;
+    type?: string;
     autofocus?: boolean;
     autoselect?: boolean;
     disabled?: boolean;
@@ -22,6 +23,7 @@
     name,
     placeholder,
     value = $bindable(undefined),
+    type = "text",
     autofocus = false,
     autoselect = false,
     disabled = false,
@@ -98,7 +100,7 @@
       focussed = false;
     }}
     bind:this={inputElement}
-    type="text"
+    {type}
     {name}
     {placeholder}
     {disabled}

@@ -23,7 +23,6 @@ use radicle_types::domain::patch::service::Service;
 use radicle_types::domain::patch::traits::PatchService;
 use radicle_types::error::Error;
 use radicle_types::outbound::sqlite::Sqlite;
-use radicle_types::traits::auth::Auth;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::issue::{Issues, IssuesMut};
 use radicle_types::traits::patch::{Patches, PatchesMut};
@@ -37,7 +36,6 @@ pub struct Context {
     patches: Arc<Service<Sqlite>>,
 }
 
-impl Auth for Context {}
 impl Repo for Context {}
 impl Cobs for Context {}
 impl Thread for Context {}
@@ -107,9 +105,7 @@ async fn config_handler(State(ctx): State<Context>) -> impl IntoResponse {
     Ok::<_, Error>(Json(config))
 }
 
-async fn auth_handler(State(ctx): State<Context>) -> impl IntoResponse {
-    ctx.authenticate()?;
-
+async fn auth_handler() -> impl IntoResponse {
     Ok::<_, Error>(Json(()))
 }
 

@@ -2,7 +2,7 @@ mod commands;
 
 use radicle_types::AppState;
 
-use commands::{auth, cob, diff, inbox, init, profile, repo, thread};
+use commands::{auth, cob, diff, inbox, profile, repo, startup, thread};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -22,42 +22,43 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
-            init::startup,
-            init::node_status_events,
-            init::repo_sync_events,
-            init::node_events,
             auth::authenticate,
-            repo::repo_count,
-            repo::list_repos,
-            repo::repo_by_id,
-            repo::diff_stats,
-            repo::list_commits,
-            diff::get_diff,
-            inbox::list_notifications,
-            inbox::count_notifications_by_repo,
-            inbox::clear_notifications,
+            auth::init,
             cob::get_embed,
-            cob::save_embed_to_disk,
-            cob::save_embed_by_path,
-            cob::save_embed_by_clipboard,
-            cob::save_embed_by_bytes,
             cob::issue::activity_by_issue,
-            cob::issue::list_issues,
-            cob::issue::issue_by_id,
             cob::issue::comment_threads_by_issue_id,
             cob::issue::create_issue,
             cob::issue::edit_issue,
+            cob::issue::issue_by_id,
+            cob::issue::list_issues,
             cob::patch::activity_by_patch,
+            cob::patch::edit_patch,
             cob::patch::list_patches,
             cob::patch::patch_by_id,
             cob::patch::edit_patch,
             cob::patch::review_by_patch_and_revision_and_id,
             cob::patch::revisions_by_patch,
             cob::patch::revision_by_patch_and_id,
+            cob::patch::revisions_by_patch,
+            cob::save_embed_by_bytes,
+            cob::save_embed_by_clipboard,
+            cob::save_embed_by_path,
+            cob::save_embed_to_disk,
+            diff::get_diff,
+            inbox::clear_notifications,
+            inbox::count_notifications_by_repo,
+            inbox::list_notifications,
+            profile::alias,
+            profile::config,
+            repo::create_repo,
+            repo::diff_stats,
+            repo::list_commits,
+            repo::list_repos,
+            repo::repo_by_id,
+            repo::repo_count,
+            startup::startup,
             thread::create_issue_comment,
             thread::create_patch_comment,
-            profile::config,
-            profile::alias,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

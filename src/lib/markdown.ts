@@ -48,6 +48,7 @@ dompurify.setConfig({
     "ol",
     "p",
     "pre",
+    "strong",
     "table",
     "tbody",
     "td",

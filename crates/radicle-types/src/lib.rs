@@ -1,4 +1,3 @@
-use traits::auth::Auth;
 use traits::cobs::Cobs;
 use traits::issue::{Issues, IssuesMut};
 use traits::patch::{Patches, PatchesMut};
@@ -22,7 +21,6 @@ pub struct AppState {
     pub profile: radicle::Profile,
 }
 
-impl Auth for AppState {}
 impl Repo for AppState {}
 impl Thread for AppState {}
 impl Cobs for AppState {}

@@ -72,15 +72,6 @@
 </script>
 
 <style>
-  a {
-    color: var(--color-foreground-default);
-    text-decoration: none;
-  }
-  a:hover {
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 2px;
-  }
   .timeline {
     display: flex;
     gap: 0.75rem;
@@ -234,7 +225,7 @@
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            <a href="#{op.id}">
+            <a class="global-link" href="#{op.id}">
               {op.replyTo && op.replyTo !== activity[0].id
                 ? "replied to a comment"
                 : "commented"}

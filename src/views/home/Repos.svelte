@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
   import type { HomeReposTab } from "@app/lib/router/definitions";
   import type { Config } from "@bindings/config/Config";
   import type { NotificationCount } from "@bindings/cob/inbox/NotificationCount";
@@ -7,13 +8,15 @@
 
   import * as router from "@app/lib/router";
   import { didFromPublicKey } from "@app/lib/utils";
+  import { dynamicInterval } from "@app/lib/interval";
+  import { invoke } from "@app/lib/invoke";
+  import { onMount } from "svelte";
 
   import CopyableId from "@app/components/CopyableId.svelte";
   import HomeSidebar from "@app/components/HomeSidebar.svelte";
   import Layout from "@app/views/repo/Layout.svelte";
+  import Onboarding from "@app/views/home/Onboarding.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
-  import Border from "@app/components/Border.svelte";
-  import Icon from "@app/components/Icon.svelte";
 
   interface Props {
     activeTab?: HomeReposTab;
@@ -24,9 +27,49 @@
   }
 
   /* eslint-disable prefer-const */
-  let { config, repos, notificationCount, repoCount, activeTab }: Props =
+  let {
+    config,
+    repos: initialRepos,
+    notificationCount,
+    repoCount,
+    activeTab,
+  }: Props =
     /* eslint-enable prefer-const */
     $props();
+
+  let repos = $state(initialRepos);
+  let lock = false;
+  const startup = $state<{ error?: ErrorWrapper }>({ error: undefined });
+
+  async function checkRepos() {
+    try {
+      if (lock) {
+        return;
+      }
+      if (repos.length > 0) {
+        return;
+      }
+      lock = true;
+      await reload();
+    } catch (err) {
+      const error = err as ErrorWrapper;
+      startup.error = error;
+    } finally {
+      lock = false;
+    }
+  }
+
+  onMount(() => {
+    dynamicInterval("repos", checkRepos, 5_000);
+  });
+
+  async function reload() {
+    [repos, repoCount, config] = await Promise.all([
+      invoke<RepoInfo[]>("list_repos", { show: "all" }),
+      invoke<RepoCount>("repo_count"),
+      invoke<Config>("config"),
+    ]);
+  }
 </script>
 
 <style>
@@ -65,7 +108,7 @@
   {/snippet}
   <div class="container">
     <div class="header">Repositories</div>
-    {#if repos.length}
+    {#if repos.length > 0}
       <div class="repo-grid">
         {#each repos as repo}
           {#if repo.payloads["xyz.radicle.project"]}
@@ -83,20 +126,7 @@
         {/each}
       </div>
     {:else}
-      <Border
-        variant="ghost"
-        styleAlignItems="center"
-        styleJustifyContent="center">
-        <div
-          class="global-flex"
-          style:height="74px"
-          style:justify-content="center">
-          <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
-            <Icon name="none" />
-            No repositories.
-          </div>
-        </div>
-      </Border>
+      <Onboarding {reload} />
     {/if}
   </div>
 </Layout>

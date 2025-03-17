@@ -14,6 +14,8 @@ use radicle_types::{domain, AppState};
 #[tauri::command]
 pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     let profile = radicle::Profile::load()?;
+    let repositories = profile.storage.repositories()?;
+    let public_key = profile.public_key;
 
     let inbox_db = radicle_types::outbound::sqlite::Sqlite::reader(
         profile.node().join(NOTIFICATIONS_DB_FILE),
@@ -24,42 +26,24 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     let inbox_service = domain::inbox::service::Service::new(inbox_db);
     let patch_service = domain::patch::service::Service::new(cob_db);
 
+    let node_handle = app.app_handle().clone();
+    let sync_handle = app.app_handle().clone();
+    let events_handle = app.app_handle().clone();
+
+    let node = Node::new(profile.socket());
+    let node_status = node.clone();
+
+    let mut node_seeds = node.clone();
+
     app.manage(inbox_service);
     app.manage(patch_service);
 
-    let state = AppState { profile };
-    app.manage(state.clone());
-
-    Ok(state.config())
-}
-
-#[tauri::command]
-pub(crate) fn node_status_events(app: AppHandle, ctx: tauri::State<AppState>) -> Result<(), Error> {
-    let app_handle = app.clone();
-
-    let node = Node::new(ctx.profile.socket());
-    let node_status = node.clone();
-
     tauri::async_runtime::spawn(async move {
         loop {
-            let _ = app_handle.emit("node_running", node_status.is_running());
+            let _ = node_handle.emit("node_running", node_status.is_running());
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         }
     });
-
-    Ok(())
-}
-
-#[tauri::command]
-pub(crate) fn repo_sync_events(app: AppHandle, ctx: tauri::State<AppState>) -> Result<(), Error> {
-    let profile = &ctx.profile;
-    let repositories = profile.storage.repositories()?;
-
-    let app_handle = app.clone();
-    let public_key = profile.public_key;
-
-    let node = Node::new(profile.socket());
-    let mut node_seeds = node.clone();
 
     tauri::async_runtime::spawn(async move {
         loop {
@@ -81,34 +65,29 @@ pub(crate) fn repo_sync_events(app: AppHandle, ctx: tauri::State<AppState>) -> R
                     }
                 }
             }
-            let _ = app_handle.emit("sync_status", sync_status);
+            let _ = sync_handle.emit("sync_status", sync_status);
             tokio::time::sleep(std::time::Duration::from_secs(10)).await;
         }
     });
 
-    Ok(())
-}
-
-#[tauri::command]
-pub(crate) fn node_events(app: AppHandle, ctx: tauri::State<AppState>) -> Result<(), Error> {
-    let app_handle = app.clone();
-    let node = Node::new(ctx.profile.socket());
-
     tauri::async_runtime::spawn(async move {
         loop {
             if node.is_running() {
-                log::debug!("node: spawned node event subscription.");
+                log::info!("node: spawned node event subscription.");
                 while let Ok(events) = node.subscribe(std::time::Duration::MAX) {
                     for event in events.into_iter().flatten() {
-                        let _ = app_handle.emit("event", event);
+                        let _ = events_handle.emit("event", event);
                     }
                 }
-                log::debug!("node: event subscription loop has exited.");
+                log::info!("node: event subscription loop has exited.");
             }
 
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         }
     });
 
-    Ok(())
+    let state = AppState { profile };
+    app.manage(state.clone());
+
+    Ok(state.config())
 }

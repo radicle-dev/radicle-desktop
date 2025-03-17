@@ -9,7 +9,35 @@ use crate::cobs::stream;
 pub enum Error {
     /// Profile error.
     #[error(transparent)]
-    Profile(#[from] radicle::profile::Error),
+    ProfileError(#[from] radicle::profile::Error),
+
+    /// Missing SSH Agent error.
+    #[error("ssh agent not running")]
+    AgentNotRunning,
+
+    /// Embeds error.
+    #[error("not able to save embed")]
+    SaveEmbedError,
+
+    /// Init Error error.
+    #[error(transparent)]
+    InitError(#[from] radicle::rad::InitError),
+
+    /// Alias error.
+    #[error(transparent)]
+    AliasError(#[from] radicle::node::AliasError),
+
+    /// Tauri Plugin Clipboard error.
+    #[error(transparent)]
+    TauriPluginClipboard(#[from] tauri_plugin_clipboard_manager::Error),
+
+    /// Tauri Plugin Fs error.
+    #[error(transparent)]
+    TauriPluginFs(#[from] tauri_plugin_fs::Error),
+
+    /// Project error.
+    #[error(transparent)]
+    ProjectError(#[from] radicle::identity::project::ProjectError),
 
     /// List notification error.
     #[error(transparent)]
@@ -24,10 +52,6 @@ pub enum Error {
     /// CobStore error.
     #[error(transparent)]
     CobStore(#[from] radicle::cob::store::Error),
-
-    /// Anyhow error.
-    #[error(transparent)]
-    Anyhow(#[from] anyhow::Error),
 
     /// Io error.
     #[error(transparent)]
@@ -109,45 +133,60 @@ pub enum Error {
     #[error(transparent)]
     Node(#[from] radicle::node::Error),
 
-    /// An error with a hint.
-    #[error("{err} {hint}")]
-    WithHint {
-        err: anyhow::Error,
-        hint: &'static str,
-    },
-
     /// Serde JSON error.
     #[error(transparent)]
     SerdeJSON(#[from] serde_json::error::Error),
 }
 
-#[derive(Serialize)]
-struct ErrorWrapperWithHint {
-    err: String,
-    hint: String,
+impl Error {
+    #[must_use]
+    pub const fn code(&self) -> &'static str {
+        match self {
+            Error::ProjectError(radicle::identity::project::ProjectError::Name(_)) => {
+                "ProjectError.InvalidName"
+            }
+            Error::ProjectError(radicle::identity::project::ProjectError::Description(_)) => {
+                "ProjectError.InvalidDescription"
+            }
+            Error::Crypto(radicle::crypto::ssh::keystore::Error::Ssh(ssh_key::Error::Crypto))
+            | Error::Crypto(radicle::crypto::ssh::keystore::Error::PassphraseMissing) => {
+                "PassphraseError.InvalidPassphrase"
+            }
+            Error::AliasError(radicle::node::AliasError::Empty) => "AliasError.EmptyAlias",
+            Error::AliasError(radicle::node::AliasError::MaxBytesExceeded) => {
+                "AliasError.TooLongAlias"
+            }
+            Error::ProfileError(radicle::profile::Error::NotFound(_)) => {
+                "IdentityError.MissingProfile"
+            }
+            Error::AliasError(radicle::node::AliasError::InvalidCharacter) => {
+                "AliasError.InvalidAlias"
+            }
+            _ => "UnknownError",
+        }
+    }
 }
 
-#[derive(Serialize)]
-struct ErrorWrapper {
-    err: String,
+#[derive(Serialize, ts_rs::TS, Debug)]
+#[ts(export)]
+#[ts(export_to = "error/")]
+pub struct ErrorWrapper {
+    code: String,
+    #[ts(optional)]
+    message: Option<String>,
 }
 
-impl Serialize for Error {
+impl serde::Serialize for Error {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::ser::Serializer,
     {
-        match self {
-            Error::WithHint { err, hint } => ErrorWrapperWithHint {
-                err: err.to_string(),
-                hint: hint.to_string(),
-            }
-            .serialize(serializer),
-            err => ErrorWrapper {
-                err: err.to_string(),
-            }
-            .serialize(serializer),
-        }
+        use serde::ser::SerializeStruct;
+
+        let mut state = serializer.serialize_struct("ErrorWrapper", 2)?;
+        state.serialize_field("code", &self.code().to_string())?;
+        state.serialize_field("message", &self.to_string())?;
+        state.end()
     }
 }
 
@@ -164,14 +203,27 @@ impl IntoResponse for Error {
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod test {
-    use super::Error;
-    use anyhow::anyhow;
+    use crate::error::Error;
 
     #[test]
-    fn serialize_errors() {
-        assert_eq!(serde_json::to_string(&Error::WithHint {
-            err: anyhow!("Not able to find your keys in the ssh agent"),
-            hint: "Make sure to run <code>rad auth</code> in your terminal to add your keys to the ssh-agent.",
-        }).unwrap(),"{\"err\":\"Not able to find your keys in the ssh agent\",\"hint\":\"Make sure to run <code>rad auth</code> in your terminal to add your keys to the ssh-agent.\"}");
+    fn serialize_nested_errors() {
+        let serialized = serde_json::to_string(&Error::Crypto(
+            radicle::crypto::ssh::keystore::Error::Ssh(ssh_key::Error::Crypto),
+        ))
+        .unwrap();
+        assert_eq!(
+            serialized,
+            "{\"code\":\"PassphraseError.InvalidPassphrase\",\"message\":\"ssh keygen: cryptographic error\"}"
+        );
+    }
+
+    #[test]
+    fn serialize_unknown_errors() {
+        let serialized =
+            serde_json::to_string(&Error::Issue(radicle::issue::Error::MissingIdentity)).unwrap();
+        assert_eq!(
+            serialized,
+            "{\"code\":\"UnknownError\",\"message\":\"identity document missing\"}"
+        );
     }
 }

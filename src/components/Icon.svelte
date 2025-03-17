@@ -37,6 +37,7 @@
       | "face"
       | "file"
       | "home"
+      | "info"
       | "inbox"
       | "issue"
       | "issue-closed"
@@ -583,6 +584,21 @@
     <path d="M6 9H10L10 10H6L6 9Z" />
     <path d="M3 13H13V14H3L3 13Z" />
     <path d="M3 2H13V3H3L3 2Z" />
+  {:else if name === "info"}
+    <path d="M10 13V14L6 14V13L10 13Z" />
+    <path d="M4 12H6L6 13L4 13L4 12Z" />
+    <path d="M3 10H4L4 12L3 12L3 10Z" />
+    <path d="M3 6L3 10H2L2 6H3Z" />
+    <path d="M4 4L4 6H3L3 4L4 4Z" />
+    <path d="M6 3L6 4L4 4L4 3L6 3Z" />
+    <path d="M10 3L6 3V2L10 2V3Z" />
+    <path d="M12 4L10 4V3L12 3V4Z" />
+    <path d="M13 6L12 6V4H13V6Z" />
+    <path d="M13 10L13 6H14L14 10H13Z" />
+    <path d="M12 12V10L13 10V12L12 12Z" />
+    <path d="M12 12H10V13H12V12Z" />
+    <path d="M9 7V10L10 10V11L6 11L6 10H7V8H6V7L9 7Z" />
+    <path d="M9 4L7 4L7 6L9 6V4Z" />
   {:else if name === "issue"}
     <path d="M6 13H8V14H6V13Z" />
     <path d="M10 13L8 13V14L10 14V13Z" />
