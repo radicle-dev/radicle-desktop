@@ -387,7 +387,6 @@
       threads: codeCommentThreads,
     }}
     rid={repo.rid}
-    showCommits={false}
     {patchId}
     {revision} />
 </div>
