@@ -9,7 +9,11 @@ pub fn run() {
     #[cfg(debug_assertions)]
     let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_log::Builder::new().build());
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(log::LevelFilter::Info)
+                .build(),
+        );
     #[cfg(not(debug_assertions))]
     let builder = tauri::Builder::default();
 
