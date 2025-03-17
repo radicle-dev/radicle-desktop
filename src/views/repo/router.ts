@@ -290,6 +290,11 @@ export function repoRouteToPath(route: RepoRoute): string {
     let url = [...pathSegments, "patches", route.patch].join("/");
     if (route.status) {
       searchParams.set("status", route.status);
+    }
+    if (route.reviewId) {
+      searchParams.set("review", route.reviewId);
+    }
+    if (searchParams.size > 0) {
       url += `?${searchParams}`;
     }
     return url;
@@ -340,7 +345,7 @@ export function repoUrlToRoute(
       const status = (searchParams.get("status") ?? undefined) as
         | PatchStatus
         | undefined;
-      const reviewId = searchParams.get("reviewId") ?? undefined;
+      const reviewId = searchParams.get("review") ?? undefined;
       if (id) {
         return {
           resource: "repo.patch",
