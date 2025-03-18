@@ -10,10 +10,12 @@
   import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {
+    disabled: boolean;
     commit: Commit;
+    onclick: () => void;
   }
 
-  const { commit }: Props = $props();
+  const { disabled, commit, onclick }: Props = $props();
 
   let commitMessageVisible = $state(false);
 </script>
@@ -58,13 +60,21 @@
     display: flex;
     align-items: center;
   }
+  .disabled {
+    color: var(--color-foreground-disabled) !important;
+  }
   pre {
     white-space: pre-wrap;
     word-wrap: break-word;
   }
+  .summary {
+    cursor: pointer;
+  }
 </style>
 
-<div class="teaser" aria-label="commit-teaser">
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<div class="teaser" class:disabled {onclick} aria-label="commit-teaser">
   <div class="left">
     <div class="message">
       <div class="summary" use:twemoji>
@@ -75,7 +85,8 @@
           <NakedButton
             stylePadding="0 4px"
             variant="ghost"
-            onclick={() => {
+            onclick={e => {
+              e.stopPropagation();
               commitMessageVisible = !commitMessageVisible;
             }}>
             <Icon name="ellipsis" />
@@ -91,7 +102,7 @@
   </div>
   <div class="right">
     <CompactCommitAuthorship {commit}>
-      <Id id={commit.id} variant="commit" />
+      <Id id={commit.id} variant={disabled ? "none" : "commit"} />
     </CompactCommitAuthorship>
   </div>
 </div>

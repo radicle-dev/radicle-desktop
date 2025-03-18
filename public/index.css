@@ -41,6 +41,12 @@ body {
   font-weight: var(--font-weight-semibold);
 }
 
+.global-none {
+  color: var(--color-foreground-disabled);
+  font-weight: var(--font-weight-bold);
+  font-family: var(--font-family-monospace);
+}
+
 .global-flex {
   display: flex;
   align-items: center;

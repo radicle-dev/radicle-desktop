@@ -8,12 +8,11 @@
   interface Props {
     leftHeader: Snippet;
     children: Snippet;
-    expanded: boolean;
   }
 
-  /* eslint-disable prefer-const */
-  let { leftHeader, children, expanded }: Props = $props();
-  /* eslint-enable prefer-const */
+  const { leftHeader, children }: Props = $props();
+
+  let expanded = $state(true);
 </script>
 
 <style>

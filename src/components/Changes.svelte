@@ -5,6 +5,7 @@
   import type { Revision } from "@bindings/cob/patch/Revision";
 
   import { invoke } from "@app/lib/invoke";
+  import { pluralize } from "@app/lib/utils";
 
   import Changeset from "@app/components/Changeset.svelte";
   import CobCommitTeaser from "./CobCommitTeaser.svelte";
@@ -24,6 +25,9 @@
 
   let hideChanges = $state(false);
   let filesExpanded = $state(true);
+  let selectedCommit = $state<string>();
+  let base = $state(revision.base);
+  let head = $state(revision.head);
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -32,6 +36,27 @@
     hideChanges = false;
     filesExpanded = true;
   });
+
+  function selectRevision({
+    headId,
+    baseId,
+    commitId = undefined,
+    showFiles = true,
+  }: {
+    headId: string;
+    baseId: string;
+    commitId?: string;
+    showFiles?: boolean;
+  }) {
+    head = headId;
+    base = baseId;
+    selectedCommit = commitId;
+    filesExpanded = showFiles;
+  }
+
+  const isActiveCommit = (commitId: string) => selectedCommit === commitId;
+  const isTeaserDisabled = (commitId: string) =>
+    selectedCommit ? selectedCommit !== commitId : false;
 
   async function loadHighlightedDiff(rid: string, base: string, head: string) {
     return invoke<Diff>("get_diff", {
@@ -81,6 +106,28 @@
     left: -18.5px;
     background-color: var(--color-fill-separator);
   }
+  .commit {
+    cursor: pointer;
+  }
+  .commit-dot.active {
+    background-color: var(--color-border-focus);
+  }
+  .commit:hover .commit-dot:not(.active) {
+    background-color: var(--color-foreground-contrast);
+  }
+  .commit:hover {
+    background-color: var(--color-background-float);
+  }
+  .disabled {
+    color: var(--color-foreground-disabled) !important;
+  }
+  .summary {
+    padding: 0.25rem 0;
+  }
+  .summary:hover {
+    background-color: var(--color-background-float);
+    color: var(--color-foreground-contrast) !important;
+  }
   .hide {
     display: none;
   }
@@ -113,23 +160,48 @@
 <div class:hide={hideChanges}>
   {#await loadCommits(rid, revision.base, revision.head) then commits}
     <div style:margin-bottom="1rem">
-      <CommitsContainer expanded={filesExpanded}>
+      <CommitsContainer>
         {#snippet leftHeader()}
           <div class="txt-semibold">Commits</div>
         {/snippet}
         {#snippet children()}
           <div style:padding="0 1rem">
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
             <div
-              class="global-flex txt-small"
-              style:color="var(--color-foreground-dim)">
-              <Icon name="branch" /><Id id={revision.base} variant="commit" />
+              class="global-flex txt-small summary"
+              class:disabled={selectedCommit}
+              style:cursor="pointer"
+              onclick={() =>
+                selectRevision({
+                  headId: revision.head,
+                  baseId: revision.base,
+                })}>
+              <Icon name="branch" />
+              {commits.length}
+              {pluralize("commit", commits.length)} on base
+              <Id
+                id={revision.base}
+                variant={selectedCommit ? "none" : "commit"} />
               <div class="global-counter">base</div>
             </div>
             <div class="commits">
               {#each commits.reverse() as commit}
                 <div class="commit" style:position="relative">
                   <div class="commit-dot"></div>
-                  <CobCommitTeaser {commit} />
+                  <div
+                    class="commit-dot"
+                    class:active={isActiveCommit(commit.id)}>
+                  </div>
+                  <CobCommitTeaser
+                    disabled={isTeaserDisabled(commit.id)}
+                    onclick={() =>
+                      selectRevision({
+                        headId: commit.id,
+                        baseId: commit.parents[0],
+                        commitId: commit.id,
+                      })}
+                    {commit} />
                 </div>
               {/each}
             </div>
@@ -139,13 +211,9 @@
     </div>
   {/await}
 
-  {#await loadHighlightedDiff(rid, revision.base, revision.head)}
+  {#await loadHighlightedDiff(rid, base, head)}
     <span class="txt-small">Loading…</span>
   {:then diff}
-    <Changeset
-      expanded={filesExpanded}
-      head={revision.head}
-      {diff}
-      {codeComments} />
+    <Changeset expanded={filesExpanded} {head} {diff} {codeComments} />
   {/await}
 </div>
