@@ -273,10 +273,13 @@
     position: relative;
     cursor: cell;
   }
-  .left:hover,
-  .right:hover,
-  .left:active,
-  .right:active {
+  .selection-disabled {
+    cursor: default;
+  }
+  .left:hover:not(.selection-disabled),
+  .right:hover:not(.selection-disabled),
+  .left:active:not(.selection-disabled),
+  .right:active:not(.selection-disabled) {
     color: var(--color-foreground-contrast);
   }
   .sign {
@@ -356,6 +359,7 @@
               isSelected(filePath(file, "left"), hunkIdx, lineIdx)}>
             <div
               class="left"
+              class:selection-disabled={!codeComments || thread}
               class:marker={selection?.start.side === "left" &&
                 selection.start.lineNumber === lineNumber(line, "left")}
               onpointerdown={e => {
@@ -368,6 +372,7 @@
 
             <div
               class="right"
+              class:selection-disabled={!codeComments || thread}
               class:marker={selection?.start.side === "right" &&
                 selection.start.lineNumber === lineNumber(line, "right")}
               onpointerdown={e => {
