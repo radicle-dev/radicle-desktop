@@ -74,6 +74,12 @@
   .hide {
     display: none;
   }
+  .review-list {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
 </style>
 
 <div style:margin={hideReviews ? "1.5rem 0" : "1.5rem 0 2.5rem 0"}>
@@ -119,9 +125,15 @@
   </div>
 
   {#if revision.reviews && revision.reviews.length}
-    <div class:hide={hideReviews} style:margin-top="1rem">
-      {#each revision.reviews as review}
-        <ReviewTeaser {rid} {review} {patchId} {status} />
+    <div class:hide={hideReviews} class="review-list">
+      {#each revision.reviews as review, idx}
+        <ReviewTeaser
+          {rid}
+          {review}
+          {patchId}
+          {status}
+          first={idx === 0}
+          last={idx === revision.reviews.length - 1} />
       {/each}
     </div>
   {/if}

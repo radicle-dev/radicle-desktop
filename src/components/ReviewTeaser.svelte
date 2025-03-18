@@ -21,9 +21,17 @@
     review: Review;
     rid: string;
     status: PatchStatus | undefined;
+    first?: boolean;
+    last?: boolean;
   }
 
-  const { patchId, review, rid, status }: Props = $props();
+  const { patchId, review, rid, status, first, last }: Props = $props();
+  const style = $derived(
+    (first && last && "--local-clip-path: var(--2px-corner-fill)") ||
+      (first && "--local-clip-path: var(--2px-top-corner-fill)") ||
+      (last && "--local-clip-path: var(--2px-bottom-corner-fill)") ||
+      "",
+  );
 </script>
 
 <style>
@@ -41,7 +49,7 @@
     z-index: -1;
     content: " ";
     background-color: var(--color-fill-float);
-    clip-path: var(--2px-corner-fill);
+    clip-path: var(--local-clip-path);
     width: 100%;
     height: 100%;
     top: 0;
@@ -92,6 +100,7 @@
   tabindex="0"
   role="button"
   class="review"
+  {style}
   style:cursor="pointer"
   onclick={() => {
     void push({
