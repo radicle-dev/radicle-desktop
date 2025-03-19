@@ -100,7 +100,7 @@
             npmDeps = fetchNpmDeps {
               name = pname + "-npm-deps-" + version;
               inherit src;
-              hash = "sha256-11qBh/Lr10X5sFgM6FJOFqQYnAsnC+avkbXdABYOtTE="; # npmDepsHash : Update canary, don't touch!
+              hash = "sha256-jCz7gyjTXo9QOR8KGMGCnKjoODwHCFEmMtndrLeta0M="; # npmDepsHash : Update canary, don't touch!
             };
 
             nativeBuildInputs = [
