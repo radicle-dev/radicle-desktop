@@ -27,17 +27,10 @@
   }
 
   /* eslint-disable prefer-const */
-  let {
-    config,
-    repos: initialRepos,
-    notificationCount,
-    repoCount,
-    activeTab,
-  }: Props =
+  let { config, repos, notificationCount, repoCount, activeTab }: Props =
     /* eslint-enable prefer-const */
     $props();
 
-  let repos = $state(initialRepos);
   let lock = false;
   const startup = $state<{ error?: ErrorWrapper }>({ error: undefined });
 
