@@ -1,6 +1,4 @@
 <script lang="ts">
-  import type { IssueStatus, PatchStatus } from "@app/views/repo/router";
-
   import * as router from "@app/lib/router";
 
   import { storeLayout, getLayout } from "@app/views/repo/Layout.svelte";
@@ -11,9 +9,7 @@
   import NakedButton from "./NakedButton.svelte";
 
   interface Props {
-    activeTab:
-      | { type: "issues"; status: IssueStatus }
-      | { type: "patches"; status?: PatchStatus };
+    activeTab: "issues" | "patches";
     rid: string;
   }
 
@@ -45,7 +41,7 @@
   <div class="global-flex" style:height="40px">
     <Icon name="repo" />
   </div>
-  {#if activeTab.type === "issues"}
+  {#if activeTab === "issues"}
     <Border
       styleCursor="pointer"
       onclick={() => {
@@ -75,7 +71,7 @@
     </button>
   {/if}
 
-  {#if activeTab.type === "patches"}
+  {#if activeTab === "patches"}
     <Border
       styleCursor="pointer"
       onclick={() => {

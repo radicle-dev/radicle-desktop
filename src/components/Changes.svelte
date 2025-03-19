@@ -164,49 +164,47 @@
         {#snippet leftHeader()}
           <div class="txt-semibold">Commits</div>
         {/snippet}
-        {#snippet children()}
-          <div style:padding="0 1rem">
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <div
-              class="global-flex txt-small summary"
-              class:disabled={selectedCommit}
-              style:cursor="pointer"
-              onclick={() =>
-                selectRevision({
-                  headId: revision.head,
-                  baseId: revision.base,
-                })}>
-              <Icon name="branch" />
-              {commits.length}
-              {pluralize("commit", commits.length)} on base
-              <Id
-                id={revision.base}
-                variant={selectedCommit ? "none" : "commit"} />
-              <div class="global-counter">base</div>
-            </div>
-            <div class="commits">
-              {#each commits.reverse() as commit}
-                <div class="commit" style:position="relative">
-                  <div class="commit-dot"></div>
-                  <div
-                    class="commit-dot"
-                    class:active={isActiveCommit(commit.id)}>
-                  </div>
-                  <CobCommitTeaser
-                    disabled={isTeaserDisabled(commit.id)}
-                    onclick={() =>
-                      selectRevision({
-                        headId: commit.id,
-                        baseId: commit.parents[0],
-                        commitId: commit.id,
-                      })}
-                    {commit} />
-                </div>
-              {/each}
-            </div>
+        <div style:padding="0 1rem">
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <div
+            class="global-flex txt-small summary"
+            class:disabled={selectedCommit}
+            style:cursor="pointer"
+            onclick={() =>
+              selectRevision({
+                headId: revision.head,
+                baseId: revision.base,
+              })}>
+            <Icon name="branch" />
+            {commits.length}
+            {pluralize("commit", commits.length)} on base
+            <Id
+              id={revision.base}
+              variant={selectedCommit ? "none" : "commit"} />
+            <div class="global-counter">base</div>
           </div>
-        {/snippet}
+          <div class="commits">
+            {#each commits.reverse() as commit}
+              <div class="commit" style:position="relative">
+                <div class="commit-dot"></div>
+                <div
+                  class="commit-dot"
+                  class:active={isActiveCommit(commit.id)}>
+                </div>
+                <CobCommitTeaser
+                  disabled={isTeaserDisabled(commit.id)}
+                  onclick={() =>
+                    selectRevision({
+                      headId: commit.id,
+                      baseId: commit.parents[0],
+                      commitId: commit.id,
+                    })}
+                  {commit} />
+              </div>
+            {/each}
+          </div>
+        </div>
       </CommitsContainer>
     </div>
   {/await}

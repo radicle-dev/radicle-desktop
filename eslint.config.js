@@ -16,7 +16,7 @@ export default [
         parserOptions: {
           project: "./tsconfig.json",
           tsconfigRootDir: import.meta.dirname,
-          extraFileExtensions: [".svelte"],
+          extraFileExtensions: [".svelte", ".svelte.ts"],
         },
         globals: { ...globals.browser, ...globals.node },
       },
@@ -115,7 +115,7 @@ export default [
   ...svelte.configs["flat/recommended"],
   ...svelte.configs["flat/prettier"],
   {
-    files: ["*.svelte", "**/*.svelte"],
+    files: ["*.svelte", "**/*.svelte", "**/*.svelte.ts"],
     languageOptions: {
       parser: svelteParser,
       parserOptions: {
@@ -128,6 +128,7 @@ export default [
       },
     },
     rules: {
+      "svelte/require-each-key": "off",
       "svelte/no-at-html-tags": "off",
       "@typescript-eslint/no-explicit-any": "error",
     },

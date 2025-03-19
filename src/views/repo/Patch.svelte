@@ -346,7 +346,7 @@
   {/snippet}
 
   {#snippet sidebar()}
-    <Sidebar activeTab={{ type: "patches", status }} rid={repo.rid} />
+    <Sidebar activeTab="patches" rid={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}

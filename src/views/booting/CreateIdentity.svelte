@@ -2,22 +2,23 @@
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
 
   import * as router from "@app/lib/router";
+  import { createEventEmittersOnce } from "@app/lib/startup.svelte";
+  import { invoke } from "@app/lib/invoke";
+
+  import debounce from "lodash/debounce";
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import TextInput from "@app/components/TextInput.svelte";
   import logo from "/radicle.svg?url";
-  import { invoke } from "@app/lib/invoke";
-  import { createEventEmittersOnce } from "@app/lib/startup.svelte";
-  import { debounce } from "lodash";
 
   let passphrase = $state("");
   let notMatchingPassphrases = $state<boolean>();
   let passphraseRepeat = $state("");
   let alias = $state("");
-  const errors = $state<{ alias: ErrorWrapper[]; passphrase: ErrorWrapper[] }>({
+  const errors: { alias: ErrorWrapper[]; passphrase: ErrorWrapper[] } = {
     alias: [],
     passphrase: [],
-  });
+  };
 
   const validatePassphraseRepeat = debounce(() => {
     if (passphrase !== passphraseRepeat && passphraseRepeat.length !== 0) {

@@ -113,7 +113,7 @@
 
 <Layout publicKey={config.publicKey}>
   {#snippet sidebar()}
-    <Sidebar activeTab={{ type: "issues", status }} rid={repo.rid} />
+    <Sidebar activeTab="issues" rid={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}
