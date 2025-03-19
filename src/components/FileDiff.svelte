@@ -40,6 +40,20 @@
   }
 
   const commentsOfThisFile = $derived(filterThreadsByFilePath());
+  const resolvedThreads = $derived(
+    commentsOfThisFile
+      ? commentsOfThisFile.threads.filter(t => {
+          return t.root.resolved === true;
+        }).length
+      : 0,
+  );
+  const unresolvedThreads = $derived(
+    commentsOfThisFile
+      ? commentsOfThisFile.threads.filter(t => {
+          return t.root.resolved === false;
+        }).length
+      : 0,
+  );
 </script>
 
 <style>
@@ -104,7 +118,18 @@
       </div>
     {/if}
     {#if commentsOfThisFile && commentsOfThisFile.threads.length > 0}
-      <Icon name="comment" />
+      {#if unresolvedThreads > 0}
+        <div class="global-flex">
+          <Icon name="comment" />
+          {unresolvedThreads}
+        </div>
+      {/if}
+      {#if resolvedThreads > 0}
+        <div class="global-flex">
+          <Icon name="comment-checkmark" />
+          {resolvedThreads}
+        </div>
+      {/if}
     {/if}
   {/snippet}
 

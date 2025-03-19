@@ -1,6 +1,9 @@
 <script lang="ts" module>
   export interface CodeComments {
-    threads: Thread<CodeLocation>[];
+    changeCommentStatus: (
+      commentId: string,
+      resolved: boolean,
+    ) => Promise<void>;
     config: Config;
     createComment: (
       body: string,
@@ -21,6 +24,7 @@
     ) => Promise<void>;
     repoDelegates: Author[];
     rid: string;
+    threads: Thread<CodeLocation>[];
   }
 </script>
 
@@ -191,6 +195,26 @@
         start: { side: "right", lineNumber: location.new.range.start },
       };
     }
+  }
+
+  let threadExpandedStates: Record<string, boolean> = $state(
+    codeComments
+      ? Object.fromEntries(
+          codeComments.threads.map(t => [t.root.id, t.root.resolved]),
+        )
+      : {},
+  );
+
+  $effect(() => {
+    threadExpandedStates = codeComments
+      ? Object.fromEntries(
+          codeComments.threads.map(t => [t.root.id, t.root.resolved]),
+        )
+      : {};
+  });
+
+  function toggleCommentExpand(commentId: string) {
+    threadExpandedStates[commentId] = !threadExpandedStates[commentId];
   }
 </script>
 
@@ -379,22 +403,51 @@
 
             <div class="global-flex comment-icon">
               {#if thread}
-                {#if thread.root.resolved && thread.replies.every(r => r.resolved)}
-                  <Icon name="comment-checkmark" />
+                {#if thread.root.resolved}
+                  <Icon
+                    name="comment-checkmark"
+                    onclick={() => toggleCommentExpand(thread.root.id)} />
                 {:else}
-                  <Icon name="comment" />
+                  <Icon
+                    name="comment"
+                    onclick={() => toggleCommentExpand(thread.root.id)} />
                 {/if}
               {/if}
             </div>
           </div>
 
-          {#if codeComments && thread}
+          {#if codeComments && thread && !threadExpandedStates[thread.root.id]}
             <div class="thread">
-              <div style:padding="0.5rem">
+              <div class="global-flex" style:padding="0.5rem">
                 {@render commentHeader(
                   thread.root.location?.path,
                   rangeAnchorsFromCodeLocation(thread.root.location),
                 )}
+                {#if roles.isDelegateOrAuthor( codeComments.config.publicKey, codeComments.repoDelegates.map(delegate => delegate.did), thread.root.author.did, )}
+                  <div style:margin-left="auto">
+                    {#if thread.root.resolved}
+                      <div title="Unresolve comment thread">
+                        <Icon
+                          name="cross"
+                          onclick={() =>
+                            codeComments.changeCommentStatus(
+                              thread.root.id,
+                              false,
+                            )} />
+                      </div>
+                    {:else}
+                      <div title="Resolve comment thread">
+                        <Icon
+                          name="checkmark"
+                          onclick={() =>
+                            codeComments.changeCommentStatus(
+                              thread.root.id,
+                              true,
+                            )} />
+                      </div>
+                    {/if}
+                  </div>
+                {/if}
               </div>
               <ThreadComponent
                 inline

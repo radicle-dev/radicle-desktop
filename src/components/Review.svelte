@@ -218,6 +218,27 @@
       await loadReview();
     }
   }
+
+  async function changeCommentStatus(commentId: string, resolved: boolean) {
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patchId,
+        action: {
+          type: resolved
+            ? "review.comment.resolve"
+            : "review.comment.unresolve",
+          comment: commentId,
+          review: review.id,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Updating comment status failed: ", error);
+    } finally {
+      await loadReview();
+    }
+  }
 </script>
 
 <style>
@@ -378,6 +399,7 @@
 
   <Changes
     codeComments={{
+      changeCommentStatus,
       config,
       createComment,
       editComment,
