@@ -2,7 +2,7 @@
   import type { ComponentProps } from "svelte";
 
   import debounce from "lodash/debounce";
-  import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+  import { writeToClipboard } from "@app/lib/invoke";
 
   import Icon from "./Icon.svelte";
 
@@ -19,7 +19,7 @@
   }, 1000);
 
   async function copy() {
-    await writeText(id);
+    await writeToClipboard(id);
     icon = "checkmark";
     restoreIcon();
   }

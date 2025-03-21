@@ -1,15 +1,16 @@
 use radicle::identity;
-use radicle_types as types;
+use radicle_types::domain::repo::models;
+use radicle_types::domain::repo::service::Service;
+use radicle_types::domain::repo::traits::RepoService;
 use radicle_types::error::Error;
-use radicle_types::traits::repo::Repo;
-
-use crate::AppState;
+use radicle_types::outbound::radicle::Radicle as R;
+use radicle_types::outbound::sqlite::Sqlite;
 
 #[tauri::command]
 pub async fn get_diff(
-    ctx: tauri::State<'_, AppState>,
+    service: tauri::State<'_, Service<R, Sqlite>>,
     rid: identity::RepoId,
-    options: radicle_types::cobs::diff::Options,
-) -> Result<types::diff::Diff, Error> {
-    ctx.get_diff(rid, options)
+    options: models::diff::Options,
+) -> Result<models::diff::Diff, Error> {
+    service.get_diff(rid, options)
 }

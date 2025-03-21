@@ -7,9 +7,8 @@ use radicle::{cob, git, identity, node, storage};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::cobs::stream::{self, CobStream};
-use crate::cobs::{self, Author};
-use crate::domain::patch::models;
+use crate::domain::repo::models::cobs;
+use crate::domain::repo::models::stream::{self, CobStream};
 
 #[derive(Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -41,10 +40,12 @@ pub struct CountsByRepoParams {
     pub repo: identity::RepoId,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct RepoGroupParams {
     pub repo: identity::RepoId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub skip: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub take: Option<usize>,
 }
 
@@ -141,7 +142,7 @@ pub struct ActionWithAuthor<T> {
     pub oid: git::Oid,
     #[ts(type = "number")]
     pub timestamp: Timestamp,
-    pub author: Author,
+    pub author: cobs::Author,
     #[serde(flatten)]
     pub action: T,
 }
@@ -158,8 +159,8 @@ pub struct Patch {
     #[ts(type = "number")]
     pub timestamp: localtime::LocalTime,
     pub title: String,
-    pub status: models::patch::State,
-    pub actions: Vec<ActionWithAuthor<models::patch::Action>>,
+    pub status: cobs::patch::State,
+    pub actions: Vec<ActionWithAuthor<cobs::patch::Action>>,
 }
 
 /// Type of notification.

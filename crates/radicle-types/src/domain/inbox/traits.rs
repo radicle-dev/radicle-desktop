@@ -1,10 +1,34 @@
-use crate::domain::inbox::models::notification::{
-    CountByRepo, ListNotificationsError, RepoGroupParams,
-};
+use std::collections::BTreeMap;
 
-use super::models::notification::RepoGroup;
+use radicle::{git, identity, Profile, Storage};
+
+use crate::domain::inbox::models::notification::{
+    CountByRepo, ListNotificationsError, NotificationCount, NotificationItem, RepoGroup,
+    RepoGroupParams,
+};
+use crate::domain::repo::models::cobs::PaginatedQuery;
+use crate::error::Error;
+
+use super::models::notification::SetStatusNotifications;
 
 pub trait InboxStorage {
+    fn clear_notifications(
+        &self,
+        profile: &Profile,
+        params: SetStatusNotifications,
+    ) -> Result<(), Error>;
+
+    fn count_notifications_by_repo(
+        &self,
+        storage: Storage,
+    ) -> Result<BTreeMap<identity::RepoId, NotificationCount>, Error>;
+
+    fn list_notifications(
+        &self,
+        profile: &Profile,
+        params: RepoGroupParams,
+    ) -> Result<PaginatedQuery<BTreeMap<git::Qualified<'static>, Vec<NotificationItem>>>, Error>;
+
     fn counts_by_repo(
         &self,
     ) -> Result<
@@ -16,6 +40,23 @@ pub trait InboxStorage {
 }
 
 pub trait InboxService {
+    fn clear_notifications(
+        &self,
+        profile: &Profile,
+        params: SetStatusNotifications,
+    ) -> Result<(), Error>;
+
+    fn count_notifications_by_repo(
+        &self,
+        storage: Storage,
+    ) -> Result<BTreeMap<identity::RepoId, NotificationCount>, Error>;
+
+    fn list_notifications(
+        &self,
+        profile: &Profile,
+        params: RepoGroupParams,
+    ) -> Result<PaginatedQuery<BTreeMap<git::Qualified<'static>, Vec<NotificationItem>>>, Error>;
+
     /// Get the total notification count by repos.
     fn counts_by_repo(
         &self,

@@ -4,28 +4,45 @@ use radicle::cob::cache::COBS_DB_FILE;
 use radicle::identity::RepoId;
 use radicle::node::{Handle, Node, NOTIFICATIONS_DB_FILE};
 use radicle::storage::ReadStorage;
+use radicle::Profile;
+use radicle_types::outbound::radicle::Radicle;
+use radicle_types::outbound::sqlite::Sqlite;
 use tauri::{AppHandle, Emitter, Manager};
 
 use radicle_types::config::Config;
+use radicle_types::domain;
 use radicle_types::error::Error;
-use radicle_types::traits::Profile;
-use radicle_types::{domain, AppState};
 
 #[tauri::command]
-pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
+pub(crate) fn load_profile(app: AppHandle) -> Result<Config, Error> {
     let profile = radicle::Profile::load()?;
-    let repositories = profile.storage.repositories()?;
-    let public_key = profile.public_key;
+    app.manage(profile.clone());
 
-    let inbox_db = radicle_types::outbound::sqlite::Sqlite::reader(
-        profile.node().join(NOTIFICATIONS_DB_FILE),
-    )?;
-    let cob_db =
-        radicle_types::outbound::sqlite::Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
+    Ok(Config::get(&profile))
+}
+
+#[tauri::command]
+pub(crate) fn create_services(app: AppHandle, profile: tauri::State<Profile>) -> Result<(), Error> {
+    let inbox_db = Sqlite::reader(profile.node().join(NOTIFICATIONS_DB_FILE))?;
+    let cob_db = Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
+    let radicle = Radicle::new((*profile).clone());
 
     let inbox_service = domain::inbox::service::Service::new(inbox_db);
-    let patch_service = domain::patch::service::Service::new(cob_db);
+    let repo_service = domain::repo::service::Service::new(radicle.clone(), cob_db);
+    let identity_service = domain::identity::service::Service::new(radicle);
 
+    app.manage(inbox_service);
+    app.manage(repo_service);
+    app.manage(identity_service);
+
+    Ok(())
+}
+
+#[tauri::command]
+pub(crate) fn create_event_emitters(
+    app: AppHandle,
+    profile: tauri::State<Profile>,
+) -> Result<(), Error> {
     let node_handle = app.app_handle().clone();
     let sync_handle = app.app_handle().clone();
     let events_handle = app.app_handle().clone();
@@ -35,8 +52,8 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
 
     let mut node_seeds = node.clone();
 
-    app.manage(inbox_service);
-    app.manage(patch_service);
+    let repositories = profile.storage.repositories()?;
+    let public_key = profile.public_key;
 
     tauri::async_runtime::spawn(async move {
         loop {
@@ -47,8 +64,10 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
 
     tauri::async_runtime::spawn(async move {
         loop {
-            let mut sync_status =
-                BTreeMap::<RepoId, Option<radicle_types::cobs::repo::SyncStatus>>::new();
+            let mut sync_status = BTreeMap::<
+                RepoId,
+                Option<radicle_types::domain::repo::models::repo::SyncStatus>,
+            >::new();
             for repo in &repositories {
                 if let Ok(seeds) = node_seeds.seeds(repo.rid).map(Into::<Vec<_>>::into) {
                     if let Some(status) =
@@ -86,8 +105,5 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
         }
     });
 
-    let state = AppState { profile };
-    app.manage(state.clone());
-
-    Ok(state.config())
+    Ok(())
 }

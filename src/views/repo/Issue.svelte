@@ -387,6 +387,7 @@
             {/if}
           </div>
           <TextInput
+            placeholder="Issue title"
             valid={updatedTitle.trim().length > 0}
             bind:value={updatedTitle}
             autofocus

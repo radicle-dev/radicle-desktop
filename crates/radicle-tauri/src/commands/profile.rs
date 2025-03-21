@@ -1,15 +1,13 @@
-use radicle::node::NodeId;
+use radicle::node::{AliasStore, NodeId};
+use radicle::Profile;
 use radicle_types::config::Config;
-use radicle_types::traits::Profile;
-
-use crate::AppState;
 
 #[tauri::command]
-pub fn config(ctx: tauri::State<AppState>) -> Config {
-    ctx.config()
+pub fn config(profile: tauri::State<Profile>) -> Config {
+    Config::get(&profile)
 }
 
 #[tauri::command]
-pub fn alias(ctx: tauri::State<AppState>, nid: NodeId) -> Option<radicle::node::Alias> {
-    ctx.alias(nid)
+pub fn alias(profile: tauri::State<Profile>, nid: NodeId) -> Option<radicle::node::Alias> {
+    profile.alias(&nid)
 }

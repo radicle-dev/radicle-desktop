@@ -25,6 +25,8 @@
 
   const activeRouteStore = router.activeRouteStore;
 
+  console.log(localStorage.getItem("TEST_HTTP_API_PORT"));
+
   let profile = $state<Config>();
   let unlistenEvents: UnlistenFn | undefined = undefined;
   let unlistenNodeEvents: UnlistenFn | undefined = undefined;
@@ -32,7 +34,9 @@
 
   onMount(async () => {
     try {
-      profile = await invoke<Config>("startup");
+      profile = await invoke<Config>("load_profile");
+      await invoke("create_services");
+      await invoke("create_event_emitters");
     } catch (err) {
       startup.error = err as ErrorWrapper;
       return;
@@ -44,7 +48,7 @@
     }
 
     try {
-      await invoke("authenticate");
+      await invoke("check_agent");
       void router.loadFromLocation();
       dynamicInterval(
         "auth",

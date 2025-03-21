@@ -1,14 +1,10 @@
 import { test, expect } from "@tests/support/fixtures.js";
 
-test("default theme", async ({ page }) => {
-  await page.goto("/repos");
-
+test("default theme", async ({ authenticatedContext: page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
-test("theme persistence", async ({ page }) => {
-  await page.goto("/repos");
-  await expect(page.getByRole("button", { name: "markdown" })).toBeVisible();
+test("theme persistence", async ({ authenticatedContext: page }) => {
   await page.getByRole("button", { name: "Settings" }).click();
 
   await page
@@ -21,9 +17,7 @@ test("theme persistence", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 });
 
-test("change theme", async ({ page }) => {
-  await page.goto("/repos");
-  await expect(page.getByRole("button", { name: "markdown" })).toBeVisible();
+test("change theme", async ({ authenticatedContext: page }) => {
   await page.getByRole("button", { name: "Settings" }).click();
 
   await page

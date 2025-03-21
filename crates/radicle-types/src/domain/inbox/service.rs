@@ -1,9 +1,11 @@
-use radicle::git;
+use radicle::{git, Profile, Storage};
 
 use crate::domain::inbox::models::notification::{
     CountByRepo, ListNotificationsError, NotificationRow, RepoGroupParams,
 };
 use crate::domain::inbox::traits::{InboxService, InboxStorage};
+
+use super::models::notification::SetStatusNotifications;
 
 #[derive(Debug, Clone)]
 pub struct Service<I>
@@ -43,5 +45,42 @@ where
         ListNotificationsError,
     > {
         self.inbox.repo_group(params)
+    }
+
+    fn list_notifications(
+        &self,
+        profile: &Profile,
+        params: RepoGroupParams,
+    ) -> Result<
+        crate::domain::repo::models::cobs::PaginatedQuery<
+            std::collections::BTreeMap<
+                git::Qualified<'static>,
+                Vec<super::models::notification::NotificationItem>,
+            >,
+        >,
+        crate::error::Error,
+    > {
+        self.inbox.list_notifications(profile, params)
+    }
+
+    fn count_notifications_by_repo(
+        &self,
+        storage: Storage,
+    ) -> Result<
+        std::collections::BTreeMap<
+            radicle::identity::RepoId,
+            super::models::notification::NotificationCount,
+        >,
+        crate::error::Error,
+    > {
+        self.inbox.count_notifications_by_repo(storage)
+    }
+
+    fn clear_notifications(
+        &self,
+        profile: &Profile,
+        params: SetStatusNotifications,
+    ) -> Result<(), crate::error::Error> {
+        self.inbox.clear_notifications(profile, params)
     }
 }

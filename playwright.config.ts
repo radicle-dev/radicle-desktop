@@ -4,7 +4,6 @@ import { devices } from "@playwright/test";
 const config: PlaywrightTestConfig = {
   outputDir: "./tests/artifacts",
   testDir: "./tests/e2e",
-  globalSetup: "./tests/support/globalSetup.ts",
   timeout: 30_000,
   expect: {
     timeout: 8000,

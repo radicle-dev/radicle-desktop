@@ -15,7 +15,7 @@ export async function checkAuth() {
       return;
     }
     lock = true;
-    await invoke("authenticate", { passphrase: "" });
+    await invoke("check_agent");
     dynamicInterval(
       "auth",
       checkAuth,

@@ -8,7 +8,8 @@ export async function invoke<T = null>(
   if (window.__TAURI_INTERNALS__) {
     return tauri.invoke(cmd, args, options);
   } else {
-    return fetch(`http://127.0.0.1:8081/${cmd}`, {
+    const port = localStorage.getItem("TEST_HTTP_API_PORT") || "8081";
+    return fetch(`http://127.0.0.1:${port}/${cmd}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(args),

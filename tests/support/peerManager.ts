@@ -1,62 +1,11 @@
 import type * as Execa from "execa";
 
 import * as Fs from "node:fs/promises";
-import * as Os from "node:os";
 import * as Path from "node:path";
 import * as Stream from "node:stream";
-import * as Util from "node:util";
-import * as readline from "node:readline/promises";
-import getPort from "get-port";
-import matches from "lodash/matches.js";
 import waitOn from "wait-on";
-import { defaultConfig, type Config } from "@tests/support/fixtures.js";
 import { execa } from "execa";
 import { logPrefix } from "@tests/support/logPrefix.js";
-import { randomTag } from "@tests/support/support.js";
-import { sleep } from "@app/lib/sleep.js";
-
-export type RefsUpdate =
-  | { updated: { name: string; old: string; new: string } }
-  | { created: { name: string; oid: string } }
-  | { deleted: { name: string; oid: string } }
-  | { skipped: { name: string; oid: string } };
-
-export type NodeEvent =
-  | {
-      type: "refsFetched";
-      remote: string;
-      rid: string;
-      updated: RefsUpdate[];
-    }
-  | {
-      type: "refsSynced";
-      remote: string;
-      rid: string;
-    }
-  | {
-      type: "seedDiscovered";
-      rid: string;
-      nid: string;
-    }
-  | {
-      type: "seedDropped";
-      nid: string;
-      rid: string;
-    }
-  | {
-      type: "peerConnected";
-      nid: string;
-    }
-  | {
-      type: "peerDisconnected";
-      nid: string;
-      reason: string;
-    };
-
-export interface RoutingEntry {
-  nid: string;
-  rid: string;
-}
 
 interface PeerManagerParams {
   dataPath: string;
@@ -139,58 +88,33 @@ export interface BaseUrl {
 
 export class RadiclePeer {
   public checkoutPath: string;
-  public nodeId: string;
+  public nodeId?: string;
+  public sshAgentPid?: string;
+  public sshAgentAuthSock?: string;
+  public httpdBaseUrl?: BaseUrl;
 
   #radSeed: string;
-  #socket: string;
   #radHome: string;
-  #eventRecords: NodeEvent[] = [];
   #outputLog: Stream.Writable;
   #gitOptions?: Record<string, string>;
-  #listenSocketAddr?: string;
-  #httpdBaseUrl?: BaseUrl;
-  #nodeProcess?: SpawnResult;
   // Name for easy identification. Used on file system and in logs.
   #name: string;
   #childProcesses: SpawnResult[] = [];
 
   private constructor(props: {
     checkoutPath: string;
-    nodeId: string;
     radSeed: string;
-    socket: string;
     gitOptions?: Record<string, string>;
     radHome: string;
     logFile: Stream.Writable;
     name: string;
   }) {
     this.checkoutPath = props.checkoutPath;
-    this.nodeId = props.nodeId;
     this.#gitOptions = props.gitOptions;
     this.#radSeed = props.radSeed;
-    this.#socket = props.socket;
     this.#radHome = props.radHome;
     this.#outputLog = props.logFile;
     this.#name = props.name;
-  }
-
-  public async waitForEvent(searchEvent: NodeEvent, timeoutInMs: number) {
-    const start = new Date().getTime();
-
-    while (true) {
-      if (this.#eventRecords.find(matches(searchEvent))) {
-        return;
-      }
-      if (new Date().getTime() - start > timeoutInMs) {
-        throw Error(
-          `Timeout waiting for event on node ${this.#name} ${Util.inspect(
-            searchEvent,
-            { depth: null },
-          )}`,
-        );
-      }
-      await sleep(100);
-    }
   }
 
   public static async create({
@@ -201,34 +125,12 @@ export class RadiclePeer {
     outputLog: logFile,
   }: PeerManagerParams): Promise<RadiclePeer> {
     const checkoutPath = Path.join(dataPath, name, "copy");
-    await Fs.mkdir(checkoutPath, { recursive: true });
     const radHome = Path.join(dataPath, name, "home");
-    await Fs.mkdir(radHome, { recursive: true });
-
-    const socketDir = await Fs.mkdtemp(
-      Path.join(Os.tmpdir(), `radicle-${randomTag()}`),
-    );
-    const socket = Path.join(socketDir, "control.sock");
-
-    /* eslint-disable @typescript-eslint/naming-convention */
-    const env = {
-      ...gitOptions,
-      RAD_HOME: radHome,
-      RAD_PASSPHRASE: "asdf",
-      RAD_KEYGEN_SEED: node,
-      RAD_SOCKET: socket,
-    };
-    /* eslint-enable @typescript-eslint/naming-convention */
-
-    await execa("rad", ["auth", "--alias", name], { env });
-    const { stdout: nodeId } = await execa("rad", ["self", "--nid"], { env });
 
     return new RadiclePeer({
       checkoutPath,
       gitOptions,
       radSeed: node,
-      socket,
-      nodeId,
       radHome,
       logFile,
       name,
@@ -242,15 +144,8 @@ export class RadiclePeer {
     await this.spawn("ssh-add", ["-d", `${this.#radHome}/keys/radicle.pub`]);
   }
 
-  public async authenticate(): Promise<void> {
-    await this.spawn("rad", ["auth"]);
-  }
-
-  public async startHttpd(port?: number): Promise<void> {
-    if (!port) {
-      port = await getPort();
-    }
-    this.#httpdBaseUrl = {
+  public async startHttpd(port: number): Promise<void> {
+    this.httpdBaseUrl = {
       hostname: "127.0.0.1",
       port,
       scheme: "http",
@@ -261,72 +156,40 @@ export class RadiclePeer {
       "./crates/test-http-api/Cargo.toml",
       "--",
       "--listen",
-      `${this.#httpdBaseUrl.hostname}:${this.#httpdBaseUrl.port}`,
+      `${this.httpdBaseUrl.hostname}:${this.httpdBaseUrl.port}`,
     ]);
 
     await waitOn({
       resources: [
-        `tcp:${this.#httpdBaseUrl.hostname}:${this.#httpdBaseUrl.port}`,
+        `tcp:${this.httpdBaseUrl.hostname}:${this.httpdBaseUrl.port}`,
       ],
       timeout: 20_000,
     });
   }
 
-  public async startNode(config: Partial<Config> = defaultConfig) {
-    const listenPort = await getPort();
-    this.#listenSocketAddr = `0.0.0.0:${listenPort}`;
-
-    await updateConfig(this.#radHome, config);
-
-    this.#nodeProcess = this.spawn("radicle-node", [
-      "--listen",
-      this.#listenSocketAddr,
-    ]);
-
-    await waitOn({
-      resources: [`socket:${this.#socket}`],
-      timeout: 2000,
-    });
-
-    const { stdout } = this.rad(["node", "events"], {
-      cwd: this.#radHome,
-    });
-
-    if (!stdout) {
-      throw new Error("Could not get stdout to track events");
+  public async startSSHAgent() {
+    const { stdout } = await this.spawn("ssh-agent", ["-s"]);
+    const match = stdout.match(/SSH_AUTH_SOCK=([^;]+);.*SSH_AGENT_PID=(\d+)/s);
+    if (match) {
+      this.sshAgentAuthSock = match[1];
+      this.sshAgentPid = match[2];
+    } else {
+      throw new Error("Could not start a new ssh-agent");
     }
 
-    readline
-      .createInterface({
-        input: stdout,
-        terminal: false,
-      })
-      .on("line", line => {
-        let event;
-        try {
-          event = JSON.parse(line);
-        } catch {
-          console.log("Error parsing event", line);
-          return;
-        }
-
-        this.#eventRecords.push(event);
-        for (const line of Util.inspect(event, { depth: null }).split("\n")) {
-          this.#outputLog.write(
-            `${logPrefix(`${this.#name} node events`)} ${line}\n`,
-          );
-        }
-      });
+    await waitOn({
+      resources: [`socket:${this.sshAgentAuthSock}`],
+      timeout: 2000,
+    });
   }
 
-  public async stopNode() {
-    // Don’t leak unhandled rejections when forcefully killing the process
-    // eslint-disable-next-line @typescript-eslint/no-empty-function
-    this.#nodeProcess?.catch(() => {});
-    this.#nodeProcess?.kill("SIGTERM");
+  public async stopSSHAgent() {
+    if (this.sshAgentPid) {
+      process.kill(Number(this.sshAgentPid), "SIGTERM");
+    }
 
     await waitOn({
-      resources: [`socket:${this.#socket}`],
+      resources: [`socket:${this.sshAgentAuthSock}`],
       reverse: true,
       timeout: 2000,
     });
@@ -345,33 +208,6 @@ export class RadiclePeer {
       p.catch(() => {});
       p.kill("SIGKILL");
     });
-  }
-
-  public get address(): string {
-    if (!this.#listenSocketAddr) {
-      throw new Error("Remote node has no listen addr yet");
-    }
-    return `${this.nodeId}@${this.#listenSocketAddr}`;
-  }
-
-  public uiUrl(): string {
-    if (!this.#httpdBaseUrl) {
-      throw new Error("No httpd service running");
-    }
-
-    return `/nodes/${this.#httpdBaseUrl.hostname}:${this.#httpdBaseUrl.port}`;
-  }
-
-  public ridUrl(rid: string): string {
-    return `/nodes/${this.httpdBaseUrl.hostname}:${this.httpdBaseUrl.port}/${rid}`;
-  }
-
-  public get httpdBaseUrl(): BaseUrl {
-    if (!this.#httpdBaseUrl) {
-      throw new Error("No httpd service running");
-    }
-
-    return this.#httpdBaseUrl;
   }
 
   public git(args: string[] = [], opts?: SpawnOptions): SpawnResult {
@@ -404,10 +240,10 @@ export class RadiclePeer {
         GIT_CONFIG_GLOBAL: "/dev/null",
         GIT_CONFIG_NOSYSTEM: "1",
         RAD_HOME: this.#radHome,
-        RAD_PASSPHRASE: "asdf",
         RAD_LOCAL_TIME: "1671125284",
         RAD_KEYGEN_SEED: this.#radSeed,
-        RAD_SOCKET: this.#socket,
+        SSH_AUTH_SOCK: this.sshAgentAuthSock,
+        SSH_AGENT_PID: this.sshAgentPid,
         ...opts?.env,
         ...this.#gitOptions,
       },
@@ -421,21 +257,4 @@ export class RadiclePeer {
 
     return childProcess;
   }
-}
-
-async function updateConfig(radHome: string, configParams: Partial<Config>) {
-  const configPath = Path.join(radHome, "config.json");
-  const configFile = await Fs.readFile(configPath, "utf-8");
-  const config = {
-    defaultConfig,
-    ...JSON.parse(configFile),
-  };
-  config.preferredSeeds = [];
-  config.web = { ...config.web, ...configParams.web };
-  config.node = {
-    ...config.node,
-    ...configParams.node,
-    network: "test",
-  };
-  await Fs.writeFile(configPath, JSON.stringify(config), "utf-8");
 }

@@ -1,4 +1,5 @@
 use radicle::crypto::PublicKey;
+use radicle::Profile;
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -21,4 +22,14 @@ pub struct Config {
     #[serde(default)]
     #[ts(type = "{ default: 'allow', scope: 'followed' | 'all' } | { default: 'block' }")]
     pub seeding_policy: DefaultSeedingPolicy,
+}
+
+impl Config {
+    pub fn get(profile: &Profile) -> Self {
+        Self {
+            public_key: profile.public_key,
+            seeding_policy: profile.config.node.seeding_policy,
+            alias: profile.config.node.alias.clone(),
+        }
+    }
 }
