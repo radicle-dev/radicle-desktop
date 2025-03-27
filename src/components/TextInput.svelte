@@ -16,6 +16,7 @@
     onDismiss?: () => void;
     valid?: boolean;
     oninput?: FormEventHandler<HTMLInputElement>;
+    keyShortcuts?: string;
   }
 
   /* eslint-disable prefer-const */
@@ -31,6 +32,7 @@
     onDismiss,
     valid = true,
     oninput,
+    keyShortcuts,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -93,6 +95,7 @@
   variant={valid ? (focussed ? "secondary" : "ghost") : "danger"}
   styleWidth="100%">
   <input
+    aria-keyshortcuts={keyShortcuts}
     onfocus={() => {
       focussed = true;
     }}

@@ -6,17 +6,22 @@
   import type { RepoCount } from "@bindings/repo/RepoCount";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import fuzzysort from "fuzzysort";
+
   import * as router from "@app/lib/router";
-  import { didFromPublicKey } from "@app/lib/utils";
+  import { didFromPublicKey, modifierKey } from "@app/lib/utils";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
   import { onMount } from "svelte";
 
+  import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import HomeSidebar from "@app/components/HomeSidebar.svelte";
+  import Icon from "@app/components/Icon.svelte";
   import Layout from "@app/views/repo/Layout.svelte";
   import Onboarding from "@app/views/home/Onboarding.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
+  import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
     activeTab?: HomeReposTab;
@@ -63,6 +68,22 @@
       invoke<Config>("config"),
     ]);
   }
+
+  let searchInput = $state("");
+
+  const searchableRepos = $derived(
+    repos
+      .flatMap(r => {
+        if (r.payloads["xyz.radicle.project"]) {
+          return { repo: r, name: r.payloads["xyz.radicle.project"].data.name };
+        }
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== undefined),
+  );
+
+  const searchResults = $derived(
+    fuzzysort.go(searchInput, searchableRepos, { key: "name", all: true }),
+  );
 </script>
 
 <style>
@@ -82,7 +103,6 @@
     padding-right: 1.5rem;
     align-items: center;
     min-height: 40px;
-    margin-bottom: 0.5rem;
   }
 </style>
 
@@ -100,24 +120,60 @@
       {notificationCount} />
   {/snippet}
   <div class="container">
-    <div class="header">Repositories</div>
+    <div class="global-flex" style:margin-bottom="0.5rem">
+      <div class="header">Repositories</div>
+      <div style:margin-left="auto">
+        <TextInput
+          onSubmit={async () => {
+            if (searchResults.length === 1) {
+              await router.push({
+                resource: "repo.issues",
+                rid: searchResults[0].obj.repo.rid,
+                status: "open",
+              });
+            }
+          }}
+          onDismiss={() => {
+            searchInput = "";
+          }}
+          placeholder={`Filter repositories ${modifierKey()} + f`}
+          keyShortcuts="ctrl+f"
+          bind:value={searchInput} />
+      </div>
+    </div>
     {#if repos.length > 0}
-      <div class="repo-grid">
-        {#each repos as repo}
-          {#if repo.payloads["xyz.radicle.project"]}
+      {#if searchResults.length > 0}
+        <div class="repo-grid">
+          {#each searchResults as result}
             <RepoCard
-              {repo}
+              focussed={searchResults.length === 1}
+              repo={result.obj.repo}
               selfDid={didFromPublicKey(config.publicKey)}
               onclick={() => {
                 void router.push({
                   resource: "repo.issues",
-                  rid: repo.rid,
+                  rid: result.obj.repo.rid,
                   status: "open",
                 });
               }} />
-          {/if}
-        {/each}
-      </div>
+          {/each}
+        </div>
+      {:else}
+        <Border
+          variant="ghost"
+          styleAlignItems="center"
+          styleJustifyContent="center">
+          <div
+            class="global-flex"
+            style:height="74px"
+            style:justify-content="center">
+            <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
+              <Icon name="none" />
+              No matching repositories.
+            </div>
+          </div>
+        </Border>
+      {/if}
     {:else}
       <Onboarding {reload} />
     {/if}

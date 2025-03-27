@@ -12,9 +12,10 @@
     repo: RepoInfo;
     selfDid: string;
     onclick?: () => void;
+    focussed?: boolean;
   }
 
-  const { repo, selfDid, onclick }: Props = $props();
+  const { repo, selfDid, onclick, focussed }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
@@ -34,7 +35,7 @@
 </style>
 
 <Border
-  variant="ghost"
+  variant={focussed ? "secondary" : "ghost"}
   styleCursor="pointer"
   styleWidth="100%"
   stylePadding="8px 12px"
