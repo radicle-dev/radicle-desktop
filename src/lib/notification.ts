@@ -69,7 +69,7 @@ export function createSummary(
   ) {
     summary = `closed ${kind}`;
   } else if (lastAction.type === "revision.comment") {
-    summary = `left ${count > 1 ? count : "a"} review ${pluralize("comment", count)}`;
+    summary = `left ${count > 1 ? count : "a"} ${pluralize("comment", count)}`;
   } else if (lastAction.type === "review.comment") {
     summary = `left ${count > 1 ? count : "a"} review ${pluralize("comment", count)}`;
   } else if (a.every(e => e.type === "comment.react")) {
