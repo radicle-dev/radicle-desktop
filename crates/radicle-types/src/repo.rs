@@ -94,6 +94,10 @@ impl ProjectPayload {
     pub fn new(data: ProjectPayloadData, meta: ProjectPayloadMeta) -> Self {
         Self { data, meta }
     }
+
+    pub fn name(&self) -> &str {
+        &self.data.name
+    }
 }
 
 impl TryFrom<identity::doc::Payload> for ProjectPayloadData {

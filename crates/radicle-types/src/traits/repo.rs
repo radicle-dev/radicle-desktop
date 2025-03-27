@@ -57,7 +57,13 @@ pub trait Repo: Profile {
             entries.push(repo_info)
         }
 
-        entries.sort_by(|a, b| b.last_commit_timestamp.cmp(&a.last_commit_timestamp));
+        entries.sort_by_key(|repo_info| {
+            repo_info
+                .payloads
+                .project
+                .as_ref()
+                .map(|p| p.name().to_lowercase())
+        });
 
         Ok::<_, Error>(entries)
     }
