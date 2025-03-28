@@ -18,9 +18,11 @@
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import Label from "@app/components/Label.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import Border from "./Border.svelte";
 
   interface Props {
     compact?: boolean;
+    focussed?: boolean;
     loadPatch?: (patchId: string) => Promise<void>;
     patch: Patch;
     rid: string;
@@ -30,6 +32,7 @@
 
   const {
     compact = false,
+    focussed,
     loadPatch,
     patch,
     rid,
@@ -72,26 +75,7 @@
   }
 </style>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<div
-  tabindex="0"
-  role="button"
-  class:selected
-  class="patch-teaser"
-  style:align-items="flex-start"
-  onclick={async () => {
-    if (loadPatch) {
-      await loadPatch(patch.id);
-    } else {
-      void push({
-        resource: "repo.patch",
-        rid,
-        patch: patch.id,
-        status,
-        reviewId: undefined,
-      });
-    }
-  }}>
+{#snippet patchSnippet()}
   <div class="global-flex" style:align-items="flex-start">
     <div
       class="global-counter status"
@@ -116,7 +100,7 @@
     </div>
   </div>
 
-  <div class="global-flex">
+  <div class="global-flex" style:margin-left="auto">
     {#if !compact}
       {#await invoke<Stats>( "diff_stats", { rid, base: patch.base, head: patch.head }, ) then stats}
         <DiffStatBadge {stats} />
@@ -134,4 +118,39 @@
       {patch.revisionCount}
     </div>
   </div>
-</div>
+{/snippet}
+
+{#if focussed}
+  <Border
+    styleBackgroundColor="var(--color-background-float)"
+    styleDisplay="flex"
+    styleAlignItems="flex-start"
+    styleMinHeight="5rem"
+    stylePadding="1rem"
+    variant="secondary">
+    {@render patchSnippet()}
+  </Border>
+{:else}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    tabindex="0"
+    role="button"
+    class:selected
+    class="patch-teaser"
+    style:align-items="flex-start"
+    onclick={async () => {
+      if (loadPatch) {
+        await loadPatch(patch.id);
+      } else {
+        void push({
+          resource: "repo.patch",
+          rid,
+          patch: patch.id,
+          status,
+          reviewId: undefined,
+        });
+      }
+    }}>
+    {@render patchSnippet()}
+  </div>
+{/if}

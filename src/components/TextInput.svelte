@@ -7,36 +7,38 @@
   import Border from "./Border.svelte";
 
   interface Props {
-    name?: string;
-    placeholder?: string;
-    value?: string;
-    type?: string;
     autofocus?: boolean;
     autoselect?: boolean;
     disabled?: boolean;
-    onSubmit?: () => void;
-    onDismiss?: () => void;
-    valid?: boolean;
-    oninput?: FormEventHandler<HTMLInputElement>;
     keyShortcuts?: string;
     left?: Snippet;
+    name?: string;
+    onDismiss?: () => void;
+    onFocus?: () => void;
+    onSubmit?: () => void;
+    oninput?: FormEventHandler<HTMLInputElement>;
+    placeholder?: string;
+    type?: string;
+    valid?: boolean;
+    value?: string;
   }
 
   /* eslint-disable prefer-const */
   let {
-    name,
-    placeholder,
-    value = $bindable(undefined),
-    type = "text",
     autofocus = false,
     autoselect = false,
     disabled = false,
-    onSubmit,
-    onDismiss,
-    valid = true,
-    oninput,
     keyShortcuts,
     left,
+    name,
+    onDismiss,
+    onFocus,
+    onSubmit,
+    oninput,
+    placeholder,
+    type = "text",
+    valid = true,
+    value = $bindable(undefined),
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -102,6 +104,9 @@
     style:padding={left ? "0.25rem 0.75rem 0.25rem 0" : "0.25rem 0.75rem"}
     aria-keyshortcuts={keyShortcuts}
     onfocus={() => {
+      if (onFocus) {
+        onFocus();
+      }
       focussed = true;
     }}
     onblur={() => {

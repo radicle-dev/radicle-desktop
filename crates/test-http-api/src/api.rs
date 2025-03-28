@@ -339,7 +339,7 @@ async fn issue_threads_handler(
 struct PatchesBody {
     pub rid: identity::RepoId,
     pub skip: Option<usize>,
-    pub take: Option<usize>,
+    pub take: Option<isize>,
     pub status: Option<types::cobs::query::PatchStatus>,
 }
 
@@ -354,8 +354,8 @@ async fn patches_handler(
 ) -> impl IntoResponse {
     let profile = ctx.profile;
     let cursor = skip.unwrap_or(0);
-    let take = take.unwrap_or(20);
     let aliases = profile.aliases();
+
     let patches = match status {
         None => ctx.patches.list(rid)?.collect::<Vec<_>>(),
         Some(s) => ctx
@@ -363,6 +363,25 @@ async fn patches_handler(
             .list_by_status(rid, s.into())?
             .collect::<Vec<_>>(),
     };
+
+    if let Some(t) = take {
+        if t < 0 {
+            // Return all patches
+            let content = patches
+                .into_iter()
+                .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
+                .collect::<Vec<_>>();
+
+            return Ok::<_, Error>(Json(cobs::PaginatedQuery {
+                cursor: 0,
+                more: false,
+                content,
+            }));
+        }
+    }
+
+    let take = take.unwrap_or(20) as usize;
+
     let more = cursor + take < patches.len();
 
     let patches = patches

@@ -22,18 +22,36 @@ pub async fn list_patches(
     rid: identity::RepoId,
     status: Option<types::cobs::query::PatchStatus>,
     skip: Option<usize>,
-    take: Option<usize>,
+    take: Option<isize>,
 ) -> Result<types::cobs::PaginatedQuery<Vec<models::patch::Patch>>, Error> {
     let profile = ctx.profile();
     let cursor = skip.unwrap_or(0);
-    let take = take.unwrap_or(20);
     let aliases = profile.aliases();
+
     let patches = match status {
         None => sqlite_service.list(rid)?.collect::<Vec<_>>(),
         Some(s) => sqlite_service
             .list_by_status(rid, s.into())?
             .collect::<Vec<_>>(),
     };
+
+    if let Some(t) = take {
+        if t < 0 {
+            // Return all patches
+            let content = patches
+                .into_iter()
+                .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
+                .collect::<Vec<_>>();
+
+            return Ok::<_, Error>(cobs::PaginatedQuery {
+                cursor: 0,
+                more: false,
+                content,
+            });
+        }
+    }
+
+    let take = take.unwrap_or(20) as usize;
     let more = cursor + take < patches.len();
 
     let patches = patches
