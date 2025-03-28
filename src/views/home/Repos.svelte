@@ -122,7 +122,7 @@
   <div class="container">
     <div class="global-flex" style:margin-bottom="0.5rem">
       <div class="header">Repositories</div>
-      <div style:margin-left="auto">
+      <div class="global-flex" style:margin-left="auto">
         <TextInput
           onSubmit={async () => {
             if (searchResults.length === 1) {
@@ -136,9 +136,17 @@
           onDismiss={() => {
             searchInput = "";
           }}
-          placeholder={`Filter repositories ${modifierKey()} + f`}
+          placeholder={`Fuzzy filter repositories ${modifierKey()} + f`}
           keyShortcuts="ctrl+f"
-          bind:value={searchInput} />
+          bind:value={searchInput}>
+          {#snippet left()}
+            <div
+              style:color="var(--color-foreground-dim)"
+              style:padding-left="0.5rem">
+              <Icon name="filter" />
+            </div>
+          {/snippet}
+        </TextInput>
       </div>
     </div>
     {#if repos.length > 0}

@@ -36,6 +36,7 @@
       | "eye"
       | "face"
       | "file"
+      | "filter"
       | "home"
       | "info"
       | "inbox"
@@ -545,6 +546,21 @@
     <path d="M4 2H9V3L4 3V2Z" />
     <path d="M13 6V13H12V6L13 6Z" />
     <path d="M4 3V13H3L3 3L4 3Z" />
+  {:else if name === "filter"}
+    <path d="M3 2L13 2V3L3 3V2Z" />
+    <path d="M13 3L14 3V4L13 4V3Z" />
+    <path d="M12 4L13 4V5H12V4Z" />
+    <path d="M11 5L12 5V7H11V5Z" />
+    <path d="M5 5H4V7H5V5Z" />
+    <path d="M10 7L11 7V9H10V7Z" />
+    <path d="M6 7L5 7L5 9H6V7Z" />
+    <path d="M9 9L10 9L10 13L9 13L9 9Z" />
+    <path d="M7 9H6V12H7V9Z" />
+    <path d="M2 3L3 3L3 4H2L2 3Z" />
+    <path d="M3 4H4L4 5L3 5L3 4Z" />
+    <path d="M8 13H9L9 14H8V13Z" />
+    <path d="M6 4L12 4V5L6 5V4Z" />
+    <path d="M7 12H8L8 13H7L7 12Z" />
   {:else if name === "home"}
     <path d="M7 1.50003H9V2.50003H7V1.50003Z" />
     <path d="M6 2.50003L7 2.50003V3.50003H6V2.50003Z" />

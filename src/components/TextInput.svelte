@@ -1,8 +1,10 @@
 <script lang="ts">
+  import type { FormEventHandler } from "svelte/elements";
+  import type { Snippet } from "svelte";
+
   import { onMount } from "svelte";
 
   import Border from "./Border.svelte";
-  import type { FormEventHandler } from "svelte/elements";
 
   interface Props {
     name?: string;
@@ -17,6 +19,7 @@
     valid?: boolean;
     oninput?: FormEventHandler<HTMLInputElement>;
     keyShortcuts?: string;
+    left?: Snippet;
   }
 
   /* eslint-disable prefer-const */
@@ -33,6 +36,7 @@
     valid = true,
     oninput,
     keyShortcuts,
+    left,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -78,7 +82,6 @@
     height: 100%;
     margin: 0;
     height: 32px;
-    padding: 0.25rem 0.75rem;
     border: 0;
   }
   input::placeholder {
@@ -94,7 +97,9 @@
 <Border
   variant={valid ? (focussed ? "secondary" : "ghost") : "danger"}
   styleWidth="100%">
+  {@render left?.()}
   <input
+    style:padding={left ? "0.25rem 0.75rem 0.25rem 0" : "0.25rem 0.75rem"}
     aria-keyshortcuts={keyShortcuts}
     onfocus={() => {
       focussed = true;
