@@ -2,18 +2,23 @@
   import type { Config } from "@bindings/config/Config";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
-  import type { PatchStatus } from "./router";
+  import { DEFAULT_TAKE, type PatchStatus } from "./router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import { invoke } from "@app/lib/invoke";
+  import fuzzysort from "fuzzysort";
 
+  import * as router from "@app/lib/router";
+  import { invoke } from "@app/lib/invoke";
+  import { modifierKey } from "@app/lib/utils";
+
+  import Border from "@app/components/Border.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Layout from "./Layout.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchesSecondColumn from "@app/components/PatchesSecondColumn.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
-  import Border from "@app/components/Border.svelte";
+  import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -23,6 +28,8 @@
   }
 
   const { repo, patches, config, status }: Props = $props();
+
+  let loading: boolean = $state(false);
 
   let items = $state(patches.content);
   let cursor = patches.cursor;
@@ -34,22 +41,53 @@
     more = patches.more;
   });
 
-  async function loadMoreContent() {
+  async function loadMoreContent(all: boolean = false) {
     if (more) {
       const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
         rid: repo.rid,
-        skip: cursor + 20,
+        skip: cursor + DEFAULT_TAKE,
         status,
-        take: 20,
+        take: all ? undefined : DEFAULT_TAKE,
       });
 
       cursor = p.cursor;
       more = p.more;
-      items = [...items, ...p.content];
+
+      if (all) {
+        items = p.content;
+      } else {
+        items = [...items, ...p.content];
+      }
     }
   }
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
+
+  let searchInput = $state("");
+
+  const searchablePatches = $derived(
+    items
+      .flatMap(i => {
+        return {
+          patch: i,
+          labels: i.labels.join(" "),
+          assignees: i.assignees
+            .map(a => {
+              return a.alias ?? "";
+            })
+            .join(" "),
+          author: i.author.alias ?? "",
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== undefined),
+  );
+
+  const searchResults = $derived(
+    fuzzysort.go(searchInput, searchablePatches, {
+      keys: ["patch.title", "labels", "assignees", "author"],
+      all: true,
+    }),
+  );
 </script>
 
 <style>
@@ -89,11 +127,57 @@
   {/snippet}
 
   <div class="container">
-    <div class="header">Patches</div>
+    <div class="header">
+      Patches
+
+      <div class="global-flex" style:margin-left="auto">
+        <TextInput
+          onFocus={async () => {
+            try {
+              loading = true;
+              // Load all patches.
+              await loadMoreContent(true);
+            } catch (e) {
+              console.error("Loading all patches failed: ", e);
+            } finally {
+              loading = false;
+            }
+          }}
+          onSubmit={async () => {
+            if (searchResults.length === 1) {
+              await router.push({
+                patch: searchResults[0].obj.patch.id,
+                resource: "repo.patch",
+                reviewId: undefined,
+                rid: repo.rid,
+                status,
+              });
+            }
+          }}
+          onDismiss={() => {
+            searchInput = "";
+          }}
+          placeholder={`Fuzzy filter issues ${modifierKey()} + f`}
+          keyShortcuts="ctrl+f"
+          bind:value={searchInput}>
+          {#snippet left()}
+            <div
+              style:color="var(--color-foreground-dim)"
+              style:padding-left="0.5rem">
+              <Icon name={loading ? "clock" : "filter"} />
+            </div>
+          {/snippet}
+        </TextInput>
+      </div>
+    </div>
 
     <div class="list">
-      {#each items as patch}
-        <PatchTeaser rid={repo.rid} {patch} {status} />
+      {#each searchResults as result}
+        <PatchTeaser
+          focussed={searchResults.length === 1 && searchInput !== ""}
+          patch={result.obj.patch}
+          rid={repo.rid}
+          {status} />
       {/each}
 
       {#if patches.content.length === 0}

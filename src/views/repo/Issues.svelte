@@ -4,7 +4,10 @@
   import type { IssueStatus } from "./router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import fuzzysort from "fuzzysort";
+
   import * as router from "@app/lib/router";
+  import { modifierKey } from "@app/lib/utils";
 
   import Layout from "./Layout.svelte";
 
@@ -15,6 +18,7 @@
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import IssuesSecondColumn from "@app/components/IssuesSecondColumn.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
+  import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -23,7 +27,35 @@
     status: IssueStatus;
   }
 
-  const { repo, issues, config, status }: Props = $props();
+  /* eslint-disable prefer-const */
+  let { repo, issues, config, status }: Props = $props();
+  /* eslint-enable prefer-const */
+
+  let searchInput = $state("");
+
+  const searchableIssues = $derived(
+    issues
+      .flatMap(i => {
+        return {
+          issue: i,
+          labels: i.labels.join(" "),
+          assignees: i.assignees
+            .map(a => {
+              return a.alias ?? "";
+            })
+            .join(" "),
+          author: i.author.alias ?? "",
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== undefined),
+  );
+
+  const searchResults = $derived(
+    fuzzysort.go(searchInput, searchableIssues, {
+      keys: ["issue.title", "labels", "assignees", "author"],
+      all: true,
+    }),
+  );
 </script>
 
 <style>
@@ -40,7 +72,6 @@
     font-size: var(--font-size-medium);
     display: flex;
     align-items: center;
-    justify-content: space-between;
     min-height: 40px;
     margin-bottom: 0.5rem;
   }
@@ -65,24 +96,55 @@
   <div class="container">
     <div class="header">
       <div>Issues</div>
-      <div class="txt-regular txt-semibold">
-        <Button
-          variant="secondary"
-          onclick={() => {
-            void router.push({
-              resource: "repo.createIssue",
-              status,
-              rid: repo.rid,
-            });
-          }}>
-          <Icon name="plus" />New
-        </Button>
+      <div class="global-flex" style:margin-left="auto">
+        <TextInput
+          onSubmit={async () => {
+            if (searchResults.length === 1) {
+              await router.push({
+                resource: "repo.issue",
+                rid: repo.rid,
+                issue: searchResults[0].obj.issue.id,
+                status,
+              });
+            }
+          }}
+          onDismiss={() => {
+            searchInput = "";
+          }}
+          placeholder={`Fuzzy filter issues ${modifierKey()} + f`}
+          keyShortcuts="ctrl+f"
+          bind:value={searchInput}>
+          {#snippet left()}
+            <div
+              style:color="var(--color-foreground-dim)"
+              style:padding-left="0.5rem">
+              <Icon name="filter" />
+            </div>
+          {/snippet}
+        </TextInput>
+        <div class="txt-regular txt-semibold">
+          <Button
+            variant="secondary"
+            onclick={() => {
+              void router.push({
+                resource: "repo.createIssue",
+                status,
+                rid: repo.rid,
+              });
+            }}>
+            <Icon name="plus" />New
+          </Button>
+        </div>
       </div>
     </div>
 
     <div class="list">
-      {#each issues as issue}
-        <IssueTeaser {issue} rid={repo.rid} {status} />
+      {#each searchResults as result}
+        <IssueTeaser
+          focussed={searchResults.length === 1 && searchInput !== ""}
+          issue={result.obj.issue}
+          rid={repo.rid}
+          {status} />
       {/each}
 
       {#if issues.length === 0}

@@ -22,32 +22,50 @@ pub async fn list_patches(
     rid: identity::RepoId,
     status: Option<types::cobs::query::PatchStatus>,
     skip: Option<usize>,
+    // None: return all patches, `skip` is ignored.
     take: Option<usize>,
 ) -> Result<types::cobs::PaginatedQuery<Vec<models::patch::Patch>>, Error> {
     let profile = ctx.profile();
     let cursor = skip.unwrap_or(0);
-    let take = take.unwrap_or(20);
     let aliases = profile.aliases();
+
     let patches = match status {
         None => sqlite_service.list(rid)?.collect::<Vec<_>>(),
         Some(s) => sqlite_service
             .list_by_status(rid, s.into())?
             .collect::<Vec<_>>(),
     };
-    let more = cursor + take < patches.len();
 
-    let patches = patches
-        .into_iter()
-        .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
-        .skip(cursor)
-        .take(take)
-        .collect::<Vec<_>>();
+    match take {
+        None => {
+            let content = patches
+                .into_iter()
+                .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
+                .collect::<Vec<_>>();
 
-    Ok::<_, Error>(cobs::PaginatedQuery {
-        cursor,
-        more,
-        content: patches,
-    })
+            Ok::<_, Error>(cobs::PaginatedQuery {
+                cursor: 0,
+                more: false,
+                content,
+            })
+        }
+        Some(take) => {
+            let more = cursor + take < patches.len();
+
+            let content = patches
+                .into_iter()
+                .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
+                .skip(cursor)
+                .take(take)
+                .collect::<Vec<_>>();
+
+            Ok::<_, Error>(cobs::PaginatedQuery {
+                cursor,
+                more,
+                content,
+            })
+        }
+    }
 }
 
 #[tauri::command]

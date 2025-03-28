@@ -15,6 +15,8 @@ import { unreachable } from "@app/lib/utils";
 
 export type IssueStatus = "all" | Issue["state"]["status"];
 
+export const DEFAULT_TAKE = 20;
+
 export interface RepoIssueRoute {
   resource: "repo.issue";
   rid: string;
@@ -132,6 +134,7 @@ export async function loadPatch(
       invoke<PaginatedQuery<Patch[]>>("list_patches", {
         rid: route.rid,
         status: route.status,
+        take: DEFAULT_TAKE,
       }),
       invoke<Patch>("patch_by_id", {
         rid: route.rid,
@@ -178,6 +181,7 @@ export async function loadPatches(
     invoke<PaginatedQuery<Patch[]>>("list_patches", {
       rid: route.rid,
       status: route.status,
+      take: DEFAULT_TAKE,
     }),
   ]);
 

@@ -10,6 +10,7 @@
   } from "@app/lib/utils";
   import { push } from "@app/lib/router";
 
+  import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
   import Id from "./Id.svelte";
   import InlineTitle from "./InlineTitle.svelte";
@@ -17,19 +18,21 @@
   import NodeId from "./NodeId.svelte";
 
   interface Props {
+    compact?: boolean;
+    focussed?: boolean;
     issue: Issue;
     rid: string;
-    status: IssueStatus;
     selected?: boolean;
-    compact?: boolean;
+    status: IssueStatus;
   }
 
   const {
+    compact = false,
+    focussed,
     issue,
     rid,
-    status,
     selected = false,
-    compact = false,
+    status,
   }: Props = $props();
 </script>
 
@@ -37,7 +40,6 @@
   .issue-teaser {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 0.25rem;
     min-height: 5rem;
     background-color: var(--color-background-float);
@@ -67,16 +69,7 @@
   }
 </style>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
-<div
-  tabindex="0"
-  role="button"
-  class="issue-teaser"
-  class:selected
-  style:align-items="flex-start"
-  onclick={() => {
-    void push({ resource: "repo.issue", rid, issue: issue.id, status });
-  }}>
+{#snippet issueSnippet()}
   <div class="global-flex" style:align-items="flex-start">
     <div
       class="global-counter status"
@@ -102,7 +95,7 @@
     </div>
   </div>
 
-  <div class="global-flex">
+  <div class="global-flex" style:margin-left="auto">
     {#if !compact}
       {#each issue.labels as label}
         <Label {label} />
@@ -116,4 +109,29 @@
       </div>
     {/if}
   </div>
-</div>
+{/snippet}
+
+{#if focussed}
+  <Border
+    styleBackgroundColor="var(--color-background-float)"
+    styleDisplay="flex"
+    styleAlignItems="flex-start"
+    styleMinHeight="5rem"
+    stylePadding="1rem"
+    variant="secondary">
+    {@render issueSnippet()}
+  </Border>
+{:else}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    tabindex="0"
+    role="button"
+    class="issue-teaser"
+    class:selected
+    style:align-items="flex-start"
+    onclick={() => {
+      void push({ resource: "repo.issue", rid, issue: issue.id, status });
+    }}>
+    {@render issueSnippet()}
+  </div>
+{/if}
