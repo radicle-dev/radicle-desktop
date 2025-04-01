@@ -2,12 +2,13 @@
   import type { Config } from "@bindings/config/Config";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
-  import { DEFAULT_TAKE, type PatchStatus } from "./router";
+  import type { PatchStatus } from "./router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import fuzzysort from "fuzzysort";
 
   import * as router from "@app/lib/router";
+  import { DEFAULT_TAKE } from "./router";
   import { invoke } from "@app/lib/invoke";
   import { modifierKey } from "@app/lib/utils";
 
@@ -181,7 +182,7 @@
           {status} />
       {/each}
 
-      {#if patches.content.length === 0}
+      {#if searchResults.length === 0}
         <Border
           variant="ghost"
           styleAlignItems="center"
@@ -192,10 +193,10 @@
             style:justify-content="center">
             <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
               <Icon name="none" />
-              {#if status === undefined}
-                No patches.
+              {#if items.length > 0 && searchResults.length === 0}
+                No matching patches.
               {:else}
-                No {status} patches.
+                No {status === undefined ? "" : status} patches.
               {/if}
             </div>
           </div>

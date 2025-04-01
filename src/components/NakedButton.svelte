@@ -10,6 +10,7 @@
     styleHeight?: string;
     stylePadding?: string;
     active?: boolean;
+    keyShortcuts?: string;
   }
 
   const {
@@ -21,6 +22,7 @@
     styleHeight = "2rem",
     stylePadding = "0 8px",
     active = false,
+    keyShortcuts,
   }: Props = $props();
 
   const style = $derived(
@@ -239,6 +241,7 @@
   class:active
   onclick={!disabled ? onclick : undefined}
   {title}
+  aria-keyshortcuts={keyShortcuts}
   role="button"
   tabindex="0"
   {style}

@@ -11,8 +11,11 @@
   import type { Revision } from "@bindings/cob/patch/Revision";
 
   import capitalize from "lodash/capitalize";
+  import fuzzysort from "fuzzysort";
 
   import * as roles from "@app/lib/roles";
+  import * as router from "@app/lib/router";
+  import { DEFAULT_TAKE } from "./router";
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import {
     formatOid,
@@ -20,6 +23,7 @@
     patchStatusColor,
   } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
+  import { modifierKey } from "@app/lib/utils";
   import { nodeRunning } from "@app/lib/events";
 
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
@@ -32,6 +36,7 @@
   import LabelInput from "@app/components/LabelInput.svelte";
   import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
   import OutlineButton from "@app/components/OutlineButton.svelte";
   import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
@@ -190,18 +195,22 @@
     }
   }
 
-  async function loadMoreTeasers() {
+  async function loadMoreTeasers(all: boolean = false) {
     if (more) {
       const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
         rid: repo.rid,
         status,
-        skip: cursor + 20,
-        take: 20,
+        skip: cursor + DEFAULT_TAKE,
+        take: all ? undefined : DEFAULT_TAKE,
       });
 
       cursor = p.cursor;
       more = p.more;
-      patchTeasers = [...patchTeasers, ...p.content];
+      if (all) {
+        patchTeasers = p.content;
+      } else {
+        patchTeasers = [...patchTeasers, ...p.content];
+      }
     }
   }
 
@@ -222,6 +231,7 @@
       invoke<PaginatedQuery<Patch[]>>("list_patches", {
         rid: repo.rid,
         status,
+        take: DEFAULT_TAKE,
       }),
     ]);
   }
@@ -244,6 +254,7 @@
       patches = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
         rid: repo.rid,
         status: filter,
+        take: DEFAULT_TAKE,
       });
       status = filter;
     } catch (error) {
@@ -260,6 +271,34 @@
       });
     }) as Revision;
   }
+
+  let showFilters: boolean = $state(false);
+  let loading: boolean = $state(false);
+  let searchInput = $state("");
+
+  const searchablePatches = $derived(
+    patches.content
+      .flatMap(i => {
+        return {
+          patch: i,
+          labels: i.labels.join(" "),
+          assignees: i.assignees
+            .map(a => {
+              return a.alias ?? "";
+            })
+            .join(" "),
+          author: i.author.alias ?? "",
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== undefined),
+  );
+
+  const searchResults = $derived(
+    fuzzysort.go(searchInput, searchablePatches, {
+      keys: ["patch.title", "labels", "assignees", "author"],
+      all: true,
+    }),
+  );
 </script>
 
 <style>
@@ -350,10 +389,7 @@
   {/snippet}
 
   {#snippet secondColumn()}
-    <div
-      class="txt-regular txt-semibold global-flex"
-      style:min-height="40px"
-      style:justify-content="space-between">
+    <div class="txt-regular txt-semibold global-flex" style:min-height="40px">
       <div class="global-flex" style:gap="4px">
         {project.data.name}
         <Icon name="chevron-right" />
@@ -367,60 +403,120 @@
           Patches
         </Link>
       </div>
-
-      <Popover popoverPositionRight="0" popoverPositionTop="2.5rem">
-        {#snippet toggle(onclick)}
-          <OutlineButton variant="ghost" {onclick}>
-            {@render icons(status)}
-            {status ? capitalize(status) : "All"}
-            {@render counters(status)}
-            <Icon name="chevron-down" />
-          </OutlineButton>
-        {/snippet}
-
-        {#snippet popover()}
-          <Border variant="ghost">
-            <DropdownList
-              items={[
-                undefined,
-                "draft",
-                "open",
-                "archived",
-                "merged",
-              ] as const}>
-              {#snippet item(state)}
-                <DropdownListItem
-                  style="gap: 0.5rem"
-                  selected={status === state}
-                  onclick={async () => {
-                    await loadPatches(state);
-                    closeFocused();
-                  }}>
-                  {@render icons(state)}
-                  {state ? capitalize(state) : "All"}
-                  {@render counters(state)}
-                </DropdownListItem>
-              {/snippet}
-            </DropdownList>
-          </Border>
-        {/snippet}
-      </Popover>
+      <div style:margin-left="auto">
+        <NakedButton
+          keyShortcuts="ctrl+f"
+          variant="ghost"
+          stylePadding="0 4px"
+          active={showFilters}
+          onclick={() => {
+            if (showFilters) {
+              showFilters = false;
+              searchInput = "";
+            } else {
+              showFilters = true;
+            }
+          }}>
+          <Icon name="filter" />
+        </NakedButton>
+      </div>
     </div>
+    {#if showFilters}
+      <div class="global-flex" style:margin="1rem 0">
+        <Popover popoverPositionLeft="0" popoverPositionTop="2.5rem">
+          {#snippet toggle(onclick)}
+            <OutlineButton variant="ghost" {onclick}>
+              {@render icons(status)}
+              {status ? capitalize(status) : "All"}
+              {@render counters(status)}
+              <Icon name="chevron-down" />
+            </OutlineButton>
+          {/snippet}
+
+          {#snippet popover()}
+            <Border variant="ghost">
+              <DropdownList
+                items={[
+                  undefined,
+                  "draft",
+                  "open",
+                  "archived",
+                  "merged",
+                ] as const}>
+                {#snippet item(state)}
+                  <DropdownListItem
+                    style="gap: 0.5rem"
+                    selected={status === state}
+                    onclick={async () => {
+                      await loadPatches(state);
+                      closeFocused();
+                    }}>
+                    {@render icons(state)}
+                    {state ? capitalize(state) : "All"}
+                    {@render counters(state)}
+                  </DropdownListItem>
+                {/snippet}
+              </DropdownList>
+            </Border>
+          {/snippet}
+        </Popover>
+        {#if patchTeasers.length > 0}
+          <TextInput
+            onFocus={async () => {
+              try {
+                loading = true;
+                await loadMoreTeasers(true);
+              } catch (e) {
+                console.error("Loading all patches failed: ", e);
+              } finally {
+                loading = false;
+              }
+            }}
+            onSubmit={async () => {
+              if (searchResults.length === 1) {
+                await router.push({
+                  patch: searchResults[0].obj.patch.id,
+                  resource: "repo.patch",
+                  reviewId: undefined,
+                  rid: repo.rid,
+                  status,
+                });
+              }
+            }}
+            onDismiss={() => {
+              showFilters = false;
+              searchInput = "";
+            }}
+            placeholder={`Fuzzy filter patches ${modifierKey()} + f`}
+            autofocus
+            bind:value={searchInput}>
+            {#snippet left()}
+              <div
+                style:color="var(--color-foreground-dim)"
+                style:padding-left="0.5rem">
+                <Icon name={loading ? "clock" : "filter"} />
+              </div>
+            {/snippet}
+          </TextInput>
+        {/if}
+      </div>
+    {/if}
     <div class="patch-list">
-      {#each patchTeasers as teaser}
+      {#each searchResults as teaser}
         <PatchTeaser
+          focussed={searchResults.length === 1 && searchInput !== ""}
           compact
           loadPatch={async (id: string) => {
             review = undefined;
             await loadPatch(id);
           }}
-          patch={teaser}
+          patch={teaser.obj.patch}
           rid={repo.rid}
           {status}
-          selected={patch && teaser.id === patch.id} />
+          selected={teaser.obj.patch.id === patch.id} />
       {/each}
 
-      {#if patches.content.length === 0}
+      {#if searchResults.length === 0}
         <Border
           styleMinWidth="25rem"
           variant="ghost"
@@ -432,10 +528,10 @@
             style:justify-content="center">
             <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
               <Icon name="none" />
-              {#if status === undefined}
-                No patches.
+              {#if patchTeasers.length > 0 && searchResults.length === 0}
+                No matching patches.
               {:else}
-                No {status} patches.
+                No {status === undefined ? "" : status} patches.
               {/if}
             </div>
           </div>

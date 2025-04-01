@@ -47,6 +47,7 @@
     cursor: pointer;
     font-size: var(--font-size-regular);
     word-break: break-word;
+    width: 100%;
   }
   .selected {
     background-color: var(--color-fill-float-hover);
@@ -70,58 +71,6 @@
 </style>
 
 {#snippet issueSnippet()}
-  <div class="global-flex" style:align-items="flex-start">
-    <div
-      class="global-counter status"
-      style:color={issueStatusColor[issue.state.status]}
-      style:background-color={issueStatusBackgroundColor[issue.state.status]}>
-      {#if issue.state.status === "open"}
-        <Icon name="issue" />
-      {:else}
-        <Icon name="issue-closed" />
-      {/if}
-    </div>
-    <div
-      class="global-flex"
-      style:flex-direction="column"
-      style:align-items="flex-start">
-      <InlineTitle content={issue.title} />
-      <div class="global-flex txt-small" style:flex-wrap="wrap">
-        <NodeId {...authorForNodeId(issue.author)} />
-        opened
-        <Id id={issue.id} variant="oid" />
-        {formatTimestamp(issue.timestamp)}
-      </div>
-    </div>
-  </div>
-
-  <div class="global-flex" style:margin-left="auto">
-    {#if !compact}
-      {#each issue.labels as label}
-        <Label {label} />
-      {/each}
-    {/if}
-
-    {#if issue.commentCount > 0}
-      <div class="txt-small global-flex" style:gap="0.25rem">
-        <Icon name="comment" />
-        {issue.commentCount}
-      </div>
-    {/if}
-  </div>
-{/snippet}
-
-{#if focussed}
-  <Border
-    styleBackgroundColor="var(--color-background-float)"
-    styleDisplay="flex"
-    styleAlignItems="flex-start"
-    styleMinHeight="5rem"
-    stylePadding="1rem"
-    variant="secondary">
-    {@render issueSnippet()}
-  </Border>
-{:else}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
     tabindex="0"
@@ -129,9 +78,58 @@
     class="issue-teaser"
     class:selected
     style:align-items="flex-start"
+    style:clip-path={focussed ? "none" : undefined}
     onclick={() => {
       void push({ resource: "repo.issue", rid, issue: issue.id, status });
     }}>
-    {@render issueSnippet()}
+    <div class="global-flex" style:align-items="flex-start">
+      <div
+        class="global-counter status"
+        style:color={issueStatusColor[issue.state.status]}
+        style:background-color={issueStatusBackgroundColor[issue.state.status]}>
+        {#if issue.state.status === "open"}
+          <Icon name="issue" />
+        {:else}
+          <Icon name="issue-closed" />
+        {/if}
+      </div>
+      <div
+        class="global-flex"
+        style:flex-direction="column"
+        style:align-items="flex-start">
+        <InlineTitle content={issue.title} />
+        <div class="global-flex txt-small" style:flex-wrap="wrap">
+          <NodeId {...authorForNodeId(issue.author)} />
+          opened
+          <Id id={issue.id} variant="oid" />
+          {formatTimestamp(issue.timestamp)}
+        </div>
+      </div>
+    </div>
+
+    <div class="global-flex" style:margin-left="auto">
+      {#if !compact}
+        {#each issue.labels as label}
+          <Label {label} />
+        {/each}
+      {/if}
+
+      {#if issue.commentCount > 0}
+        <div class="txt-small global-flex" style:gap="0.25rem">
+          <Icon name="comment" />
+          {issue.commentCount}
+        </div>
+      {/if}
+    </div>
   </div>
+{/snippet}
+
+{#if focussed}
+  <Border
+    styleBackgroundColor="var(--color-background-float)"
+    variant="secondary">
+    {@render issueSnippet()}
+  </Border>
+{:else}
+  {@render issueSnippet()}
 {/if}

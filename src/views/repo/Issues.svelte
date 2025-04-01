@@ -149,7 +149,7 @@
           {status} />
       {/each}
 
-      {#if issues.length === 0}
+      {#if searchResults.length === 0}
         <Border
           variant="ghost"
           styleAlignItems="center"
@@ -160,10 +160,10 @@
             style:justify-content="center">
             <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
               <Icon name="none" />
-              {#if status === "all"}
-                No issues.
+              {#if issues.length > 0 && searchResults.length === 0}
+                No matching issues.
               {:else}
-                No {status} issues.
+                No {status === "all" ? "" : status} issues.
               {/if}
             </div>
           </div>
