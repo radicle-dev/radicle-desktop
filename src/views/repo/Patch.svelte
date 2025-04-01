@@ -367,11 +367,16 @@
 
   {#snippet secondColumn()}
     <div
+      class="txt-medium global-flex"
+      style:font-weight="var(--font-weight-medium)"
       style:min-width="450px"
-      class="txt-regular txt-semibold global-flex"
       style:min-height="2.5rem"
       style:margin-bottom="1rem">
-      <div class="global-flex" style:gap="4px">
+      <div
+        class="global-flex"
+        style:font-weight="var(--font-weight-medium)"
+        style:gap="4px"
+        style:white-space="nowrap">
         {project.data.name}
         <Icon name="chevron-right" />
         <Link

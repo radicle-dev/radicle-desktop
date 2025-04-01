@@ -239,10 +239,10 @@
     cursor: default;
   }
   .addition {
-    background-color: var(--color-fill-diff-green-light);
+    background-color: var(--color-fill-diff-green);
   }
   .deletion {
-    background-color: var(--color-fill-diff-red-light);
+    background-color: var(--color-fill-diff-red);
   }
   .addition > .left,
   .addition > .right,
@@ -299,17 +299,17 @@
     align-self: flex-start;
   }
   .thread {
-    background-color: var(--color-fill-float-hover);
+    background-color: var(--color-background-default);
+    box-shadow: inset 0 0 0 2px var(--color-border-hint);
     padding: 0.5rem;
-    margin-bottom: 1rem;
   }
   .comment-form {
-    background-color: var(--color-fill-float-hover);
+    background-color: var(--color-background-default);
+    box-shadow: inset 0 0 0 2px var(--color-border-default);
     font-family: var(--font-family-sans-serif);
     display: flex;
     flex-direction: column;
     padding: 1rem;
-    margin-bottom: 1rem;
   }
   .comment-header {
     display: flex;

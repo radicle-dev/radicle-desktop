@@ -88,7 +88,7 @@
     width: 2px;
     height: 1rem;
     margin-left: 1.25rem;
-    background-color: var(--color-background-float);
+    background-color: var(--color-border-hint);
   }
 </style>
 

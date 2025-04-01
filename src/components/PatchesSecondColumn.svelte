@@ -54,7 +54,7 @@
     color: var(--color-fill-success);
   }
   .archived {
-    color: var(--color-fill-yellow-iconic);
+    color: var(--color-foreground-yellow);
   }
   .merged {
     color: var(--color-foreground-primary);

@@ -47,6 +47,7 @@
     {disallowEmptyBody}
     {rid}
     {placeholder}
+    borderVariant="ghost"
     submitInProgress={state === "submit"}
     {focus}
     stylePadding="0.5rem 0.75rem"
@@ -69,7 +70,7 @@
   <Border
     hoverable
     styleCursor="text"
-    variant="float"
+    variant="ghost"
     styleHeight="2.5rem"
     styleWidth="100%"
     onclick={e => {

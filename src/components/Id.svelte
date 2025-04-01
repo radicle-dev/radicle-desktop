@@ -65,8 +65,8 @@
     justify-content: center;
     z-index: 20;
     bottom: 1.5rem;
-    background: var(--color-fill-ghost);
-    color: var(--color-fill-gray);
+    background: var(--color-fill-counter);
+    color: var(--color-foreground-contrast);
     box-shadow: var(--elevation-low);
     font-family: var(--font-family-sans-serif);
     font-size: var(--font-size-small);

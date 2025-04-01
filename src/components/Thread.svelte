@@ -166,11 +166,13 @@
   </div>
   {#if replies.length > 0 || (createReply && showReplyForm)}
     {#if inline}
-      <div style:background-color="var(--color-background-float)">
+      <div
+        style:background-color="var(--color-background-deafult)"
+        style:border="2px solid var(--color-border-hint)">
         {@render repliesSnippet()}
       </div>
     {:else}
-      <Border variant="float" styleOverflow="hidden" flatTop={!inline}>
+      <Border variant="ghost" styleOverflow="hidden" flatTop={!inline}>
         {@render repliesSnippet()}
       </Border>
     {/if}

@@ -67,7 +67,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-fill-ghost-hover);
+  background-color: var(--color-fill-counter);
   clip-path: var(--1px-corner-fill);
   height: 1.5rem;
   padding: 0 0.5rem;

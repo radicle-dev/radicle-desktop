@@ -199,7 +199,7 @@
   </div>
 
   {#if revision.reviews && revision.reviews.length}
-    <div style:display={hideReviews ? "none" : "revert"} class="review-list">
+    <div style:display={hideReviews ? "none" : "flex"} class="review-list">
       {#each revision.reviews as review, idx}
         <ReviewTeaser
           {rid}
