@@ -97,31 +97,33 @@
     <div class="header">
       <div>Issues</div>
       <div class="global-flex" style:margin-left="auto">
-        <TextInput
-          onSubmit={async () => {
-            if (searchResults.length === 1) {
-              await router.push({
-                resource: "repo.issue",
-                rid: repo.rid,
-                issue: searchResults[0].obj.issue.id,
-                status,
-              });
-            }
-          }}
-          onDismiss={() => {
-            searchInput = "";
-          }}
-          placeholder={`Fuzzy filter issues ${modifierKey()} + f`}
-          keyShortcuts="ctrl+f"
-          bind:value={searchInput}>
-          {#snippet left()}
-            <div
-              style:color="var(--color-foreground-dim)"
-              style:padding-left="0.5rem">
-              <Icon name="filter" />
-            </div>
-          {/snippet}
-        </TextInput>
+        {#if issues.length > 0}
+          <TextInput
+            onSubmit={async () => {
+              if (searchResults.length === 1) {
+                await router.push({
+                  resource: "repo.issue",
+                  rid: repo.rid,
+                  issue: searchResults[0].obj.issue.id,
+                  status,
+                });
+              }
+            }}
+            onDismiss={() => {
+              searchInput = "";
+            }}
+            placeholder={`Fuzzy filter issues ${modifierKey()} + f`}
+            keyShortcuts="ctrl+f"
+            bind:value={searchInput}>
+            {#snippet left()}
+              <div
+                style:color="var(--color-foreground-dim)"
+                style:padding-left="0.5rem">
+                <Icon name="filter" />
+              </div>
+            {/snippet}
+          </TextInput>
+        {/if}
         <div class="txt-regular txt-semibold">
           <Button
             variant="secondary"

@@ -29,8 +29,6 @@
 
   const { repo, patches, config, status }: Props = $props();
 
-  let loading: boolean = $state(false);
-
   let items = $state(patches.content);
   let cursor = patches.cursor;
   let more = patches.more;
@@ -63,6 +61,7 @@
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
+  let loading: boolean = $state(false);
   let searchInput = $state("");
 
   const searchablePatches = $derived(
@@ -130,45 +129,47 @@
     <div class="header">
       Patches
 
-      <div class="global-flex" style:margin-left="auto">
-        <TextInput
-          onFocus={async () => {
-            try {
-              loading = true;
-              // Load all patches.
-              await loadMoreContent(true);
-            } catch (e) {
-              console.error("Loading all patches failed: ", e);
-            } finally {
-              loading = false;
-            }
-          }}
-          onSubmit={async () => {
-            if (searchResults.length === 1) {
-              await router.push({
-                patch: searchResults[0].obj.patch.id,
-                resource: "repo.patch",
-                reviewId: undefined,
-                rid: repo.rid,
-                status,
-              });
-            }
-          }}
-          onDismiss={() => {
-            searchInput = "";
-          }}
-          placeholder={`Fuzzy filter issues ${modifierKey()} + f`}
-          keyShortcuts="ctrl+f"
-          bind:value={searchInput}>
-          {#snippet left()}
-            <div
-              style:color="var(--color-foreground-dim)"
-              style:padding-left="0.5rem">
-              <Icon name={loading ? "clock" : "filter"} />
-            </div>
-          {/snippet}
-        </TextInput>
-      </div>
+      {#if items.length > 0}
+        <div class="global-flex" style:margin-left="auto">
+          <TextInput
+            onFocus={async () => {
+              try {
+                loading = true;
+                // Load all patches.
+                await loadMoreContent(true);
+              } catch (e) {
+                console.error("Loading all patches failed: ", e);
+              } finally {
+                loading = false;
+              }
+            }}
+            onSubmit={async () => {
+              if (searchResults.length === 1) {
+                await router.push({
+                  patch: searchResults[0].obj.patch.id,
+                  resource: "repo.patch",
+                  reviewId: undefined,
+                  rid: repo.rid,
+                  status,
+                });
+              }
+            }}
+            onDismiss={() => {
+              searchInput = "";
+            }}
+            placeholder={`Fuzzy filter patches ${modifierKey()} + f`}
+            keyShortcuts="ctrl+f"
+            bind:value={searchInput}>
+            {#snippet left()}
+              <div
+                style:color="var(--color-foreground-dim)"
+                style:padding-left="0.5rem">
+                <Icon name={loading ? "clock" : "filter"} />
+              </div>
+            {/snippet}
+          </TextInput>
+        </div>
+      {/if}
     </div>
 
     <div class="list">

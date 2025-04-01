@@ -122,32 +122,34 @@
   <div class="container">
     <div class="global-flex" style:margin-bottom="0.5rem">
       <div class="header">Repositories</div>
-      <div class="global-flex" style:margin-left="auto">
-        <TextInput
-          onSubmit={async () => {
-            if (searchResults.length === 1) {
-              await router.push({
-                resource: "repo.issues",
-                rid: searchResults[0].obj.repo.rid,
-                status: "open",
-              });
-            }
-          }}
-          onDismiss={() => {
-            searchInput = "";
-          }}
-          placeholder={`Fuzzy filter repositories ${modifierKey()} + f`}
-          keyShortcuts="ctrl+f"
-          bind:value={searchInput}>
-          {#snippet left()}
-            <div
-              style:color="var(--color-foreground-dim)"
-              style:padding-left="0.5rem">
-              <Icon name="filter" />
-            </div>
-          {/snippet}
-        </TextInput>
-      </div>
+      {#if repos.length > 0}
+        <div class="global-flex" style:margin-left="auto">
+          <TextInput
+            onSubmit={async () => {
+              if (searchResults.length === 1) {
+                await router.push({
+                  resource: "repo.issues",
+                  rid: searchResults[0].obj.repo.rid,
+                  status: "open",
+                });
+              }
+            }}
+            onDismiss={() => {
+              searchInput = "";
+            }}
+            placeholder={`Fuzzy filter repositories ${modifierKey()} + f`}
+            keyShortcuts="ctrl+f"
+            bind:value={searchInput}>
+            {#snippet left()}
+              <div
+                style:color="var(--color-foreground-dim)"
+                style:padding-left="0.5rem">
+                <Icon name="filter" />
+              </div>
+            {/snippet}
+          </TextInput>
+        </div>
+      {/if}
     </div>
     {#if repos.length > 0}
       {#if searchResults.length > 0}
@@ -173,7 +175,7 @@
           styleJustifyContent="center">
           <div
             class="global-flex"
-            style:height="74px"
+            style:height="126px"
             style:justify-content="center">
             <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
               <Icon name="none" />
