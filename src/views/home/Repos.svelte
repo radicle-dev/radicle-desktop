@@ -154,7 +154,7 @@
         <div class="repo-grid">
           {#each searchResults as result}
             <RepoCard
-              focussed={searchResults.length === 1}
+              focussed={searchResults.length === 1 && searchInput !== ""}
               repo={result.obj.repo}
               selfDid={didFromPublicKey(config.publicKey)}
               onclick={() => {
