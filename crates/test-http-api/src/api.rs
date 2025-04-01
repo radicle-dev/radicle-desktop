@@ -165,7 +165,7 @@ async fn diff_stats_handler(
 #[derive(Serialize, Deserialize)]
 struct DiffBody {
     pub rid: identity::RepoId,
-    pub options: types::cobs::diff::Options,
+    pub options: types::cobs::diff::DiffOptions,
 }
 
 async fn diff_handler(

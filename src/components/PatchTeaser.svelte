@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { PatchStatus } from "@app/views/repo/router";
-  import type { Stats } from "@bindings/cob/Stats";
 
   import {
     authorForNodeId,
@@ -9,7 +8,7 @@
     patchStatusBackgroundColor,
     patchStatusColor,
   } from "@app/lib/utils";
-  import { invoke } from "@app/lib/invoke";
+  import { cachedDiffStats } from "@app/lib/invoke";
   import { push } from "@app/lib/router";
 
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
@@ -102,7 +101,7 @@
 
   <div class="global-flex" style:margin-left="auto">
     {#if !compact}
-      {#await invoke<Stats>( "diff_stats", { rid, base: patch.base, head: patch.head }, ) then stats}
+      {#await cachedDiffStats(rid, patch.base, patch.head) then stats}
         <DiffStatBadge {stats} />
       {/await}
 

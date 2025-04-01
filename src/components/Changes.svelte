@@ -1,10 +1,8 @@
 <script lang="ts">
-  import type { Commit } from "@bindings/repo/Commit";
-  import type { Diff } from "@bindings/diff/Diff";
   import type { CodeComments } from "./Diff.svelte";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
-  import { invoke } from "@app/lib/invoke";
+  import { cachedGetDiff, cachedListCommits } from "@app/lib/invoke";
   import { pluralize } from "@app/lib/utils";
 
   import Changeset from "@app/components/Changeset.svelte";
@@ -57,26 +55,6 @@
   const isActiveCommit = (commitId: string) => selectedCommit === commitId;
   const isTeaserDisabled = (commitId: string) =>
     selectedCommit ? selectedCommit !== commitId : false;
-
-  async function loadHighlightedDiff(rid: string, base: string, head: string) {
-    return invoke<Diff>("get_diff", {
-      rid,
-      options: {
-        base,
-        head,
-        unified: 3,
-        highlight: true,
-      },
-    });
-  }
-
-  async function loadCommits(rid: string, base: string, head: string) {
-    return invoke<Commit[]>("list_commits", {
-      rid,
-      base,
-      head,
-    });
-  }
 </script>
 
 <style>
@@ -158,7 +136,7 @@
 </div>
 
 <div class:hide={hideChanges}>
-  {#await loadCommits(rid, revision.base, revision.head) then commits}
+  {#await cachedListCommits(rid, revision.base, revision.head) then commits}
     <div style:margin-bottom="1rem">
       <CommitsContainer>
         {#snippet leftHeader()}
@@ -209,7 +187,7 @@
     </div>
   {/await}
 
-  {#await loadHighlightedDiff(rid, base, head)}
+  {#await cachedGetDiff(rid, { base, head, unified: 3, highlight: true })}
     <span class="txt-small">Loading…</span>
   {:then diff}
     <Changeset expanded={filesExpanded} {head} {diff} {codeComments} />

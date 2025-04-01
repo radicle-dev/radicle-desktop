@@ -9,7 +9,7 @@ use crate::AppState;
 pub async fn get_diff(
     ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,
-    options: radicle_types::cobs::diff::Options,
+    options: radicle_types::cobs::diff::DiffOptions,
 ) -> Result<types::diff::Diff, Error> {
     ctx.get_diff(rid, options)
 }

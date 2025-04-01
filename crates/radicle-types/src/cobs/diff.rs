@@ -1,9 +1,14 @@
 use radicle::git;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
-#[derive(Serialize, Deserialize)]
-pub struct Options {
+#[derive(TS, Serialize, Deserialize)]
+#[ts(export)]
+#[ts(export_to = "cob/")]
+pub struct DiffOptions {
+    #[ts(as = "String")]
     pub base: git::Oid,
+    #[ts(as = "String")]
     pub head: git::Oid,
     pub unified: Option<u32>,
     pub highlight: Option<bool>,

@@ -182,7 +182,11 @@ pub trait Repo: Profile {
         })
     }
 
-    fn get_diff(&self, rid: identity::RepoId, options: cobs::diff::Options) -> Result<Diff, Error> {
+    fn get_diff(
+        &self,
+        rid: identity::RepoId,
+        options: cobs::diff::DiffOptions,
+    ) -> Result<Diff, Error> {
         let unified = options.unified.unwrap_or(5);
         let highlight = options.highlight.unwrap_or(true);
         let profile = self.profile();
