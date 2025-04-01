@@ -1,7 +1,7 @@
 import type { Commit } from "@bindings/repo/Commit";
 import type { Diff } from "@bindings/diff/Diff";
 import type { DiffOptions } from "@bindings/cob/DiffOptions";
-import type { Stats } from "@bindings/cob/Stats";
+import type { Stats } from "@bindings/diff/Stats";
 
 import * as tauri from "@tauri-apps/api/core";
 import { cached } from "@app/lib/cached";

@@ -14,6 +14,16 @@ pub struct Diff {
     pub stats: Stats,
 }
 
+impl Stats {
+    pub fn new(stats: &radicle_surf::diff::Stats) -> Self {
+        Self {
+            files_changed: stats.files_changed,
+            insertions: stats.insertions,
+            deletions: stats.deletions,
+        }
+    }
+}
+
 impl From<surf::diff::Diff> for Diff {
     fn from(value: surf::diff::Diff) -> Self {
         Self {

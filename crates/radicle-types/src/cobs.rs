@@ -96,25 +96,6 @@ pub struct PaginatedQuery<T> {
     pub content: T,
 }
 
-#[derive(TS, Serialize)]
-#[ts(export)]
-#[ts(export_to = "cob/")]
-pub struct Stats {
-    pub files_changed: usize,
-    pub insertions: usize,
-    pub deletions: usize,
-}
-
-impl Stats {
-    pub fn new(stats: &radicle_surf::diff::Stats) -> Self {
-        Self {
-            files_changed: stats.files_changed,
-            insertions: stats.insertions,
-            deletions: stats.deletions,
-        }
-    }
-}
-
 pub mod query {
     use serde::{Deserialize, Serialize};
 

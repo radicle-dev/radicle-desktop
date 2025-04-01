@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Stats } from "@bindings/cob/Stats";
+  import type { Stats } from "@bindings/diff/Stats";
 
   interface Props {
     stats: Stats;

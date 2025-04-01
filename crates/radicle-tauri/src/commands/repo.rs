@@ -41,7 +41,7 @@ pub async fn diff_stats(
     rid: RepoId,
     base: git::Oid,
     head: git::Oid,
-) -> Result<types::cobs::Stats, Error> {
+) -> Result<types::diff::Stats, Error> {
     ctx.diff_stats(rid, base, head)
 }
 

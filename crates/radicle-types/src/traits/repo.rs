@@ -10,6 +10,7 @@ use radicle::storage::{ReadRepository, ReadStorage, RepositoryInfo};
 use radicle::{git, identity};
 
 use crate::cobs;
+use crate::diff;
 use crate::diff::Diff;
 use crate::error::Error;
 use crate::repo::{self, RepoCount};
@@ -122,7 +123,7 @@ pub trait Repo: Profile {
         rid: identity::RepoId,
         base: git::Oid,
         head: git::Oid,
-    ) -> Result<cobs::Stats, Error> {
+    ) -> Result<diff::Stats, Error> {
         let profile = self.profile();
         let repo = radicle_surf::Repository::open(storage::git::paths::repository(
             &profile.storage,
@@ -133,7 +134,7 @@ pub trait Repo: Profile {
         let diff = repo.diff(base.id, commit.id)?;
         let stats = diff.stats();
 
-        Ok::<_, Error>(cobs::Stats::new(stats))
+        Ok::<_, Error>(diff::Stats::new(stats))
     }
 
     fn repo_info(
