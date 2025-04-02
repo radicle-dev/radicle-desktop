@@ -16,6 +16,11 @@ pub trait PatchStorage {
         rid: identity::RepoId,
         status: patch::Status,
     ) -> Result<impl Iterator<Item = (PatchId, Patch)>, models::patch::ListPatchesError>;
+
+    fn counts(
+        &self,
+        rid: identity::RepoId,
+    ) -> Result<models::patch::PatchCounts, models::patch::CountsError>;
 }
 
 pub trait PatchService {
@@ -29,4 +34,9 @@ pub trait PatchService {
         rid: identity::RepoId,
         status: patch::Status,
     ) -> Result<impl Iterator<Item = (PatchId, Patch)>, models::patch::ListPatchesError>;
+
+    fn counts(
+        &self,
+        rid: identity::RepoId,
+    ) -> Result<models::patch::PatchCounts, models::patch::CountsError>;
 }

@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::ops::Index;
 
 use radicle::node::AliasStore;
+use radicle::patch::Status;
 use radicle::profile::Aliases;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -667,4 +669,53 @@ impl FromRadicleAction<radicle::patch::Action> for Action {
             },
         }
     }
+}
+
+#[derive(Debug, Default, TS, Serialize)]
+#[ts(export)]
+#[ts(export_to = "cob/patch/")]
+#[serde(rename_all = "camelCase")]
+pub struct PatchCounts {
+    pub(crate) open: usize,
+    pub(crate) draft: usize,
+    pub(crate) archived: usize,
+    pub(crate) merged: usize,
+}
+
+impl Index<Status> for PatchCounts {
+    type Output = usize;
+
+    fn index(&self, status: Status) -> &Self::Output {
+        match status {
+            Status::Draft => &self.draft,
+            Status::Open => &self.open,
+            Status::Archived => &self.archived,
+            Status::Merged => &self.merged,
+        }
+    }
+}
+
+impl PatchCounts {
+    pub fn new(open: usize, draft: usize, archived: usize, merged: usize) -> Self {
+        Self {
+            open,
+            draft,
+            archived,
+            merged,
+        }
+    }
+
+    pub fn total(&self) -> usize {
+        self.open + self.draft + self.archived + self.merged
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum CountsError {
+    #[error(transparent)]
+    Sqlite(#[from] sqlite::Error),
+
+    #[error(transparent)]
+    Unknown(#[from] anyhow::Error),
+    // to be extended as new error scenarios are introduced
 }
