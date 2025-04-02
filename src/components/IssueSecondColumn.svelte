@@ -136,13 +136,18 @@
 
     <OutlineButton
       variant="ghost"
-      disabled={$activeRouteStore.resource === "repo.createIssue"}
+      styleHeight="2.5rem"
+      active={$activeRouteStore.resource === "repo.createIssue"}
       onclick={() => {
-        void router.push({
-          resource: "repo.createIssue",
-          rid: repo.rid,
-          status,
-        });
+        if ($activeRouteStore.resource === "repo.createIssue") {
+          window.history.back();
+        } else {
+          void router.push({
+            resource: "repo.createIssue",
+            rid: repo.rid,
+            status,
+          });
+        }
       }}>
       <Icon name="plus" />New
     </OutlineButton>
