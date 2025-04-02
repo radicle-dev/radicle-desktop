@@ -311,7 +311,7 @@
     align-items: center;
     justify-content: space-between;
     word-break: break-word;
-    min-height: 40px;
+    min-height: 2.5rem;
   }
   .title-icons {
     display: flex;
@@ -322,11 +322,11 @@
   .status {
     padding: 0;
     margin-right: 0.75rem;
-    height: 2rem;
-    width: 2rem;
+    height: 2.5rem;
+    width: 2.5rem;
   }
   .patch-list {
-    margin-top: 0.5rem;
+    margin-top: 1rem;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -389,7 +389,7 @@
   {/snippet}
 
   {#snippet secondColumn()}
-    <div class="txt-regular txt-semibold global-flex" style:min-height="40px">
+    <div class="txt-regular txt-semibold global-flex" style:min-height="2.5rem">
       <div class="global-flex" style:gap="4px">
         {project.data.name}
         <Icon name="chevron-right" />
@@ -405,9 +405,9 @@
       </div>
       <div style:margin-left="auto">
         <NakedButton
+          styleHeight="2.5rem"
           keyShortcuts="ctrl+f"
           variant="ghost"
-          stylePadding="0 4px"
           active={showFilters}
           onclick={() => {
             if (showFilters) {
@@ -423,9 +423,9 @@
     </div>
     {#if showFilters}
       <div class="global-flex" style:margin="1rem 0">
-        <Popover popoverPositionLeft="0" popoverPositionTop="2.5rem">
+        <Popover popoverPositionLeft="0" popoverPositionTop="3rem">
           {#snippet toggle(onclick)}
-            <OutlineButton variant="ghost" {onclick}>
+            <OutlineButton variant="ghost" {onclick} styleHeight="2.5rem">
               {@render icons(status)}
               {status ? capitalize(status) : "All"}
               {@render counters(status)}
@@ -445,7 +445,8 @@
                 ] as const}>
                 {#snippet item(state)}
                   <DropdownListItem
-                    style="gap: 0.5rem"
+                    styleGap="0.5rem"
+                    styleMinHeight="2.5rem"
                     selected={status === state}
                     onclick={async () => {
                       await loadPatches(state);
@@ -553,7 +554,7 @@
       }} />
   {:else}
     <div class="content">
-      <div style:margin-bottom="0.5rem">
+      <div style:margin-bottom="1rem">
         {#if editingTitle}
           <div class="title">
             <div

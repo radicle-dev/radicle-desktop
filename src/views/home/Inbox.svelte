@@ -158,7 +158,7 @@
     justify-content: space-between;
     padding-right: 1.5rem;
     align-items: center;
-    min-height: 40px;
+    min-height: 2.5rem;
   }
 </style>
 

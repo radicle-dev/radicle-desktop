@@ -10,13 +10,13 @@
 
   interface Props {
     compact?: boolean;
-    styleHeight?: string;
+    styleHeight?: ComponentProps<typeof NakedButton>["styleHeight"];
     popoverProps: Partial<ComponentProps<typeof Popover>>;
   }
 
   const {
     compact = true,
-    styleHeight = "40px",
+    styleHeight = "2.5rem",
     popoverProps,
   }: Props = $props();
 </script>

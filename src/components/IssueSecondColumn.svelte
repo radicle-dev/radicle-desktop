@@ -70,10 +70,10 @@
   .container {
     display: flex;
     align-items: center;
-    min-height: 40px;
+    min-height: 2.5rem;
   }
   .issue-list {
-    margin-top: 0.5rem;
+    margin-top: 1rem;
     display: flex;
     flex-direction: column;
     gap: 2px;
@@ -101,7 +101,8 @@
 
 <div class="container">
   <div
-    class="txt-regular txt-semibold global-flex"
+    class="txt-medium global-flex"
+    style:font-weight="var(--font-weight-medium)"
     style:gap="4px"
     style:white-space="nowrap">
     {title}
@@ -119,9 +120,9 @@
 
   <div class="global-flex" style:margin-left="auto">
     <NakedButton
+      styleHeight="2.5rem"
       keyShortcuts="ctrl+f"
       variant="ghost"
-      stylePadding="0 4px"
       active={showFilters}
       onclick={() => {
         if (showFilters) {
@@ -156,9 +157,9 @@
 
 {#if showFilters}
   <div class="global-flex" style:margin="1rem 0">
-    <Popover popoverPositionRight="0" popoverPositionTop="2.5rem">
+    <Popover popoverPositionLeft="0" popoverPositionTop="3rem">
       {#snippet toggle(onclick)}
-        <OutlineButton variant="ghost" {onclick}>
+        <OutlineButton variant="ghost" {onclick} styleHeight="2.5rem">
           {@render icons(status)}
           {capitalize(status)}
           {@render counters(status)}
@@ -171,7 +172,8 @@
           <DropdownList items={["all", "open", "closed"] as IssueStatus[]}>
             {#snippet item(state)}
               <DropdownListItem
-                style="gap: 0.5rem"
+                styleGap="0.5rem"
+                styleMinHeight="2.5rem"
                 selected={status === state}
                 onclick={() => {
                   changeFilter(state);

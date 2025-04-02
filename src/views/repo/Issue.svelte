@@ -292,13 +292,13 @@
     align-items: center;
     justify-content: space-between;
     word-break: break-word;
-    min-height: 40px;
+    min-height: 2.5rem;
   }
   .status {
     padding: 0;
     margin-right: 0.75rem;
-    height: 2rem;
-    width: 2rem;
+    height: 2.5rem;
+    width: 2.5rem;
   }
   .issue-body {
     margin: 1rem 0;
@@ -368,7 +368,7 @@
   {/snippet}
 
   <div class="content">
-    <div style:margin-bottom="0.5rem">
+    <div style:margin-bottom="1rem">
       {#if editingTitle}
         <div class="title">
           <div

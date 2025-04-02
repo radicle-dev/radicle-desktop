@@ -85,7 +85,11 @@
     font-weight: var(--font-weight-medium);
     -webkit-user-select: text;
     user-select: text;
-    margin-top: 0.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    word-break: break-word;
+    min-height: 2.5rem;
     margin-bottom: 1rem;
   }
   .content {

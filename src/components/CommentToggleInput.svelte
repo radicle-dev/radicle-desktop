@@ -70,7 +70,7 @@
     hoverable
     styleCursor="text"
     variant="float"
-    styleHeight="40px"
+    styleHeight="2.5rem"
     styleWidth="100%"
     onclick={e => {
       e.preventDefault();

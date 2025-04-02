@@ -49,6 +49,7 @@
 
 <div class="main">
   <Button
+    styleHeight="2.5rem"
     variant="secondary"
     flatRight
     onclick={() => void save($state.snapshot(selectedAction["state"]))}>
@@ -57,10 +58,10 @@
 
   <Popover
     popoverPadding="0"
-    popoverPositionTop="2.5rem"
+    popoverPositionTop="3rem"
     popoverPositionRight="0">
     {#snippet toggle(onclick)}
-      <Button flatLeft {onclick} variant="secondary">
+      <Button styleHeight="2.5rem" flatLeft {onclick} variant="secondary">
         <Icon name="chevron-down" />
       </Button>
     {/snippet}
@@ -70,6 +71,8 @@
           items={actions.filter(a => !isEqual(a.state, issueState))}>
           {#snippet item(action)}
             <DropdownListItem
+              styleGap="0.5rem"
+              styleMinHeight="2.5rem"
               selected={isEqual(selectedAction, action)}
               onclick={() => {
                 selectedAction = action;

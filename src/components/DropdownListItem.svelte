@@ -7,7 +7,8 @@
     onclick: () => void;
     disabled?: boolean;
     title?: string;
-    style?: string;
+    styleGap?: string;
+    styleMinHeight?: string;
   }
 
   const {
@@ -16,7 +17,8 @@
     selected,
     disabled = false,
     title,
-    style,
+    styleGap,
+    styleMinHeight,
   }: Props = $props();
 </script>
 
@@ -27,7 +29,7 @@
     align-items: center;
     flex-direction: row;
     min-height: 2rem;
-    padding: 0 0.5rem;
+    padding: 0 0.75rem;
     white-space: nowrap;
     font-size: var(--font-size-small);
     font-weight: var(--font-weight-regular);
@@ -65,7 +67,8 @@
   class="item"
   class:selected
   class:disabled
-  {style}
+  style:gap={styleGap}
+  style:min-height={styleMinHeight}
   {title}
   onclick={() => {
     if (disabled) {

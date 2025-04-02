@@ -57,7 +57,7 @@
 
 <div class="container">
   <div>
-    <div style:margin-bottom="0.5rem">
+    <div style:margin-bottom="1rem">
       {#if activeTab.type === "inbox"}
         <Border
           styleCursor="pointer"

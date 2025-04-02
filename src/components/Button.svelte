@@ -10,6 +10,7 @@
     flatLeft?: boolean;
     flatRight?: boolean;
     title?: string;
+    styleHeight?: "2rem" | "2.5rem";
   }
 
   const {
@@ -21,6 +22,7 @@
     flatLeft = false,
     flatRight = false,
     title,
+    styleHeight = "2rem",
   }: Props = $props();
 
   const style = $derived(
@@ -43,7 +45,6 @@
 
     color: var(--text-color);
 
-    height: 2rem;
     column-gap: 0;
     row-gap: 0;
     display: grid;
@@ -371,6 +372,7 @@
 <div
   class="container active"
   style:cursor={!disabled ? "pointer" : "default"}
+  style:height={styleHeight}
   class:disabled
   class:active
   class:flat-right={flatRight}

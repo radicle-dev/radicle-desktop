@@ -104,8 +104,8 @@
     font-size: var(--font-size-medium);
     display: flex;
     align-items: center;
-    min-height: 40px;
-    margin-bottom: 0.5rem;
+    min-height: 2.5rem;
+    margin-bottom: 1rem;
   }
 </style>
 

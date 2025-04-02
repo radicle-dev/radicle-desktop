@@ -72,8 +72,8 @@
     font-size: var(--font-size-medium);
     display: flex;
     align-items: center;
-    min-height: 40px;
-    margin-bottom: 0.5rem;
+    min-height: 2.5rem;
+    margin-bottom: 1rem;
   }
 </style>
 
@@ -96,7 +96,7 @@
   <div class="container">
     <div class="header">
       <div>Issues</div>
-      <div class="global-flex" style:margin-left="auto">
+      <div class="global-flex" style:margin-left="auto" style:gap="0.75rem">
         {#if issues.length > 0}
           <TextInput
             onSubmit={async () => {
@@ -126,6 +126,7 @@
         {/if}
         <div class="txt-regular txt-semibold">
           <Button
+            styleHeight="2.5rem"
             variant="secondary"
             onclick={() => {
               void router.push({

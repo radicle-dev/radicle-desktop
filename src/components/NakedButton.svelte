@@ -7,7 +7,7 @@
     disabled?: boolean;
     variant: "primary" | "secondary" | "ghost";
     onclick?: (e: MouseEvent) => void;
-    styleHeight?: string;
+    styleHeight?: "2rem" | "2.5rem";
     stylePadding?: string;
     active?: boolean;
     keyShortcuts?: string;

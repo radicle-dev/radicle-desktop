@@ -102,7 +102,7 @@
     justify-content: space-between;
     padding-right: 1.5rem;
     align-items: center;
-    min-height: 40px;
+    min-height: 2.5rem;
   }
 </style>
 
@@ -120,7 +120,7 @@
       {notificationCount} />
   {/snippet}
   <div class="container">
-    <div class="global-flex" style:margin-bottom="0.5rem">
+    <div class="global-flex" style:margin-bottom="1rem">
       <div class="header">Repositories</div>
       {#if repos.length > 0}
         <div class="global-flex" style:margin-left="auto">

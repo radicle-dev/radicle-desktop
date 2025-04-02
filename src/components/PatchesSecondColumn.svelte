@@ -63,7 +63,7 @@
 
 <div class="container">
   <div>
-    <div style:margin-bottom="0.5rem" style:padding-left="0.75rem">
+    <div style:margin-bottom="1rem" style:padding-left="0.75rem">
       <RepoTeaser name={project.data.name} seeding={repo.seeding} />
     </div>
 

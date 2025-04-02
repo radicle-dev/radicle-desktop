@@ -21,8 +21,8 @@
     cursor: pointer;
     border: 0;
     background: none;
-    height: 40px;
-    width: 40px;
+    height: 2.5rem;
+    width: 2.5rem;
     clip-path: var(--2px-corner-fill);
     margin: 0;
     display: flex;
@@ -38,7 +38,7 @@
 </style>
 
 <div class="global-flex" style:flex-direction="column" style:gap="0.5rem">
-  <div class="global-flex" style:height="40px">
+  <div class="global-flex" style:height="2.5rem">
     <Icon name="repo" />
   </div>
   {#if activeTab === "issues"}
@@ -52,8 +52,8 @@
         });
       }}
       variant="ghost"
-      styleWidth="40px"
-      styleHeight="40px"
+      styleWidth="2.5rem"
+      styleHeight="2.5rem"
       styleJustifyContent="center">
       <Icon name="issue" />
     </Border>
@@ -82,8 +82,8 @@
         });
       }}
       variant="ghost"
-      styleWidth="40px"
-      styleHeight="40px"
+      styleWidth="2.5rem"
+      styleHeight="2.5rem"
       styleJustifyContent="center">
       <Icon name="patch" />
     </Border>
@@ -104,7 +104,7 @@
 
 <div>
   <NakedButton
-    styleHeight="40px"
+    styleHeight="2.5rem"
     variant="ghost"
     onclick={() => {
       if (getLayout()) {

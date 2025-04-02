@@ -253,9 +253,9 @@
     display: flex;
     align-items: center;
     white-space: nowrap;
-    min-height: 40px;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    min-height: 2.5rem;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
   }
   .metadata-divider {
     width: 2px;
@@ -297,12 +297,12 @@
 </style>
 
 <div class="content">
-  <div style:margin-bottom="0.5rem">
+  <div style:margin-bottom="1rem">
     <div class="title">
       <NakedButton
+        styleHeight="2.5rem"
         variant="ghost"
-        onclick={onNavigateBack}
-        stylePadding="0 4px">
+        onclick={onNavigateBack}>
         <Icon name="arrow-left" />
       </NakedButton>
       <span class="global-flex" style:gap="0">
