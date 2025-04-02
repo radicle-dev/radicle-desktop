@@ -106,9 +106,6 @@
     background-color: var(--color-background-float);
     color: var(--color-foreground-contrast) !important;
   }
-  .hide {
-    display: none;
-  }
 </style>
 
 <div
@@ -135,7 +132,7 @@
   {/if}
 </div>
 
-<div class:hide={hideChanges}>
+<div style:display={hideChanges ? "none" : "revert"}>
   {#await cachedListCommits(rid, revision.base, revision.head) then commits}
     <div style:margin-bottom="1rem">
       <CommitsContainer>

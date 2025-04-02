@@ -344,9 +344,6 @@
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
   }
-  .hide {
-    display: none;
-  }
 </style>
 
 <Layout publicKey={config.publicKey}>
@@ -521,7 +518,9 @@
         <div class="txt-semibold global-flex txt-regular">Timeline</div>
       </NakedButton>
     </div>
-    <div class:hide={hideTimeline} style:margin-top="1rem">
+    <div
+      style:display={hideTimeline ? "none" : "revert"}
+      style:margin-top="1rem">
       <IssueTimeline {activity} />
     </div>
   </div>

@@ -90,9 +90,6 @@
     margin-left: 1.25rem;
     background-color: var(--color-background-float);
   }
-  .hide {
-    display: none;
-  }
 </style>
 
 <div style:margin={hideDiscussion ? "1.5rem 0" : "1.5rem 0 2.5rem 0"}>
@@ -130,7 +127,9 @@
       </NakedButton>
     </div>
   </div>
-  <div class:hide={hideDiscussion} style:margin-top="1rem">
+  <div
+    style:display={hideDiscussion ? "none" : "revert"}
+    style:margin-top="1rem">
     {#each commentThreads as thread}
       <ThreadComponent
         {thread}

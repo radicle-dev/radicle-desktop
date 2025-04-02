@@ -71,9 +71,6 @@
 </script>
 
 <style>
-  .hide {
-    display: none;
-  }
   .review-list {
     margin-top: 1rem;
     display: flex;
@@ -125,7 +122,7 @@
   </div>
 
   {#if revision.reviews && revision.reviews.length}
-    <div class:hide={hideReviews} class="review-list">
+    <div style:display={hideReviews ? "none" : "revert"} class="review-list">
       {#each revision.reviews as review, idx}
         <ReviewTeaser
           {rid}
