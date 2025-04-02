@@ -4245,6 +4245,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
+ "either",
  "log",
  "radicle",
  "radicle-surf",

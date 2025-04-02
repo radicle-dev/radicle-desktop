@@ -10,7 +10,7 @@ use sqlite as sql;
 
 use crate::domain::inbox::models::notification;
 use crate::domain::inbox::traits::InboxStorage;
-use crate::domain::patch::models::patch::ListPatchesError;
+use crate::domain::patch::models::patch::{CountsError, ListPatchesError, PatchCounts, State};
 use crate::domain::patch::traits::PatchStorage;
 use crate::error::Error;
 
@@ -34,6 +34,33 @@ impl Sqlite {
 }
 
 impl PatchStorage for Sqlite {
+    fn counts(&self, rid: identity::RepoId) -> Result<PatchCounts, CountsError> {
+        let mut stmt = self.db.prepare(
+            "SELECT
+                 patch->'$.state' AS state,
+                 COUNT(*) AS count
+             FROM patches
+             WHERE repo = ?1
+             GROUP BY patch->'$.state.status'",
+        )?;
+        stmt.bind((1, &rid))?;
+
+        stmt.into_iter()
+            .try_fold(PatchCounts::default(), |mut counts, row| {
+                let row = row?;
+                let count = row.read::<i64, _>("count") as usize;
+                let status = serde_json::from_str::<State>(row.read::<&str, _>("state"))
+                    .map_err(|err| CountsError::Unknown(err.into()))?;
+                match status {
+                    State::Draft => counts.draft += count,
+                    State::Open { .. } => counts.open += count,
+                    State::Archived => counts.archived += count,
+                    State::Merged { .. } => counts.merged += count,
+                }
+                Ok(counts)
+            })
+    }
+
     fn list(
         &self,
         rid: identity::RepoId,

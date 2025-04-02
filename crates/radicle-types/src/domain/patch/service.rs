@@ -5,6 +5,8 @@ use radicle::patch::PatchId;
 
 use crate::domain::patch::traits::{PatchService, PatchStorage};
 
+use super::models::patch::PatchCounts;
+
 #[derive(Debug, Clone)]
 pub struct Service<I>
 where
@@ -41,5 +43,12 @@ where
     ) -> Result<impl Iterator<Item = (PatchId, Patch)>, super::models::patch::ListPatchesError>
     {
         self.patches.list_by_status(rid, status)
+    }
+
+    fn counts(
+        &self,
+        rid: identity::RepoId,
+    ) -> Result<PatchCounts, super::models::patch::CountsError> {
+        self.patches.counts(rid)
     }
 }

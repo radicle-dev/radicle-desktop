@@ -49,6 +49,9 @@ pub enum Error {
     #[error(transparent)]
     ListPatchesError(#[from] crate::domain::patch::models::patch::ListPatchesError),
 
+    #[error(transparent)]
+    PatchCountsError(#[from] crate::domain::patch::models::patch::CountsError),
+
     /// CobStore error.
     #[error(transparent)]
     CobStore(#[from] radicle::cob::store::Error),
