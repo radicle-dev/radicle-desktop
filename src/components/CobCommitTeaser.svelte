@@ -13,9 +13,10 @@
     disabled: boolean;
     commit: Commit;
     onclick: () => void;
+    hoverable?: boolean;
   }
 
-  const { disabled, commit, onclick }: Props = $props();
+  const { disabled, hoverable = false, commit, onclick }: Props = $props();
 
   let commitMessageVisible = $state(false);
 </script>
@@ -67,7 +68,7 @@
     white-space: pre-wrap;
     word-wrap: break-word;
   }
-  .summary {
+  .cursor-pointer {
     cursor: pointer;
   }
 </style>
@@ -77,7 +78,7 @@
 <div class="teaser" class:disabled {onclick} aria-label="commit-teaser">
   <div class="left">
     <div class="message">
-      <div class="summary" use:twemoji>
+      <div class:cursor-pointer={hoverable} use:twemoji>
         <InlineTitle fontSize="small" content={commit.summary} />
       </div>
       {#if commit.message.trim() !== commit.summary.trim()}
