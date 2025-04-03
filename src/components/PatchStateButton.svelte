@@ -1,89 +1,88 @@
 <script lang="ts">
   import type { State } from "@bindings/cob/patch/State";
 
-  import isEqual from "lodash/isEqual";
+  import capitalize from "lodash/capitalize";
 
   import { closeFocused } from "@app/components/Popover.svelte";
+  import { patchStatusBackgroundColor, patchStatusColor } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
-  import Button from "@app/components/Button.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
 
-  const {
-    save,
-    patchState,
-  }: {
-    save: (state: State) => Promise<void>;
-    patchState: State;
-  } = $props();
+  interface Props {
+    selectedState: State;
+    onSelect: (newState: State) => void;
+  }
 
-  const actions: { caption: string; state: State }[] = [
-    {
-      caption: "Reopen",
-      state: { status: "open" },
-    },
-    { caption: "Convert to draft", state: { status: "draft" } },
-    { caption: "Archive", state: { status: "archived" } },
-  ];
-
-  let selectedAction = $state(
-    patchState.status === "open" ? actions[1] : actions[0],
-  );
-
-  // React to state changes that come from outside of this button.
-  $effect(() => {
-    selectedAction = patchState.status === "open" ? actions[1] : actions[0];
-  });
+  const { selectedState, onSelect }: Props = $props();
 </script>
 
 <style>
-  .main {
+  button {
+    cursor: pointer;
+    border: 0;
+    background: none;
+    margin: 0;
+    padding: 0;
     display: flex;
-    flex-direction: row;
+    align-items: center;
     justify-content: center;
+    font-size: var(--font-size-small);
+  }
+  .badge {
+    gap: 6px;
+    padding-right: 10px;
   }
 </style>
 
-<div class="main">
-  <Button
-    styleHeight="2.5rem"
-    variant="secondary"
-    flatRight
-    onclick={() =>
-      void save($state.snapshot(selectedAction["state"]) as State)}>
-    {selectedAction["caption"]}
-  </Button>
-
-  <Popover
-    popoverPadding="0"
-    popoverPositionTop="3rem"
-    popoverPositionRight="0">
-    {#snippet toggle(onclick)}
-      <Button styleHeight="2.5rem" flatLeft {onclick} variant="secondary">
+<Popover popoverPadding="0" popoverPositionTop="2rem" popoverPositionLeft="0">
+  {#snippet toggle(onclick)}
+    <button {onclick}>
+      <span
+        class="global-counter badge"
+        style:color={patchStatusColor[selectedState.status]}
+        style:background-color={patchStatusBackgroundColor[
+          selectedState.status
+        ]}>
+        <Icon
+          name={selectedState.status === "open"
+            ? "patch"
+            : `patch-${selectedState.status}`} />
+        {capitalize(selectedState.status)}
         <Icon name="chevron-down" />
-      </Button>
-    {/snippet}
-    {#snippet popover()}
-      <Border variant="ghost">
-        <DropdownList
-          items={actions.filter(a => !isEqual(a.state, patchState))}>
-          {#snippet item(action)}
-            <DropdownListItem
-              styleGap="0.5rem"
-              styleMinHeight="2.5rem"
-              selected={isEqual(selectedAction, action)}
-              onclick={() => {
-                selectedAction = action;
-                closeFocused();
-              }}>
-              {action.caption}
-            </DropdownListItem>
-          {/snippet}
-        </DropdownList>
-      </Border>
-    {/snippet}
-  </Popover>
-</div>
+      </span>
+    </button>
+  {/snippet}
+  {#snippet popover()}
+    <Border variant="ghost">
+      <DropdownList
+        items={[
+          { status: "open" },
+          { status: "draft" },
+          { status: "archived" },
+        ] as State[]}>
+        {#snippet item(state)}
+          <DropdownListItem
+            selected={selectedState.status === state.status}
+            onclick={() => {
+              onSelect(state);
+              closeFocused();
+            }}>
+            <span
+              class="global-flex"
+              style:color={patchStatusColor[state.status]}>
+              <Icon
+                name={state.status === "open"
+                  ? "patch"
+                  : `patch-${state.status}`} />
+              {capitalize(state.status)}
+            </span>
+          </DropdownListItem>
+        {/snippet}
+      </DropdownList>
+    </Border>
+  {/snippet}
+</Popover>

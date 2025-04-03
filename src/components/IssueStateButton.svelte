@@ -1,88 +1,91 @@
 <script lang="ts">
   import type { State } from "@bindings/cob/issue/State";
 
+  import capitalize from "lodash/capitalize";
   import isEqual from "lodash/isEqual";
 
   import { closeFocused } from "@app/components/Popover.svelte";
+  import { issueStatusBackgroundColor, issueStatusColor } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
-  import Button from "@app/components/Button.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
 
-  const {
-    save,
-    issueState,
-  }: {
-    save: (state: State) => Promise<void>;
-    issueState: State;
-  } = $props();
+  interface Props {
+    selectedState: State;
+    onSelect: (selectedStatus: State) => void;
+  }
 
-  const actions: { caption: string; state: State }[] = [
-    { caption: "Reopen", state: { status: "open" } },
-    {
-      caption: "Close as solved",
-      state: { status: "closed", reason: "solved" },
-    },
-    { caption: "Close as other", state: { status: "closed", reason: "other" } },
-  ];
-
-  let selectedAction = $state(
-    issueState.status === "open" ? actions[1] : actions[0],
-  );
-
-  // React to state changes that come from outside of this button.
-  $effect(() => {
-    selectedAction = issueState.status === "open" ? actions[1] : actions[0];
-  });
+  const { selectedState, onSelect }: Props = $props();
 </script>
 
 <style>
-  .main {
+  button {
+    cursor: pointer;
+    border: 0;
+    background: none;
+    margin: 0;
+    padding: 0;
     display: flex;
-    flex-direction: row;
+    align-items: center;
     justify-content: center;
+    font-size: var(--font-size-small);
+  }
+  .badge {
+    gap: 6px;
+    padding-right: 10px;
   }
 </style>
 
-<div class="main">
-  <Button
-    styleHeight="2.5rem"
-    variant="secondary"
-    flatRight
-    onclick={() => void save($state.snapshot(selectedAction["state"]))}>
-    {selectedAction["caption"]}
-  </Button>
-
-  <Popover
-    popoverPadding="0"
-    popoverPositionTop="3rem"
-    popoverPositionRight="0">
-    {#snippet toggle(onclick)}
-      <Button styleHeight="2.5rem" flatLeft {onclick} variant="secondary">
+<Popover popoverPadding="0" popoverPositionTop="2rem" popoverPositionLeft="0">
+  {#snippet toggle(onclick)}
+    <button {onclick}>
+      <span
+        class="global-counter badge"
+        style:color={issueStatusColor[selectedState.status]}
+        style:background-color={issueStatusBackgroundColor[
+          selectedState.status
+        ]}>
+        <Icon
+          name={selectedState.status === "open"
+            ? "issue"
+            : `issue-${selectedState.status}`} />
+        {capitalize(selectedState.status)}
+        {selectedState.status === "closed" ? `as ${selectedState.reason}` : ""}
         <Icon name="chevron-down" />
-      </Button>
-    {/snippet}
-    {#snippet popover()}
-      <Border variant="ghost">
-        <DropdownList
-          items={actions.filter(a => !isEqual(a.state, issueState))}>
-          {#snippet item(action)}
-            <DropdownListItem
-              styleGap="0.5rem"
-              styleMinHeight="2.5rem"
-              selected={isEqual(selectedAction, action)}
-              onclick={() => {
-                selectedAction = action;
-                closeFocused();
-              }}>
-              {action.caption}
-            </DropdownListItem>
-          {/snippet}
-        </DropdownList>
-      </Border>
-    {/snippet}
-  </Popover>
-</div>
+      </span>
+    </button>
+  {/snippet}
+  {#snippet popover()}
+    <Border variant="ghost">
+      <DropdownList
+        items={[
+          { status: "open" },
+          { status: "closed", reason: "solved" },
+          { status: "closed", reason: "other" },
+        ] as State[]}>
+        {#snippet item(state)}
+          <DropdownListItem
+            selected={isEqual(selectedState, state)}
+            onclick={() => {
+              onSelect(state);
+              closeFocused();
+            }}>
+            <span
+              class="global-flex"
+              style:color={issueStatusColor[state.status]}>
+              <Icon
+                name={state.status === "open"
+                  ? "issue"
+                  : `issue-${state.status}`} />
+              {capitalize(state.status)}
+              {state.status === "closed" ? `as ${state.reason}` : ""}
+            </span>
+          </DropdownListItem>
+        {/snippet}
+      </DropdownList>
+    </Border>
+  {/snippet}
+</Popover>

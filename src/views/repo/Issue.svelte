@@ -30,7 +30,6 @@
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
-  import IssueStateBadge from "@app/components/IssueStateBadge.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimeline from "@app/components/IssueTimeline.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
@@ -410,7 +409,6 @@
                 updatedTitle = issue.title;
                 editingTitle = !editingTitle;
               }} />
-            <IssueStateButton issueState={issue.state} save={saveState} />
           </div>
         </div>
       {:else}
@@ -433,7 +431,6 @@
           {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), issue.body.author.did, )}
             <div class="title-icons">
               <Icon name="pen" onclick={() => (editingTitle = !editingTitle)} />
-              <IssueStateButton issueState={issue.state} save={saveState} />
             </div>
           {/if}
         </div>
@@ -443,7 +440,14 @@
     <Border variant="ghost" styleGap="0">
       <div class="metadata-section" style:min-width="8rem">
         <div class="metadata-section-title">Status</div>
-        <IssueStateBadge state={issue.state} />
+        <IssueStateButton
+          selectedState={issue.state}
+          onSelect={newState => {
+            void saveState(newState);
+            if (status !== "all" && newState.status !== status) {
+              void loadIssues("all");
+            }
+          }} />
       </div>
 
       <div class="metadata-divider"></div>

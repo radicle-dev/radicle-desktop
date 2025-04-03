@@ -38,7 +38,6 @@
   import Link from "@app/components/Link.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import OutlineButton from "@app/components/OutlineButton.svelte";
-  import PatchStateBadge from "@app/components/PatchStateBadge.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchTimeline from "@app/components/PatchTimeline.svelte";
@@ -174,20 +173,17 @@
     }
   }
 
-  async function saveState(state: Patch["state"]) {
+  async function saveState(newState: Patch["state"]) {
     try {
       await invoke("edit_patch", {
         rid: repo.rid,
         cobId: patch.id,
         action: {
           type: "lifecycle",
-          state,
+          state: newState,
         },
         opts: { announce: $nodeRunning && $announce },
       });
-      if (initialStatus !== undefined) {
-        status = state["status"];
-      }
     } catch (error) {
       console.error("Changing state failed", error);
     } finally {
@@ -343,6 +339,7 @@
     flex-direction: column;
     align-items: flex-start;
     height: 100%;
+    z-index: 20;
   }
   .metadata-section-title {
     margin-bottom: 0.5rem;
@@ -594,7 +591,6 @@
                   updatedTitle = patch.title;
                   editingTitle = !editingTitle;
                 }} />
-              <PatchStateButton patchState={patch.state} save={saveState} />
             </div>
           </div>
         {:else}
@@ -618,7 +614,6 @@
                 <Icon
                   name="pen"
                   onclick={() => (editingTitle = !editingTitle)} />
-                <PatchStateButton patchState={patch.state} save={saveState} />
               </div>
             {/if}
           </div>
@@ -627,7 +622,15 @@
       <Border variant="ghost" styleGap="0">
         <div class="metadata-section" style:min-width="8rem">
           <div class="metadata-section-title">Status</div>
-          <PatchStateBadge state={patch.state} />
+          <PatchStateButton
+            selectedState={patch.state}
+            onSelect={newState => {
+              void saveState(newState);
+              if (status !== undefined && newState.status !== status) {
+                status = undefined;
+                void loadPatches(status);
+              }
+            }} />
         </div>
 
         <div class="metadata-divider"></div>
