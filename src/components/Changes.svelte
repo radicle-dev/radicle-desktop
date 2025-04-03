@@ -90,21 +90,25 @@
   .commit-dot.active {
     background-color: var(--color-border-focus);
   }
-  .commit:hover .commit-dot:not(.active) {
+  .commit:hover:not(.single-commit) .commit-dot:not(.active) {
     background-color: var(--color-foreground-contrast);
   }
-  .commit:hover {
+  .commit:hover:not(.single-commit) {
     background-color: var(--color-background-float);
   }
   .disabled {
     color: var(--color-foreground-disabled) !important;
   }
   .summary {
+    cursor: pointer;
     padding: 0.25rem 0;
   }
-  .summary:hover {
+  .summary:hover:not(.single-commit) {
     background-color: var(--color-background-float);
     color: var(--color-foreground-contrast) !important;
+  }
+  .single-commit {
+    cursor: default !important;
   }
 </style>
 
@@ -144,13 +148,15 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
             class="global-flex txt-small summary"
+            class:single-commit={commits.length === 1}
             class:disabled={selectedCommit}
-            style:cursor="pointer"
-            onclick={() =>
+            onclick={() => {
+              if (commits.length === 1) return;
               selectRevision({
                 headId: revision.head,
                 baseId: revision.base,
-              })}>
+              });
+            }}>
             <Icon name="branch" />
             {commits.length}
             {pluralize("commit", commits.length)} on base
@@ -161,20 +167,26 @@
           </div>
           <div class="commits">
             {#each commits.reverse() as commit}
-              <div class="commit" style:position="relative">
+              <div
+                class="commit"
+                class:single-commit={commits.length === 1}
+                style:position="relative">
                 <div class="commit-dot"></div>
                 <div
                   class="commit-dot"
                   class:active={isActiveCommit(commit.id)}>
                 </div>
                 <CobCommitTeaser
+                  hoverable={commits.length > 1}
                   disabled={isTeaserDisabled(commit.id)}
-                  onclick={() =>
+                  onclick={() => {
+                    if (commits.length === 1) return;
                     selectRevision({
                       headId: commit.id,
                       baseId: commit.parents[0],
                       commitId: commit.id,
-                    })}
+                    });
+                  }}
                   {commit} />
               </div>
             {/each}
