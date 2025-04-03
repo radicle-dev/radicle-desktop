@@ -111,6 +111,30 @@ body {
     0 calc(100% - 2px)
   );
 
+  --1px-top-corner-fill: polygon(
+    0 2px,
+    2px 2px,
+    2px 0,
+    calc(100% - 2px) 0,
+    calc(100% - 2px) 2px,
+    100% 2px,
+    100% calc(100% - 2px),
+    100% 4px,
+    100% 100%,
+    0 100%
+  );
+
+  --1px-bottom-corner-fill: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 2px),
+    calc(100% - 2px) calc(100% - 2px),
+    calc(100% - 2px) 100%,
+    2px 100%,
+    2px calc(100% - 2px),
+    0 calc(100% - 2px)
+  );
+
   --2px-corner-fill: polygon(
     0 4px,
     2px 4px,

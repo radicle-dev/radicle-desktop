@@ -174,19 +174,20 @@
     </div>
 
     <div class="list">
-      {#each searchResults as result}
-        <PatchTeaser
-          focussed={searchResults.length === 1 && searchInput !== ""}
-          patch={result.obj.patch}
-          rid={repo.rid}
-          {status} />
-      {/each}
+      <Border
+        variant={searchResults.length === 1 && searchInput !== ""
+          ? "secondary"
+          : "float"}
+        styleFlexDirection="column"
+        styleOverflow="hidden"
+        styleGap="2px"
+        styleAlignItems="center"
+        styleJustifyContent="center">
+        {#each searchResults as result}
+          <PatchTeaser patch={result.obj.patch} rid={repo.rid} {status} />
+        {/each}
 
-      {#if searchResults.length === 0}
-        <Border
-          variant="ghost"
-          styleAlignItems="center"
-          styleJustifyContent="center">
+        {#if searchResults.length === 0}
           <div
             class="global-flex"
             style:height="74px"
@@ -200,8 +201,8 @@
               {/if}
             </div>
           </div>
-        </Border>
-      {/if}
+        {/if}
+      </Border>
     </div>
   </div>
 </Layout>

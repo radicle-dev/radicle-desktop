@@ -71,13 +71,7 @@
     display: flex;
     align-items: center;
     min-height: 2.5rem;
-  }
-  .issue-list {
-    margin-top: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding-bottom: 1rem;
+    margin-bottom: 1rem;
   }
 </style>
 
@@ -218,10 +212,17 @@
   </div>
 {/if}
 
-<div class="issue-list">
+<Border
+  variant={searchResults.length === 1 && searchInput !== ""
+    ? "secondary"
+    : "float"}
+  styleFlexDirection="column"
+  styleOverflow="hidden"
+  styleGap="2px"
+  styleAlignItems="center"
+  styleJustifyContent="center">
   {#each searchResults as result}
     <IssueTeaser
-      focussed={searchResults.length === 1 && searchInput !== ""}
       compact
       issue={result.obj.issue}
       {status}
@@ -230,24 +231,19 @@
   {/each}
 
   {#if searchResults.length === 0}
-    <Border
-      styleMinWidth="25rem"
-      variant="ghost"
-      styleAlignItems="center"
-      styleJustifyContent="center">
-      <div
-        class="global-flex"
-        style:height="74px"
-        style:justify-content="center">
-        <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
-          <Icon name="none" />
-          {#if issues.length > 0 && searchResults.length === 0}
-            No matching issues.
-          {:else}
-            No {status === "all" ? "" : status} issues.
-          {/if}
-        </div>
+    <div
+      class="global-flex"
+      style:height="74px"
+      style:justify-content="center"
+      style:min-width="405px">
+      <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
+        <Icon name="none" />
+        {#if issues.length > 0 && searchResults.length === 0}
+          No matching issues.
+        {:else}
+          No {status === "all" ? "" : status} issues.
+        {/if}
       </div>
-    </Border>
+    </div>
   {/if}
-</div>
+</Border>

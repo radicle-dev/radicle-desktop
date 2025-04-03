@@ -42,6 +42,7 @@
     align-items: center;
     gap: 0.25rem;
     min-height: 5rem;
+    min-width: 405px;
     background-color: var(--color-background-float);
     padding: 1rem;
     cursor: pointer;
@@ -60,13 +61,13 @@
     margin-right: 1rem;
   }
   .issue-teaser:first-of-type {
-    clip-path: var(--3px-top-corner-fill);
+    clip-path: var(--1px-top-corner-fill);
   }
   .issue-teaser:last-of-type {
-    clip-path: var(--3px-bottom-corner-fill);
+    clip-path: var(--1px-bottom-corner-fill);
   }
   .issue-teaser:only-of-type {
-    clip-path: var(--3px-corner-fill);
+    clip-path: var(--1px-corner-fill);
   }
 </style>
 

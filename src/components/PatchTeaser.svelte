@@ -47,6 +47,7 @@
     justify-content: space-between;
     gap: 0.25rem;
     min-height: 5rem;
+    min-width: 440px;
     background-color: var(--color-background-float);
     padding: 1rem;
     cursor: pointer;
@@ -65,13 +66,13 @@
     margin-right: 1rem;
   }
   .patch-teaser:first-of-type {
-    clip-path: var(--3px-top-corner-fill);
+    clip-path: var(--1px-top-corner-fill);
   }
   .patch-teaser:last-of-type {
-    clip-path: var(--3px-bottom-corner-fill);
+    clip-path: var(--1px-bottom-corner-fill);
   }
   .patch-teaser:only-of-type {
-    clip-path: var(--3px-corner-fill);
+    clip-path: var(--1px-corner-fill);
   }
 </style>
 

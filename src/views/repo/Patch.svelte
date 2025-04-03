@@ -325,13 +325,6 @@
     height: 2.5rem;
     width: 2.5rem;
   }
-  .patch-list {
-    margin-top: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding-bottom: 1rem;
-  }
   .content {
     padding: 1rem 1rem 1rem 0;
   }
@@ -389,7 +382,10 @@
   {/snippet}
 
   {#snippet secondColumn()}
-    <div class="txt-regular txt-semibold global-flex" style:min-height="2.5rem">
+    <div
+      class="txt-regular txt-semibold global-flex"
+      style:min-height="2.5rem"
+      style:margin-bottom="1rem">
       <div class="global-flex" style:gap="4px">
         {project.data.name}
         <Icon name="chevron-right" />
@@ -502,10 +498,17 @@
         {/if}
       </div>
     {/if}
-    <div class="patch-list">
+    <Border
+      variant={searchResults.length === 1 && searchInput !== ""
+        ? "secondary"
+        : "float"}
+      styleFlexDirection="column"
+      styleOverflow="hidden"
+      styleGap="2px"
+      styleAlignItems="center"
+      styleJustifyContent="center">
       {#each searchResults as teaser}
         <PatchTeaser
-          focussed={searchResults.length === 1 && searchInput !== ""}
           compact
           loadPatch={async (id: string) => {
             review = undefined;
@@ -518,27 +521,22 @@
       {/each}
 
       {#if searchResults.length === 0}
-        <Border
-          styleMinWidth="25rem"
-          variant="ghost"
-          styleAlignItems="center"
-          styleJustifyContent="center">
-          <div
-            class="global-flex"
-            style:height="74px"
-            style:justify-content="center">
-            <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
-              <Icon name="none" />
-              {#if patchTeasers.length > 0 && searchResults.length === 0}
-                No matching patches.
-              {:else}
-                No {status === undefined ? "" : status} patches.
-              {/if}
-            </div>
+        <div
+          class="global-flex"
+          style:height="74px"
+          style:min-width="440px"
+          style:justify-content="center">
+          <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
+            <Icon name="none" />
+            {#if patchTeasers.length > 0 && searchResults.length === 0}
+              No matching patches.
+            {:else}
+              No {status === undefined ? "" : status} patches.
+            {/if}
           </div>
-        </Border>
+        </div>
       {/if}
-    </div>
+    </Border>
   {/snippet}
 
   {#if review}

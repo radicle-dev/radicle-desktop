@@ -62,11 +62,6 @@
   .container {
     padding: 1rem 1rem 1rem 0;
   }
-  .list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
   .header {
     font-weight: var(--font-weight-medium);
     font-size: var(--font-size-medium);
@@ -141,35 +136,34 @@
       </div>
     </div>
 
-    <div class="list">
+    <Border
+      variant={searchResults.length === 1 && searchInput !== ""
+        ? "secondary"
+        : "float"}
+      styleFlexDirection="column"
+      styleOverflow="hidden"
+      styleGap="2px"
+      styleAlignItems="center"
+      styleJustifyContent="center">
       {#each searchResults as result}
-        <IssueTeaser
-          focussed={searchResults.length === 1 && searchInput !== ""}
-          issue={result.obj.issue}
-          rid={repo.rid}
-          {status} />
+        <IssueTeaser issue={result.obj.issue} rid={repo.rid} {status} />
       {/each}
 
       {#if searchResults.length === 0}
-        <Border
-          variant="ghost"
-          styleAlignItems="center"
-          styleJustifyContent="center">
-          <div
-            class="global-flex"
-            style:height="74px"
-            style:justify-content="center">
-            <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
-              <Icon name="none" />
-              {#if issues.length > 0 && searchResults.length === 0}
-                No matching issues.
-              {:else}
-                No {status === "all" ? "" : status} issues.
-              {/if}
-            </div>
+        <div
+          class="global-flex"
+          style:height="74px"
+          style:justify-content="center">
+          <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
+            <Icon name="none" />
+            {#if issues.length > 0 && searchResults.length === 0}
+              No matching issues.
+            {:else}
+              No {status === "all" ? "" : status} issues.
+            {/if}
           </div>
-        </Border>
+        </div>
       {/if}
-    </div>
+    </Border>
   </div>
 </Layout>
