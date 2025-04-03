@@ -111,7 +111,7 @@
     </NakedButton>
     <div style:margin-left="auto">
       <NakedButton
-        variant="secondary"
+        variant="ghost"
         onclick={async () => {
           if (hideDiscussion) {
             hideDiscussion = false;
