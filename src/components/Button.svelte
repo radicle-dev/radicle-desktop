@@ -28,7 +28,8 @@
       `--button-color-2: var(--color-fill-${variant}-hover);` +
       `--button-color-3: var(--color-fill-${variant}-shade);` +
       // The ghost colors are called --color-fill-counter and --color-fill-counter-emphasized.
-      `--button-color-4: var(--color-fill${variant === "ghost" ? "" : `-${variant}`}-counter)`,
+      `--button-color-4: var(--color-fill${variant === "ghost" ? "" : `-${variant}`}-counter);` +
+      `--text-color: ${variant === "ghost" ? "var(--color-foreground-contrast)" : "var(--color-foreground-white)"}`,
   );
 </script>
 
@@ -39,6 +40,8 @@
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
+
+    color: var(--text-color);
 
     height: 2rem;
     column-gap: 0;
