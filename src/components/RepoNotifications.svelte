@@ -33,6 +33,11 @@
     align-items: center;
     padding-right: 1.5rem;
   }
+  .container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
 </style>
 
 {#if Object.entries(items).length > 0}
@@ -47,7 +52,7 @@
   </div>
 {/if}
 
-<div>
+<div class="container">
   {#each Object.entries(items).sort((a, b) => b[1][0].timestamp - a[1][0].timestamp) as [_, notificationItems]}
     <NotificationTeaser
       {clearByIds}
