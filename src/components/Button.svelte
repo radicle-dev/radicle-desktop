@@ -114,6 +114,9 @@
   .container.disabled {
     color: var(--color-foreground-disabled);
   }
+  .container.active:not(.disabled) {
+    color: var(--color-foreground-emphasized);
+  }
 
   .disabled .p1-3,
   .disabled .p2-2,
