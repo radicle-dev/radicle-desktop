@@ -383,6 +383,7 @@
             {/if}
           </div>
           <TextInput
+            placeholder="Issue title"
             valid={updatedTitle.trim().length > 0}
             bind:value={updatedTitle}
             autofocus
@@ -397,6 +398,7 @@
             }} />
           <div class="title-icons">
             <Icon
+              ariaLabel="save-new-title"
               name="checkmark"
               onclick={async () => {
                 if (updatedTitle.trim().length > 0) {
@@ -404,6 +406,7 @@
                 }
               }} />
             <Icon
+              ariaLabel="discard-new-title"
               name="cross"
               onclick={() => {
                 updatedTitle = issue.title;
@@ -430,7 +433,10 @@
           </div>
           {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), issue.body.author.did, )}
             <div class="title-icons">
-              <Icon name="pen" onclick={() => (editingTitle = !editingTitle)} />
+              <Icon
+                name="pen"
+                ariaLabel="edit-title"
+                onclick={() => (editingTitle = !editingTitle)} />
             </div>
           {/if}
         </div>

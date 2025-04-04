@@ -15,7 +15,7 @@
     "check-js": "scripts/check-js",
     "check-rs": "scripts/check-rs",
     "test:unit": "TZ='UTC' vitest run",
-    "test:e2e": "TZ='UTC' playwright test",
+    "test:e2e": "TZ='UTC' cargo build --manifest-path ./crates/test-http-api/Cargo.toml && playwright test",
     "format": "npx prettier '**/*.@(ts|js|svelte|json|css|html|yml)' --write",
     "generate-types": "cargo test --manifest-path ./crates/radicle-types/Cargo.toml",
     "tauri": "npx tauri"

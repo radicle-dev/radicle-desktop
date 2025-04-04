@@ -202,6 +202,7 @@
   <CommentComponent
     caption={revision.id === patchId ? "opened patch" : "created revision"}
     {rid}
+    ariaLabels={{ edit: "edit-revision-description" }}
     id={revision.id}
     lastEdit={revision.description.length > 1
       ? revision.description.at(-1)

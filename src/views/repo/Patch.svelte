@@ -567,6 +567,7 @@
             <TextInput
               valid={updatedTitle.trim().length > 0}
               bind:value={updatedTitle}
+              ariaLabel="patch-title"
               autofocus
               onSubmit={async () => {
                 if (updatedTitle.trim().length > 0) {
@@ -579,6 +580,7 @@
               }} />
             <div class="title-icons">
               <Icon
+                ariaLabel="save-new-title"
                 name="checkmark"
                 onclick={async () => {
                   if (updatedTitle.trim().length > 0) {
@@ -586,6 +588,7 @@
                   }
                 }} />
               <Icon
+                ariaLabel="discard-new-title"
                 name="cross"
                 onclick={() => {
                   updatedTitle = patch.title;
@@ -612,6 +615,7 @@
             {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), patch.author.did, )}
               <div class="title-icons">
                 <Icon
+                  ariaLabel="edit-patch-title"
                   name="pen"
                   onclick={() => (editingTitle = !editingTitle)} />
               </div>

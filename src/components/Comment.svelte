@@ -20,6 +20,7 @@
 
   interface Props {
     actions?: Snippet;
+    ariaLabels?: { edit: string };
     beforeTimestamp?: Snippet;
     id?: string;
     rid: string;
@@ -40,6 +41,7 @@
   /* eslint-disable prefer-const */
   let {
     actions,
+    ariaLabels,
     beforeTimestamp,
     id,
     rid,
@@ -153,7 +155,10 @@
       <div class="header-right">
         {#if id && editComment}
           <div class="edit-buttons">
-            <Icon name="pen" onclick={toggleEdit} />
+            <Icon
+              ariaLabel={ariaLabels?.edit}
+              name="pen"
+              onclick={toggleEdit} />
           </div>
         {/if}
         {#if id && reactions && reactOnComment}

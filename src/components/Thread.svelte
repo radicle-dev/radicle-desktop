@@ -104,6 +104,7 @@
         <CommentComponent
           disallowEmptyBody
           {rid}
+          ariaLabels={{ edit: "edit-reply-comment" }}
           lastEdit={reply.edits.length > 1 ? reply.edits.at(-1) : undefined}
           id={reply.id}
           author={reply.author}
@@ -147,6 +148,7 @@
     <CommentComponent
       disallowEmptyBody
       {rid}
+      ariaLabels={{ edit: "edit-top-level-comment" }}
       id={root.id}
       lastEdit={root.edits.length > 1 ? root.edits.at(-1) : undefined}
       author={root.author}
@@ -159,7 +161,10 @@
       reactOnComment={reactOnComment && partial(reactOnComment, root.id)}>
       {#snippet actions()}
         {#if createReply}
-          <Icon name="reply" onclick={toggleReply} />
+          <Icon
+            ariaLabel="create-top-level-reply"
+            name="reply"
+            onclick={toggleReply} />
         {/if}
       {/snippet}
     </CommentComponent>

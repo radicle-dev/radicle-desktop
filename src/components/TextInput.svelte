@@ -21,6 +21,7 @@
     type?: string;
     valid?: boolean;
     value?: string;
+    ariaLabel?: string;
   }
 
   /* eslint-disable prefer-const */
@@ -28,6 +29,7 @@
     autofocus = false,
     autoselect = false,
     disabled = false,
+    ariaLabel,
     keyShortcuts,
     left,
     name,
@@ -112,6 +114,7 @@
     onblur={() => {
       focussed = false;
     }}
+    aria-label={ariaLabel}
     bind:this={inputElement}
     {type}
     {name}

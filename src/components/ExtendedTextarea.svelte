@@ -183,11 +183,17 @@
   }
 
   function selectFiles() {
-    void open({ multiple: true }).then(paths => {
-      if (paths) {
-        void attachEmbedsByPaths(paths);
-      }
-    });
+    if (window.__TAURI_INTERNALS__) {
+      void open({ multiple: true }).then(paths => {
+        if (paths) {
+          void attachEmbedsByPaths(paths);
+        }
+      });
+    } else {
+      console.warn(
+        "Attaching files with file dialog isn't supported in the browser yet.",
+      );
+    }
   }
 
   function submitFn() {

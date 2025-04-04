@@ -3,6 +3,7 @@
 
   interface Props {
     children: Snippet;
+    ariaLabel?: string;
     variant: "primary" | "secondary" | "ghost" | "success" | "danger";
     onclick?: () => void;
     disabled?: boolean;
@@ -16,6 +17,7 @@
   const {
     children,
     variant,
+    ariaLabel,
     onclick = undefined,
     disabled = false,
     active = false,
@@ -375,6 +377,7 @@
   style:height={styleHeight}
   class:disabled
   class:active
+  aria-label={ariaLabel}
   class:flat-right={flatRight}
   class:flat-left={flatLeft}
   onclick={!disabled ? onclick : undefined}

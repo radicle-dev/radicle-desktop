@@ -41,7 +41,7 @@
 
 <Popover popoverPadding="0" popoverPositionTop="2rem" popoverPositionLeft="0">
   {#snippet toggle(onclick)}
-    <button {onclick}>
+    <button aria-label="toggle-issue-state" {onclick}>
       <span
         class="global-counter badge"
         style:color={issueStatusColor[selectedState.status]}

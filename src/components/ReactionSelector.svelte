@@ -53,7 +53,7 @@
   {popoverPositionLeft}
   popoverPadding="0">
   {#snippet toggle(onclick)}
-    <Icon name="face" {onclick} />
+    <Icon ariaLabel="toggle-reaction-selector" name="face" {onclick} />
   {/snippet}
   {#snippet popover()}
     <Border variant="ghost">
@@ -63,6 +63,7 @@
             ({ emoji }) => emoji === reaction,
           )}
           <button
+            aria-label={`reaction-selector-${reaction}`}
             use:twemoji={{ exclude: ["21a9"] }}
             class:active={Boolean(lookedUpReaction)}
             onclick={() =>

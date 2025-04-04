@@ -7,6 +7,7 @@
     disabled?: boolean;
     styleDisplay?: string;
     styleVerticalAlign?: string;
+    ariaLabel?: string;
     name:
       | "arrow-left"
       | "arrow-right"
@@ -70,6 +71,7 @@
   const {
     size = "16",
     onclick = undefined,
+    ariaLabel = undefined,
     name,
     disabled = false,
     styleDisplay = "flex",
@@ -109,7 +111,7 @@
       onclick(e);
     }
   }}
-  aria-label={`icon-${name}`}
+  aria-label={ariaLabel ?? `icon-${name}`}
   width={size}
   height={size}
   fill="currentColor"
