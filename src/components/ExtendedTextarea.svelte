@@ -39,6 +39,7 @@
       embeds: Map<string, Embed>;
     }) => Promise<void>;
     close: () => void;
+    allowAttachments?: boolean;
   }
 
   /* eslint-disable prefer-const */
@@ -62,6 +63,7 @@
     borderVariant = "float",
     submit,
     close,
+    allowAttachments = true,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -85,37 +87,39 @@
 
   onMount(async () => {
     if (window.__TAURI_INTERNALS__) {
-      dragEnterUnlistenFn = await listen("tauri://drag-enter", () => {
-        draggingOver = true;
-      });
+      if (allowAttachments) {
+        dragEnterUnlistenFn = await listen("tauri://drag-enter", () => {
+          draggingOver = true;
+        });
 
-      dragLeaveUnlistenFn = await listen("tauri://drag-leave", () => {
-        draggingOver = false;
-      });
+        dragLeaveUnlistenFn = await listen("tauri://drag-leave", () => {
+          draggingOver = false;
+        });
 
-      dragDropUnlistenFn = await listen<{
-        paths: string[];
-        position: { x: number; y: number };
-      }>("tauri://drag-drop", async event => {
-        draggingOver = false;
-        const [preBody, afterBody] = splitBody();
+        dragDropUnlistenFn = await listen<{
+          paths: string[];
+          position: { x: number; y: number };
+        }>("tauri://drag-drop", async event => {
+          draggingOver = false;
+          const [preBody, afterBody] = splitBody();
 
-        return Promise.all(
-          event.payload.paths.map(async path => {
-            const pathSegments = path.split("/");
-            const name = pathSegments[pathSegments.length - 1];
-            const uploadLabel = `[Uploading ${name}...]()\n`;
+          return Promise.all(
+            event.payload.paths.map(async path => {
+              const pathSegments = path.split("/");
+              const name = pathSegments[pathSegments.length - 1];
+              const uploadLabel = `[Uploading ${name}...]()\n`;
 
-            body = preBody.concat(uploadLabel, afterBody);
-            const oid = await invoke<string>("save_embed_by_path", {
-              rid,
-              path,
-            });
-            embeds.set(oid, { name, content: `git:${oid}` });
-            return `[${name}](${oid})\n`;
-          }),
-        ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
-      });
+              body = preBody.concat(uploadLabel, afterBody);
+              const oid = await invoke<string>("save_embed_by_path", {
+                rid,
+                path,
+              });
+              embeds.set(oid, { name, content: `git:${oid}` });
+              return `[${name}](${oid})\n`;
+            }),
+          ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
+        });
+      }
     }
   });
 
@@ -145,6 +149,10 @@
   }
 
   async function handlePaste(e: ClipboardEvent) {
+    if (!allowAttachments) {
+      return;
+    }
+
     if (e.clipboardData?.files && e.clipboardData.files.length > 0) {
       e.preventDefault();
       const [preBody, afterBody] = splitBody();
@@ -276,8 +284,8 @@
     {#if !preview}
       <div
         class="txt-overflow txt-small txt-missing"
-        title={`Drag and drop files to add them. Markdown is supported. Press ${utils.modifierKey()}↵ to submit.`}>
-        Drag and drop files to add them.
+        title={`${allowAttachments ? "Drag and drop files to add them. " : ""}Markdown is supported. Press ${utils.modifierKey()}↵ to submit.`}>
+        {#if allowAttachments}Drag and drop files to add them.{/if}
         <Icon
           name="markdown"
           styleDisplay="inline"
@@ -286,10 +294,12 @@
       </div>
     {/if}
     <div class="buttons">
-      <OutlineButton variant="ghost" onclick={selectFiles} disabled={preview}>
-        <Icon name="attachment" />
-        Attach
-      </OutlineButton>
+      {#if allowAttachments}
+        <OutlineButton variant="ghost" onclick={selectFiles} disabled={preview}>
+          <Icon name="attachment" />
+          Attach
+        </OutlineButton>
+      {/if}
       <OutlineButton variant="ghost" onclick={() => (preview = !preview)}>
         <Icon name={preview ? "pen" : "eye"} />
         {preview ? "Edit" : "Preview"}

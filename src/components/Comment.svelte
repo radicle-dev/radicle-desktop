@@ -35,6 +35,7 @@
     editComment?: (body: string, embeds: Embed[]) => Promise<void>;
     reactOnComment?: (authors: Author[], reaction: string) => Promise<void>;
     styleWidth?: string;
+    allowAttachments?: boolean;
   }
 
   /* eslint-disable prefer-const */
@@ -55,6 +56,7 @@
     reactOnComment,
     styleWidth,
     emptyBodyTooltip,
+    allowAttachments = true,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -191,6 +193,7 @@
             {embeds}
             {disallowEmptyBody}
             {emptyBodyTooltip}
+            {allowAttachments}
             borderVariant="ghost"
             submitInProgress={state === "submit"}
             submitCaption="Save"

@@ -365,6 +365,7 @@
 
     <div class="review-body">
       <CommentComponent
+        allowAttachments={false}
         rid={repo.rid}
         disallowEmptyBody={review.verdict === undefined}
         emptyBodyTooltip="Summary is mandatory when verdict is None"
