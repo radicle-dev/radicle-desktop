@@ -1,35 +1,36 @@
-use traits::cobs::Cobs;
-use traits::issue::{Issues, IssuesMut};
-use traits::patch::{Patches, PatchesMut};
-use traits::repo::Repo;
-use traits::thread::Thread;
-use traits::Profile;
+use std::str::FromStr;
 
-pub mod cobs;
+use radicle::crypto::ssh::Passphrase;
+use radicle::node::Alias;
+
+use outbound::radicle::Radicle;
+
 pub mod config;
-pub mod diff;
 pub mod domain;
 pub mod error;
 pub mod outbound;
-pub mod repo;
-pub mod syntax;
 pub mod test;
-pub mod traits;
 
-#[derive(Clone)]
-pub struct AppState {
-    pub profile: radicle::Profile,
-}
+pub fn init(alias: String, passphrase: Passphrase) -> Result<(), error::Error> {
+    let home = radicle::profile::home()?;
+    let alias = Alias::from_str(&alias)?;
 
-impl Repo for AppState {}
-impl Thread for AppState {}
-impl Cobs for AppState {}
-impl Issues for AppState {}
-impl IssuesMut for AppState {}
-impl Patches for AppState {}
-impl PatchesMut for AppState {}
-impl Profile for AppState {
-    fn profile(&self) -> radicle::Profile {
-        self.profile.clone()
+    if passphrase.is_empty() {
+        return Err(error::Error::Crypto(
+            radicle::crypto::ssh::keystore::Error::PassphraseMissing,
+        ));
     }
+    let profile = radicle::Profile::init(
+        home,
+        alias,
+        Some(passphrase.clone()),
+        radicle::profile::env::seed(),
+    )?;
+    match radicle::crypto::ssh::agent::Agent::connect() {
+        Ok(mut agent) => Radicle::register(&mut agent, &profile, passphrase.clone())?,
+        Err(e) if e.is_not_running() => return Err(error::Error::AgentNotRunning),
+        Err(e) => Err(e)?,
+    }
+
+    Ok(())
 }

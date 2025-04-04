@@ -3,13 +3,18 @@ use axum::http::{Response, StatusCode};
 use axum::response::IntoResponse;
 use serde::Serialize;
 
-use crate::cobs::stream;
+use crate::domain::inbox::models::notification;
+use crate::domain::repo::models::{cobs, stream};
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Profile error.
     #[error(transparent)]
     ProfileError(#[from] radicle::profile::Error),
+
+    /// Keys not in SSH Agent error.
+    #[error("ssh agent doesn't have the keys")]
+    KeysNotRegistered,
 
     /// Missing SSH Agent error.
     #[error("ssh agent not running")]
@@ -41,13 +46,11 @@ pub enum Error {
 
     /// List notification error.
     #[error(transparent)]
-    ListNotificationsError(
-        #[from] crate::domain::inbox::models::notification::ListNotificationsError,
-    ),
+    ListNotificationsError(#[from] notification::ListNotificationsError),
 
-    /// CobStore error.
+    /// List patches error.
     #[error(transparent)]
-    ListPatchesError(#[from] crate::domain::patch::models::patch::ListPatchesError),
+    ListPatchesError(#[from] cobs::patch::ListPatchesError),
 
     /// CobStore error.
     #[error(transparent)]
@@ -149,6 +152,8 @@ impl Error {
                 "ProjectError.InvalidDescription"
             }
             Error::Crypto(radicle::crypto::ssh::keystore::Error::Ssh(ssh_key::Error::Crypto))
+            | Error::AgentNotRunning
+            | Error::KeysNotRegistered
             | Error::Crypto(radicle::crypto::ssh::keystore::Error::PassphraseMissing) => {
                 "PassphraseError.InvalidPassphrase"
             }

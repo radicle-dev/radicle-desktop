@@ -1,68 +1,65 @@
-use radicle::git;
-use radicle::identity;
+use radicle::{git, identity, issue};
 
-use radicle::issue::TYPENAME;
-use radicle_types as types;
+use radicle_types::domain::repo::models::cobs;
+use radicle_types::domain::repo::service::Service;
+use radicle_types::domain::repo::traits::RepoService;
 use radicle_types::error::Error;
-use radicle_types::traits::cobs::Cobs;
-use radicle_types::traits::issue::Issues;
-use radicle_types::traits::issue::IssuesMut;
-
-use crate::AppState;
+use radicle_types::outbound::radicle::Radicle;
+use radicle_types::outbound::sqlite::Sqlite;
 
 #[tauri::command]
 pub fn create_issue(
-    ctx: tauri::State<AppState>,
+    service: tauri::State<Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
-    new: types::cobs::issue::NewIssue,
-    opts: types::cobs::CobOptions,
-) -> Result<types::cobs::issue::Issue, Error> {
-    ctx.create_issue(rid, new, opts)
+    new: cobs::issue::NewIssue,
+    opts: cobs::CobOptions,
+) -> Result<cobs::issue::Issue, Error> {
+    service.create_issue(rid, new, opts)
 }
 
 #[tauri::command]
 pub fn edit_issue(
-    ctx: tauri::State<AppState>,
+    service: tauri::State<Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
     cob_id: git::Oid,
-    action: types::cobs::issue::Action,
-    opts: types::cobs::CobOptions,
-) -> Result<types::cobs::issue::Issue, Error> {
-    ctx.edit_issue(rid, cob_id, action, opts)
+    action: cobs::issue::Action,
+    opts: cobs::CobOptions,
+) -> Result<cobs::issue::Issue, Error> {
+    service.edit_issue(rid, cob_id.into(), action, opts)
 }
 
 #[tauri::command]
 pub(crate) fn list_issues(
-    ctx: tauri::State<AppState>,
+    service: tauri::State<Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
-    status: Option<types::cobs::query::IssueStatus>,
-) -> Result<Vec<types::cobs::issue::Issue>, Error> {
-    ctx.list_issues(rid, status)
+    status: Option<cobs::query::IssueStatus>,
+) -> Result<Vec<cobs::issue::Issue>, Error> {
+    service.list_issues(rid, status)
 }
 
 #[tauri::command]
 pub(crate) fn issue_by_id(
-    ctx: tauri::State<AppState>,
+    service: tauri::State<Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
-    id: git::Oid,
-) -> Result<Option<types::cobs::issue::Issue>, Error> {
-    ctx.issue_by_id(rid, id)
+    id: issue::IssueId,
+) -> Result<Option<cobs::issue::Issue>, Error> {
+    service.issue_by_id(rid, id)
 }
 
 #[tauri::command]
 pub(crate) fn comment_threads_by_issue_id(
-    ctx: tauri::State<AppState>,
+    service: tauri::State<Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
-    id: git::Oid,
-) -> Result<Option<Vec<types::cobs::thread::Thread>>, Error> {
-    ctx.comment_threads_by_issue_id(rid, id)
+    id: issue::IssueId,
+) -> Result<Option<Vec<cobs::thread::Thread>>, Error> {
+    service.comment_threads_by_issue_id(rid, id)
 }
 
 #[tauri::command]
 pub fn activity_by_issue(
-    ctx: tauri::State<AppState>,
+    service: tauri::State<Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
     id: git::Oid,
-) -> Result<Vec<types::cobs::Operation<types::cobs::issue::Action>>, Error> {
-    ctx.activity_by_id(rid, &TYPENAME, id)
+) -> Result<Vec<cobs::Operation<cobs::issue::Action>>, Error> {
+    service.activity_by_id(rid, &issue::TYPENAME, id)
 }

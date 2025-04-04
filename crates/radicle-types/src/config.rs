@@ -22,3 +22,13 @@ pub struct Config {
     #[ts(type = "{ default: 'allow', scope: 'followed' | 'all' } | { default: 'block' }")]
     pub seeding_policy: DefaultSeedingPolicy,
 }
+
+impl Config {
+    pub fn get(profile: &radicle::Profile) -> Self {
+        Self {
+            public_key: profile.public_key,
+            seeding_policy: profile.config.node.seeding_policy,
+            alias: profile.config.node.alias.clone(),
+        }
+    }
+}

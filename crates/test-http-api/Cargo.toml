@@ -7,6 +7,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = { version = "1.0.90" }
+anymap3 = { version = "1.0.1" }
+arboard = { version = "3.4.1" }
 axum = { version = "0.8.1", default-features = false, features = ["json", "query", "tokio", "http1"] }
 hyper = { version = "1.4", default-features = false }
 lexopt = { version = "0.3.0" }
@@ -15,6 +17,7 @@ radicle-surf = { version = "0.22.1", default-features = false, features = ["serd
 radicle-types = { path = "../radicle-types" }
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }
+ssh-key = { version = "0.6.3" }
 thiserror = { version = "2.0.12" }
 tokio = { version = "1.40", default-features = false, features = ["macros", "rt-multi-thread"] }
 tower-http = { version = "0.6.2", default-features = false, features = ["cors", "set-header"] }

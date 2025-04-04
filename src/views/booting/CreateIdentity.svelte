@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
 
+  import { SvelteMap } from "svelte/reactivity";
   import * as router from "@app/lib/router";
   import { createEventEmittersOnce } from "@app/lib/startup.svelte";
   import { invoke } from "@app/lib/invoke";
@@ -15,10 +16,7 @@
   let notMatchingPassphrases = $state<boolean>();
   let passphraseRepeat = $state("");
   let alias = $state("");
-  const errors: { alias: ErrorWrapper[]; passphrase: ErrorWrapper[] } = {
-    alias: [],
-    passphrase: [],
-  };
+  const errors: SvelteMap<string, ErrorWrapper[]> = new SvelteMap();
 
   const validatePassphraseRepeat = debounce(() => {
     if (passphrase !== passphraseRepeat && passphraseRepeat.length !== 0) {
@@ -27,17 +25,33 @@
   }, 400);
 
   function validateInput(field: "alias" | "passphrase") {
-    if (field === "alias" && alias.length === 0) {
-      errors.alias.push({ code: "AliasError.EmptyAlias" });
-    }
-    if (field === "alias" && alias.length > 32) {
-      errors.alias.push({ code: "AliasError.TooLongAlias" });
-    }
-    if (field === "alias" && alias.includes(" ")) {
-      errors.alias.push({ code: "AliasError.InvalidAlias" });
+    if (field === "alias") {
+      const existingAliasErrors = errors.get("alias");
+      if (alias.length === 0) {
+        errors.set("alias", [
+          ...(existingAliasErrors || []),
+          { code: "AliasError.EmptyAlias" },
+        ]);
+      }
+      if (alias.length > 32) {
+        errors.set("alias", [
+          ...(existingAliasErrors || []),
+          { code: "AliasError.TooLongAlias" },
+        ]);
+      }
+      if (alias.includes(" ")) {
+        errors.set("alias", [
+          ...(existingAliasErrors || []),
+          { code: "AliasError.InvalidAlias" },
+        ]);
+      }
     }
     if (field === "passphrase" && passphrase.length === 0) {
-      errors.passphrase.push({ code: "PassphraseError.InvalidPassphrase" });
+      const existingPassphraseErrors = errors.get("passphrase");
+      errors.set("alias", [
+        ...(existingPassphraseErrors || []),
+        { code: "PassphraseError.InvalidPassphrase" },
+      ]);
     }
   }
 
@@ -56,23 +70,22 @@
     }
     try {
       await invoke("init", { passphrase, alias });
-      await invoke("startup");
-      await invoke("authenticate", { passphrase });
-      // Clearing the passphrases from memory.
-      passphrase = "";
-      passphraseRepeat = "";
-
+      await invoke("load_profile");
+      await invoke("initialize_domain_services");
       if (window.__TAURI_INTERNALS__) {
         await createEventEmittersOnce();
       }
+      // Clearing the passphrases from memory.
+      passphrase = "";
+      passphraseRepeat = "";
 
       void router.loadFromLocation();
     } catch (err) {
       const e = err as ErrorWrapper;
       if (e.code.startsWith("AliasError")) {
-        errors.alias = [e];
+        errors.set("alias", [e]);
       } else if (e.code.startsWith("PassphraseError")) {
-        errors.passphrase = [e];
+        errors.set("passphrase", [e]);
       }
       console.error(err);
     }
@@ -128,7 +141,7 @@
         autofocus
         onSubmit={handleKeydown}
         oninput={() => {
-          errors.alias = [];
+          errors.set("alias", []);
           if (alias.length > 0) {
             validateInput("alias");
           }
@@ -136,8 +149,8 @@
         placeholder="Enter desired alias"
         type="text"
         bind:value={alias}></TextInput>
-      {#if errors.alias.some(e => e.code.startsWith("AliasError"))}
-        {#each errors.alias as error}
+      {#if errors.get("alias")?.some(e => e.code.startsWith("AliasError"))}
+        {#each errors.get("alias") || [] as error}
           <div
             style="color: var(--color-foreground-red);"
             class="hint txt-small global-flex">
@@ -163,7 +176,7 @@
         <TextInput
           onSubmit={handleKeydown}
           oninput={() => {
-            errors.passphrase = [];
+            errors.set("passphrase", []);
             notMatchingPassphrases = false;
             if (passphrase.length > 0) {
               validateInput("passphrase");
@@ -172,8 +185,10 @@
           placeholder="Enter passphrase to protect your keys"
           type="password"
           bind:value={passphrase}></TextInput>
-        {#if errors.passphrase.some(e => e.code.startsWith("PassphraseError"))}
-          {#each errors.passphrase as error}
+        {#if errors
+          .get("passphrase")
+          ?.some(e => e.code.startsWith("PassphraseError"))}
+          {#each errors.get("passphrase") || [] as error}
             <div
               style="color: var(--color-foreground-red);"
               class="hint txt-small global-flex">
@@ -191,7 +206,7 @@
         <TextInput
           onSubmit={handleKeydown}
           oninput={() => {
-            errors.passphrase = [];
+            errors.set("passphase", []);
             notMatchingPassphrases = false;
             validatePassphraseRepeat();
           }}

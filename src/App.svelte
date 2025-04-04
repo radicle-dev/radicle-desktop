@@ -32,7 +32,8 @@
 
   onMount(async () => {
     try {
-      profile = await invoke<Config>("startup");
+      profile = await invoke<Config>("load_profile");
+      await invoke("initialize_domain_services");
     } catch (err) {
       startup.error = err as ErrorWrapper;
       return;
@@ -44,7 +45,7 @@
     }
 
     try {
-      await invoke("authenticate");
+      await invoke("verify_public_key_in_agent");
       void router.loadFromLocation();
       dynamicInterval(
         "auth",

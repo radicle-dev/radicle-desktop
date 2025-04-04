@@ -1,15 +1,15 @@
+pub mod api;
+pub mod registry;
+
 use std::net::SocketAddr;
-use std::sync::Arc;
 
 use axum::Router;
+use hyper::{header::CONTENT_TYPE, Method};
 use tokio::net::TcpListener;
+use tower_http::cors;
 
-use radicle::cob::cache::COBS_DB_FILE;
-use radicle::Profile;
-
-use radicle_types::domain::patch::service::Service as PatchService;
-
-mod api;
+use api::{identity, inbox, issue, patch, repo, thread};
+use registry::StateRegistry;
 
 #[derive(Debug, Clone)]
 pub struct Options {
@@ -17,23 +17,25 @@ pub struct Options {
 }
 
 pub async fn run(options: Options) -> anyhow::Result<()> {
-    let profile = Profile::load()?;
-    let listener = TcpListener::bind(options.listen).await?;
-    let app = router(profile)?.into_make_service_with_connect_info::<SocketAddr>();
+    let app_state = StateRegistry::default();
 
-    axum::serve(listener, app)
+    let listener = TcpListener::bind(options.listen).await?;
+    let app = Router::<StateRegistry>::new()
+        .merge(identity::router())
+        .merge(inbox::router())
+        .merge(issue::router())
+        .merge(patch::router())
+        .merge(repo::router())
+        .merge(thread::router())
+        .layer(
+            cors::CorsLayer::new()
+                .allow_origin(cors::Any)
+                .allow_methods([Method::POST])
+                .allow_headers([CONTENT_TYPE]),
+        )
+        .with_state(app_state.clone());
+
+    axum::serve(listener, app.into_make_service())
         .await
         .map_err(anyhow::Error::from)
-}
-
-fn router(profile: Profile) -> anyhow::Result<Router> {
-    let profile = Arc::new(profile);
-
-    let patch_db =
-        radicle_types::outbound::sqlite::Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
-    let patch_service = PatchService::new(patch_db);
-
-    let ctx = api::Context::new(profile, Arc::new(patch_service));
-
-    Ok(api::router(ctx))
 }

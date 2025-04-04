@@ -2,40 +2,42 @@ use std::path::PathBuf;
 
 use radicle::git;
 use radicle::identity;
-use radicle_types as types;
-use radicle_types::error::Error;
-use radicle_types::traits::thread::Thread;
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_dialog::DialogExt;
 
-use crate::AppState;
+use radicle_types::domain::repo::models::cobs;
+use radicle_types::domain::repo::service::Service;
+use radicle_types::domain::repo::traits::RepoService as _;
+use radicle_types::error::Error;
+use radicle_types::outbound::radicle::Radicle;
+use radicle_types::outbound::sqlite::Sqlite;
 
 pub mod issue;
 pub mod patch;
 
 #[tauri::command]
 pub async fn get_embed(
-    ctx: tauri::State<'_, AppState>,
+    service: tauri::State<'_, Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
     name: Option<String>,
     oid: git::Oid,
-) -> Result<types::cobs::EmbedWithMimeType, Error> {
-    ctx.get_embed(rid, name, oid)
+) -> Result<cobs::EmbedWithMimeType, Error> {
+    service.get_embed(rid, name, oid)
 }
 
 #[tauri::command]
 pub async fn save_embed_by_path(
-    ctx: tauri::State<'_, AppState>,
+    service: tauri::State<'_, Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
     path: PathBuf,
 ) -> Result<git::Oid, Error> {
-    ctx.save_embed_by_path(rid, path)
+    service.save_embed_by_path(rid, path)
 }
 
 #[tauri::command]
 pub async fn save_embed_by_clipboard(
     app_handle: tauri::AppHandle,
-    ctx: tauri::State<'_, AppState>,
+    service: tauri::State<'_, Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
     name: String,
 ) -> Result<git::Oid, Error> {
@@ -44,23 +46,23 @@ pub async fn save_embed_by_clipboard(
         .read_image()
         .map(|i| i.rgba().to_vec())?;
 
-    ctx.save_embed_by_bytes(rid, name, content)
+    service.save_embed_by_bytes(rid, name, content)
 }
 
 #[tauri::command]
 pub async fn save_embed_by_bytes(
-    ctx: tauri::State<'_, AppState>,
+    service: tauri::State<'_, Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
     name: String,
     bytes: Vec<u8>,
 ) -> Result<git::Oid, Error> {
-    ctx.save_embed_by_bytes(rid, name, bytes)
+    service.save_embed_by_bytes(rid, name, bytes)
 }
 
 #[tauri::command]
 pub async fn save_embed_to_disk(
     app_handle: tauri::AppHandle,
-    ctx: tauri::State<'_, AppState>,
+    service: tauri::State<'_, Service<Radicle, Sqlite>>,
     rid: identity::RepoId,
     oid: git::Oid,
     name: String,
@@ -75,5 +77,5 @@ pub async fn save_embed_to_disk(
     };
     let path = path.into_path()?;
 
-    ctx.save_embed_to_disk(rid, oid, path)
+    service.save_embed_to_disk(rid, oid, path)
 }

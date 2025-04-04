@@ -1,15 +1,13 @@
 use std::fmt::Debug;
 
-use radicle::cob::Timestamp;
 use radicle::node::notifications::NotificationId;
 use radicle::profile::Aliases;
 use radicle::{cob, git, identity, node, storage};
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::cobs::stream::{self, CobStream};
-use crate::cobs::{self, Author};
-use crate::domain::patch::models;
+use crate::domain::repo::models::stream::CobStream as _;
+use crate::domain::repo::models::{cobs, stream};
 
 #[derive(Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -41,10 +39,12 @@ pub struct CountsByRepoParams {
     pub repo: identity::RepoId,
 }
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct RepoGroupParams {
     pub repo: identity::RepoId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub skip: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub take: Option<usize>,
 }
 
@@ -140,8 +140,8 @@ pub struct ActionWithAuthor<T> {
     #[ts(as = "String")]
     pub oid: git::Oid,
     #[ts(type = "number")]
-    pub timestamp: Timestamp,
-    pub author: Author,
+    pub timestamp: cob::Timestamp,
+    pub author: cobs::Author,
     #[serde(flatten)]
     pub action: T,
 }
@@ -158,8 +158,8 @@ pub struct Patch {
     #[ts(type = "number")]
     pub timestamp: localtime::LocalTime,
     pub title: String,
-    pub status: models::patch::State,
-    pub actions: Vec<ActionWithAuthor<models::patch::Action>>,
+    pub status: cobs::patch::State,
+    pub actions: Vec<ActionWithAuthor<cobs::patch::Action>>,
 }
 
 /// Type of notification.

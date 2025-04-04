@@ -4,9 +4,12 @@ import { listen } from "@tauri-apps/api/event";
 import { SvelteMap } from "svelte/reactivity";
 import { nodeRunning, syncStatus } from "./events";
 import once from "lodash/once";
+import { invoke } from "@app/lib/invoke";
 
 // Will be called once in the startup of the app
 export const createEventEmittersOnce = once(async () => {
+  await invoke("create_event_emitters");
+
   const unlistenEvents = await listen("event", () => {
     // Add handler for incoming events
   });
