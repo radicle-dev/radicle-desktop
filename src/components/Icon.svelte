@@ -17,6 +17,7 @@
       | "broom"
       | "broom-double"
       | "checkmark"
+      | "checkout"
       | "chevron-down"
       | "chevron-right"
       | "clock"
@@ -237,6 +238,20 @@
     <path d="M4 8V9H3L3 8H4Z" />
     <path d="M5 9L5 10L4 10L4 9H5Z" />
     <path d="M6 10L6 11H5L5 10L6 10Z" />
+  {:else if name === "checkout"}
+    <path d="M5 5H11V6H5V5Z" />
+    <path d="M4 6L5 6L5 11H4L4 6Z" />
+    <path d="M11 6L12 6V11H11L11 6Z" />
+    <path d="M3 11H4L4 12H3V11Z" />
+    <path d="M12 11L13 11V12H12V11Z" />
+    <path d="M3 13H13V14H3V13Z" />
+    <path d="M4 10H12V11L4 11L4 10Z" />
+    <path d="M13 12L14 12V13L13 13V12Z" />
+    <path d="M2 12H3L3 13H2V12Z" />
+    <path d="M7 2L9 2V6H7V2Z" />
+    <path d="M7 7H9V8H7V7Z" />
+    <path d="M6 6H10V7H6V6Z" />
+    <path d="M5 5H11V6H5V5Z" />
   {:else if name === "chevron-down"}
     <path d="M9 10V11H8V10H9Z" />
     <path d="M10 9V10L9 10V9H10Z" />

@@ -28,6 +28,8 @@
 
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
+  import Command from "@app/components/Command.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
@@ -77,6 +79,7 @@
   let cursor: number = $state(0);
   let more: boolean = $state(false);
   let patchTeasers: Patch[] = $state([]);
+  let checkoutPopoverExpanded = $state(false);
 
   let patches = $state(initialPatches);
   let status = $state(initialStatus);
@@ -105,6 +108,13 @@
     more = patches.more;
   });
 
+  const checkoutCommand = $derived.by(() => {
+    if (tab === "revisions" && selectedRevision.id !== patch.id) {
+      return `rad patch checkout ${formatOid(patch.id)} --revision ${formatOid(selectedRevision.id)}`;
+    } else {
+      return `rad patch checkout ${formatOid(patch.id)}`;
+    }
+  });
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
   async function editTitle(rid: string, patchId: string, title: string) {
@@ -609,13 +619,43 @@
               </div>
               <InlineTitle content={patch.title} fontSize="medium" />
             </div>
-            {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), patch.author.did, )}
-              <div class="title-icons">
-                <Icon
-                  name="pen"
-                  onclick={() => (editingTitle = !editingTitle)} />
-              </div>
-            {/if}
+            <div
+              class="global-flex txt-small"
+              style:margin-left="auto"
+              style:z-index="40"
+              style:gap="0.75rem">
+              {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), patch.author.did, )}
+                <div class="title-icons">
+                  <Icon
+                    name="pen"
+                    onclick={() => (editingTitle = !editingTitle)} />
+                </div>
+              {/if}
+
+              <Popover
+                bind:expanded={checkoutPopoverExpanded}
+                popoverPositionRight="0"
+                popoverPositionTop="3rem">
+                {#snippet toggle(onclick)}
+                  <Button styleHeight="2rem" variant="secondary" {onclick}>
+                    <Icon name="checkout" />Checkout<Icon name="chevron-down" />
+                  </Button>
+                {/snippet}
+                {#snippet popover()}
+                  <Border
+                    styleAlignItems="flex-start"
+                    styleBackgroundColor="var(--color-background-float)"
+                    styleFlexDirection="column"
+                    styleGap="0.5rem"
+                    stylePadding="1rem"
+                    styleWidth="max-content"
+                    variant="ghost">
+                    To checkout this patch in your working copy, run:
+                    <Command command={checkoutCommand} styleWidth="100%" />
+                  </Border>
+                {/snippet}
+              </Popover>
+            </div>
           </div>
         {/if}
       </div>
