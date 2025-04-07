@@ -1,28 +1,9 @@
 <script lang="ts">
-  import type { ComponentProps } from "svelte";
+  import Clipboard from "./Clipboard.svelte";
 
-  import debounce from "lodash/debounce";
-  import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+  const { id }: { id: string } = $props();
 
-  import Icon from "./Icon.svelte";
-
-  const {
-    id,
-  }: {
-    id: string;
-  } = $props();
-
-  let icon: ComponentProps<typeof Icon>["name"] = $state("copy");
-
-  const restoreIcon = debounce(() => {
-    icon = "copy";
-  }, 1000);
-
-  async function copy() {
-    await writeText(id);
-    icon = "checkmark";
-    restoreIcon();
-  }
+  let clipboard: Clipboard;
 </script>
 
 <style>
@@ -40,8 +21,8 @@
 <div
   role="button"
   tabindex="0"
-  onclick={copy}
+  onclick={() => clipboard.copy()}
   class="copyable-id global-flex txt-small txt-monospace">
   {id}
-  <Icon name={icon} />
+  <Clipboard bind:this={clipboard} text={id} />
 </div>
