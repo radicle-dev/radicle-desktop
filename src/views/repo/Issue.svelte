@@ -27,15 +27,14 @@
   import CommentComponent from "@app/components/Comment.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import Discussion from "@app/components/Discussion.svelte";
+  import EditableTitle from "@app/components/EditableTitle.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import InlineTitle from "@app/components/InlineTitle.svelte";
   import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimeline from "@app/components/IssueTimeline.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
-  import TextInput from "@app/components/TextInput.svelte";
 
   import Layout from "./Layout.svelte";
 
@@ -63,8 +62,6 @@
 
   let issues = $state(initialIssues);
   let status = $state(initialStatus);
-  let editingTitle = $state(false);
-  let updatedTitle = $state("");
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let hideTimeline = $state(true);
@@ -78,8 +75,6 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     issue.id;
 
-    editingTitle = false;
-    updatedTitle = issue.title;
     hideTimeline = true;
   });
 
@@ -152,8 +147,6 @@
         id: issue.id,
       }),
     ]);
-
-    editingTitle = false;
   }
 
   async function createComment(
@@ -200,29 +193,23 @@
     }
   }
 
-  async function editTitle(id: string, title: string) {
-    if (issue.title === updatedTitle) {
-      editingTitle = false;
-      return;
-    }
-
+  async function updateTitle(newTitle: string) {
     try {
       await invoke("edit_issue", {
         rid: repo.rid,
         cobId: issue.id,
         action: {
           type: "edit",
-          id,
-          title,
+          id: issue.id,
+          title: newTitle,
         },
         opts: { announce: $nodeRunning && $announce },
       });
       // Update second column issue title without reloading the whole issue list.
       const issueIndex = issues.findIndex(i => i.id === issue.id);
       if (issueIndex !== -1) {
-        issues[issueIndex].title = updatedTitle;
+        issues[issueIndex].title = newTitle;
       }
-      editingTitle = false;
     } catch (error) {
       console.error("Issue title editing failed: ", error);
     } finally {
@@ -282,20 +269,8 @@
 </script>
 
 <style>
-  .title {
-    font-size: var(--font-size-medium);
-    font-weight: var(--font-weight-medium);
-    -webkit-user-select: text;
-    user-select: text;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    word-break: break-word;
-    min-height: 2.5rem;
-  }
   .status {
     padding: 0;
-    margin-right: 0.75rem;
     height: 2.5rem;
     width: 2.5rem;
   }
@@ -317,12 +292,6 @@
   }
   .content {
     padding: 1rem 1rem 1rem 0;
-  }
-  .title-icons {
-    display: flex;
-    gap: 1rem;
-    margin-left: 1rem;
-    align-items: center;
   }
   .metadata-divider {
     width: 2px;
@@ -367,74 +336,26 @@
   {/snippet}
 
   <div class="content">
-    <div style:margin-bottom="1rem">
-      {#if editingTitle}
-        <div class="title">
-          <div
-            class="global-counter status"
-            style:color={issueStatusColor[issue.state.status]}
-            style:background-color={issueStatusBackgroundColor[
-              issue.state.status
-            ]}>
-            {#if issue.state.status === "open"}
-              <Icon name="issue" />
-            {:else}
-              <Icon name="issue-closed" />
-            {/if}
-          </div>
-          <TextInput
-            valid={updatedTitle.trim().length > 0}
-            bind:value={updatedTitle}
-            autofocus
-            onSubmit={async () => {
-              if (updatedTitle.trim().length > 0) {
-                await editTitle(issue.id, updatedTitle);
-              }
-            }}
-            onDismiss={() => {
-              updatedTitle = issue.title;
-              editingTitle = !editingTitle;
-            }} />
-          <div class="title-icons">
-            <Icon
-              name="checkmark"
-              onclick={async () => {
-                if (updatedTitle.trim().length > 0) {
-                  await editTitle(issue.id, updatedTitle);
-                }
-              }} />
-            <Icon
-              name="cross"
-              onclick={() => {
-                updatedTitle = issue.title;
-                editingTitle = !editingTitle;
-              }} />
-          </div>
-        </div>
-      {:else}
-        <div class="title">
-          <div class="global-flex" style:gap="0">
-            <div
-              class="global-counter status"
-              style:color={issueStatusColor[issue.state.status]}
-              style:background-color={issueStatusBackgroundColor[
-                issue.state.status
-              ]}>
-              {#if issue.state.status === "open"}
-                <Icon name="issue" />
-              {:else}
-                <Icon name="issue-closed" />
-              {/if}
-            </div>
-            <InlineTitle content={issue.title} fontSize="medium" />
-          </div>
-          {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), issue.body.author.did, )}
-            <div class="title-icons">
-              <Icon name="pen" onclick={() => (editingTitle = !editingTitle)} />
-            </div>
-          {/if}
-        </div>
-      {/if}
+    <div class="global-flex" style:margin-bottom="1rem" style:gap="0.75rem">
+      <div
+        class="global-counter status"
+        style:color={issueStatusColor[issue.state.status]}
+        style:background-color={issueStatusBackgroundColor[issue.state.status]}>
+        {#if issue.state.status === "open"}
+          <Icon name="issue" />
+        {:else}
+          <Icon name="issue-closed" />
+        {/if}
+      </div>
+      <EditableTitle
+        {updateTitle}
+        allowedToEdit={roles.isDelegateOrAuthor(
+          config.publicKey,
+          repo.delegates.map(delegate => delegate.did),
+          issue.body.author.did,
+        )}
+        title={issue.title}
+        cobId={issue.id} />
     </div>
 
     <Border variant="ghost" styleGap="0">
