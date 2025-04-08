@@ -33,6 +33,9 @@
 
     hideChanges = false;
     filesExpanded = true;
+    selectedCommit = undefined;
+    base = revision.base;
+    head = revision.head;
   });
 
   function selectRevision({
