@@ -34,7 +34,6 @@
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import InlineTitle from "@app/components/InlineTitle.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
@@ -51,6 +50,7 @@
   import Sidebar from "@app/components/Sidebar.svelte";
   import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
+  import EditableTitle from "@app/components/EditableTitle.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -83,8 +83,6 @@
 
   let patches = $state(initialPatches);
   let status = $state(initialStatus);
-  let editingTitle = $state(false);
-  let updatedTitle = $state("");
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let tab: "patch" | "revisions" | "timeline" = $state(
@@ -97,8 +95,6 @@
     patch.id;
 
     tab = revisions.length > 1 ? "revisions" : "patch";
-    editingTitle = false;
-    updatedTitle = patch.title;
     selectedRevision = revisions.slice(-1)[0];
   });
 
@@ -117,25 +113,19 @@
   });
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
-  async function editTitle(rid: string, patchId: string, title: string) {
-    if (patch.title === updatedTitle) {
-      editingTitle = false;
-      return;
-    }
-
+  async function updateTitle(newTitle: string) {
     try {
       await invoke("edit_patch", {
-        rid,
-        cobId: patchId,
+        rid: repo.rid,
+        cobId: patch.id,
         action: {
-          id: patchId,
+          id: patch.id,
           type: "edit",
-          title,
+          title: newTitle,
           target: "delegates",
         },
         opts: { announce: $nodeRunning && $announce },
       });
-      editingTitle = false;
     } catch (error) {
       console.error("Editing title failed: ", error);
     } finally {
@@ -308,26 +298,8 @@
 </script>
 
 <style>
-  .title {
-    font-size: var(--font-size-medium);
-    font-weight: var(--font-weight-medium);
-    -webkit-user-select: text;
-    user-select: text;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    word-break: break-word;
-    min-height: 2.5rem;
-  }
-  .title-icons {
-    display: flex;
-    gap: 1rem;
-    margin-left: 1rem;
-    align-items: center;
-  }
   .status {
     padding: 0;
-    margin-right: 0.75rem;
     height: 2.5rem;
     width: 2.5rem;
   }
@@ -567,105 +539,48 @@
       }} />
   {:else}
     <div class="content">
-      <div style:margin-bottom="1rem">
-        {#if editingTitle}
-          <div class="title">
-            <div
-              class="global-counter status"
-              style:color={patchStatusColor[patch.state.status]}
-              style:background-color={patchStatusBackgroundColor[
-                patch.state.status
-              ]}>
-              <Icon
-                name={patch.state.status === "open"
-                  ? "patch"
-                  : `patch-${patch.state.status}`} />
-            </div>
-
-            <TextInput
-              valid={updatedTitle.trim().length > 0}
-              bind:value={updatedTitle}
-              autofocus
-              onSubmit={async () => {
-                if (updatedTitle.trim().length > 0) {
-                  await editTitle(repo.rid, patch.id, updatedTitle);
-                }
-              }}
-              onDismiss={() => {
-                updatedTitle = patch.title;
-                editingTitle = !editingTitle;
-              }} />
-            <div class="title-icons">
-              <Icon
-                name="checkmark"
-                onclick={async () => {
-                  if (updatedTitle.trim().length > 0) {
-                    await editTitle(repo.rid, patch.id, updatedTitle);
-                  }
-                }} />
-              <Icon
-                name="cross"
-                onclick={() => {
-                  updatedTitle = patch.title;
-                  editingTitle = !editingTitle;
-                }} />
-            </div>
-          </div>
-        {:else}
-          <div class="title">
-            <div class="global-flex" style:gap="0">
-              <div
-                class="global-counter status"
-                style:color={patchStatusColor[patch.state.status]}
-                style:background-color={patchStatusBackgroundColor[
-                  patch.state.status
-                ]}>
-                <Icon
-                  name={patch.state.status === "open"
-                    ? "patch"
-                    : `patch-${patch.state.status}`} />
-              </div>
-              <InlineTitle content={patch.title} fontSize="medium" />
-            </div>
-            <div
-              class="global-flex txt-small"
-              style:margin-left="auto"
-              style:z-index="40"
-              style:gap="0.75rem">
-              {#if roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), patch.author.did, )}
-                <div class="title-icons">
-                  <Icon
-                    name="pen"
-                    onclick={() => (editingTitle = !editingTitle)} />
-                </div>
-              {/if}
-
-              <Popover
-                bind:expanded={checkoutPopoverExpanded}
-                popoverPositionRight="0"
-                popoverPositionTop="2.5rem">
-                {#snippet toggle(onclick)}
-                  <Button styleHeight="2rem" variant="secondary" {onclick}>
-                    <Icon name="checkout" />Checkout<Icon name="chevron-down" />
-                  </Button>
-                {/snippet}
-                {#snippet popover()}
-                  <Border
-                    styleAlignItems="flex-start"
-                    styleBackgroundColor="var(--color-background-float)"
-                    styleFlexDirection="column"
-                    styleGap="0.5rem"
-                    stylePadding="1rem"
-                    styleWidth="max-content"
-                    variant="ghost">
-                    To checkout this patch in your working copy, run:
-                    <Command command={checkoutCommand} styleWidth="100%" />
-                  </Border>
-                {/snippet}
-              </Popover>
-            </div>
-          </div>
-        {/if}
+      <div class="global-flex" style:margin-bottom="1rem" style:gap="0.75rem">
+        <div
+          class="global-counter status"
+          style:color={patchStatusColor[patch.state.status]}
+          style:background-color={patchStatusBackgroundColor[
+            patch.state.status
+          ]}>
+          <Icon
+            name={patch.state.status === "open"
+              ? "patch"
+              : `patch-${patch.state.status}`} />
+        </div>
+        <EditableTitle
+          {updateTitle}
+          allowedToEdit={true}
+          title={patch.title}
+          cobId={patch.id} />
+        <div style:margin-left="auto">
+          <Popover
+            bind:expanded={checkoutPopoverExpanded}
+            popoverPositionRight="0"
+            popoverPositionTop="2.5rem">
+            {#snippet toggle(onclick)}
+              <Button styleHeight="2rem" variant="secondary" {onclick}>
+                <Icon name="checkout" />Checkout<Icon name="chevron-down" />
+              </Button>
+            {/snippet}
+            {#snippet popover()}
+              <Border
+                styleAlignItems="flex-start"
+                styleBackgroundColor="var(--color-background-float)"
+                styleFlexDirection="column"
+                styleGap="0.5rem"
+                stylePadding="1rem"
+                styleWidth="max-content"
+                variant="ghost">
+                To checkout this patch in your working copy, run:
+                <Command command={checkoutCommand} styleWidth="100%" />
+              </Border>
+            {/snippet}
+          </Popover>
+        </div>
       </div>
       <Border variant="ghost" styleGap="0">
         <div class="metadata-section" style:min-width="8rem">
