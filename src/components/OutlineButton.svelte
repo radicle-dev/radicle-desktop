@@ -2,21 +2,23 @@
   import type { Snippet } from "svelte";
 
   interface Props {
-    children: Snippet;
-    variant: "primary" | "secondary" | "ghost";
-    onclick?: () => void;
-    disabled?: boolean;
-    styleHeight?: "2rem" | "2.5rem";
     active?: boolean;
+    children: Snippet;
+    disabled?: boolean;
+    onclick?: () => void;
+    styleHeight?: "2rem" | "2.5rem";
+    title?: string;
+    variant: "primary" | "secondary" | "ghost";
   }
 
   const {
-    children,
-    variant,
-    onclick,
-    disabled = false,
-    styleHeight = "2rem",
     active = false,
+    children,
+    disabled = false,
+    onclick,
+    styleHeight = "2rem",
+    title,
+    variant,
   }: Props = $props();
 
   const style = $derived(
@@ -269,15 +271,16 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
-  class="container"
-  style:height={styleHeight}
-  style:cursor={!disabled ? "pointer" : "default"}
-  class:disabled
   class:active
+  class:disabled
+  class="container"
   onclick={!disabled ? onclick : undefined}
   role="button"
+  style:cursor={!disabled ? "pointer" : "default"}
+  style:height={styleHeight}
   tabindex="0"
-  {style}>
+  {style}
+  {title}>
   <div class="pixel p1-1"></div>
   <div class="pixel p1-2"></div>
   <div class="pixel p1-3"></div>

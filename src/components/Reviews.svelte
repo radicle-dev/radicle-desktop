@@ -5,15 +5,17 @@
   import type { Verdict } from "@bindings/cob/patch/Verdict";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
+  import { didFromPublicKey } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
 
-  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import ReviewTeaser from "@app/components/ReviewTeaser.svelte";
 
-  import { didFromPublicKey } from "@app/lib/utils";
+  import Border from "./Border.svelte";
+  import OutlineButton from "./OutlineButton.svelte";
+  import Popover from "./Popover.svelte";
 
   interface Props {
     rid: string;
@@ -94,30 +96,66 @@
     </NakedButton>
 
     <div class="global-flex" style:margin-left="auto">
-      <NakedButton
-        variant="secondary"
-        disabled={hasOwnReview}
-        title={hasOwnReview ? "You already published a review" : undefined}
-        onclick={() => createReview()}>
-        <Icon name="plus" />
-        <span class="txt-small">Write Review</span>
-      </NakedButton>
-      <Button
-        variant="danger"
-        disabled={hasOwnReview}
-        title={hasOwnReview ? "You already published a review" : undefined}
-        onclick={() => createReview("reject")}>
-        <Icon name="comment-cross" />
-        <span class="txt-small">Reject</span>
-      </Button>
-      <Button
-        variant="success"
-        disabled={hasOwnReview}
-        title={hasOwnReview ? "You already published a review" : undefined}
-        onclick={() => createReview("accept")}>
-        <Icon name="comment-checkmark" />
-        <span class="txt-small">Accept</span>
-      </Button>
+      <Popover popoverPositionRight="0" popoverPositionTop="2.5rem">
+        {#snippet toggle(onclick)}
+          <NakedButton
+            variant="ghost"
+            disabled={hasOwnReview}
+            {onclick}
+            title={hasOwnReview ? "You already published a review" : undefined}>
+            <Icon name="plus" />
+            <span class="txt-small">Review</span>
+          </NakedButton>
+        {/snippet}
+
+        {#snippet popover()}
+          <Border variant="ghost" stylePadding="1rem">
+            <OutlineButton
+              variant="ghost"
+              disabled={hasOwnReview}
+              title={hasOwnReview
+                ? "You already published a review"
+                : undefined}
+              onclick={() => createReview()}>
+              <span
+                class="global-flex"
+                style:color="var(--color-foreground-dim)">
+                <Icon name="comment" />
+                <span class="txt-small">Write Review</span>
+              </span>
+            </OutlineButton>
+            <OutlineButton
+              variant="ghost"
+              disabled={hasOwnReview}
+              title={hasOwnReview
+                ? "You already published a review"
+                : undefined}
+              onclick={() => createReview("reject")}>
+              <span
+                class="global-flex"
+                style:color="var(--color-foreground-red)">
+                <Icon name="comment-cross" />
+                <span class="txt-small">Reject</span>
+              </span>
+            </OutlineButton>
+            <OutlineButton
+              variant="ghost"
+              disabled={hasOwnReview}
+              title={hasOwnReview
+                ? "You already published a review"
+                : undefined}
+              onclick={() => createReview("accept")}>
+              <span
+                class="global-flex"
+                style:color="var(--color-foreground-success)">
+                <Icon name="comment-checkmark" />
+                <span class="txt-small">Accept</span>
+                <span></span>
+              </span>
+            </OutlineButton>
+          </Border>
+        {/snippet}
+      </Popover>
     </div>
   </div>
 
