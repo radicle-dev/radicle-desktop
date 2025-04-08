@@ -643,7 +643,7 @@
               <Popover
                 bind:expanded={checkoutPopoverExpanded}
                 popoverPositionRight="0"
-                popoverPositionTop="3rem">
+                popoverPositionTop="2.5rem">
                 {#snippet toggle(onclick)}
                   <Button styleHeight="2rem" variant="secondary" {onclick}>
                     <Icon name="checkout" />Checkout<Icon name="chevron-down" />

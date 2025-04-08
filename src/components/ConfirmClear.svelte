@@ -18,7 +18,7 @@
   /* eslint-enable prefer-const */
 </script>
 
-<Popover popoverPositionRight="0" popoverPositionTop="3rem">
+<Popover popoverPositionRight="0" popoverPositionTop="2.5rem">
   {#snippet toggle(onclick)}
     <NakedButton stylePadding="0 4px" variant="ghost" {onclick}>
       <Icon name="broom-double" />
