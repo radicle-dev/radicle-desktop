@@ -3,9 +3,10 @@
   import type { NotificationItem } from "@bindings/cob/inbox/NotificationItem";
 
   import * as router from "@app/lib/router";
+
   import Button from "./Button.svelte";
+  import ConfirmClear from "./ConfirmClear.svelte";
   import NotificationTeaser from "./NotificationTeaser.svelte";
-  import Icon from "./Icon.svelte";
 
   interface Props {
     all?: boolean;
@@ -31,7 +32,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-right: 1.5rem;
+    padding-right: 1rem;
   }
   .container {
     display: flex;
@@ -48,7 +49,11 @@
       </span>
       {repo.count}
     </div>
-    <Icon onclick={() => clearByRepo(repo.rid)} name="broom-double" />
+    <ConfirmClear
+      subject={repo.name}
+      clear={() => {
+        void clearByRepo(repo.rid);
+      }} />
   </div>
 {/if}
 

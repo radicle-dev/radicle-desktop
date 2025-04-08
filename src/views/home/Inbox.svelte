@@ -1,21 +1,22 @@
 <script lang="ts">
-  import type { HomeInboxTab } from "@app/lib/router/definitions";
   import type { Config } from "@bindings/config/Config";
+  import type { HomeInboxTab } from "@app/lib/router/definitions";
   import type { NotificationCount } from "@bindings/cob/inbox/NotificationCount";
   import type { NotificationItem } from "@bindings/cob/inbox/NotificationItem";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { RepoCount } from "@bindings/repo/RepoCount";
 
+  import * as router from "@app/lib/router";
   import { SvelteMap } from "svelte/reactivity";
   import { invoke } from "@app/lib/invoke";
-  import * as router from "@app/lib/router";
 
+  import Border from "@app/components/Border.svelte";
+  import ConfirmClear from "@app/components/ConfirmClear.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import HomeSidebar from "@app/components/HomeSidebar.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Layout from "@app/views/repo/Layout.svelte";
   import RepoNotifications from "@app/components/RepoNotifications.svelte";
-  import Border from "@app/components/Border.svelte";
 
   interface Props {
     activeTab?: HomeInboxTab;
@@ -156,7 +157,7 @@
     font-size: var(--font-size-medium);
     display: flex;
     justify-content: space-between;
-    padding-right: 1.5rem;
+    padding-right: 1rem;
     align-items: center;
     min-height: 2.5rem;
   }
@@ -184,7 +185,7 @@
     <div class="header">
       <div>Inbox</div>
       {#if notifications.size > 0}
-        <Icon onclick={clearAll} name="broom-double" />
+        <ConfirmClear subject="inbox" clear={clearAll} />
       {/if}
     </div>
     {#each notifications.values() as { repo, pagination, items }}

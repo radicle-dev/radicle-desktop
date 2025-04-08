@@ -20,6 +20,7 @@
 
   import Icon from "./Icon.svelte";
   import InlineTitle from "./InlineTitle.svelte";
+  import NakedButton from "./NakedButton.svelte";
   import NodeId from "./NodeId.svelte";
 
   interface Props {
@@ -142,6 +143,12 @@
     font-size: var(--font-size-regular);
     word-break: break-word;
   }
+  .clear-icon {
+    display: none;
+  }
+  .notification-teaser:hover .clear-icon {
+    display: flex;
+  }
   .selected {
     background-color: var(--color-fill-float-hover);
   }
@@ -151,13 +158,6 @@
   .status {
     padding: 0;
     margin-right: 1rem;
-  }
-  .icon {
-    width: 2rem;
-    height: 2rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
   }
   .notification-teaser:first-of-type {
     clip-path: var(--3px-top-corner-fill);
@@ -210,18 +210,19 @@
         </div>
       </div>
     </div>
-    <div class="global-flex">
-      <div class="icon">
-        <Icon
-          onclick={e => {
-            e.stopPropagation();
-            void clearByIds(
-              rid,
-              notificationItems.map(n => n.rowId),
-            );
-          }}
-          name={clearIcon} />
-      </div>
+    <div class="clear-icon">
+      <NakedButton
+        stylePadding="0 4px"
+        variant="ghost"
+        onclick={e => {
+          e.stopPropagation();
+          void clearByIds(
+            rid,
+            notificationItems.map(n => n.rowId),
+          );
+        }}>
+        <Icon name={clearIcon} />
+      </NakedButton>
     </div>
   </div>
 </div>
