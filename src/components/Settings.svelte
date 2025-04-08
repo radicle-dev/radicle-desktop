@@ -33,7 +33,7 @@
   {#snippet popover()}
     <Border variant="ghost" stylePadding="0.5rem 1rem" styleWidth="27rem">
       <div
-        class="global-flex"
+        class="global-flex txt-small"
         style:flex-direction="column"
         style:align-items="flex-start"
         style:gap="1rem"
