@@ -143,7 +143,7 @@
                 ? "You already published a review"
                 : undefined}
               onclick={async () => {
-                createReview("reject");
+                await createReview("reject");
                 await loadPatch();
                 closeFocused();
               }}>
@@ -161,7 +161,7 @@
                 ? "You already published a review"
                 : undefined}
               onclick={async () => {
-                createReview("accept");
+                await createReview("accept");
                 await loadPatch();
                 closeFocused();
               }}>
