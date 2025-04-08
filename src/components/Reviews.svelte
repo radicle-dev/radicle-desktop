@@ -1,19 +1,23 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
   import type { PatchStatus } from "@app/views/repo/router";
+  import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Verdict } from "@bindings/cob/patch/Verdict";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
+  import { closeFocused } from "./Popover.svelte";
+  import { didFromPublicKey } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
+  import { push } from "@app/lib/router";
 
-  import Button from "@app/components/Button.svelte";
+  import Border from "@app/components/Border.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
+  import OutlineButton from "@app/components/OutlineButton.svelte";
+  import Popover from "@app/components/Popover.svelte";
   import ReviewTeaser from "@app/components/ReviewTeaser.svelte";
-
-  import { didFromPublicKey } from "@app/lib/utils";
 
   interface Props {
     rid: string;
@@ -47,9 +51,9 @@
       revision.reviews === undefined || revision.reviews.length === 0;
   });
 
-  async function createReview(verdict?: Verdict) {
+  async function createReview(verdict?: Verdict): Promise<Review | undefined> {
     try {
-      await invoke("edit_patch", {
+      return await invoke("edit_patch", {
         rid: rid,
         cobId: patchId,
         action: {
@@ -64,8 +68,6 @@
       });
     } catch (error) {
       console.error("Creating a review failed: ", error);
-    } finally {
-      await loadPatch();
     }
   }
 </script>
@@ -94,30 +96,86 @@
     </NakedButton>
 
     <div class="global-flex" style:margin-left="auto">
-      <NakedButton
-        variant="secondary"
-        disabled={hasOwnReview}
-        title={hasOwnReview ? "You already published a review" : undefined}
-        onclick={() => createReview()}>
-        <Icon name="plus" />
-        <span class="txt-small">Write Review</span>
-      </NakedButton>
-      <Button
-        variant="danger"
-        disabled={hasOwnReview}
-        title={hasOwnReview ? "You already published a review" : undefined}
-        onclick={() => createReview("reject")}>
-        <Icon name="comment-cross" />
-        <span class="txt-small">Reject</span>
-      </Button>
-      <Button
-        variant="success"
-        disabled={hasOwnReview}
-        title={hasOwnReview ? "You already published a review" : undefined}
-        onclick={() => createReview("accept")}>
-        <Icon name="comment-checkmark" />
-        <span class="txt-small">Accept</span>
-      </Button>
+      <Popover popoverPositionRight="0" popoverPositionTop="2.5rem">
+        {#snippet toggle(onclick)}
+          <NakedButton
+            variant="ghost"
+            disabled={hasOwnReview}
+            {onclick}
+            title={hasOwnReview ? "You already published a review" : undefined}>
+            <Icon name="plus" />
+            <span class="txt-small">Review</span>
+          </NakedButton>
+        {/snippet}
+
+        {#snippet popover()}
+          <Border variant="ghost" stylePadding="1rem">
+            <OutlineButton
+              variant="ghost"
+              disabled={hasOwnReview}
+              title={hasOwnReview
+                ? "You already published a review"
+                : undefined}
+              onclick={async () => {
+                const newReview = await createReview();
+                if (newReview) {
+                  await push({
+                    resource: "repo.patch",
+                    rid,
+                    patch: patchId,
+                    status,
+                    reviewId: newReview.id,
+                  });
+                }
+                closeFocused();
+              }}>
+              <span
+                class="global-flex"
+                style:color="var(--color-foreground-dim)">
+                <Icon name="comment" />
+                <span class="txt-small">Write Review</span>
+              </span>
+            </OutlineButton>
+            <OutlineButton
+              variant="ghost"
+              disabled={hasOwnReview}
+              title={hasOwnReview
+                ? "You already published a review"
+                : undefined}
+              onclick={async () => {
+                createReview("reject");
+                await loadPatch();
+                closeFocused();
+              }}>
+              <span
+                class="global-flex"
+                style:color="var(--color-foreground-red)">
+                <Icon name="comment-cross" />
+                <span class="txt-small">Reject</span>
+              </span>
+            </OutlineButton>
+            <OutlineButton
+              variant="ghost"
+              disabled={hasOwnReview}
+              title={hasOwnReview
+                ? "You already published a review"
+                : undefined}
+              onclick={async () => {
+                createReview("accept");
+                await loadPatch();
+                closeFocused();
+              }}>
+              <span
+                class="global-flex"
+                style:color="var(--color-foreground-success)">
+                <Icon name="comment-checkmark" />
+                <span class="txt-small">Accept</span>
+                <span></span>
+              </span>
+            </OutlineButton>
+          </Border>
+        {/snippet}
+      </Popover>
     </div>
   </div>
 
