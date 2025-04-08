@@ -1,14 +1,13 @@
 use std::collections::BTreeMap;
 
-use radicle::identity::DocAt;
+use radicle::identity;
 use radicle::issue::cache::Issues;
 use radicle::node;
 use radicle::patch::cache::Patches;
 use radicle::storage::{ReadRepository, ReadStorage};
-use radicle::{git, identity};
 
 use radicle_types::cobs::PaginatedQuery;
-use radicle_types::domain::inbox::models::notification;
+use radicle_types::domain::inbox::models::notification::{self, RepoGroupByItem};
 use radicle_types::domain::inbox::service::Service;
 use radicle_types::domain::inbox::traits::InboxService;
 use radicle_types::error::Error;
@@ -20,10 +19,7 @@ pub fn list_notifications(
     ctx: tauri::State<AppState>,
     sqlite_service: tauri::State<Service<Sqlite>>,
     params: notification::RepoGroupParams,
-) -> Result<
-    PaginatedQuery<BTreeMap<git::Qualified<'static>, Vec<notification::NotificationItem>>>,
-    Error,
-> {
+) -> Result<PaginatedQuery<RepoGroupByItem>, Error> {
     let profile = &ctx.profile;
     let aliases = profile.aliases();
     let cursor = params.skip.unwrap_or(0);
@@ -127,7 +123,7 @@ pub fn list_notifications(
             (qualified, items)
         })
         .filter(|(_, v)| !v.is_empty())
-        .collect::<BTreeMap<git::Qualified<'static>, Vec<notification::NotificationItem>>>();
+        .collect::<RepoGroupByItem>();
 
     Ok(PaginatedQuery {
         cursor,
@@ -147,7 +143,7 @@ pub fn count_notifications_by_repo(
         .filter_map(|s| {
             let (rid, count) = s.ok()?;
             let repo = profile.storage.repository(rid).ok()?;
-            let DocAt { doc, .. } = repo.identity_doc().ok()?;
+            let identity::DocAt { doc, .. } = repo.identity_doc().ok()?;
             let project = doc.project().ok()?;
 
             Some((

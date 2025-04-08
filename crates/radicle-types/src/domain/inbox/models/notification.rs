@@ -33,7 +33,8 @@ pub struct NotificationRow {
     pub new: Option<git::Oid>,
 }
 
-pub type RepoGroup = std::collections::BTreeMap<git::Qualified<'static>, Vec<NotificationRow>>;
+pub type RepoGroup = Vec<(git::Qualified<'static>, Vec<NotificationRow>)>;
+pub type RepoGroupByItem = Vec<(git::Qualified<'static>, Vec<NotificationItem>)>;
 pub type CountByRepo = (identity::RepoId, usize);
 
 #[derive(Clone, Debug)]

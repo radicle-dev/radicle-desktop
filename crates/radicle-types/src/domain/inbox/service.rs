@@ -1,7 +1,5 @@
-use radicle::git;
-
 use crate::domain::inbox::models::notification::{
-    CountByRepo, ListNotificationsError, NotificationRow, RepoGroupParams,
+    CountByRepo, ListNotificationsError, RepoGroup, RepoGroupParams,
 };
 use crate::domain::inbox::traits::{InboxService, InboxStorage};
 
@@ -35,13 +33,7 @@ where
         self.inbox.counts_by_repo()
     }
 
-    fn repo_group(
-        &self,
-        params: RepoGroupParams,
-    ) -> Result<
-        std::collections::BTreeMap<git::Qualified<'static>, Vec<NotificationRow>>,
-        ListNotificationsError,
-    > {
+    fn repo_group(&self, params: RepoGroupParams) -> Result<RepoGroup, ListNotificationsError> {
         self.inbox.repo_group(params)
     }
 }

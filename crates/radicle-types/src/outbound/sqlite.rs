@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -137,17 +136,24 @@ impl InboxStorage for Sqlite {
     fn repo_group(
         &self,
         params: notification::RepoGroupParams,
-    ) -> Result<
-        std::collections::BTreeMap<git::Qualified<'static>, Vec<notification::NotificationRow>>,
-        notification::ListNotificationsError,
-    > {
+    ) -> Result<notification::RepoGroup, notification::ListNotificationsError> {
         let mut stmt = self.db.prepare(
-        "SELECT ref, substr(ref, 66) ref_without_namespace, json_group_array(json_object('row_id', rowid, 'timestamp', timestamp, 'remote', substr(ref, 17, 48), 'old', old, 'new', new)) as value
-        FROM 'repository-notifications'
-        WHERE repo = ?
-        GROUP BY ref_without_namespace
-        ORDER BY timestamp DESC"
-    )?;
+            "SELECT ref, substr(ref, 66) ref_without_namespace,
+                json_group_array(
+                    json_object(
+                        'row_id', rowid,
+                        'timestamp', timestamp,
+                        'remote', substr(ref, 17, 48),
+                        'old', old,
+                        'new', new
+                    )
+                ) as value,
+                MAX(timestamp) AS latest_timestamp
+            FROM 'repository-notifications'
+            WHERE repo = ?
+            GROUP BY ref_without_namespace
+            ORDER BY latest_timestamp DESC",
+        )?;
         stmt.bind((1, &params.repo))?;
 
         stmt.into_iter()
@@ -160,9 +166,6 @@ impl InboxStorage for Sqlite {
 
                 Ok((reference.to_owned(), items))
             })
-            .collect::<Result<
-                BTreeMap<git::Qualified<'static>, Vec<notification::NotificationRow>>,
-                notification::ListNotificationsError,
-            >>()
+            .collect::<Result<notification::RepoGroup, notification::ListNotificationsError>>()
     }
 }

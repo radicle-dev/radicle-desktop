@@ -13,7 +13,7 @@
     clearByIds: (rid: string, ids: string[]) => Promise<void>;
     clearByRepo: (rid: string) => Promise<void>;
     repo: HomeInboxTab;
-    items: Record<string, NotificationItem[]>;
+    items: [string, NotificationItem[]][];
     more: boolean;
   }
 
@@ -58,7 +58,7 @@
 {/if}
 
 <div class="container">
-  {#each Object.entries(items).sort((a, b) => b[1][0].timestamp - a[1][0].timestamp) as [_, notificationItems]}
+  {#each items.sort((a, b) => b[1][0].timestamp - a[1][0].timestamp) as [_, notificationItems]}
     <NotificationTeaser
       {clearByIds}
       rid={repo.rid}

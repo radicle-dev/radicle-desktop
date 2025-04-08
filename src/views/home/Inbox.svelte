@@ -25,7 +25,7 @@
       string,
       {
         repo: HomeInboxTab;
-        items: Record<string, NotificationItem[]>;
+        items: [string, NotificationItem[]][];
         pagination: { cursor: number; more: boolean };
       }
     >;
@@ -95,7 +95,7 @@
   async function reload(rids: string[]) {
     for (const rid of rids) {
       const [n, count] = await Promise.all([
-        invoke<PaginatedQuery<Record<string, NotificationItem[]>>>(
+        invoke<PaginatedQuery<[string, NotificationItem[]][]>>(
           "list_notifications",
           {
             params: {
@@ -124,16 +124,17 @@
 
   async function loadMoreContent() {
     if (more && activeTab) {
-      const c = cursor ? cursor : 20;
-      const p = await invoke<
-        PaginatedQuery<Record<string, NotificationItem[]>>
-      >("list_notifications", {
-        params: {
-          repo: activeTab.rid,
-          skip: more ? c + 20 : c,
-          take: 20,
+      const c = cursor ? cursor : 0;
+      const p = await invoke<PaginatedQuery<[string, NotificationItem[]][]>>(
+        "list_notifications",
+        {
+          params: {
+            repo: activeTab.rid,
+            skip: more ? c + 20 : c,
+            take: 20,
+          },
         },
-      });
+      );
 
       cursor = p.cursor;
       more = p.more;

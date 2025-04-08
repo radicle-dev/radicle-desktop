@@ -49,7 +49,7 @@ interface LoadedInboxRoute {
       string,
       {
         repo: HomeInboxTab;
-        items: Record<string, NotificationItem[]>;
+        items: [string, NotificationItem[]][];
         pagination: { cursor: number; more: boolean };
       }
     >;
@@ -115,7 +115,7 @@ export async function loadRoute(
       new SvelteMap();
     if (route.activeTab) {
       const items = await invoke<
-        PaginatedQuery<Record<string, NotificationItem[]>>
+        PaginatedQuery<[string, NotificationItem[]][]>
       >("list_notifications", {
         params: {
           repo: route.activeTab.rid,
@@ -129,7 +129,7 @@ export async function loadRoute(
     } else {
       for (const [rid, item] of notificationCount) {
         const result = await invoke<
-          PaginatedQuery<Record<string, NotificationItem[]>>
+          PaginatedQuery<[string, NotificationItem[]][]>
         >("list_notifications", {
           params: {
             repo: rid,
