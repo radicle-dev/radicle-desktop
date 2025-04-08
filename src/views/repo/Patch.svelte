@@ -355,6 +355,11 @@
     margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
   }
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
 </style>
 
 {#snippet icons(status: PatchStatus | undefined)}
@@ -390,6 +395,7 @@
 
   {#snippet secondColumn()}
     <div
+      style:min-width="450px"
       class="txt-regular txt-semibold global-flex"
       style:min-height="2.5rem"
       style:margin-bottom="1rem">
@@ -505,33 +511,35 @@
         {/if}
       </div>
     {/if}
-    <Border
-      variant={searchResults.length === 1 && searchInput !== ""
-        ? "secondary"
-        : "float"}
-      styleFlexDirection="column"
-      styleOverflow="hidden"
-      styleGap="2px"
-      styleAlignItems="center"
-      styleJustifyContent="center">
-      {#each searchResults as teaser}
-        <PatchTeaser
-          compact
-          loadPatch={async (id: string) => {
-            review = undefined;
-            await loadPatch(id);
-          }}
-          patch={teaser.obj.patch}
-          rid={repo.rid}
-          {status}
-          selected={teaser.obj.patch.id === patch.id} />
-      {/each}
 
-      {#if searchResults.length === 0}
+    {#if searchResults.length > 0}
+      <div class="list">
+        {#each searchResults as teaser}
+          <PatchTeaser
+            selected={teaser.obj.patch.id === patch.id}
+            focussed={searchResults.length === 1 && searchInput !== ""}
+            compact
+            loadPatch={async (id: string) => {
+              review = undefined;
+              await loadPatch(id);
+            }}
+            patch={teaser.obj.patch}
+            rid={repo.rid}
+            {status} />
+        {/each}
+      </div>
+    {/if}
+
+    {#if searchResults.length === 0}
+      <Border
+        variant="ghost"
+        styleFlexDirection="column"
+        styleOverflow="hidden"
+        styleAlignItems="center"
+        styleJustifyContent="center">
         <div
           class="global-flex"
-          style:height="74px"
-          style:min-width="440px"
+          style:height="84px"
           style:justify-content="center">
           <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
             <Icon name="none" />
@@ -542,8 +550,8 @@
             {/if}
           </div>
         </div>
-      {/if}
-    </Border>
+      </Border>
+    {/if}
   {/snippet}
 
   {#if review}

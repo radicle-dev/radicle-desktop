@@ -40,6 +40,13 @@
     more = patches.more;
   });
 
+  $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    status;
+
+    searchInput = "";
+  });
+
   async function loadMoreContent(all: boolean = false) {
     if (more) {
       const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
@@ -174,23 +181,23 @@
     </div>
 
     <div class="list">
-      <Border
-        variant={searchResults.length === 1 && searchInput !== ""
-          ? "secondary"
-          : "float"}
-        styleFlexDirection="column"
-        styleOverflow="hidden"
-        styleGap="2px"
-        styleAlignItems="center"
-        styleJustifyContent="center">
-        {#each searchResults as result}
-          <PatchTeaser patch={result.obj.patch} rid={repo.rid} {status} />
-        {/each}
+      {#each searchResults as result}
+        <PatchTeaser
+          focussed={searchResults.length === 1 && searchInput !== ""}
+          patch={result.obj.patch}
+          rid={repo.rid}
+          {status} />
+      {/each}
 
-        {#if searchResults.length === 0}
+      {#if searchResults.length === 0}
+        <Border
+          variant="ghost"
+          styleFlexDirection="column"
+          styleAlignItems="center"
+          styleJustifyContent="center">
           <div
             class="global-flex"
-            style:height="74px"
+            style:height="84px"
             style:justify-content="center">
             <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
               <Icon name="none" />
@@ -201,8 +208,8 @@
               {/if}
             </div>
           </div>
-        {/if}
-      </Border>
+        </Border>
+      {/if}
     </div>
   </div>
 </Layout>
