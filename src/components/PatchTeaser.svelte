@@ -47,7 +47,6 @@
     justify-content: space-between;
     gap: 0.25rem;
     min-height: 5rem;
-    min-width: 440px;
     background-color: var(--color-background-float);
     padding: 1rem;
     cursor: pointer;
@@ -66,13 +65,13 @@
     margin-right: 1rem;
   }
   .patch-teaser:first-of-type {
-    clip-path: var(--1px-top-corner-fill);
+    clip-path: var(--2px-top-corner-fill);
   }
   .patch-teaser:last-of-type {
-    clip-path: var(--1px-bottom-corner-fill);
+    clip-path: var(--2px-bottom-corner-fill);
   }
   .patch-teaser:only-of-type {
-    clip-path: var(--1px-corner-fill);
+    clip-path: var(--2px-corner-fill);
   }
 </style>
 
@@ -85,6 +84,7 @@
     class="patch-teaser"
     style:align-items="flex-start"
     style:clip-path={focussed ? "none" : undefined}
+    style:padding={focussed ? "1rem" : "20px"}
     onclick={async () => {
       if (loadPatch) {
         await loadPatch(patch.id);

@@ -33,6 +33,13 @@
 
   let searchInput = $state("");
 
+  $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    status;
+
+    searchInput = "";
+  });
+
   const searchableIssues = $derived(
     issues
       .flatMap(i => {
@@ -61,6 +68,11 @@
 <style>
   .container {
     padding: 1rem 1rem 1rem 0;
+  }
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
   .header {
     font-weight: var(--font-weight-medium);
@@ -136,34 +148,36 @@
       </div>
     </div>
 
-    <Border
-      variant={searchResults.length === 1 && searchInput !== ""
-        ? "secondary"
-        : "float"}
-      styleFlexDirection="column"
-      styleOverflow="hidden"
-      styleGap="2px"
-      styleAlignItems="center"
-      styleJustifyContent="center">
+    <div class="list">
       {#each searchResults as result}
-        <IssueTeaser issue={result.obj.issue} rid={repo.rid} {status} />
+        <IssueTeaser
+          focussed={searchResults.length === 1 && searchInput !== ""}
+          issue={result.obj.issue}
+          rid={repo.rid}
+          {status} />
       {/each}
 
       {#if searchResults.length === 0}
-        <div
-          class="global-flex"
-          style:height="74px"
-          style:justify-content="center">
-          <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
-            <Icon name="none" />
-            {#if issues.length > 0 && searchResults.length === 0}
-              No matching issues.
-            {:else}
-              No {status === "all" ? "" : status} issues.
-            {/if}
+        <Border
+          variant="ghost"
+          styleFlexDirection="column"
+          styleAlignItems="center"
+          styleJustifyContent="center">
+          <div
+            class="global-flex"
+            style:height="84px"
+            style:justify-content="center">
+            <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
+              <Icon name="none" />
+              {#if issues.length > 0 && searchResults.length === 0}
+                No matching issues.
+              {:else}
+                No {status === "all" ? "" : status} issues.
+              {/if}
+            </div>
           </div>
-        </div>
+        </Border>
       {/if}
-    </Border>
+    </div>
   </div>
 </Layout>

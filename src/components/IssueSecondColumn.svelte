@@ -72,6 +72,12 @@
     align-items: center;
     min-height: 2.5rem;
     margin-bottom: 1rem;
+    min-width: 450px;
+  }
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
   }
 </style>
 
@@ -212,30 +218,28 @@
   </div>
 {/if}
 
-<Border
-  variant={searchResults.length === 1 && searchInput !== ""
-    ? "secondary"
-    : "float"}
-  styleFlexDirection="column"
-  styleOverflow="hidden"
-  styleGap="2px"
-  styleAlignItems="center"
-  styleJustifyContent="center">
-  {#each searchResults as result}
-    <IssueTeaser
-      compact
-      issue={result.obj.issue}
-      {status}
-      rid={repo.rid}
-      selected={result.obj.issue.id === selectedIssueId} />
-  {/each}
+{#if searchResults.length > 0}
+  <div class="list">
+    {#each searchResults as result}
+      <IssueTeaser
+        selected={result.obj.issue.id === selectedIssueId}
+        focussed={searchResults.length === 1 && searchInput !== ""}
+        compact
+        issue={result.obj.issue}
+        {status}
+        rid={repo.rid} />
+    {/each}
+  </div>
+{/if}
 
-  {#if searchResults.length === 0}
-    <div
-      class="global-flex"
-      style:height="74px"
-      style:justify-content="center"
-      style:min-width="405px">
+{#if searchResults.length === 0}
+  <Border
+    variant="ghost"
+    styleFlexDirection="column"
+    styleOverflow="hidden"
+    styleAlignItems="center"
+    styleJustifyContent="center">
+    <div class="global-flex" style:height="84px" style:justify-content="center">
       <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
         <Icon name="none" />
         {#if issues.length > 0 && searchResults.length === 0}
@@ -245,5 +249,5 @@
         {/if}
       </div>
     </div>
-  {/if}
-</Border>
+  </Border>
+{/if}
