@@ -40,3 +40,7 @@ steps:
         from_secret: minio_access_key
       secret_key:
         from_secret: minio_secret_key
+
+depends_on:
+  - lint
+  - unit-test

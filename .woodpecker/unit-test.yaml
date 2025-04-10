@@ -1,0 +1,20 @@
+when:
+  - event: pull_request
+  - event: push
+    branch: main
+  - event: tag
+    ref: refs/namespaces/z6MkwPUeUS2fJMfc2HZN1RQTQcTTuhw4HhPySB8JeUg2mVvx/tags/v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z]+)?(\.[0-9]+)?  # Matches v1.2.3, v1.2.3-rc, v1.2.3-rc.1, etc.
+  - event: tag
+    ref: refs/namespaces/z6MkkfM3tPXNPrPevKr3uSiQtHPuwnNhu2yUVjgd2jXVsVz5/tags/v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z]+)?(\.[0-9]+)?  # Matches v1.2.3, v1.2.3-rc, v1.2.3-rc.1, etc.
+steps:
+  unit-tests:
+    image: docker.io/library/node:22.11.0
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+      - |
+        npm ci
+        npm run test:unit
+
+depends_on:
+  - lint
