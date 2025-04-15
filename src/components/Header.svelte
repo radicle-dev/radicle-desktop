@@ -1,14 +1,19 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
+  import { onMount, type Snippet } from "svelte";
 
   import * as router from "@app/lib/router";
+  import { dynamicInterval } from "@app/lib/interval";
+  import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
 
   import Avatar from "./Avatar.svelte";
+  import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
+  import Inbox from "@app/views/home/Inbox.svelte";
   import NakedButton from "./NakedButton.svelte";
-
-  const activeRouteStore = router.activeRouteStore;
+  import OutlineButton from "./OutlineButton.svelte";
+  import Popover from "./Popover.svelte";
 
   interface Props {
     publicKey: string;
@@ -16,6 +21,24 @@
   }
 
   const { center, publicKey }: Props = $props();
+
+  let notificationCount: number | undefined = $state(undefined);
+  let notificationPopoverExpaneded: boolean = $state(false);
+
+  onMount(async () => {
+    await loadCounter();
+  });
+
+  dynamicInterval("auth", loadCounter, 3_000);
+
+  async function loadCounter() {
+    notificationCount = await invoke<number>("count_total_notifications");
+    if (window.__TAURI_INTERNALS__) {
+      await getCurrentWindow().setBadgeCount(
+        notificationCount === 0 ? undefined : notificationCount,
+      );
+    }
+  }
 </script>
 
 <style>
@@ -41,6 +64,7 @@
     flex-direction: column;
     width: 100%;
     row-gap: 8px;
+    z-index: 50;
   }
   .top-row {
     display: flex;
@@ -56,7 +80,7 @@
         <NakedButton
           variant="ghost"
           onclick={() => {
-            void router.push({ resource: "home" });
+            void router.push({ resource: "home", activeTab: "all" });
           }}
           stylePadding="0 4px">
           <Avatar {publicKey} />
@@ -93,13 +117,37 @@
             Offline
           {/if}
         </div>
-        <NakedButton
-          variant="ghost"
-          stylePadding="0 4px"
-          active={$activeRouteStore.resource === "inbox"}
-          onclick={() => router.push({ resource: "inbox" })}>
-          <Icon name="inbox" />
-        </NakedButton>
+
+        <Popover
+          popoverPositionRight="0"
+          popoverPositionTop="3rem"
+          bind:expanded={notificationPopoverExpaneded}>
+          {#snippet toggle(onclick)}
+            <OutlineButton
+              {onclick}
+              variant={notificationCount && notificationCount > 0
+                ? "secondary"
+                : "ghost"}
+              active={notificationPopoverExpaneded}>
+              <Icon name="inbox" />
+              {#if notificationCount !== undefined && notificationCount > 0}
+                {notificationCount}
+              {/if}
+            </OutlineButton>
+          {/snippet}
+
+          {#snippet popover()}
+            <Border
+              variant="ghost"
+              styleWidth="40rem"
+              stylePadding="1rem"
+              styleAlignItems="flex-start"
+              styleOverflow="scroll"
+              styleHeight="calc(100vh - 4rem)">
+              <Inbox {notificationCount} {loadCounter} />
+            </Border>
+          {/snippet}
+        </Popover>
       </div>
     </div>
   </div>

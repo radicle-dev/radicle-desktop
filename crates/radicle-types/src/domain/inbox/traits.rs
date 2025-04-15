@@ -12,6 +12,8 @@ pub trait InboxStorage {
         ListNotificationsError,
     >;
 
+    fn count_total(&self) -> Result<usize, ListNotificationsError>;
+
     fn repo_group(&self, params: RepoGroupParams) -> Result<RepoGroup, ListNotificationsError>;
 }
 
@@ -23,6 +25,9 @@ pub trait InboxService {
         impl Iterator<Item = Result<CountByRepo, ListNotificationsError>>,
         ListNotificationsError,
     >;
+
+    /// Get the total notification count.
+    fn count_total(&self) -> Result<usize, ListNotificationsError>;
 
     fn repo_group(&self, params: RepoGroupParams) -> Result<RepoGroup, ListNotificationsError>;
 }

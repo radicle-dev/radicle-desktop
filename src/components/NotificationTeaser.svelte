@@ -27,7 +27,7 @@
     rid: string;
     kind: "issue" | "patch";
     oid: string;
-    clearByIds: (rid: string, ids: string[]) => Promise<void>;
+    clearByIds: (ids: string[]) => Promise<void>;
     notificationItems: NotificationItem[];
     selected?: boolean;
   }
@@ -216,10 +216,7 @@
         variant="ghost"
         onclick={e => {
           e.stopPropagation();
-          void clearByIds(
-            rid,
-            notificationItems.map(n => n.rowId),
-          );
+          void clearByIds(notificationItems.map(n => n.rowId));
         }}>
         <Icon name={clearIcon} />
       </NakedButton>

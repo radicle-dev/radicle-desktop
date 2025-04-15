@@ -133,6 +133,19 @@ impl InboxStorage for Sqlite {
         }))
     }
 
+    fn count_total(&self) -> Result<usize, notification::ListNotificationsError> {
+        let stmt = self.db.prepare(
+            "SELECT COUNT(*) as count
+             FROM `repository-notifications`
+             WHERE ref LIKE '%cobs%'",
+        )?;
+
+        match stmt.into_iter().next() {
+            Some(Ok(row)) => Ok(row.try_read::<i64, _>("count")? as usize),
+            _ => Ok(0),
+        }
+    }
+
     fn repo_group(
         &self,
         params: notification::RepoGroupParams,

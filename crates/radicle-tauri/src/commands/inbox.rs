@@ -1,12 +1,9 @@
-use std::collections::BTreeMap;
-
 use radicle::identity;
 use radicle::issue::cache::Issues;
 use radicle::node;
 use radicle::patch::cache::Patches;
 use radicle::storage::{ReadRepository, ReadStorage};
 
-use radicle_types::cobs::PaginatedQuery;
 use radicle_types::domain::inbox::models::notification::{self, RepoGroupByItem};
 use radicle_types::domain::inbox::service::Service;
 use radicle_types::domain::inbox::traits::InboxService;
@@ -19,21 +16,23 @@ pub fn list_notifications(
     ctx: tauri::State<AppState>,
     sqlite_service: tauri::State<Service<Sqlite>>,
     params: notification::RepoGroupParams,
-) -> Result<PaginatedQuery<RepoGroupByItem>, Error> {
+) -> Result<RepoGroupByItem, Error> {
     let profile = &ctx.profile;
     let aliases = profile.aliases();
-    let cursor = params.skip.unwrap_or(0);
-    let take = params.take.unwrap_or(20);
-
     let all = sqlite_service.repo_group(params.clone())?;
-    let more = cursor + take < all.len();
+    // When all is true, explicitly ignore the take parameter and use all.len()
+    let take = if params.all.unwrap_or(false) {
+        all.len() // Always use all.len() when all is true, ignoring any take parameter
+    } else {
+        params.take.unwrap_or(20)
+    };
+
     let repo = profile.storage.repository(params.repo)?;
     let patches = profile.patches(&repo)?;
     let issues = profile.issues(&repo)?;
 
     let content = all
         .into_iter()
-        .skip(cursor)
         .take(take)
         .map(|(qualified, n)| {
             let items = n
@@ -120,23 +119,19 @@ pub fn list_notifications(
                 })
                 .collect::<Vec<_>>();
 
-            (qualified, items)
+            items
         })
-        .filter(|(_, v)| !v.is_empty())
+        .filter(|v| !v.is_empty())
         .collect::<RepoGroupByItem>();
 
-    Ok(PaginatedQuery {
-        cursor,
-        more,
-        content,
-    })
+    Ok(content)
 }
 
 #[tauri::command]
 pub fn count_notifications_by_repo(
     ctx: tauri::State<AppState>,
     inbox: tauri::State<Service<Sqlite>>,
-) -> Result<BTreeMap<identity::RepoId, notification::NotificationCount>, Error> {
+) -> Result<Vec<notification::NotificationCount>, Error> {
     let profile = &ctx.profile;
     let result = inbox
         .counts_by_repo()?
@@ -146,18 +141,20 @@ pub fn count_notifications_by_repo(
             let identity::DocAt { doc, .. } = repo.identity_doc().ok()?;
             let project = doc.project().ok()?;
 
-            Some((
+            Some(notification::NotificationCount {
                 rid,
-                notification::NotificationCount {
-                    rid,
-                    name: project.name().to_string(),
-                    count,
-                },
-            ))
+                name: project.name().to_string(),
+                count,
+            })
         })
-        .collect::<BTreeMap<identity::RepoId, notification::NotificationCount>>();
+        .collect::<Vec<notification::NotificationCount>>();
 
     Ok(result)
+}
+
+#[tauri::command]
+pub fn count_total_notifications(inbox: tauri::State<Service<Sqlite>>) -> Result<usize, Error> {
+    Ok(inbox.count_total()?)
 }
 
 #[tauri::command]

@@ -34,7 +34,7 @@ pub struct NotificationRow {
 }
 
 pub type RepoGroup = Vec<(git::Qualified<'static>, Vec<NotificationRow>)>;
-pub type RepoGroupByItem = Vec<(git::Qualified<'static>, Vec<NotificationItem>)>;
+pub type RepoGroupByItem = Vec<Vec<NotificationItem>>;
 pub type CountByRepo = (identity::RepoId, usize);
 
 #[derive(Clone, Debug)]
@@ -45,8 +45,8 @@ pub struct CountsByRepoParams {
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct RepoGroupParams {
     pub repo: identity::RepoId,
-    pub skip: Option<usize>,
     pub take: Option<usize>,
+    pub all: Option<bool>,
 }
 
 #[derive(Debug, thiserror::Error)]

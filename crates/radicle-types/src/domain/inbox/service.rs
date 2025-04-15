@@ -33,6 +33,10 @@ where
         self.inbox.counts_by_repo()
     }
 
+    fn count_total(&self) -> Result<usize, ListNotificationsError> {
+        self.inbox.count_total()
+    }
+
     fn repo_group(&self, params: RepoGroupParams) -> Result<RepoGroup, ListNotificationsError> {
         self.inbox.repo_group(params)
     }
