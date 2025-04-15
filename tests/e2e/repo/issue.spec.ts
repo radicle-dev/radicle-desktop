@@ -41,10 +41,7 @@ test("creation of top level comments", async ({ page }) => {
     );
   await page.getByRole("button", { name: "icon-checkmark" }).click();
   await expect(
-    page.getByRole("button", {
-      name: "icon-issue Make sure that comment creation is working avatar palm opened 8faf9dc 6 months ago",
-      exact: true,
-    }),
+    page.getByRole("button", { name: "icon-issue Make sure that" }),
   ).toBeVisible();
   await expect(
     page
