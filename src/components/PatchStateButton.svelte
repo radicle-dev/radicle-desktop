@@ -32,6 +32,10 @@
     justify-content: center;
     font-size: var(--font-size-small);
   }
+  button:disabled {
+    cursor: inherit;
+  }
+
   .badge {
     gap: 6px;
     padding-right: 10px;
@@ -40,7 +44,7 @@
 
 <Popover popoverPadding="0" popoverPositionTop="2rem" popoverPositionLeft="0">
   {#snippet toggle(onclick)}
-    <button {onclick}>
+    <button disabled={selectedState.status === "merged"} {onclick}>
       <span
         class="global-counter badge"
         style:color={patchStatusColor[selectedState.status]}
@@ -52,7 +56,9 @@
             ? "patch"
             : `patch-${selectedState.status}`} />
         {capitalize(selectedState.status)}
-        <Icon name="chevron-down" />
+        {#if selectedState.status !== "merged"}
+          <Icon name="chevron-down" />
+        {/if}
       </span>
     </button>
   {/snippet}
