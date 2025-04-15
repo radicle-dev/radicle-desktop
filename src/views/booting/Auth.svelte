@@ -33,7 +33,7 @@
           await createEventEmittersOnce();
         }
         passphrase = " ".repeat(passphrase.length);
-        await router.push({ resource: "home" });
+        await router.push({ resource: "home", activeTab: "all" });
       } catch (err) {
         error = err as ErrorWrapper;
       } finally {

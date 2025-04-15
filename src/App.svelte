@@ -22,7 +22,6 @@
   import Auth from "@app/views/booting/Auth.svelte";
   import CreateIdentity from "@app/views/booting/CreateIdentity.svelte";
   import CreateIssue from "@app/views/repo/CreateIssue.svelte";
-  import Inbox from "@app/views/home/Inbox.svelte";
   import Issue from "@app/views/repo/Issue.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
@@ -108,8 +107,6 @@
   {/if}
 {:else if $activeRouteStore.resource === "home"}
   <Repos {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "inbox"}
-  <Inbox {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.home"}
   <RepoHome {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.createIssue"}

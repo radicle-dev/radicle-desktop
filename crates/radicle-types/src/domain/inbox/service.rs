@@ -1,3 +1,5 @@
+use radicle::identity;
+
 use crate::domain::inbox::models::notification::{
     CountByRepo, ListNotificationsError, RepoGroup, RepoGroupParams,
 };
@@ -33,7 +35,14 @@ where
         self.inbox.counts_by_repo()
     }
 
-    fn repo_group(&self, params: RepoGroupParams) -> Result<RepoGroup, ListNotificationsError> {
+    fn notification_count(&self) -> Result<usize, ListNotificationsError> {
+        self.inbox.notification_count()
+    }
+
+    fn repo_group(
+        &self,
+        params: RepoGroupParams,
+    ) -> Result<Vec<(identity::RepoId, RepoGroup)>, ListNotificationsError> {
         self.inbox.repo_group(params)
     }
 }

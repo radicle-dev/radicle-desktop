@@ -12,4 +12,5 @@ export type Patch = {
   title: string;
   status: State;
   actions: Array<ActionWithAuthor<Action>>;
+  repoId: string;
 };

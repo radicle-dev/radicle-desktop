@@ -42,6 +42,7 @@ export interface LoadedRepoHomeRoute {
     repo: RepoInfo;
     config: Config;
     readme: Readme | null;
+    notificationCount: number;
   };
 }
 
@@ -55,6 +56,7 @@ export interface LoadedRepoIssueRoute {
     status: IssueStatus;
     activity: Operation<IssueAction>[];
     threads: Thread[];
+    notificationCount: number;
   };
 }
 
@@ -65,6 +67,7 @@ export interface LoadedRepoCreateIssueRoute {
     config: Config;
     issues: Issue[];
     status: IssueStatus;
+    notificationCount: number;
   };
 }
 
@@ -81,6 +84,7 @@ export interface LoadedRepoIssuesRoute {
     config: Config;
     issues: Issue[];
     status: IssueStatus;
+    notificationCount: number;
   };
 }
 
@@ -105,6 +109,7 @@ export interface LoadedRepoPatchRoute {
     review: Review | undefined;
     revisions: Revision[];
     activity: Operation<PatchAction>[];
+    notificationCount: number;
   };
 }
 
@@ -121,6 +126,7 @@ export interface LoadedRepoPatchesRoute {
     config: Config;
     patches: PaginatedQuery<Patch[]>;
     status: PatchStatus | undefined;
+    notificationCount: number;
   };
 }
 
@@ -142,8 +148,9 @@ export type LoadedRepoRoute =
 export async function loadPatch(
   route: RepoPatchRoute,
 ): Promise<LoadedRepoPatchRoute> {
-  const [config, repo, patches, patch, revisions, activity] = await Promise.all(
-    [
+  const [notificationCount, config, repo, patches, patch, revisions, activity] =
+    await Promise.all([
+      invoke<number>("notification_count"),
       invoke<Config>("config"),
       invoke<RepoInfo>("repo_by_id", {
         rid: route.rid,
@@ -165,8 +172,7 @@ export async function loadPatch(
         rid: route.rid,
         id: route.patch,
       }),
-    ],
-  );
+    ]);
 
   const review = revisions
     .flatMap(r => r.reviews || [])
@@ -183,6 +189,7 @@ export async function loadPatch(
       status: route.status,
       review,
       activity,
+      notificationCount,
     },
   };
 }
@@ -190,7 +197,8 @@ export async function loadPatch(
 export async function loadPatches(
   route: RepoPatchesRoute,
 ): Promise<LoadedRepoPatchesRoute> {
-  const [config, repo, patches] = await Promise.all([
+  const [notificationCount, config, repo, patches] = await Promise.all([
+    invoke<number>("notification_count"),
     invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
@@ -204,14 +212,15 @@ export async function loadPatches(
 
   return {
     resource: "repo.patches",
-    params: { repo, config, patches, status: route.status },
+    params: { notificationCount, repo, config, patches, status: route.status },
   };
 }
 
 export async function loadRepoHome(
   route: RepoHomeRoute,
 ): Promise<LoadedRepoHomeRoute> {
-  const [config, repo, readme] = await Promise.all([
+  const [notificationCount, config, repo, readme] = await Promise.all([
+    invoke<number>("notification_count"),
     invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
@@ -223,14 +232,15 @@ export async function loadRepoHome(
 
   return {
     resource: "repo.home",
-    params: { repo, config, readme },
+    params: { notificationCount, repo, config, readme },
   };
 }
 
 export async function loadCreateIssue(
   route: RepoCreateIssueRoute,
 ): Promise<LoadedRepoCreateIssueRoute> {
-  const [config, repo, issues] = await Promise.all([
+  const [notificationCount, config, repo, issues] = await Promise.all([
+    invoke<number>("notification_count"),
     invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
@@ -243,39 +253,42 @@ export async function loadCreateIssue(
 
   return {
     resource: "repo.createIssue",
-    params: { repo, config, issues, status: route.status },
+    params: { notificationCount, repo, config, issues, status: route.status },
   };
 }
 
 export async function loadIssue(
   route: RepoIssueRoute,
 ): Promise<LoadedRepoIssueRoute> {
-  const [config, repo, issue, activity, issues, threads] = await Promise.all([
-    invoke<Config>("config"),
-    invoke<RepoInfo>("repo_by_id", {
-      rid: route.rid,
-    }),
-    invoke<Issue>("issue_by_id", {
-      rid: route.rid,
-      id: route.issue,
-    }),
-    invoke<Operation<IssueAction>[]>("activity_by_issue", {
-      rid: route.rid,
-      id: route.issue,
-    }),
-    invoke<Issue[]>("list_issues", {
-      rid: route.rid,
-      status: route.status,
-    }),
-    invoke<Thread[]>("comment_threads_by_issue_id", {
-      rid: route.rid,
-      id: route.issue,
-    }),
-  ]);
+  const [notificationCount, config, repo, issue, activity, issues, threads] =
+    await Promise.all([
+      invoke<number>("notification_count"),
+      invoke<Config>("config"),
+      invoke<RepoInfo>("repo_by_id", {
+        rid: route.rid,
+      }),
+      invoke<Issue>("issue_by_id", {
+        rid: route.rid,
+        id: route.issue,
+      }),
+      invoke<Operation<IssueAction>[]>("activity_by_issue", {
+        rid: route.rid,
+        id: route.issue,
+      }),
+      invoke<Issue[]>("list_issues", {
+        rid: route.rid,
+        status: route.status,
+      }),
+      invoke<Thread[]>("comment_threads_by_issue_id", {
+        rid: route.rid,
+        id: route.issue,
+      }),
+    ]);
 
   return {
     resource: "repo.issue",
     params: {
+      notificationCount,
       repo,
       config,
       issue,
@@ -290,7 +303,8 @@ export async function loadIssue(
 export async function loadIssues(
   route: RepoIssuesRoute,
 ): Promise<LoadedRepoIssuesRoute> {
-  const [config, repo, issues] = await Promise.all([
+  const [notificationCount, config, repo, issues] = await Promise.all([
+    invoke<number>("notification_count"),
     invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
@@ -303,7 +317,7 @@ export async function loadIssues(
 
   return {
     resource: "repo.issues",
-    params: { repo, config, issues, status: route.status },
+    params: { notificationCount, repo, config, issues, status: route.status },
   };
 }
 

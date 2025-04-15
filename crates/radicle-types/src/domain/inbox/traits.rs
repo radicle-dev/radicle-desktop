@@ -1,3 +1,5 @@
+use radicle::identity;
+
 use crate::domain::inbox::models::notification::{
     CountByRepo, ListNotificationsError, RepoGroupParams,
 };
@@ -12,7 +14,12 @@ pub trait InboxStorage {
         ListNotificationsError,
     >;
 
-    fn repo_group(&self, params: RepoGroupParams) -> Result<RepoGroup, ListNotificationsError>;
+    fn notification_count(&self) -> Result<usize, ListNotificationsError>;
+
+    fn repo_group(
+        &self,
+        params: RepoGroupParams,
+    ) -> Result<Vec<(identity::RepoId, RepoGroup)>, ListNotificationsError>;
 }
 
 pub trait InboxService {
@@ -24,5 +31,11 @@ pub trait InboxService {
         ListNotificationsError,
     >;
 
-    fn repo_group(&self, params: RepoGroupParams) -> Result<RepoGroup, ListNotificationsError>;
+    /// Get the total notification count.
+    fn notification_count(&self) -> Result<usize, ListNotificationsError>;
+
+    fn repo_group(
+        &self,
+        params: RepoGroupParams,
+    ) -> Result<Vec<(identity::RepoId, RepoGroup)>, ListNotificationsError>;
 }

@@ -39,6 +39,7 @@
     sidebar?: Snippet;
     loadMoreContent?: () => Promise<void>;
     loadMoreSecondColumn?: () => Promise<void>;
+    notificationCount: number;
     hideSidebar?: boolean;
     styleSecondColumnOverflow?: string;
   }
@@ -51,6 +52,7 @@
     sidebar = undefined,
     loadMoreContent = undefined,
     loadMoreSecondColumn = undefined,
+    notificationCount,
     hideSidebar = false,
     styleSecondColumnOverflow = "scroll",
   }: Props = $props();
@@ -134,7 +136,7 @@
 
 <div class="layout">
   <div class="header">
-    <Header {config} center={headerCenter}></Header>
+    <Header {config} center={headerCenter} {notificationCount}></Header>
   </div>
 
   {#if sidebar}

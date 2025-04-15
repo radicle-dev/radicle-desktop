@@ -30,6 +30,7 @@
     issues: Issue[];
     config: Config;
     status: IssueStatus;
+    notificationCount: number;
   }
 
   const {
@@ -37,6 +38,7 @@
     issues: initialIssues,
     config,
     status: initialStatus,
+    notificationCount,
   }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
@@ -115,7 +117,7 @@
   }
 </style>
 
-<Layout {config}>
+<Layout {notificationCount} {config}>
   {#snippet sidebar()}
     <Sidebar activeTab="issues" rid={repo.rid} />
   {/snippet}

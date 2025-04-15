@@ -47,7 +47,7 @@ async function navigateToUrl(
     await navigate(action, route);
   } else {
     console.error("Could not resolve route for URL: ", url);
-    await navigate(action, { resource: "home" });
+    await navigate(action, { resource: "home", activeTab: "all" });
   }
 }
 
@@ -105,10 +105,8 @@ function urlToRoute(url: URL): Route | null {
     case "": {
       return {
         resource: "home",
+        activeTab: "all",
       };
-    }
-    case "inbox": {
-      return { resource: "inbox" };
     }
     case "repos": {
       return repoUrlToRoute(segments, url.searchParams);
@@ -122,8 +120,6 @@ function urlToRoute(url: URL): Route | null {
 export function routeToPath(route: Route): string {
   if (route.resource === "home") {
     return "/";
-  } else if (route.resource === "inbox") {
-    return "/inbox";
   } else if (
     route.resource === "repo.home" ||
     route.resource === "repo.createIssue" ||

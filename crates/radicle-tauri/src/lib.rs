@@ -46,7 +46,7 @@ pub fn run() {
             cob::save_embed_to_disk,
             diff::get_diff,
             inbox::clear_notifications,
-            inbox::count_notifications_by_repo,
+            inbox::notification_count,
             inbox::list_notifications,
             profile::alias,
             profile::config,

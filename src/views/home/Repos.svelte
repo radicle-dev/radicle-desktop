@@ -1,8 +1,7 @@
 <script lang="ts">
-  import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
-  import type { HomeReposTab } from "@app/lib/router/definitions";
   import type { Config } from "@bindings/config/Config";
-  import type { NotificationCount } from "@bindings/cob/inbox/NotificationCount";
+  import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
+  import type { HomeReposTab } from "@app/views/home/router";
   import type { RepoCount } from "@bindings/repo/RepoCount";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
@@ -25,15 +24,15 @@
   import { setFocused } from "@app/components/Popover.svelte";
 
   interface Props {
-    activeTab?: HomeReposTab;
+    activeTab: HomeReposTab;
     config: Config;
-    notificationCount: Map<string, NotificationCount>;
     repoCount: RepoCount;
     repos: RepoInfo[];
+    notificationCount: number;
   }
 
   /* eslint-disable prefer-const */
-  let { config, repos, notificationCount, repoCount, activeTab }: Props =
+  let { config, repos, repoCount, activeTab, notificationCount }: Props =
     /* eslint-enable prefer-const */
     $props();
 
@@ -107,15 +106,16 @@
   }
 </style>
 
-<Layout hideSidebar styleSecondColumnOverflow="visible" {config}>
+<Layout
+  {notificationCount}
+  hideSidebar
+  styleSecondColumnOverflow="visible"
+  {config}>
   {#snippet headerCenter()}
     <CopyableId id={config.publicKey} />
   {/snippet}
   {#snippet secondColumn()}
-    <HomeSidebar
-      activeTab={{ type: "repos", filter: activeTab }}
-      {repoCount}
-      {notificationCount} />
+    <HomeSidebar {activeTab} {repoCount} />
   {/snippet}
   <div class="container">
     <div class="global-flex" style:margin-bottom="1rem">
