@@ -26,9 +26,10 @@
     patches: PaginatedQuery<Patch[]>;
     config: Config;
     status: PatchStatus | undefined;
+    notificationCount: number;
   }
 
-  const { repo, patches, config, status }: Props = $props();
+  const { repo, patches, config, status, notificationCount }: Props = $props();
 
   let items = $state(patches.content);
   let cursor = patches.cursor;
@@ -118,6 +119,7 @@
 </style>
 
 <Layout
+  {notificationCount}
   {loadMoreContent}
   hideSidebar
   styleSecondColumnOverflow="visible"

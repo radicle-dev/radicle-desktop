@@ -1,25 +1,19 @@
 <script lang="ts">
-  import type { HomeInboxTab, HomeReposTab } from "@app/lib/router/definitions";
-  import type { NotificationCount } from "@bindings/cob/inbox/NotificationCount";
   import type { RepoCount } from "@bindings/repo/RepoCount";
-
-  import sum from "lodash/sum";
+  import type { HomeReposTab } from "@app/views/home/router";
 
   import * as router from "@app/lib/router";
+
   import Border from "./Border.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Link from "./Link.svelte";
   import Settings from "@app/components/Settings.svelte";
 
   interface Props {
-    activeTab:
-      | { type: "inbox"; repo?: HomeInboxTab }
-      | { type: "repos"; filter?: HomeReposTab };
-    notificationCount: Map<string, NotificationCount>;
+    activeTab: HomeReposTab;
     repoCount: RepoCount;
   }
 
-  const { notificationCount, repoCount, activeTab }: Props = $props();
+  const { activeTab, repoCount }: Props = $props();
 </script>
 
 <style>
@@ -50,163 +44,76 @@
     background-color: var(--color-background-default);
     font-weight: var(--font-weight-semibold);
   }
-  .highlight {
-    color: var(--color-foreground-contrast);
-  }
 </style>
 
 <div class="container">
   <div>
-    <div style:margin-bottom="1rem">
-      {#if activeTab.type === "inbox"}
-        <Border
-          styleCursor="pointer"
-          variant="ghost"
-          styleFlexDirection="column"
-          styleGap="2px"
-          styleBackgroundColor="var(--color-background-float)">
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div
-            class="tab"
-            class:active={!activeTab.repo}
-            onclick={() => router.push({ resource: "inbox" })}>
-            <div class="global-flex"><Icon name="inbox" />Inbox</div>
-            <div class="global-counter">
-              {sum(Array.from(notificationCount.values()).map(c => c.count))}
-            </div>
-          </div>
-          {#each notificationCount.entries() as [_, n]}
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="tab"
-              onclick={() =>
-                router.push({
-                  resource: "inbox",
-                  activeTab: n,
-                })}
-              class:active={activeTab.repo?.rid === n.rid}>
-              <div class="global-flex">
-                <Icon name="repo" />{n.name}
-              </div>
-              <div
-                class="global-counter"
-                class:highlight={activeTab.repo?.rid === n.rid}>
-                {n.count}
-              </div>
-            </div>
-          {/each}
-        </Border>
-      {:else}
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <div
-          class="tab"
-          style:cursor="pointer"
-          onclick={() => router.push({ resource: "inbox" })}
-          style:color="var(--color-foreground-contrast)"
-          style:padding-left="12px">
-          <div class="global-flex"><Icon name="inbox" />Inbox</div>
-          <div class="global-counter">
-            {sum(Array.from(notificationCount.values()).map(c => c.count))}
-          </div>
+    <Border
+      styleCursor="pointer"
+      variant="ghost"
+      styleFlexDirection="column"
+      styleGap="2px"
+      styleBackgroundColor="var(--color-background-float)">
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="tab txt-small"
+        class:active={activeTab === "all"}
+        onclick={() => router.push({ resource: "home", activeTab: "all" })}>
+        <div class="global-flex"><Icon name="repo" />Repositories</div>
+        <div class="global-counter">
+          {repoCount.total}
         </div>
-      {/if}
-    </div>
-
-    {#if activeTab.type === "repos"}
-      <Border
-        styleCursor="pointer"
-        variant="ghost"
-        styleFlexDirection="column"
-        styleGap="2px"
-        styleBackgroundColor="var(--color-background-float)">
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="tab txt-small"
-          class:active={!activeTab.filter}
-          onclick={() => router.push({ resource: "home" })}>
-          <div class="global-flex"><Icon name="repo" />Repositories</div>
-          <div class="global-counter">
-            {repoCount.total}
-          </div>
-        </div>
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="tab"
-          class:active={activeTab.filter === "delegate"}
-          onclick={() =>
-            router.push({
-              resource: "home",
-              activeTab: "delegate",
-            })}>
-          <div class="global-flex">
-            <Icon name="delegate" />
-            <div>Delegate</div>
-          </div>
-          <div class="global-counter">{repoCount.delegate}</div>
-        </div>
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="tab"
-          class:active={activeTab.filter === "contributor"}
-          onclick={() =>
-            router.push({
-              resource: "home",
-              activeTab: "contributor",
-            })}>
-          <div class="global-flex">
-            <Icon name="user" />
-            <div>Contributor</div>
-          </div>
-          <div class="global-counter">{repoCount.contributor}</div>
-        </div>
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="tab"
-          class:active={activeTab.filter === "private"}
-          onclick={() =>
-            router.push({
-              resource: "home",
-              activeTab: "private",
-            })}>
-          <div class="global-flex">
-            <Icon name="lock" />
-            <div>Private</div>
-          </div>
-          <div class="global-counter">{repoCount.private}</div>
-        </div>
-      </Border>
-    {:else}
-      <Border
-        styleBackgroundColor="var(--color-background-float)"
-        variant="float">
-        <Link
-          styleWidth="100%"
-          underline={false}
-          route={{
+      </div>
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="tab"
+        class:active={activeTab === "delegate"}
+        onclick={() =>
+          router.push({
             resource: "home",
-          }}>
-          <div
-            style:justify-content="space-between"
-            style:width="100%"
-            class="tab">
-            <div class="global-flex">
-              <Icon name="repo" />
-              Repositories
-            </div>
-            <div class="global-counter">
-              {repoCount.total}
-            </div>
-          </div>
-        </Link>
-      </Border>
-    {/if}
+            activeTab: "delegate",
+          })}>
+        <div class="global-flex">
+          <Icon name="delegate" />
+          <div>Delegate</div>
+        </div>
+        <div class="global-counter">{repoCount.delegate}</div>
+      </div>
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="tab"
+        class:active={activeTab === "contributor"}
+        onclick={() =>
+          router.push({
+            resource: "home",
+            activeTab: "contributor",
+          })}>
+        <div class="global-flex">
+          <Icon name="user" />
+          <div>Contributor</div>
+        </div>
+        <div class="global-counter">{repoCount.contributor}</div>
+      </div>
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="tab"
+        class:active={activeTab === "private"}
+        onclick={() =>
+          router.push({
+            resource: "home",
+            activeTab: "private",
+          })}>
+        <div class="global-flex">
+          <Icon name="lock" />
+          <div>Private</div>
+        </div>
+        <div class="global-counter">{repoCount.private}</div>
+      </div>
+    </Border>
   </div>
 
   <Settings

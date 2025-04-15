@@ -1,217 +1,187 @@
 <script lang="ts">
-  import type { Config } from "@bindings/config/Config";
-  import type { HomeInboxTab } from "@app/lib/router/definitions";
-  import type { NotificationCount } from "@bindings/cob/inbox/NotificationCount";
-  import type { NotificationItem } from "@bindings/cob/inbox/NotificationItem";
-  import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
-  import type { RepoCount } from "@bindings/repo/RepoCount";
+  import type { NotificationsByRepo } from "@bindings/cob/inbox/NotificationsByRepo";
 
-  import * as router from "@app/lib/router";
-  import { SvelteMap } from "svelte/reactivity";
-  import { invoke } from "@app/lib/invoke";
-
-  import Border from "@app/components/Border.svelte";
   import ConfirmClear from "@app/components/ConfirmClear.svelte";
-  import CopyableId from "@app/components/CopyableId.svelte";
-  import HomeSidebar from "@app/components/HomeSidebar.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Layout from "@app/views/repo/Layout.svelte";
-  import RepoNotifications from "@app/components/RepoNotifications.svelte";
+  import NotificationsByRepoComponent from "@app/components/NotificationsByRepo.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {
-    activeTab?: HomeInboxTab;
-    notificationCount: SvelteMap<string, NotificationCount>;
-    notifications: SvelteMap<
-      string,
-      {
-        repo: HomeInboxTab;
-        items: [string, NotificationItem[]][];
-        pagination: { cursor: number; more: boolean };
-      }
-    >;
-    repoCount: RepoCount;
-    config: Config;
+    clearAll: () => Promise<void>;
+    clearByIds: (ids: string[]) => Promise<void>;
+    clearByRepo: (rid: string) => Promise<void>;
+    loadNew: () => Promise<void>;
+    notificationCount: number | undefined;
+    notificationsByRepo: NotificationsByRepo[];
+    showAll: (rid: string) => Promise<void>;
   }
 
-  /* eslint-disable prefer-const */
-  let {
+  const {
+    clearAll,
+    clearByIds,
+    clearByRepo,
+    loadNew,
     notificationCount,
-    repoCount,
-    activeTab,
-    config,
-    notifications,
+    notificationsByRepo,
+    showAll,
   }: Props = $props();
-  /* eslint-enable prefer-const */
 
-  let cursor: number | undefined = undefined;
-  let more: boolean | undefined = undefined;
+  let pinnedRepos: string[] = $state(loadPinnedRepos());
+  let hiddenRepos: string[] = $state(loadHiddenRepos());
 
-  // If we are focused on a repo populate the pagination vars.
-  $effect(() => {
-    if (activeTab && notifications.has(activeTab.rid)) {
-      const n = notifications.get(activeTab.rid);
-      cursor = n!.pagination.cursor;
-      more = n!.pagination.more;
-    }
-  });
+  function loadPinnedRepos(): string[] {
+    const storedPinnedRepos = localStorage
+      ? localStorage.getItem("pinnedInboxRepos")
+      : null;
 
-  async function clearAll() {
-    try {
-      await invoke("clear_notifications", {
-        params: { type: "all" },
-      });
-    } catch (error) {
-      console.error("Clearing notifications failed", error);
-    } finally {
-      notificationCount.clear();
-      notifications.clear();
+    if (storedPinnedRepos === null) {
+      return [];
+    } else {
+      return JSON.parse(storedPinnedRepos);
     }
   }
 
-  async function clearByRepo(rid: string) {
-    try {
-      await invoke("clear_notifications", {
-        params: { type: "repo", content: rid },
-      });
-    } catch (error) {
-      console.error("Clearing notifications failed", error);
-    } finally {
-      await reload([rid]);
+  function updatePinnedRepos(newRepos: string[]) {
+    pinnedRepos = newRepos;
+    localStorage.setItem("pinnedInboxRepos", JSON.stringify(newRepos));
+  }
+
+  function togglePin(rid: string) {
+    const repos = loadPinnedRepos();
+    if (repos.includes(rid)) {
+      updatePinnedRepos(repos.filter(r => r !== rid));
+    } else {
+      updatePinnedRepos([rid, ...repos]);
     }
   }
 
-  async function clearByIds(rid: string, ids: string[]) {
-    try {
-      await invoke("clear_notifications", {
-        params: { type: "ids", content: ids },
-      });
-    } catch (error) {
-      console.error("Clearing notifications failed", error);
-    } finally {
-      await reload([rid]);
+  function loadHiddenRepos(): string[] {
+    const storedHiddenRepos = localStorage
+      ? localStorage.getItem("hiddenInboxRepos")
+      : null;
+
+    if (storedHiddenRepos === null) {
+      return [];
+    } else {
+      return JSON.parse(storedHiddenRepos);
     }
   }
 
-  async function reload(rids: string[]) {
-    for (const rid of rids) {
-      const [n, count] = await Promise.all([
-        invoke<PaginatedQuery<[string, NotificationItem[]][]>>(
-          "list_notifications",
-          {
-            params: {
-              repo: rid,
-            },
-          },
-        ),
-        invoke<Record<string, NotificationCount>>(
-          "count_notifications_by_repo",
-        ),
-      ]);
-      notificationCount = new SvelteMap(Object.entries(count));
+  function updateHiddenRepos(newRepos: string[]) {
+    hiddenRepos = newRepos;
+    localStorage.setItem("hiddenInboxRepos", JSON.stringify(newRepos));
+  }
 
-      notifications.set(rid, {
-        repo: notificationCount.get(rid)!,
-        items: n.content,
-        pagination: { cursor: n.cursor, more: n.more },
-      });
-
-      // If we are looking at a single repo and there are no more notifications left after a reload, push the user to the general inbox
-      if (activeTab && Object.values(n.content).length === 0) {
-        void router.push({ resource: "inbox" });
-      }
+  function toggleHide(rid: string) {
+    const repos = loadHiddenRepos();
+    if (repos.includes(rid)) {
+      updateHiddenRepos(repos.filter(r => r !== rid));
+    } else {
+      updateHiddenRepos([rid, ...repos]);
     }
   }
 
-  async function loadMoreContent() {
-    if (more && activeTab) {
-      const c = cursor ? cursor : 0;
-      const p = await invoke<PaginatedQuery<[string, NotificationItem[]][]>>(
-        "list_notifications",
-        {
-          params: {
-            repo: activeTab.rid,
-            skip: more ? c + 20 : c,
-            take: 20,
-          },
-        },
-      );
+  function sortedRepos(
+    allRepos: NotificationsByRepo[],
+    pinned: string[],
+    hidden: string[],
+  ) {
+    // Preserve pinning order.
+    const pinnedRepos = pinned
+      .map(p => allRepos.find(r => r.rid === p))
+      .filter((repo): repo is NotificationsByRepo => repo !== undefined);
 
-      cursor = p.cursor;
-      more = p.more;
+    const sortedRepos = allRepos
+      .filter(r => !pinned.includes(r.rid) && !hidden.includes(r.rid))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const hiddenRepos = allRepos
+      .filter(r => hidden.includes(r.rid))
+      .sort((a, b) => a.name.localeCompare(b.name));
 
-      const currentNotifications = notifications.get(activeTab.rid);
-      notifications.set(activeTab.rid, {
-        repo: currentNotifications!.repo,
-        items: { ...currentNotifications!.items, ...p.content },
-        pagination: { cursor: p.cursor, more: p.more },
-      });
-    }
+    return [...pinnedRepos, ...sortedRepos, ...hiddenRepos];
+  }
+
+  function loadedNotificationCount() {
+    return notificationsByRepo.reduce((acc, repo) => {
+      return acc + repo.count;
+    }, 0);
   }
 </script>
 
 <style>
   .container {
-    padding: 1rem 1rem 1rem 0;
+    width: 100%;
   }
   .header {
     font-weight: var(--font-weight-medium);
     font-size: var(--font-size-medium);
     display: flex;
-    justify-content: space-between;
-    padding-right: 1rem;
     align-items: center;
-    min-height: 2.5rem;
+    min-height: 2rem;
+  }
+  .clear-inbox {
+    margin-left: auto;
+    margin-right: 1rem;
+    display: none;
+  }
+  .header:hover .clear-inbox {
+    display: flex;
+  }
+  .repo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1rem;
   }
 </style>
 
-<Layout
-  {config}
-  loadMoreContent={async () => {
-    if (activeTab) {
-      await loadMoreContent();
-    }
-  }}
-  hideSidebar
-  styleSecondColumnOverflow="visible">
-  {#snippet headerCenter()}
-    <CopyableId id={config.publicKey} />
-  {/snippet}
-  {#snippet secondColumn()}
-    <HomeSidebar
-      activeTab={{ type: "inbox", repo: activeTab }}
-      {notificationCount}
-      {repoCount} />
-  {/snippet}
-  <div class="container">
-    <div class="header">
-      <div>Inbox</div>
-      {#if notifications.size > 0}
-        <ConfirmClear subject="inbox" clear={clearAll} />
+<div class="container">
+  <div class="header">
+    <div>
+      Inbox
+      {#if notificationCount !== undefined && notificationCount > 0}
+        {notificationCount}
       {/if}
     </div>
-    {#each notifications.values() as { repo, pagination, items }}
-      <RepoNotifications
-        all={Boolean(activeTab)}
-        {clearByIds}
-        {clearByRepo}
-        {repo}
-        more={pagination.more}
-        {items} />
-    {:else}
-      <Border
-        variant="ghost"
-        styleAlignItems="center"
-        styleJustifyContent="center">
-        <div
-          class="global-flex"
-          style:height="4.625rem"
-          style:justify-content="center">
-          <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
-            <Icon name="none" />
-            No notifications.
-          </div>
-        </div>
-      </Border>
-    {/each}
+    {#if notificationCount === undefined || notificationCount === 0}
+      <div
+        class="txt-missing txt-small global-flex"
+        style:gap="0.25rem"
+        style:margin-left="auto">
+        <Icon name="thumb-up" />
+        Yay, inbox zero!
+      </div>
+    {/if}
+    {#if notificationCount !== undefined && notificationCount > loadedNotificationCount()}
+      <div class="txt-missing txt-small global-flex" style:margin-left="1rem">
+        <NakedButton variant="ghost" onclick={loadNew}>
+          See {notificationCount - loadedNotificationCount()} new
+        </NakedButton>
+      </div>
+    {/if}
+    {#if notificationCount && notificationCount > 0}
+      <div class="clear-inbox">
+        <ConfirmClear count={notificationCount} clear={clearAll} />
+      </div>
+    {/if}
   </div>
-</Layout>
+
+  {#if notificationCount !== undefined && notificationCount > 0}
+    <div class="repo-list">
+      {#each sortedRepos(notificationsByRepo, pinnedRepos, hiddenRepos) as repo}
+        <NotificationsByRepoComponent
+          count={repo.count}
+          groupedNotifications={repo.notifications}
+          hidden={hiddenRepos.includes(repo.rid)}
+          name={repo.name}
+          pinned={pinnedRepos.includes(repo.rid)}
+          rid={repo.rid}
+          {clearByIds}
+          {clearByRepo}
+          {showAll}
+          {toggleHide}
+          {togglePin} />
+      {/each}
+    </div>
+  {/if}
+</div>

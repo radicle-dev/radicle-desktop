@@ -57,6 +57,7 @@
     activity: Operation<Action>[];
     status: PatchStatus | undefined;
     review: Review | undefined;
+    notificationCount: number;
   }
 
   /* eslint-disable prefer-const */
@@ -69,6 +70,7 @@
     status: initialStatus,
     activity,
     review,
+    notificationCount,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -322,7 +324,7 @@
   }
 </style>
 
-<Layout {config} loadMoreSecondColumn={loadMoreTeasers}>
+<Layout {notificationCount} loadMoreSecondColumn={loadMoreTeasers} {config}>
   {#snippet headerCenter()}
     <CopyableId id={patch.id} />
   {/snippet}

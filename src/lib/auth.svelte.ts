@@ -22,7 +22,7 @@ export async function checkAuth() {
       import.meta.env.VITE_AUTH_LONG_DELAY || 30_000,
     );
     if (get(router.activeRouteStore).resource === "booting") {
-      void router.push({ resource: "home" });
+      void router.push({ resource: "home", activeTab: "all" });
     }
   } catch (err) {
     const error = err as ErrorWrapper;

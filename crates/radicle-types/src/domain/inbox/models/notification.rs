@@ -31,10 +31,12 @@ pub struct NotificationRow {
     pub remote: storage::RemoteId,
     pub old: Option<git::Oid>,
     pub new: Option<git::Oid>,
+    pub repo: Option<identity::RepoId>,
 }
 
 pub type RepoGroup = Vec<(git::Qualified<'static>, Vec<NotificationRow>)>;
-pub type RepoGroupByItem = Vec<(git::Qualified<'static>, Vec<NotificationItem>)>;
+pub type RepoGroupByItem = Vec<Vec<NotificationItem>>;
+
 pub type CountByRepo = (identity::RepoId, usize);
 
 #[derive(Clone, Debug)]
@@ -44,9 +46,9 @@ pub struct CountsByRepoParams {
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct RepoGroupParams {
-    pub repo: identity::RepoId,
-    pub skip: Option<usize>,
+    pub repos: Option<Vec<identity::RepoId>>,
     pub take: Option<usize>,
+    pub all: Option<bool>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -96,17 +98,20 @@ where
     Ok(iter.filter_map(|a| a.ok()).collect::<Vec<_>>())
 }
 
-#[derive(Serialize, TS)]
+#[derive(Serialize, Debug, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "cob/inbox/")]
-pub struct NotificationCount {
+pub struct NotificationsByRepo {
     #[ts(as = "String")]
     pub rid: identity::RepoId,
     pub name: String,
+    pub notifications: RepoGroupByItem,
     #[ts(type = "number")]
     pub count: usize,
 }
+
+pub type NotificationsByRepoList = Vec<NotificationsByRepo>;
 
 #[derive(Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -132,6 +137,8 @@ pub struct Issue {
     pub timestamp: localtime::LocalTime,
     pub status: cobs::issue::State,
     pub actions: Vec<ActionWithAuthor<cobs::issue::Action>>,
+    #[ts(as = "String")]
+    pub repo_id: Option<identity::RepoId>,
 }
 
 #[derive(Debug, Serialize, TS, Deserialize)]
@@ -161,6 +168,8 @@ pub struct Patch {
     pub title: String,
     pub status: models::patch::State,
     pub actions: Vec<ActionWithAuthor<models::patch::Action>>,
+    #[ts(as = "String")]
+    pub repo_id: Option<identity::RepoId>,
 }
 
 /// Type of notification.

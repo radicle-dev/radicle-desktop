@@ -27,7 +27,7 @@
     rid: string;
     kind: "issue" | "patch";
     oid: string;
-    clearByIds: (rid: string, ids: string[]) => Promise<void>;
+    clearByIds: (ids: string[]) => Promise<void>;
     notificationItems: NotificationItem[];
     selected?: boolean;
   }
@@ -201,7 +201,11 @@
         {/if}
         <div class="txt-small">
           {#each uniqueActions as action}
-            <div class="global-flex" style:gap="0.25rem" style:height="2rem">
+            <div
+              class="global-flex"
+              style:gap="0.25rem"
+              style:min-height="2rem"
+              style:flex-wrap="wrap">
               <NodeId {...authorForNodeId(action.items[0].author)} />
               <span>{@html action.summary}</span>
               <span>{formatTimestamp(action.items[0].timestamp)}</span>
@@ -216,10 +220,7 @@
         variant="ghost"
         onclick={e => {
           e.stopPropagation();
-          void clearByIds(
-            rid,
-            notificationItems.map(n => n.rowId),
-          );
+          void clearByIds(notificationItems.map(n => n.rowId));
         }}>
         <Icon name={clearIcon} />
       </NakedButton>

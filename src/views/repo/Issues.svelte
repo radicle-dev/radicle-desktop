@@ -24,10 +24,11 @@
     issues: Issue[];
     config: Config;
     status: IssueStatus;
+    notificationCount: number;
   }
 
   /* eslint-disable prefer-const */
-  let { repo, issues, config, status }: Props = $props();
+  let { notificationCount, repo, issues, config, status }: Props = $props();
   /* eslint-enable prefer-const */
 
   let searchInput = $state("");
@@ -83,7 +84,11 @@
   }
 </style>
 
-<Layout hideSidebar styleSecondColumnOverflow="visible" {config}>
+<Layout
+  {notificationCount}
+  hideSidebar
+  styleSecondColumnOverflow="visible"
+  {config}>
   {#snippet headerCenter()}
     <CopyableId id={repo.rid} />
   {/snippet}

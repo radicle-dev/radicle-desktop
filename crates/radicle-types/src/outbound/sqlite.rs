@@ -133,12 +133,37 @@ impl InboxStorage for Sqlite {
         }))
     }
 
+    fn notification_count(&self) -> Result<usize, notification::ListNotificationsError> {
+        let stmt = self.db.prepare(
+            "SELECT COUNT(DISTINCT substr(ref, 66)) as count
+             FROM `repository-notifications`
+             WHERE new NOT NULL AND (ref LIKE '%cobs/xyz.radicle.patch%' OR ref LIKE '%cobs/xyz.radicle.issue%')",
+        )?;
+
+        match stmt.into_iter().next() {
+            Some(Ok(row)) => Ok(row.try_read::<i64, _>("count")? as usize),
+            _ => Ok(0),
+        }
+    }
+
     fn repo_group(
         &self,
         params: notification::RepoGroupParams,
-    ) -> Result<notification::RepoGroup, notification::ListNotificationsError> {
-        let mut stmt = self.db.prepare(
-            "SELECT ref, substr(ref, 66) ref_without_namespace,
+    ) -> Result<
+        Vec<(identity::RepoId, notification::RepoGroup)>,
+        notification::ListNotificationsError,
+    > {
+        let repos_clause = match &params.repos {
+            Some(repos) if !repos.is_empty() => {
+                let placeholders: Vec<String> =
+                    (1..=repos.len()).map(|i| format!("?{}", i)).collect();
+                format!("WHERE repo IN ({})", placeholders.join(","))
+            }
+            _ => String::from(""),
+        };
+
+        let query = format!(
+            "SELECT repo, ref, substr(ref, 66) ref_without_namespace,
                 json_group_array(
                     json_object(
                         'row_id', rowid,
@@ -150,22 +175,52 @@ impl InboxStorage for Sqlite {
                 ) as value,
                 MAX(timestamp) AS latest_timestamp
             FROM 'repository-notifications'
-            WHERE repo = ?
-            GROUP BY ref_without_namespace
+            {}
+            GROUP BY repo, ref_without_namespace
             ORDER BY latest_timestamp DESC",
-        )?;
-        stmt.bind((1, &params.repo))?;
+            repos_clause
+        );
 
-        stmt.into_iter()
-            .map(|row| {
-                let row = row?;
-                let refstr = row.try_read::<&str, _>("ref")?;
-                let value = row.try_read::<&str, _>("value")?;
-                let items = serde_json::from_str::<Vec<notification::NotificationRow>>(value)?;
-                let (_, reference) = git::parse_ref::<String>(refstr)?;
+        let mut stmt = self.db.prepare(&query)?;
 
-                Ok((reference.to_owned(), items))
-            })
-            .collect::<Result<notification::RepoGroup, notification::ListNotificationsError>>()
+        if let Some(repos) = &params.repos {
+            if !repos.is_empty() {
+                for (i, repo) in repos.iter().enumerate() {
+                    stmt.bind((i + 1, repo))?;
+                }
+            }
+        }
+
+        let mut result: Vec<(identity::RepoId, notification::RepoGroup)> = Vec::new();
+        let mut current_repo: Option<identity::RepoId> = None;
+        let mut current_group: notification::RepoGroup = Vec::new();
+
+        for row_result in stmt.into_iter() {
+            let row = row_result?;
+            let repo_id = row.try_read::<identity::RepoId, _>("repo")?;
+            let refstr = row.try_read::<&str, _>("ref")?;
+            let value = row.try_read::<&str, _>("value")?;
+            let items = serde_json::from_str::<Vec<notification::NotificationRow>>(value)?;
+            let (_, reference) = git::parse_ref::<String>(refstr)?;
+
+            if let Some(current) = current_repo {
+                if current != repo_id {
+                    result.push((current, std::mem::take(&mut current_group)));
+                    current_repo = Some(repo_id);
+                }
+            } else {
+                current_repo = Some(repo_id);
+            }
+
+            current_group.push((reference.to_owned(), items));
+        }
+
+        if let Some(repo) = current_repo {
+            if !current_group.is_empty() {
+                result.push((repo, current_group));
+            }
+        }
+
+        Ok(result)
     }
 }

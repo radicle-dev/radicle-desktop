@@ -18,9 +18,10 @@
     config: Config;
     readme: Readme | null;
     repo: RepoInfo;
+    notificationCount: number;
   }
 
-  const { config, readme, repo }: Props = $props();
+  const { config, readme, repo, notificationCount }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
@@ -37,7 +38,11 @@
   }
 </style>
 
-<Layout {config} hideSidebar styleSecondColumnOverflow="visible">
+<Layout
+  {notificationCount}
+  {config}
+  hideSidebar
+  styleSecondColumnOverflow="visible">
   {#snippet headerCenter()}
     <CopyableId id={repo.rid} />
   {/snippet}

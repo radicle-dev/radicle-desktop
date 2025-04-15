@@ -13,6 +13,7 @@
 
   import Avatar from "@app/components/Avatar.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import InboxPopover from "@app/components/InboxPopover.svelte";
   import InfoButton from "@app/components/InfoButton.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import NodeStatusButton from "@app/components/NodeStatusButton.svelte";
@@ -29,9 +30,8 @@
   interface Props {
     config: Config;
     center?: Snippet;
+    notificationCount: number;
   }
-
-  const { center, config }: Props = $props();
 
   onMount(async () => {
     try {
@@ -46,6 +46,8 @@
       firstLaunchStorage.value = false;
     }
   });
+
+  const { center, notificationCount, config }: Props = $props();
 </script>
 
 <style>
@@ -71,6 +73,7 @@
     flex-direction: column;
     width: 100%;
     row-gap: 8px;
+    z-index: 50;
   }
   .top-row {
     display: flex;
@@ -87,7 +90,7 @@
           variant="ghost"
           active={$activeRouteStore.resource === "home"}
           onclick={() => {
-            void router.push({ resource: "home" });
+            void router.push({ resource: "home", activeTab: "all" });
           }}
           stylePadding="0 4px">
           <Avatar publicKey={config.publicKey} />
@@ -115,13 +118,7 @@
       <div class="global-flex">
         <InfoButton {config} />
         <NodeStatusButton />
-        <NakedButton
-          variant="ghost"
-          stylePadding="0 4px"
-          active={$activeRouteStore.resource === "inbox"}
-          onclick={() => router.push({ resource: "inbox" })}>
-          <Icon name="inbox" />
-        </NakedButton>
+        <InboxPopover {notificationCount} />
       </div>
     </div>
   </div>
