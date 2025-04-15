@@ -63,7 +63,7 @@
 
   async function reload() {
     [repos, repoCount, config] = await Promise.all([
-      invoke<RepoInfo[]>("list_repos", { show: "all" }),
+      invoke<RepoInfo[]>("list_repos", { show: activeTab ?? "all" }),
       invoke<RepoCount>("repo_count"),
       invoke<Config>("config"),
     ]);
