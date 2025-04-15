@@ -19,13 +19,12 @@
   import Border from "@app/components/Border.svelte";
   import Command from "@app/components/Command.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
-  import Repos from "@app/views/home/guides/Repos.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import InboxPopover from "@app/components/InboxPopover.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import Popover, { setFocused } from "@app/components/Popover.svelte";
-
-  const activeRouteStore = router.activeRouteStore;
+  import Repos from "@app/views/home/guides/Repos.svelte";
 
   const firstLaunchStorage = useLocalStorage(
     "appFirstLaunch",
@@ -37,6 +36,7 @@
   interface Props {
     config: Config;
     center?: Snippet;
+    notificationCount: number;
   }
 
   onMount(async () => {
@@ -53,7 +53,7 @@
     }
   });
 
-  const { center, config }: Props = $props();
+  const { center, notificationCount, config }: Props = $props();
 </script>
 
 <style>
@@ -79,6 +79,7 @@
     flex-direction: column;
     width: 100%;
     row-gap: 8px;
+    z-index: 50;
   }
   .top-row {
     display: flex;
@@ -103,7 +104,7 @@
         <NakedButton
           variant="ghost"
           onclick={() => {
-            void router.push({ resource: "home" });
+            void router.push({ resource: "home", activeTab: "all" });
           }}
           stylePadding="0 4px">
           <Avatar publicKey={config.publicKey} />
@@ -245,13 +246,8 @@
             </Border>
           {/snippet}
         </Popover>
-        <NakedButton
-          variant="ghost"
-          stylePadding="0 4px"
-          active={$activeRouteStore.resource === "inbox"}
-          onclick={() => router.push({ resource: "inbox" })}>
-          <Icon name="inbox" />
-        </NakedButton>
+
+        <InboxPopover {notificationCount} />
       </div>
     </div>
   </div>

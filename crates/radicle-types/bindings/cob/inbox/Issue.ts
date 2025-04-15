@@ -12,4 +12,5 @@ export type Issue = {
   timestamp: number;
   status: State;
   actions: Array<ActionWithAuthor<Action>>;
+  repoId: string;
 };

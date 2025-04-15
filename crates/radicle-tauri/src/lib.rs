@@ -47,6 +47,7 @@ pub fn run() {
             diff::get_diff,
             inbox::clear_notifications,
             inbox::count_notifications_by_repo,
+            inbox::count_total_notifications,
             inbox::list_notifications,
             profile::alias,
             profile::config,

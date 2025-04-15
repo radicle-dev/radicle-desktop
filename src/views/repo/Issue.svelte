@@ -46,6 +46,7 @@
     config: Config;
     threads: Thread[];
     status: IssueStatus;
+    notificationCount: number;
   }
 
   /* eslint-disable prefer-const */
@@ -57,6 +58,7 @@
     config,
     threads,
     status: initialStatus,
+    notificationCount,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -314,7 +316,7 @@
   }
 </style>
 
-<Layout {config}>
+<Layout {notificationCount} {config}>
   {#snippet headerCenter()}
     <CopyableId id={issue.id} />
   {/snippet}
