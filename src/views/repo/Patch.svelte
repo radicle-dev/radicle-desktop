@@ -556,7 +556,7 @@
           allowedToEdit={true}
           title={patch.title}
           cobId={patch.id} />
-        <div style:margin-left="auto">
+        <div class="txt-small" style:margin-left="auto" style:z-index="40">
           <Popover
             bind:expanded={checkoutPopoverExpanded}
             popoverPositionRight="0"
