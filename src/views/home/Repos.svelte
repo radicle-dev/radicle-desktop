@@ -44,7 +44,7 @@
       if (lock) {
         return;
       }
-      if (repos.length > 0) {
+      if (repoCount.total > 0) {
         return;
       }
       lock = true;
