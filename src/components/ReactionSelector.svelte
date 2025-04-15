@@ -39,6 +39,9 @@
     height: 24px;
     clip-path: var(--1px-corner-fill);
     margin: 0;
+    font-size: var(--font-size-small);
+    width: 2rem;
+    height: 2rem;
   }
 
   button:hover,
