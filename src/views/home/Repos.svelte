@@ -151,7 +151,7 @@
         </div>
       {/if}
     </div>
-    {#if repos.length > 0}
+    {#if repoCount.total > 0}
       {#if searchResults.length > 0}
         <div class="repo-grid">
           {#each searchResults as result}
@@ -179,7 +179,11 @@
             style:justify-content="center">
             <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
               <Icon name="none" />
-              No matching repositories.
+              {#if repos.length > 0}
+                No matching repositories.
+              {:else}
+                No repositories.
+              {/if}
             </div>
           </div>
         </Border>
