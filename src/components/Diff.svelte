@@ -222,7 +222,7 @@
   .container {
     /* Make space for the box-shadow border, otherwise it gets cut off due to
        overflow: hide on the container. */
-    padding: 8px 1px;
+    padding: 0.5rem 0.0625rem;
     font-size: var(--font-size-small);
     font-family: var(--font-family-monospace);
   }
@@ -315,7 +315,7 @@
     display: flex;
     background-color: var(--color-fill-ghost);
     clip-path: var(--1px-corner-fill);
-    padding: 0 8px;
+    padding: 0 0.5rem;
     width: fit-content;
   }
 </style>

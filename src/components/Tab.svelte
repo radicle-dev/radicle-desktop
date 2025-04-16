@@ -30,14 +30,14 @@
     display: flex;
     flex-direction: row;
     font-size: var(--font-size-small);
-    height: 38px;
+    height: 2.375rem;
   }
 
   .wrapper {
     position: relative;
     display: flex;
     gap: 0.5rem;
-    padding: 3px 0;
+    padding: 0.1875rem 0;
     align-items: center;
   }
 

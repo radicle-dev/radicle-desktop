@@ -80,8 +80,8 @@
     border-left: 4px solid var(--color-background-default);
   }
   .commit-dot {
-    width: 4px;
-    height: 4px;
+    width: 0.25rem;
+    height: 0.25rem;
     position: absolute;
     top: 0.625rem;
     left: -18.5px;

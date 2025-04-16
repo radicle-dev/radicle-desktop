@@ -48,7 +48,7 @@
     align-items: center;
     gap: 1rem;
     margin-left: auto;
-    height: 21px;
+    height: 1.3125rem;
   }
   .commit-message {
     font-size: var(--font-size-tiny);
@@ -57,7 +57,7 @@
     user-select: text;
   }
   .commit-expand-button {
-    height: 21px;
+    height: 1.3125rem;
     display: flex;
     align-items: center;
   }
@@ -81,7 +81,7 @@
       {#if commit.message.trim() !== commit.summary.trim()}
         <div class="commit-expand-button">
           <NakedButton
-            stylePadding="0 4px"
+            stylePadding="0 0.25rem"
             variant="ghost"
             onclick={e => {
               e.stopPropagation();

@@ -60,9 +60,9 @@
     <div class="global-flex">
       <div
         class="global-counter"
-        style:padding="0 6px"
+        style:padding="0 0.375rem"
         style:background-color="var(--color-fill-ghost)"
-        style:gap="4px">
+        style:gap="0.25rem">
         <Icon name="seedling" />
         {repo.seeding}
       </div>

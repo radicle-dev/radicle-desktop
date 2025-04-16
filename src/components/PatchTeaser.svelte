@@ -84,7 +84,7 @@
     class="patch-teaser"
     style:align-items="flex-start"
     style:clip-path={focussed ? "none" : undefined}
-    style:padding={focussed ? "1rem" : "20px"}
+    style:padding={focussed ? "1rem" : "1.25rem"}
     onclick={async () => {
       if (loadPatch) {
         await loadPatch(patch.id);

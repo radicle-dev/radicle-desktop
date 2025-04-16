@@ -649,7 +649,7 @@
               {formatOid(patch.id)}
               <span
                 class="global-counter"
-                style:height="24px"
+                style:height="1.5rem"
                 style:color="var(--color-foreground-contrast)">
                 Initial
               </span>

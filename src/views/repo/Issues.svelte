@@ -165,7 +165,7 @@
           styleJustifyContent="center">
           <div
             class="global-flex"
-            style:height="84px"
+            style:height="5.25rem"
             style:justify-content="center">
             <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
               <Icon name="none" />

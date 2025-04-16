@@ -20,7 +20,7 @@
     variant,
     onclick,
     styleHeight = "2rem",
-    stylePadding = "0 8px",
+    stylePadding = "0 0.5rem",
     active = false,
     keyShortcuts,
   }: Props = $props();

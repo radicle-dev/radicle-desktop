@@ -31,7 +31,7 @@
     display: flex;
     font-size: var(--font-size-small);
     justify-content: space-between;
-    padding: 8px 4px 8px 8px;
+    padding: 0.5rem 0.25rem 0.5rem 0.5rem;
     width: 100%;
   }
   .tab:not(.active) {
@@ -75,7 +75,7 @@
         <div
           class="tab"
           style:color="var(--color-foreground-contrast)"
-          style:padding-left="12px">
+          style:padding-left="0.75rem">
           <div class="global-flex"><Icon name="issue" />Issues</div>
           <div class="global-counter">
             {project.meta.issues.open + project.meta.issues.closed}

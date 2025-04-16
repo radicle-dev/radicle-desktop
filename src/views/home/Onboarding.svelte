@@ -71,7 +71,7 @@
     gap: 1.5rem;
   }
   .tab {
-    height: 24px;
+    height: 1.5rem;
     color: var(--color-foreground-contrast);
   }
   .hint {

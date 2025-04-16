@@ -18,8 +18,8 @@
 
 <style>
   .badge {
-    gap: 6px;
-    padding-right: 10px;
+    gap: 0.375rem;
+    padding-right: 0.625rem;
   }
   .no-verdict {
     background-color: var(--color-fill-ghost);

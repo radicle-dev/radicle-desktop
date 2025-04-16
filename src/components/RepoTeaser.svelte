@@ -17,9 +17,9 @@
 
   .seeding {
     margin-left: auto;
-    padding: 0 6px;
+    padding: 0 0.375rem;
     background-color: var(--color-fill-ghost);
-    gap: 4px;
+    gap: 0.25rem;
   }
 </style>
 

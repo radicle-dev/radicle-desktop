@@ -36,7 +36,7 @@
     cursor: pointer;
     border: 0;
     background: none;
-    height: 24px;
+    height: 1.5rem;
     clip-path: var(--1px-corner-fill);
     margin: 0;
     font-size: var(--font-size-small);

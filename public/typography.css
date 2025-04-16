@@ -92,8 +92,11 @@ html {
    * otherwise Safari breaks. */
   font-size: var(--font-size);
   font-weight: var(--font-weight-regular);
+}
+
+body {
   /* On Safari this aligns text with different font-faces properly vertically. */
-  line-height: 22px;
+  line-height: 1.375rem;
 }
 
 p {

@@ -50,7 +50,7 @@
     margin-bottom: 1rem;
   }
   .icon {
-    min-width: 16px;
+    min-width: 1rem;
   }
 </style>
 
@@ -63,7 +63,7 @@
         e.preventDefault();
         onclick();
       }}
-      stylePadding="0 4px">
+      stylePadding="0 0.25rem">
       <div style:color="var(--color-foreground-contrast)">
         <Icon name="chevron-down" />
       </div>

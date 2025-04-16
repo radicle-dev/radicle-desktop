@@ -90,7 +90,7 @@
     gap: 0.25rem;
   }
   .icon {
-    padding-top: 3px;
+    padding-top: 0.1875rem;
   }
 </style>
 

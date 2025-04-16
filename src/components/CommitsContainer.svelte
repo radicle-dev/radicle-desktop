@@ -48,7 +48,7 @@
   <div class="header" class:collapsed={!expanded}>
     <div class="left">
       <NakedButton
-        stylePadding="0 4px"
+        stylePadding="0 0.25rem"
         variant="ghost"
         onclick={async () => {
           expanded = !expanded;

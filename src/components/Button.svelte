@@ -311,7 +311,7 @@
   .p3-3 {
     grid-area: p3-3;
     background-color: var(--button-color-1);
-    padding: 0 8px;
+    padding: 0 0.5rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;

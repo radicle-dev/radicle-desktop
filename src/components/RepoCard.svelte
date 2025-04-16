@@ -27,7 +27,7 @@
   }
   .description {
     color: var(--color-fill-gray);
-    margin-top: 4px;
+    margin-top: 0.25rem;
   }
   .container {
     width: 100%;
@@ -38,7 +38,7 @@
   variant={focussed ? "secondary" : "ghost"}
   styleCursor="pointer"
   styleWidth="100%"
-  stylePadding="8px 12px"
+  stylePadding="0.5rem 0.75rem"
   styleOverflow="hidden"
   hoverable
   {onclick}>
@@ -61,10 +61,10 @@
 
     <div class="global-flex footer">
       <div class="global-flex">
-        <div class="global-flex" style:gap="4px">
+        <div class="global-flex" style:gap="0.25rem">
           <Icon name="issue" />{project.meta.issues.open}
         </div>
-        <div class="global-flex" style:gap="4px">
+        <div class="global-flex" style:gap="0.25rem">
           <Icon name="patch" />{project.meta.patches.open}
         </div>
       </div>

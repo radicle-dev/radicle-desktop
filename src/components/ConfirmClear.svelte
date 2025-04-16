@@ -20,7 +20,7 @@
 
 <Popover popoverPositionRight="0" popoverPositionTop="2.5rem">
   {#snippet toggle(onclick)}
-    <NakedButton stylePadding="0 4px" variant="ghost" {onclick}>
+    <NakedButton stylePadding="0 0.25rem" variant="ghost" {onclick}>
       <Icon name="broom-double" />
     </NakedButton>
   {/snippet}

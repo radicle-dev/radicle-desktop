@@ -34,8 +34,8 @@
     font-size: var(--font-size-small);
   }
   .badge {
-    gap: 6px;
-    padding-right: 10px;
+    gap: 0.375rem;
+    padding-right: 0.625rem;
   }
 </style>
 
