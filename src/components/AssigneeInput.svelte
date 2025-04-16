@@ -144,7 +144,7 @@
             }}
             name="cross" />
         {:else}
-          <Icon name="plus" onclick={() => (showInput = true)}></Icon>
+          <Icon name="add" onclick={() => (showInput = true)}></Icon>
         {/if}
       </div>
     {/if}

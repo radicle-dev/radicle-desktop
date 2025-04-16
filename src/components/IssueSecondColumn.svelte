@@ -150,7 +150,7 @@
           });
         }
       }}>
-      <Icon name="plus" />New
+      <Icon name="add" />New
     </OutlineButton>
   </div>
 </div>

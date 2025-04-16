@@ -103,7 +103,7 @@
             disabled={hasOwnReview}
             {onclick}
             title={hasOwnReview ? "You already published a review" : undefined}>
-            <Icon name="plus" />
+            <Icon name="add" />
             <span class="txt-small">Review</span>
           </NakedButton>
         {/snippet}

@@ -142,7 +142,7 @@
                 rid: repo.rid,
               });
             }}>
-            <Icon name="plus" />New
+            <Icon name="add" />New
           </Button>
         </div>
       </div>

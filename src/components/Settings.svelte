@@ -3,6 +3,7 @@
 
   import AnnounceSwitch from "./AnnounceSwitch.svelte";
   import Border from "./Border.svelte";
+  import FontSizeSwitch from "./FontSizeSwitch.svelte";
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
   import Popover from "./Popover.svelte";
@@ -49,6 +50,12 @@
           style:justify-content="space-between"
           style:width="100%">
           Announce changes <AnnounceSwitch />
+        </div>
+        <div
+          class="global-flex"
+          style:justify-content="space-between"
+          style:width="100%">
+          Font size <FontSizeSwitch />
         </div>
       </div>
     </Border>

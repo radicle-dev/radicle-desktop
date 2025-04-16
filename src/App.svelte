@@ -7,11 +7,17 @@
 
   import * as router from "@app/lib/router";
   import { checkAuth, startup } from "@app/lib/auth.svelte";
-  import { dynamicInterval } from "@app/lib/interval";
   import { createEventEmittersOnce } from "@app/lib/startup.svelte";
+  import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
+  import {
+    resetFontSize,
+    increaseFontSize,
+    decreaseFontSize,
+    fontSettings,
+  } from "@app/lib/appearance.svelte";
   import { theme } from "@app/components/ThemeSwitch.svelte";
-  import { unreachable } from "@app/lib/utils";
+  import { unreachable, isMac } from "@app/lib/utils";
 
   import Auth from "@app/views/booting/Auth.svelte";
   import CreateIdentity from "@app/views/booting/CreateIdentity.svelte";
@@ -70,8 +76,28 @@
     }
   });
 
+  $effect(() =>
+    document.documentElement.style.setProperty(
+      "--font-size",
+      `${fontSettings.size}px`,
+    ),
+  );
   $effect(() => document.documentElement.setAttribute("data-theme", $theme));
 </script>
+
+<svelte:document
+  onkeydown={e => {
+    const auxiliarKey = isMac() ? e.metaKey : e.ctrlKey;
+    // Handles the position of the plus key on different keyboard layouts.
+    const plusKey = e.key === "1" || e.key === "=";
+    if (auxiliarKey && (e.key === "+" || plusKey)) {
+      increaseFontSize();
+    } else if (auxiliarKey && e.key === "-") {
+      decreaseFontSize();
+    } else if (auxiliarKey && e.key.toLowerCase() === "0") {
+      resetFontSize();
+    }
+  }} />
 
 {#if $activeRouteStore.resource === "booting"}
   {#if startup.error?.code === "IdentityError.MissingProfile"}

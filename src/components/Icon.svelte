@@ -8,6 +8,7 @@
     styleDisplay?: string;
     styleVerticalAlign?: string;
     name:
+      | "add"
       | "arrow-left"
       | "arrow-right"
       | "arrow-right-hollow"
@@ -39,13 +40,14 @@
       | "file"
       | "filter"
       | "home"
-      | "info"
       | "inbox"
+      | "info"
       | "issue"
       | "issue-closed"
       | "label"
       | "lock"
       | "markdown"
+      | "minus"
       | "moon"
       | "more-vertical"
       | "none"
@@ -115,7 +117,14 @@
   height={size}
   fill="currentColor"
   viewBox="0 0 16 16">
-  {#if name === "arrow-left"}
+  {#if name === "add"}
+    <path d="M2 3H3V13H2V3Z" />
+    <path d="M3 13H13V14H3L3 13Z" />
+    <path d="M3 2H13V3L3 3L3 2Z" />
+    <path d="M13 3L14 3V13H13V3Z" />
+    <path d="M7 5H9V11H7V5Z" />
+    <path d="M5 7H11V9H5V7Z" />
+  {:else if name === "arrow-left"}
     <path d="M1.99997 7L1.99997 8L2.99997 8L2.99997 7L1.99997 7Z" />
     <path d="M2.99997 6L2.99997 7L3.99997 7L3.99997 6L2.99997 6Z" />
     <path d="M2.99997 9L2.99997 8L3.99997 8L3.99997 9L2.99997 9Z" />
@@ -734,6 +743,8 @@
     <path d="M8 11H9V12H8V11Z" />
     <path d="M7 10H8V12H7V10Z" />
     <path d="M3 4.00003H4V6.00003H3V4.00003Z" />
+  {:else if name === "minus"}
+    <path d="M14 7V9L2 9L2 7L14 7Z" />
   {:else if name === "moon"}
     <path d="M4 3H6V4H4V3Z" />
     <path d="M3 4L4 4L4 6H3V4Z" />
@@ -929,12 +940,8 @@
     <path d="M3 12H4V13H3V12Z" />
     <path d="M3 13H4V14H3V13Z" />
   {:else if name === "plus"}
-    <path d="M2 3H3V13H2V3Z" />
-    <path d="M3 13H13V14H3L3 13Z" />
-    <path d="M3 2H13V3L3 3L3 2Z" />
-    <path d="M13 3L14 3V13H13V3Z" />
-    <path d="M7 5H9V11H7V5Z" />
-    <path d="M5 7H11V9H5V7Z" />
+    <path d="M9 14H7L7 2L9 2L9 14Z" />
+    <path d="M14 7V9L2 9L2 7L14 7Z" />
   {:else if name === "reply"}
     <path d="M2.5 9V8H3.5V9H2.5Z" />
     <path d="M3.5 10L3.5 9L4.5 9V10L3.5 10Z" />
