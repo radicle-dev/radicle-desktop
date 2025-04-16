@@ -13,8 +13,8 @@
     "windows": [
       {
         "title": "Radicle",
-        "minWidth": 1200,
-        "minHeight": 780
+        "minWidth": 960,
+        "minHeight": 600
       }
     ],
     "security": {
