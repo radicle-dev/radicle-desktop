@@ -109,70 +109,89 @@
         {/snippet}
 
         {#snippet popover()}
-          <Border variant="ghost" stylePadding="1rem">
-            <OutlineButton
-              variant="ghost"
-              disabled={hasOwnReview}
-              title={hasOwnReview
-                ? "You already published a review"
-                : undefined}
-              onclick={async () => {
-                const newReview = await createReview();
-                if (newReview) {
-                  await push({
-                    resource: "repo.patch",
-                    rid,
-                    patch: patchId,
-                    status,
-                    reviewId: newReview.id,
-                  });
-                }
-                closeFocused();
-              }}>
-              <span
-                class="global-flex"
-                style:color="var(--color-foreground-dim)">
-                <Icon name="comment" />
-                <span class="txt-small">Write Review</span>
-              </span>
-            </OutlineButton>
-            <OutlineButton
-              variant="ghost"
-              disabled={hasOwnReview}
-              title={hasOwnReview
-                ? "You already published a review"
-                : undefined}
-              onclick={async () => {
-                await createReview("reject");
-                await loadPatch();
-                closeFocused();
-              }}>
-              <span
-                class="global-flex"
-                style:color="var(--color-foreground-red)">
-                <Icon name="comment-cross" />
-                <span class="txt-small">Reject</span>
-              </span>
-            </OutlineButton>
-            <OutlineButton
-              variant="ghost"
-              disabled={hasOwnReview}
-              title={hasOwnReview
-                ? "You already published a review"
-                : undefined}
-              onclick={async () => {
-                await createReview("accept");
-                await loadPatch();
-                closeFocused();
-              }}>
-              <span
-                class="global-flex"
-                style:color="var(--color-foreground-success)">
-                <Icon name="comment-checkmark" />
-                <span class="txt-small">Accept</span>
-                <span></span>
-              </span>
-            </OutlineButton>
+          <Border
+            variant="ghost"
+            stylePadding="1rem"
+            styleDisplay="flex"
+            styleFlexDirection="column">
+            <div class="global-flex">
+              <OutlineButton
+                variant="ghost"
+                disabled={hasOwnReview}
+                title={hasOwnReview
+                  ? "You already published a review"
+                  : undefined}
+                onclick={async () => {
+                  const newReview = await createReview();
+                  if (newReview) {
+                    await push({
+                      resource: "repo.patch",
+                      rid,
+                      patch: patchId,
+                      status,
+                      reviewId: newReview.id,
+                    });
+                  }
+                  closeFocused();
+                }}>
+                <span
+                  class="global-flex"
+                  style:color="var(--color-foreground-dim)">
+                  <Icon name="comment" />
+                  <span class="txt-small">Write Review</span>
+                </span>
+              </OutlineButton>
+              <OutlineButton
+                variant="ghost"
+                disabled={hasOwnReview}
+                title={hasOwnReview
+                  ? "You already published a review"
+                  : undefined}
+                onclick={async () => {
+                  await createReview("reject");
+                  await loadPatch();
+                  closeFocused();
+                }}>
+                <span
+                  class="global-flex"
+                  style:color="var(--color-foreground-red)">
+                  <Icon name="comment-cross" />
+                  <span class="txt-small">Reject</span>
+                </span>
+              </OutlineButton>
+              <OutlineButton
+                variant="ghost"
+                disabled={hasOwnReview}
+                title={hasOwnReview
+                  ? "You already published a review"
+                  : undefined}
+                onclick={async () => {
+                  await createReview("accept");
+                  await loadPatch();
+                  closeFocused();
+                }}>
+                <span
+                  class="global-flex"
+                  style:color="var(--color-foreground-success)">
+                  <Icon name="comment-checkmark" />
+                  <span class="txt-small">Accept</span>
+                  <span></span>
+                </span>
+              </OutlineButton>
+            </div>
+
+            <div
+              class="txt-small txt-missing global-flex"
+              style:margin-top="0.5rem"
+              style:align-items="flex-start">
+              <div style:padding-top="3px"><Icon name="info" /></div>
+              <div>
+                Clicking the buttons will create a blank review, add comments, a
+                summary, and your verdict after. Depending on your sync settings
+                your review might be published to the network right away. We are
+                actively working on draft reviews, stay tuned.
+              </div>
+            </div>
           </Border>
         {/snippet}
       </Popover>
