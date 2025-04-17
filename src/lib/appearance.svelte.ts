@@ -3,7 +3,6 @@ const step = 2;
 const minFontSize = 14;
 const maxFontSize = 24;
 
-
 export function increaseFontSize() {
   if (fontSettings.size + step <= maxFontSize) {
     setFontSize(fontSettings.size + step);
