@@ -13,8 +13,11 @@ steps:
       - "-c"
       - |
         export ARTIFACT_DIR="radicle-desktop/$${CI_COMMIT_TAG:+$CI_COMMIT_TAG}$( [[ -z "$CI_COMMIT_TAG" ]] && echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)_${CI_COMMIT_SHA:0:8}" )"
+        export LATEST_DIR="radicle-desktop/latest"
         mkdir -p "$ARTIFACT_DIR"
+        mkdir -p "$LATEST_DIR"
         echo $ARTIFACT_DIR
+        echo $LATEST_DIR
         # Install dependencies
         apt-get update && apt-get install -y build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libwebkit2gtk-4.1-dev
         curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
@@ -28,6 +31,10 @@ steps:
         cp target/release/bundle/deb/*.deb "$ARTIFACT_DIR"
         cp target/release/bundle/rpm/*.rpm "$ARTIFACT_DIR"
         cp target/release/bundle/appimage/*.AppImage "$ARTIFACT_DIR"
+        # Update latest build artifacts for upload
+        cp target/release/bundle/deb/*.deb "$LATEST_DIR"
+        cp target/release/bundle/rpm/*.rpm "$LATEST_DIR"
+        cp target/release/bundle/appimage/*.AppImage "$LATEST_DIR"
   upload:
     image: woodpeckerci/plugin-s3
     settings:
