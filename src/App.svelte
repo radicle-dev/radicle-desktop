@@ -27,6 +27,7 @@
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
+  import RepoHome from "@app/views/repo/RepoHome.svelte";
   import Repos from "@app/views/home/Repos.svelte";
 
   const activeRouteStore = router.activeRouteStore;
@@ -109,6 +110,8 @@
   <Repos {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "inbox"}
   <Inbox {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "repo.home"}
+  <RepoHome {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.createIssue"}
   <CreateIssue {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.issue"}

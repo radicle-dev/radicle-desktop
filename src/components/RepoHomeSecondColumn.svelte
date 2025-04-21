@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { IssueStatus } from "@app/views/repo/router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import Border from "./Border.svelte";
@@ -9,11 +8,10 @@
   import Settings from "./Settings.svelte";
 
   interface Props {
-    status: IssueStatus;
     repo: RepoInfo;
   }
 
-  const { status, repo }: Props = $props();
+  const { repo }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
@@ -44,92 +42,38 @@
   .active {
     background-color: var(--color-background-default);
     font-weight: var(--font-weight-semibold);
-  }
-  .highlight {
-    color: var(--color-foreground-contrast);
-  }
-  .closed {
-    color: var(--color-foreground-red);
-  }
-  .open {
-    color: var(--color-foreground-success);
+    padding: 0.25rem 0.25rem 0.25rem 0.5rem;
   }
 </style>
 
 <div class="container">
   <div>
     <div style:margin-bottom="0.75rem">
+      <Border
+        variant="ghost"
+        styleBackgroundColor="var(--color-background-default)">
+        <div class="tab active" style:color="var(--color-foreground-contrast)">
+          <RepoTeaser name={project.data.name} seeding={repo.seeding} />
+        </div>
+      </Border>
+    </div>
+
+    <div style:margin-bottom="0.5rem">
       <Link
         styleWidth="100%"
         underline={false}
-        route={{ resource: "repo.home", rid: repo.rid }}>
+        route={{ resource: "repo.issues", rid: repo.rid, status: "open" }}>
         <div
           class="tab"
           style:color="var(--color-foreground-contrast)"
-          style:padding-right="0.5rem"
           style:padding-left="0.75rem">
-          <RepoTeaser name={project.data.name} seeding={repo.seeding} />
-        </div>
-      </Link>
-    </div>
-
-    <Border
-      variant="ghost"
-      styleFlexDirection="column"
-      styleGap="2px"
-      styleBackgroundColor="var(--color-background-float)">
-      <Link
-        styleWidth="100%"
-        underline={false}
-        route={{ resource: "repo.issues", rid: repo.rid, status: "all" }}>
-        <div class="tab active">
           <div class="global-flex"><Icon name="issue" />Issues</div>
           <div class="global-counter">
             {project.meta.issues.open + project.meta.issues.closed}
           </div>
         </div>
       </Link>
-
-      <Link
-        styleWidth="100%"
-        underline={false}
-        route={{
-          resource: "repo.issues",
-          rid: repo.rid,
-          status: "open",
-        }}>
-        <div class="tab" class:active={status === "open"}>
-          <div
-            class="global-flex"
-            class:open={["open", "all"].includes(status)}>
-            <Icon name="issue" />Open
-          </div>
-          <div class="global-counter" class:highlight={status === "all"}>
-            {project.meta.issues.open}
-          </div>
-        </div>
-      </Link>
-
-      <Link
-        styleWidth="100%"
-        underline={false}
-        route={{
-          resource: "repo.issues",
-          rid: repo.rid,
-          status: "closed",
-        }}>
-        <div class="tab" class:active={status === "closed"}>
-          <div
-            class="global-flex"
-            class:closed={["closed", "all"].includes(status)}>
-            <Icon name="issue-closed" />Closed
-          </div>
-          <div class="global-counter" class:highlight={status === "all"}>
-            {project.meta.issues.closed}
-          </div>
-        </div>
-      </Link>
-    </Border>
+    </div>
 
     <div style:margin-top="0.5rem">
       <Link

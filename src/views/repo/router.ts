@@ -5,6 +5,7 @@ import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Operation } from "@bindings/cob/Operation";
 import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
 import type { Patch } from "@bindings/cob/patch/Patch";
+import type { Readme } from "@bindings/repo/Readme";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { Review } from "@bindings/cob/patch/Review";
 import type { Revision } from "@bindings/cob/patch/Revision";
@@ -17,6 +18,11 @@ export type IssueStatus = "all" | Issue["state"]["status"];
 
 export const DEFAULT_TAKE = 20;
 
+export interface RepoHomeRoute {
+  resource: "repo.home";
+  rid: string;
+}
+
 export interface RepoIssueRoute {
   resource: "repo.issue";
   rid: string;
@@ -28,6 +34,15 @@ export interface RepoCreateIssueRoute {
   resource: "repo.createIssue";
   rid: string;
   status: IssueStatus;
+}
+
+export interface LoadedRepoHomeRoute {
+  resource: "repo.home";
+  params: {
+    repo: RepoInfo;
+    config: Config;
+    readme: Readme | null;
+  };
 }
 
 export interface LoadedRepoIssueRoute {
@@ -110,12 +125,14 @@ export interface LoadedRepoPatchesRoute {
 }
 
 export type RepoRoute =
+  | RepoHomeRoute
   | RepoCreateIssueRoute
   | RepoIssueRoute
   | RepoIssuesRoute
   | RepoPatchRoute
   | RepoPatchesRoute;
 export type LoadedRepoRoute =
+  | LoadedRepoHomeRoute
   | LoadedRepoCreateIssueRoute
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
@@ -188,6 +205,25 @@ export async function loadPatches(
   return {
     resource: "repo.patches",
     params: { repo, config, patches, status: route.status },
+  };
+}
+
+export async function loadRepoHome(
+  route: RepoHomeRoute,
+): Promise<LoadedRepoHomeRoute> {
+  const [config, repo, readme] = await Promise.all([
+    invoke<Config>("config"),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Readme | null>("repo_readme", {
+      rid: route.rid,
+    }),
+  ]);
+
+  return {
+    resource: "repo.home",
+    params: { repo, config, readme },
   };
 }
 
@@ -275,7 +311,10 @@ export function repoRouteToPath(route: RepoRoute): string {
   const pathSegments = ["/repos", route.rid];
   const searchParams = new URLSearchParams();
 
-  if (route.resource === "repo.issue") {
+  if (route.resource === "repo.home") {
+    const url = [...pathSegments, "home"].join("/");
+    return url;
+  } else if (route.resource === "repo.issue") {
     let url = [...pathSegments, "issues", route.issue].join("/");
     searchParams.set("status", route.status);
     url += `?${searchParams}`;
@@ -322,7 +361,9 @@ export function repoUrlToRoute(
   const resource = segments.shift();
 
   if (rid) {
-    if (resource === "issues") {
+    if (resource === "home") {
+      return { resource: "repo.home", rid };
+    } else if (resource === "issues") {
       const idOrAction = segments.shift();
       if (idOrAction) {
         const status = (searchParams.get("status") ?? "all") as IssueStatus;

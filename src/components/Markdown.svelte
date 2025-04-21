@@ -141,6 +141,15 @@
       const treeChanges: Promise<void>[] = [];
 
       for (const node of nodes) {
+        const preElement = node.parentElement as HTMLElement;
+        const copyButton = document.createElement("radicle-clipboard");
+        copyButton.setAttribute("text", node.textContent || "");
+        const preWrapper = document.createElement("div");
+        preWrapper.classList.add("pre-wrapper");
+        preElement.parentNode?.insertBefore(preWrapper, preElement);
+        preWrapper.appendChild(preElement);
+        preWrapper.appendChild(copyButton);
+
         const className = Array.from(node.classList).find(name =>
           name.startsWith(prefix),
         );
@@ -217,8 +226,8 @@
   .markdown :global(radicle-clipboard) {
     display: none;
     position: absolute;
-    right: 0.5rem;
-    top: 0.5rem;
+    right: 0.75rem;
+    top: 0.75rem;
   }
 
   .markdown :global(radicle-clipboard) {

@@ -10,6 +10,7 @@ test("navigate single issue", async ({ page }) => {
 test("correct order of threads", async ({ page }) => {
   await page.goto("/repos");
   await page.getByRole("button", { name: "cobs" }).click();
+  await page.getByRole("link", { name: "icon-issue Issues" }).click();
   await page.getByText("This title has **markdown**").click();
   const body = page.locator(".issue-body");
   await expect(body.getByText("This is a description")).toBeVisible();
@@ -30,6 +31,7 @@ test("correct order of threads", async ({ page }) => {
 test("creation of top level comments", async ({ page }) => {
   await page.goto("/repos");
   await page.getByRole("button", { name: "cobs" }).click();
+  await page.getByRole("link", { name: "icon-issue Issues" }).click();
   await page.getByRole("button", { name: "New" }).click();
   await page
     .getByPlaceholder("Title")

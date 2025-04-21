@@ -12,7 +12,7 @@
 <style>
   .teaser {
     align-items: center;
-    min-height: 2.5rem;
+    width: 100%;
   }
 
   .seeding {

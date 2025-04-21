@@ -9,7 +9,16 @@ export default defineConfig({
     include: ["tests/unit/**/*.test.ts"],
     reporters: "verbose",
   },
-  plugins: [svelte()],
+  plugins: [
+    svelte({
+      // Reference: https://github.com/sveltejs/vite-plugin-svelte/issues/270#issuecomment-1033190138
+      dynamicCompileOptions({ filename }) {
+        if (path.basename(filename) === "Clipboard.svelte") {
+          return { customElement: true };
+        }
+      },
+    }),
+  ],
   build: {
     outDir: "build",
   },

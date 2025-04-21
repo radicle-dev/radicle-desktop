@@ -136,6 +136,11 @@ p {
 .txt-missing {
   color: var(--color-foreground-dim);
 }
+.txt-selectable {
+  -webkit-touch-callout: initial;
+  -webkit-user-select: text;
+  user-select: text;
+}
 .txt-emoji {
   height: 1em;
   width: 1em;

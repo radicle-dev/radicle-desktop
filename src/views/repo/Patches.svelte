@@ -18,7 +18,6 @@
   import Layout from "./Layout.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchesSecondColumn from "@app/components/PatchesSecondColumn.svelte";
-  import Sidebar from "@app/components/Sidebar.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
@@ -123,10 +122,6 @@
   publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={repo.rid} />
-  {/snippet}
-
-  {#snippet sidebar()}
-    <Sidebar activeTab="patches" rid={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}

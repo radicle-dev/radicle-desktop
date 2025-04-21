@@ -37,6 +37,16 @@ pub struct RepoInfo {
     pub last_commit_timestamp: i64,
 }
 
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub struct Readme {
+    pub path: String,
+    pub content: String,
+    pub binary: bool,
+}
+
 #[derive(Default, Serialize, TS)]
 #[serde(rename_all = "camelCase", tag = "type")]
 #[ts(export)]
@@ -47,25 +57,22 @@ pub enum Visibility {
     Public,
     /// Delegates plus the allowed DIDs.
     Private {
-        #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
-        #[ts(as = "Option<BTreeSet<String>>", optional)]
-        allow: BTreeSet<identity::Did>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        #[ts(as = "Option<Vec<Author>>", optional)]
+        allow: Vec<Author>,
     },
-}
-
-impl From<identity::Visibility> for Visibility {
-    fn from(value: identity::Visibility) -> Self {
-        match value {
-            identity::Visibility::Private { allow } => Self::Private { allow },
-            identity::Visibility::Public => Self::Public,
-        }
-    }
 }
 
 impl From<Visibility> for identity::Visibility {
     fn from(value: Visibility) -> Self {
         match value {
-            Visibility::Private { allow } => Self::Private { allow },
+            Visibility::Private { allow } => {
+                let did_set = allow
+                    .iter()
+                    .map(|author| *author.did())
+                    .collect::<BTreeSet<identity::Did>>();
+                Self::Private { allow: did_set }
+            }
             Visibility::Public => Self::Public,
         }
     }

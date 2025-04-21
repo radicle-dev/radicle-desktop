@@ -128,9 +128,8 @@
             onSubmit={async () => {
               if (searchResults.length === 1) {
                 await router.push({
-                  resource: "repo.issues",
+                  resource: "repo.home",
                   rid: searchResults[0].obj.repo.rid,
-                  status: "open",
                 });
               }
             }}
@@ -161,9 +160,8 @@
               selfDid={didFromPublicKey(config.publicKey)}
               onclick={() => {
                 void router.push({
-                  resource: "repo.issues",
+                  resource: "repo.home",
                   rid: result.obj.repo.rid,
-                  status: "open",
                 });
               }} />
           {/each}

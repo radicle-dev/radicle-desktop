@@ -17,7 +17,6 @@
   import Icon from "@app/components/Icon.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import IssuesSecondColumn from "@app/components/IssuesSecondColumn.svelte";
-  import Sidebar from "@app/components/Sidebar.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
@@ -90,10 +89,6 @@
   publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={repo.rid} />
-  {/snippet}
-
-  {#snippet sidebar()}
-    <Sidebar activeTab="issues" rid={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}

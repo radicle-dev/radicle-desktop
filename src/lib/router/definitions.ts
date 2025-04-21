@@ -15,6 +15,7 @@ import {
   loadIssues,
   loadPatch,
   loadPatches,
+  loadRepoHome,
 } from "@app/views/repo/router";
 
 export type HomeReposTab = "delegate" | "private" | "contributor";
@@ -153,6 +154,8 @@ export async function loadRoute(
         config,
       },
     };
+  } else if (route.resource === "repo.home") {
+    return loadRepoHome(route);
   } else if (route.resource === "repo.issue") {
     return loadIssue(route);
   } else if (route.resource === "repo.createIssue") {

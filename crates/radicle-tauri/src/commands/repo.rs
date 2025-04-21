@@ -36,6 +36,15 @@ pub fn repo_by_id(
 }
 
 #[tauri::command]
+pub fn repo_readme(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+    sha: Option<git::Oid>,
+) -> Result<Option<types::repo::Readme>, Error> {
+    ctx.repo_readme(rid, sha)
+}
+
+#[tauri::command]
 pub async fn diff_stats(
     ctx: tauri::State<'_, AppState>,
     rid: RepoId,

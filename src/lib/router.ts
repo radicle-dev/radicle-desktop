@@ -125,6 +125,7 @@ export function routeToPath(route: Route): string {
   } else if (route.resource === "inbox") {
     return "/inbox";
   } else if (
+    route.resource === "repo.home" ||
     route.resource === "repo.createIssue" ||
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||

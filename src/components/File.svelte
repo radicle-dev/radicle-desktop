@@ -8,8 +8,9 @@
 
   interface Props {
     children: Snippet;
-    expanded: boolean;
-    leftHeader: Snippet;
+    expandable?: boolean;
+    expanded?: boolean;
+    leftHeader?: Snippet;
     rightHeader?: Snippet;
     sticky?: boolean;
   }
@@ -17,10 +18,11 @@
   /* eslint-disable prefer-const */
   let {
     children,
-    expanded,
+    expanded = true,
     leftHeader,
     rightHeader,
     sticky = true,
+    expandable = true,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -36,6 +38,7 @@
     z-index: 2;
     font-size: var(--font-size-small);
     background-color: var(--color-background-default);
+    position: relative;
   }
   .header::after {
     position: absolute;
@@ -84,19 +87,21 @@
 
 <div class="header" class:sticky class:collapsed={!expanded} bind:this={header}>
   <div class="left">
-    <NakedButton
-      stylePadding="0 4px"
-      variant="ghost"
-      onclick={async () => {
-        expanded = !expanded;
-        if (!expanded && header) {
-          await tick();
-          header.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        }
-      }}>
-      <Icon name={expanded ? "chevron-down" : "chevron-right"} />
-    </NakedButton>
-    {@render leftHeader()}
+    {#if expandable}
+      <NakedButton
+        stylePadding="0 4px"
+        variant="ghost"
+        onclick={async () => {
+          expanded = !expanded;
+          if (!expanded && header) {
+            await tick();
+            header.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }}>
+        <Icon name={expanded ? "chevron-down" : "chevron-right"} />
+      </NakedButton>
+    {/if}
+    {@render leftHeader?.()}
   </div>
   {#if rightHeader}
     <div

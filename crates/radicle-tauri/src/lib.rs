@@ -56,6 +56,7 @@ pub fn run() {
             repo::list_repos,
             repo::repo_by_id,
             repo::repo_count,
+            repo::repo_readme,
             startup::startup,
             startup::version,
             thread::create_issue_comment,

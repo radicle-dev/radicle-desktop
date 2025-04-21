@@ -63,8 +63,19 @@
 
 <div class="container">
   <div>
-    <div style:margin-bottom="1rem" style:padding-left="0.75rem">
-      <RepoTeaser name={project.data.name} seeding={repo.seeding} />
+    <div style:margin-bottom="0.75rem">
+      <Link
+        styleWidth="100%"
+        underline={false}
+        route={{ resource: "repo.home", rid: repo.rid }}>
+        <div
+          class="tab"
+          style:color="var(--color-foreground-contrast)"
+          style:padding-right="0.5rem"
+          style:padding-left="0.75rem">
+          <RepoTeaser name={project.data.name} seeding={repo.seeding} />
+        </div>
+      </Link>
     </div>
 
     <div style:margin-bottom="0.5rem">

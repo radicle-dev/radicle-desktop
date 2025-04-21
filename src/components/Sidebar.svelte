@@ -39,7 +39,16 @@
 
 <div class="global-flex" style:flex-direction="column" style:gap="0.5rem">
   <div class="global-flex" style:height="2.5rem">
-    <Icon name="repo" />
+    <button
+      class="sidebar-button"
+      onclick={() => {
+        void router.push({
+          resource: "repo.home",
+          rid,
+        });
+      }}>
+      <Icon name="repo" />
+    </button>
   </div>
   {#if activeTab === "issues"}
     <Border

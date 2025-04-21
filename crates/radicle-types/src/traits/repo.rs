@@ -1,3 +1,4 @@
+use base64::Engine;
 use radicle_surf as surf;
 use serde::{Deserialize, Serialize};
 
@@ -108,6 +109,49 @@ pub trait Repo: Profile {
         })
     }
 
+    fn repo_readme(
+        &self,
+        rid: identity::RepoId,
+        sha: Option<git::Oid>,
+    ) -> Result<Option<repo::Readme>, Error> {
+        let profile = self.profile();
+        let repo = radicle_surf::Repository::open(storage::git::paths::repository(
+            &profile.storage,
+            &rid,
+        ))?;
+
+        let paths = [
+            "README",
+            "README.md",
+            "README.markdown",
+            "README.txt",
+            "README.rst",
+            "README.org",
+            "Readme.md",
+        ];
+
+        let oid = sha.map_or_else(|| repo.head(), Ok)?;
+        for path in paths
+            .iter()
+            .map(ToString::to_string)
+            .chain(paths.iter().map(|p| p.to_lowercase()))
+        {
+            if let Ok(blob) = repo.blob(oid, &path) {
+                let content = match std::str::from_utf8(blob.content()) {
+                    Ok(s) => s.to_owned(),
+                    Err(_) => base64::engine::general_purpose::STANDARD.encode(blob.content()),
+                };
+
+                return Ok(Some(repo::Readme {
+                    path,
+                    content,
+                    binary: blob.is_binary(),
+                }));
+            }
+        }
+        Ok(None)
+    }
+
     fn repo_by_id(&self, rid: identity::RepoId) -> Result<repo::RepoInfo, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
@@ -176,7 +220,15 @@ pub trait Repo: Profile {
             payloads: repo::SupportedPayloads { project },
             delegates,
             threshold: doc.threshold(),
-            visibility: doc.visibility().clone().into(),
+            visibility: match doc.visibility().clone() {
+                identity::Visibility::Public => repo::Visibility::Public,
+                identity::Visibility::Private { allow } => repo::Visibility::Private {
+                    allow: allow
+                        .iter()
+                        .map(|did| cobs::Author::new(did, &aliases))
+                        .collect(),
+                },
+            },
             rid: repo.id,
             seeding,
             last_commit_timestamp: commit.time().seconds() * 1000,
