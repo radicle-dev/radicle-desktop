@@ -24,6 +24,7 @@
 </script>
 
 <script lang="ts">
+  import type { Config } from "@bindings/config/Config";
   import type { Snippet } from "svelte";
 
   import { onMount } from "svelte";
@@ -32,7 +33,7 @@
 
   interface Props {
     children: Snippet;
-    publicKey: string;
+    config: Config;
     headerCenter?: Snippet;
     secondColumn: Snippet;
     sidebar?: Snippet;
@@ -44,7 +45,7 @@
 
   const {
     children,
-    publicKey,
+    config,
     headerCenter = undefined,
     secondColumn,
     sidebar = undefined,
@@ -132,7 +133,7 @@
 
 <div class="layout">
   <div class="header">
-    <Header {publicKey} center={headerCenter}></Header>
+    <Header {config} center={headerCenter}></Header>
   </div>
 
   {#if sidebar}

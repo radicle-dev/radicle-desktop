@@ -1,21 +1,25 @@
 <script lang="ts">
+  import type { Config } from "@bindings/config/Config";
   import type { Snippet } from "svelte";
 
   import * as router from "@app/lib/router";
+  import { authorForNodeId } from "@app/lib/utils";
   import { nodeRunning } from "@app/lib/events";
 
-  import Avatar from "./Avatar.svelte";
+  import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
+  import NodeId from "./NodeId.svelte";
+  import Popover from "./Popover.svelte";
 
   const activeRouteStore = router.activeRouteStore;
 
   interface Props {
-    publicKey: string;
+    config: Config;
     center?: Snippet;
   }
 
-  const { center, publicKey }: Props = $props();
+  const { center, config }: Props = $props();
 </script>
 
 <style>
@@ -59,7 +63,7 @@
             void router.push({ resource: "home" });
           }}
           stylePadding="0 4px">
-          <Avatar {publicKey} />
+          <Icon name="home" />
         </NakedButton>
         <NakedButton
           variant="ghost"
@@ -82,17 +86,48 @@
       {@render center?.()}
 
       <div class="global-flex">
-        <div
-          class="global-flex txt-semibold txt-small"
-          style:margin-right="0.25rem">
-          {#if $nodeRunning}
-            <Icon name="online" />
-            Online
-          {:else}
-            <Icon name="offline" />
-            Offline
-          {/if}
-        </div>
+        <Popover
+          popoverPadding="0"
+          popoverPositionTop="2.5rem"
+          popoverPositionRight="0">
+          {#snippet toggle(onclick)}
+            <NakedButton variant="ghost" {onclick}>
+              {#if $nodeRunning}
+                <Icon name="online" />
+                Online
+              {:else}
+                <Icon name="offline" />
+                Offline
+              {/if}
+            </NakedButton>
+          {/snippet}
+          {#snippet popover()}
+            <Border
+              variant="ghost"
+              stylePadding="1rem"
+              styleMinWidth="20rem"
+              styleAlignItems="flex-start"
+              styleFlexDirection="column">
+              <div class="txt-small global-flex">
+                Authenticated as:
+                <NodeId
+                  {...authorForNodeId({
+                    did: config.publicKey,
+                    alias: config.alias,
+                  })} />
+              </div>
+              <div class="txt-small txt-missing">
+                {#if $nodeRunning}
+                  Your node is up and running, your changes will be synced
+                  automatically.
+                {:else}
+                  Your node is stopped, to sync changes with the network start
+                  your node.
+                {/if}
+              </div>
+            </Border>
+          {/snippet}
+        </Popover>
         <NakedButton
           variant="ghost"
           stylePadding="0 4px"

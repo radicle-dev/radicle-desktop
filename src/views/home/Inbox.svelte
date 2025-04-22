@@ -172,7 +172,7 @@
   }}
   hideSidebar
   styleSecondColumnOverflow="visible"
-  publicKey={config.publicKey}>
+  {config}>
   {#snippet headerCenter()}
     <CopyableId id={config.publicKey} />
   {/snippet}
