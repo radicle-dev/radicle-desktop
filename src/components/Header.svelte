@@ -5,8 +5,10 @@
   import { nodeRunning } from "@app/lib/events";
 
   import Avatar from "./Avatar.svelte";
+  import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
+  import Popover from "./Popover.svelte";
 
   const activeRouteStore = router.activeRouteStore;
 
@@ -82,17 +84,40 @@
       {@render center?.()}
 
       <div class="global-flex">
-        <div
-          class="global-flex txt-semibold txt-small"
-          style:margin-right="0.25rem">
-          {#if $nodeRunning}
-            <Icon name="online" />
-            Online
-          {:else}
-            <Icon name="offline" />
-            Offline
-          {/if}
-        </div>
+        <Popover
+          popoverPadding="0"
+          popoverPositionTop="2.5rem"
+          popoverPositionRight="0">
+          {#snippet toggle(onclick)}
+            <NakedButton variant="ghost" {onclick}>
+              {#if $nodeRunning}
+                <Icon name="online" />
+                Online
+              {:else}
+                <Icon name="offline" />
+                Offline
+              {/if}
+            </NakedButton>
+          {/snippet}
+          {#snippet popover()}
+            <Border
+              variant="ghost"
+              stylePadding="1rem"
+              styleMinWidth="20rem"
+              styleAlignItems="flex-start"
+              styleFlexDirection="column">
+              <div class="txt-small txt-missing">
+                {#if $nodeRunning}
+                  Your node is up and running, your changes will be synced
+                  automatically.
+                {:else}
+                  Your node is not running, changes you make are safe but won't
+                  be announced.
+                {/if}
+              </div>
+            </Border>
+          {/snippet}
+        </Popover>
         <NakedButton
           variant="ghost"
           stylePadding="0 4px"
