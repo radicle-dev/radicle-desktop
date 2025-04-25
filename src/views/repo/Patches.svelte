@@ -120,7 +120,7 @@
   {loadMoreContent}
   hideSidebar
   styleSecondColumnOverflow="visible"
-  {config}>
+  publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={repo.rid} />
   {/snippet}

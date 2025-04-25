@@ -84,7 +84,10 @@
   }
 </style>
 
-<Layout hideSidebar styleSecondColumnOverflow="visible" {config}>
+<Layout
+  hideSidebar
+  styleSecondColumnOverflow="visible"
+  publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={repo.rid} />
   {/snippet}

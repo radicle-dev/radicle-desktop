@@ -356,7 +356,7 @@
   </div>
 {/snippet}
 
-<Layout loadMoreSecondColumn={loadMoreTeasers} {config}>
+<Layout loadMoreSecondColumn={loadMoreTeasers} publicKey={config.publicKey}>
   {#snippet headerCenter()}
     <CopyableId id={patch.id} />
   {/snippet}

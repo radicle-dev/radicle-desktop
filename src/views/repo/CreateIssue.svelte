@@ -115,7 +115,7 @@
   }
 </style>
 
-<Layout {config}>
+<Layout publicKey={config.publicKey}>
   {#snippet sidebar()}
     <Sidebar activeTab="issues" rid={repo.rid} />
   {/snippet}
