@@ -1,8 +1,12 @@
 <script lang="ts">
   import type { ComponentProps } from "svelte";
 
+  import { onMount } from "svelte";
+  import { invoke } from "@app/lib/invoke";
+
   import AnnounceSwitch from "./AnnounceSwitch.svelte";
   import Border from "./Border.svelte";
+  import CopyableId from "./CopyableId.svelte";
   import FontSizeSwitch from "./FontSizeSwitch.svelte";
   import Icon from "./Icon.svelte";
   import NakedButton from "./NakedButton.svelte";
@@ -14,6 +18,12 @@
     styleHeight?: ComponentProps<typeof NakedButton>["styleHeight"];
     popoverProps: Partial<ComponentProps<typeof Popover>>;
   }
+
+  let version = $state("");
+
+  onMount(async () => {
+    version = await invoke<string>("version");
+  });
 
   const {
     compact = true,
@@ -39,6 +49,14 @@
         style:align-items="flex-start"
         style:gap="1rem"
         style:width="100%">
+        <div
+          class="global-flex"
+          style:justify-content="space-between"
+          style:width="100%"
+          style:min-height="2rem">
+          Version <CopyableId id={version} />
+        </div>
+
         <div
           class="global-flex"
           style:justify-content="space-between"

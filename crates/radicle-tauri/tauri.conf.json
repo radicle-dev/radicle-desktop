@@ -1,8 +1,8 @@
 {
   "productName": "Radicle",
   "mainBinaryName": "radicle-desktop",
-  "version": "0.2.0",
   "identifier": "xyz.radicle.desktop",
+  "version": "0.2.0",
   "build": {
     "beforeDevCommand": "npm start",
     "devUrl": "http://localhost:1420",

@@ -57,6 +57,7 @@ pub fn run() {
             repo::repo_by_id,
             repo::repo_count,
             startup::startup,
+            startup::version,
             thread::create_issue_comment,
             thread::create_patch_comment,
         ])

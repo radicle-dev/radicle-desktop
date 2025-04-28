@@ -1,15 +1,46 @@
 use std::collections::BTreeMap;
 
+use serde::Serialize;
+use tauri::{AppHandle, Emitter, Manager};
+
 use radicle::cob::cache::COBS_DB_FILE;
 use radicle::identity::RepoId;
 use radicle::node::{Handle, Node, NOTIFICATIONS_DB_FILE};
 use radicle::storage::ReadStorage;
-use tauri::{AppHandle, Emitter, Manager};
 
 use radicle_types::config::Config;
 use radicle_types::error::Error;
 use radicle_types::traits::Profile;
 use radicle_types::{domain, AppState};
+
+pub struct Version {
+    pub version: String,
+    pub head: String,
+}
+
+impl Serialize for Version {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&format!("{} ({})", self.version, self.head))
+    }
+}
+
+#[tauri::command]
+pub(crate) fn version(app: AppHandle) -> Result<Version, Error> {
+    let version = app
+        .config()
+        .version
+        .clone()
+        .expect("The build version has not been set.");
+    pub const GIT_HEAD: &str = env!("GIT_HEAD");
+
+    Ok(Version {
+        version,
+        head: GIT_HEAD.to_string(),
+    })
+}
 
 #[tauri::command]
 pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
