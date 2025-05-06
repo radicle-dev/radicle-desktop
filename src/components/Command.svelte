@@ -25,13 +25,16 @@
   <Border
     hoverable
     onclick={() => clipboard.copy()}
+    styleOverflow="hidden"
     styleBackgroundColor="var(--color-background-float)"
     styleCursor="pointer"
     styleJustifyContent="space-between"
     stylePadding="0.25rem 0.5rem"
     {styleWidth}
     variant="ghost">
-    $ {command}
+    <span class="txt-overflow">
+      $ {command}
+    </span>
     <Clipboard bind:this={clipboard} text={command} />
   </Border>
 </div>

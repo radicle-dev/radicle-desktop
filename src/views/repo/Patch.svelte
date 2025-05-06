@@ -33,11 +33,13 @@
   import CopyableId from "@app/components/CopyableId.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
+  import EditableTitle from "@app/components/EditableTitle.svelte";
   import Icon from "@app/components/Icon.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
+  import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import OutlineButton from "@app/components/OutlineButton.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
@@ -50,7 +52,6 @@
   import Sidebar from "@app/components/Sidebar.svelte";
   import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
-  import EditableTitle from "@app/components/EditableTitle.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -389,7 +390,7 @@
           Patches
         </Link>
       </div>
-      <div style:margin-left="auto">
+      <div class="global-flex" style:margin-left="auto">
         <NakedButton
           styleHeight="2.5rem"
           keyShortcuts="ctrl+f"
@@ -405,6 +406,7 @@
           }}>
           <Icon name="filter" />
         </NakedButton>
+        <NewPatchButton rid={repo.rid} outline />
       </div>
     </div>
     {#if showFilters}

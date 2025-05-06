@@ -126,20 +126,18 @@
             {/snippet}
           </TextInput>
         {/if}
-        <div class="txt-regular txt-semibold">
-          <Button
-            styleHeight="2.5rem"
-            variant="secondary"
-            onclick={() => {
-              void router.push({
-                resource: "repo.createIssue",
-                status,
-                rid: repo.rid,
-              });
-            }}>
-            <Icon name="add" />New
-          </Button>
-        </div>
+        <Button
+          styleHeight="2.5rem"
+          variant="secondary"
+          onclick={() => {
+            void router.push({
+              resource: "repo.createIssue",
+              status,
+              rid: repo.rid,
+            });
+          }}>
+          <Icon name="add" />New
+        </Button>
       </div>
     </div>
 

@@ -16,6 +16,7 @@
   import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Layout from "./Layout.svelte";
+  import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchesSecondColumn from "@app/components/PatchesSecondColumn.svelte";
   import TextInput from "@app/components/TextInput.svelte";
@@ -112,6 +113,7 @@
     align-items: center;
     min-height: 2.5rem;
     margin-bottom: 1rem;
+    gap: 0.75rem;
   }
 </style>
 
@@ -132,8 +134,8 @@
     <div class="header">
       Patches
 
-      {#if items.length > 0}
-        <div class="global-flex" style:margin-left="auto">
+      <div class="global-flex" style:margin-left="auto">
+        {#if items.length > 0}
           <TextInput
             onFocus={async () => {
               try {
@@ -171,8 +173,9 @@
               </div>
             {/snippet}
           </TextInput>
-        </div>
-      {/if}
+        {/if}
+        <NewPatchButton rid={repo.rid} />
+      </div>
     </div>
 
     <div class="list">
