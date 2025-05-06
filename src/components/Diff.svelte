@@ -141,32 +141,34 @@
     e.preventDefault();
     e.stopPropagation();
 
+    const commentAnchor = determineSelectedAnchor(side, line);
+
     selection = {
       file: filePath(file, side),
-      start: determineSelectedAnchor(side, line),
-      end: determineSelectedAnchor(side, line),
+      start: commentAnchor,
+      end: commentAnchor,
       hunkIdx: hunkIdx,
       lineIdx: lineIdx,
       codeLocation: {
         commit: head,
         path: filePath(file, side),
         old:
-          side === "left"
+          commentAnchor.side === "left"
             ? {
                 type: "lines",
                 range: {
-                  start: lineNumber(line, "left") as number,
-                  end: (lineNumber(line, "left") as number) + 1,
+                  start: commentAnchor.lineNumber,
+                  end: commentAnchor.lineNumber + 1,
                 },
               }
             : null,
         new:
-          side === "right"
+          commentAnchor.side === "right"
             ? {
                 type: "lines",
                 range: {
-                  start: lineNumber(line, "right") as number,
-                  end: (lineNumber(line, "right") as number) + 1,
+                  start: commentAnchor.lineNumber,
+                  end: commentAnchor.lineNumber + 1,
                 },
               }
             : null,
