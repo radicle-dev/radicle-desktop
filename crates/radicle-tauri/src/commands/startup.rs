@@ -43,6 +43,16 @@ pub(crate) fn version(app: AppHandle) -> Result<Version, Error> {
 }
 
 #[tauri::command]
+pub(crate) fn check_radicle_cli(ctx: tauri::State<AppState>) -> Result<(), Error> {
+    let rad = ctx.profile().home().path().join("bin/rad");
+    if !rad.try_exists()? {
+        return Err(Error::RadicleNotInstalled);
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
 pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     let profile = radicle::Profile::load()?;
     let repositories = profile.storage.repositories()?;
