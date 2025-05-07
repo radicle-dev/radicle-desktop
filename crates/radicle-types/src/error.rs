@@ -11,6 +11,10 @@ pub enum Error {
     #[error(transparent)]
     ProfileError(#[from] radicle::profile::Error),
 
+    /// Radicle error.
+    #[error("radicle is not installed")]
+    RadicleNotInstalled,
+
     /// Missing SSH Agent error.
     #[error("ssh agent not running")]
     AgentNotRunning,

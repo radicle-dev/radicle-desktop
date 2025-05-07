@@ -59,6 +59,7 @@ pub fn run() {
             repo::repo_readme,
             startup::startup,
             startup::version,
+            startup::check_radicle_cli,
             thread::create_issue_comment,
             thread::create_patch_comment,
         ])
