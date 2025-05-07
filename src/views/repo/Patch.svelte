@@ -570,7 +570,8 @@
             popoverPositionTop="3rem">
             {#snippet toggle(onclick)}
               <Button styleHeight="2.5rem" variant="secondary" {onclick}>
-                <Icon name="checkout" />Checkout<Icon name="chevron-down" />
+                <Icon name="checkout" />Checkout patch<Icon
+                  name="chevron-down" />
               </Button>
             {/snippet}
             {#snippet popover()}

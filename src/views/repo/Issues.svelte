@@ -136,7 +136,7 @@
               rid: repo.rid,
             });
           }}>
-          <Icon name="add" />New
+          <Icon name="add" />New issue
         </Button>
       </div>
     </div>

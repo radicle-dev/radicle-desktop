@@ -150,7 +150,7 @@
           });
         }
       }}>
-      <Icon name="add" />New
+      <Icon name="add" />New issue
     </OutlineButton>
   </div>
 </div>
