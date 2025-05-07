@@ -29,16 +29,9 @@ impl Serialize for Version {
 
 #[tauri::command]
 pub(crate) fn version(app: AppHandle) -> Result<Version, Error> {
-    let version = app
-        .config()
-        .version
-        .clone()
-        .expect("The build version has not been set.");
-    pub const GIT_HEAD: &str = env!("GIT_HEAD");
-
     Ok(Version {
-        version,
-        head: GIT_HEAD.to_string(),
+        version: app.config().version.clone().unwrap_or("unknown".into()),
+        head: env!("GIT_HEAD").to_string(),
     })
 }
 
