@@ -25,8 +25,6 @@
   const { config, readme, repo }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
-
-  let checkoutPopoverExpanded: boolean = $state(false);
 </script>
 
 <style>
@@ -41,10 +39,7 @@
   }
 </style>
 
-<Layout
-  publicKey={config.publicKey}
-  hideSidebar
-  styleSecondColumnOverflow="visible">
+<Layout {config} hideSidebar styleSecondColumnOverflow="visible">
   {#snippet headerCenter()}
     <CopyableId id={repo.rid} />
   {/snippet}
@@ -61,10 +56,7 @@
         {project.data.name}
       </div>
       <div class="global-flex txt-small" style:margin-left="auto">
-        <Popover
-          bind:expanded={checkoutPopoverExpanded}
-          popoverPositionRight="0"
-          popoverPositionTop="3rem">
+        <Popover popoverPositionRight="0" popoverPositionTop="3rem">
           {#snippet toggle(onclick)}
             <Button styleHeight="2.5rem" variant="secondary" {onclick}>
               <Icon name="checkout" />Checkout repo<Icon name="chevron-down" />

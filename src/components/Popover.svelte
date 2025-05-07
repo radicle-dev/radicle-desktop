@@ -1,9 +1,21 @@
 <script lang="ts" module>
-  import { writable } from "svelte/store";
-  const focused = writable<HTMLDivElement | undefined>(undefined);
+  let focused = $state<{ element: HTMLDivElement; id: string } | undefined>(
+    undefined,
+  );
 
   export function closeFocused() {
-    focused.set(undefined);
+    focused = undefined;
+  }
+
+  export function setFocused(id: string) {
+    const thisComponent = document.querySelector(`[data-popover-id="${id}"]`);
+    if (thisComponent) {
+      if (focused?.element === thisComponent) {
+        closeFocused();
+      } else {
+        focused = { element: thisComponent as HTMLDivElement, id };
+      }
+    }
   }
 </script>
 
@@ -13,49 +25,55 @@
   interface Props {
     toggle: Snippet<[() => void]>;
     popover: Snippet;
+    popoverId?: string;
     popoverContainerMinWidth?: string;
     popoverPadding?: string;
     popoverPositionBottom?: string;
     popoverPositionLeft?: string;
     popoverPositionRight?: string;
     popoverPositionTop?: string;
-    expanded?: boolean;
   }
 
   /* eslint-disable prefer-const */
   let {
     toggle,
     popover,
+    popoverId,
     popoverContainerMinWidth,
     popoverPadding,
     popoverPositionBottom,
     popoverPositionLeft,
     popoverPositionRight,
     popoverPositionTop,
-    expanded = $bindable(false),
   }: Props = $props();
   /* eslint-enable prefer-const */
 
+  const id = popoverId ?? crypto.randomUUID();
   let thisComponent: HTMLDivElement | undefined = $state();
 
   function clickOutside(ev: MouseEvent | TouchEvent) {
-    if ($focused && !ev.composedPath().includes($focused)) {
-      closeFocused();
+    const toggleElement = document.querySelector(
+      `[data-popover-toggle="${id}"]`,
+    );
+    if (focused && !ev.composedPath().includes(focused.element)) {
+      if (
+        thisComponent === focused.element &&
+        !ev.composedPath().includes(toggleElement!)
+      ) {
+        closeFocused();
+      }
     }
   }
 
   function toggleFn() {
-    expanded = !expanded;
-    if ($focused === thisComponent) {
-      closeFocused();
-    } else {
-      focused.set(thisComponent);
+    if (thisComponent) {
+      if (focused?.element === thisComponent) {
+        closeFocused();
+      } else {
+        focused = { element: thisComponent, id };
+      }
     }
   }
-
-  $effect(() => {
-    expanded = $focused === thisComponent;
-  });
 </script>
 
 <style>
@@ -72,12 +90,13 @@
 <svelte:window onclick={clickOutside} ontouchstart={clickOutside} />
 
 <div
+  data-popover-id={id}
   bind:this={thisComponent}
   class="container"
   style:min-width={popoverContainerMinWidth}>
   {@render toggle(toggleFn)}
 
-  {#if expanded}
+  {#if focused?.element === thisComponent}
     <div
       class="popover"
       style:bottom={popoverPositionBottom}

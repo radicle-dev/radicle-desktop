@@ -19,9 +19,10 @@
   import HomeSidebar from "@app/components/HomeSidebar.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Layout from "@app/views/repo/Layout.svelte";
-  import Onboarding from "@app/views/home/Onboarding.svelte";
+  import OutlineButton from "@app/components/OutlineButton.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
   import TextInput from "@app/components/TextInput.svelte";
+  import { setFocused } from "@app/components/Popover.svelte";
 
   interface Props {
     activeTab?: HomeReposTab;
@@ -106,10 +107,7 @@
   }
 </style>
 
-<Layout
-  hideSidebar
-  styleSecondColumnOverflow="visible"
-  publicKey={config.publicKey}>
+<Layout hideSidebar styleSecondColumnOverflow="visible" {config}>
   {#snippet headerCenter()}
     <CopyableId id={config.publicKey} />
   {/snippet}
@@ -187,7 +185,18 @@
         </Border>
       {/if}
     {:else}
-      <Onboarding {reload} />
+      <div class="txt-missing txt-small" style:margin-bottom="1.5rem">
+        You don't have any repositories in your Radicle storage yet. To get
+        started, check out the guide below.
+      </div>
+      <div style="display: flex; gap: 1rem;">
+        <OutlineButton
+          popoverToggle="popover-guide"
+          onclick={() => setFocused("popover-guide")}
+          variant="ghost">
+          <Icon name="info" />Guide
+        </OutlineButton>
+      </div>
     {/if}
   </div>
 </Layout>

@@ -80,7 +80,6 @@
   let cursor: number = $state(0);
   let more: boolean = $state(false);
   let patchTeasers: Patch[] = $state([]);
-  let checkoutPopoverExpanded = $state(false);
 
   let patches = $state(initialPatches);
   let status = $state(initialStatus);
@@ -357,7 +356,7 @@
   </div>
 {/snippet}
 
-<Layout loadMoreSecondColumn={loadMoreTeasers} publicKey={config.publicKey}>
+<Layout {config} loadMoreSecondColumn={loadMoreTeasers}>
   {#snippet headerCenter()}
     <CopyableId id={patch.id} />
   {/snippet}
@@ -564,10 +563,7 @@
           title={patch.title}
           cobId={patch.id} />
         <div class="txt-small" style:margin-left="auto" style:z-index="40">
-          <Popover
-            bind:expanded={checkoutPopoverExpanded}
-            popoverPositionRight="0"
-            popoverPositionTop="3rem">
+          <Popover popoverPositionRight="0" popoverPositionTop="3rem">
             {#snippet toggle(onclick)}
               <Button styleHeight="2.5rem" variant="secondary" {onclick}>
                 <Icon name="checkout" />Checkout patch<Icon
