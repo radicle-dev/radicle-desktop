@@ -21,7 +21,7 @@
     heartwood,
     nix-playwright-browsers,
     ...
-  }@inputs:
+  }:
     (flake-utils.lib.eachDefaultSystem (system: let
       pkgs = import nixpkgs {
         inherit system;
@@ -30,7 +30,6 @@
           nix-playwright-browsers.overlays.${system}.default
         ];
       };
-      inherit (pkgs) lib;
     in {
 
       checks = {
@@ -131,7 +130,13 @@
               PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = 1;
               PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = true;
               RUST_SRC_PATH = "${rTc}/lib/rustlib/src/rust/library";
-            };
+            } // (
+              if self ? rev || self ? dirtyRev
+              then {
+                GIT_HEAD = self.rev or self.dirtyRev;
+              }
+              else {}
+            );
 
             preCheck = ''
               export RAD_HOME="$PWD/_rad-home"
