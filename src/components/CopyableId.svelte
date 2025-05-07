@@ -1,7 +1,13 @@
 <script lang="ts">
+  import type { Snippet } from "svelte";
+
   import Clipboard from "./Clipboard.svelte";
 
-  const { id }: { id: string } = $props();
+  const {
+    inline = false,
+    children,
+    id,
+  }: { inline?: boolean; children?: Snippet; id: string } = $props();
 
   let clipboard: Clipboard;
 </script>
@@ -15,6 +21,11 @@
   .copyable-id:hover {
     color: var(--color-foreground-contrast);
   }
+  .inline {
+    display: inline-flex;
+    gap: 0.25rem;
+    white-space: nowrap;
+  }
 </style>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -22,7 +33,12 @@
   role="button"
   tabindex="0"
   onclick={() => clipboard.copy()}
+  class:inline
   class="copyable-id global-flex txt-small txt-monospace">
-  {id}
+  {#if children}
+    {@render children()}
+  {:else}
+    {id}
+  {/if}
   <Clipboard bind:this={clipboard} text={id} />
 </div>

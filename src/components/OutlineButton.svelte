@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   interface Props {
+    popoverToggle?: string;
     active?: boolean;
     children: Snippet;
     disabled?: boolean;
@@ -12,6 +13,7 @@
   }
 
   const {
+    popoverToggle,
     active = false,
     children,
     disabled = false,
@@ -271,6 +273,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
+  data-popover-toggle={popoverToggle}
   class:active
   class:disabled
   class="container"

@@ -17,6 +17,8 @@
       | "branch"
       | "broom"
       | "broom-double"
+      | "checkbox-checked"
+      | "checkbox-unchecked"
       | "checkmark"
       | "checkout"
       | "chevron-down"
@@ -162,6 +164,19 @@
     <path d="M10 11L9 11L9 12L10 12L10 11Z" />
     <path d="M10 10L9 10L9 13L10 13L10 10Z" />
     <path d="M2 6L3 6L3 10L2 10L2 6Z" />
+  {:else if name === "checkbox-checked"}
+    <path d="M2 3H3V13H2V3Z" />
+    <path d="M13 3H14V13H13V3Z" />
+    <path d="M3 13H13V14H3L3 13Z" />
+    <path
+      d="M6 9.5V8.5H5V7.5L3 7.5L3 2L13 2V4.5L11 4.5V5.5H10L10 6.5H9V7.5H8V8.5H7V9.5H6Z" />
+    <path
+      d="M3 8.5H4L4 9.5L5 9.5L5 10.5H6V11.5H7L7 10.5L8 10.5V9.5H9V8.5H10V7.5L11 7.5V6.5H12V5.5H13L13 13H3L3 8.5Z" />
+  {:else if name === "checkbox-unchecked"}
+    <path d="M2 3H3V13H2V3Z" />
+    <path d="M13 3H14V13H13V3Z" />
+    <path d="M3 13H13V14H3L3 13Z" />
+    <path d="M3 2H13V3H3L3 2Z" />
   {:else if name === "attachment"}
     <path d="M4 4H12V5H4V4Z" />
     <path d="M4 11H11V12H4V11Z" />

@@ -9,6 +9,7 @@
     stylePosition?: string;
     stylePadding?: string;
     styleHeight?: string;
+    styleMaxHeight?: string;
     styleMinHeight?: string;
     styleMinWidth?: string;
     styleWidth?: string;
@@ -31,6 +32,7 @@
     onclick,
     stylePadding,
     styleHeight,
+    styleMaxHeight,
     styleMinHeight,
     stylePosition,
     styleWidth,
@@ -245,6 +247,7 @@
   <div class="p3-2"></div>
   <div
     class="p3-3"
+    style:max-height={styleMaxHeight}
     style:min-width={styleMinWidth}
     style:display={styleDisplay}
     style:position={stylePosition}

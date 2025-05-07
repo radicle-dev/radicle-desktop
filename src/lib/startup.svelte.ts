@@ -1,9 +1,10 @@
 import type { SyncStatus } from "@bindings/repo/SyncStatus";
 
-import { listen } from "@tauri-apps/api/event";
-import { SvelteMap } from "svelte/reactivity";
-import { nodeRunning, syncStatus } from "./events";
 import once from "lodash/once";
+import { SvelteMap } from "svelte/reactivity";
+import { listen } from "@tauri-apps/api/event";
+
+import { nodeRunning, syncStatus } from "./events";
 
 // Will be called once in the startup of the app
 export const createEventEmittersOnce = once(async () => {

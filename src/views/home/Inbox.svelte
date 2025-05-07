@@ -165,14 +165,14 @@
 </style>
 
 <Layout
+  {config}
   loadMoreContent={async () => {
     if (activeTab) {
       await loadMoreContent();
     }
   }}
   hideSidebar
-  styleSecondColumnOverflow="visible"
-  publicKey={config.publicKey}>
+  styleSecondColumnOverflow="visible">
   {#snippet headerCenter()}
     <CopyableId id={config.publicKey} />
   {/snippet}

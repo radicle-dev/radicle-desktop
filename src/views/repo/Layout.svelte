@@ -29,10 +29,11 @@
   import { onMount } from "svelte";
 
   import Header from "@app/components/Header.svelte";
+  import type { Config } from "@bindings/config/Config";
 
   interface Props {
     children: Snippet;
-    publicKey: string;
+    config: Config;
     headerCenter?: Snippet;
     secondColumn: Snippet;
     sidebar?: Snippet;
@@ -44,7 +45,7 @@
 
   const {
     children,
-    publicKey,
+    config,
     headerCenter = undefined,
     secondColumn,
     sidebar = undefined,
@@ -104,6 +105,7 @@
   .header {
     grid-column: 1 / 4;
     border-bottom: 2px solid var(--color-background-default);
+    z-index: 100;
   }
 
   .sidebar {
@@ -132,7 +134,7 @@
 
 <div class="layout">
   <div class="header">
-    <Header {publicKey} center={headerCenter}></Header>
+    <Header {config} center={headerCenter}></Header>
   </div>
 
   {#if sidebar}
