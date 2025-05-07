@@ -17,9 +17,11 @@
   import { DEFAULT_TAKE } from "./router";
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import {
+    explorerUrl,
     formatOid,
     patchStatusBackgroundColor,
     patchStatusColor,
+    verdictIcon,
   } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
   import { modifierKey } from "@app/lib/utils";
@@ -28,14 +30,14 @@
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
   import CheckoutPatchButton from "@app/components/CheckoutPatchButton.svelte";
-  import CopyableId from "@app/components/CopyableId.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import InlineTitle from "@app/components/InlineTitle.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
-  import Layout from "./Layout.svelte";
   import Link from "@app/components/Link.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
+  import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchStateFilterButton from "@app/components/PatchStateFilterButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
@@ -47,6 +49,13 @@
   import Sidebar from "@app/components/Sidebar.svelte";
   import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
+
+  import Layout from "./Layout.svelte";
+  import PatchesBreadcrumb from "./PatchesBreadcrumb.svelte";
+  import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
+  import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
+  import MoreBreadcrumbsButton from "@app/components/MoreBreadcrumbsButton.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -285,6 +294,30 @@
       all: true,
     }),
   );
+  function breadcrumbIcon() {
+    if (selectedRevision.id === revisions[0].id || tab === "patch") {
+      return patch.state.status === "open"
+        ? ("patch" as const)
+        : (`patch-${patch.state.status}` as const);
+    } else {
+      return "revision";
+    }
+  }
+  function breadcrumbTitle() {
+    if (tab === "patch") {
+      if (revisions[0].description.slice(-1)[0].body.trim() === "") {
+        return formatOid(revisions[0].id);
+      } else {
+        return revisions[0].description.slice(-1)[0].body.trim();
+      }
+    } else {
+      if (selectedRevision.description.slice(-1)[0].body.trim() === "") {
+        return formatOid(selectedRevision.id);
+      } else {
+        return selectedRevision.description.slice(-1)[0].body.trim();
+      }
+    }
+  }
 </script>
 
 <style>
@@ -324,9 +357,94 @@
   }
 </style>
 
-<Layout {notificationCount} loadMoreSecondColumn={loadMoreTeasers} {config}>
-  {#snippet headerCenter()}
-    <CopyableId id={patch.id} />
+<Layout {config} loadMoreSecondColumn={loadMoreTeasers} {notificationCount}>
+  {#snippet breadcrumbs()}
+    <div
+      class="global-flex global-hide-on-medium-desktop-down"
+      style:gap="0.25rem">
+      <NodeBreadcrumb {config} />
+      <Icon name="chevron-right" />
+      <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
+      <Icon name="chevron-right" />
+      <PatchesBreadcrumb rid={repo.rid} {status} />
+      <Icon name="chevron-right" />
+    </div>
+    <div
+      class="global-flex global-hide-on-desktop-up"
+      style:gap="0.25rem"
+      style:margin-right="0.5rem">
+      <MoreBreadcrumbsButton>
+        <DropdownListItem styleGap="0.5rem" selected={false} styleWidth="100%">
+          <NodeBreadcrumb {config} />
+        </DropdownListItem>
+        <DropdownListItem styleGap="0.5rem" selected={false} styleWidth="100%">
+          <Icon name="repo" />
+          <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
+        </DropdownListItem>
+        <DropdownListItem styleGap="0.5rem" selected={false} styleWidth="100%">
+          <Icon
+            name={status === "open" || status === undefined
+              ? "patch"
+              : `patch-${status}`} />
+          <PatchesBreadcrumb rid={repo.rid} {status} />
+        </DropdownListItem>
+      </MoreBreadcrumbsButton>
+    </div>
+    <span class="txt-overflow" style:max-width="8rem">
+      {#if review || selectedRevision.id !== revisions.slice(-1)[0].id}
+        <Link
+          route={{
+            resource: "repo.patch",
+            rid: repo.rid,
+            patch: patch.id,
+            status,
+            reviewId: undefined,
+          }}>
+          <InlineTitle content={patch.title} fontSize="small" />
+        </Link>
+      {:else}
+        <InlineTitle content={patch.title} fontSize="small" />
+      {/if}
+    </span>
+    <Icon name="chevron-right" />
+    {#if review}
+      <span class="txt-overflow" style:max-width="8rem">
+        <Link
+          route={{
+            resource: "repo.patch",
+            rid: repo.rid,
+            patch: patch.id,
+            status,
+            reviewId: undefined,
+          }}>
+          <span class="txt-overflow" style:max-width="8rem">
+            {#if selectedRevision.description.slice(-1)[0].body.trim() === ""}
+              {formatOid(selectedRevision.id)}
+            {:else}
+              <InlineTitle
+                content={selectedRevision.description.slice(-1)[0].body}
+                fontSize="small" />
+            {/if}
+          </span>
+        </Link>
+      </span>
+      <Icon name="chevron-right" />
+      {review.author.alias}'s review
+      <BreadcrumbCopyButton
+        url={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
+        icon={verdictIcon(review.verdict)}
+        id={review.id} />
+    {:else}
+      <span class="txt-overflow" style:max-width="8rem">
+        <InlineTitle content={breadcrumbTitle()} fontSize="small" />
+      </span>
+      <BreadcrumbCopyButton
+        url={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
+        icon={breadcrumbIcon()}
+        id={revisions[0].id === selectedRevision.id || tab === "patch"
+          ? patch.id
+          : selectedRevision.id} />
+    {/if}
   {/snippet}
 
   {#snippet sidebar()}
@@ -340,50 +458,33 @@
       style:min-width="450px"
       style:min-height="2.5rem"
       style:margin-bottom="1rem">
-      <div
-        class="global-flex"
-        style:font-weight="var(--font-weight-medium)"
-        style:gap="4px"
-        style:white-space="nowrap">
-        {project.data.name}
-        <Icon name="chevron-right" />
-        <Link
-          underline={false}
-          route={{
-            resource: "repo.patches",
-            rid: repo.rid,
-            status: "open",
-          }}>
-          Patches
-        </Link>
-      </div>
+      <PatchStateFilterButton
+        counters={project.meta.patches}
+        {status}
+        select={async selectedState => {
+          await loadPatches(selectedState);
+        }} />
+      <NakedButton
+        styleHeight="2.5rem"
+        keyShortcuts="ctrl+f"
+        variant="ghost"
+        active={showFilters}
+        onclick={() => {
+          if (showFilters) {
+            showFilters = false;
+            searchInput = "";
+          } else {
+            showFilters = true;
+          }
+        }}>
+        <Icon name="filter" />
+      </NakedButton>
       <div class="global-flex" style:margin-left="auto">
-        <NakedButton
-          styleHeight="2.5rem"
-          keyShortcuts="ctrl+f"
-          variant="ghost"
-          active={showFilters}
-          onclick={() => {
-            if (showFilters) {
-              showFilters = false;
-              searchInput = "";
-            } else {
-              showFilters = true;
-            }
-          }}>
-          <Icon name="filter" />
-        </NakedButton>
         <NewPatchButton rid={repo.rid} outline />
       </div>
     </div>
     {#if showFilters}
       <div class="global-flex" style:margin="1rem 0">
-        <PatchStateFilterButton
-          counters={project.meta.patches}
-          {status}
-          select={async selectedState => {
-            await loadPatches(selectedState);
-          }} />
         {#if patchTeasers.length > 0}
           <TextInput
             onFocus={async () => {

@@ -49,6 +49,7 @@
       | "issue"
       | "issue-closed"
       | "label"
+      | "link"
       | "lock"
       | "markdown"
       | "minus"
@@ -57,6 +58,7 @@
       | "none"
       | "offline"
       | "online"
+      | "open-external"
       | "patch"
       | "patch-archived"
       | "patch-draft"
@@ -779,6 +781,30 @@
     <path d="M12.5 10.5H13.5V11.5H12.5V10.5Z" />
     <path d="M10.5 5.50003L11.5 5.50003V6.50003L10.5 6.50003L10.5 5.50003Z" />
     <path d="M11.5 11.5H12.5L12.5 12.5H11.5L11.5 11.5Z" />
+  {:else if name === "link"}
+    <path d="M8 2L11 2V3H8V2Z" />
+    <path d="M7 9H9V10H7V9Z" />
+    <path d="M13 4V6H12V4L13 4Z" />
+    <path d="M5 6L5 8L4 8L4 6L5 6Z" />
+    <path d="M11 3L12 3V4L11 4L11 3Z" />
+    <path d="M5 8H6V9H5L5 8Z" />
+    <path d="M7 3L8 3L8 4L7 4V3Z" />
+    <path d="M6 4L7 4L7 5H6V4Z" />
+    <path d="M5 5H6L6 6H5V5Z" />
+    <path d="M11 6H12V7H11V6Z" />
+    <path d="M10 7L11 7L11 8H10V7Z" />
+    <path d="M9 8H10L10 9H9L9 8Z" />
+    <path d="M7 6H9V7H7V6Z" />
+    <path d="M5 13H8V14H5V13Z" />
+    <path d="M12 8L12 10H11L11 8L12 8Z" />
+    <path d="M4 10L4 12H3L3 10H4Z" />
+    <path d="M10 7L11 7L11 8H10V7Z" />
+    <path d="M4 12H5V13H4L4 12Z" />
+    <path d="M6 7L7 7L7 8H6L6 7Z" />
+    <path d="M4 9H5L5 10H4L4 9Z" />
+    <path d="M10 10L11 10V11L10 11V10Z" />
+    <path d="M9 11L10 11V12H9V11Z" />
+    <path d="M8 12L9 12L9 13H8L8 12Z" />
   {:else if name === "lock"}
     <path d="M6 2H10V3H6V2Z" />
     <path d="M10 3L11 3V4H10V3Z" />
@@ -935,6 +961,30 @@
     <path d="M11 14H10V13H11V14Z" />
     <path d="M5 13H6V14H5V13Z" />
     <path d="M11 2.99998L10 2.99998V1.99998L11 1.99998V2.99998Z" />
+  {:else if name === "open-external"}
+    <path d="M3 2L6 2V3L3 3V2Z" />
+    <path d="M3 13L13 13V14L3 14V13Z" />
+    <path d="M2 3L3 3L3 13H2L2 3Z" />
+    <path d="M13 10H14V13H13V10Z" />
+    <path d="M13 2H14V3L13 3V2Z" />
+    <path d="M12 3L13 3V4H12V3Z" />
+    <path d="M12 4H13V5H12V4Z" />
+    <path d="M11 3L12 3V4L11 4V3Z" />
+    <path d="M11 4L12 4V5L11 5V4Z" />
+    <path d="M10 5L11 5V6H10V5Z" />
+    <path d="M9 6H10V7H9V6Z" />
+    <path d="M8 7L9 7V8H8V7Z" />
+    <path d="M7 8H8V9H7V8Z" />
+    <path d="M12 2L13 2V3L12 3V2Z" />
+    <path d="M11 2L12 2V3L11 3V2Z" />
+    <path d="M9 2H10V3H9V2Z" />
+    <path d="M8 2L9 2V3L8 3V2Z" />
+    <path d="M10 2L11 2V3L10 3V2Z" />
+    <path d="M13 3L14 3V4H13V3Z" />
+    <path d="M13 4H14V5H13V4Z" />
+    <path d="M13 5H14V6H13V5Z" />
+    <path d="M13 6H14V7H13V6Z" />
+    <path d="M13 7H14V8H13V7Z" />
   {:else if name === "patch"}
     <path d="M13 11H14V14H11L11 11H12V7H13V11ZM12 13L12 12H13L13 13H12Z" />
     <path d="M12 7L9 7L9 9H8L8 8L7 8V7H6V6L7 6V5H8L8 4L9 4V6L12 6L12 7Z" />

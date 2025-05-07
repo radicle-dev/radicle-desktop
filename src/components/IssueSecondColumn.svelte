@@ -12,7 +12,6 @@
   import Icon from "./Icon.svelte";
   import IssueStateFilterButton from "./IssueStateFilterButton.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
-  import Link from "./Link.svelte";
   import NakedButton from "./NakedButton.svelte";
   import OutlineButton from "./OutlineButton.svelte";
   import TextInput from "./TextInput.svelte";
@@ -25,10 +24,9 @@
     repo: RepoInfo;
     selectedIssueId?: string;
     status: IssueStatus;
-    title: string;
   }
 
-  const { changeFilter, issues, repo, selectedIssueId, status, title }: Props =
+  const { changeFilter, issues, repo, selectedIssueId, status }: Props =
     $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
@@ -77,25 +75,11 @@
 </style>
 
 <div class="container">
-  <div
-    class="txt-medium global-flex"
-    style:font-weight="var(--font-weight-medium)"
-    style:gap="4px"
-    style:white-space="nowrap">
-    {title}
-    <Icon name="chevron-right" />
-    <Link
-      underline={false}
-      route={{
-        resource: "repo.issues",
-        rid: repo.rid,
-        status: "open",
-      }}>
-      Issues
-    </Link>
-  </div>
-
-  <div class="global-flex" style:margin-left="auto">
+  <div class="global-flex">
+    <IssueStateFilterButton
+      {status}
+      counters={project.meta.issues}
+      {changeFilter} />
     <NakedButton
       styleHeight="2.5rem"
       keyShortcuts="ctrl+f"
@@ -111,7 +95,8 @@
       }}>
       <Icon name="filter" />
     </NakedButton>
-
+  </div>
+  <div class="global-flex" style:margin-left="auto">
     <OutlineButton
       variant="ghost"
       styleHeight="2.5rem"
@@ -134,10 +119,6 @@
 
 {#if showFilters}
   <div class="global-flex" style:margin="1rem 0">
-    <IssueStateFilterButton
-      {status}
-      counters={project.meta.issues}
-      {changeFilter} />
     <TextInput
       onSubmit={async () => {
         if (searchResults.length === 1) {

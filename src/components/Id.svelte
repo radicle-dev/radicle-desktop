@@ -33,6 +33,8 @@
     variant: "oid" | "commit" | "none";
     ariaLabel?: string;
     debounceTimeout?: number;
+    styleBottom?: string;
+    styleLeft?: string;
   }
 
   const {
@@ -43,6 +45,8 @@
     variant,
     ariaLabel,
     debounceTimeout = 50,
+    styleBottom = "1.5rem",
+    styleLeft = "1rem",
   }: Props = $props();
 
   const setVisible = debounce((value: boolean) => {
@@ -57,14 +61,12 @@
   }
   .popover {
     position: absolute;
-    left: 1rem;
     display: flex;
     align-items: center;
     flex-direction: row;
     gap: 0.5rem;
     justify-content: center;
     z-index: 20;
-    bottom: 1.5rem;
     background: var(--color-fill-counter);
     color: var(--color-foreground-contrast);
     box-shadow: var(--elevation-low);
@@ -113,7 +115,7 @@
 
   {#if visible}
     <div style:position="absolute">
-      <div class="popover">
+      <div class="popover" style:bottom={styleBottom} style:left={styleLeft}>
         <Icon name={icon} />
         {tooltip}
       </div>

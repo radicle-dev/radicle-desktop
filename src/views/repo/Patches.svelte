@@ -10,16 +10,20 @@
   import * as router from "@app/lib/router";
   import { DEFAULT_TAKE } from "./router";
   import { invoke } from "@app/lib/invoke";
-  import { modifierKey } from "@app/lib/utils";
+  import { explorerUrl, modifierKey } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
-  import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Layout from "./Layout.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
+  import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchesSecondColumn from "@app/components/PatchesSecondColumn.svelte";
   import TextInput from "@app/components/TextInput.svelte";
+
+  import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
+  import Layout from "./Layout.svelte";
+  import PatchesBreadcrumb from "./PatchesBreadcrumb.svelte";
+  import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -124,8 +128,16 @@
   hideSidebar
   styleSecondColumnOverflow="visible"
   {config}>
-  {#snippet headerCenter()}
-    <CopyableId id={repo.rid} />
+  {#snippet breadcrumbs()}
+    <NodeBreadcrumb {config} />
+    <Icon name="chevron-right" />
+    <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
+    <Icon name="chevron-right" />
+    <PatchesBreadcrumb rid={repo.rid} {status} />
+    <BreadcrumbCopyButton
+      url={explorerUrl(`${repo.rid}/patches`)}
+      icon="repo"
+      id={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}
@@ -136,7 +148,7 @@
     <div class="header">
       Patches
 
-      <div class="global-flex" style:margin-left="auto">
+      <div class="global-flex" style:margin-left="auto" style:gap="0.75rem">
         {#if items.length > 0}
           <TextInput
             onFocus={async () => {

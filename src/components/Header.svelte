@@ -5,20 +5,17 @@
   import { boolean } from "zod";
   import { onMount } from "svelte";
 
-  import * as router from "@app/lib/router";
   import useLocalStorage from "@app/lib/useLocalStorage.svelte";
+
   import { checkRadicleCLI } from "@app/lib/checkRadicleCLI.svelte";
   import { dynamicInterval } from "@app/lib/interval";
   import { setFocused } from "@app/components/Popover.svelte";
 
-  import Avatar from "@app/components/Avatar.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InboxPopover from "@app/components/InboxPopover.svelte";
   import InfoButton from "@app/components/InfoButton.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import NodeStatusButton from "@app/components/NodeStatusButton.svelte";
-
-  const activeRouteStore = router.activeRouteStore;
 
   const firstLaunchStorage = useLocalStorage(
     "appFirstLaunch",
@@ -28,10 +25,12 @@
   );
 
   interface Props {
+    breadcrumbs?: Snippet;
     config: Config;
-    center?: Snippet;
     notificationCount: number;
   }
+
+  const { breadcrumbs, config, notificationCount }: Props = $props();
 
   onMount(async () => {
     try {
@@ -46,8 +45,6 @@
       firstLaunchStorage.value = false;
     }
   });
-
-  const { center, notificationCount, config }: Props = $props();
 </script>
 
 <style>
@@ -88,15 +85,6 @@
       <div class="global-flex" style:gap="0.25rem">
         <NakedButton
           variant="ghost"
-          active={$activeRouteStore.resource === "home"}
-          onclick={() => {
-            void router.push({ resource: "home", activeTab: "all" });
-          }}
-          stylePadding="0 4px">
-          <Avatar publicKey={config.publicKey} />
-        </NakedButton>
-        <NakedButton
-          variant="ghost"
           onclick={() => {
             window.history.back();
           }}
@@ -111,9 +99,13 @@
           stylePadding="0 4px">
           <Icon name="arrow-right" />
         </NakedButton>
+        <div
+          class="global-flex txt-small txt-semibold"
+          style:gap="0.25rem"
+          style:margin-left="0.5rem">
+          {@render breadcrumbs?.()}
+        </div>
       </div>
-
-      {@render center?.()}
 
       <div class="global-flex">
         <InfoButton {config} />

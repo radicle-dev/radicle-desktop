@@ -15,6 +15,7 @@
   import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
   import {
+    explorerUrl,
     issueStatusBackgroundColor,
     issueStatusColor,
     publicKeyFromDid,
@@ -25,18 +26,24 @@
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
-  import CopyableId from "@app/components/CopyableId.svelte";
   import Discussion from "@app/components/Discussion.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import InlineTitle from "@app/components/InlineTitle.svelte";
   import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimeline from "@app/components/IssueTimeline.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
+  import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
 
+  import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
+  import IssuesBreadcrumb from "./IssuesBreadcrumb.svelte";
   import Layout from "./Layout.svelte";
+  import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
+  import MoreBreadcrumbsButton from "@app/components/MoreBreadcrumbsButton.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -316,9 +323,44 @@
   }
 </style>
 
-<Layout {notificationCount} {config}>
-  {#snippet headerCenter()}
-    <CopyableId id={issue.id} />
+<Layout {config} {notificationCount}>
+  {#snippet breadcrumbs()}
+    <div
+      class="global-flex global-hide-on-medium-desktop-down"
+      style:gap="0.25rem">
+      <NodeBreadcrumb {config} />
+      <Icon name="chevron-right" />
+      <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
+      <Icon name="chevron-right" />
+      <IssuesBreadcrumb rid={repo.rid} {status} />
+      <Icon name="chevron-right" />
+    </div>
+    <div
+      class="global-flex global-hide-on-desktop-up"
+      style:gap="0.25rem"
+      style:margin-right="0.5rem">
+      <MoreBreadcrumbsButton>
+        <DropdownListItem styleGap="0.5rem" selected={false} styleWidth="100%">
+          <NodeBreadcrumb {config} />
+        </DropdownListItem>
+        <DropdownListItem styleGap="0.5rem" selected={false} styleWidth="100%">
+          <Icon name="repo" />
+          <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
+        </DropdownListItem>
+        <DropdownListItem styleGap="0.5rem" selected={false} styleWidth="100%">
+          <Icon name={status === "open" ? "issue" : "issue-closed"} />
+          <IssuesBreadcrumb rid={repo.rid} {status} />
+        </DropdownListItem>
+      </MoreBreadcrumbsButton>
+    </div>
+
+    <span class="txt-overflow" style:max-width="16rem">
+      <InlineTitle content={issue.title} fontSize="small" />
+    </span>
+    <BreadcrumbCopyButton
+      url={explorerUrl(`${repo.rid}/issues/${issue.id}`)}
+      icon={issue.state.status === "open" ? "issue" : "issue-closed"}
+      id={issue.id} />
   {/snippet}
 
   {#snippet sidebar()}
@@ -333,8 +375,7 @@
       {status}
       changeFilter={async filter => {
         await loadIssues(filter);
-      }}
-      title={project.data.name} />
+      }} />
   {/snippet}
 
   <div class="content">

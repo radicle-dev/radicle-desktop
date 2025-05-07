@@ -7,17 +7,20 @@
   import fuzzysort from "fuzzysort";
 
   import * as router from "@app/lib/router";
-  import { modifierKey } from "@app/lib/utils";
-
-  import Layout from "./Layout.svelte";
+  import { explorerUrl, modifierKey } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
   import Button from "@app/components/Button.svelte";
-  import CopyableId from "@app/components/CopyableId.svelte";
   import Icon from "@app/components/Icon.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import IssuesSecondColumn from "@app/components/IssuesSecondColumn.svelte";
+  import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import TextInput from "@app/components/TextInput.svelte";
+
+  import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
+  import IssuesBreadcrumb from "./IssuesBreadcrumb.svelte";
+  import Layout from "./Layout.svelte";
+  import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -30,6 +33,8 @@
   /* eslint-disable prefer-const */
   let { notificationCount, repo, issues, config, status }: Props = $props();
   /* eslint-enable prefer-const */
+
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
   let searchInput = $state("");
 
@@ -85,12 +90,20 @@
 </style>
 
 <Layout
-  {notificationCount}
   hideSidebar
   styleSecondColumnOverflow="visible"
-  {config}>
-  {#snippet headerCenter()}
-    <CopyableId id={repo.rid} />
+  {config}
+  {notificationCount}>
+  {#snippet breadcrumbs()}
+    <NodeBreadcrumb {config} />
+    <Icon name="chevron-right" />
+    <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
+    <Icon name="chevron-right" />
+    <IssuesBreadcrumb rid={repo.rid} {status} />
+    <BreadcrumbCopyButton
+      url={explorerUrl(`${repo.rid}/issues`)}
+      icon="repo"
+      id={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}

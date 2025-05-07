@@ -5,14 +5,16 @@
 
   import Border from "@app/components/Border.svelte";
   import CheckoutRepoButton from "@app/components/CheckoutRepoButton.svelte";
-  import CopyableId from "@app/components/CopyableId.svelte";
   import File from "@app/components/File.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Layout from "./Layout.svelte";
   import Markdown from "@app/components/Markdown.svelte";
+  import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import Path from "@app/components/Path.svelte";
   import RepoHomeSecondColumn from "@app/components/RepoHomeSecondColumn.svelte";
   import RepoMetadata from "@app/components/RepoMetadata.svelte";
+
+  import Layout from "./Layout.svelte";
+  import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
 
   interface Props {
     config: Config;
@@ -39,12 +41,14 @@
 </style>
 
 <Layout
-  {notificationCount}
   {config}
   hideSidebar
-  styleSecondColumnOverflow="visible">
-  {#snippet headerCenter()}
-    <CopyableId id={repo.rid} />
+  styleSecondColumnOverflow="visible"
+  {notificationCount}>
+  {#snippet breadcrumbs()}
+    <NodeBreadcrumb {config} />
+    <Icon name="chevron-right" />
+    <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
   {/snippet}
 
   {#snippet secondColumn()}

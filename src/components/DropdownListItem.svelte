@@ -4,11 +4,12 @@
   interface Props {
     children: Snippet;
     selected: boolean;
-    onclick: () => void;
+    onclick?: () => void;
     disabled?: boolean;
     title?: string;
     styleGap?: string;
     styleMinHeight?: string;
+    styleWidth?: string;
   }
 
   const {
@@ -19,6 +20,7 @@
     title,
     styleGap,
     styleMinHeight,
+    styleWidth,
   }: Props = $props();
 </script>
 
@@ -67,11 +69,12 @@
   class="item"
   class:selected
   class:disabled
+  style:width={styleWidth}
   style:gap={styleGap}
   style:min-height={styleMinHeight}
   {title}
   onclick={() => {
-    if (disabled) {
+    if (disabled || !onclick) {
       return;
     }
     onclick();

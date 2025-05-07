@@ -25,16 +25,15 @@
 
 <script lang="ts">
   import type { Snippet } from "svelte";
+  import type { Config } from "@bindings/config/Config";
 
   import { onMount } from "svelte";
 
   import Header from "@app/components/Header.svelte";
-  import type { Config } from "@bindings/config/Config";
 
   interface Props {
     children: Snippet;
     config: Config;
-    headerCenter?: Snippet;
     secondColumn: Snippet;
     sidebar?: Snippet;
     loadMoreContent?: () => Promise<void>;
@@ -42,12 +41,12 @@
     notificationCount: number;
     hideSidebar?: boolean;
     styleSecondColumnOverflow?: string;
+    breadcrumbs?: Snippet;
   }
 
   const {
     children,
     config,
-    headerCenter = undefined,
     secondColumn,
     sidebar = undefined,
     loadMoreContent = undefined,
@@ -55,6 +54,7 @@
     notificationCount,
     hideSidebar = false,
     styleSecondColumnOverflow = "scroll",
+    breadcrumbs,
   }: Props = $props();
 
   let contentContainer: HTMLElement | undefined = $state();
@@ -136,7 +136,7 @@
 
 <div class="layout">
   <div class="header">
-    <Header {config} center={headerCenter} {notificationCount}></Header>
+    <Header {breadcrumbs} {config} {notificationCount}></Header>
   </div>
 
   {#if sidebar}

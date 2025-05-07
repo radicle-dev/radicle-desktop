@@ -6,22 +6,22 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import fuzzysort from "fuzzysort";
+  import { onMount } from "svelte";
 
   import * as router from "@app/lib/router";
   import { didFromPublicKey, modifierKey } from "@app/lib/utils";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
-  import { onMount } from "svelte";
+  import { setFocused } from "@app/components/Popover.svelte";
 
   import Border from "@app/components/Border.svelte";
-  import CopyableId from "@app/components/CopyableId.svelte";
   import HomeSidebar from "@app/components/HomeSidebar.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Layout from "@app/views/repo/Layout.svelte";
+  import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import OutlineButton from "@app/components/OutlineButton.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
   import TextInput from "@app/components/TextInput.svelte";
-  import { setFocused } from "@app/components/Popover.svelte";
 
   interface Props {
     activeTab: HomeReposTab;
@@ -111,9 +111,10 @@
   hideSidebar
   styleSecondColumnOverflow="visible"
   {config}>
-  {#snippet headerCenter()}
-    <CopyableId id={config.publicKey} />
+  {#snippet breadcrumbs()}
+    <NodeBreadcrumb {config} />
   {/snippet}
+
   {#snippet secondColumn()}
     <HomeSidebar {activeTab} {repoCount} />
   {/snippet}

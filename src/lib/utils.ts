@@ -248,3 +248,11 @@ export function verdictIcon(verdict: Review["verdict"]) {
     return "comment";
   }
 }
+
+export function explorerUrl(
+  path: string,
+  seed = "seed.radicle.garden",
+  explorer = "https://app.radicle.xyz",
+) {
+  return `${explorer}/nodes/${seed}/${path}`;
+}

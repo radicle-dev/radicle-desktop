@@ -16,14 +16,17 @@
 
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
+  import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
+  import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
+  import IssuesBreadcrumb from "./IssuesBreadcrumb.svelte";
   import Layout from "./Layout.svelte";
-  import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
+  import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -41,8 +44,6 @@
     notificationCount,
   }: Props = $props();
 
-  const project = $derived(repo.payloads["xyz.radicle.project"]!);
-
   let preview: boolean = $state(false);
   let title: string = $state("");
   let status = $state(initialStatus);
@@ -50,6 +51,8 @@
 
   let assignees: Author[] = $state([]);
   let labels: string[] = $state([]);
+
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
   async function loadIssues(filter: IssueStatus) {
     try {
@@ -117,7 +120,14 @@
   }
 </style>
 
-<Layout {notificationCount} {config}>
+<Layout {config} {notificationCount}>
+  {#snippet breadcrumbs()}
+    <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
+    <IssuesBreadcrumb rid={repo.rid} {status} />
+    <Icon name="chevron-right" />
+    New
+  {/snippet}
+
   {#snippet sidebar()}
     <Sidebar activeTab="issues" rid={repo.rid} />
   {/snippet}
@@ -127,7 +137,6 @@
       {repo}
       {issues}
       {status}
-      title={project.data.name}
       changeFilter={async filter => {
         await loadIssues(filter);
       }} />
