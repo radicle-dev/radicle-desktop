@@ -12,13 +12,13 @@
   import { tick } from "svelte";
 
   interface Props {
-    rid: string;
+    rid?: string;
     content: string;
     // If true, add <br> on a single line break
     breaks?: boolean;
   }
 
-  const { rid, content, breaks = false }: Props = $props();
+  const { rid = "", content, breaks = false }: Props = $props();
 
   let container: HTMLElement;
 
