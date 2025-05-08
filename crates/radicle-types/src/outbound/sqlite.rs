@@ -118,9 +118,9 @@ impl InboxStorage for Sqlite {
         notification::ListNotificationsError,
     > {
         let stmt = self.db.prepare(
-            "SELECT ref, repo, COUNT(*) as count
+            "SELECT COUNT(DISTINCT substr(ref, 66)) count, ref, repo
                  FROM `repository-notifications`
-                 WHERE ref LIKE '%cobs%'
+                 WHERE new NOT NULL AND (ref LIKE '%cobs/xyz.radicle.patch%' OR ref LIKE '%cobs/xyz.radicle.issue%')
                  GROUP BY repo",
         )?;
 
