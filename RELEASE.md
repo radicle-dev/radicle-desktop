@@ -4,6 +4,7 @@
 
 - Bump the minor version in `crates/radicle-tauri/tauri.conf.json`.
 - Update `CHANGELOG.md` — only include changes relevant to users.
+- If a npm dependencies change happened, make sure to run `/scripts/update-flake`.
 - Create a version bump patch, push to CI, and request a review.
 - Wait for CI to pass and get peer approval.
 - Build the macOS app locally: `npm run tauri build`.
