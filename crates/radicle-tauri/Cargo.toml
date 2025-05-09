@@ -12,7 +12,7 @@ name = "app_lib"
 crate-type = ["staticlib", "cdylib", "lib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0.1", features = ["isolation"] }
+tauri-build = { version = "2.2.0", features = ["isolation"] }
 
 [dependencies]
 anyhow = { version = "1.0.90" }
@@ -22,24 +22,24 @@ log = { version = "0.4.22" }
 radicle = { git = "https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git", package = "radicle", rev = "7c902b6905724345ba850eb6cca8f8becc9a9c72" }
 radicle-types = { version = "0.1.0", path = "../radicle-types" }
 radicle-surf = { version = "0.22.1", features = ["serde"] }
-serde = { version = "1.0.210", features = ["derive"] }
-serde_json = { version = "1.0.132" }
-tauri = { version = "2.2.5", features = ["isolation"] }
-tauri-plugin-clipboard-manager = { version = "2.2.1" }
-tauri-plugin-dialog = { version = "2.2.0" }
-tauri-plugin-log = { version = "2.2.1" }
-tauri-plugin-shell = { version = "2.2.0" }
-tauri-plugin-window-state = { version = "2.2.1" }
+serde = { version = "1.0.0", features = ["derive"] }
+serde_json = { version = "1.0.0" }
+tauri = { version = "2.5.0", features = ["isolation"] }
+tauri-plugin-clipboard-manager = { version = "2.2.2" }
+tauri-plugin-dialog = { version = "2.2.1" }
+tauri-plugin-log = { version = "2.4.0" }
+tauri-plugin-shell = { version = "2.2.1" }
+tauri-plugin-window-state = { version = "2.2.2" }
 thiserror = { version = "2.0.12" }
-tokio = { version = "1.40.0", features = ["time"] }
-ts-rs = { version = "10.0.0", features = ["serde-json-impl", "no-serde-warnings"] }
+tokio = { version = "1.45.0", features = ["time"] }
+ts-rs = { version = "10.1.0", features = ["serde-json-impl", "no-serde-warnings"] }
 ssh-key = { version = "0.6.3" }
 zeroize = { version = "1.8.1", features = ["serde"] }
 
 [features]
 # by default Tauri runs in production mode
 # when `tauri dev` runs it is executed with `cargo run --no-default-features` if `devPath` is an URL
-default = [ "custom-protocol" ]
+default = ["custom-protocol"]
 # this feature is used for production builds where `devPath` points to the filesystem
 # DO NOT remove this
-custom-protocol = [ "tauri/custom-protocol" ]
+custom-protocol = ["tauri/custom-protocol"]
