@@ -10,7 +10,6 @@
     heartwood = {
       url = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git?ref=refs/namespaces/z6MksFqXN3Yhqk8pTJdUGLwATkRfQvwZXPqR2qMEhbS9wzpT/refs/tags/v1.1.0";
     };
-    nix-playwright-browsers.url = "github:voidus/nix-playwright-browsers";
   };
 
   outputs = {
@@ -19,7 +18,6 @@
     flake-utils,
     rust-overlay,
     heartwood,
-    nix-playwright-browsers,
     ...
   }:
     (flake-utils.lib.eachDefaultSystem (system: let
@@ -27,7 +25,6 @@
         inherit system;
         overlays = [
           (import rust-overlay)
-          nix-playwright-browsers.overlays.${system}.default
         ];
       };
     in {
@@ -75,7 +72,6 @@
             webkitgtk_4_1,
             git,
             openssh,
-            playwright-browsers_v1_47_0,
           }: let
             rTc = rust-bin.fromRustupToolchainFile ./rust-toolchain;
             rustPlatform = makeRustPlatform {
@@ -125,7 +121,7 @@
 
             env = {
               HW_RELEASE = "nix-" + (heartwood.shortRev or "unknown-ref");
-              PLAYWRIGHT_BROWSERS_PATH = playwright-browsers_v1_47_0;
+              PLAYWRIGHT_BROWSERS_PATH = pkgs.playwright-driver.browsers;
               PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = 1;
               PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS = true;
               RUST_SRC_PATH = "${rTc}/lib/rustlib/src/rust/library";
