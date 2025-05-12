@@ -78,8 +78,8 @@
             openssh,
             playwright-browsers_v1_47_0,
           }: let
-            rTc = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain;
-            rustPlatform = pkgs.makeRustPlatform {
+            rTc = rust-bin.fromRustupToolchainFile ./rust-toolchain;
+            rustPlatform = makeRustPlatform {
               cargo = rTc;
               rustc = rTc;
             };
