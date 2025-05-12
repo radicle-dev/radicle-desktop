@@ -26,3 +26,6 @@ public/twemoji/*.svg
 # Integration Tests
 tests/tmp/**/*
 tests/artifacts/**/*
+
+# direnv cache
+/.direnv/
