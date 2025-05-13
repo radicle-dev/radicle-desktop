@@ -21,7 +21,7 @@
   }
 </style>
 
-<div class="cmd txt-monospace" style:width={styleWidth}>
+<div class="cmd txt-monospace txt-small" style:width={styleWidth}>
   <Border
     hoverable
     onclick={() => clipboard.copy()}

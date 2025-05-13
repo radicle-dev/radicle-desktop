@@ -17,6 +17,7 @@
   import * as router from "@app/lib/router";
   import { DEFAULT_TAKE } from "./router";
   import { announce } from "@app/components/AnnounceSwitch.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
   import {
     formatOid,
     patchStatusBackgroundColor,
@@ -28,8 +29,7 @@
 
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
-  import Button from "@app/components/Button.svelte";
-  import Command from "@app/components/Command.svelte";
+  import CheckoutPatchButton from "@app/components/CheckoutPatchButton.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
@@ -44,7 +44,7 @@
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchTimeline from "@app/components/PatchTimeline.svelte";
-  import Popover, { closeFocused } from "@app/components/Popover.svelte";
+  import Popover from "@app/components/Popover.svelte";
   import ReviewComponent from "@app/components/Review.svelte";
   import RevisionBadges from "@app/components/RevisionBadges.svelte";
   import RevisionComponent from "@app/components/Revision.svelte";
@@ -104,13 +104,6 @@
     more = patches.more;
   });
 
-  const checkoutCommand = $derived.by(() => {
-    if (tab === "revisions" && selectedRevision.id !== patch.id) {
-      return `rad patch checkout ${formatOid(patch.id)} --revision ${formatOid(selectedRevision.id)}`;
-    } else {
-      return `rad patch checkout ${formatOid(patch.id)}`;
-    }
-  });
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
   async function updateTitle(newTitle: string) {
@@ -562,28 +555,11 @@
           allowedToEdit={true}
           title={patch.title}
           cobId={patch.id} />
-        <div class="txt-small" style:margin-left="auto" style:z-index="40">
-          <Popover popoverPositionRight="0" popoverPositionTop="3rem">
-            {#snippet toggle(onclick)}
-              <Button styleHeight="2.5rem" variant="secondary" {onclick}>
-                <Icon name="checkout" />Checkout patch<Icon
-                  name="chevron-down" />
-              </Button>
-            {/snippet}
-            {#snippet popover()}
-              <Border
-                styleAlignItems="flex-start"
-                styleBackgroundColor="var(--color-background-float)"
-                styleFlexDirection="column"
-                styleGap="0.5rem"
-                stylePadding="1rem"
-                styleWidth="max-content"
-                variant="ghost">
-                To checkout this patch in your working copy, run:
-                <Command command={checkoutCommand} styleWidth="100%" />
-              </Border>
-            {/snippet}
-          </Popover>
+        <div style:margin-left="auto" style:z-index="40">
+          <CheckoutPatchButton
+            {tab}
+            selectedRevisionId={selectedRevision.id}
+            patchId={patch.id} />
         </div>
       </div>
       <Border variant="ghost" styleGap="0">
