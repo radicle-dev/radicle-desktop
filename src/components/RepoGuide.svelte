@@ -1,12 +1,14 @@
 <script lang="ts">
   import { z } from "zod";
-  import publish from "@app/views/home/publish.md?raw";
-  import clone from "@app/views/home/clone.md?raw";
+
+  import useLocalStorage from "@app/lib/useLocalStorage.svelte";
+
+  import clone from "@app/components/RepoGuide/clone.md?raw";
+  import publish from "@app/components/RepoGuide/publish.md?raw";
 
   import Border from "@app/components/Border.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import Tab from "@app/components/Tab.svelte";
-  import useLocalStorage from "@app/lib/useLocalStorage.svelte";
 
   const tab = useLocalStorage(
     "repoGuideTab",
