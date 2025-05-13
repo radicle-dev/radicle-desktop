@@ -1,18 +1,16 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
-  import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Readme } from "@bindings/repo/Readme";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import Border from "@app/components/Border.svelte";
-  import Button from "@app/components/Button.svelte";
-  import Command from "@app/components/Command.svelte";
+  import CheckoutRepoButton from "@app/components/CheckoutRepoButton.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
   import File from "@app/components/File.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Layout from "./Layout.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import Path from "@app/components/Path.svelte";
-  import Popover from "@app/components/Popover.svelte";
   import RepoHomeSecondColumn from "@app/components/RepoHomeSecondColumn.svelte";
   import RepoMetadata from "@app/components/RepoMetadata.svelte";
 
@@ -55,28 +53,8 @@
         style:font-weight="var(--font-weight-medium)">
         {project.data.name}
       </div>
-      <div class="global-flex txt-small" style:margin-left="auto">
-        <Popover popoverPositionRight="0" popoverPositionTop="3rem">
-          {#snippet toggle(onclick)}
-            <Button styleHeight="2.5rem" variant="secondary" {onclick}>
-              <Icon name="checkout" />Checkout repo<Icon name="chevron-down" />
-            </Button>
-          {/snippet}
-
-          {#snippet popover()}
-            <Border
-              styleAlignItems="flex-start"
-              styleBackgroundColor="var(--color-background-float)"
-              styleFlexDirection="column"
-              styleGap="0.5rem"
-              stylePadding="1rem"
-              styleWidth="max-content"
-              variant="ghost">
-              To checkout a working copy of this repo, run:
-              <Command command={`rad checkout ${repo.rid}`} styleWidth="100%" />
-            </Border>
-          {/snippet}
-        </Popover>
+      <div class="global-flex" style:margin-left="auto">
+        <CheckoutRepoButton rid={repo.rid} />
       </div>
     </div>
 
