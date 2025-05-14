@@ -20,6 +20,8 @@
   }
 
   const { onSelect, summaryMissing, selectedVerdict }: Props = $props();
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
 <style>
@@ -47,11 +49,15 @@
   }
 </style>
 
-<Popover popoverPadding="0" popoverPositionLeft="0" popoverPositionTop="2rem">
+<Popover
+  popoverPadding="0"
+  popoverPositionLeft="0"
+  popoverPositionTop="2rem"
+  bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
     <button {onclick}>
       <VerdictBadge verdict={selectedVerdict} hoverable>
-        <Icon name="chevron-down" />
+        <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
       </VerdictBadge>
     </button>
   {/snippet}

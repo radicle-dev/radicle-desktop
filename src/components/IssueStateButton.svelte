@@ -19,6 +19,8 @@
   }
 
   const { selectedState, onSelect }: Props = $props();
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
 <style>
@@ -39,7 +41,11 @@
   }
 </style>
 
-<Popover popoverPadding="0" popoverPositionTop="2rem" popoverPositionLeft="0">
+<Popover
+  popoverPadding="0"
+  popoverPositionTop="2rem"
+  popoverPositionLeft="0"
+  bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
     <button {onclick}>
       <span
@@ -54,7 +60,7 @@
             : `issue-${selectedState.status}`} />
         {capitalize(selectedState.status)}
         {selectedState.status === "closed" ? `as ${selectedState.reason}` : ""}
-        <Icon name="chevron-down" />
+        <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
       </span>
     </button>
   {/snippet}

@@ -23,6 +23,7 @@
       | "checkout"
       | "chevron-down"
       | "chevron-right"
+      | "chevron-up"
       | "clock"
       | "collapse"
       | "collapse-panel"
@@ -298,6 +299,17 @@
     <path d="M7 10L8 10L8 11L7 11L7 10Z" />
     <path d="M9 8L10 8V9L9 9V8Z" />
     <path d="M8 9H9V10H8L8 9Z" />
+  {:else if name === "chevron-up"}
+    <path d="M7 6.5L7 5.5L8 5.5L8 6.5L7 6.5Z" />
+    <path d="M6 7.5L6 6.5L7 6.5V7.5L6 7.5Z" />
+    <path d="M5 8.5L5 7.5L6 7.5L6 8.5L5 8.5Z" />
+    <path d="M4 9.5L4 8.5L5 8.5L5 9.5L4 9.5Z" />
+    <path d="M3 10.5L3 9.5L4 9.5L4 10.5H3Z" />
+    <path d="M12 10.5V9.5H13V10.5H12Z" />
+    <path d="M11 9.5L11 8.5L12 8.5L12 9.5L11 9.5Z" />
+    <path d="M10 8.5V7.5L11 7.5V8.5L10 8.5Z" />
+    <path d="M8 6.5L8 5.5L9 5.5L9 6.5L8 6.5Z" />
+    <path d="M9 7.5V6.5L10 6.5L10 7.5L9 7.5Z" />
   {:else if name === "clock"}
     <path d="M6 13H8V14H6V13Z" />
     <path d="M10 13H8V14H10V13Z" />

@@ -32,6 +32,7 @@
     popoverPositionLeft?: string;
     popoverPositionRight?: string;
     popoverPositionTop?: string;
+    expanded?: boolean;
   }
 
   /* eslint-disable prefer-const */
@@ -45,6 +46,7 @@
     popoverPositionLeft,
     popoverPositionRight,
     popoverPositionTop,
+    expanded = $bindable(false),
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -74,6 +76,10 @@
       }
     }
   }
+
+  $effect(() => {
+    expanded = focused?.element === thisComponent;
+  });
 </script>
 
 <style>
@@ -96,7 +102,7 @@
   style:min-width={popoverContainerMinWidth}>
   {@render toggle(toggleFn)}
 
-  {#if focused?.element === thisComponent}
+  {#if expanded}
     <div
       class="popover"
       style:bottom={popoverPositionBottom}

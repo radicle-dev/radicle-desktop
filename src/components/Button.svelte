@@ -31,7 +31,8 @@
       `--button-color-3: var(--color-fill-${variant}-shade);` +
       // The ghost colors are called --color-fill-counter and --color-fill-counter-emphasized.
       `--button-color-4: var(--color-fill${variant === "ghost" ? "" : `-${variant}`}-counter);` +
-      `--text-color: ${variant === "ghost" ? "var(--color-foreground-contrast)" : "var(--color-foreground-white)"}`,
+      `--text-color: ${variant === "ghost" ? "var(--color-foreground-contrast)" : "var(--color-foreground-white)"};` +
+      `--text-color-active: ${variant === "ghost" ? "var(--color-foreground-emphasized)" : "var(--color-foreground-white)"};`,
   );
 </script>
 
@@ -119,7 +120,7 @@
     color: var(--color-foreground-disabled);
   }
   .container.active:not(.disabled) {
-    color: var(--color-foreground-emphasized);
+    color: var(--text-color-active);
   }
 
   .disabled .p1-3,

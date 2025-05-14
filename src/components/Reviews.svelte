@@ -69,17 +69,26 @@
 
 <div style:margin={hideReviews ? "1.5rem 0" : "1.5rem 0 2.5rem 0"}>
   <div class="global-flex">
-    <NakedButton
-      disabled={revision.reviews === undefined || revision.reviews.length === 0}
-      variant="ghost"
-      onclick={() => (hideReviews = !hideReviews)}>
-      <Icon name={hideReviews ? "chevron-right" : "chevron-down"} />
-      <div class="txt-semibold global-flex txt-regular">
+    <div class="global-flex">
+      <NakedButton
+        stylePadding="0 4px"
+        disabled={revision.reviews === undefined ||
+          revision.reviews.length === 0}
+        variant="ghost"
+        onclick={() => (hideReviews = !hideReviews)}>
+        <Icon name={hideReviews ? "chevron-right" : "chevron-down"} />
+      </NakedButton>
+      <div
+        class="txt-semibold global-flex txt-regular"
+        style:color={revision.reviews === undefined ||
+        revision.reviews.length === 0
+          ? "var(--color-foreground-disabled)"
+          : undefined}>
         Reviews <span style:font-weight="var(--font-weight-regular)">
           {revision.reviews?.length ?? 0}
         </span>
       </div>
-    </NakedButton>
+    </div>
 
     <div class="global-flex" style:margin-left="auto">
       <ReviewButton

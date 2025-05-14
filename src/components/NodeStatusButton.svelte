@@ -5,14 +5,17 @@
   import Icon from "@app/components/Icon.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import Popover from "@app/components/Popover.svelte";
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
 <Popover
   popoverPadding="0"
   popoverPositionTop="2.5rem"
+  bind:expanded={popoverExpanded}
   popoverPositionRight="0">
   {#snippet toggle(onclick)}
-    <NakedButton variant="ghost" {onclick}>
+    <NakedButton variant="ghost" {onclick} active={popoverExpanded}>
       {#if $nodeRunning}
         <Icon name="online" />
         Online

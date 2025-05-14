@@ -85,6 +85,7 @@
       <div class="global-flex" style:gap="0.25rem">
         <NakedButton
           variant="ghost"
+          active={$activeRouteStore.resource === "home"}
           onclick={() => {
             void router.push({ resource: "home" });
           }}
