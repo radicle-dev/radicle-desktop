@@ -22,12 +22,21 @@
       return `rad patch checkout ${formatOid(patchId)}`;
     }
   });
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
-<Popover popoverPositionRight="0" popoverPositionTop="3rem">
+<Popover
+  popoverPositionRight="0"
+  popoverPositionTop="3rem"
+  bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
-    <Button styleHeight="2.5rem" variant="secondary" {onclick}>
-      <Icon name="checkout" />Checkout patch<Icon name="chevron-down" />
+    <Button
+      styleHeight="2.5rem"
+      variant="secondary"
+      {onclick}
+      active={popoverExpanded}>
+      <Icon name="checkout" />Checkout patch
     </Button>
   {/snippet}
   {#snippet popover()}

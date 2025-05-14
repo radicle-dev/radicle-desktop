@@ -207,6 +207,10 @@
     background-color: var(--button-color-1);
   }
 
+  .container.active:not(.disabled) {
+    color: var(--color-foreground-emphasized);
+  }
+
   .container.disabled {
     color: var(--color-foreground-disabled);
     cursor: inherit;

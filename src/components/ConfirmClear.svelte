@@ -13,14 +13,21 @@
     subject: string;
   }
 
-  /* eslint-disable prefer-const */
-  let { clear, subject }: Props = $props();
-  /* eslint-enable prefer-const */
+  const { clear, subject }: Props = $props();
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
-<Popover popoverPositionRight="0" popoverPositionTop="2.5rem">
+<Popover
+  popoverPositionRight="0"
+  popoverPositionTop="2.5rem"
+  bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
-    <NakedButton stylePadding="0 0.25rem" variant="ghost" {onclick}>
+    <NakedButton
+      stylePadding="0 0.25rem"
+      variant="ghost"
+      {onclick}
+      active={popoverExpanded}>
       <Icon name="broom-double" />
     </NakedButton>
   {/snippet}

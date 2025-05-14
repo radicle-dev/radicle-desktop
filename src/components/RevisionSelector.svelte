@@ -43,6 +43,8 @@
       ["desc"],
     ),
   );
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
 <style>
@@ -54,9 +56,14 @@
   }
 </style>
 
-<Popover popoverPadding="0" popoverPositionTop="37px" popoverPositionLeft="0">
+<Popover
+  popoverPadding="0"
+  popoverPositionTop="37px"
+  popoverPositionLeft="0"
+  bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
     <NakedButton
+      active={popoverExpanded}
       variant="ghost"
       onclick={(e: MouseEvent) => {
         e.stopPropagation();

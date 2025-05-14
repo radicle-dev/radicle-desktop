@@ -12,17 +12,30 @@
   }
 
   const { outline = false, rid }: Props = $props();
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
-<Popover popoverPositionRight="0" popoverPositionTop="3rem">
+<Popover
+  popoverPositionRight="0"
+  popoverPositionTop="3rem"
+  bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
     {#if outline}
-      <OutlineButton styleHeight="2.5rem" variant="ghost" {onclick}>
-        <Icon name="add" />New patch<Icon name="chevron-down" />
+      <OutlineButton
+        styleHeight="2.5rem"
+        variant="ghost"
+        {onclick}
+        active={popoverExpanded}>
+        <Icon name="add" />New patch
       </OutlineButton>
     {:else}
-      <Button styleHeight="2.5rem" variant="secondary" {onclick}>
-        <Icon name="add" />New patch<Icon name="chevron-down" />
+      <Button
+        styleHeight="2.5rem"
+        variant="secondary"
+        {onclick}
+        active={popoverExpanded}>
+        <Icon name="add" />New patch
       </Button>
     {/if}
   {/snippet}

@@ -22,6 +22,8 @@
   }
 
   const { status, select, counters }: Props = $props();
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
 {#snippet iconSnippet(status: PatchStatus | undefined)}
@@ -43,13 +45,20 @@
   </div>
 {/snippet}
 
-<Popover popoverPositionLeft="0" popoverPositionTop="3rem">
+<Popover
+  popoverPositionLeft="0"
+  popoverPositionTop="3rem"
+  bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
-    <OutlineButton variant="ghost" {onclick} styleHeight="2.5rem">
+    <OutlineButton
+      variant="ghost"
+      {onclick}
+      styleHeight="2.5rem"
+      active={popoverExpanded}>
       {@render iconSnippet(status)}
       {status ? capitalize(status) : "All"}
       {@render counterSnippet(status)}
-      <Icon name="chevron-down" />
+      <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
     </OutlineButton>
   {/snippet}
 

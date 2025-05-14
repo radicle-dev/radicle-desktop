@@ -118,10 +118,15 @@
 <div
   class="txt-semibold global-flex"
   style:margin-bottom={hideChanges ? undefined : "1rem"}>
-  <NakedButton variant="ghost" onclick={() => (hideChanges = !hideChanges)}>
-    <Icon name={hideChanges ? "chevron-right" : "chevron-down"} />
+  <div class="global-flex">
+    <NakedButton
+      variant="ghost"
+      onclick={() => (hideChanges = !hideChanges)}
+      stylePadding="0 4px">
+      <Icon name={hideChanges ? "chevron-right" : "chevron-down"} />
+    </NakedButton>
     <div class="txt-semibold global-flex txt-regular">Changes</div>
-  </NakedButton>
+  </div>
   {#if !hideChanges}
     <div style:margin-left="auto">
       <NakedButton

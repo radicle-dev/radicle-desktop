@@ -18,6 +18,8 @@
   }
 
   const { selectedState, onSelect }: Props = $props();
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
 <style>
@@ -42,7 +44,11 @@
   }
 </style>
 
-<Popover popoverPadding="0" popoverPositionTop="2rem" popoverPositionLeft="0">
+<Popover
+  popoverPadding="0"
+  popoverPositionTop="2rem"
+  popoverPositionLeft="0"
+  bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
     <button disabled={selectedState.status === "merged"} {onclick}>
       <span
@@ -57,7 +63,7 @@
             : `patch-${selectedState.status}`} />
         {capitalize(selectedState.status)}
         {#if selectedState.status !== "merged"}
-          <Icon name="chevron-down" />
+          <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
         {/if}
       </span>
     </button>

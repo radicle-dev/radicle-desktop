@@ -43,13 +43,19 @@
         ),
     ),
   );
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
-<Popover popoverPositionRight="0" popoverPositionTop="2.5rem">
+<Popover
+  popoverPositionRight="0"
+  popoverPositionTop="2.5rem"
+  bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
     <NakedButton
       variant="ghost"
       disabled={hasOwnReview}
+      active={popoverExpanded}
       {onclick}
       title={hasOwnReview ? "You already published a review" : undefined}>
       <Icon name="add" />

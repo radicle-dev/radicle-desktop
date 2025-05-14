@@ -30,11 +30,18 @@
     styleHeight = "2.5rem",
     popoverProps,
   }: Props = $props();
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
-<Popover {...popoverProps}>
+<Popover {...popoverProps} bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
-    <NakedButton title="Settings" variant="ghost" {onclick} {styleHeight}>
+    <NakedButton
+      title="Settings"
+      variant="ghost"
+      {onclick}
+      {styleHeight}
+      active={popoverExpanded}>
       <Icon name="settings" />
       {#if !compact}
         Settings

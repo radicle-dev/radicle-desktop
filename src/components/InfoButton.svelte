@@ -17,6 +17,8 @@
     config: Config;
   }
   const { config }: Props = $props();
+
+  let popoverExpanded: boolean = $state(false);
 </script>
 
 <style>
@@ -35,10 +37,15 @@
   popoverId="popover-guide"
   popoverPadding="0"
   popoverPositionTop="2.5rem"
+  bind:expanded={popoverExpanded}
   popoverPositionRight="-9.3rem">
   {#snippet toggle(onclick)}
-    <NakedButton variant="ghost" {onclick} stylePadding="0 4px">
-      <Icon name="info" />
+    <NakedButton
+      variant="ghost"
+      {onclick}
+      stylePadding="0 4px"
+      active={popoverExpanded}>
+      <Icon name="info" /> Guide
     </NakedButton>
   {/snippet}
   {#snippet popover()}

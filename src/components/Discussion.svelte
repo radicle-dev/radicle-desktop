@@ -94,12 +94,19 @@
 
 <div style:margin={hideDiscussion ? "1.5rem 0" : "1.5rem 0 2.5rem 0"}>
   <div class="global-flex">
-    <NakedButton
-      variant="ghost"
-      disabled={commentThreads.length === 0}
-      onclick={() => (hideDiscussion = !hideDiscussion)}>
-      <Icon name={hideDiscussion ? "chevron-right" : "chevron-down"} />
-      <div class="txt-semibold global-flex txt-regular">
+    <div class="global-flex">
+      <NakedButton
+        variant="ghost"
+        stylePadding="0 4px"
+        disabled={commentThreads.length === 0}
+        onclick={() => (hideDiscussion = !hideDiscussion)}>
+        <Icon name={hideDiscussion ? "chevron-right" : "chevron-down"} />
+      </NakedButton>
+      <div
+        class="txt-semibold global-flex txt-regular"
+        style:color={commentThreads.length === 0
+          ? "var(--color-foreground-disabled)"
+          : undefined}>
         Discussion <span style:font-weight="var(--font-weight-regular)">
           {sum(
             commentThreads.map(t => {
@@ -108,10 +115,11 @@
           )}
         </span>
       </div>
-    </NakedButton>
+    </div>
     <div style:margin-left="auto">
       <NakedButton
         variant="ghost"
+        active={topLevelReplyOpen}
         onclick={async () => {
           if (hideDiscussion) {
             hideDiscussion = false;
