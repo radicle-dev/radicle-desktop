@@ -61,12 +61,11 @@
         radicle-desktop = pkgs.callPackage (
           {
             lib,
-            fetchNpmDeps,
+            importNpmLock,
             rust-bin,
             makeRustPlatform,
             cargo-tauri,
             nodejs,
-            npmHooks,
             pkg-config,
             wrapGAppsHook4,
             glib,
@@ -96,16 +95,16 @@
               };
             };
 
-            npmDeps = fetchNpmDeps {
-              name = pname + "-npm-deps-" + version;
-              inherit src;
-              hash = "sha256-KECQdLg9lUJ/H0xn+5ejJOtBvzUGe3nTi0lrJ/vkr6E="; # npmDepsHash : Update canary, don't touch!
+            npmDeps = importNpmLock {
+              inherit version;
+              pname = pname + "-npm-deps";
+              npmRoot = ./.;
             };
 
             nativeBuildInputs = [
               cargo-tauri.hook
               nodejs
-              npmHooks.npmConfigHook
+              importNpmLock.npmConfigHook
               pkg-config
               wrapGAppsHook4
             ];
