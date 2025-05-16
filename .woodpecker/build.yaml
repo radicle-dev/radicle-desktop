@@ -12,14 +12,36 @@ steps:
       - "/bin/bash"
       - "-c"
       - |
+        set -euo pipefail
+
         export ARTIFACT_DIR="radicle-desktop/$${CI_COMMIT_TAG:+$CI_COMMIT_TAG}$( [[ -z "$CI_COMMIT_TAG" ]] && echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)_${CI_COMMIT_SHA:0:8}" )"
         export LATEST_DIR="radicle-desktop/latest"
         mkdir -p "$ARTIFACT_DIR"
         mkdir -p "$LATEST_DIR"
         echo $ARTIFACT_DIR
         echo $LATEST_DIR
+
         # Install dependencies
-        apt-get update && apt-get install -y build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libwebkit2gtk-4.1-dev
+        # We downgrade webkit2gtk because of a bug.
+        # See
+        # https://github.com/tauri-apps/tauri/issues/11994#issuecomment-2585913213
+        # for details
+        apt-get update && apt-get install -y \
+          build-essential \
+          curl \
+          wget \
+          file \
+          libxdo-dev \
+          libssl-dev \
+          libayatana-appindicator3-dev \
+          librsvg2-dev \
+          libwebkit2gtk-4.1-0=2.44.0-2 \
+          libwebkit2gtk-4.1-dev=2.44.0-2 \
+          libjavascriptcoregtk-4.1-0=2.44.0-2 \
+          libjavascriptcoregtk-4.1-dev=2.44.0-2 \
+          gir1.2-javascriptcoregtk-4.1=2.44.0-2 \
+          gir1.2-webkit2-4.1=2.44.0-2
+
         curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
         curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         . "$HOME/.cargo/env"
