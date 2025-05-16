@@ -33,6 +33,13 @@
     }
   },
   "bundle": {
+    "linux": {
+      "deb": {
+        "depends": [
+          "radicle"
+        ]
+      }
+    },
     "active": true,
     "targets": "all",
     "icon": [
