@@ -2,14 +2,38 @@
 
 This desktop application lets you interact with [Radicle][rad], a peer-to-peer code collaboration and publishing stack.
 
-## Local-first
+## Installation
+
+**Requirements:**
+
+* *Linux* or *Unix* based operating system.
+* Git 2.34 or later
+* OpenSSH 9.1 or later with `ssh-agent`
+
+### From binaries
+
+**Debian**
+
+Add the following to your `sources.list`:
+
+```
+deb [trusted=yes] https://minio-api.radworks.garden/radworks-releases/radicle-desktop/debian unstable main
+```
+
+Run from your shell:
+
+```
+sudo apt update
+sudo apt install radicle-desktop
+```
+
+### From source
 
 **Prerequisites:**
 
-- Recent versions of [Node.js][nod] (22.11.0 or higher) and [npm][npm] installed
-- Requires the [Rust][rus] toolchain (1.77 or higher).
-
-Also make sure to have [Tauri system dependencies][tau] installed.
+- [Node.js][nod] (22.11.0 or higher) and [npm][npm]
+- [Rust][rus] toolchain (1.77 or higher)
+- [Tauri system dependencies][tau]
 
 Run the following commands to build the desktop app locally:
 
