@@ -6,6 +6,7 @@
   import type { RepoRoute } from "@app/views/repo/router";
   import type { NotificationItem } from "@bindings/cob/inbox/NotificationItem";
 
+  import uniqWith from "lodash/uniqWith";
   import {
     authorForNodeId,
     formatTimestamp,
@@ -14,9 +15,9 @@
     patchStatusBackgroundColor,
     patchStatusColor,
   } from "@app/lib/utils";
+  import { closeFocused } from "./Popover.svelte";
   import { compressActions } from "@app/lib/notification";
   import { push } from "@app/lib/router";
-  import uniqWith from "lodash/uniqWith";
 
   import Icon from "./Icon.svelte";
   import InlineTitle from "./InlineTitle.svelte";
@@ -177,7 +178,10 @@
   class:selected
   class="notification-teaser"
   onclick={() => {
-    if (route) void push(route);
+    if (route) {
+      void push(route);
+      closeFocused();
+    }
   }}>
   <div
     class="global-flex"
