@@ -2,29 +2,100 @@ when:
   - event: pull_request
   - event: push
     branch: main
-  - event: tag
-    ref: refs/namespaces/z6MkwPUeUS2fJMfc2HZN1RQTQcTTuhw4HhPySB8JeUg2mVvx/tags/v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z]+)?(\.[0-9]+)?  # Matches v1.2.3, v1.2.3-rc, v1.2.3-rc.1, etc.
-  - event: tag
-    ref: refs/namespaces/z6MkkfM3tPXNPrPevKr3uSiQtHPuwnNhu2yUVjgd2jXVsVz5/tags/v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z]+)?(\.[0-9]+)?  # Matches v1.2.3, v1.2.3-rc, v1.2.3-rc.1, etc.
+
+variables:
+  - &base_image "docker.io/sebastinez/radicle-desktop-base:latest_3"
+  - &cache_endpoint "https://minio-api.radworks.garden/build-caches/radicle-desktop/cache"
+  - &cache_dir "radicle-desktop/cache"
+
 steps:
-  lint_typescript:
-    image: docker.io/library/node:22.11.0
+  cache:
+    image: *base_image
+    pull: true
+    environment:
+      CACHE_ENDPOINT: *cache_endpoint
+      CACHE_DIR: *cache_dir
     entrypoint:
       - "/bin/bash"
       - "-c"
       - |
+        set -euo pipefail
+
+        # Initialize cache status file
+        echo "# Cache status" > .cache
+
+        export ARCH=$(uname -m)
+        export RUST_VERSION=$(rustc --version | cut -d ' ' -f 2)
+        export RUST_HASH=$(sha256sum Cargo.lock | cut -d ' ' -f 1)
+        export FILE_NAME="rust-debug-""$ARCH""-""$RUST_VERSION""-""$RUST_HASH"".tar.zst"
+        echo "FILE_NAME=$FILE_NAME" >> .cache
+        cat .cache
+
+        # Create temporary directory for cache files
+        mkdir -p "$CACHE_DIR"
+
+        echo "Checking cache..."
+        url="$CACHE_ENDPOINT""/""$FILE_NAME"
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --head $url)
+
+        if [ "$HTTP_CODE" = "200" ]; then
+          echo "Cache hit! Downloading..."
+          curl -s -o "$CACHE_DIR""/""$FILE_NAME" $url
+          echo "CACHE_HIT=true" >> .cache
+        else
+          echo "No cache found (HTTP status: $HTTP_CODE)"
+          echo "CACHE_HIT=false" >> .cache
+        fi
+
+  lint_typescript:
+    image: docker.io/library/node:22.11.0
+    depends_on: []
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+      - |
+        set -euo pipefail
+
         npm ci
         npm run check-js
   lint_rust:
-    image: docker.io/library/rust:bookworm
+    image: docker.io/sebastinez/radicle-desktop-base:latest_3
+    pull: true
+    depends_on: [cache]
+    environment:
+      CACHE_DIR: *cache_dir
     entrypoint:
       - "/bin/bash"
       - "-c"
       - |
-        apt update
-        apt install -y libgtk-3-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev libwebkit2gtk-4.1-dev npm
-        rustup toolchain install
-        rustup component add rustfmt clippy
-        npm run check-rs
-        
-        
+        set -euo pipefail
+
+        cat .cache
+        source .cache
+
+        if [ "$CACHE_HIT" = "true" ]; then
+          echo "Extracting cache..."
+          tar --zstd -xf "$CACHE_DIR""/""$FILE_NAME"
+        fi
+
+        # Pointing to check-rs directly to avoid installing npm
+        scripts/check-rs
+
+        if [ "$CACHE_HIT" = "false" ]; then
+          echo "Creating debug cache archive..."
+          tar --zstd -cf "$CACHE_DIR""/""$FILE_NAME" target
+        fi
+
+  upload-cache:
+    image: woodpeckerci/plugin-s3
+    depends_on: [lint_rust]
+    settings:
+      endpoint: https://minio-api.radworks.garden
+      bucket: build-caches
+      source: radicle-desktop/*/*.{tar.zst}
+      target: ""
+      path_style: true
+      access_key:
+        from_secret: minio_access_key
+      secret_key:
+        from_secret: minio_secret_key

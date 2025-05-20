@@ -1,64 +1,120 @@
 when:
+  - event: pull_request
   - event: push
     branch: main
-  - event: tag
-    ref: refs/namespaces/z6MkwPUeUS2fJMfc2HZN1RQTQcTTuhw4HhPySB8JeUg2mVvx/tags/v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z]+)?(\.[0-9]+)?  # Matches v1.2.3, v1.2.3-rc, v1.2.3-rc.1, etc.
-  - event: tag
-    ref: refs/namespaces/z6MkkfM3tPXNPrPevKr3uSiQtHPuwnNhu2yUVjgd2jXVsVz5/tags/v[0-9]+.[0-9]+.[0-9]+(-[a-zA-Z]+)?(\.[0-9]+)?  # Matches v1.2.3, v1.2.3-rc, v1.2.3-rc.1, etc.
+
+variables:
+  - &base_image "docker.io/sebastinez/radicle-desktop-base:latest_3"
+  - &cache_endpoint "https://minio-api.radworks.garden/build-caches/radicle-desktop/cache"
+  - &cache_dir "radicle-desktop/cache"
+
 steps:
-  build:
-    image: docker.io/library/ubuntu:24.04
+  cache:
+    image: *base_image
+    pull: true
+    environment:
+      CACHE_ENDPOINT: *cache_endpoint
+      CACHE_DIR: *cache_dir
     entrypoint:
       - "/bin/bash"
       - "-c"
       - |
         set -euo pipefail
 
-        export ARTIFACT_DIR="radicle-desktop/$${CI_COMMIT_TAG:+$CI_COMMIT_TAG}$( [[ -z "$CI_COMMIT_TAG" ]] && echo "$(date -u +%Y-%m-%dT%H:%M:%SZ)_${CI_COMMIT_SHA:0:8}" )"
+        # Initialize cache status file
+        echo "# Cache status" > .cache
+
+        export ARCH=$(uname -m)
+        export RUST_VERSION=$(rustc --version | cut -d ' ' -f 2)
+        export RUST_HASH=$(sha256sum Cargo.lock | cut -d ' ' -f 1)
+        export FILE_NAME="rust-""$ARCH""-""$RUST_VERSION""-""$RUST_HASH"".tar.zst"
+        echo "FILE_NAME=$FILE_NAME" >> .cache
+        cat .cache
+
+        # Create temporary directory for cache files
+        mkdir -p "$CACHE_DIR"
+
+        echo "Checking cache..."
+        url="$CACHE_ENDPOINT""/""$FILE_NAME"
+        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --head $url)
+
+        if [ "$HTTP_CODE" = "200" ]; then
+          echo "Cache hit! Downloading..."
+          curl -s -o "$CACHE_DIR""/""$FILE_NAME" $url
+          echo "CACHE_HIT=true" >> .cache
+        else
+          echo "No cache found (HTTP status: $HTTP_CODE)"
+          echo "CACHE_HIT=false" >> .cache
+        fi
+
+  build:
+    image: *base_image
+    depends_on: [cache]
+    pull: true
+    environment:
+      CI: true
+      CACHE_DIR: *cache_dir
+    entrypoint:
+      - "/bin/bash"
+      - "-c"
+      - |
+        set -euo pipefail
+
+        export VERSION=$(jq -r '.version' crates/radicle-tauri/tauri.conf.json)
+        export ARTIFACT_DIR="radicle-desktop/""$VERSION""_""${CI_COMMIT_SHA:0:8}"
         export LATEST_DIR="radicle-desktop/latest"
         mkdir -p "$ARTIFACT_DIR"
         mkdir -p "$LATEST_DIR"
+        mkdir -p "$LATEST_DIR""/deb"
+        mkdir -p "$LATEST_DIR""/rpm"
+        mkdir -p "$LATEST_DIR""/appimage"
         echo $ARTIFACT_DIR
         echo $LATEST_DIR
+        echo $CACHE_DIR
 
-        # Install dependencies
-        # We downgrade webkit2gtk because of a bug.
-        # See
-        # https://github.com/tauri-apps/tauri/issues/11994#issuecomment-2585913213
-        # for details
-        apt-get update && apt-get install -y \
-          build-essential \
-          curl \
-          wget \
-          file \
-          libxdo-dev \
-          libssl-dev \
-          libayatana-appindicator3-dev \
-          librsvg2-dev \
-          libwebkit2gtk-4.1-0=2.44.0-2 \
-          libwebkit2gtk-4.1-dev=2.44.0-2 \
-          libjavascriptcoregtk-4.1-0=2.44.0-2 \
-          libjavascriptcoregtk-4.1-dev=2.44.0-2 \
-          gir1.2-javascriptcoregtk-4.1=2.44.0-2 \
-          gir1.2-webkit2-4.1=2.44.0-2
+        cat .cache
+        source .cache
 
-        curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && apt-get install -y nodejs
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-        . "$HOME/.cargo/env"
-        npm install
-        # Build the Tauri app
-        export CI=true
+        if [ "$CACHE_HIT" = "true" ]; then
+          echo "Extracting cache..."
+          tar --zstd -xf $CACHE_DIR/$FILE_NAME
+        fi
+
+        npm ci
         npm run tauri build
+
+        if [ "$CACHE_HIT" = "false" ]; then
+          echo "Creating cache archive..."
+          tar --zstd -cf $CACHE_DIR/$FILE_NAME target
+        fi
+
         # Organize build artifacts for upload
         cp target/release/bundle/deb/*.deb "$ARTIFACT_DIR"
         cp target/release/bundle/rpm/*.rpm "$ARTIFACT_DIR"
         cp target/release/bundle/appimage/*.AppImage "$ARTIFACT_DIR"
+
         # Update latest build artifacts for upload
-        cp target/release/bundle/deb/*.deb "$LATEST_DIR"
-        cp target/release/bundle/rpm/*.rpm "$LATEST_DIR"
-        cp target/release/bundle/appimage/*.AppImage "$LATEST_DIR"
-  upload:
+        cp target/release/bundle/deb/*.deb "$LATEST_DIR/deb/radicle-desktop-amd64.deb"
+        cp target/release/bundle/rpm/*.rpm "$LATEST_DIR/rpm/radicle-desktop-x86_64.rpm"
+        cp target/release/bundle/appimage/*.AppImage "$LATEST_DIR/appimage/radicle-desktop-amd64.AppImage"
+
+  upload-cache:
     image: woodpeckerci/plugin-s3
+    depends_on: [build]
+    settings:
+      endpoint: https://minio-api.radworks.garden
+      bucket: build-caches
+      source: radicle-desktop/*/*.{tar.zst}
+      target: ""
+      path_style: true
+      access_key:
+        from_secret: minio_access_key
+      secret_key:
+        from_secret: minio_secret_key
+
+  upload-artifacts:
+    image: woodpeckerci/plugin-s3
+    depends_on: [build]
     settings:
       endpoint: https://minio-api.radworks.garden
       bucket: radworks-releases
@@ -69,7 +125,3 @@ steps:
         from_secret: minio_access_key
       secret_key:
         from_secret: minio_secret_key
-
-depends_on:
-  - lint
-  - unit-test
