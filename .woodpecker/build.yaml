@@ -61,12 +61,11 @@ steps:
         set -euo pipefail
 
         export VERSION=$(jq -r '.version' crates/radicle-tauri/tauri.conf.json)
-        export ARTIFACT_DIR="radicle-desktop/""$VERSION""_""${CI_COMMIT_SHA:0:8}"
+        export ARTIFACT_DIR="radicle-desktop/pre-release/""$VERSION""_""${CI_COMMIT_SHA:0:8}"
         export LATEST_DIR="radicle-desktop/latest"
         mkdir -p "$ARTIFACT_DIR"
         mkdir -p "$LATEST_DIR"
         mkdir -p "$LATEST_DIR""/deb"
-        mkdir -p "$LATEST_DIR""/rpm"
         mkdir -p "$LATEST_DIR""/appimage"
         echo $ARTIFACT_DIR
         echo $LATEST_DIR
@@ -90,13 +89,12 @@ steps:
 
         # Organize build artifacts for upload
         cp target/release/bundle/deb/*.deb "$ARTIFACT_DIR"
-        cp target/release/bundle/rpm/*.rpm "$ARTIFACT_DIR"
         cp target/release/bundle/appimage/*.AppImage "$ARTIFACT_DIR"
 
         # Update latest build artifacts for upload
         cp target/release/bundle/deb/*.deb "$LATEST_DIR/deb/radicle-desktop-amd64.deb"
-        cp target/release/bundle/rpm/*.rpm "$LATEST_DIR/rpm/radicle-desktop-x86_64.rpm"
         cp target/release/bundle/appimage/*.AppImage "$LATEST_DIR/appimage/radicle-desktop-amd64.AppImage"
+        echo "{\"sha\": \"$(git rev-parse HEAD)\"}" > "$LATEST_DIR/sha.json"
 
   upload-cache:
     image: woodpeckerci/plugin-s3
@@ -118,8 +116,25 @@ steps:
     settings:
       endpoint: https://minio-api.radworks.garden
       bucket: radworks-releases
-      source: radicle-desktop/*/*.{deb,rpm,AppImage}
+      source: radicle-desktop/pre-release/*/*.{deb,AppImage}
       target: ""
+      path_style: true
+      access_key:
+        from_secret: minio_access_key
+      secret_key:
+        from_secret: minio_secret_key
+
+  release:
+    image: woodpeckerci/plugin-s3
+    depends_on: [build]
+    when:
+      - evaluate: 'CI_PIPELINE_EVENT == "push" && CI_COMMIT_BRANCH == CI_REPO_DEFAULT_BRANCH && CI_COMMIT_MESSAGE != "^Release"'
+    settings:
+      endpoint: https://minio-api.radworks.garden
+      bucket: radworks-releases
+      source: radicle-desktop/latest/*/*.{deb,AppImage}
+      target: ""
+      overwrite: true
       path_style: true
       access_key:
         from_secret: minio_access_key
