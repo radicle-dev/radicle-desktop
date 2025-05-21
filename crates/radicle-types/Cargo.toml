@@ -24,6 +24,7 @@ thiserror = { version = "2.0.12" }
 tree-sitter-bash = { version = "0.23.3" }
 tree-sitter-c = { version = "0.23.2" }
 tree-sitter-css = { version = "0.23.1" }
+tree-sitter-diff = { version = "0.1.0" }
 tree-sitter-go = { version = "0.23.4" }
 tree-sitter-highlight = { version = "0.25.3" }
 tree-sitter-html = { version = "0.23.2" }

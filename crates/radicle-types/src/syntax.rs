@@ -250,6 +250,7 @@ impl Highlighter {
             ("rust", Self::config("rust")),
             ("json", Self::config("json")),
             ("jsdoc", Self::config("jsdoc")),
+            ("diff", Self::config("diff")),
             ("typescript", Self::config("typescript")),
             ("javascript", Self::config("javascript")),
             ("markdown", Self::config("markdown")),
@@ -333,6 +334,16 @@ impl Highlighter {
                     language,
                     tree_sitter_rust::HIGHLIGHTS_QUERY,
                     tree_sitter_rust::INJECTIONS_QUERY,
+                    "",
+                )
+                .expect("Highlighter::config: highlight configuration must be valid"),
+            ),
+            "diff" => Some(
+                ts::HighlightConfiguration::new(
+                    tree_sitter_diff::LANGUAGE.into(),
+                    language,
+                    tree_sitter_diff::HIGHLIGHTS_QUERY,
+                    "",
                     "",
                 )
                 .expect("Highlighter::config: highlight configuration must be valid"),
