@@ -92,8 +92,8 @@ steps:
         cp target/release/bundle/appimage/*.AppImage "$ARTIFACT_DIR"
 
         # Update latest build artifacts for upload
-        cp target/release/bundle/deb/*.deb "$LATEST_DIR/deb/radicle-desktop-amd64.deb"
-        cp target/release/bundle/appimage/*.AppImage "$LATEST_DIR/appimage/radicle-desktop-amd64.AppImage"
+        cp target/release/bundle/deb/*.deb "$LATEST_DIR/deb"
+        cp target/release/bundle/appimage/*.AppImage "$LATEST_DIR/appimage"
         echo "{\"sha\": \"$(git rev-parse HEAD)\"}" > "$LATEST_DIR/sha.json"
 
   upload-cache:

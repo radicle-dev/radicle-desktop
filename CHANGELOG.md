@@ -1,3 +1,8 @@
+### v0.4.1
+
+- Fixed a bug in the release pipeline to update the latest artifacts
+- Added WSL2 installation instructions to https://radworks.garden
+
 ### v0.4.0
 
 - Notification inbox is now accessible from any view without navigating away
