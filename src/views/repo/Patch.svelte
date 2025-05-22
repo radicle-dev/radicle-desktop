@@ -294,15 +294,6 @@
       all: true,
     }),
   );
-  function breadcrumbIcon() {
-    if (selectedRevision.id === revisions[0].id || tab === "patch") {
-      return patch.state.status === "open"
-        ? ("patch" as const)
-        : (`patch-${patch.state.status}` as const);
-    } else {
-      return "revision";
-    }
-  }
   function breadcrumbTitle() {
     if (tab === "patch") {
       if (revisions[0].description.slice(-1)[0].body.trim() === "") {
@@ -440,10 +431,16 @@
       </span>
       <BreadcrumbCopyButton
         url={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
-        icon={breadcrumbIcon()}
-        id={revisions[0].id === selectedRevision.id || tab === "patch"
-          ? patch.id
-          : selectedRevision.id} />
+        icon={patch.state.status === "open"
+          ? "patch"
+          : `patch-${patch.state.status}`}
+        id={patch.id}
+        icon2={revisions.length > 1 ? "revision" : undefined}
+        id2={revisions.length > 1 &&
+        selectedRevision.id !== revisions[0].id &&
+        tab !== "patch"
+          ? selectedRevision.id
+          : undefined} />
     {/if}
   {/snippet}
 
