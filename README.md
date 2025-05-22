@@ -1,5 +1,7 @@
 # Radicle Desktop
 
+[![status-badge](https://woodpecker.radworks.garden/api/badges/6/status.svg)](https://woodpecker.radworks.garden/repos/6)
+
 This desktop application lets you interact with [Radicle][rad], a peer-to-peer code collaboration and publishing stack.
 
 ## Installation
