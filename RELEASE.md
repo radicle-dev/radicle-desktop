@@ -5,6 +5,7 @@
 - Bump the minor version in `crates/radicle-tauri/tauri.conf.json`.
 - Update `CHANGELOG.md` — only include changes relevant to users.
 - Create a version bump patch, push to CI, and request a review.
+  - The commit message should start with `Release` followed by `v<version_number>`.
 - Wait for CI to pass and get peer approval.
 - Build the macOS app locally: `npm run tauri build`.
 - Upload the macOS build to [MinIO][0] in the same folder as the latest Linux build.
