@@ -8,6 +8,7 @@
   - The commit message should start with `Release` followed by `v<version_number>`.
 - Wait for CI to pass and get peer approval.
 - Build the macOS app locally: `npm run tauri build`.
+  - Make sure to clean any transient dependencies with `cargo clean && rm -rf node_modules` before building.
 - Upload the macOS build to [MinIO][0] in the same folder as the latest Linux build.
 - Create a patch on [radworks-product][1] to [update the download links][2].
 - Once merged, publish the website: `git push github main`.
