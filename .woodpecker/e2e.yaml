@@ -4,67 +4,50 @@ when:
     branch: main
 
 variables:
-  - &base_image "docker.io/sebastinez/radicle-desktop-base:latest_3"
-  - &cache_endpoint "https://minio-api.radworks.garden/build-caches/radicle-desktop/cache"
-  - &cache_dir "radicle-desktop/cache"
+  - &plugin-sccache-read-only
+    s3-bucket: "build-caches"
+    s3-endpoint: "https://minio-api.radworks.garden"
+    s3-key-prefix: "radicle-desktop"
+    save-if: "false"
+    s3-access-key:
+      from_secret: minio_access_key
+    s3-secret-access-key:
+      from_secret: minio_secret_key
+
+# test
 
 steps:
-  cache:
-    image: *base_image
+  read_cache:
+    image: quay.io/radicle_garden/plugin-sccache:latest
     pull: true
-    environment:
-      CACHE_ENDPOINT: *cache_endpoint
-      CACHE_DIR: *cache_dir
-    entrypoint:
-      - "/bin/bash"
-      - "-c"
-      - |
-        set -euo pipefail
+    volumes:
+      - sccache:/sccache_data
+    settings: *plugin-sccache-read-only
 
-        # Initialize cache status file
-        echo "# Cache status" > .cache
+  update_cache:
+    image: quay.io/radicle_garden/plugin-sccache:latest
+    pull: true
+    when:
+      evaluate: 'CI_PIPELINE_EVENT == "push" && CI_COMMIT_BRANCH == CI_REPO_DEFAULT_BRANCH && CI_COMMIT_MESSAGE startsWith "Release"'
+    volumes:
+      - sccache:/sccache_data
+    settings:
+      <<: *plugin-sccache-read-only
+      save-if: true
 
-        export ARCH=$(uname -m)
-        export RUST_VERSION=$(rustc --version | cut -d ' ' -f 2)
-        export RUST_HASH=$(sha256sum Cargo.lock | cut -d ' ' -f 1)
-        export FILE_NAME="rust-e2e-""$ARCH""-""$RUST_VERSION""-""$RUST_HASH"".tar.zst"
-        echo "FILE_NAME=$FILE_NAME" >> .cache
-        cat .cache
-
-        # Create temporary directory for cache files
-        mkdir -p "$CACHE_DIR"
-
-        echo "Checking cache..."
-        url="$CACHE_ENDPOINT""/""$FILE_NAME"
-        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --head $url)
-
-        if [ "$HTTP_CODE" = "200" ]; then
-          echo "Cache hit! Downloading..."
-          curl -s -o "$CACHE_DIR""/""$FILE_NAME" $url
-          echo "CACHE_HIT=true" >> .cache
-        else
-          echo "No cache found (HTTP status: $HTTP_CODE)"
-          echo "CACHE_HIT=false" >> .cache
-        fi
   end-to-end:
-    image: *base_image
+    image: quay.io/radicle_garden/radicle-desktop-e2e:latest
     pull: true
-    environment:
-      CACHE_ENDPOINT: *cache_endpoint
-      CACHE_DIR: *cache_dir
+    volumes:
+      - sccache:/sccache_data
     entrypoint:
       - "/bin/bash"
       - "-c"
       - |
         set -euo pipefail
 
-        cat .cache
-        source .cache
-
-        if [ "$CACHE_HIT" = "true" ]; then
-          echo "Extracting cache..."
-          tar --zstd -xf "$CACHE_DIR""/""$FILE_NAME"
-        fi
+        export PATH="/sccache_data:$PATH"
+        source .sccache
 
         ./scripts/install-binaries;
         npm ci
@@ -72,23 +55,6 @@ steps:
         mkdir -p tests/artifacts;
 
         # Install and run playwright
-        npx playwright install webkit chromium --with-deps
         npm run test:e2e -- --project webkit
 
-        if [ "$CACHE_HIT" = "false" ]; then
-          echo "Creating debug cache archive..."
-          tar --zstd -cf "$CACHE_DIR""/""$FILE_NAME" target
-        fi
-
-  upload-cache:
-    image: woodpeckerci/plugin-s3
-    settings:
-      endpoint: https://minio-api.radworks.garden
-      bucket: build-caches
-      source: radicle-desktop/*/*.{tar.zst}
-      target: ""
-      path_style: true
-      access_key:
-        from_secret: minio_access_key
-      secret_key:
-        from_secret: minio_secret_key
+        sccache --show-stats

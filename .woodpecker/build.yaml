@@ -4,61 +4,49 @@ when:
     branch: main
 
 variables:
-  - &base_image "docker.io/sebastinez/radicle-desktop-base:latest_3"
-  - &cache_endpoint "https://minio-api.radworks.garden/build-caches/radicle-desktop/cache"
-  - &cache_dir "radicle-desktop/cache"
+  - &plugin-sccache-read-only
+    s3-bucket: "build-caches"
+    s3-endpoint: "https://minio-api.radworks.garden"
+    s3-key-prefix: "radicle-desktop"
+    save-if: "false"
+    s3-access-key:
+      from_secret: minio_access_key
+    s3-secret-access-key:
+      from_secret: minio_secret_key
 
 steps:
-  cache:
-    image: *base_image
+  read_cache:
+    image: quay.io/radicle_garden/plugin-sccache:latest
     pull: true
-    environment:
-      CACHE_ENDPOINT: *cache_endpoint
-      CACHE_DIR: *cache_dir
-    entrypoint:
-      - "/bin/bash"
-      - "-c"
-      - |
-        set -euo pipefail
+    volumes:
+      - sccache:/sccache_data
+    settings: *plugin-sccache-read-only
 
-        # Initialize cache status file
-        echo "# Cache status" > .cache
-
-        export ARCH=$(uname -m)
-        export RUST_VERSION=$(rustc --version | cut -d ' ' -f 2)
-        export RUST_HASH=$(sha256sum Cargo.lock | cut -d ' ' -f 1)
-        export FILE_NAME="rust-""$ARCH""-""$RUST_VERSION""-""$RUST_HASH"".tar.zst"
-        echo "FILE_NAME=$FILE_NAME" >> .cache
-        cat .cache
-
-        # Create temporary directory for cache files
-        mkdir -p "$CACHE_DIR"
-
-        echo "Checking cache..."
-        url="$CACHE_ENDPOINT""/""$FILE_NAME"
-        HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --head $url)
-
-        if [ "$HTTP_CODE" = "200" ]; then
-          echo "Cache hit! Downloading..."
-          curl -s -o "$CACHE_DIR""/""$FILE_NAME" $url
-          echo "CACHE_HIT=true" >> .cache
-        else
-          echo "No cache found (HTTP status: $HTTP_CODE)"
-          echo "CACHE_HIT=false" >> .cache
-        fi
+  update_cache:
+    image: quay.io/radicle_garden/plugin-sccache:latest
+    pull: true
+    when:
+      evaluate: 'CI_PIPELINE_EVENT == "push" && CI_COMMIT_BRANCH == CI_REPO_DEFAULT_BRANCH && CI_COMMIT_MESSAGE startsWith "Release"'
+    volumes:
+      - sccache:/sccache_data
+    settings:
+      <<: *plugin-sccache-read-only
+      save-if: true
 
   build:
-    image: *base_image
-    depends_on: [cache]
-    pull: true
+    image: quay.io/radicle_garden/radicle-desktop-base:latest
+    volumes:
+      - sccache:/sccache_data
     environment:
       CI: true
-      CACHE_DIR: *cache_dir
     entrypoint:
       - "/bin/bash"
       - "-c"
       - |
         set -euo pipefail
+
+        export PATH="/sccache_data:$PATH"
+        source .sccache
 
         export VERSION=$(jq -r '.version' crates/radicle-tauri/tauri.conf.json)
         export ARTIFACT_DIR="radicle-desktop/pre-release/""$VERSION""_""${CI_COMMIT_SHA:0:8}"
@@ -69,23 +57,11 @@ steps:
         mkdir -p "$LATEST_DIR""/appimage"
         echo $ARTIFACT_DIR
         echo $LATEST_DIR
-        echo $CACHE_DIR
-
-        cat .cache
-        source .cache
-
-        if [ "$CACHE_HIT" = "true" ]; then
-          echo "Extracting cache..."
-          tar --zstd -xf $CACHE_DIR/$FILE_NAME
-        fi
 
         npm ci
         npm run tauri build
 
-        if [ "$CACHE_HIT" = "false" ]; then
-          echo "Creating cache archive..."
-          tar --zstd -cf $CACHE_DIR/$FILE_NAME target
-        fi
+        sccache --show-stats
 
         # Organize build artifacts for upload
         cp target/release/bundle/deb/*.deb "$ARTIFACT_DIR"
@@ -96,23 +72,8 @@ steps:
         cp target/release/bundle/appimage/*.AppImage "$LATEST_DIR/appimage"
         echo "{\"sha\": \"$(git rev-parse HEAD)\"}" > "$LATEST_DIR/sha.json"
 
-  upload-cache:
-    image: woodpeckerci/plugin-s3
-    depends_on: [build]
-    settings:
-      endpoint: https://minio-api.radworks.garden
-      bucket: build-caches
-      source: radicle-desktop/*/*.{tar.zst}
-      target: ""
-      path_style: true
-      access_key:
-        from_secret: minio_access_key
-      secret_key:
-        from_secret: minio_secret_key
-
   upload-artifacts:
     image: woodpeckerci/plugin-s3
-    depends_on: [build]
     settings:
       endpoint: https://minio-api.radworks.garden
       bucket: radworks-releases
@@ -126,9 +87,8 @@ steps:
 
   release:
     image: woodpeckerci/plugin-s3
-    depends_on: [build]
     when:
-      - evaluate: 'CI_PIPELINE_EVENT == "push" && CI_COMMIT_BRANCH == CI_REPO_DEFAULT_BRANCH && CI_COMMIT_MESSAGE == "^Release"'
+      - evaluate: 'CI_PIPELINE_EVENT == "push" && CI_COMMIT_BRANCH == CI_REPO_DEFAULT_BRANCH && CI_COMMIT_MESSAGE startsWith "Release"'
     settings:
       endpoint: https://minio-api.radworks.garden
       bucket: radworks-releases
