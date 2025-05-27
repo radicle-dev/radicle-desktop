@@ -1,0 +1,31 @@
+when:
+  - event: pull_request
+  - event: push
+    branch: main
+  - event: manual
+
+steps:
+  build-arch:
+    image: docker.io/library/archlinux:base-devel
+    when:
+      - path: "arch/*"
+      - event: manual
+    commands:
+      - pacman -Sy --noconfirm git
+      - useradd -m builder
+      - 'echo "builder ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builder'
+      - chown -R builder:builder /home/builder
+      - su builder
+      - set -e
+      - cd /home/builder
+      - rm -rf radicle-bin && git clone https://aur.archlinux.org/radicle-bin.git --depth=1
+      - makepkg --dir radicle-bin --install --syncdeps --noconfirm
+      - cd $CI_WORKSPACE/arch/radicle-desktop
+      # Ensure .SCRINFO is up-to-date
+      - makepkg --printsrcinfo > .SRCINFO && git diff --exit-code .SRCINFO
+      - |
+          CI=true \
+          BUILDDIR=/home/builder/build \
+          PKGDEST=/home/builder/ \
+          SRCDEST=/home/builder/ \
+          makepkg --syncdeps --noconfirm --force
