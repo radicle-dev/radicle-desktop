@@ -128,7 +128,7 @@ steps:
     image: woodpeckerci/plugin-s3
     depends_on: [build]
     when:
-      - evaluate: 'CI_PIPELINE_EVENT == "push" && CI_COMMIT_BRANCH == CI_REPO_DEFAULT_BRANCH && CI_COMMIT_MESSAGE != "^Release"'
+      - evaluate: 'CI_PIPELINE_EVENT == "push" && CI_COMMIT_BRANCH == CI_REPO_DEFAULT_BRANCH && CI_COMMIT_MESSAGE == "^Release"'
     settings:
       endpoint: https://minio-api.radworks.garden
       bucket: radworks-releases
