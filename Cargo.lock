@@ -633,6 +633,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bytesize"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3c8f83209414aacf0eeae3cf730b18d6981697fba62f200fcfb92b9f082acba"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "cairo-rs"
 version = "0.18.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3928,11 +3937,13 @@ checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
 
 [[package]]
 name = "radicle"
-version = "0.14.0"
-source = "git+https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git?rev=7c902b6905724345ba850eb6cca8f8becc9a9c72#7c902b6905724345ba850eb6cca8f8becc9a9c72"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fbbbde9fb67cc5264a38ba0f106b55892a1aeb8c8ca9023ec36a6b7e0442700"
 dependencies = [
  "amplify",
  "base64 0.21.7",
+ "bytesize",
  "crossbeam-channel",
  "cyphernet",
  "fastrand",
@@ -3959,8 +3970,9 @@ dependencies = [
 
 [[package]]
 name = "radicle-cob"
-version = "0.13.0"
-source = "git+https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git?rev=7c902b6905724345ba850eb6cca8f8becc9a9c72#7c902b6905724345ba850eb6cca8f8becc9a9c72"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e9c90efa7a3febd01d33ed2e72cb12296c971ce03efa243d11c01520fcc1be8"
 dependencies = [
  "fastrand",
  "git2",
@@ -3972,13 +3984,15 @@ dependencies = [
  "radicle-git-ext",
  "serde",
  "serde_json",
+ "signature 2.2.0",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "radicle-crypto"
-version = "0.11.0"
-source = "git+https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git?rev=7c902b6905724345ba850eb6cca8f8becc9a9c72#7c902b6905724345ba850eb6cca8f8becc9a9c72"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d16d9e1403a6c3073dce14f3ed893f430bb67d7af6a07cc7fe4b81907025ba22"
 dependencies = [
  "amplify",
  "cyphernet",
@@ -3989,6 +4003,7 @@ dependencies = [
  "radicle-git-ext",
  "radicle-ssh",
  "serde",
+ "signature 2.2.0",
  "sqlite",
  "ssh-key",
  "thiserror 1.0.69",
@@ -3998,7 +4013,8 @@ dependencies = [
 [[package]]
 name = "radicle-dag"
 version = "0.10.0"
-source = "git+https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git?rev=7c902b6905724345ba850eb6cca8f8becc9a9c72#7c902b6905724345ba850eb6cca8f8becc9a9c72"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cb41c7e10ada3a4df960190a96bfb4af56d33ada890f917acc8e3b122b614875"
 dependencies = [
  "fastrand",
 ]
@@ -4020,7 +4036,8 @@ dependencies = [
 [[package]]
 name = "radicle-ssh"
 version = "0.9.0"
-source = "git+https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git?rev=7c902b6905724345ba850eb6cca8f8becc9a9c72#7c902b6905724345ba850eb6cca8f8becc9a9c72"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fbee758010fb64482be4b18591fbeb3cbc15b16450d143edf4edb5484c7366c6"
 dependencies = [
  "byteorder",
  "log",

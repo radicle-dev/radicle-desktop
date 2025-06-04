@@ -19,7 +19,7 @@ anyhow = { version = "1.0.90" }
 base64 = { version = "0.22.1" }
 either = { version = "1.15" }
 log = { version = "0.4.22" }
-radicle = { git = "https://ash.radicle.garden/z3gqcJUoA1n9HaHKufZs5FCSGazv5.git", package = "radicle", rev = "7c902b6905724345ba850eb6cca8f8becc9a9c72" }
+radicle = { version = "0.15.0" }
 radicle-types = { version = "0.1.0", path = "../radicle-types" }
 radicle-surf = { version = "0.22.1", features = ["serde"] }
 serde = { version = "1.0.0", features = ["derive"] }
