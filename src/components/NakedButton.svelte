@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   interface Props {
+    id?: string;
     children: Snippet;
     title?: string;
     disabled?: boolean;
@@ -14,6 +15,7 @@
   }
 
   const {
+    id,
     children,
     title,
     disabled,
@@ -240,6 +242,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
+  {id}
   class="container"
   class:disabled
   class:active

@@ -63,7 +63,7 @@
         style:padding="0 0.375rem"
         style:background-color="var(--color-fill-ghost)"
         style:gap="0.25rem">
-        <Icon name="seedling" />
+        <Icon name="seedling-filled" />
         {repo.seeding}
       </div>
     </div>

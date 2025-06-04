@@ -11,40 +11,57 @@
   import * as router from "@app/lib/router";
   import { didFromPublicKey, modifierKey } from "@app/lib/utils";
   import { dynamicInterval } from "@app/lib/interval";
+  import { guidePopoverToggleId } from "@app/components/GuideButton.svelte";
   import { invoke } from "@app/lib/invoke";
-  import { setFocused } from "@app/components/Popover.svelte";
+  import { sleep } from "@app/lib/sleep";
 
+  import AddRepoButton from "@app/components/AddRepoButton.svelte";
   import Border from "@app/components/Border.svelte";
   import HomeSidebar from "@app/components/HomeSidebar.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Layout from "@app/views/repo/Layout.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
   import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
-  import OutlineButton from "@app/components/OutlineButton.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
+  import RepoCardPlaceholder from "@app/components/RepoCardPlaceholder.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
     activeTab: HomeReposTab;
     config: Config;
+    notificationCount: number;
     repoCount: RepoCount;
     repos: RepoInfo[];
-    notificationCount: number;
+    seededNotReplicated: string[];
   }
 
   /* eslint-disable prefer-const */
-  let { config, repos, repoCount, activeTab, notificationCount }: Props =
+  let {
+    activeTab,
+    config,
+    notificationCount,
+    repoCount,
+    repos,
+    seededNotReplicated,
+  }: Props =
     /* eslint-enable prefer-const */
     $props();
 
-  let lock = false;
   const startup = $state<{ error?: ErrorWrapper }>({ error: undefined });
+  let showFilters: boolean = $state(false);
+  let searchInput = $state("");
 
-  async function checkRepos() {
+  let lock = false;
+
+  async function reloadRepoList() {
     try {
       if (lock) {
         return;
       }
-      if (repoCount.total > 0) {
+      if (seededNotReplicated.length === 0 && repoCount.total > 0) {
+        return;
+      }
+      if (searchInput !== "") {
         return;
       }
       lock = true;
@@ -58,24 +75,27 @@
   }
 
   onMount(() => {
-    dynamicInterval("repos", checkRepos, 5_000);
+    dynamicInterval("repos", reloadRepoList, 5_000);
   });
 
   async function reload() {
-    [repos, repoCount, config] = await Promise.all([
+    [repos, repoCount, config, seededNotReplicated] = await Promise.all([
       invoke<RepoInfo[]>("list_repos", { show: activeTab ?? "all" }),
       invoke<RepoCount>("repo_count"),
       invoke<Config>("config"),
+      invoke<string[]>("seeded_not_replicated"),
     ]);
   }
-
-  let searchInput = $state("");
 
   const searchableRepos = $derived(
     repos
       .flatMap(r => {
         if (r.payloads["xyz.radicle.project"]) {
-          return { repo: r, name: r.payloads["xyz.radicle.project"].data.name };
+          return {
+            repo: r,
+            name: r.payloads["xyz.radicle.project"].data.name,
+            description: r.payloads["xyz.radicle.project"].data.description,
+          };
         }
       })
       .filter((item): item is NonNullable<typeof item> => item !== undefined),
@@ -83,7 +103,7 @@
 
   const searchResults = $derived(
     fuzzysort.go(searchInput, searchableRepos, {
-      keys: ["name", "repo.rid"],
+      keys: ["name", "description", "repo.rid"],
       threshold: 0.5,
       all: true,
     }),
@@ -104,9 +124,18 @@
     font-size: var(--font-size-medium);
     display: flex;
     justify-content: space-between;
-    padding-right: 1.5rem;
+    padding-right: 0.325rem;
     align-items: center;
     min-height: 2.5rem;
+  }
+  button {
+    text-decoration: underline;
+    border: 0;
+    color: var(--color-foreground-dim);
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    cursor: pointer;
   }
 </style>
 
@@ -124,38 +153,77 @@
   {/snippet}
   <div class="container">
     <div class="global-flex" style:margin-bottom="1rem">
-      <div class="header">Repositories</div>
-      {#if repos.length > 0}
-        <div class="global-flex" style:margin-left="auto">
-          <TextInput
-            onSubmit={async () => {
-              if (searchResults.length === 1) {
-                await router.push({
-                  resource: "repo.home",
-                  rid: searchResults[0].obj.repo.rid,
-                });
-              }
-            }}
-            onDismiss={() => {
-              searchInput = "";
-            }}
-            placeholder={`Fuzzy filter repositories ${modifierKey()} + f`}
-            keyShortcuts="ctrl+f"
-            bind:value={searchInput}>
-            {#snippet left()}
-              <div
-                style:color="var(--color-foreground-dim)"
-                style:padding-left="0.5rem">
-                <Icon name="filter" />
-              </div>
-            {/snippet}
-          </TextInput>
-        </div>
-      {/if}
+      <div class="global-flex">
+        <div class="header">Repositories</div>
+        {#if repos.length > 0}
+          {#if !showFilters}
+            <NakedButton
+              styleHeight="2.5rem"
+              keyShortcuts="ctrl+f"
+              variant="ghost"
+              active={showFilters}
+              onclick={() => {
+                if (showFilters) {
+                  showFilters = false;
+                  searchInput = "";
+                } else {
+                  showFilters = true;
+                }
+              }}>
+              <Icon name="filter" />
+            </NakedButton>
+          {/if}
+          {#if showFilters}
+            <TextInput
+              autofocus
+              onSubmit={async () => {
+                if (searchResults.length === 1) {
+                  await router.push({
+                    resource: "repo.home",
+                    rid: searchResults[0].obj.repo.rid,
+                  });
+                }
+              }}
+              onDismiss={() => {
+                searchInput = "";
+                showFilters = false;
+              }}
+              onBlur={() => {
+                if (searchInput.trim() === "") {
+                  showFilters = false;
+                }
+              }}
+              placeholder={`Fuzzy filter repositories ${modifierKey()} + f`}
+              keyShortcuts="ctrl+f"
+              bind:value={searchInput}>
+              {#snippet left()}
+                <div style:padding-left="0.5rem">
+                  <Icon name="filter" />
+                </div>
+              {/snippet}
+            </TextInput>
+          {/if}
+        {/if}
+      </div>
+      <div class="global-flex" style:margin-left="auto">
+        <AddRepoButton
+          {repos}
+          {reload}
+          {seededNotReplicated}
+          onOpen={() => {
+            searchInput = "";
+            showFilters = false;
+          }} />
+      </div>
     </div>
-    {#if repoCount.total > 0}
-      {#if searchResults.length > 0}
+    {#if repoCount.total > 0 || seededNotReplicated.length > 0}
+      {#if searchResults.length > 0 || seededNotReplicated.length > 0}
         <div class="repo-grid">
+          {#if !showFilters}
+            {#each seededNotReplicated as rid}
+              <RepoCardPlaceholder {rid} {reload} />
+            {/each}
+          {/if}
           {#each searchResults as result}
             <RepoCard
               focussed={searchResults.length === 1 && searchInput !== ""}
@@ -190,17 +258,21 @@
         </Border>
       {/if}
     {:else}
-      <div class="txt-missing txt-small" style:margin-bottom="1.5rem">
-        You don't have any repositories in your Radicle storage yet. To get
-        started, check out the guide below.
+      <div class="txt-missing txt-small">
+        You don't have any repositories in your Radicle storage yet.
       </div>
-      <div style="display: flex; gap: 1rem;">
-        <OutlineButton
-          popoverToggle="popover-guide"
-          onclick={() => setFocused("popover-guide")}
-          variant="ghost">
-          <Icon name="info" />Guide
-        </OutlineButton>
+      <!-- prettier-ignore -->
+      <div class="txt-missing txt-small">
+        To get started, check out
+        <button
+          class="txt-small"
+          onclick={async () => {
+                const guidePopoverButton = document.getElementById(guidePopoverToggleId);
+                await sleep(1);
+                guidePopoverButton?.click();
+          }}>
+          the guide
+        </button>.
       </div>
     {/if}
   </div>

@@ -1,8 +1,16 @@
+<script lang="ts" module>
+  export const guidePopoverToggleId = "guide-popover-toggle";
+</script>
+
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
 
+  import { activeRouteStore, push } from "@app/lib/router";
+  import { addRepoPopoverToggleId } from "./AddRepoButton.svelte";
   import { didFromPublicKey, truncateDid } from "@app/lib/utils";
+  import { nodeRunning } from "@app/lib/events";
   import { radicleInstalled } from "@app/lib/checkRadicleCLI.svelte";
+  import { sleep } from "@app/lib/sleep";
 
   import Border from "@app/components/Border.svelte";
   import Command from "@app/components/Command.svelte";
@@ -11,7 +19,6 @@
   import NakedButton from "@app/components/NakedButton.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import Popover from "@app/components/Popover.svelte";
-  import RepoGuide from "@app/components/RepoGuide.svelte";
 
   interface Props {
     config: Config;
@@ -22,28 +29,35 @@
 </script>
 
 <style>
-  .guide-header {
-    padding-bottom: 1rem;
-  }
   .spacer {
     width: 100%;
     border-bottom: 1px solid var(--color-border-default);
     height: 1px;
     margin: 1rem 0;
   }
+
+  button {
+    text-decoration: underline;
+    border: 0;
+    color: var(--color-foreground-contrast);
+    margin: 0;
+    padding: 0;
+    background-color: transparent;
+    cursor: pointer;
+  }
 </style>
 
 <Popover
-  popoverId="popover-guide"
   popoverPadding="0"
   popoverPositionTop="2.5rem"
   bind:expanded={popoverExpanded}
   popoverPositionRight="-9.3rem">
   {#snippet toggle(onclick)}
     <NakedButton
+      id={guidePopoverToggleId}
       variant="ghost"
       {onclick}
-      stylePadding="0 4px"
+      stylePadding="0 0.25rem"
       active={popoverExpanded}>
       <Icon name="info" /> Guide
     </NakedButton>
@@ -53,7 +67,8 @@
       variant="ghost"
       styleGap="0"
       stylePadding="1rem"
-      styleMinWidth="36rem"
+      styleMinWidth="32rem"
+      styleBackgroundColor="var(--color-background-float)"
       styleOverflow="auto"
       styleMaxHeight="calc(100vh - 5rem)"
       styleAlignItems="flex-start"
@@ -61,14 +76,12 @@
       <div
         style:position="relative"
         style:display="flex"
+        style:line-height="1.625rem"
         style:gap="0.5rem"
         style:flex-direction="column"
-        style:padding="1rem"
-        style:margin-bottom="1rem"
-        style:width="100%"
-        style:background-color="var(--color-background-float)">
+        style:width="100%">
         <div class="txt-semibold txt-medium" style:margin-bottom="1rem">
-          Getting started
+          Get started
         </div>
         <div class="txt-small" style:display="inline">
           Hello <span style:padding-left="0.25rem">
@@ -85,23 +98,44 @@
           you can share this with anyone to find you on the network.
         </div>
         <div class="spacer"></div>
-        {#if radicleInstalled()}
+        {#if radicleInstalled() || $nodeRunning}
           <div class="global-flex txt-small">
-            <Icon name="checkbox-checked" />Radicle CLI is setup
+            <div class="global-flex">
+              <Icon name="thumb-up" />Radicle CLI is installed, you're good to
+              go.
+            </div>
+            <button
+              class="txt-small"
+              onclick={async () => {
+                if ($activeRouteStore.resource !== "home") {
+                  await push({
+                    resource: "home",
+                    activeTab: "all",
+                  });
+                }
+                await sleep(1);
+                const addRepoButton = document.getElementById(
+                  addRepoPopoverToggleId,
+                );
+                addRepoButton?.click();
+              }}>
+              Try adding a repo!
+            </button>
           </div>
         {:else}
           <div class="txt-small">
-            <div class="global-flex" style:padding-bottom="0.5rem">
-              <Icon name="checkbox-unchecked" />Make sure to install Radicle CLI
+            <div class="global-flex" style:padding-bottom="1rem">
+              <Icon name="warning" />Radicle CLI is not installed
+            </div>
+            <div style:padding-bottom="1rem">
+              To interact with repositories on the Radicle network, you’ll need
+              to install Radicle node along with its accompanying CLI tools. The
+              node runs in the background, enabling seamless pushing and pulling
+              of changes, while the CLI tools let you manage the node and
+              provide interoperability between Git and Radicle.
             </div>
             <div style:padding-bottom="0.5rem">
-              To be able to interact with repos on the Radicle network you'll
-              need to install a node on your computer. This node will identify
-              itself on the network with your keys to push and pull changes.
-            </div>
-            <div style:padding-bottom="0.5rem">
-              To install the node and other Radicle CLI tooling, simply run the
-              command below from your shell:
+              To install Radicle node and CLI tooling, run this in your shell:
             </div>
             <Command
               styleWidth="fit-content"
@@ -109,9 +143,6 @@
           </div>
         {/if}
       </div>
-      <div class="guide-header txt-medium txt-semibold">Guide</div>
-
-      <RepoGuide />
     </Border>
   {/snippet}
 </Popover>

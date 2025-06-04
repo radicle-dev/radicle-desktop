@@ -15,6 +15,7 @@
     name?: string;
     onDismiss?: () => void;
     onFocus?: () => void;
+    onBlur?: () => void;
     onSubmit?: () => void;
     oninput?: FormEventHandler<HTMLInputElement>;
     placeholder?: string;
@@ -33,6 +34,7 @@
     name,
     onDismiss,
     onFocus,
+    onBlur,
     onSubmit,
     oninput,
     placeholder,
@@ -110,6 +112,9 @@
       focussed = true;
     }}
     onblur={() => {
+      if (onBlur) {
+        onBlur();
+      }
       focussed = false;
     }}
     bind:this={inputElement}

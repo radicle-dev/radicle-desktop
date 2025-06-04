@@ -19,6 +19,7 @@ export interface LoadedHomeRoute {
     repos: RepoInfo[];
     config: Config;
     notificationCount: number;
+    seededNotReplicated: string[];
   };
 }
 
@@ -35,12 +36,14 @@ export async function loadHome(route: HomeRoute): Promise<LoadedHomeRoute> {
     }
   }
 
-  const [config, repoCount, repos, notificationCount] = await Promise.all([
-    invoke<Config>("config"),
-    invoke<RepoCount>("repo_count"),
-    invoke<RepoInfo[]>("list_repos", { show }),
-    invoke<number>("notification_count"),
-  ]);
+  const [config, repoCount, repos, notificationCount, seededNotReplicated] =
+    await Promise.all([
+      invoke<Config>("config"),
+      invoke<RepoCount>("repo_count"),
+      invoke<RepoInfo[]>("list_repos", { show }),
+      invoke<number>("notification_count"),
+      invoke<string[]>("seeded_not_replicated"),
+    ]);
   return {
     resource: "home",
     params: {
@@ -49,6 +52,7 @@ export async function loadHome(route: HomeRoute): Promise<LoadedHomeRoute> {
       repos,
       config,
       notificationCount,
+      seededNotReplicated,
     },
   };
 }

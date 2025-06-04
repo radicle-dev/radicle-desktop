@@ -2,6 +2,7 @@
   import type { Snippet } from "svelte";
 
   interface Props {
+    id?: string;
     children: Snippet;
     variant: "primary" | "secondary" | "ghost" | "success" | "danger";
     onclick?: () => void;
@@ -14,6 +15,7 @@
   }
 
   const {
+    id,
     children,
     variant,
     onclick = undefined,
@@ -371,6 +373,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
+  {id}
   class="container active"
   style:cursor={!disabled ? "pointer" : "default"}
   style:height={styleHeight}

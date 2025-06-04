@@ -10,7 +10,7 @@
 
   import Border from "./Border.svelte";
   import Icon from "./Icon.svelte";
-  import Inbox from "@app/views/home/Inbox.svelte";
+  import Inbox from "./Inbox.svelte";
   import OutlineButton from "./OutlineButton.svelte";
   import Popover from "./Popover.svelte";
 

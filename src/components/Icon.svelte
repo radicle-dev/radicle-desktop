@@ -17,6 +17,7 @@
       | "branch"
       | "broom"
       | "broom-double"
+      | "bulb"
       | "checkbox-checked"
       | "checkbox-unchecked"
       | "checkmark"
@@ -44,6 +45,7 @@
       | "file"
       | "filter"
       | "home"
+      | "hourglass"
       | "inbox"
       | "info"
       | "issue"
@@ -258,6 +260,24 @@
     <path d="M9 3H10V9H9V3Z" />
     <path d="M10 3H11V9H10V3Z" />
     <path d="M9 2H11V3H9V2Z" />
+  {:else if name === "bulb"}
+    <path d="M9 13.5H7V14.5H9V13.5Z" />
+    <path d="M5 7.50003V9.50003H4L4 7.50003H5Z" />
+    <path d="M4 4.50003L4 7.50003H3L3 4.50003H4Z" />
+    <path d="M12 4.50003V7.50003H13V4.50003H12Z" />
+    <path d="M11 7.50003V9.50003L12 9.50003V7.50003H11Z" />
+    <path d="M5 4.50003L4 4.50003L4 3.50003L5 3.50003L5 4.50003Z" />
+    <path d="M11 4.50003H12V3.50003H11V4.50003Z" />
+    <path d="M6 9.50003V10.5H5L5 9.50003H6Z" />
+    <path d="M6 2.50003L10 2.50003V1.50003L6 1.50003L6 2.50003Z" />
+    <path d="M10 9.50003L11 9.50003V10.5H10V9.50003Z" />
+    <path d="M9 10.5H10V13.5H9L9 10.5Z" />
+    <path d="M6 10.5H7V13.5H6L6 10.5Z" />
+    <path d="M7 10.5H10L10 11.5H7V10.5Z" />
+    <path d="M10 2.50003H12V3.50003L10 3.50003L10 2.50003Z" />
+    <path d="M4 2.50003L6 2.50003V3.50003L4 3.50003L4 2.50003Z" />
+    <path d="M7 7.50003H9V9.50003H7V7.50003Z" />
+    <path d="M7 12.5H8V13.5H7L7 12.5Z" />
   {:else if name === "checkmark"}
     <path d="M7 11V12H6V11H7Z" />
     <path d="M8 10V11L7 11L7 10H8Z" />
@@ -680,6 +700,29 @@
     <path d="M6 10.5H7V13.5H6V10.5Z" />
     <path d="M7 9.50003H9V10.5L7 10.5L7 9.50003Z" />
     <path d="M9 10.5L10 10.5V13.5H9L9 10.5Z" />
+  {:else if name === "hourglass"}
+    <path d="M13 14H3V13H13V14Z" />
+    <path d="M3 13H2V12H3V13Z" />
+    <path d="M14 13H13V12H14V13Z" />
+    <path d="M4 12H3V11H4V12Z" />
+    <path d="M11 12H5V11H6V10H10V11H11V12Z" />
+    <path d="M13 12H12V11H13V12Z" />
+    <path d="M5 11H4V10H5V11Z" />
+    <path d="M12 11H11V10H12V11Z" />
+    <path d="M6 10H5V9H6V10Z" />
+    <path d="M11 10H10V9H11V10Z" />
+    <path d="M7 9H6V7H7V9Z" />
+    <path d="M10 9H9V7H10V9Z" />
+    <path d="M6 7H5V6H6V7Z" />
+    <path d="M10 6H9V7H7V6H6V5H10V6Z" />
+    <path d="M11 7H10V6H11V7Z" />
+    <path d="M5 6H4V5H5V6Z" />
+    <path d="M12 6H11V5H12V6Z" />
+    <path d="M4 5H3V4H4V5Z" />
+    <path d="M13 5H12V4H13V5Z" />
+    <path d="M3 4H2V3H3V4Z" />
+    <path d="M14 4H13V3H14V4Z" />
+    <path d="M13 3H3V2H13V3Z" />
   {:else if name === "inbox"}
     <path d="M2 3H3V13H2V3Z" />
     <path d="M13 3H14V13H13V3Z" />

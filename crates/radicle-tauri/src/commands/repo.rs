@@ -129,3 +129,18 @@ pub(crate) async fn create_repo(
 
     Ok(())
 }
+
+#[tauri::command]
+pub fn seed(ctx: tauri::State<AppState>, rid: RepoId) -> Result<(), Error> {
+    ctx.seed(rid)
+}
+
+#[tauri::command]
+pub fn unseed(ctx: tauri::State<AppState>, rid: RepoId) -> Result<(), Error> {
+    ctx.unseed(rid)
+}
+
+#[tauri::command]
+pub fn seeded_not_replicated(ctx: tauri::State<AppState>) -> Result<Vec<RepoId>, Error> {
+    ctx.seeded_not_replicated()
+}

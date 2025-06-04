@@ -6,17 +6,6 @@
   export function closeFocused() {
     focused = undefined;
   }
-
-  export function setFocused(id: string) {
-    const thisComponent = document.querySelector(`[data-popover-id="${id}"]`);
-    if (thisComponent) {
-      if (focused?.element === thisComponent) {
-        closeFocused();
-      } else {
-        focused = { element: thisComponent as HTMLDivElement, id };
-      }
-    }
-  }
 </script>
 
 <script lang="ts">
@@ -25,7 +14,6 @@
   interface Props {
     toggle: Snippet<[() => void]>;
     popover: Snippet;
-    popoverId?: string;
     popoverContainerMinWidth?: string;
     popoverPadding?: string;
     popoverPositionBottom?: string;
@@ -39,7 +27,6 @@
   let {
     toggle,
     popover,
-    popoverId,
     popoverContainerMinWidth,
     popoverPadding,
     popoverPositionBottom,
@@ -50,7 +37,7 @@
   }: Props = $props();
   /* eslint-enable prefer-const */
 
-  const id = popoverId ?? crypto.randomUUID();
+  const id = crypto.randomUUID();
   let thisComponent: HTMLDivElement | undefined = $state();
 
   function clickOutside(ev: MouseEvent | TouchEvent) {

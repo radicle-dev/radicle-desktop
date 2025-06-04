@@ -8,7 +8,7 @@ use radicle::node::routing::Store;
 use radicle::patch::cache::Patches as _;
 use radicle::storage;
 use radicle::storage::{ReadRepository, ReadStorage, RepositoryInfo};
-use radicle::{git, identity};
+use radicle::{git, identity, node};
 
 use crate::cobs;
 use crate::diff;
@@ -294,5 +294,36 @@ pub trait Repo: Profile {
             .collect();
 
         Ok(commits)
+    }
+
+    fn unseed(&self, rid: identity::RepoId) -> Result<(), Error> {
+        let profile = self.profile();
+        let mut node = radicle::Node::new(profile.socket());
+
+        profile.unseed(rid, &mut node)?;
+
+        Ok(())
+    }
+
+    fn seed(&self, rid: identity::RepoId) -> Result<(), Error> {
+        let profile = self.profile();
+        let mut node = radicle::Node::new(profile.socket());
+
+        profile.seed(rid, node::policy::Scope::All, &mut node)?;
+
+        Ok(())
+    }
+
+    fn seeded_not_replicated(&self) -> Result<Vec<identity::RepoId>, Error> {
+        let profile = &self.profile();
+        let storage = &profile.storage;
+        let policies = profile.policies()?;
+        let entries = policies
+            .seed_policies()?
+            .filter(|policy| !storage.contains(&policy.rid).unwrap_or(false))
+            .map(|policy| policy.rid)
+            .collect::<Vec<_>>();
+
+        Ok(entries)
     }
 }

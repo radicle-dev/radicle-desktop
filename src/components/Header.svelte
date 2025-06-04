@@ -9,11 +9,13 @@
 
   import { checkRadicleCLI } from "@app/lib/checkRadicleCLI.svelte";
   import { dynamicInterval } from "@app/lib/interval";
-  import { setFocused } from "@app/components/Popover.svelte";
+  import { sleep } from "@app/lib/sleep";
 
   import Icon from "@app/components/Icon.svelte";
-  import InboxPopover from "@app/components/InboxPopover.svelte";
-  import InfoButton from "@app/components/InfoButton.svelte";
+  import InboxButton from "@app/components/InboxButton.svelte";
+  import GuideButton, {
+    guidePopoverToggleId,
+  } from "@app/components/GuideButton.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import NodeStatusButton from "@app/components/NodeStatusButton.svelte";
 
@@ -41,7 +43,9 @@
     }
 
     if (firstLaunchStorage.value === true) {
-      setFocused("popover-guide");
+      const guidePopoverButton = document.getElementById(guidePopoverToggleId);
+      await sleep(1);
+      guidePopoverButton?.click();
       firstLaunchStorage.value = false;
     }
   });
@@ -108,9 +112,9 @@
       </div>
 
       <div class="global-flex">
-        <InfoButton {config} />
+        <GuideButton {config} />
         <NodeStatusButton />
-        <InboxPopover {notificationCount} />
+        <InboxButton {notificationCount} />
       </div>
     </div>
   </div>
