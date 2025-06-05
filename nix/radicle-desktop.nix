@@ -35,9 +35,6 @@ rustPlatform.buildRustPackage rec {
 
   cargoDeps = rustPlatform.importCargoLock {
     lockFile = ./../Cargo.lock;
-    outputHashes = {
-      "radicle-0.14.0" = "sha256-F7pJ+yLhlRXg03A+pNXwsqNSOG3qJs6bEO9YUUXs4f0=";
-    };
   };
 
   npmDeps = importNpmLock {
