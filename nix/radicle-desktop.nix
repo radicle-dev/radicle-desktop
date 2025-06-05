@@ -18,6 +18,7 @@
   playwright-driver,
   heartwood,
   twemoji-assets,
+  radicle-node,
   GIT_HEAD ? null,
 }:
 let
@@ -57,6 +58,10 @@ rustPlatform.buildRustPackage rec {
     libsoup_3
     openssl
     webkitgtk_4_1
+  ];
+
+  propagatedBuildInputs = [
+    radicle-node
   ];
 
   postPatch = ''
