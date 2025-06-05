@@ -19,6 +19,10 @@ pub enum Error {
     #[error("ssh agent not running")]
     AgentNotRunning,
 
+    /// Generic Cob cache error.
+    #[error(transparent)]
+    Cache(#[from] radicle::cob::cache::Error),
+
     /// Embeds error.
     #[error("not able to save embed")]
     SaveEmbedError,

@@ -30,6 +30,9 @@
   import RepoHome from "@app/views/repo/RepoHome.svelte";
   import Repos from "@app/views/home/Repos.svelte";
   import Spinner from "./components/Spinner.svelte";
+  import FullWindowError from "./components/FullWindowError.svelte";
+  import ExternalLink from "./components/ExternalLink.svelte";
+  import Command from "./components/Command.svelte";
 
   const activeRouteStore = router.activeRouteStore;
 
@@ -40,6 +43,7 @@
 
   let showSpinner = $state(false);
   delay(() => (showSpinner = true), 1000);
+
   onMount(async () => {
     try {
       profile = await invoke<Config>("startup");
@@ -117,6 +121,24 @@
     <CreateIdentity />
   {:else if startup.error?.code === "PassphraseError.InvalidPassphrase" && profile}
     <Auth profile={{ did: profile.publicKey, alias: profile.alias }} />
+  {:else if startup.error}
+    <FullWindowError title="An error occurred" error={startup.error}>
+      We were unable to load your Radicle identity, or your Radicle installation
+      is outdated.
+      <br />
+      If you have an existing Radicle installation, make sure you have
+      <ExternalLink href="https://radicle.xyz/download">
+        the latest version.
+      </ExternalLink>
+      <br />
+      <br />
+      <div
+        style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem;">
+        To migrate your Radicle storage, make sure to restart your radicle-node
+        or run:
+        <Command styleWidth="30rem" command="rad cob migrate" />
+      </div>
+    </FullWindowError>
   {:else if showSpinner}
     <div class="spinner"><Spinner /></div>
   {/if}

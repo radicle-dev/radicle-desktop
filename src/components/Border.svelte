@@ -10,6 +10,7 @@
     stylePadding?: string;
     styleHeight?: string;
     styleMaxHeight?: string;
+    styleMaxWidth?: string;
     styleMinHeight?: string;
     styleMinWidth?: string;
     styleWidth?: string;
@@ -33,6 +34,7 @@
     stylePadding,
     styleHeight,
     styleMaxHeight,
+    styleMaxWidth,
     styleMinHeight,
     stylePosition,
     styleWidth,
@@ -221,6 +223,7 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
   style:width={styleWidth}
+  style:max-width={styleMaxWidth}
   style:cursor={styleCursor}
   class="container"
   class:flat-top={flatTop}

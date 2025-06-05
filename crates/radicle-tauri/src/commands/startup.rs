@@ -48,8 +48,12 @@ pub(crate) fn check_radicle_cli(ctx: tauri::State<AppState>) -> Result<(), Error
 #[tauri::command]
 pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     let profile = radicle::Profile::load()?;
+    let home = profile.home();
     let repositories = profile.storage.repositories()?;
     let public_key = profile.public_key;
+
+    let cobs_cache = radicle::cob::cache::Store::open(home.cobs().join(COBS_DB_FILE))?;
+    cobs_cache.check_version()?;
 
     let inbox_db = radicle_types::outbound::sqlite::Sqlite::reader(
         profile.node().join(NOTIFICATIONS_DB_FILE),

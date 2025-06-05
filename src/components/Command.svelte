@@ -5,9 +5,10 @@
   interface Props {
     command: string;
     styleWidth: string;
+    showPrompt?: boolean;
   }
 
-  const { command, styleWidth }: Props = $props();
+  const { command, styleWidth, showPrompt = true }: Props = $props();
 
   let clipboard: Clipboard;
 </script>
@@ -33,7 +34,7 @@
     {styleWidth}
     variant="ghost">
     <span class="txt-overflow">
-      $ {command}
+      {showPrompt ? "$ " : ""}{command}
     </span>
     <Clipboard bind:this={clipboard} text={command} />
   </Border>
