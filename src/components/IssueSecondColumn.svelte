@@ -53,7 +53,8 @@
 
   const searchResults = $derived(
     fuzzysort.go(searchInput, searchableIssues, {
-      keys: ["issue.title", "labels", "assignees", "author"],
+      keys: ["issue.title", "labels", "assignees", "author", "issue.id"],
+      threshold: 0.5,
       all: true,
     }),
   );

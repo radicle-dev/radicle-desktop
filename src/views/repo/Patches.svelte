@@ -96,7 +96,8 @@
 
   const searchResults = $derived(
     fuzzysort.go(searchInput, searchablePatches, {
-      keys: ["patch.title", "labels", "assignees", "author"],
+      keys: ["patch.title", "labels", "assignees", "author", "patch.id"],
+      threshold: 0.5,
       all: true,
     }),
   );

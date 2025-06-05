@@ -82,7 +82,11 @@
   );
 
   const searchResults = $derived(
-    fuzzysort.go(searchInput, searchableRepos, { key: "name", all: true }),
+    fuzzysort.go(searchInput, searchableRepos, {
+      keys: ["name", "repo.rid"],
+      threshold: 0.5,
+      all: true,
+    }),
   );
 </script>
 
