@@ -18,6 +18,7 @@
   } from "@app/lib/appearance.svelte";
   import { theme } from "@app/components/ThemeSwitch.svelte";
   import { unreachable, isMac } from "@app/lib/utils";
+  import delay from "lodash/delay";
 
   import Auth from "@app/views/booting/Auth.svelte";
   import CreateIdentity from "@app/views/booting/CreateIdentity.svelte";
@@ -28,6 +29,7 @@
   import Patches from "@app/views/repo/Patches.svelte";
   import RepoHome from "@app/views/repo/RepoHome.svelte";
   import Repos from "@app/views/home/Repos.svelte";
+  import Spinner from "./components/Spinner.svelte";
 
   const activeRouteStore = router.activeRouteStore;
 
@@ -36,6 +38,8 @@
   let unlistenNodeEvents: UnlistenFn | undefined = undefined;
   let unlistenSyncStatus: UnlistenFn | undefined = undefined;
 
+  let showSpinner = $state(false);
+  delay(() => (showSpinner = true), 1000);
   onMount(async () => {
     try {
       profile = await invoke<Config>("startup");
@@ -85,6 +89,15 @@
   $effect(() => document.documentElement.setAttribute("data-theme", $theme));
 </script>
 
+<style>
+  .spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+  }
+</style>
+
 <svelte:document
   onkeydown={e => {
     const auxiliarKey = isMac() ? e.metaKey : e.ctrlKey;
@@ -104,6 +117,8 @@
     <CreateIdentity />
   {:else if startup.error?.code === "PassphraseError.InvalidPassphrase" && profile}
     <Auth profile={{ did: profile.publicKey, alias: profile.alias }} />
+  {:else if showSpinner}
+    <div class="spinner"><Spinner /></div>
   {/if}
 {:else if $activeRouteStore.resource === "home"}
   <Repos {...$activeRouteStore.params} />
