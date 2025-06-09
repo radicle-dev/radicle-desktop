@@ -22,6 +22,16 @@ body {
   background-color: var(--color-background-default);
 }
 
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.5);
+}
+
 ::selection {
   background: var(--color-fill-yellow);
   color: var(--color-foreground-black);
