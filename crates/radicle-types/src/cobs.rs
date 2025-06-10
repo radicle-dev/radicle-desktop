@@ -1,3 +1,5 @@
+use radicle::git::Oid;
+use radicle::prelude::RepoId;
 use radicle::profile::Aliases;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -11,6 +13,29 @@ pub mod issue;
 pub mod repo;
 pub mod stream;
 pub mod thread;
+
+#[derive(ts_rs::TS, Clone, Serialize)]
+#[serde(rename_all = "camelCase", tag = "event", content = "data")]
+#[ts(export)]
+#[ts(export_to = "cob/")]
+pub enum CacheEvent {
+    Started {
+        #[ts(as = "String")]
+        rid: RepoId,
+    },
+    Progress {
+        #[ts(as = "String")]
+        rid: RepoId,
+        #[ts(as = "String")]
+        oid: Oid,
+        current: usize,
+        total: usize,
+    },
+    Finished {
+        #[ts(as = "String")]
+        rid: RepoId,
+    },
+}
 
 #[derive(Debug, Clone, Serialize, TS, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]

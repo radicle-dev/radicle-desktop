@@ -43,6 +43,10 @@ pub enum Error {
     #[error(transparent)]
     TauriPluginFs(#[from] tauri_plugin_fs::Error),
 
+    /// Tauri error.
+    #[error(transparent)]
+    Tauri(#[from] tauri::Error),
+
     /// Project error.
     #[error(transparent)]
     ProjectError(#[from] radicle::identity::project::ProjectError),

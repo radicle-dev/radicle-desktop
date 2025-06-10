@@ -1,4 +1,7 @@
+use std::ops::ControlFlow;
+
 use radicle::patch::TYPENAME;
+use radicle::storage::ReadStorage;
 use radicle::{cob, git, identity};
 
 use radicle_types as types;
@@ -124,4 +127,37 @@ pub fn activity_by_patch(
     id: git::Oid,
 ) -> Result<Vec<types::cobs::Operation<models::patch::Action>>, Error> {
     ctx.activity_by_id(rid, &TYPENAME, id)
+}
+
+#[tauri::command]
+pub async fn rebuild_patch_cache(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    on_event: tauri::ipc::Channel<cobs::CacheEvent>,
+) -> Result<(), Error> {
+    let repo = ctx.profile.storage.repository(rid)?;
+    let mut patches = ctx.profile.patches_mut(&repo)?;
+    on_event.send(types::cobs::CacheEvent::Started { rid })?;
+    patches.write_all(|result, progress| {
+        match result {
+            Ok((id, _)) => {
+                if on_event
+                    .send(cobs::CacheEvent::Progress {
+                        rid,
+                        oid: **id,
+                        current: progress.current(),
+                        total: progress.total(),
+                    })
+                    .is_err()
+                {
+                    log::error!("Failed to send progress");
+                }
+            }
+            Err(err) => log::warn!("Failed to retrieve patch: {err}"),
+        };
+        ControlFlow::Continue(())
+    })?;
+    on_event.send(types::cobs::CacheEvent::Finished { rid })?;
+
+    Ok(())
 }

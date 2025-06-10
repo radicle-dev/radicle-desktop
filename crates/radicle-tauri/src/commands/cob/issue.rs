@@ -1,5 +1,8 @@
+use std::ops::ControlFlow;
+
 use radicle::git;
 use radicle::identity;
+use radicle::storage::ReadStorage;
 
 use radicle::issue::TYPENAME;
 use radicle_types as types;
@@ -65,4 +68,37 @@ pub fn activity_by_issue(
     id: git::Oid,
 ) -> Result<Vec<types::cobs::Operation<types::cobs::issue::Action>>, Error> {
     ctx.activity_by_id(rid, &TYPENAME, id)
+}
+
+#[tauri::command]
+pub async fn rebuild_issue_cache(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    on_event: tauri::ipc::Channel<types::cobs::CacheEvent>,
+) -> Result<(), Error> {
+    let repo = ctx.profile.storage.repository(rid)?;
+    let mut issues = ctx.profile.issues_mut(&repo)?;
+    on_event.send(types::cobs::CacheEvent::Started { rid })?;
+    issues.write_all(|result, progress| {
+        match result {
+            Ok((id, _)) => {
+                if on_event
+                    .send(types::cobs::CacheEvent::Progress {
+                        rid,
+                        oid: **id,
+                        current: progress.current(),
+                        total: progress.total(),
+                    })
+                    .is_err()
+                {
+                    log::error!("Failed to send progress");
+                }
+            }
+            Err(err) => log::warn!("Failed to retrieve issue: {err}"),
+        };
+        ControlFlow::Continue(())
+    })?;
+    on_event.send(types::cobs::CacheEvent::Finished { rid })?;
+
+    Ok(())
 }

@@ -1,23 +1,33 @@
 <script lang="ts">
+  import type { CacheEvent } from "@bindings/cob/CacheEvent";
   import type { Config } from "@bindings/config/Config";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
-  import type { PatchStatus } from "./router";
+  import type { PatchStatus } from "@app/views/repo/router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import delay from "lodash/delay";
   import fuzzysort from "fuzzysort";
+  import { Channel } from "@tauri-apps/api/core";
 
   import * as router from "@app/lib/router";
-  import { DEFAULT_TAKE } from "./router";
-  import { invoke } from "@app/lib/invoke";
+  import { DEFAULT_TAKE } from "@app/views/repo/router";
   import { explorerUrl, modifierKey } from "@app/lib/utils";
+  import { invoke } from "@app/lib/invoke";
+  import {
+    patchCountMismatch,
+    resetPatchCounts,
+    updatePatchCounts,
+  } from "@app/lib/patchCounts.svelte";
 
   import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchesSecondColumn from "@app/components/PatchesSecondColumn.svelte";
+  import Spinner from "@app/components/Spinner.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
@@ -39,10 +49,25 @@
   let cursor = patches.cursor;
   let more = patches.more;
 
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
+
+  let cacheState: CacheEvent | undefined = $state();
+
   $effect(() => {
     items = patches.content;
     cursor = patches.cursor;
-    more = patches.more;
+    // If the first page is not full, we know there are no more patches.
+    if (patches.more === true && patches.content.length < DEFAULT_TAKE) {
+      more = false;
+    } else {
+      more = patches.more;
+    }
+  });
+
+  $effect(() => {
+    if (more === false) {
+      updatePatchCounts(items.length, project.meta.patches, status);
+    }
   });
 
   $effect(() => {
@@ -51,6 +76,36 @@
 
     searchInput = "";
   });
+
+  async function rebuildPatchCache() {
+    try {
+      await invoke("rebuild_patch_cache", {
+        rid: repo.rid,
+        onEvent: new Channel<CacheEvent>(message => {
+          cacheState = message;
+        }),
+      });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
+        rid: repo.rid,
+        skip: 0,
+        status,
+        take: DEFAULT_TAKE,
+      });
+
+      items = p.content;
+      cursor = p.cursor;
+      more = p.more;
+
+      resetPatchCounts();
+
+      delay(() => {
+        cacheState = undefined;
+      }, 1500);
+    }
+  }
 
   async function loadMoreContent(all: boolean = false) {
     if (more) {
@@ -69,10 +124,17 @@
       } else {
         items = [...items, ...p.content];
       }
+
+      // If the newly fetched patches are empty, there is no more to fetch.
+      if (p.content.length === 0) {
+        more = false;
+      }
+
+      if (more === false) {
+        updatePatchCounts(items.length, project.meta.patches, status);
+      }
     }
   }
-
-  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
   let loading: boolean = $state(false);
   let searchInput = $state("");
@@ -146,6 +208,40 @@
   {/snippet}
 
   <div class="container">
+    {#if patchCountMismatch(status)}
+      <div style="margin-bottom: 1rem;">
+        <Border
+          styleOverflow="hidden"
+          styleBackgroundColor="var(--color-fill-private)"
+          stylePadding="0.25rem 0.5rem"
+          styleGap="1rem"
+          variant="outline">
+          <div class="txt-overflow txt-small global-flex">
+            <Icon name="warning" />
+            <span class="txt-overflow">
+              There’s a problem with your COB cache, so some patches may not be
+              displayed. You can rebuild the cache to resolve this.
+            </span>
+          </div>
+          <div style:margin-left="auto">
+            <Button
+              variant="ghost"
+              onclick={rebuildPatchCache}
+              disabled={cacheState !== undefined}>
+              {#if cacheState?.event === "started" || cacheState?.event === "progress"}
+                Rebuilding
+                <Spinner />
+              {:else if cacheState?.event === "finished"}
+                Done
+                <Icon name="checkmark" />
+              {:else}
+                Rebuild cache
+              {/if}
+            </Button>
+          </div>
+        </Border>
+      </div>
+    {/if}
     <div class="header">
       Patches
 

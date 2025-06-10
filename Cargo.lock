@@ -4115,6 +4115,7 @@ dependencies = [
  "serde_json",
  "sqlite",
  "ssh-key",
+ "tauri",
  "tauri-plugin-clipboard-manager",
  "tauri-plugin-fs",
  "tempfile",
