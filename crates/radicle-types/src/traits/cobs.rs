@@ -7,7 +7,6 @@ use crate::error::Error;
 use crate::traits::Profile;
 
 pub trait Cobs: Profile {
-    #[allow(clippy::unnecessary_filter_map)]
     fn activity_by_id<A: DeserializeOwned, B: FromRadicleAction<A>>(
         &self,
         rid: identity::RepoId,
@@ -20,7 +19,7 @@ pub trait Cobs: Profile {
         let iter = cob::store::ops(&id.into(), type_name, &repo)?;
         let ops = iter
             .into_iter()
-            .filter_map(|op| {
+            .map(|op| {
                 let actions = op
                     .actions
                     .iter()
@@ -36,12 +35,12 @@ pub trait Cobs: Profile {
                     })
                     .collect::<Vec<_>>();
 
-                Some(crate::cobs::Operation {
+                crate::cobs::Operation {
                     id: op.id,
                     actions,
                     author: crate::cobs::Author::new(&op.author.into(), &aliases),
                     timestamp: op.timestamp,
-                })
+                }
             })
             .collect::<Vec<_>>();
 
