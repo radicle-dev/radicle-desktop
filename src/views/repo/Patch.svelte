@@ -272,7 +272,7 @@
   let searchInput = $state("");
 
   const searchablePatches = $derived(
-    patches.content
+    patchTeasers
       .flatMap(i => {
         return {
           patch: i,
