@@ -22,14 +22,17 @@ body {
   background-color: var(--color-background-default);
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.5);
+:root {
+  .os-theme-radicle {
+    --os-size: 16px;
+    --os-handle-border-radius: 4px;
+    --os-padding-perpendicular: 4px;
+    --os-padding-axis: 2px;
+    --os-track-bg: var(--color-background-default);
+    --os-handle-bg: var(--color-fill-ghost);
+    --os-handle-bg-hover: var(--color-fill-ghost);
+    --os-handle-bg-active: var(--color-fill-ghost);
+  }
 }
 
 ::selection {

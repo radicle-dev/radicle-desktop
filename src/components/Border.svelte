@@ -11,6 +11,7 @@
       | "danger"
       | "success"
       | "outline";
+    innerElement?: HTMLElement;
     hoverable?: boolean;
     onclick?: (e: MouseEvent) => void;
     stylePosition?: string;
@@ -33,10 +34,12 @@
     styleJustifyContent?: string;
   }
 
-  const {
+  /* eslint-disable prefer-const */
+  let {
     children,
     variant,
     hoverable = false,
+    innerElement = $bindable(),
     onclick,
     stylePadding,
     styleHeight,
@@ -257,6 +260,7 @@
   <div class="p3-2"></div>
   <div
     class="p3-3"
+    bind:this={innerElement}
     style:max-height={styleMaxHeight}
     style:min-width={styleMinWidth}
     style:display={styleDisplay}

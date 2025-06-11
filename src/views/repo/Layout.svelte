@@ -27,7 +27,7 @@
   import type { Snippet } from "svelte";
   import type { Config } from "@bindings/config/Config";
 
-  import { onMount } from "svelte";
+  import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
 
   import Header from "@app/components/Header.svelte";
 
@@ -57,43 +57,8 @@
     breadcrumbs,
   }: Props = $props();
 
-  let contentContainer: HTMLElement | undefined = $state();
-  let secondColumnContainer: HTMLElement | undefined = $state();
   let loadingContent = false;
   let loadingSecondColumn = false;
-
-  onMount(() => {
-    if (contentContainer && loadMoreContent) {
-      contentContainer.addEventListener("scroll", async () => {
-        if (
-          contentContainer &&
-          contentContainer.scrollTop + contentContainer.clientHeight >=
-            contentContainer.scrollHeight / 2 &&
-          loadingContent === false
-        ) {
-          loadingContent = true;
-          void loadMoreContent().finally(() => (loadingContent = false));
-        }
-      });
-    }
-
-    if (secondColumnContainer && loadMoreSecondColumn) {
-      secondColumnContainer.addEventListener("scroll", async () => {
-        if (
-          secondColumnContainer &&
-          secondColumnContainer.scrollTop +
-            secondColumnContainer.clientHeight >=
-            secondColumnContainer.scrollHeight / 2 &&
-          loadingSecondColumn === false
-        ) {
-          loadingSecondColumn = true;
-          void loadMoreSecondColumn().finally(
-            () => (loadingSecondColumn = false),
-          );
-        }
-      });
-    }
-  });
 </script>
 
 <style>
@@ -119,18 +84,12 @@
     justify-content: space-between;
   }
 
-  .secondColumn {
+  :global(.secondColumn) {
+    z-index: 10;
     grid-column: 2 / 3;
     max-width: 29rem;
     min-width: 14rem;
     padding: 1rem 1rem 1rem 0;
-  }
-
-  .content {
-    grid-column: 3 / 4;
-    width: 100%;
-    overflow: scroll;
-    overscroll-behavior: none;
   }
 </style>
 
@@ -148,18 +107,62 @@
     </div>
   {/if}
 
-  <div
+  <OverlayScrollbarsComponent
+    element="div"
     class="secondColumn"
-    style:padding-left={hideSidebar ? "1rem" : "0"}
-    bind:this={secondColumnContainer}
-    style:display={oneColumnLayout && !hideSidebar ? "none" : undefined}
-    style:overflow={styleSecondColumnOverflow}>
+    style={`padding-left: ${hideSidebar ? "1rem" : "0"}; ${oneColumnLayout && !hideSidebar ? "display: none;" : ""}; overflow: ${styleSecondColumnOverflow}`}
+    events={{
+      scroll: instance => {
+        const secondColumnContainer = instance.elements().target;
+        if (
+          loadMoreSecondColumn &&
+          secondColumnContainer.scrollTop +
+            secondColumnContainer.clientHeight >=
+            secondColumnContainer.scrollHeight / 2 &&
+          loadingSecondColumn === false
+        ) {
+          loadingSecondColumn = true;
+          void loadMoreSecondColumn().finally(
+            () => (loadingSecondColumn = false),
+          );
+        }
+      },
+    }}
+    options={{
+      overflow: { x: "visible" },
+      scrollbars: {
+        theme: "os-theme-radicle",
+        autoHide: "scroll",
+      },
+    }}
+    defer>
     {@render secondColumn()}
-  </div>
+  </OverlayScrollbarsComponent>
 
-  <div
-    class="content global-reset-scroll-after-navigate"
-    bind:this={contentContainer}>
+  <OverlayScrollbarsComponent
+    element="div"
+    events={{
+      scroll: instance => {
+        const contentContainer = instance.elements().target;
+        if (
+          loadMoreContent &&
+          contentContainer.scrollTop + contentContainer.clientHeight >=
+            contentContainer.scrollHeight / 2 &&
+          loadingContent === false
+        ) {
+          loadingContent = true;
+          void loadMoreContent().finally(() => (loadingContent = false));
+        }
+      },
+    }}
+    style="grid-column: 3/4; width: 100%;"
+    options={{
+      scrollbars: {
+        theme: "os-theme-radicle",
+        autoHide: "scroll",
+      },
+    }}
+    defer>
     {@render children()}
-  </div>
+  </OverlayScrollbarsComponent>
 </div>

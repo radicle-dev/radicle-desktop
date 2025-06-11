@@ -111,7 +111,7 @@
   {/if}
 </div>
 
-<div>
+<div style:z-index="20">
   <NakedButton
     styleHeight="2.5rem"
     variant="ghost"

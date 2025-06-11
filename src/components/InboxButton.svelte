@@ -4,6 +4,7 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
 
   import { onMount } from "svelte";
+  import { useOverlayScrollbars } from "overlayscrollbars-svelte";
 
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
@@ -20,12 +21,26 @@
 
   let { notificationCount }: Props = $props();
 
+  let borderComponent: HTMLElement | undefined = $state();
   let notificationPopoverExpaneded: boolean = $state(false);
   let buttonActive: boolean = $state(false);
 
   $effect(() => {
     if (notificationPopoverExpaneded === false) {
       buttonActive = false;
+    }
+  });
+
+  $effect(() => {
+    if (borderComponent) {
+      const [initialize] = useOverlayScrollbars({
+        options: () => ({
+          scrollbars: { theme: "os-theme-radicle", autoHide: "scroll" },
+        }),
+        defer: true,
+      });
+
+      initialize({ target: borderComponent });
     }
   });
 
@@ -128,6 +143,7 @@
 
   {#snippet popover()}
     <Border
+      bind:innerElement={borderComponent}
       variant="ghost"
       styleWidth="40rem"
       stylePadding="1rem"
