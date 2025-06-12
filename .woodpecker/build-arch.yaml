@@ -4,7 +4,34 @@ when:
     branch: main
   - event: manual
 
+variables:
+  - &plugin-sccache-read-only
+    s3-bucket: "build-caches"
+    s3-endpoint: "https://minio-api.radworks.garden"
+    s3-key-prefix: "radicle-desktop"
+    save-if: "false"
+    s3-access-key:
+      from_secret: minio_access_key
+    s3-secret-access-key:
+      from_secret: minio_secret_key
+
 steps:
+  read_cache:
+    image: quay.io/radicle_garden/plugin-sccache:latest
+    volumes:
+      - sccache:/sccache_data
+    settings: *plugin-sccache-read-only
+
+  update_cache:
+    image: quay.io/radicle_garden/plugin-sccache:latest
+    when:
+      evaluate: 'CI_PIPELINE_EVENT == "push" && CI_COMMIT_BRANCH == CI_REPO_DEFAULT_BRANCH && CI_COMMIT_MESSAGE startsWith "Release"'
+    volumes:
+      - sccache:/sccache_data
+    settings:
+      <<: *plugin-sccache-read-only
+      save-if: true
+
   build-arch:
     image: docker.io/library/archlinux:base-devel
     when:
