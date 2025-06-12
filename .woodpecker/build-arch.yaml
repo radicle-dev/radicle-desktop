@@ -8,7 +8,7 @@ steps:
   build-arch:
     image: docker.io/library/archlinux:base-devel
     when:
-      - path: "arch/*"
+      - path: "arch/*/*"
       - event: manual
     commands:
       - pacman -Sy --noconfirm git
