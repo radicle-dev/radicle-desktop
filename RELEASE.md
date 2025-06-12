@@ -21,8 +21,6 @@
 
   - Create a patch with the changes and wait for CI to pass
 
-- Create a patch on [radworks-product][1] to [update the download links][2].
-- Once merged, publish the website: `git push github main`.
 - Publish the Arch package by pushing changes to the [Arch User Repository][4]:
 
   ```bash
