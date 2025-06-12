@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -23,14 +23,14 @@ if [[ -z "${commit_message:-}" ]]; then
 fi
 
 if [[ ! -d radicle-desktop.git ]]; then
-  git clone ssh://aur.archlinux.org/radicle-desktop.git radicle-desktop.git
+  git clone ssh://aur@aur.archlinux.org/radicle-desktop.git radicle-desktop.git
 fi
 
 pushd radicle-desktop.git >/dev/null
 export GIT_PAGER=""
 git checkout master
 git pull
-cp --archive ../radicle-desktop/* ../radicle-desktop/.* .
+cp -a ../radicle-desktop/* ../radicle-desktop/.* .
 git diff
 git commit --all --message "$commit_message"
 if [[ "$push" == true ]]; then
