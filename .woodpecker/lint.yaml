@@ -17,14 +17,12 @@ variables:
 steps:
   read_cache:
     image: quay.io/radicle_garden/plugin-sccache:latest
-    pull: true
     volumes:
       - sccache:/sccache_data
     settings: *plugin-sccache-read-only
 
   update_cache:
     image: quay.io/radicle_garden/plugin-sccache:latest
-    pull: true
     when:
       evaluate: 'CI_PIPELINE_EVENT == "push" && CI_COMMIT_BRANCH == CI_REPO_DEFAULT_BRANCH && CI_COMMIT_MESSAGE startsWith "Release"'
     volumes:
@@ -46,7 +44,6 @@ steps:
 
   lint_rust:
     image: quay.io/radicle_garden/radicle-desktop-base:latest
-    pull: true
     volumes:
       - sccache:/sccache_data
     entrypoint:
