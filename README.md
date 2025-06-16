@@ -19,7 +19,7 @@ This desktop application lets you interact with [Radicle][rad], a peer-to-peer c
 Add the following to your `sources.list`:
 
 ```
-deb [trusted=yes] https://minio-api.radworks.garden/radworks-releases/radicle-desktop/debian unstable main
+deb [trusted=yes] https://radicle.xyz/apt unstable main
 ```
 
 Run from your shell:
