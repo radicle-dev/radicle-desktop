@@ -3,7 +3,6 @@
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
 
   import * as router from "@app/lib/router";
-  import { createEventEmittersOnce } from "@app/lib/startup.svelte";
   import { invoke } from "@app/lib/invoke";
   import { truncateDid } from "@app/lib/utils";
 
@@ -13,6 +12,10 @@
   import Spinner from "@app/components/Spinner.svelte";
   import TextInput from "@app/components/TextInput.svelte";
   import logo from "/radicle.svg?url";
+  import {
+    setUnlistenNodeEvents,
+    createEventEmittersOnce,
+  } from "@app/lib/startup.svelte";
 
   interface Props {
     profile: Author;
@@ -30,7 +33,7 @@
       try {
         await invoke("authenticate", { passphrase });
         if (window.__TAURI_INTERNALS__) {
-          await createEventEmittersOnce();
+          setUnlistenNodeEvents(await createEventEmittersOnce());
         }
         passphrase = " ".repeat(passphrase.length);
         await router.push({ resource: "home", activeTab: "all" });

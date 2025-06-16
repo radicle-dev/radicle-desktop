@@ -1,24 +1,28 @@
 <script lang="ts">
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
   import type { Config } from "@bindings/config/Config";
-  import type { UnlistenFn } from "@tauri-apps/api/event";
 
+  import delay from "lodash/delay";
+  import { listen } from "@tauri-apps/api/event";
   import { onDestroy, onMount } from "svelte";
 
   import * as router from "@app/lib/router";
   import { checkAuth, startup } from "@app/lib/auth.svelte";
-  import { createEventEmittersOnce } from "@app/lib/startup.svelte";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
+  import { nodeRunning } from "@app/lib/events";
   import {
     resetFontSize,
     increaseFontSize,
     decreaseFontSize,
     fontSettings,
   } from "@app/lib/appearance.svelte";
+  import {
+    setUnlistenNodeEvents,
+    unlistenNodeEvents,
+  } from "@app/lib/startup.svelte";
   import { theme } from "@app/components/ThemeSwitch.svelte";
   import { unreachable, isMac } from "@app/lib/utils";
-  import delay from "lodash/delay";
 
   import Auth from "@app/views/booting/Auth.svelte";
   import CreateIdentity from "@app/views/booting/CreateIdentity.svelte";
@@ -37,9 +41,6 @@
   const activeRouteStore = router.activeRouteStore;
 
   let profile = $state<Config>();
-  let unlistenEvents: UnlistenFn | undefined = undefined;
-  let unlistenNodeEvents: UnlistenFn | undefined = undefined;
-  let unlistenSyncStatus: UnlistenFn | undefined = undefined;
 
   let showSpinner = $state(false);
   delay(() => (showSpinner = true), 1000);
@@ -53,8 +54,11 @@
     }
 
     if (window.__TAURI_INTERNALS__) {
-      [unlistenEvents, unlistenNodeEvents, unlistenSyncStatus] =
-        await createEventEmittersOnce();
+      setUnlistenNodeEvents(
+        await listen<boolean>("node_running", event => {
+          nodeRunning.set(event.payload);
+        }),
+      );
     }
 
     try {
@@ -73,12 +77,6 @@
   });
 
   onDestroy(() => {
-    if (unlistenEvents) {
-      unlistenEvents();
-    }
-    if (unlistenSyncStatus) {
-      unlistenSyncStatus();
-    }
     if (unlistenNodeEvents) {
       unlistenNodeEvents();
     }

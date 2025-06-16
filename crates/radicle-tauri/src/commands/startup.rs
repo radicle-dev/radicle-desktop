@@ -1,12 +1,8 @@
-use std::collections::BTreeMap;
-
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
 use radicle::cob::cache::COBS_DB_FILE;
-use radicle::identity::RepoId;
 use radicle::node::{Handle, Node, NOTIFICATIONS_DB_FILE};
-use radicle::storage::ReadStorage;
 
 use radicle_types::config::Config;
 use radicle_types::error::Error;
@@ -49,8 +45,6 @@ pub(crate) fn check_radicle_cli(ctx: tauri::State<AppState>) -> Result<(), Error
 pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     let profile = radicle::Profile::load()?;
     let home = profile.home();
-    let repositories = profile.storage.repositories()?;
-    let public_key = profile.public_key;
 
     let cobs_cache = radicle::cob::cache::Store::open(home.cobs().join(COBS_DB_FILE))?;
     cobs_cache.check_version()?;
@@ -65,13 +59,9 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     let patch_service = domain::patch::service::Service::new(cob_db);
 
     let node_handle = app.app_handle().clone();
-    let sync_handle = app.app_handle().clone();
-    let events_handle = app.app_handle().clone();
 
     let node = Node::new(profile.socket());
     let node_status = node.clone();
-
-    let mut node_seeds = node.clone();
 
     app.manage(inbox_service);
     app.manage(patch_service);
@@ -79,47 +69,6 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     tauri::async_runtime::spawn(async move {
         loop {
             let _ = node_handle.emit("node_running", node_status.is_running());
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-        }
-    });
-
-    tauri::async_runtime::spawn(async move {
-        loop {
-            let mut sync_status =
-                BTreeMap::<RepoId, Option<radicle_types::cobs::repo::SyncStatus>>::new();
-            for repo in &repositories {
-                if let Ok(seeds) = node_seeds.seeds(repo.rid).map(Into::<Vec<_>>::into) {
-                    if let Some(status) =
-                        seeds
-                            .iter()
-                            .find_map(|radicle::node::Seed { nid, sync, .. }| {
-                                (*nid == public_key).then_some(sync.clone())
-                            })
-                    {
-                        sync_status.insert(repo.rid, status.map(Into::into));
-                    } else {
-                        // The local node wasn't found in the seed nodes table.
-                        sync_status.insert(repo.rid, None);
-                    }
-                }
-            }
-            let _ = sync_handle.emit("sync_status", sync_status);
-            tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-        }
-    });
-
-    tauri::async_runtime::spawn(async move {
-        loop {
-            if node.is_running() {
-                log::info!("node: spawned node event subscription.");
-                while let Ok(events) = node.subscribe(std::time::Duration::MAX) {
-                    for event in events.into_iter().flatten() {
-                        let _ = events_handle.emit("event", event);
-                    }
-                }
-                log::info!("node: event subscription loop has exited.");
-            }
-
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         }
     });
