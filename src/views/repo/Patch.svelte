@@ -453,7 +453,7 @@
     <div
       class="txt-medium global-flex"
       style:font-weight="var(--font-weight-medium)"
-      style:min-width="450px"
+      style:min-width="28rem"
       style:min-height="2.5rem"
       style:margin-bottom="1rem">
       <PatchStateFilterButton

@@ -66,7 +66,7 @@
     align-items: center;
     min-height: 2.5rem;
     margin-bottom: 1rem;
-    min-width: 450px;
+    min-width: 28rem;
   }
   .list {
     display: flex;
