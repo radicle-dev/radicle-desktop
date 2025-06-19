@@ -147,6 +147,20 @@
     color: var(--color-foreground-dim);
   }
 
+  textarea::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+
+  textarea::-webkit-scrollbar-track {
+    background-color: transparent;
+  }
+
+  textarea::-webkit-scrollbar-thumb {
+    background-color: var(--color-fill-ghost);
+    border-radius: 4px;
+  }
+
   .dragover {
     position: absolute;
     opacity: 0.5;
