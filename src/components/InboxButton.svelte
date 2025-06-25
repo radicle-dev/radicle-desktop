@@ -35,7 +35,7 @@
     if (borderComponent) {
       const [initialize] = useOverlayScrollbars({
         options: () => ({
-          scrollbars: { theme: "os-theme-radicle", autoHide: "scroll" },
+          scrollbars: { theme: "global-os-theme-radicle", autoHide: "scroll" },
         }),
         defer: true,
       });

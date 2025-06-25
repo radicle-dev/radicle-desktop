@@ -131,7 +131,7 @@
     options={{
       overflow: { x: "visible" },
       scrollbars: {
-        theme: "os-theme-radicle",
+        theme: "global-os-theme-radicle",
         autoHide: "scroll",
       },
     }}
@@ -158,7 +158,7 @@
     style="grid-column: 3/4; width: 100%;"
     options={{
       scrollbars: {
-        theme: "os-theme-radicle",
+        theme: "global-os-theme-radicle",
         autoHide: "scroll",
       },
     }}
