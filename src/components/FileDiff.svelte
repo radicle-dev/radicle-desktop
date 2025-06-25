@@ -96,13 +96,13 @@
     {/if}
 
     {#if file.status === "added"}
-      <span class="global-counter added">added</span>
+      <span class="global-counter added">Added</span>
     {:else if file.status === "deleted"}
-      <span class="global-counter deleted">deleted</span>
+      <span class="global-counter deleted">Deleted</span>
     {:else if file.status === "moved"}
-      <span class="global-counter moved">moved</span>
+      <span class="global-counter moved">Moved</span>
     {:else if file.status === "copied"}
-      <span class="global-counter copied">copied</span>
+      <span class="global-counter copied">Copied</span>
     {/if}
   {/snippet}
 
@@ -120,7 +120,7 @@
     {#if commentsOfThisFile && commentsOfThisFile.threads.length > 0}
       {#if unresolvedThreads > 0}
         <div class="global-flex">
-          <Icon name="comment" />
+          <Icon name="comment-cross" />
           {unresolvedThreads}
         </div>
       {/if}

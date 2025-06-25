@@ -241,11 +241,11 @@ export function gravatarURL(email: string): string {
 
 export function verdictIcon(verdict: Review["verdict"]) {
   if (verdict === "accept") {
-    return "comment-checkmark";
+    return "thumb-up";
   } else if (verdict === "reject") {
-    return "comment-cross";
+    return "stop";
   } else {
-    return "comment";
+    return "review";
   }
 }
 

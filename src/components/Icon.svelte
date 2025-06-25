@@ -71,12 +71,15 @@
       | "plus"
       | "reply"
       | "repo"
+      | "review"
       | "revision"
       | "seedling"
       | "seedling-filled"
       | "settings"
+      | "stop"
       | "sun"
       | "thumb-up"
+      | "unresolve"
       | "user"
       | "warning";
   }
@@ -1163,6 +1166,35 @@
     <path d="M7 8H5V9L7 9L7 8Z" />
     <path d="M7 10H5L5 11H7L7 10Z" />
     <path d="M7 12H5L5 13H7L7 12Z" />
+  {:else if name === "review"}
+    <path d="M11 5L8 5V4L11 4V5Z" />
+    <path d="M9 7L10 7V6L9 6V7Z" />
+    <path d="M10 9H9L9 10H10V9Z" />
+    <path d="M7 6V7H6L6 6L7 6Z" />
+    <path d="M4 6L4 7H3L3 6H4Z" />
+    <path d="M12 10V9L13 9V10L12 10Z" />
+    <path d="M12 6L11 6V5L12 5V6Z" />
+    <path d="M7 10L8 10L8 11H7L7 10Z" />
+    <path d="M4 10H5L5 11L4 11L4 10Z" />
+    <path d="M5 11L7 11L7 12L5 12L5 11Z" />
+    <path d="M8 6L7 6V5L8 5V6Z" />
+    <path d="M5 6H4L4 5L5 5V6Z" />
+    <path d="M7 5L5 5L5 4L7 4V5Z" />
+    <path d="M11 10H12V11L11 11V10Z" />
+    <path d="M12 7V6L13 6V7L12 7Z" />
+    <path d="M7 9L7 10H6L6 9H7Z" />
+    <path d="M4 9L4 10H3L3 9H4Z" />
+    <path d="M8 11H11L11 12H8L8 11Z" />
+    <path d="M8 8L8 7H9L9 8H8Z" />
+    <path d="M11 8L11 9L10 9L10 8L11 8Z" />
+    <path d="M10 8V7L11 7V8L10 8Z" />
+    <path d="M9 8L9 9H8V8H9Z" />
+    <path d="M14 7V8H13V7L14 7Z" />
+    <path d="M5 9V8H6V9L5 9Z" />
+    <path d="M2 9L2 8H3L3 9L2 9Z" />
+    <path d="M6 7L6 8H5L5 7H6Z" />
+    <path d="M3 7L3 8H2L2 7H3Z" />
+    <path d="M13 9V8H14V9H13Z" />
   {:else if name === "revision"}
     <path d="M6 13H8V14H6V13Z" />
     <path d="M8 13H9V14H8V13Z" />
@@ -1262,6 +1294,20 @@
     <path d="M4 4L5 4L5 7H4V4Z" />
     <path d="M11 9L12 9V12H11V9Z" />
     <path d="M7 4L8 4V7L7 7V4Z" />
+  {:else if name === "stop"}
+    <path d="M3.5 5L3.5 13H2.5L2.5 5H3.5Z" />
+    <path d="M5.5 4L5.5 8H4.5L4.5 4H5.5Z" />
+    <path d="M7.5 3L7.5 8H6.5L6.5 3L7.5 3Z" />
+    <path d="M3.5 13L12.5 13V14L3.5 14L3.5 13Z" />
+    <path d="M3.5 4H5.5V5H3.5L3.5 4Z" />
+    <path d="M12.5 8L13.5 8L13.5 12H12.5L12.5 8Z" />
+    <path d="M11.5 7H12.5V8H11.5V7Z" />
+    <path d="M8.5 3H9.5V8H8.5V3Z" />
+    <path d="M10.5 4H11.5L11.5 10H10.5L10.5 4Z" />
+    <path d="M5.5 3L6.5 3L6.5 4H5.5L5.5 3Z" />
+    <path d="M7.5 2H8.5V3L7.5 3V2Z" />
+    <path d="M9.5 3L10.5 3V4L9.5 4V3Z" />
+    <path d="M11.5 12L12.5 12V13H11.5V12Z" />
   {:else if name === "sun"}
     <path d="M8 2H9V3H8V2Z" />
     <path d="M14 8V9H13V8H14Z" />
@@ -1306,6 +1352,32 @@
     <path d="M7 6H8V7H7L7 6Z" />
     <path d="M7 10L8 10V11L7 11L7 10Z" />
     <path d="M7 12L8 12L8 13H7L7 12Z" />
+  {:else if name === "unresolve"}
+    <path d="M7 11.5V12.5H6V11.5H7Z" />
+    <path d="M8 10.5V11.5L7 11.5L7 10.5H8Z" />
+    <path d="M10 8.5V9.5H9V8.5H10Z" />
+    <path d="M11 7.5V8.5L10 8.5L10 7.5H11Z" />
+    <path d="M10 7.5L10 8.5H9L9 7.5L10 7.5Z" />
+    <path d="M12 6.5V7.5H11V6.5H12Z" />
+    <path d="M13 5.5V6.5L12 6.5V5.5L13 5.5Z" />
+    <path d="M4 8.5V9.5H3L3 8.5H4Z" />
+    <path d="M5 8.5L5 9.5H4V8.5H5Z" />
+    <path d="M6 9.5L6 10.5H5V9.5H6Z" />
+    <path d="M7 10.5L7 11.5H6L6 10.5H7Z" />
+    <path d="M8 9.5V10.5H7V9.5H8Z" />
+    <path d="M11 6.5V7.5H10V6.5H11Z" />
+    <path d="M12 5.5V6.5H11V5.5H12Z" />
+    <path d="M5 9.5V10.5H4L4 9.5H5Z" />
+    <path d="M6 10.5L6 11.5H5L5 10.5H6Z" />
+    <path d="M12 11.5H13V12.5H12V11.5Z" />
+    <path d="M11 10.5H12L12 11.5H11V10.5Z" />
+    <path d="M10 9.5L11 9.5V10.5H10V9.5Z" />
+    <path d="M9 8.5H10V9.5H9V8.5Z" />
+    <path d="M8 7.5L9 7.5L9 8.5H8V7.5Z" />
+    <path d="M7 6.5H8V7.5H7V6.5Z" />
+    <path d="M6 5.5H7V6.5H6V5.5Z" />
+    <path d="M5 4.5H6V5.5L5 5.5V4.5Z" />
+    <path d="M4 3.5L5 3.5V4.5L4 4.5V3.5Z" />
   {:else if name === "user"}
     <path d="M5 3H6V4H5V3Z" />
     <path d="M5 6L5 8H4V6H5Z" />

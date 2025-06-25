@@ -2,7 +2,6 @@
   import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
   import type { Embed } from "@bindings/cob/thread/Embed";
-  import type { PatchStatus } from "@app/views/repo/router";
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Thread } from "@bindings/cob/thread/Thread";
 
@@ -17,7 +16,6 @@
   import Changes from "@app/components/Changes.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import Discussion from "@app/components/Discussion.svelte";
-  import Reviews from "@app/components/Reviews.svelte";
 
   interface Props {
     rid: string;
@@ -25,19 +23,11 @@
     patchId: string;
     revision: Revision;
     config: Config;
-    status: PatchStatus | undefined;
     loadPatch: () => Promise<void>;
   }
 
-  const {
-    rid,
-    repoDelegates,
-    patchId,
-    revision,
-    config,
-    status,
-    loadPatch,
-  }: Props = $props();
+  const { rid, repoDelegates, patchId, revision, config, loadPatch }: Props =
+    $props();
 
   const commentThreads = $derived(
     ((revision.discussion &&
@@ -218,8 +208,6 @@
     ) && partial(editRevision, revision.id)}>
   </CommentComponent>
 </div>
-
-<Reviews {config} {patchId} {revision} {rid} {status} />
 
 <Discussion
   cobId={patchId}

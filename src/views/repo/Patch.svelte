@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Action } from "@bindings/cob/patch/Action";
-  import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
   import type { DraftReview } from "@app/lib/draftReviewStorage";
   import type { Operation } from "@bindings/cob/Operation";
@@ -13,51 +12,48 @@
 
   import fuzzysort from "fuzzysort";
 
-  import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
   import { DEFAULT_TAKE } from "./router";
   import { announce } from "@app/components/AnnounceSwitch.svelte";
-  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import {
+    didFromPublicKey,
     explorerUrl,
     formatOid,
-    patchStatusBackgroundColor,
-    patchStatusColor,
     verdictIcon,
   } from "@app/lib/utils";
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { invoke } from "@app/lib/invoke";
   import { modifierKey } from "@app/lib/utils";
   import { nodeRunning } from "@app/lib/events";
+  import { push } from "@app/lib/router";
 
-  import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
   import CheckoutPatchButton from "@app/components/CheckoutPatchButton.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
-  import LabelInput from "@app/components/LabelInput.svelte";
   import Link from "@app/components/Link.svelte";
+  import MoreBreadcrumbsButton from "@app/components/MoreBreadcrumbsButton.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
-  import PatchStateButton from "@app/components/PatchStateButton.svelte";
+  import PatchMetadata from "@app/components/PatchMetadata.svelte";
+  import PatchStateButtonCompact from "@app/components/PatchStateButtonCompact.svelte";
   import PatchStateFilterButton from "@app/components/PatchStateFilterButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import PatchTimeline from "@app/components/PatchTimeline.svelte";
   import ReviewComponent from "@app/components/Review.svelte";
-  import RevisionBadges from "@app/components/RevisionBadges.svelte";
   import RevisionComponent from "@app/components/Revision.svelte";
-  import RevisionSelector from "@app/components/RevisionSelector.svelte";
+  import Revisions from "@app/components/Revisions.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
-  import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
+  import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
   import Layout from "./Layout.svelte";
   import PatchesBreadcrumb from "./PatchesBreadcrumb.svelte";
   import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
-  import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
-  import MoreBreadcrumbsButton from "@app/components/MoreBreadcrumbsButton.svelte";
-  import DropdownListItem from "@app/components/DropdownListItem.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -89,10 +85,9 @@
   let more: boolean = $state(false);
   let patchTeasers: Patch[] = $state([]);
 
+  let hideTimeline = $state(true);
   let patches = $state(initialPatches);
   let status = $state(initialStatus);
-  let labelSaveInProgress: boolean = $state(false);
-  let assigneesSaveInProgress: boolean = $state(false);
   let tab: "patch" | "revisions" | "timeline" = $state(
     revisions.length > 1 ? "revisions" : "patch",
   );
@@ -114,6 +109,24 @@
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
+  async function saveState(newState: Patch["state"]) {
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        action: {
+          type: "lifecycle",
+          state: newState,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Changing state failed", error);
+    } finally {
+      await loadPatch();
+    }
+  }
+
   async function updateTitle(newTitle: string) {
     try {
       await invoke("edit_patch", {
@@ -129,64 +142,6 @@
       });
     } catch (error) {
       console.error("Editing title failed: ", error);
-    } finally {
-      await loadPatch();
-    }
-  }
-
-  async function saveLabels(labels: string[]) {
-    try {
-      labelSaveInProgress = true;
-      await invoke("edit_patch", {
-        rid: repo.rid,
-        cobId: patch.id,
-        action: {
-          type: "label",
-          labels,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Editing labels failed", error);
-    } finally {
-      labelSaveInProgress = false;
-      await loadPatch();
-    }
-  }
-
-  async function saveAssignees(assignees: Author[]) {
-    try {
-      assigneesSaveInProgress = true;
-      await invoke("edit_patch", {
-        rid: repo.rid,
-        cobId: patch.id,
-        action: {
-          type: "assign",
-          assignees,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Editing assignees failed", error);
-    } finally {
-      assigneesSaveInProgress = false;
-      await loadPatch();
-    }
-  }
-
-  async function saveState(newState: Patch["state"]) {
-    try {
-      await invoke("edit_patch", {
-        rid: repo.rid,
-        cobId: patch.id,
-        action: {
-          type: "lifecycle",
-          state: newState,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Changing state failed", error);
     } finally {
       await loadPatch();
     }
@@ -320,37 +275,30 @@
       }
     }
   }
+  const reviewsOfSelectedRevision: Array<Review | DraftReview> = $derived(
+    [
+      draftReviewStorage.getForRevision(selectedRevision.id, {
+        did: didFromPublicKey(config.publicKey),
+        alias: config.alias,
+      }),
+      ...(selectedRevision.reviews ?? []),
+    ].filter((review): review is Review | DraftReview => Boolean(review)),
+  );
+  const hasOwnReview = $derived(
+    reviewsOfSelectedRevision.some(
+      value => value.author.did === didFromPublicKey(config.publicKey),
+    ),
+  );
 </script>
 
 <style>
-  .status {
-    padding: 0;
-    height: 2.5rem;
-    width: 2.5rem;
-  }
   .content {
     padding: 1rem 1rem 1rem 0;
   }
-
-  .metadata-divider {
-    width: 2px;
-    background-color: var(--color-fill-ghost);
-    height: calc(100% + 4px);
-    top: 0;
-    position: relative;
-  }
-  .metadata-section {
-    padding: 0.5rem;
-    font-size: var(--font-size-small);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    height: 100%;
-    z-index: 20;
-  }
-  .metadata-section-title {
-    margin-bottom: 0.5rem;
-    color: var(--color-foreground-dim);
+  .container {
+    display: grid;
+    grid-template-columns: 1fr min-content;
+    grid-template-areas: "main-content right-sidebar";
   }
   .list {
     display: flex;
@@ -593,162 +541,135 @@
   {:else}
     <div class="content">
       <div class="global-flex" style:margin-bottom="1rem" style:gap="0.75rem">
-        <div
-          class="global-counter status"
-          style:color={patchStatusColor[patch.state.status]}
-          style:background-color={patchStatusBackgroundColor[
-            patch.state.status
-          ]}>
-          <Icon
-            name={patch.state.status === "open"
-              ? "patch"
-              : `patch-${patch.state.status}`} />
-        </div>
+        <PatchStateButtonCompact
+          selectedState={patch.state}
+          onSelect={newState => {
+            void saveState(newState);
+          }} />
         <EditableTitle
           {updateTitle}
           allowedToEdit={true}
           title={patch.title}
           cobId={patch.id} />
-        <div style:margin-left="auto" style:z-index="40">
+        <div
+          class="global-flex"
+          style:margin-left="auto"
+          style:z-index="40"
+          style:gap="1rem">
           <CheckoutPatchButton
             {tab}
             selectedRevisionId={selectedRevision.id}
             patchId={patch.id} />
-        </div>
-      </div>
-      <Border variant="ghost" styleGap="0">
-        <div class="metadata-section" style:min-width="8rem">
-          <div class="metadata-section-title">Status</div>
-          <PatchStateButton
-            selectedState={patch.state}
-            onSelect={newState => {
-              void saveState(newState);
-              if (status !== undefined && newState.status !== status) {
-                status = undefined;
-                void loadPatches(status);
-              }
-            }} />
-        </div>
-
-        <div class="metadata-divider"></div>
-
-        <div class="metadata-section" style:flex="1">
-          <LabelInput
-            allowedToEdit={!!roles.isDelegateOrAuthor(
-              config.publicKey,
-              repo.delegates.map(delegate => delegate.did),
-              patch.author.did,
-            )}
-            labels={patch.labels}
-            submitInProgress={labelSaveInProgress}
-            save={saveLabels} />
-        </div>
-
-        <div class="metadata-divider"></div>
-
-        <div class="metadata-section" style:flex="1">
-          <AssigneeInput
-            allowedToEdit={!!roles.isDelegateOrAuthor(
-              config.publicKey,
-              repo.delegates.map(delegate => delegate.did),
-              patch.author.did,
-            )}
-            assignees={patch.assignees}
-            submitInProgress={assigneesSaveInProgress}
-            save={saveAssignees} />
-        </div>
-      </Border>
-
-      <div class="global-flex" style:gap="0.5rem" style:margin-top="1rem">
-        <Border stylePosition="relative" variant="ghost" flatBottom>
-          <div
-            class="global-flex"
-            style:z-index="10"
-            style:gap="1rem"
-            style:padding="0 1rem"
-            style:width="100%">
-            <span class="txt-small" style:color="var(--color-foreground-dim)">
-              Revisions
+          <Button
+            variant="secondary"
+            styleHeight="2.5rem"
+            disabled={hasOwnReview}
+            onclick={() => {
+              const id = draftReviewStorage.create(
+                repo.rid,
+                selectedRevision.id,
+              );
+              void push({
+                resource: "repo.patch",
+                rid: repo.rid,
+                patch: patch.id,
+                reviewId: id,
+                status,
+              });
+            }}
+            title={hasOwnReview
+              ? "You already created a review for this revision"
+              : "Review revision"}>
+            <Icon name="review" />
+            <span class="txt-small global-hide-on-medium-desktop-down">
+              Review revision
             </span>
-            <Tab
-              active={tab === "patch"}
-              onclick={() => {
-                tab = "patch";
-              }}>
-              {formatOid(patch.id)}
-              <span
-                class="global-counter"
-                style:height="1.5rem"
-                style:color="var(--color-foreground-contrast)">
-                Initial
-              </span>
-            </Tab>
-            {#if revisions.length > 1}
-              <Tab
-                active={tab === "revisions"}
-                onclick={() => {
-                  tab = "revisions";
-                }}>
-                {formatOid(selectedRevision.id)}
-                <div class="global-flex" style:gap="0.25rem">
-                  <RevisionBadges revision={selectedRevision} {revisions} />
-                  <RevisionSelector
-                    {patch}
-                    {revisions}
-                    {selectedRevision}
-                    selectRevision={rev => {
-                      selectedRevision = rev;
-                      tab = "revisions";
-                    }} />
-                </div>
-              </Tab>
-            {/if}
-
-            <div style:margin-left="auto">
-              <Tab
-                active={tab === "timeline"}
-                onclick={() => {
-                  tab = "timeline";
-                }}>
-                <Icon name="clock" />
-                Timeline
-              </Tab>
-            </div>
-          </div>
-        </Border>
+          </Button>
+        </div>
       </div>
-
-      <Border
-        variant="ghost"
-        flatTop
-        styleWidth="100%"
-        stylePadding="1rem"
-        styleMinWidth="0"
-        styleDisplay="block"
-        styleFlexDirection="column"
-        styleAlignItems="flex-start">
-        {#if tab === "patch"}
+      <div class="global-hide-on-desktop-up" style:margin-top="1rem">
+        <PatchMetadata
+          {config}
+          {loadPatch}
+          {patch}
+          {repo}
+          {saveState}
+          horizontal />
+      </div>
+      <div
+        class="global-hide-on-desktop-up"
+        style:padding="0.5rem"
+        style:margin-bottom="2rem">
+        <div
+          class="txt-small"
+          style:margin-bottom="1rem"
+          style:color="var(--color-foreground-dim)">
+          Revisions
+        </div>
+        <Revisions
+          {config}
+          rid={repo.rid}
+          selectRevision={rev => {
+            selectedRevision = rev;
+            tab = "revisions";
+          }}
+          {patch}
+          {revisions}
+          {selectedRevision}
+          {status} />
+      </div>
+      <div class="container">
+        <div style:grid-area="main-content" style:min-width="0">
           <RevisionComponent
             rid={repo.rid}
             repoDelegates={repo.delegates}
             patchId={patch.id}
             {loadPatch}
-            {status}
-            revision={revisions[0]}
-            {config} />
-        {:else if tab === "timeline"}
-          <PatchTimeline {activity} patchId={patch.id} />
-        {:else}
-          <RevisionComponent
-            rid={repo.rid}
-            repoDelegates={repo.delegates}
-            patchId={patch.id}
-            {loadPatch}
-            {status}
             revision={selectedRevision}
             {config} />
-        {/if}
-      </Border>
+          <div class="global-flex" style:margin-top="1.5rem">
+            <NakedButton
+              variant="ghost"
+              onclick={() => (hideTimeline = !hideTimeline)}
+              stylePadding="0 4px">
+              <Icon name={hideTimeline ? "chevron-right" : "chevron-down"} />
+            </NakedButton>
+            <div class="txt-semibold global-flex txt-regular">Timeline</div>
+          </div>
+          <div
+            style:display={hideTimeline ? "none" : "revert"}
+            style:margin-top="1rem">
+            <PatchTimeline {activity} patchId={patch.id} />
+          </div>
+        </div>
+
+        <div
+          class="global-hide-on-medium-desktop-down"
+          style:grid-area="right-sidebar"
+          style:margin-left="1rem"
+          style:width="22rem">
+          <PatchMetadata {config} {loadPatch} {patch} {repo} {saveState} />
+          <div style:margin-top="0.5rem" style:padding="0.5rem">
+            <div
+              class="txt-small"
+              style:margin-bottom="1rem"
+              style:color="var(--color-foreground-dim)">
+              Revisions
+            </div>
+            <Revisions
+              {config}
+              rid={repo.rid}
+              selectRevision={rev => {
+                selectedRevision = rev;
+                tab = "revisions";
+              }}
+              {patch}
+              {revisions}
+              {selectedRevision}
+              {status} />
+          </div>
+        </div>
+      </div>
     </div>
   {/if}
 </Layout>

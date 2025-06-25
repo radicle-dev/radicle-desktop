@@ -420,7 +420,7 @@
                     onclick={() => toggleCommentExpand(thread.root.id)} />
                 {:else}
                   <Icon
-                    name="comment"
+                    name="comment-cross"
                     onclick={() => toggleCommentExpand(thread.root.id)} />
                 {/if}
               {/if}
@@ -439,7 +439,7 @@
                     {#if thread.root.resolved}
                       <div title="Unresolve comment thread">
                         <Icon
-                          name="cross"
+                          name="unresolve"
                           onclick={partial(
                             codeComments.changeCommentStatus,
                             thread.root.id,

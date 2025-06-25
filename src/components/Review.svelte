@@ -345,11 +345,15 @@
         <NodeId
           {...authorForNodeId(review.author)}
           styleFontSize="var(--font-size-medium)"
-          styleFontWeight="var(--font-weight-medium)" />'s
+          styleFontWeight="var(--font-weight-medium)" />'s review
         {#if "draft" in review}
-          draft
+          <span
+            class="global-counter"
+            style:margin-left="0.5rem"
+            title="This review is not yet visible to your peers">
+            Draft
+          </span>
         {/if}
-        review
       </span>
       {#if "draft" in review}
         <div style:margin-inline-start="auto">

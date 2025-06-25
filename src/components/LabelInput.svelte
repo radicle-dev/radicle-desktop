@@ -73,9 +73,14 @@
 </script>
 
 <style>
-  .header {
+  .add-icon {
+    display: none;
+  }
+  .title-button:hover .add-icon {
+    display: flex;
+  }
+  .title-button {
     font-size: var(--font-size-small);
-    margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
   }
   .body {
@@ -85,6 +90,7 @@
     flex-direction: row;
     gap: 0.5rem;
     font-size: var(--font-size-small);
+    margin-top: 1rem;
   }
   .validation-message {
     display: flex;
@@ -97,74 +103,101 @@
   button {
     border: 0;
     cursor: pointer;
-    color: var(--color-foreground-default);
     gap: 0.5rem;
+    background-color: transparent;
+    border: none;
+    display: flex;
+    color: var(--color-foreground-default);
+    padding: 0;
+    align-items: center;
   }
 </style>
 
-<div style:width="100%">
-  <div class="global-flex" style:align-items="flex-start">
-    <div class="header">Labels</div>
+<div class="global-flex">
+  <button
+    disabled={!allowedToEdit}
+    style:color={allowedToEdit
+      ? "var(--color-foreground-dim)"
+      : "var(--color-foreground-disabled)"}
+    title={allowedToEdit
+      ? undefined
+      : "Only delegates are allowed to add labels"}
+    style:cursor={allowedToEdit ? "pointer" : "default"}
+    class="title-button"
+    onclick={() => {
+      inputValue = "";
+      showInput = !showInput;
+    }}>
+    {#if updatedLabels.length === 0}
+      Add labels
+    {:else}
+      Labels
+    {/if}
 
-    {#if allowedToEdit}
-      <div class="global-flex" style:margin-left="auto">
-        {#if showInput}
-          <Icon
-            onclick={addLabel}
-            disabled={!valid || inputValue === ""}
-            name="checkmark" />
-          <Icon
-            onclick={() => {
-              inputValue = "";
-              showInput = false;
-            }}
-            name="cross" />
-        {:else}
-          <Icon name="add" onclick={() => (showInput = true)}></Icon>
-        {/if}
+    {#if !showInput && allowedToEdit}
+      <span class="add-icon">
+        <Icon name="add"></Icon>
+      </span>
+    {/if}
+  </button>
+
+  {#if allowedToEdit}
+    <div class="global-flex edit-icons">
+      {#if showInput}
+        <Icon
+          onclick={addLabel}
+          name="checkmark"
+          disabled={!valid || inputValue === ""} />
+        <Icon
+          onclick={() => {
+            inputValue = "";
+            showInput = false;
+          }}
+          name="cross" />
+      {/if}
+    </div>
+  {/if}
+</div>
+
+{#if showInput}
+  <div style:margin-top="1rem">
+    <TextInput
+      autofocus
+      {valid}
+      disabled={submitInProgress}
+      placeholder="Add label"
+      bind:value={inputValue}
+      onSubmit={addLabel} />
+    {#if !valid && validationMessage}
+      <div class="validation-message">
+        <Icon name="warning" />{validationMessage}
       </div>
     {/if}
   </div>
+{/if}
 
+{#if updatedLabels.length > 0}
   <div class="body">
     {#if allowedToEdit}
       {#each updatedLabels as label}
         <button
           class="global-counter txt-small"
+          style:background-color="var(--color-fill-counter)"
+          style:padding="0 0.5rem"
           style:max-width="10rem"
           onclick={() => (removeToggles[label] = !removeToggles[label])}>
           <div class="txt-overflow" title={label}>{label}</div>
           {#if removeToggles[label]}
-            <Icon name="cross" onclick={() => removeLabel(label)} />
+            <span style:margin-right="0.5rem">
+              <Icon name="cross" onclick={() => removeLabel(label)} />
+            </span>
           {/if}
         </button>
       {/each}
-      {#if updatedLabels.length === 0 && !showInput}
-        <div class="txt-missing">No labels.</div>
-      {/if}
     {:else}
       {#each updatedLabels as label}
         <Label {label} />
-      {:else}
-        <div class="txt-missing">No labels.</div>
       {/each}
     {/if}
   </div>
-
-  {#if showInput}
-    <div style:margin-top="0.5rem">
-      <TextInput
-        autofocus
-        {valid}
-        disabled={submitInProgress}
-        placeholder="Add label"
-        bind:value={inputValue}
-        onSubmit={addLabel} />
-      {#if !valid && validationMessage}
-        <div class="validation-message">
-          <Icon name="warning" />{validationMessage}
-        </div>
-      {/if}
-    </div>
-  {/if}
-</div>
+{/if}

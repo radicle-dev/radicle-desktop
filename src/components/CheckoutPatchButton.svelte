@@ -2,9 +2,9 @@
   import { formatOid } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
-  import Button from "@app/components/Button.svelte";
   import Command from "@app/components/Command.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
   import Popover from "@app/components/Popover.svelte";
 
   interface Props {
@@ -31,13 +31,15 @@
   popoverPositionTop="3rem"
   bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
-    <Button
+    <NakedButton
+      title="Checkout patch"
       styleHeight="2.5rem"
-      variant="secondary"
+      variant="ghost"
       {onclick}
       active={popoverExpanded}>
-      <Icon name="checkout" />Checkout patch
-    </Button>
+      <Icon name="checkout" />
+      <span class="global-hide-on-medium-desktop-down">Checkout patch</span>
+    </NakedButton>
   {/snippet}
   {#snippet popover()}
     <Border

@@ -251,7 +251,7 @@
       <div class="timeline-item">
         {#if op.verdict === "accept"}
           <div class="icon" style:color="var(--color-foreground-success)">
-            <Icon name="comment-checkmark" />
+            <Icon name="thumb-up" />
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
@@ -262,7 +262,7 @@
           </div>
         {:else if op.verdict === "reject"}
           <div class="icon" style:color="var(--color-foreground-red)">
-            <Icon name="comment-cross" />
+            <Icon name="stop" />
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />

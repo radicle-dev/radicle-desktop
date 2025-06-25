@@ -94,9 +94,14 @@
 </script>
 
 <style>
-  .header {
+  .add-icon {
+    display: none;
+  }
+  .title-button:hover .add-icon {
+    display: flex;
+  }
+  .title-button {
     font-size: var(--font-size-small);
-    margin-bottom: 0.5rem;
     color: var(--color-foreground-dim);
   }
   .body {
@@ -104,8 +109,9 @@
     align-items: center;
     flex-wrap: wrap;
     flex-direction: row;
-    gap: 0.5rem;
+    gap: 1rem;
     font-size: var(--font-size-small);
+    margin-top: 1rem;
   }
   .validation-message {
     display: flex;
@@ -123,33 +129,75 @@
     border: none;
     display: flex;
     color: var(--color-foreground-default);
+    padding: 0;
+    align-items: center;
   }
 </style>
 
-<div style:width="100%">
-  <div class="global-flex" style:align-items="flex-start">
-    <div class="header">Assignees</div>
+<div class="global-flex">
+  <button
+    disabled={!allowedToEdit}
+    style:color={allowedToEdit
+      ? "var(--color-foreground-dim)"
+      : "var(--color-foreground-disabled)"}
+    title={allowedToEdit
+      ? undefined
+      : "Only delegates are allowed to add assignees"}
+    style:cursor={allowedToEdit ? "pointer" : "default"}
+    class="title-button"
+    onclick={() => {
+      inputValue = "";
+      showInput = !showInput;
+    }}>
+    {#if updatedAssignees.length === 0}
+      Add assignees
+    {:else}
+      Assignees
+    {/if}
 
-    {#if allowedToEdit}
-      <div class="global-flex" style:margin-left="auto">
-        {#if showInput}
-          <Icon
-            onclick={addAssignee}
-            name="checkmark"
-            disabled={!valid || inputValue === ""} />
-          <Icon
-            onclick={() => {
-              inputValue = "";
-              showInput = false;
-            }}
-            name="cross" />
-        {:else}
-          <Icon name="add" onclick={() => (showInput = true)}></Icon>
-        {/if}
+    {#if !showInput && allowedToEdit}
+      <span class="add-icon">
+        <Icon name="add" />
+      </span>
+    {/if}
+  </button>
+
+  {#if allowedToEdit}
+    <div class="global-flex edit-icons">
+      {#if showInput}
+        <Icon
+          onclick={addAssignee}
+          name="checkmark"
+          disabled={!valid || inputValue === ""} />
+        <Icon
+          onclick={() => {
+            inputValue = "";
+            showInput = false;
+          }}
+          name="cross" />
+      {/if}
+    </div>
+  {/if}
+</div>
+
+{#if showInput}
+  <div style:margin-top="1rem">
+    <TextInput
+      autofocus
+      {valid}
+      disabled={submitInProgress}
+      placeholder="Assignee DID, e.g. did:key:z6MkwPUeUS2…"
+      bind:value={inputValue}
+      onSubmit={addAssignee} />
+    {#if !valid && validationMessage}
+      <div class="validation-message">
+        <Icon name="warning" />{validationMessage}
       </div>
     {/if}
   </div>
+{/if}
 
+{#if updatedAssignees.length > 0}
   <div class="body">
     {#if allowedToEdit}
       {#each updatedAssignees as assignee}
@@ -163,32 +211,10 @@
           {/if}
         </button>
       {/each}
-      {#if updatedAssignees.length === 0 && !showInput}
-        <div class="txt-missing">Not assigned to anyone.</div>
-      {/if}
     {:else}
       {#each updatedAssignees as assignee}
         <NodeId {...authorForNodeId(assignee)} />
-      {:else}
-        <div class="txt-missing">Not assigned to anyone.</div>
       {/each}
     {/if}
   </div>
-
-  {#if showInput}
-    <div style:margin-top="0.5rem">
-      <TextInput
-        autofocus
-        {valid}
-        disabled={submitInProgress}
-        placeholder="Add assignee"
-        bind:value={inputValue}
-        onSubmit={addAssignee} />
-      {#if !valid && validationMessage}
-        <div class="validation-message">
-          <Icon name="warning" />{validationMessage}
-        </div>
-      {/if}
-    </div>
-  {/if}
-</div>
+{/if}

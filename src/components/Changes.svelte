@@ -171,7 +171,7 @@
             <Id
               id={revision.base}
               variant={selectedCommit ? "none" : "commit"} />
-            <div class="global-counter">base</div>
+            <div class="global-counter">Base</div>
           </div>
           <div class="commits">
             {#each commits.reverse() as commit}
