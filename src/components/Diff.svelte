@@ -1,6 +1,6 @@
 <script lang="ts" module>
   export interface CodeComments {
-    changeCommentStatus: (
+    changeCommentStatus?: (
       commentId: string,
       resolved: boolean,
     ) => Promise<void>;
@@ -16,12 +16,14 @@
       body: string,
       embeds: Embed[],
     ) => Promise<void>;
-    reactOnComment: (
+    reactOnComment?: (
       publicKey: string,
       commentId: string,
       authors: Author[],
       reaction: string,
     ) => Promise<void>;
+    // Defaults to `true`.
+    canReply?: boolean;
     repoDelegates: Author[];
     rid: string;
     threads: Thread<CodeLocation>[];
@@ -430,27 +432,27 @@
                   thread.root.location?.path,
                   rangeAnchorsFromCodeLocation(thread.root.location),
                 )}
-                {#if roles.isDelegateOrAuthor( codeComments.config.publicKey, codeComments.repoDelegates.map(delegate => delegate.did), thread.root.author.did, )}
+                {#if codeComments.changeCommentStatus && roles.isDelegateOrAuthor( codeComments.config.publicKey, codeComments.repoDelegates.map(delegate => delegate.did), thread.root.author.did, )}
                   <div style:margin-left="auto">
                     {#if thread.root.resolved}
                       <div title="Unresolve comment thread">
                         <Icon
                           name="cross"
-                          onclick={() =>
-                            codeComments.changeCommentStatus(
-                              thread.root.id,
-                              false,
-                            )} />
+                          onclick={partial(
+                            codeComments.changeCommentStatus,
+                            thread.root.id,
+                            false,
+                          )} />
                       </div>
                     {:else}
                       <div title="Resolve comment thread">
                         <Icon
                           name="checkmark"
-                          onclick={() =>
-                            codeComments.changeCommentStatus(
-                              thread.root.id,
-                              true,
-                            )} />
+                          onclick={partial(
+                            codeComments.changeCommentStatus,
+                            thread.root.id,
+                            true,
+                          )} />
                       </div>
                     {/if}
                   </div>
@@ -460,18 +462,20 @@
                 inline
                 rid={codeComments.rid}
                 {thread}
-                reactOnComment={codeComments.config &&
+                reactOnComment={codeComments.reactOnComment &&
                   partial(
                     codeComments.reactOnComment,
                     codeComments.config.publicKey,
                   )}
-                createReply={async (body, embeds) => {
-                  await codeComments.createComment(
-                    body,
-                    embeds,
-                    thread.root.id,
-                  );
-                }}
+                createReply={(codeComments.canReply ?? true)
+                  ? async (body, embeds) => {
+                      await codeComments.createComment(
+                        body,
+                        embeds,
+                        thread.root.id,
+                      );
+                    }
+                  : undefined}
                 editComment={codeComments.editComment}
                 canEditComment={partial(
                   roles.isDelegateOrAuthor,
