@@ -135,6 +135,7 @@ export default [
   },
   {
     ignores: [
+      "arch",
       "build/*",
       "isolation/*",
       "node_modules/**/*",
