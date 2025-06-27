@@ -6,6 +6,7 @@
   import type { Config } from "@bindings/config/Config";
 
   import { activeRouteStore, push } from "@app/lib/router";
+  import { settingsPopoverToggleId } from "./Settings.svelte";
   import { addRepoPopoverToggleId } from "./AddRepoButton.svelte";
   import { didFromPublicKey, truncateDid } from "@app/lib/utils";
   import { nodeRunning } from "@app/lib/events";
@@ -96,6 +97,22 @@
             {truncateDid(config.publicKey)}
           </CopyableId>
           you can share this with anyone to find you on the network.
+        </div>
+        <div class="txt-small" style:margin-top="1rem">
+          We release a new version of the app every two weeks. To stay up to
+          date, go to
+          <button
+            class="txt-small"
+            onclick={async () => {
+              const settingsButton = document.getElementById(
+                settingsPopoverToggleId,
+              );
+              await sleep(1);
+              settingsButton?.click();
+            }}>
+            Settings
+          </button>
+          and enable 'Check for updates' to receive notifications about new releases.
         </div>
         <div class="spacer"></div>
         {#if radicleInstalled() || $nodeRunning}
