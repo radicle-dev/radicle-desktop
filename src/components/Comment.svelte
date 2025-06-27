@@ -155,12 +155,12 @@
         </div>
       {/if}
       <div class="header-right">
-        {#if id && editComment}
+        {#if editComment}
           <div class="edit-buttons">
             <Icon name="pen" onclick={toggleEdit} />
           </div>
         {/if}
-        {#if id && reactions && reactOnComment}
+        {#if reactions && reactOnComment}
           <ReactionSelector
             popoverPositionRight="0"
             popoverPositionBottom="1.5rem"
