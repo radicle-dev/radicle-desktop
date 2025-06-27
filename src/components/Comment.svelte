@@ -28,7 +28,7 @@
     reactions?: Reaction[];
     embeds?: Map<string, Embed>;
     caption?: string;
-    timestamp: number;
+    timestamp?: number;
     lastEdit?: Edit;
     disallowEmptyBody?: boolean;
     emptyBodyTooltip?: string;
@@ -139,9 +139,11 @@
       {#if beforeTimestamp}
         {@render beforeTimestamp()}
       {/if}
-      <span class="timestamp" title={utils.absoluteTimestamp(timestamp)}>
-        {utils.formatTimestamp(timestamp)}
-      </span>
+      {#if timestamp}
+        <span class="timestamp" title={utils.absoluteTimestamp(timestamp)}>
+          {utils.formatTimestamp(timestamp)}
+        </span>
+      {/if}
       {#if lastEdit}
         <div
           class="card-metadata"
