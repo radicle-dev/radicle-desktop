@@ -64,6 +64,10 @@ pub trait Thread: Profile {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let bytes = fs::read(path.clone())?;
+        let file_size = bytes.len();
+        if file_size > 10_485_760 {
+            return Err(Error::FileTooLarge(file_size));
+        }
         let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("embed");
         let embed = radicle::cob::Embed::<git::Oid>::store(name, &bytes, &repo.backend)?;
 
@@ -76,6 +80,10 @@ pub trait Thread: Profile {
         name: String,
         bytes: Vec<u8>,
     ) -> Result<git::Oid, Error> {
+        let file_size = bytes.len();
+        if file_size > 10_485_760 {
+            return Err(Error::FileTooLarge(file_size));
+        }
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let embed = radicle::cob::Embed::<git::Oid>::store(&name, &bytes, &repo.backend)?;

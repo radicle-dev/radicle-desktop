@@ -19,6 +19,10 @@ pub enum Error {
     #[error("ssh agent not running")]
     AgentNotRunning,
 
+    /// File size too big
+    #[error("file size too large: {0}")]
+    FileTooLarge(usize),
+
     /// Generic Cob cache error.
     #[error(transparent)]
     Cache(#[from] radicle::cob::cache::Error),

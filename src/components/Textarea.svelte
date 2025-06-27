@@ -200,6 +200,8 @@
     onkeydown={handleKeydown}>
   </textarea>
   {#if draggingOver}
-    <div class="txt-small dragover">Drop files to add them as embeds.</div>
+    <div class="txt-small dragover">
+      Drop files to add them as embeds. Embeds are limited to 10Mb.
+    </div>
   {/if}
 </Border>

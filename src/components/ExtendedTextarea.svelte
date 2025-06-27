@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { UnlistenFn } from "@tauri-apps/api/event";
   import type { ComponentProps } from "svelte";
+  import type { Embed } from "@bindings/cob/thread/Embed";
+
+  import debounce from "lodash/debounce";
 
   import * as utils from "@app/lib/utils";
 
-  import type { Embed } from "@bindings/cob/thread/Embed";
   import { invoke } from "@app/lib/invoke";
   import { listen } from "@tauri-apps/api/event";
   import { onDestroy, onMount } from "svelte";
@@ -79,9 +81,14 @@
   let selectionStart = $state(body.length);
   let selectionEnd = $state(body.length);
   let draggingOver = $state(false);
+  let embedUploadError: string | undefined = $state();
   let dragEnterUnlistenFn: UnlistenFn | undefined = undefined;
   let dragLeaveUnlistenFn: UnlistenFn | undefined = undefined;
   let dragDropUnlistenFn: UnlistenFn | undefined = undefined;
+
+  const restoreDragDropText = debounce(() => {
+    embedUploadError = undefined;
+  }, 5000);
 
   function updateBodyAndSelection(input: string[], pre: string, after: string) {
     const allEmbeds = input.join("");
@@ -119,12 +126,18 @@
               const uploadLabel = `[Uploading ${name}...]()\n`;
 
               body = preBody.concat(uploadLabel, afterBody);
-              const oid = await invoke<string>("save_embed_by_path", {
-                rid,
-                path,
-              });
-              embeds.set(oid, { name, content: `git:${oid}` });
-              return `[${name}](${oid})\n`;
+              try {
+                const oid = await invoke<string>("save_embed_by_path", {
+                  rid,
+                  path,
+                });
+                embeds.set(oid, { name, content: `git:${oid}` });
+                return `[${name}](${oid})\n`;
+              } catch {
+                embedUploadError = "Upload failed, embed exceeded 10Mb.";
+                restoreDragDropText();
+                return "";
+              }
             }),
           ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
         });
@@ -147,12 +160,18 @@
         const name = pathSegments[pathSegments.length - 1];
         const uploadLabel = `[Uploading ${name}...]()\n`;
         body = preBody.concat(uploadLabel, afterBody);
-        const oid = await invoke<string>("save_embed_by_path", {
-          rid,
-          path,
-        });
-        embeds.set(oid, { name: name ?? path, content: `git:${oid}` });
-        return `[${name}](${oid})\n`;
+        try {
+          const oid = await invoke<string>("save_embed_by_path", {
+            rid,
+            path,
+          });
+          embeds.set(oid, { name: name ?? path, content: `git:${oid}` });
+          return `[${name}](${oid})\n`;
+        } catch {
+          embedUploadError = "Upload failed, embed exceeded 10Mb.";
+          restoreDragDropText();
+          return "";
+        }
       }),
     ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
   }
@@ -170,12 +189,19 @@
         const file = e.clipboardData.files[0];
         const uploadLabel = `[Uploading...]()\n`;
         body = preBody.concat(uploadLabel, afterBody);
-        const oid = await invoke<string>("save_embed_by_clipboard", {
-          name: file.name,
-          rid,
-        });
-        embeds.set(oid, { name: file.name, content: `git:${oid}` });
-        body = preBody.concat(`[${file.name}](${oid})\n`, afterBody);
+        try {
+          const oid = await invoke<string>("save_embed_by_clipboard", {
+            name: file.name,
+            rid,
+          });
+
+          embeds.set(oid, { name: file.name, content: `git:${oid}` });
+          body = preBody.concat(`[${file.name}](${oid})\n`, afterBody);
+        } catch {
+          body = preBody.concat(``, afterBody);
+          embedUploadError = "Upload failed, embed exceeded 10Mb.";
+          restoreDragDropText();
+        }
       } else {
         return Promise.all(
           Array.from(e.clipboardData.files).map(async file => {
@@ -183,13 +209,19 @@
             const bytes = new Uint8Array(arrayBuffer);
             const uploadLabel = `[Uploading ${file.name}...]()\n`;
             body = preBody.concat(uploadLabel, afterBody);
-            const oid = await invoke<string>("save_embed_by_bytes", {
-              rid,
-              name: file.name,
-              bytes,
-            });
-            embeds.set(oid, { name: file.name, content: `git:${oid}` });
-            return `[${file.name}](${oid})\n`;
+            try {
+              const oid = await invoke<string>("save_embed_by_bytes", {
+                rid,
+                name: file.name,
+                bytes,
+              });
+              embeds.set(oid, { name: file.name, content: `git:${oid}` });
+              return `[${file.name}](${oid})\n`;
+            } catch {
+              embedUploadError = "Upload failed, embed exceeded 10Mb.";
+              restoreDragDropText();
+              return "";
+            }
           }),
         ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
       }
@@ -292,9 +324,20 @@
     </OutlineButton>
     {#if !preview}
       <div
+        style:display=""
         class="txt-overflow txt-small txt-missing"
         title={`${attachEnabled ? "Drag and drop files to add them. " : ""}Markdown is supported. Press ${utils.modifierKey()}↵ to submit.`}>
-        {#if attachEnabled}Drag and drop files to add them.{/if}
+        {#if embedUploadError}
+          <span style:color="var(--color-fill-danger)">
+            <Icon
+              styleDisplay="inline"
+              styleVerticalAlign="text-top"
+              name="warning" />
+            {embedUploadError}
+          </span>
+        {:else if attachEnabled}
+          Drag and drop files to add them.
+        {/if}
         <Icon
           name="markdown"
           styleDisplay="inline"
