@@ -14,6 +14,18 @@ export async function invoke<T = null>(
   return withTestBackend<T>(tauri.invoke, cmd, args, options);
 }
 
+/**
+ * Invoking a Tauri command returned an error with the given message
+ */
+class InvokeError extends Error {
+  name = "InvokeError";
+
+  constructor(message: string) {
+    super(message);
+    Error.captureStackTrace?.(this, InvokeError);
+  }
+}
+
 async function withTestBackend<T>(
   fn: (
     cmd: string,
@@ -25,7 +37,14 @@ async function withTestBackend<T>(
   options?: tauri.InvokeOptions,
 ) {
   if (window.__TAURI_INTERNALS__) {
-    return fn(cmd, args, options);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return fn(cmd, args, options).catch((error: any) => {
+      if (typeof error === "object" && error !== null && "message" in error) {
+        throw new InvokeError(String(error.message));
+      } else {
+        throw new InvokeError(`Invalid error object: ${error}`);
+      }
+    });
   } else {
     return fetch(`http://127.0.0.1:8081/${cmd}`, {
       method: "POST",
@@ -38,7 +57,11 @@ async function withTestBackend<T>(
       }
       const json = await response.json();
       if (!response.ok) {
-        throw json;
+        if (typeof json === "object" && json !== null && "message" in json) {
+          throw new InvokeError(String(json.message));
+        } else {
+          throw new InvokeError(`Invalid error object: ${json}`);
+        }
       }
 
       return json;
