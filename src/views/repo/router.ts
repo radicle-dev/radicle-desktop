@@ -1,6 +1,7 @@
 import type { Action as IssueAction } from "@bindings/cob/issue/Action";
 import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 import type { Config } from "@bindings/config/Config";
+import type { DraftReview } from "@app/lib/draftReviewStorage";
 import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Operation } from "@bindings/cob/Operation";
 import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
@@ -11,8 +12,9 @@ import type { Review } from "@bindings/cob/patch/Review";
 import type { Revision } from "@bindings/cob/patch/Revision";
 import type { Thread } from "@bindings/cob/thread/Thread";
 
+import { didFromPublicKey, unreachable } from "@app/lib/utils";
+import { draftReviewStorage } from "@app/lib/draftReviewStorage";
 import { invoke } from "@app/lib/invoke";
-import { unreachable } from "@app/lib/utils";
 
 export type IssueStatus = "all" | Issue["state"]["status"];
 
@@ -106,7 +108,7 @@ export interface LoadedRepoPatchRoute {
     patch: Patch;
     patches: PaginatedQuery<Patch[]>;
     status: PatchStatus | undefined;
-    review: Review | undefined;
+    review: Review | DraftReview | undefined;
     revisions: Revision[];
     activity: Operation<PatchAction>[];
     notificationCount: number;
@@ -174,9 +176,18 @@ export async function loadPatch(
       }),
     ]);
 
-  const review = revisions
-    .flatMap(r => r.reviews || [])
-    .find(review => review.id === route.reviewId);
+  const draftReview =
+    route.reviewId !== undefined &&
+    draftReviewStorage.get(route.reviewId, {
+      did: didFromPublicKey(config.publicKey),
+      alias: config.alias,
+    });
+
+  const review =
+    draftReview ||
+    revisions
+      .flatMap(r => r.reviews || [])
+      .find(review => review.id === route.reviewId);
 
   return {
     resource: "repo.patch",

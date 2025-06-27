@@ -219,7 +219,7 @@
   </CommentComponent>
 </div>
 
-<Reviews {config} {patchId} {loadPatch} {revision} {rid} {status} />
+<Reviews {config} {patchId} {revision} {rid} {status} />
 
 <Discussion
   cobId={patchId}

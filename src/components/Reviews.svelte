@@ -1,61 +1,49 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
+  import type { DraftReview } from "@app/lib/draftReviewStorage";
   import type { PatchStatus } from "@app/views/repo/router";
   import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
-  import type { Verdict } from "@bindings/cob/patch/Verdict";
-
-  import { announce } from "@app/components/AnnounceSwitch.svelte";
-  import { invoke } from "@app/lib/invoke";
-  import { nodeRunning } from "@app/lib/events";
 
   import Icon from "@app/components/Icon.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
-  import ReviewButton from "@app/components/ReviewButton.svelte";
   import ReviewTeaser from "@app/components/ReviewTeaser.svelte";
+  import { didFromPublicKey } from "@app/lib/utils";
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
+  import { push } from "@app/lib/router";
 
   interface Props {
     config: Config;
-    loadPatch: () => Promise<void>;
     patchId: string;
     revision: Revision;
     rid: string;
     status: PatchStatus | undefined;
   }
 
-  const { config, loadPatch, patchId, revision, rid, status }: Props = $props();
+  const { config, patchId, revision, rid, status }: Props = $props();
 
-  let hideReviews = $state(
-    revision.reviews === undefined || revision.reviews.length === 0,
-  );
-
-  $effect(() => {
+  let hideReviews = $derived.by(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     patchId;
 
-    hideReviews =
-      revision.reviews === undefined || revision.reviews.length === 0;
+    return reviews.length === 0;
   });
 
-  async function createReview(verdict?: Verdict): Promise<Review | undefined> {
-    try {
-      return await invoke("edit_patch", {
-        rid: rid,
-        cobId: patchId,
-        action: {
-          type: "review",
-          revision: revision.id,
-          verdict,
-          // We need to pass an empty string to create a review without a verdict.
-          summary: "",
-          labels: [],
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Creating a review failed: ", error);
-    }
-  }
+  const reviews: Array<Review | DraftReview> = $derived(
+    [
+      draftReviewStorage.getForRevision(revision.id, {
+        did: didFromPublicKey(config.publicKey),
+        alias: config.alias,
+      }),
+      ...(revision.reviews ?? []),
+    ].filter((review): review is Review | DraftReview => Boolean(review)),
+  );
+
+  const hasOwnReview = $derived(
+    reviews.some(
+      value => value.author.did === didFromPublicKey(config.publicKey),
+    ),
+  );
 </script>
 
 <style>
@@ -72,47 +60,53 @@
     <div class="global-flex">
       <NakedButton
         stylePadding="0 4px"
-        disabled={revision.reviews === undefined ||
-          revision.reviews.length === 0}
+        disabled={reviews.length === 0}
         variant="ghost"
         onclick={() => (hideReviews = !hideReviews)}>
         <Icon name={hideReviews ? "chevron-right" : "chevron-down"} />
       </NakedButton>
       <div
         class="txt-semibold global-flex txt-regular"
-        style:color={revision.reviews === undefined ||
-        revision.reviews.length === 0
+        style:color={reviews.length === 0
           ? "var(--color-foreground-disabled)"
           : undefined}>
         Reviews <span style:font-weight="var(--font-weight-regular)">
-          {revision.reviews?.length ?? 0}
+          {reviews.length}
         </span>
       </div>
     </div>
 
     <div class="global-flex" style:margin-left="auto">
-      <ReviewButton
-        {rid}
-        {patchId}
-        {revision}
-        {config}
-        {status}
-        {loadPatch}
-        {createReview} />
+      <NakedButton
+        variant="ghost"
+        disabled={hasOwnReview}
+        onclick={() => {
+          const id = draftReviewStorage.create(rid, revision.id);
+
+          void push({
+            resource: "repo.patch",
+            rid,
+            patch: patchId,
+            reviewId: id,
+            status,
+          });
+        }}
+        title={hasOwnReview ? "You already published a review" : undefined}>
+        <Icon name="add" />
+        <span class="txt-small">Review</span>
+      </NakedButton>
     </div>
   </div>
 
-  {#if revision.reviews && revision.reviews.length}
-    <div style:display={hideReviews ? "none" : "flex"} class="review-list">
-      {#each revision.reviews as review, idx}
-        <ReviewTeaser
-          {rid}
-          {review}
-          {patchId}
-          {status}
-          first={idx === 0}
-          last={idx === revision.reviews.length - 1} />
-      {/each}
-    </div>
-  {/if}
+  <div style:display={hideReviews ? "none" : "flex"} class="review-list">
+    {#each reviews as review, idx}
+      <ReviewTeaser
+        {rid}
+        {review}
+        {patchId}
+        {status}
+        first={idx === 0}
+        last={idx === reviews.length - 1} />
+    {/each}
+  </div>
 </div>

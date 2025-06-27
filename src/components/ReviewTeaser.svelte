@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { DraftReview } from "@app/lib/draftReviewStorage";
   import type { PatchStatus } from "@app/views/repo/router";
   import type { Review } from "@bindings/cob/patch/Review";
 
@@ -18,7 +19,7 @@
 
   interface Props {
     patchId: string;
-    review: Review;
+    review: Review | DraftReview;
     rid: string;
     status: PatchStatus | undefined;
     first?: boolean;
@@ -122,11 +123,15 @@
     <div class="review-header">
       <div class="global-flex">
         <NodeId {...authorForNodeId(review.author)} />
-        <span>published review</span>
-        <Id id={review.id} variant="oid" />
-        <div class="timestamp" title={absoluteTimestamp(review.timestamp)}>
-          {formatTimestamp(review.timestamp)}
-        </div>
+        {#if "draft" in review}
+          <span>draft review</span>
+        {:else}
+          <span>published review</span>
+          <Id id={review.id} variant="oid" />
+          <div class="timestamp" title={absoluteTimestamp(review.timestamp)}>
+            {formatTimestamp(review.timestamp)}
+          </div>
+        {/if}
       </div>
 
       <div class="global-flex" style:gap="1rem">

@@ -4,6 +4,7 @@ use std::ops::Index;
 
 use radicle::node::AliasStore;
 use radicle::patch::Status;
+use radicle::prelude::RepoId;
 use radicle::profile::Aliases;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -669,6 +670,28 @@ impl FromRadicleAction<radicle::patch::Action> for Action {
             },
         }
     }
+}
+
+#[derive(Debug, TS, Deserialize)]
+#[ts(export)]
+#[ts(export_to = "cob/patch/")]
+pub struct CreateReviewArgs {
+    #[ts(as = "String")]
+    pub rid: RepoId,
+    #[ts(as = "String")]
+    pub revision: patch::RevisionId,
+    pub verdict: Option<Verdict>,
+    pub summary: Option<String>,
+    #[ts(as = "Vec<String>")]
+    pub labels: Vec<cob::Label>,
+    #[ts(inline)]
+    pub comments: Vec<CreateReviewComment>,
+}
+
+#[derive(Debug, TS, Deserialize)]
+pub struct CreateReviewComment {
+    pub body: String,
+    pub location: Option<cobs::thread::CodeLocation>,
 }
 
 #[derive(Debug, Default, TS, Serialize)]

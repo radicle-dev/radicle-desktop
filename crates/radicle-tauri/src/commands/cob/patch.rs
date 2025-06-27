@@ -1,6 +1,7 @@
 use std::ops::ControlFlow;
 
-use radicle::patch::TYPENAME;
+use radicle::patch::cache::Patches as _;
+use radicle::patch::{ReviewId, TYPENAME};
 use radicle::storage::ReadStorage;
 use radicle::{cob, git, identity};
 
@@ -118,6 +119,41 @@ pub fn edit_patch(
     opts: cobs::CobOptions,
 ) -> Result<models::patch::Patch, Error> {
     ctx.edit_patch(rid, cob_id, action, opts)
+}
+
+#[tauri::command]
+pub fn create_patch_review(
+    ctx: tauri::State<AppState>,
+    args: models::patch::CreateReviewArgs,
+) -> Result<ReviewId, Error> {
+    let repo = ctx.profile.storage.repository(args.rid)?;
+    let signer = ctx.profile.signer()?;
+    let mut patches = ctx.profile.patches_mut(&repo)?;
+    let patch_id = match patches.find_by_revision(&args.revision)? {
+        Some(found) => found.id,
+        None => return Err(cob::patch::Error::RevisionNotFound(args.revision).into()),
+    };
+    let mut patch = patches.get_mut(&patch_id)?;
+    let review_id = patch.review(
+        args.revision,
+        args.verdict.map(Into::into),
+        args.summary,
+        args.labels,
+        &signer,
+    )?;
+
+    for comment in args.comments {
+        patch.review_comment(
+            review_id,
+            comment.body,
+            comment.location.map(Into::into),
+            None,
+            vec![],
+            &signer,
+        )?;
+    }
+
+    Ok(review_id)
 }
 
 #[tauri::command]

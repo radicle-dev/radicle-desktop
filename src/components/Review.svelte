@@ -2,6 +2,7 @@
   import type { Author } from "@bindings/cob/Author";
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
   import type { Config } from "@bindings/config/Config";
+  import type { DraftReview } from "@app/lib/draftReviewStorage";
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Review } from "@bindings/cob/patch/Review";
@@ -19,6 +20,7 @@
   import { nodeRunning } from "@app/lib/events";
 
   import Border from "@app/components/Border.svelte";
+  import Button from "./Button.svelte";
   import Changes from "@app/components/Changes.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import Discussion from "@app/components/Discussion.svelte";
@@ -29,6 +31,8 @@
   import NodeId from "@app/components/NodeId.svelte";
   import VerdictBadge from "@app/components/VerdictBadge.svelte";
   import VerdictButton from "@app/components/VerdictButton.svelte";
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
+  import { push } from "@app/lib/router";
 
   interface Props {
     config: Config;
@@ -36,7 +40,7 @@
     patchId: string;
     loadReview: () => Promise<void>;
     repo: RepoInfo;
-    review: Review;
+    review: Review | DraftReview;
     revision: Revision;
   }
 
@@ -61,6 +65,9 @@
       "did",
     ),
   );
+
+  let publishingInProgress = $state(false);
+  const canPublish = $derived(review.verdict || review.summary);
 
   const commentThreads = $derived(
     ((review.comments &&
@@ -123,18 +130,26 @@
 
     try {
       labelSaveInProgress = true;
-      await invoke("edit_patch", {
-        rid: repo.rid,
-        cobId: patchId,
-        action: {
-          type: "review.edit",
-          review: reviewId,
-          summary,
+      if ("draft" in review) {
+        draftReviewStorage.update(review.id, {
           verdict,
+          summary: summary ?? "",
           labels,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
+        });
+      } else {
+        await invoke("edit_patch", {
+          rid: repo.rid,
+          cobId: patchId,
+          action: {
+            type: "review.edit",
+            review: reviewId,
+            summary,
+            verdict,
+            labels,
+          },
+          opts: { announce: $nodeRunning && $announce },
+        });
+      }
     } catch (error) {
       console.error("Editing review failed: ", error);
     } finally {
@@ -150,19 +165,27 @@
     location?: CodeLocation,
   ) {
     try {
-      await invoke("edit_patch", {
-        rid: repo.rid,
-        cobId: patchId,
-        action: {
-          type: "review.comment",
-          review: review.id,
+      if ("draft" in review) {
+        draftReviewStorage.addComment(review.id, {
           body,
           embeds,
-          replyTo,
-          location,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
+          location: location!,
+        });
+      } else {
+        await invoke("edit_patch", {
+          rid: repo.rid,
+          cobId: patchId,
+          action: {
+            type: "review.comment",
+            review: review.id,
+            body,
+            embeds,
+            replyTo,
+            location,
+          },
+          opts: { announce: $nodeRunning && $announce },
+        });
+      }
     } catch (error) {
       console.error("Creating comment failed", error);
     } finally {
@@ -172,18 +195,25 @@
 
   async function editComment(commentId: string, body: string, embeds: Embed[]) {
     try {
-      await invoke("edit_patch", {
-        rid: repo.rid,
-        cobId: patchId,
-        action: {
-          type: "review.comment.edit",
-          comment: commentId,
+      if ("draft" in review) {
+        draftReviewStorage.updateComment(review.id, commentId, {
           body,
-          review: review.id,
           embeds,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
+        });
+      } else {
+        await invoke("edit_patch", {
+          rid: repo.rid,
+          cobId: patchId,
+          action: {
+            type: "review.comment.edit",
+            comment: commentId,
+            body,
+            review: review.id,
+            embeds,
+          },
+          opts: { announce: $nodeRunning && $announce },
+        });
+      }
     } catch (error) {
       console.error("Editing comment failed: ", error);
     } finally {
@@ -197,6 +227,9 @@
     authors: Author[],
     reaction: string,
   ) {
+    if ("draft" in review) {
+      throw new Error("Cannot react on comment for draft review");
+    }
     try {
       await invoke("edit_patch", {
         rid: repo.rid,
@@ -220,6 +253,9 @@
   }
 
   async function changeCommentStatus(commentId: string, resolved: boolean) {
+    if ("draft" in review) {
+      throw new Error("Cannot change comment status for draft review");
+    }
     try {
       await invoke("edit_patch", {
         rid: repo.rid,
@@ -309,8 +345,40 @@
         <NodeId
           {...authorForNodeId(review.author)}
           styleFontSize="var(--font-size-medium)"
-          styleFontWeight="var(--font-weight-medium)" />'s review
+          styleFontWeight="var(--font-weight-medium)" />'s
+        {#if "draft" in review}
+          draft
+        {/if}
+        review
       </span>
+      {#if "draft" in review}
+        <div style:margin-inline-start="auto">
+          <Button
+            styleHeight="2.5rem"
+            variant="secondary"
+            title={canPublish
+              ? undefined
+              : "Add a summary or select a verdict to publish the review"}
+            disabled={!canPublish || publishingInProgress}
+            onclick={async () => {
+              publishingInProgress = true;
+              try {
+                await draftReviewStorage.publish(review.id);
+                await push({
+                  resource: "repo.patch",
+                  rid: repo.rid,
+                  patch: patchId,
+                  reviewId: undefined,
+                  status: undefined,
+                });
+              } finally {
+                publishingInProgress = false;
+              }
+            }}>
+            <Icon name="checkout" />Publish
+          </Button>
+        </div>
+      {/if}
     </div>
 
     <Border variant="ghost" styleGap="0">
@@ -370,10 +438,10 @@
         disallowEmptyBody={review.verdict === undefined}
         emptyBodyTooltip="Summary is mandatory when verdict is None"
         styleWidth="100%"
-        caption="published review"
-        id={review.id}
+        caption={"draft" in review ? "draft review" : "published review"}
+        id={"draft" in review ? undefined : review.id}
         author={review.author}
-        timestamp={review.timestamp}
+        timestamp={"draft" in review ? undefined : review.timestamp}
         editComment={(publicKeyFromDid(review.author.did) ===
           config.publicKey ||
           undefined) &&
@@ -388,24 +456,29 @@
     </div>
   </div>
 
-  <Discussion
-    cobId={patchId}
-    repoDelegates={repo.delegates}
-    rid={repo.rid}
-    {commentThreads}
-    {config}
-    {createComment}
-    {editComment}
-    {reactOnComment} />
+  {#if !("draft" in review)}
+    <Discussion
+      cobId={patchId}
+      repoDelegates={repo.delegates}
+      rid={repo.rid}
+      {commentThreads}
+      {config}
+      {createComment}
+      {editComment}
+      {reactOnComment} />
+  {/if}
 
   <Changes
     codeComments={{
-      changeCommentStatus,
+      changeCommentStatus: "draft" in review ? undefined : changeCommentStatus,
       config,
       createComment,
       editComment,
-      reactOnComment,
+      reactOnComment: "draft" in review ? undefined : reactOnComment,
       repoDelegates: repo.delegates,
+      canReply: false,
+      disableAttachments:
+        "draft" in review ? "Publish your review to attach files" : false,
       rid: repo.rid,
       threads: codeCommentThreads,
     }}

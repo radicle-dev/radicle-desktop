@@ -2,6 +2,7 @@
   import type { Action } from "@bindings/cob/patch/Action";
   import type { Author } from "@bindings/cob/Author";
   import type { Config } from "@bindings/config/Config";
+  import type { DraftReview } from "@app/lib/draftReviewStorage";
   import type { Operation } from "@bindings/cob/Operation";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
@@ -16,6 +17,7 @@
   import * as router from "@app/lib/router";
   import { DEFAULT_TAKE } from "./router";
   import { announce } from "@app/components/AnnounceSwitch.svelte";
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import {
     explorerUrl,
     formatOid,
@@ -65,7 +67,7 @@
     config: Config;
     activity: Operation<Action>[];
     status: PatchStatus | undefined;
-    review: Review | undefined;
+    review: Review | DraftReview | undefined;
     notificationCount: number;
   }
 
@@ -231,17 +233,21 @@
     ]);
   }
 
-  async function loadReview(reviewId: string | undefined = review?.id) {
-    if (!reviewId) {
+  async function loadReview() {
+    if (!review) {
       return;
     }
 
-    review = await invoke<Review>("review_by_patch_and_revision_and_id", {
-      rid: repo.rid,
-      id: patch.id,
-      revisionId: findReviewRevision(reviewId).id,
-      reviewId,
-    });
+    if ("draft" in review) {
+      review = draftReviewStorage.get(review.id, review.author);
+    } else {
+      review = await invoke<Review>("review_by_patch_and_revision_and_id", {
+        rid: repo.rid,
+        id: patch.id,
+        revisionId: findReviewRevision(review).id,
+        reviewId: review.id,
+      });
+    }
   }
 
   async function loadPatches(filter: PatchStatus | undefined) {
@@ -257,14 +263,18 @@
     }
   }
 
-  function findReviewRevision(reviewId: string): Revision {
+  function findReviewRevision(review: Review | DraftReview): Revision {
     // Every review is guaranteed to have a revision according to the protocol
     // model, so using type assertions here is safe.
-    return revisions.find(revision => {
-      return revision.reviews!.find(rev => {
-        return rev.id === reviewId;
-      });
-    }) as Revision;
+    if ("draft" in review) {
+      return revisions.find(
+        revision => revision.id === review.revisionId,
+      ) as Revision;
+    } else {
+      return revisions.find(revision =>
+        revision.reviews?.find(rev => rev.id === review.id),
+      ) as Revision;
+    }
   }
 
   let showFilters: boolean = $state(false);
@@ -422,10 +432,12 @@
       </span>
       <Icon name="chevron-right" />
       {review.author.alias}'s review
-      <BreadcrumbCopyButton
-        url={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
-        icon={verdictIcon(review.verdict)}
-        id={review.id} />
+      {#if !("draft" in review)}
+        <BreadcrumbCopyButton
+          url={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
+          icon={verdictIcon(review.verdict)}
+          id={review.id} />
+      {/if}
     {:else}
       <span class="txt-overflow" style:max-width="8rem">
         <InlineTitle content={breadcrumbTitle()} fontSize="small" />
@@ -574,7 +586,7 @@
       {repo}
       {loadReview}
       {review}
-      revision={findReviewRevision(review.id)}
+      revision={findReviewRevision(review)}
       onNavigateBack={() => {
         review = undefined;
       }} />
