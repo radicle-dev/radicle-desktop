@@ -35,7 +35,8 @@
     editComment?: (body: string, embeds: Embed[]) => Promise<void>;
     reactOnComment?: (authors: Author[], reaction: string) => Promise<void>;
     styleWidth?: string;
-    allowAttachments?: boolean;
+    // See `ExtendedTextarea`
+    disableAttachments?: boolean | string;
   }
 
   /* eslint-disable prefer-const */
@@ -56,7 +57,7 @@
     reactOnComment,
     styleWidth,
     emptyBodyTooltip,
-    allowAttachments = true,
+    disableAttachments,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -195,7 +196,7 @@
             {embeds}
             {disallowEmptyBody}
             {emptyBodyTooltip}
-            {allowAttachments}
+            {disableAttachments}
             borderVariant="ghost"
             submitInProgress={state === "submit"}
             submitCaption="Save"

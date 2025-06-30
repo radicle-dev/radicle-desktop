@@ -39,7 +39,11 @@
       embeds: Map<string, Embed>;
     }) => Promise<void>;
     close: () => void;
-    allowAttachments?: boolean;
+    // If true, adding attachments through drag-and-drop is disabled and there
+    // is no "Attach" button. If a string is provided, the "Attach" button is
+    // visible but disabled and uses the string as the title to indicate the
+    // reason for disabling. Defaults to `false`
+    disableAttachments?: boolean | string;
   }
 
   /* eslint-disable prefer-const */
@@ -63,9 +67,14 @@
     borderVariant = "float",
     submit,
     close,
-    allowAttachments = true,
+    disableAttachments: attachDisabled = false,
   }: Props = $props();
   /* eslint-enable prefer-const */
+
+  const attachEnabled = $derived(attachDisabled === false);
+  const attachDisabledReason = $derived(
+    typeof attachDisabled === "string" ? attachDisabled : undefined,
+  );
 
   let selectionStart = $state(body.length);
   let selectionEnd = $state(body.length);
@@ -87,7 +96,7 @@
 
   onMount(async () => {
     if (window.__TAURI_INTERNALS__) {
-      if (allowAttachments) {
+      if (attachEnabled) {
         dragEnterUnlistenFn = await listen("tauri://drag-enter", () => {
           draggingOver = true;
         });
@@ -149,7 +158,7 @@
   }
 
   async function handlePaste(e: ClipboardEvent) {
-    if (!allowAttachments) {
+    if (!attachEnabled) {
       return;
     }
 
@@ -284,8 +293,8 @@
     {#if !preview}
       <div
         class="txt-overflow txt-small txt-missing"
-        title={`${allowAttachments ? "Drag and drop files to add them. " : ""}Markdown is supported. Press ${utils.modifierKey()}↵ to submit.`}>
-        {#if allowAttachments}Drag and drop files to add them.{/if}
+        title={`${attachEnabled ? "Drag and drop files to add them. " : ""}Markdown is supported. Press ${utils.modifierKey()}↵ to submit.`}>
+        {#if attachEnabled}Drag and drop files to add them.{/if}
         <Icon
           name="markdown"
           styleDisplay="inline"
@@ -294,8 +303,12 @@
       </div>
     {/if}
     <div class="buttons">
-      {#if allowAttachments}
-        <OutlineButton variant="ghost" onclick={selectFiles} disabled={preview}>
+      {#if attachEnabled || attachDisabledReason}
+        <OutlineButton
+          variant="ghost"
+          onclick={selectFiles}
+          disabled={preview || attachDisabledReason !== undefined}
+          title={attachDisabledReason}>
           <Icon name="attachment" />
           Attach
         </OutlineButton>

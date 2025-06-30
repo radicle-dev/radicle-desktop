@@ -24,6 +24,8 @@
     ) => Promise<void>;
     // Defaults to `true`.
     canReply?: boolean;
+    // See `ExtendedTextarea`.
+    disableAttachments?: boolean | string;
     repoDelegates: Author[];
     rid: string;
     threads: Thread<CodeLocation>[];
@@ -504,6 +506,7 @@
                 }}
                 focus
                 placeholder="Leave a comment"
+                disableAttachments={codeComments.disableAttachments}
                 submit={async (body, embeds) => {
                   if (selection?.codeLocation) {
                     try {

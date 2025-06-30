@@ -12,6 +12,8 @@
     onclose?: () => void;
     onexpand?: () => void;
     disallowEmptyBody?: boolean;
+    // See `ExtendedTextarea`
+    disableAttachments?: boolean | string;
   }
 
   /* eslint-disable prefer-const */
@@ -23,6 +25,7 @@
     onclose,
     onexpand,
     disallowEmptyBody = false,
+    disableAttachments,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -58,6 +61,7 @@
         state = "collapsed";
       }
     }}
+    {disableAttachments}
     submit={async ({ comment, embeds }) => {
       try {
         state = "submit";
