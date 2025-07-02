@@ -15,11 +15,12 @@
 
   interface Props {
     onSelect: (selectedVerdict: Review["verdict"]) => Promise<void>;
+    draft: boolean;
     summaryMissing: boolean;
     selectedVerdict: Review["verdict"];
   }
 
-  const { onSelect, summaryMissing, selectedVerdict }: Props = $props();
+  const { onSelect, draft, summaryMissing, selectedVerdict }: Props = $props();
 
   let popoverExpanded: boolean = $state(false);
 </script>
@@ -69,7 +70,9 @@
             title={verdict === undefined && summaryMissing
               ? "Set a summary to select verdict None"
               : undefined}
-            disabled={verdict === undefined && summaryMissing}
+            disabled={draft === false &&
+              verdict === undefined &&
+              summaryMissing}
             selected={selectedVerdict === verdict}
             onclick={async () => {
               await onSelect(verdict);

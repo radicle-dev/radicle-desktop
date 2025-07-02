@@ -387,6 +387,7 @@
         {#if !!roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), review.author.did, )}
           <VerdictButton
             selectedVerdict={verdict}
+            draft={"draft" in review}
             summaryMissing={review.summary === undefined ||
               review.summary.trim() === ""}
             onSelect={async newVerdict => {
@@ -435,7 +436,7 @@
       <CommentComponent
         disableAttachments
         rid={repo.rid}
-        disallowEmptyBody={review.verdict === undefined}
+        disallowEmptyBody={!("draft" in review) && review.verdict === undefined}
         emptyBodyTooltip="Summary is mandatory when verdict is None"
         styleWidth="100%"
         caption={"draft" in review ? "draft review" : "published review"}
