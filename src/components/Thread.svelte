@@ -4,14 +4,14 @@
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
 
-  import { tick } from "svelte";
   import partial from "lodash/partial";
+  import { tick } from "svelte";
 
   import { scrollIntoView } from "@app/lib/utils";
 
-  import Border from "./Border.svelte";
+  import Border from "@app/components/Border.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
-  import ExtendedTextarea from "./ExtendedTextarea.svelte";
+  import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
   import Icon from "@app/components/Icon.svelte";
 
   interface Props {

@@ -48,18 +48,18 @@
 
   import type { Author } from "@bindings/cob/Author";
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
-  import type { Config } from "@bindings/config/Config";
   import type { Embed } from "@bindings/cob/thread/Embed";
+  import type { Thread } from "@bindings/cob/thread/Thread";
+  import type { Config } from "@bindings/config/Config";
   import type { FileDiff } from "@bindings/diff/FileDiff";
   import type { Modification } from "@bindings/diff/Modification";
-  import type { Thread } from "@bindings/cob/thread/Thread";
-
-  import * as roles from "@app/lib/roles";
 
   import escape from "lodash/escape";
   import partial from "lodash/partial";
 
-  import CommentToggleInput from "./CommentToggleInput.svelte";
+  import * as roles from "@app/lib/roles";
+
+  import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import Icon from "@app/components/Icon.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
 

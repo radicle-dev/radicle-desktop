@@ -1,4 +1,4 @@
-import type { LoadedHomeRoute, HomeRoute } from "@app/views/home/router";
+import type { HomeRoute, LoadedHomeRoute } from "@app/views/home/router";
 import type { LoadedRepoRoute, RepoRoute } from "@app/views/repo/router";
 
 import { loadHome } from "@app/views/home/router";

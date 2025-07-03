@@ -2,12 +2,11 @@
   import type { Config } from "@bindings/config/Config";
 
   import * as router from "@app/lib/router";
-
   import { didFromPublicKey, explorerUrl } from "@app/lib/utils";
 
-  import BreadcrumbCopyButton from "@app/views/repo/BreadcrumbCopyButton.svelte";
   import Link from "@app/components/Link.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import BreadcrumbCopyButton from "@app/views/repo/BreadcrumbCopyButton.svelte";
 
   const activeRouteStore = router.activeRouteStore;
 

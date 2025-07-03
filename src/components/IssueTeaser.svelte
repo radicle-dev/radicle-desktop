@@ -1,21 +1,21 @@
 <script lang="ts">
-  import type { Issue } from "@bindings/cob/issue/Issue";
   import type { IssueStatus } from "@app/views/repo/router";
+  import type { Issue } from "@bindings/cob/issue/Issue";
 
+  import { push } from "@app/lib/router";
   import {
     authorForNodeId,
     formatTimestamp,
     issueStatusBackgroundColor,
     issueStatusColor,
   } from "@app/lib/utils";
-  import { push } from "@app/lib/router";
 
-  import Border from "./Border.svelte";
-  import Icon from "./Icon.svelte";
-  import Id from "./Id.svelte";
-  import InlineTitle from "./InlineTitle.svelte";
-  import Label from "./Label.svelte";
-  import NodeId from "./NodeId.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import Id from "@app/components/Id.svelte";
+  import InlineTitle from "@app/components/InlineTitle.svelte";
+  import Label from "@app/components/Label.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
 
   interface Props {
     compact?: boolean;

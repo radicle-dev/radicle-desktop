@@ -3,16 +3,18 @@ import type * as Execa from "execa";
 import * as Fs from "node:fs/promises";
 import * as Os from "node:os";
 import * as Path from "node:path";
+import * as readline from "node:readline/promises";
 import * as Stream from "node:stream";
 import * as Util from "node:util";
-import * as readline from "node:readline/promises";
+
+import { type Config, defaultConfig } from "@tests/support/fixtures.js";
+import { logPrefix } from "@tests/support/logPrefix.js";
+import { randomTag } from "@tests/support/support.js";
+import { execa } from "execa";
 import getPort from "get-port";
 import matches from "lodash/matches.js";
 import waitOn from "wait-on";
-import { defaultConfig, type Config } from "@tests/support/fixtures.js";
-import { execa } from "execa";
-import { logPrefix } from "@tests/support/logPrefix.js";
-import { randomTag } from "@tests/support/support.js";
+
 import { sleep } from "@app/lib/sleep.js";
 
 export type RefsUpdate =

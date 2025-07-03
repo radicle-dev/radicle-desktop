@@ -1,15 +1,16 @@
 <script lang="ts">
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
 
+  import logo from "/radicle.svg?url";
+  import debounce from "lodash/debounce";
+
+  import { invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import { createEventEmittersOnce } from "@app/lib/startup.svelte";
-  import { invoke } from "@app/lib/invoke";
 
-  import debounce from "lodash/debounce";
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import TextInput from "@app/components/TextInput.svelte";
-  import logo from "/radicle.svg?url";
 
   let passphrase = $state("");
   let notMatchingPassphrases = $state<boolean>();

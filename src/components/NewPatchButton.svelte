@@ -1,10 +1,10 @@
 <script lang="ts">
-  import Border from "./Border.svelte";
-  import Button from "./Button.svelte";
-  import Command from "./Command.svelte";
-  import Icon from "./Icon.svelte";
-  import OutlineButton from "./OutlineButton.svelte";
-  import Popover from "./Popover.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
+  import Command from "@app/components/Command.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import OutlineButton from "@app/components/OutlineButton.svelte";
+  import Popover from "@app/components/Popover.svelte";
 
   interface Props {
     outline?: boolean;

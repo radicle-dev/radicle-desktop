@@ -3,7 +3,6 @@
 
   import capitalize from "lodash/capitalize.js";
 
-  import { closeFocused } from "./Popover.svelte";
   import { verdictIcon } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
@@ -11,6 +10,7 @@
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
   import VerdictBadge from "@app/components/VerdictBadge.svelte";
 
   interface Props {

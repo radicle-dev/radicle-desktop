@@ -2,7 +2,7 @@ import type { ActionWithAuthor } from "@bindings/cob/inbox/ActionWithAuthor";
 import type { Action as IssueAction } from "@bindings/cob/issue/Action";
 import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 
-import { pluralize, formatOid } from "@app/lib/utils";
+import { formatOid, pluralize } from "@app/lib/utils";
 
 export type Action =
   | ActionWithAuthor<IssueAction>

@@ -3,8 +3,9 @@
 <script lang="ts">
   import debounce from "lodash/debounce";
 
-  import Icon from "@app/components/Icon.svelte";
   import { writeToClipboard } from "@app/lib/invoke";
+
+  import Icon from "@app/components/Icon.svelte";
 
   interface Props {
     text: string;

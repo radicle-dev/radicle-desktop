@@ -16,7 +16,7 @@
     "check-rs": "scripts/check-rs",
     "test:unit": "TZ='UTC' vitest run",
     "test:e2e": "TZ='UTC' playwright test",
-    "format": "npx prettier '**/*.@(ts|js|svelte|json|css|html|yml)' --write",
+    "format": "npx prettier '**/*.@(ts|js|svelte|json|css|html|yml)' '!crates/**/*' --write",
     "generate-types": "cargo test --manifest-path ./crates/radicle-types/Cargo.toml",
     "tauri": "npx tauri"
   },
@@ -57,6 +57,7 @@
     "dompurify": "^3.2.5",
     "eslint": "^9.26.0",
     "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-svelte": "^3.5.1",
     "execa": "^9.5.3",
     "fuzzysort": "^3.1.0",

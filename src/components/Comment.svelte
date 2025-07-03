@@ -1,13 +1,12 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import type { Author } from "@bindings/cob/Author";
   import type { Edit } from "@bindings/cob/patch/Edit";
   import type { Reaction } from "@bindings/cob/Reaction";
   import type { Embed } from "@bindings/cob/thread/Embed";
+  import type { Snippet } from "svelte";
 
   import { tick } from "svelte";
 
-  import { closeFocused } from "./Popover.svelte";
   import * as utils from "@app/lib/utils";
 
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
@@ -15,8 +14,9 @@
   import Id from "@app/components/Id.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
-  import ReactionSelector from "@app/components/ReactionSelector.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
   import Reactions from "@app/components/Reactions.svelte";
+  import ReactionSelector from "@app/components/ReactionSelector.svelte";
 
   interface Props {
     actions?: Snippet;

@@ -1,30 +1,30 @@
 <script lang="ts">
+  import type { HomeReposTab } from "@app/views/home/router";
   import type { Config } from "@bindings/config/Config";
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
-  import type { HomeReposTab } from "@app/views/home/router";
   import type { RepoCount } from "@bindings/repo/RepoCount";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import fuzzysort from "fuzzysort";
   import { onMount } from "svelte";
 
-  import * as router from "@app/lib/router";
-  import { didFromPublicKey, modifierKey } from "@app/lib/utils";
   import { dynamicInterval } from "@app/lib/interval";
-  import { guidePopoverToggleId } from "@app/components/GuideButton.svelte";
   import { invoke } from "@app/lib/invoke";
+  import * as router from "@app/lib/router";
   import { sleep } from "@app/lib/sleep";
+  import { didFromPublicKey, modifierKey } from "@app/lib/utils";
 
   import AddRepoButton from "@app/components/AddRepoButton.svelte";
   import Border from "@app/components/Border.svelte";
+  import { guidePopoverToggleId } from "@app/components/GuideButton.svelte";
   import HomeSidebar from "@app/components/HomeSidebar.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Layout from "@app/views/repo/Layout.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import RepoCard from "@app/components/RepoCard.svelte";
   import RepoCardPlaceholder from "@app/components/RepoCardPlaceholder.svelte";
   import TextInput from "@app/components/TextInput.svelte";
+  import Layout from "@app/views/repo/Layout.svelte";
 
   interface Props {
     activeTab: HomeReposTab;

@@ -5,14 +5,13 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
 
-  import { activeRouteStore, push } from "@app/lib/router";
-  import { settingsPopoverToggleId } from "./Settings.svelte";
-  import { addRepoPopoverToggleId } from "./AddRepoButton.svelte";
-  import { didFromPublicKey, truncateDid } from "@app/lib/utils";
-  import { nodeRunning } from "@app/lib/events";
   import { radicleInstalled } from "@app/lib/checkRadicleCLI.svelte";
+  import { nodeRunning } from "@app/lib/events";
+  import { activeRouteStore, push } from "@app/lib/router";
   import { sleep } from "@app/lib/sleep";
+  import { didFromPublicKey, truncateDid } from "@app/lib/utils";
 
+  import { addRepoPopoverToggleId } from "@app/components/AddRepoButton.svelte";
   import Border from "@app/components/Border.svelte";
   import Command from "@app/components/Command.svelte";
   import CopyableId from "@app/components/CopyableId.svelte";
@@ -20,6 +19,7 @@
   import NakedButton from "@app/components/NakedButton.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import Popover from "@app/components/Popover.svelte";
+  import { settingsPopoverToggleId } from "@app/components/Settings.svelte";
 
   interface Props {
     config: Config;

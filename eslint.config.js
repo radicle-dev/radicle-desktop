@@ -2,6 +2,7 @@ import globals from "globals";
 import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
 import svelte from "eslint-plugin-svelte";
+import simpleImportSort from "eslint-plugin-simple-import-sort";
 import svelteParser from "svelte-eslint-parser";
 import ts from "typescript-eslint";
 
@@ -11,6 +12,9 @@ export default [
     ...ts.configs.recommended,
     prettier,
     {
+      plugins: {
+        "simple-import-sort": simpleImportSort,
+      },
       languageOptions: {
         parser: ts.parser,
         parserOptions: {
@@ -45,6 +49,27 @@ export default [
         // Require let or const instead of var.
         // https://eslint.org/docs/rules/no-var
         "no-var": "warn",
+        "simple-import-sort/imports": [
+          "warn",
+          {
+            groups: [
+              // Type imports
+              ["\\u0000$"],
+              // Node.js built-in modules
+              ["^node:"],
+              // Everything not matched, aka third party packages
+              ["^"],
+              // Files under @app and @lib without an extension
+              ["^(@app\/lib).*(\.svelte$|\.ts$|\.js$){0}"],
+              // Files under @app and @lib ending in .svelte or svelte.ts
+              ["^(@app\/lib).*(\.svelte$)"],
+              // Svelte components imported through @app
+              ["^(@app).*(\.svelte$)"],
+              // Everything else imported through relative imports
+              ["^\\."],
+            ],
+          },
+        ],
         // Require `===` and `!==` comparisons.
         eqeqeq: "warn",
         "@typescript-eslint/no-floating-promises": "warn",

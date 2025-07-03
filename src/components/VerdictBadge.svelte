@@ -3,6 +3,7 @@
   import type { Snippet } from "svelte";
 
   import capitalize from "lodash/capitalize.js";
+
   import { verdictIcon } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";

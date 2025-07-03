@@ -2,18 +2,17 @@
   import type { NotificationsByRepo } from "@bindings/cob/inbox/NotificationsByRepo";
 
   import { getCurrentWindow } from "@tauri-apps/api/window";
-
-  import { onMount } from "svelte";
   import { useOverlayScrollbars } from "overlayscrollbars-svelte";
+  import { onMount } from "svelte";
 
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
 
-  import Border from "./Border.svelte";
-  import Icon from "./Icon.svelte";
-  import Inbox from "./Inbox.svelte";
-  import OutlineButton from "./OutlineButton.svelte";
-  import Popover from "./Popover.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import Inbox from "@app/components/Inbox.svelte";
+  import OutlineButton from "@app/components/OutlineButton.svelte";
+  import Popover from "@app/components/Popover.svelte";
 
   interface Props {
     notificationCount: number;

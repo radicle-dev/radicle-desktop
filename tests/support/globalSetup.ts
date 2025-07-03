@@ -1,19 +1,20 @@
 import * as Fs from "node:fs";
 import * as Path from "node:path";
+
+import {
+  createCobsFixture,
+  createMarkdownFixture,
+  defaultConfig,
+  defaultHttpdPort,
+  gitOptions,
+} from "@tests/support/fixtures.js";
+import { createPeerManager } from "@tests/support/peerManager.js";
 import {
   assertBinariesInstalled,
   heartwoodRelease,
   removeWorkspace,
   tmpDir,
 } from "@tests/support/support.js";
-import {
-  defaultConfig,
-  createCobsFixture,
-  createMarkdownFixture,
-  defaultHttpdPort,
-  gitOptions,
-} from "@tests/support/fixtures.js";
-import { createPeerManager } from "@tests/support/peerManager.js";
 
 const heartwoodBinaryPath = Path.join(
   tmpDir,

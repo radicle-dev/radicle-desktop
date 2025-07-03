@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
-  import type { Route } from "@app/lib/router/definitions";
 
   import { push, routeToPath } from "@app/lib/router";
+  import type { Route } from "@app/lib/router/definitions";
 
   interface Props {
     children: Snippet;

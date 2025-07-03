@@ -1,11 +1,11 @@
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
+  import type { Snippet } from "svelte";
 
-  import ExternalLink from "./ExternalLink.svelte";
-  import Border from "./Border.svelte";
-  import Icon from "./Icon.svelte";
-  import Command from "./Command.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Command from "@app/components/Command.svelte";
+  import ExternalLink from "@app/components/ExternalLink.svelte";
+  import Icon from "@app/components/Icon.svelte";
 
   const {
     title = "An error occurred",

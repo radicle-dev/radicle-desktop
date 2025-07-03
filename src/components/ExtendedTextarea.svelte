@@ -1,22 +1,21 @@
 <script lang="ts">
+  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { UnlistenFn } from "@tauri-apps/api/event";
   import type { ComponentProps } from "svelte";
-  import type { Embed } from "@bindings/cob/thread/Embed";
 
+  import { listen } from "@tauri-apps/api/event";
+  import { open } from "@tauri-apps/plugin-dialog";
   import debounce from "lodash/debounce";
-
-  import * as utils from "@app/lib/utils";
+  import { onDestroy, onMount } from "svelte";
 
   import { invoke } from "@app/lib/invoke";
-  import { listen } from "@tauri-apps/api/event";
-  import { onDestroy, onMount } from "svelte";
-  import { open } from "@tauri-apps/plugin-dialog";
+  import * as utils from "@app/lib/utils";
 
-  import Button from "./Button.svelte";
-  import Icon from "./Icon.svelte";
-  import Markdown from "./Markdown.svelte";
-  import Textarea from "./Textarea.svelte";
-  import OutlineButton from "./OutlineButton.svelte";
+  import Button from "@app/components/Button.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import Markdown from "@app/components/Markdown.svelte";
+  import OutlineButton from "@app/components/OutlineButton.svelte";
+  import Textarea from "@app/components/Textarea.svelte";
 
   interface Props {
     textAreaSize?: ComponentProps<typeof Textarea>["size"];

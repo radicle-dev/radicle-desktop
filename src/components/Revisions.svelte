@@ -1,19 +1,19 @@
 <script lang="ts">
-  import type { Config } from "@bindings/config/Config";
-  import type { Patch } from "@bindings/cob/patch/Patch";
   import type { PatchStatus } from "@app/views/repo/router";
+  import type { Patch } from "@bindings/cob/patch/Patch";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { Config } from "@bindings/config/Config";
 
   import orderBy from "lodash/orderBy";
   import uniqBy from "lodash/uniqBy";
 
   import { authorForNodeId } from "@app/lib/utils";
 
-  import DropdownListItem from "./DropdownListItem.svelte";
-  import Icon from "./Icon.svelte";
-  import NodeId from "./NodeId.svelte";
-  import RevisionReviews from "./RevisionReviews.svelte";
-  import RevisionBadges from "./RevisionBadges.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
+  import RevisionBadges from "@app/components/RevisionBadges.svelte";
+  import RevisionReviews from "@app/components/RevisionReviews.svelte";
 
   interface Props {
     config: Config;

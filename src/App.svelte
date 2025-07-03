@@ -1,42 +1,43 @@
 <script lang="ts">
-  import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
   import type { Config } from "@bindings/config/Config";
+  import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
 
-  import delay from "lodash/delay";
   import { listen } from "@tauri-apps/api/event";
+  import delay from "lodash/delay";
   import { onDestroy, onMount } from "svelte";
 
-  import * as router from "@app/lib/router";
-  import { checkAuth, startup } from "@app/lib/auth.svelte";
-  import { dynamicInterval } from "@app/lib/interval";
-  import { invoke } from "@app/lib/invoke";
-  import { nodeRunning } from "@app/lib/events";
   import {
-    resetFontSize,
-    increaseFontSize,
     decreaseFontSize,
     fontSettings,
+    increaseFontSize,
+    resetFontSize,
   } from "@app/lib/appearance.svelte";
+  import { checkAuth, startup } from "@app/lib/auth.svelte";
+  import { nodeRunning } from "@app/lib/events";
+  import { dynamicInterval } from "@app/lib/interval";
+  import { invoke } from "@app/lib/invoke";
+  import * as router from "@app/lib/router";
   import {
     setUnlistenNodeEvents,
     unlistenNodeEvents,
   } from "@app/lib/startup.svelte";
-  import { theme } from "@app/components/ThemeSwitch.svelte";
-  import { unreachable, isMac } from "@app/lib/utils";
+  import { isMac, unreachable } from "@app/lib/utils";
 
+  import { theme } from "@app/components/ThemeSwitch.svelte";
   import Auth from "@app/views/booting/Auth.svelte";
   import CreateIdentity from "@app/views/booting/CreateIdentity.svelte";
+  import Repos from "@app/views/home/Repos.svelte";
   import CreateIssue from "@app/views/repo/CreateIssue.svelte";
   import Issue from "@app/views/repo/Issue.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
   import RepoHome from "@app/views/repo/RepoHome.svelte";
-  import Repos from "@app/views/home/Repos.svelte";
-  import Spinner from "./components/Spinner.svelte";
-  import FullWindowError from "./components/FullWindowError.svelte";
-  import ExternalLink from "./components/ExternalLink.svelte";
+
   import Command from "./components/Command.svelte";
+  import ExternalLink from "./components/ExternalLink.svelte";
+  import FullWindowError from "./components/FullWindowError.svelte";
+  import Spinner from "./components/Spinner.svelte";
 
   const activeRouteStore = router.activeRouteStore;
 

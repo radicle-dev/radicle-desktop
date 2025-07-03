@@ -1,12 +1,15 @@
 <script lang="ts">
+  import type { RepoRoute } from "@app/views/repo/router";
   import type { ActionWithAuthor } from "@bindings/cob/inbox/ActionWithAuthor";
+  import type { NotificationItem } from "@bindings/cob/inbox/NotificationItem";
   import type { Action as IssueAction } from "@bindings/cob/issue/Action";
   import type { Action as PatchAction } from "@bindings/cob/patch/Action";
   import type { ComponentProps } from "svelte";
-  import type { RepoRoute } from "@app/views/repo/router";
-  import type { NotificationItem } from "@bindings/cob/inbox/NotificationItem";
 
   import uniqWith from "lodash/uniqWith";
+
+  import { compressActions } from "@app/lib/notification";
+  import { push } from "@app/lib/router";
   import {
     authorForNodeId,
     formatTimestamp,
@@ -15,14 +18,12 @@
     patchStatusBackgroundColor,
     patchStatusColor,
   } from "@app/lib/utils";
-  import { closeFocused } from "./Popover.svelte";
-  import { compressActions } from "@app/lib/notification";
-  import { push } from "@app/lib/router";
 
-  import Icon from "./Icon.svelte";
-  import InlineTitle from "./InlineTitle.svelte";
-  import NakedButton from "./NakedButton.svelte";
-  import NodeId from "./NodeId.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import InlineTitle from "@app/components/InlineTitle.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
 
   interface Props {
     rid: string;

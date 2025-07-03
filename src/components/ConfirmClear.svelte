@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Button from "./Button.svelte";
+  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
-  import OutlineButton from "./OutlineButton.svelte";
+  import OutlineButton from "@app/components/OutlineButton.svelte";
 
   interface Props {
     clear: () => void;

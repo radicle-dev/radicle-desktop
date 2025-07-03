@@ -1,8 +1,9 @@
-import type { Action as NotificationAction } from "@app/lib/notification";
 import type { Action as IssueAction } from "@bindings/cob/issue/Action";
 import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 
 import { describe, expect, test } from "vitest";
+
+import type { Action as NotificationAction } from "@app/lib/notification";
 import { compressActions, createSummary } from "@app/lib/notification";
 import { formatOid } from "@app/lib/utils";
 

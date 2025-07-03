@@ -3,8 +3,8 @@
 
   import { tick } from "svelte";
 
-  import Icon from "./Icon.svelte";
-  import NakedButton from "./NakedButton.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {
     children: Snippet;

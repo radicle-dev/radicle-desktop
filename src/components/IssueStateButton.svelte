@@ -4,13 +4,13 @@
   import capitalize from "lodash/capitalize";
   import isEqual from "lodash/isEqual";
 
-  import { closeFocused } from "@app/components/Popover.svelte";
   import { issueStatusBackgroundColor, issueStatusColor } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
   import Popover from "@app/components/Popover.svelte";
 
   interface Props {

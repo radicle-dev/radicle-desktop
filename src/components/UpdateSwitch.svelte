@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Button from "./Button.svelte";
+  import Button from "@app/components/Button.svelte";
 
   interface Props {
     active: boolean;

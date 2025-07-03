@@ -1,16 +1,16 @@
 <script lang="ts">
-  import type { ComponentProps } from "svelte";
   import type { State } from "@bindings/cob/patch/State";
+  import type { ComponentProps } from "svelte";
 
   import capitalize from "lodash/capitalize";
 
-  import { closeFocused } from "@app/components/Popover.svelte";
   import { patchStatusBackgroundColor, patchStatusColor } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
   import Popover from "@app/components/Popover.svelte";
 
   interface Props {

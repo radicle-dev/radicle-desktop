@@ -29,8 +29,8 @@
 <script lang="ts">
   import { writable } from "svelte/store";
 
-  import Icon from "./Icon.svelte";
-  import Button from "./Button.svelte";
+  import Button from "@app/components/Button.svelte";
+  import Icon from "@app/components/Icon.svelte";
 </script>
 
 <style>

@@ -1,10 +1,11 @@
 <script lang="ts">
   import type { Reaction } from "@bindings/cob/Reaction";
 
-  import Border from "./Border.svelte";
-  import Icon from "./Icon.svelte";
-  import Popover from "./Popover.svelte";
   import { twemoji } from "@app/lib/utils";
+
+  import Border from "@app/components/Border.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import Popover from "@app/components/Popover.svelte";
 
   interface Props {
     reactions?: Reaction[];

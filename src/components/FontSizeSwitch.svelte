@@ -5,8 +5,8 @@
     increaseFontSize,
   } from "@app/lib/appearance.svelte";
 
-  import Button from "./Button.svelte";
-  import Icon from "./Icon.svelte";
+  import Button from "@app/components/Button.svelte";
+  import Icon from "@app/components/Icon.svelte";
 </script>
 
 <style>

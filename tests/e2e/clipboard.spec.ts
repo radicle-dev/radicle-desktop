@@ -1,6 +1,6 @@
+import { expect, markdownRid, test } from "@tests/support/fixtures.js";
 import { chromium } from "playwright";
 
-import { expect, markdownRid, test } from "@tests/support/fixtures.js";
 import { formatRepositoryId } from "@app/lib/utils";
 
 // We explicitly run all clipboard tests withing the context of a single test

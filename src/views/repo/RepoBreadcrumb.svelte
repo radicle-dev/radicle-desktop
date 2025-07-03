@@ -1,9 +1,9 @@
 <script lang="ts">
   import { activeRouteStore } from "@app/lib/router";
-
   import { explorerUrl } from "@app/lib/utils";
 
   import Link from "@app/components/Link.svelte";
+
   import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
 
   interface Props {

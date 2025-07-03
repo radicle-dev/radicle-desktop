@@ -24,8 +24,8 @@
 </script>
 
 <script lang="ts">
-  import type { Snippet } from "svelte";
   import type { Config } from "@bindings/config/Config";
+  import type { Snippet } from "svelte";
 
   import { OverlayScrollbarsComponent } from "overlayscrollbars-svelte";
 

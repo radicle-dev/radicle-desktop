@@ -1,7 +1,7 @@
 <script lang="ts">
   import { truncateId } from "@app/lib/utils";
 
-  import Avatar from "./Avatar.svelte";
+  import Avatar from "@app/components/Avatar.svelte";
 
   interface Props {
     publicKey: string;

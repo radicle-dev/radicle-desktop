@@ -1,19 +1,17 @@
 <script lang="ts">
-  import type { Author } from "@bindings/cob/Author";
-  import type { Config } from "@bindings/config/Config";
-  import type { Issue } from "@bindings/cob/issue/Issue";
-  import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { IssueStatus } from "./router";
+  import type { Author } from "@bindings/cob/Author";
+  import type { Issue } from "@bindings/cob/issue/Issue";
   import type { Embed } from "@bindings/cob/thread/Embed";
+  import type { Config } from "@bindings/config/Config";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
-
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
-  import { nodeRunning } from "@app/lib/events";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
-
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";

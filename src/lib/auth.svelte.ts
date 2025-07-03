@@ -1,9 +1,10 @@
 import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
 
-import * as router from "@app/lib/router";
-import { dynamicInterval } from "@app/lib/interval";
 import { get } from "svelte/store";
+
+import { dynamicInterval } from "@app/lib/interval";
 import { invoke } from "@app/lib/invoke";
+import * as router from "@app/lib/router";
 
 export const startup = $state<{ error?: ErrorWrapper }>({ error: undefined });
 

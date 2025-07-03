@@ -1,14 +1,13 @@
 <script lang="ts">
+  import { nodeRunning } from "@app/lib/events";
+  import { invoke } from "@app/lib/invoke";
   import { formatRepositoryId } from "@app/lib/utils";
 
-  import { invoke } from "@app/lib/invoke";
-  import { nodeRunning } from "@app/lib/events";
   import { announce } from "@app/components/AnnounceSwitch.svelte";
-
-  import Border from "./Border.svelte";
-  import Id from "./Id.svelte";
-  import Icon from "./Icon.svelte";
-  import NakedButton from "./NakedButton.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import Id from "@app/components/Id.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {
     reload: () => Promise<void>;

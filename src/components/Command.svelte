@@ -1,6 +1,6 @@
 <script lang="ts">
+  import Border from "@app/components/Border.svelte";
   import Clipboard from "@app/components/Clipboard.svelte";
-  import Border from "./Border.svelte";
 
   interface Props {
     command: string;

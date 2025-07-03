@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { Embed } from "@bindings/cob/thread/Embed";
 
+  import Border from "@app/components/Border.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
-  import Border from "./Border.svelte";
 
   interface Props {
     rid: string;

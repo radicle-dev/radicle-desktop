@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { NotificationsByRepo } from "@bindings/cob/inbox/NotificationsByRepo";
 
-  import Button from "./Button.svelte";
-  import ConfirmClear from "./ConfirmClear.svelte";
+  import Button from "@app/components/Button.svelte";
+  import ConfirmClear from "@app/components/ConfirmClear.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import NotificationTeaser from "./NotificationTeaser.svelte";
-  import NakedButton from "./NakedButton.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
+  import NotificationTeaser from "@app/components/NotificationTeaser.svelte";
 
   interface Props {
     clearByIds: (ids: string[]) => Promise<void>;

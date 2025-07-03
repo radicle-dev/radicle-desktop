@@ -1,4 +1,4 @@
-import { test, expect } from "@tests/support/fixtures.js";
+import { expect, test } from "@tests/support/fixtures.js";
 
 test("default theme", async ({ page }) => {
   await page.goto("/repos");

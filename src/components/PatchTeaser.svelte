@@ -1,23 +1,23 @@
 <script lang="ts">
-  import type { Patch } from "@bindings/cob/patch/Patch";
   import type { PatchStatus } from "@app/views/repo/router";
+  import type { Patch } from "@bindings/cob/patch/Patch";
 
+  import { cachedDiffStats } from "@app/lib/invoke";
+  import { push } from "@app/lib/router";
   import {
     authorForNodeId,
     formatTimestamp,
     patchStatusBackgroundColor,
     patchStatusColor,
   } from "@app/lib/utils";
-  import { cachedDiffStats } from "@app/lib/invoke";
-  import { push } from "@app/lib/router";
 
+  import Border from "@app/components/Border.svelte";
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import Label from "@app/components/Label.svelte";
   import NodeId from "@app/components/NodeId.svelte";
-  import Border from "./Border.svelte";
 
   interface Props {
     compact?: boolean;

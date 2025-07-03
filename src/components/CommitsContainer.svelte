@@ -1,9 +1,9 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Border from "./Border.svelte";
-  import Icon from "./Icon.svelte";
-  import NakedButton from "./NakedButton.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {
     leftHeader: Snippet;

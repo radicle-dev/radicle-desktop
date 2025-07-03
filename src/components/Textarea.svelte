@@ -1,13 +1,15 @@
 <script lang="ts">
+  import type { ComponentProps } from "svelte";
   import type {
     ClipboardEventHandler,
     FormEventHandler,
   } from "svelte/elements";
-  import type { ComponentProps } from "svelte";
 
   import { onMount, tick } from "svelte";
+
   import * as utils from "@app/lib/utils";
-  import Border from "./Border.svelte";
+
+  import Border from "@app/components/Border.svelte";
 
   interface Props {
     draggingOver?: boolean;

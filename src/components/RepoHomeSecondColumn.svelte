@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import Border from "./Border.svelte";
-  import Icon from "./Icon.svelte";
-  import Link from "./Link.svelte";
-  import RepoTeaser from "./RepoTeaser.svelte";
-  import Settings from "./Settings.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import Link from "@app/components/Link.svelte";
+  import RepoTeaser from "@app/components/RepoTeaser.svelte";
+  import Settings from "@app/components/Settings.svelte";
 
   interface Props {
     repo: RepoInfo;

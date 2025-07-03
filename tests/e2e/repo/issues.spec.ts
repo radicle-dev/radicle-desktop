@@ -1,4 +1,4 @@
-import { test, cobRid, expect } from "@tests/support/fixtures.js";
+import { cobRid, expect, test } from "@tests/support/fixtures.js";
 
 test("navigate issues listing", async ({ page }) => {
   await page.goto(`/repos/${cobRid}/issues?show=all`);

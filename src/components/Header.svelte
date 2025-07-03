@@ -2,20 +2,19 @@
   import type { Config } from "@bindings/config/Config";
   import type { Snippet } from "svelte";
 
-  import { boolean } from "zod";
   import { onMount } from "svelte";
-
-  import useLocalStorage from "@app/lib/useLocalStorage.svelte";
+  import { boolean } from "zod";
 
   import { checkRadicleCLI } from "@app/lib/checkRadicleCLI.svelte";
   import { dynamicInterval } from "@app/lib/interval";
   import { sleep } from "@app/lib/sleep";
+  import useLocalStorage from "@app/lib/useLocalStorage.svelte";
 
-  import Icon from "@app/components/Icon.svelte";
-  import InboxButton from "@app/components/InboxButton.svelte";
   import GuideButton, {
     guidePopoverToggleId,
   } from "@app/components/GuideButton.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import InboxButton from "@app/components/InboxButton.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import NodeStatusButton from "@app/components/NodeStatusButton.svelte";
 

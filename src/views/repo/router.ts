@@ -1,20 +1,20 @@
 import type { Action as IssueAction } from "@bindings/cob/issue/Action";
-import type { Action as PatchAction } from "@bindings/cob/patch/Action";
-import type { Config } from "@bindings/config/Config";
-import type { DraftReview } from "@app/lib/draftReviewStorage";
 import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Operation } from "@bindings/cob/Operation";
 import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
+import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 import type { Patch } from "@bindings/cob/patch/Patch";
-import type { Readme } from "@bindings/repo/Readme";
-import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { Review } from "@bindings/cob/patch/Review";
 import type { Revision } from "@bindings/cob/patch/Revision";
 import type { Thread } from "@bindings/cob/thread/Thread";
+import type { Config } from "@bindings/config/Config";
+import type { Readme } from "@bindings/repo/Readme";
+import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-import { didFromPublicKey, unreachable } from "@app/lib/utils";
+import type { DraftReview } from "@app/lib/draftReviewStorage";
 import { draftReviewStorage } from "@app/lib/draftReviewStorage";
 import { invoke } from "@app/lib/invoke";
+import { didFromPublicKey, unreachable } from "@app/lib/utils";
 
 export type IssueStatus = "all" | Issue["state"]["status"];
 

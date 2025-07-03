@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
 
+  import { invoke } from "@app/lib/invoke";
   import {
     authorForNodeId,
     parseNodeId,
     publicKeyFromDid,
   } from "@app/lib/utils";
-  import { invoke } from "@app/lib/invoke";
 
   import Icon from "@app/components/Icon.svelte";
   import NodeId from "@app/components/NodeId.svelte";

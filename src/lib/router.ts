@@ -1,11 +1,10 @@
-import type { LoadedRoute, Route } from "@app/lib/router/definitions";
-
+import { repoRouteToPath, repoUrlToRoute } from "@app/views/repo/router";
 import { get, writable } from "svelte/store";
 
 import * as mutexExecutor from "@app/lib/mutexExecutor";
-import * as utils from "@app/lib/utils";
+import type { LoadedRoute, Route } from "@app/lib/router/definitions";
 import { loadRoute } from "@app/lib/router/definitions";
-import { repoRouteToPath, repoUrlToRoute } from "@app/views/repo/router";
+import * as utils from "@app/lib/utils";
 
 export { type Route };
 

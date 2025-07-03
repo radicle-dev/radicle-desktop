@@ -1,19 +1,19 @@
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
-  import type { Config } from "@bindings/config/Config";
   import type { Patch } from "@bindings/cob/patch/Patch";
+  import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import * as roles from "@app/lib/roles";
-  import { announce } from "@app/components/AnnounceSwitch.svelte";
-  import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
+  import { invoke } from "@app/lib/invoke";
+  import * as roles from "@app/lib/roles";
+  import { authorForNodeId } from "@app/lib/utils";
 
+  import { announce } from "@app/components/AnnounceSwitch.svelte";
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
-  import NodeId from "./NodeId.svelte";
-  import { authorForNodeId } from "@app/lib/utils";
-  import PatchStateButton from "./PatchStateButton.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
+  import PatchStateButton from "@app/components/PatchStateButton.svelte";
 
   interface Props {
     config: Config;

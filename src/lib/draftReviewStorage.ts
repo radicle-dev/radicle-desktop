@@ -1,15 +1,16 @@
-import { z } from "zod";
-
-import type { Comment } from "@bindings/cob/thread/Comment";
 import type { Author } from "@bindings/cob/Author";
-import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
-import type { CodeRange } from "@bindings/cob/thread/CodeRange";
 import type { CreateReviewArgs } from "@bindings/cob/patch/CreateReviewArgs";
-import type { Embed } from "@bindings/cob/thread/Embed";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { Verdict } from "@bindings/cob/patch/Verdict";
+import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
+import type { CodeRange } from "@bindings/cob/thread/CodeRange";
+import type { Comment } from "@bindings/cob/thread/Comment";
+import type { Embed } from "@bindings/cob/thread/Embed";
+
+import { z } from "zod";
 
 import useLocalStorage from "@app/lib/useLocalStorage.svelte";
+
 import { invoke } from "./invoke";
 
 // This is different from the stored draft review to align it with a

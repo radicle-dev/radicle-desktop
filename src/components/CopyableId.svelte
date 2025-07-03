@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Clipboard from "./Clipboard.svelte";
+  import Clipboard from "@app/components/Clipboard.svelte";
 
   const {
     inline = false,

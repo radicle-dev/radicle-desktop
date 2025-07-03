@@ -1,18 +1,19 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import type { PeerManager, RadiclePeer } from "./peerManager.js";
-import type * as Stream from "node:stream";
 
 import * as Fs from "node:fs/promises";
 import * as Path from "node:path";
-import { test as base, expect } from "@playwright/test";
-import { execa } from "execa";
+import type * as Stream from "node:stream";
 
+import { expect, test as base } from "@playwright/test";
 import * as issue from "@tests/support/cobs/issue.js";
-import * as logLabel from "@tests/support/logPrefix.js";
 import * as patch from "@tests/support/cobs/patch.js";
-import { createOptions, supportDir, tmpDir } from "@tests/support/support.js";
+import * as logLabel from "@tests/support/logPrefix.js";
 import { createPeerManager } from "@tests/support/peerManager.js";
 import { createRepo } from "@tests/support/repo.js";
+import { createOptions, supportDir, tmpDir } from "@tests/support/support.js";
+import { execa } from "execa";
+
 import { formatOid } from "@app/lib/utils.js";
 
 export { expect };

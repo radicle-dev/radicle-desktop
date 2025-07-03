@@ -1,8 +1,8 @@
-import * as z from "zod";
 import * as semver from "semver";
+import * as z from "zod";
 
-import useLocalStorage from "./useLocalStorage.svelte";
 import { invoke } from "./invoke";
+import useLocalStorage from "./useLocalStorage.svelte";
 
 interface LatestVersionInfo {
   version: string;

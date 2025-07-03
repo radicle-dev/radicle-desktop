@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { FormEventHandler } from "svelte/elements";
   import type { Snippet } from "svelte";
+  import type { FormEventHandler } from "svelte/elements";
 
   import { onMount } from "svelte";
 
-  import Border from "./Border.svelte";
+  import Border from "@app/components/Border.svelte";
 
   interface Props {
     autofocus?: boolean;

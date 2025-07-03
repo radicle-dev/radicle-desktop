@@ -3,10 +3,10 @@
 
   import { formatRepositoryId, formatTimestamp } from "@app/lib/utils";
 
-  import Border from "./Border.svelte";
-  import Icon from "./Icon.svelte";
-  import RepoHeader from "./RepoHeader.svelte";
-  import Id from "./Id.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import Id from "@app/components/Id.svelte";
+  import RepoHeader from "@app/components/RepoHeader.svelte";
 
   interface Props {
     repo: RepoInfo;

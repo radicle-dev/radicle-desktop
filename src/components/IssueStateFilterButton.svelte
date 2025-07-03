@@ -2,17 +2,17 @@
   import type { IssueStatus } from "@app/views/repo/router";
   import type { ProjectPayloadMeta } from "@bindings/repo/ProjectPayloadMeta";
 
-  import { closeFocused } from "./Popover.svelte";
-
   import capitalize from "lodash/capitalize";
+
   import { issueStatusColor } from "@app/lib/utils";
 
-  import Border from "./Border.svelte";
-  import DropdownList from "./DropdownList.svelte";
-  import DropdownListItem from "./DropdownListItem.svelte";
-  import Icon from "./Icon.svelte";
-  import OutlineButton from "./OutlineButton.svelte";
-  import Popover from "./Popover.svelte";
+  import Border from "@app/components/Border.svelte";
+  import DropdownList from "@app/components/DropdownList.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import OutlineButton from "@app/components/OutlineButton.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
+  import Popover from "@app/components/Popover.svelte";
 
   interface Props {
     changeFilter: (status: IssueStatus) => void;

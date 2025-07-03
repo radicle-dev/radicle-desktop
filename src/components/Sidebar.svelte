@@ -1,12 +1,11 @@
 <script lang="ts">
   import * as router from "@app/lib/router";
 
-  import { storeLayout, getLayout } from "@app/views/repo/Layout.svelte";
-
+  import Border from "@app/components/Border.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
   import Settings from "@app/components/Settings.svelte";
-  import Border from "./Border.svelte";
-  import NakedButton from "./NakedButton.svelte";
+  import { getLayout, storeLayout } from "@app/views/repo/Layout.svelte";
 
   interface Props {
     activeTab: "issues" | "patches";

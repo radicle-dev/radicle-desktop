@@ -1,8 +1,8 @@
 <script lang="ts">
+  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Diff } from "@bindings/diff/Diff";
-  import type { CodeComments } from "./Diff.svelte";
 
-  import FileDiffComponent from "./FileDiff.svelte";
+  import FileDiffComponent from "@app/components/FileDiff.svelte";
 
   interface Props {
     codeComments?: CodeComments;

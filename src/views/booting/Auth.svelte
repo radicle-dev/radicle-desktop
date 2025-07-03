@@ -2,8 +2,14 @@
   import type { Author } from "@bindings/cob/Author";
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
 
-  import * as router from "@app/lib/router";
+  import logo from "/radicle.svg?url";
+
   import { invoke } from "@app/lib/invoke";
+  import * as router from "@app/lib/router";
+  import {
+    createEventEmittersOnce,
+    setUnlistenNodeEvents,
+  } from "@app/lib/startup.svelte";
   import { truncateDid } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
@@ -11,11 +17,6 @@
   import Icon from "@app/components/Icon.svelte";
   import Spinner from "@app/components/Spinner.svelte";
   import TextInput from "@app/components/TextInput.svelte";
-  import logo from "/radicle.svg?url";
-  import {
-    setUnlistenNodeEvents,
-    createEventEmittersOnce,
-  } from "@app/lib/startup.svelte";
 
   interface Props {
     profile: Author;

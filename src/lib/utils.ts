@@ -1,13 +1,12 @@
-import type { ComponentProps } from "svelte";
-
 import type { Author } from "@bindings/cob/Author";
 import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { Review } from "@bindings/cob/patch/Review";
+import type { ComponentProps } from "svelte";
 
 import bs58 from "bs58";
-import twemojiModule from "twemoji";
 import md5 from "md5";
+import twemojiModule from "twemoji";
 
 import NodeId from "@app/components/NodeId.svelte";
 

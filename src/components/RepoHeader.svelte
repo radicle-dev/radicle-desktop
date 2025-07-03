@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import Icon from "./Icon.svelte";
+  import Icon from "@app/components/Icon.svelte";
 
   interface Props {
     repo: RepoInfo;

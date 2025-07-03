@@ -1,7 +1,7 @@
 import type { UnlistenFn } from "@tauri-apps/api/event";
 
-import once from "lodash/once";
 import { listen } from "@tauri-apps/api/event";
+import once from "lodash/once";
 
 import { nodeRunning } from "./events";
 

@@ -6,10 +6,10 @@
   import { authorForNodeId } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
+  import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
-  import Icon from "./Icon.svelte";
 
   interface Props {
     horizontal?: boolean;

@@ -1,32 +1,31 @@
 <script lang="ts">
-  import type { Action } from "@bindings/cob/patch/Action";
-  import type { Config } from "@bindings/config/Config";
-  import type { DraftReview } from "@app/lib/draftReviewStorage";
+  import type { PatchStatus } from "./router";
   import type { Operation } from "@bindings/cob/Operation";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
+  import type { Action } from "@bindings/cob/patch/Action";
   import type { Patch } from "@bindings/cob/patch/Patch";
-  import type { PatchStatus } from "./router";
-  import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { Config } from "@bindings/config/Config";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import fuzzysort from "fuzzysort";
 
+  import type { DraftReview } from "@app/lib/draftReviewStorage";
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
+  import { nodeRunning } from "@app/lib/events";
+  import { invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
-  import { DEFAULT_TAKE } from "./router";
-  import { announce } from "@app/components/AnnounceSwitch.svelte";
+  import { push } from "@app/lib/router";
   import {
     didFromPublicKey,
     explorerUrl,
     formatOid,
     verdictIcon,
   } from "@app/lib/utils";
-  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
-  import { invoke } from "@app/lib/invoke";
   import { modifierKey } from "@app/lib/utils";
-  import { nodeRunning } from "@app/lib/events";
-  import { push } from "@app/lib/router";
 
+  import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Border from "@app/components/Border.svelte";
   import Button from "@app/components/Button.svelte";
   import CheckoutPatchButton from "@app/components/CheckoutPatchButton.svelte";
@@ -54,6 +53,7 @@
   import Layout from "./Layout.svelte";
   import PatchesBreadcrumb from "./PatchesBreadcrumb.svelte";
   import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
+  import { DEFAULT_TAKE } from "./router";
 
   interface Props {
     repo: RepoInfo;

@@ -1,23 +1,22 @@
 <script lang="ts">
-  import type { Config } from "@bindings/config/Config";
-  import type { DraftReview } from "@app/lib/draftReviewStorage";
-  import type { Patch } from "@bindings/cob/patch/Patch";
   import type { PatchStatus } from "@app/views/repo/router";
+  import type { Patch } from "@bindings/cob/patch/Patch";
   import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { Config } from "@bindings/config/Config";
 
-  import DropdownListItem from "./DropdownListItem.svelte";
-  import Icon from "./Icon.svelte";
-  import NodeId from "./NodeId.svelte";
-
+  import type { DraftReview } from "@app/lib/draftReviewStorage";
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
+  import { push } from "@app/lib/router";
   import {
     authorForNodeId,
     didFromPublicKey,
     verdictIcon,
   } from "@app/lib/utils";
 
-  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
-  import { push } from "@app/lib/router";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
 
   interface Props {
     config: Config;

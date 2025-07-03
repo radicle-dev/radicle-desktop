@@ -1,9 +1,10 @@
-import type { Commit } from "@bindings/repo/Commit";
-import type { Diff } from "@bindings/diff/Diff";
 import type { DiffOptions } from "@bindings/cob/DiffOptions";
+import type { Diff } from "@bindings/diff/Diff";
 import type { Stats } from "@bindings/diff/Stats";
+import type { Commit } from "@bindings/repo/Commit";
 
 import * as tauri from "@tauri-apps/api/core";
+
 import { cached } from "@app/lib/cached";
 
 export async function invoke<T = null>(

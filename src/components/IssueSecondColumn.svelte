@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Issue } from "@bindings/cob/issue/Issue";
   import type { IssueStatus } from "@app/views/repo/router";
+  import type { Issue } from "@bindings/cob/issue/Issue";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import fuzzysort from "fuzzysort";
@@ -8,13 +8,13 @@
   import * as router from "@app/lib/router";
   import { modifierKey } from "@app/lib/utils";
 
-  import Border from "./Border.svelte";
-  import Icon from "./Icon.svelte";
-  import IssueStateFilterButton from "./IssueStateFilterButton.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import IssueStateFilterButton from "@app/components/IssueStateFilterButton.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
-  import NakedButton from "./NakedButton.svelte";
-  import OutlineButton from "./OutlineButton.svelte";
-  import TextInput from "./TextInput.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
+  import OutlineButton from "@app/components/OutlineButton.svelte";
+  import TextInput from "@app/components/TextInput.svelte";
 
   const activeRouteStore = router.activeRouteStore;
 

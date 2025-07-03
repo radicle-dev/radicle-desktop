@@ -3,7 +3,8 @@
   import type { Snippet } from "svelte";
 
   import * as utils from "@app/lib/utils";
-  import HoverPopover from "./HoverPopover.svelte";
+
+  import HoverPopover from "@app/components/HoverPopover.svelte";
 
   interface Props {
     children: Snippet;

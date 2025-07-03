@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { CodeComments } from "./Diff.svelte";
+  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
   import { cachedGetDiff, cachedListCommits } from "@app/lib/invoke";
   import { pluralize } from "@app/lib/utils";
 
   import Changeset from "@app/components/Changeset.svelte";
-  import CobCommitTeaser from "./CobCommitTeaser.svelte";
+  import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
   import CommitsContainer from "@app/components/CommitsContainer.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Id from "./Id.svelte";
+  import Id from "@app/components/Id.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {

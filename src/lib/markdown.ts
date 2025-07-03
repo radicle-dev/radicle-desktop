@@ -1,11 +1,11 @@
 import type { MarkedExtension, Tokens } from "marked";
 
 import dompurify from "dompurify";
-import katexMarkedExtension from "marked-katex-extension";
-import markedFootnote from "marked-footnote";
-import markedLinkifyIt from "marked-linkify-it";
 import { Marked, Renderer as BaseRenderer } from "marked";
 import { markedEmoji } from "marked-emoji";
+import markedFootnote from "marked-footnote";
+import katexMarkedExtension from "marked-katex-extension";
+import markedLinkifyIt from "marked-linkify-it";
 
 import emojis from "@app/lib/emojis";
 

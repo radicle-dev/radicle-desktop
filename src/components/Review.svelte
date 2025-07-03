@@ -1,26 +1,27 @@
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
-  import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
-  import type { Config } from "@bindings/config/Config";
-  import type { DraftReview } from "@app/lib/draftReviewStorage";
-  import type { Embed } from "@bindings/cob/thread/Embed";
-  import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
+  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
+  import type { Config } from "@bindings/config/Config";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import partial from "lodash/partial";
   import uniqBy from "lodash/uniqBy";
 
+  import type { DraftReview } from "@app/lib/draftReviewStorage";
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
+  import { nodeRunning } from "@app/lib/events";
+  import { invoke } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
+  import { push } from "@app/lib/router";
+  import { authorForNodeId, publicKeyFromDid } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
-  import { authorForNodeId, publicKeyFromDid } from "@app/lib/utils";
-  import { invoke } from "@app/lib/invoke";
-  import { nodeRunning } from "@app/lib/events";
-
   import Border from "@app/components/Border.svelte";
-  import Button from "./Button.svelte";
+  import Button from "@app/components/Button.svelte";
   import Changes from "@app/components/Changes.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import Discussion from "@app/components/Discussion.svelte";
@@ -31,8 +32,6 @@
   import NodeId from "@app/components/NodeId.svelte";
   import VerdictBadge from "@app/components/VerdictBadge.svelte";
   import VerdictButton from "@app/components/VerdictButton.svelte";
-  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
-  import { push } from "@app/lib/router";
 
   interface Props {
     config: Config;

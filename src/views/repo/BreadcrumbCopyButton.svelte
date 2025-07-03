@@ -1,14 +1,14 @@
 <script lang="ts">
   import type { ComponentProps } from "svelte";
 
-  import { writeToClipboard } from "@app/lib/invoke";
-
   import debounce from "lodash/debounce";
-  import { closeFocused } from "@app/components/Popover.svelte";
+
+  import { writeToClipboard } from "@app/lib/invoke";
 
   import Border from "@app/components/Border.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
   import Popover from "@app/components/Popover.svelte";
 
   interface Props {

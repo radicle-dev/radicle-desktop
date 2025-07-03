@@ -1,4 +1,4 @@
-import { z, type SafeParseReturnType } from "zod";
+import { type SafeParseReturnType, z } from "zod";
 
 export default function useLocalStorage<
   S extends z.infer<T>,

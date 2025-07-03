@@ -7,17 +7,17 @@
 
   import { updateChecker } from "@app/lib/updateChecker.svelte";
 
-  import AnnounceSwitch from "./AnnounceSwitch.svelte";
-  import Border from "./Border.svelte";
-  import CopyableId from "./CopyableId.svelte";
-  import ExternalLink from "./ExternalLink.svelte";
-  import FontSizeSwitch from "./FontSizeSwitch.svelte";
-  import Icon from "./Icon.svelte";
-  import NakedButton from "./NakedButton.svelte";
-  import OutlineButton from "./OutlineButton.svelte";
-  import Popover from "./Popover.svelte";
-  import ThemeSwitch from "./ThemeSwitch.svelte";
-  import UpdateSwitch from "./UpdateSwitch.svelte";
+  import AnnounceSwitch from "@app/components/AnnounceSwitch.svelte";
+  import Border from "@app/components/Border.svelte";
+  import CopyableId from "@app/components/CopyableId.svelte";
+  import ExternalLink from "@app/components/ExternalLink.svelte";
+  import FontSizeSwitch from "@app/components/FontSizeSwitch.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
+  import OutlineButton from "@app/components/OutlineButton.svelte";
+  import Popover from "@app/components/Popover.svelte";
+  import ThemeSwitch from "@app/components/ThemeSwitch.svelte";
+  import UpdateSwitch from "@app/components/UpdateSwitch.svelte";
 
   interface Props {
     compact?: boolean;

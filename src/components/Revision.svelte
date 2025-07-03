@@ -1,18 +1,18 @@
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
-  import type { Config } from "@bindings/config/Config";
-  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
+  import type { Config } from "@bindings/config/Config";
 
   import partial from "lodash/partial";
 
-  import * as roles from "@app/lib/roles";
-  import { announce } from "@app/components/AnnounceSwitch.svelte";
-  import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
+  import { invoke } from "@app/lib/invoke";
+  import * as roles from "@app/lib/roles";
   import { publicKeyFromDid } from "@app/lib/utils";
 
+  import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Changes from "@app/components/Changes.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import Discussion from "@app/components/Discussion.svelte";

@@ -2,19 +2,19 @@
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
-  import uniqBy from "lodash/uniqBy";
   import orderBy from "lodash/orderBy";
+  import uniqBy from "lodash/uniqBy";
 
   import { authorForNodeId, formatOid } from "@app/lib/utils";
 
-  import Border from "./Border.svelte";
-  import DropdownList from "./DropdownList.svelte";
-  import DropdownListItem from "./DropdownListItem.svelte";
-  import Icon from "./Icon.svelte";
-  import NakedButton from "./NakedButton.svelte";
-  import NodeId from "./NodeId.svelte";
-  import Popover, { closeFocused } from "./Popover.svelte";
-  import RevisionBadges from "./RevisionBadges.svelte";
+  import Border from "@app/components/Border.svelte";
+  import DropdownList from "@app/components/DropdownList.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import NakedButton from "@app/components/NakedButton.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
+  import RevisionBadges from "@app/components/RevisionBadges.svelte";
 
   interface Props {
     patch: Patch;

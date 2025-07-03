@@ -1,27 +1,27 @@
 <script lang="ts">
-  import type { CacheEvent } from "@bindings/cob/CacheEvent";
-  import type { Config } from "@bindings/config/Config";
-  import type { Issue } from "@bindings/cob/issue/Issue";
   import type { IssueStatus } from "@app/views/repo/router";
+  import type { CacheEvent } from "@bindings/cob/CacheEvent";
+  import type { Issue } from "@bindings/cob/issue/Issue";
+  import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import delay from "lodash/delay";
-  import fuzzysort from "fuzzysort";
   import { Channel } from "@tauri-apps/api/core";
+  import fuzzysort from "fuzzysort";
+  import delay from "lodash/delay";
 
-  import * as router from "@app/lib/router";
-  import { explorerUrl, modifierKey } from "@app/lib/utils";
   import { invoke } from "@app/lib/invoke";
   import {
     issueCountMismatch,
     resetIssueCounts,
   } from "@app/lib/issueCounts.svelte";
+  import * as router from "@app/lib/router";
+  import { explorerUrl, modifierKey } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import IssuesSecondColumn from "@app/components/IssuesSecondColumn.svelte";
+  import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import Spinner from "@app/components/Spinner.svelte";
   import TextInput from "@app/components/TextInput.svelte";

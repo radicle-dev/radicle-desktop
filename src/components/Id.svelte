@@ -2,11 +2,11 @@
   import type { ComponentProps, Snippet } from "svelte";
 
   import debounce from "lodash/debounce";
-  import { writeToClipboard } from "@app/lib/invoke";
 
+  import { writeToClipboard } from "@app/lib/invoke";
   import { formatOid } from "@app/lib/utils";
 
-  import Icon from "./Icon.svelte";
+  import Icon from "@app/components/Icon.svelte";
 
   let icon: ComponentProps<typeof Icon>["name"] = $state("copy");
   const text = "Click to copy";

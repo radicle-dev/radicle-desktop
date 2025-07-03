@@ -3,8 +3,8 @@
 
   import ConfirmClear from "@app/components/ConfirmClear.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import NotificationsByRepoComponent from "@app/components/NotificationsByRepo.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
+  import NotificationsByRepoComponent from "@app/components/NotificationsByRepo.svelte";
 
   interface Props {
     clearAll: () => Promise<void>;

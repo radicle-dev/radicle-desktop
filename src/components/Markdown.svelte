@@ -1,15 +1,15 @@
 <script lang="ts">
   import type { Embed } from "@bindings/cob/Embed";
 
-  import dompurify from "dompurify";
   import matter from "@radicle/gray-matter";
+  import dompurify from "dompurify";
   import { toDom } from "hast-util-to-dom";
-
-  import { Renderer, markdownWithExtensions } from "@app/lib/markdown";
-  import { highlight } from "@app/lib/syntax";
-  import { twemoji, scrollIntoView, isCommit } from "@app/lib/utils";
-  import { invoke } from "@app/lib/invoke";
   import { tick } from "svelte";
+
+  import { invoke } from "@app/lib/invoke";
+  import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
+  import { highlight } from "@app/lib/syntax";
+  import { isCommit, scrollIntoView, twemoji } from "@app/lib/utils";
 
   interface Props {
     rid?: string;

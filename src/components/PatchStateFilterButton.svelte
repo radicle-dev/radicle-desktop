@@ -6,13 +6,12 @@
 
   import { patchStatusColor } from "@app/lib/utils";
 
-  import { closeFocused } from "@app/components/Popover.svelte";
-
   import Border from "@app/components/Border.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import OutlineButton from "@app/components/OutlineButton.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
   import Popover from "@app/components/Popover.svelte";
 
   interface Props {

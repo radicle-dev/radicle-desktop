@@ -1,19 +1,19 @@
 <script lang="ts">
-  import type { Action } from "@bindings/cob/issue/Action";
-  import type { Author } from "@bindings/cob/Author";
-  import type { Config } from "@bindings/config/Config";
-  import type { Embed } from "@bindings/cob/thread/Embed";
-  import type { Issue } from "@bindings/cob/issue/Issue";
   import type { IssueStatus } from "./router";
+  import type { Author } from "@bindings/cob/Author";
+  import type { Action } from "@bindings/cob/issue/Action";
+  import type { Issue } from "@bindings/cob/issue/Issue";
   import type { Operation } from "@bindings/cob/Operation";
-  import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
+  import type { Config } from "@bindings/config/Config";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import partial from "lodash/partial";
 
-  import * as roles from "@app/lib/roles";
-  import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
+  import { invoke } from "@app/lib/invoke";
+  import * as roles from "@app/lib/roles";
   import {
     explorerUrl,
     issueStatusBackgroundColor,
@@ -22,11 +22,11 @@
   } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
-
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Border from "@app/components/Border.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import Discussion from "@app/components/Discussion.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
@@ -34,6 +34,7 @@
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimeline from "@app/components/IssueTimeline.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
+  import MoreBreadcrumbsButton from "@app/components/MoreBreadcrumbsButton.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
   import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import Sidebar from "@app/components/Sidebar.svelte";
@@ -42,8 +43,6 @@
   import IssuesBreadcrumb from "./IssuesBreadcrumb.svelte";
   import Layout from "./Layout.svelte";
   import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
-  import MoreBreadcrumbsButton from "@app/components/MoreBreadcrumbsButton.svelte";
-  import DropdownListItem from "@app/components/DropdownListItem.svelte";
 
   interface Props {
     repo: RepoInfo;

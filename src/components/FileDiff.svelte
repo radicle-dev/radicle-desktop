@@ -1,6 +1,6 @@
 <script lang="ts">
+  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { FileDiff } from "@bindings/diff/FileDiff";
-  import type { CodeComments } from "./Diff.svelte";
 
   import Diff from "@app/components/Diff.svelte";
   import File from "@app/components/File.svelte";

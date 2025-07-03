@@ -7,21 +7,21 @@
 
   import { z } from "zod";
 
-  import useLocalStorage from "@app/lib/useLocalStorage.svelte";
-  import { announce } from "@app/components/AnnounceSwitch.svelte";
-  import { closeFocused } from "./Popover.svelte";
-  import { invoke } from "@app/lib/invoke";
   import { nodeRunning } from "@app/lib/events";
+  import { invoke } from "@app/lib/invoke";
+  import useLocalStorage from "@app/lib/useLocalStorage.svelte";
   import { parseRepositoryId, twemoji } from "@app/lib/utils";
 
-  import Border from "./Border.svelte";
-  import Button from "./Button.svelte";
-  import Command from "./Command.svelte";
-  import ExternalLink from "./ExternalLink.svelte";
-  import Icon from "./Icon.svelte";
-  import Popover from "./Popover.svelte";
-  import Tab from "./Tab.svelte";
-  import TextInput from "./TextInput.svelte";
+  import { announce } from "@app/components/AnnounceSwitch.svelte";
+  import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
+  import Command from "@app/components/Command.svelte";
+  import ExternalLink from "@app/components/ExternalLink.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
+  import Popover from "@app/components/Popover.svelte";
+  import Tab from "@app/components/Tab.svelte";
+  import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
     onOpen: () => void;

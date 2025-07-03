@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { Action } from "@bindings/cob/patch/Action";
-  import type { Operation } from "@bindings/cob/Operation";
   import type { Author } from "@bindings/cob/Author";
+  import type { Operation } from "@bindings/cob/Operation";
+  import type { Action } from "@bindings/cob/patch/Action";
 
   type FlattenedOperation = Action & {
     id: string;
@@ -19,9 +19,10 @@
     patchStatusColor,
     pluralize,
   } from "@app/lib/utils";
-  import Icon from "./Icon.svelte";
-  import Id from "./Id.svelte";
-  import NodeId from "./NodeId.svelte";
+
+  import Icon from "@app/components/Icon.svelte";
+  import Id from "@app/components/Id.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
 
   interface Props {
     patchId: string;

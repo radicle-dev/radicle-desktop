@@ -1,10 +1,10 @@
 <script lang="ts">
-  import type { RepoCount } from "@bindings/repo/RepoCount";
   import type { HomeReposTab } from "@app/views/home/router";
+  import type { RepoCount } from "@bindings/repo/RepoCount";
 
   import * as router from "@app/lib/router";
 
-  import Border from "./Border.svelte";
+  import Border from "@app/components/Border.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Settings from "@app/components/Settings.svelte";
 
