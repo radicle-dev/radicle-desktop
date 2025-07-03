@@ -1,3 +1,16 @@
+### v0.6.0
+
+- UI polish: scrollbars now auto-hide across the app
+- Fixed button overflow in issue and patch sidebars
+- Draft reviews can now be composed before publishing
+- Added opt-in automatic app update notifications
+- Reworked patch view for clearer, more efficient code reviews
+
+**Shout-out to our contributors 🙏✨**
+
+- [geigerzaehler](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
+
+
 ### v0.5.0
 
 - The app is now officially available via Arch packaging
