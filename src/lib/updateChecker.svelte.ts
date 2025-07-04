@@ -29,6 +29,7 @@ const isEnabledStore = useLocalStorage(
 class UpdateChecker {
   private checkInterval: number | undefined = $state();
   private latestVersionInfo: LatestVersionInfo | undefined = $state();
+  private sanitizedCurrentVersion: string | undefined = $state();
   public currentVersion: string | undefined = $state();
 
   public isEnabled = $derived.by(() => {
@@ -42,8 +43,10 @@ class UpdateChecker {
   // A state that holds the `LatestVersionInfo` if this feature has
   // been enabled and if there is a newer version available.
   public newVersion = $derived.by(() => {
-    if (this.latestVersionInfo && this.currentVersion) {
-      if (semver.gt(this.latestVersionInfo.version, this.currentVersion)) {
+    if (this.latestVersionInfo && this.sanitizedCurrentVersion) {
+      if (
+        semver.gt(this.latestVersionInfo.version, this.sanitizedCurrentVersion)
+      ) {
         return this.latestVersionInfo.version;
       } else {
         return undefined;
@@ -60,9 +63,10 @@ class UpdateChecker {
     }
 
     void invoke<string>("version").then(currentVersion => {
+      updateChecker.currentVersion = currentVersion.toString();
       const version = semver.coerce(currentVersion);
       if (version) {
-        updateChecker.currentVersion = version.toString();
+        updateChecker.sanitizedCurrentVersion = version.toString();
       }
     });
 
@@ -87,8 +91,8 @@ class UpdateChecker {
     }
 
     return (
-      this.currentVersion !== undefined &&
-      semver.gt(this.latestVersionInfo.version, this.currentVersion)
+      this.sanitizedCurrentVersion !== undefined &&
+      semver.gt(this.latestVersionInfo.version, this.sanitizedCurrentVersion)
     );
   }
 
