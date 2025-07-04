@@ -7,5 +7,6 @@ exec docker run \
     --env PKGDEST=/tmp \
     --env SRCDEST=/tmp \
     --workdir /workdir \
+    --platform linux/amd64 \
     archlinux:base-devel makepkg --printsrcinfo > radicle-desktop/.SRCINFO
 

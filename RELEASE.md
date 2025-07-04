@@ -11,8 +11,8 @@
   - Make sure to clean any transient dependencies with `cargo clean && rm -rf node_modules` before building.
 - Upload the macOS build to [MinIO][0] in the same folder as the latest Linux build.
 - Publish Arch Linux package (See `arch/README.md` for more information)
-  - Update `pkgver` in `arch/PKGBUILD` to match the release version
-  - Update `_commit` in `arch/PKGBUILD` to the release commit created above
+  - Update `pkgver` in `arch/radicle-desktop/PKGBUILD` to match the release version
+  - Update `_commit` in `arch/radicle-desktop/PKGBUILD` to the release commit created above
   - Regenerate `.SRCINFO` with
 
     ```bash
