@@ -28,9 +28,13 @@ fi
 
 pushd radicle-desktop.git >/dev/null
 export GIT_PAGER=""
-git checkout master
+git checkout master --force
 git pull
-cp -a ../radicle-desktop/* ../radicle-desktop/.* .
+cp -a \
+  ../radicle-desktop/PKGBUILD \
+  ../radicle-desktop/.SRCINFO \
+  ../radicle-desktop/.gitignore \
+  .
 git diff
 git commit --all --message "$commit_message"
 if [[ "$push" == true ]]; then
