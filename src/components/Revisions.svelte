@@ -85,7 +85,7 @@
             <RevisionBadges {revision} {revisions} />
             <span class="txt-overflow">
               {#if revision.description[0].body.trim()}
-                {revision.description[0].body}
+                {revision.description[0].body.split("\n")[0]}
               {:else}
                 <span
                   class="txt-missing"
