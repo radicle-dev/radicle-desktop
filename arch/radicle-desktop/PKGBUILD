@@ -30,7 +30,7 @@ makedepends=(
   'appmenu-gtk-module'
   'libappindicator-gtk3'
   'librsvg'
-  'rustup'
+  'cargo'
   'npm'
   'nodejs'
 )
