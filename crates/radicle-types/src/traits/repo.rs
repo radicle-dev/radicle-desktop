@@ -14,9 +14,12 @@ use crate::cobs;
 use crate::diff;
 use crate::diff::Diff;
 use crate::error::Error;
-use crate::repo::{self, RepoCount};
+use crate::repo;
+use crate::source;
 use crate::syntax::{Highlighter, ToPretty};
 use crate::traits::Profile;
+
+pub const MAX_BLOB_SIZE: usize = 10_485_760;
 
 #[derive(Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -100,7 +103,7 @@ pub trait Repo: Profile {
             }
         }
 
-        Ok::<_, Error>(RepoCount {
+        Ok::<_, Error>(repo::RepoCount {
             total,
             contributor,
             seeding,
@@ -137,12 +140,19 @@ pub trait Repo: Profile {
             .chain(paths.iter().map(|p| p.to_lowercase()))
         {
             if let Ok(blob) = repo.blob(oid, &path) {
+                if blob.size() > MAX_BLOB_SIZE {
+                    return Err(Error::FileTooLarge(blob.size()));
+                }
+
                 let content = match std::str::from_utf8(blob.content()) {
                     Ok(s) => s.to_owned(),
                     Err(_) => base64::engine::general_purpose::STANDARD.encode(blob.content()),
                 };
 
                 return Ok(Some(repo::Readme {
+                    id: blob.object_id(),
+                    commit: blob.commit().clone().into(),
+                    mime_type: "text/plain".to_owned(),
                     path,
                     content,
                     binary: blob.is_binary(),
@@ -150,6 +160,36 @@ pub trait Repo: Profile {
             }
         }
         Ok(None)
+    }
+
+    fn repo_tree(
+        &self,
+        rid: identity::RepoId,
+        path: std::path::PathBuf,
+    ) -> Result<source::tree::Tree, Error> {
+        let profile = self.profile();
+        let repo = radicle_surf::Repository::open(radicle::storage::git::paths::repository(
+            &profile.storage,
+            &rid,
+        ))?;
+        let head = repo.head()?;
+        let tree = repo.tree(head, &path)?;
+        Ok(source::tree::Tree::from_surf(tree, &path))
+    }
+
+    fn repo_blob(
+        &self,
+        rid: identity::RepoId,
+        path: std::path::PathBuf,
+    ) -> Result<source::blob::Blob, Error> {
+        let profile = self.profile();
+        let repo = radicle_surf::Repository::open(radicle::storage::git::paths::repository(
+            &profile.storage,
+            &rid,
+        ))?;
+        let head = repo.head()?;
+
+        repo.blob(head, &path).map(Into::into).map_err(Error::from)
     }
 
     fn repo_by_id(&self, rid: identity::RepoId) -> Result<repo::RepoInfo, Error> {

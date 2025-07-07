@@ -45,6 +45,24 @@ pub fn repo_readme(
 }
 
 #[tauri::command]
+pub fn repo_tree(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+    path: std::path::PathBuf,
+) -> Result<types::source::tree::Tree, Error> {
+    ctx.repo_tree(rid, path)
+}
+
+#[tauri::command]
+pub fn repo_blob(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+    path: std::path::PathBuf,
+) -> Result<types::source::blob::Blob, Error> {
+    ctx.repo_blob(rid, path)
+}
+
+#[tauri::command]
 pub async fn diff_stats(
     ctx: tauri::State<'_, AppState>,
     rid: RepoId,

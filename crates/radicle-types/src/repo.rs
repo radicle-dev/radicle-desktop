@@ -42,9 +42,13 @@ pub struct RepoInfo {
 #[ts(export)]
 #[ts(export_to = "repo/")]
 pub struct Readme {
-    pub path: String,
-    pub content: String,
+    #[ts(as = "String")]
+    pub id: surf::Oid,
     pub binary: bool,
+    pub commit: Commit,
+    pub mime_type: String,
+    pub content: String,
+    pub path: String,
 }
 
 #[derive(Default, Serialize, TS)]

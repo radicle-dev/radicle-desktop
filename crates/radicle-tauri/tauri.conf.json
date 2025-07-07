@@ -20,8 +20,9 @@
     "security": {
       "csp": {
         "default-src": "'self'",
-        "connect-src": "ipc: http://ipc.localhost https://minio-api.radworks.garden",
+        "connect-src": "ipc: http://ipc.localhost https://minio-api.radworks.garden tauri://localhost/assets/onig-CwjCXqnP.wasm",
         "img-src": "'self' blob: data: https:",
+        "script-src": "'wasm-unsafe-eval'",
         "style-src": "'unsafe-inline' 'self'"
       },
       "pattern": {

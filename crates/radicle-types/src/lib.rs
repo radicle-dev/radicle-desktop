@@ -12,6 +12,7 @@ pub mod domain;
 pub mod error;
 pub mod outbound;
 pub mod repo;
+pub mod source;
 pub mod syntax;
 pub mod test;
 pub mod traits;

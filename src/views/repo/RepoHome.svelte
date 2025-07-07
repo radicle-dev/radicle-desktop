@@ -1,31 +1,104 @@
+<script lang="ts" module>
+  let currentPath = $state("");
+
+  export function getCurrentPath() {
+    return currentPath;
+  }
+</script>
+
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
   import type { Readme } from "@bindings/repo/Readme";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { Blob } from "@bindings/source/Blob";
+  import type { Tree } from "@bindings/source/Tree";
+
+  import { toHtml } from "hast-util-to-html";
+  import { capitalize } from "lodash";
+  import { useOverlayScrollbars } from "overlayscrollbars-svelte";
+
+  import { invoke, InvokeError } from "@app/lib/invoke";
+  import { highlight } from "@app/lib/syntax";
+  import { formatOid } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
   import CheckoutRepoButton from "@app/components/CheckoutRepoButton.svelte";
   import File from "@app/components/File.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import Id from "@app/components/Id.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
   import Path from "@app/components/Path.svelte";
+  import PreviewSwitch from "@app/components/PreviewSwitch.svelte";
   import RepoHomeSecondColumn from "@app/components/RepoHomeSecondColumn.svelte";
   import RepoMetadata from "@app/components/RepoMetadata.svelte";
-
-  import Layout from "./Layout.svelte";
-  import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
+  import Layout from "@app/views/repo/Layout.svelte";
+  import RepoBreadcrumb from "@app/views/repo/RepoBreadcrumb.svelte";
 
   interface Props {
     config: Config;
-    readme: Readme | null;
+    tree: Tree;
     repo: RepoInfo;
+    readme: Readme | null;
     notificationCount: number;
   }
 
-  const { config, readme, repo, notificationCount }: Props = $props();
+  /* eslint-disable prefer-const */
+  let { config, tree, readme, repo, notificationCount }: Props = $props();
+  /* eslint-enable prefer-const */
+
+  let codeElement: HTMLElement | undefined = $state();
+  let preview = $state(true);
+  let error: InvokeError | undefined = $state();
+
+  $effect(() => {
+    currentPath = readme?.path || "";
+  });
+
+  function isMarkdownPath(path: string): boolean {
+    return /\.(md|mkd|markdown)$/i.test(path);
+  }
+
+  async function fetchTree(path: string) {
+    return await invoke<Tree>("repo_tree", { rid: repo.rid, path });
+  }
+
+  async function fetchBlob(path: string) {
+    try {
+      blob = await invoke<Blob>("repo_blob", { rid: repo.rid, path });
+      currentPath = path;
+      error = undefined;
+    } catch (err) {
+      if (err instanceof InvokeError) {
+        error = err;
+      }
+      currentPath = path;
+    }
+    return;
+  }
+
+  $effect(() => {
+    if (codeElement) {
+      const [initialize] = useOverlayScrollbars({
+        options: () => ({
+          scrollbars: { theme: "global-os-theme-radicle", autoHide: "scroll" },
+        }),
+        defer: true,
+      });
+
+      initialize({ target: codeElement });
+    }
+  });
+
+  $effect(() => {
+    preview = isMarkdownPath(currentPath);
+  });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
+  let blob: Blob | Readme | null = $state(readme);
+  const showLineNumbers = $derived(
+    blob && !blob.binary && blob.content.trim() !== "" && !preview && !error,
+  );
 </script>
 
 <style>
@@ -37,6 +110,30 @@
     grid-template-columns: 1fr min-content;
     grid-template-areas: "main-content right-sidebar";
     margin-top: 2rem;
+  }
+  .line-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  .blob {
+    display: flex;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+    overflow: hidden;
+  }
+  .blob-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0;
+  }
+  .code,
+  .commit-msg {
+    -webkit-touch-callout: initial;
+    -webkit-user-select: text;
+    user-select: text;
+    cursor: text;
   }
 </style>
 
@@ -52,7 +149,7 @@
   {/snippet}
 
   {#snippet secondColumn()}
-    <RepoHomeSecondColumn {repo} />
+    <RepoHomeSecondColumn {repo} {tree} {fetchBlob} {fetchTree} />
   {/snippet}
 
   <div class="content">
@@ -77,7 +174,7 @@
 
     <div class="container">
       <div style:grid-area="main-content" style:min-width="0">
-        {#if readme === null}
+        {#if blob === null}
           <Border
             variant="ghost"
             stylePadding="1rem"
@@ -94,28 +191,89 @@
           <File expandable={false} sticky={false}>
             {#snippet leftHeader()}
               <div style:margin-left="0.5rem">
-                <Path fullPath={readme.path} />
+                <Path fullPath={currentPath} />
               </div>
             {/snippet}
 
-            <div style:padding="1rem">
-              {#if readme.binary}
-                <div
-                  class="global-flex txt-missing"
-                  style:width="100%"
-                  style:justify-content="center">
-                  <Icon name="binary" />Binary file
-                </div>
-              {:else if readme.content.trim() === ""}
-                <div
-                  class="global-flex txt-missing"
-                  style:width="100%"
-                  style:justify-content="center">
-                  <Icon name="none" />Empty file
-                </div>
-              {:else}
-                <Markdown rid={repo.rid} content={readme.content} />
+            {#snippet rightHeader()}
+              {#if blob}
+                <Border
+                  styleMaxWidth="fit-content"
+                  variant="float"
+                  styleBackgroundColor="var(--color-background-float)"
+                  stylePadding="0 0.5rem"
+                  styleAlignItems="center"
+                  styleAlignSelf="flex-end">
+                  <Id variant="commit" id={blob.commit.id}>
+                    {formatOid(blob.commit.id)}
+                  </Id>
+                  <span class="commit-msg txt-overflow" style:max-width="20rem">
+                    {blob.commit.message}
+                  </span>
+                </Border>
               {/if}
+
+              {#if isMarkdownPath(currentPath)}
+                <PreviewSwitch bind:preview />
+              {/if}
+            {/snippet}
+
+            <div class="blob">
+              <div class="line-column">
+                {#if showLineNumbers}
+                  {#each blob.content
+                    .trimEnd()
+                    .split("\n")
+                    .map((_, index) => index) as line}
+                    <div class="txt-missing txt-monospace txt-small">
+                      {line + 1}
+                    </div>
+                  {/each}
+                {/if}
+              </div>
+              <div style:width="100%" bind:this={codeElement}>
+                {#if blob.binary}
+                  {#if blob.mimeType.startsWith("image")}
+                    <img
+                      src={`data:${blob.mimeType};base64,${blob.content}`}
+                      alt={`Preview of ${blob.id}`} />
+                  {:else}
+                    <div class="txt-small blob-placeholder txt-missing">
+                      <Icon name="file" size="32" />
+                      <span>Binary file</span>
+                    </div>
+                  {/if}
+                {:else if preview}
+                  <div style:margin-top="1rem">
+                    <Markdown content={blob.content} />
+                  </div>
+                {:else if blob.content.trim() === ""}
+                  <div class="txt-small blob-placeholder txt-missing">
+                    <Icon name="none" size="32" />
+                    <span>Empty file</span>
+                  </div>
+                {:else if error}
+                  <div class="txt-small blob-placeholder txt-missing">
+                    <Icon name="warning" size="32" />
+                    {#if error.code === "PayloadError.TooLarge"}
+                      <span>File size exceeds limit of 10 MB.</span>
+                    {:else}
+                      <span>{capitalize(error.message)}</span>
+                    {/if}
+                  </div>
+                {:else}
+                  <code>
+                    <pre
+                      class="code txt-small"
+                      style:margin="0"
+                      style:padding="0">{#await highlight(blob.content, currentPath
+                          .split(".")
+                          .at(-1) || "raw")}{blob.content}{:then tree}{@html toHtml(
+                          tree,
+                        )}{/await}</pre>
+                  </code>
+                {/if}
+              </div>
             </div>
           </File>
         {/if}

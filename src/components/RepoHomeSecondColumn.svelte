@@ -1,17 +1,42 @@
 <script lang="ts">
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { Tree } from "@bindings/source/Tree";
+
+  import { useOverlayScrollbars } from "overlayscrollbars-svelte";
 
   import Border from "@app/components/Border.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Link from "@app/components/Link.svelte";
   import RepoTeaser from "@app/components/RepoTeaser.svelte";
   import Settings from "@app/components/Settings.svelte";
+  import TreeComponent from "@app/components/Tree.svelte";
 
   interface Props {
     repo: RepoInfo;
+    tree: Tree;
+    fetchTree: (path: string) => Promise<Tree>;
+    fetchBlob: (path: string) => Promise<void>;
   }
 
-  const { repo }: Props = $props();
+  const { repo, tree, fetchTree, fetchBlob }: Props = $props();
+
+  let innerElement: HTMLElement | undefined = $state();
+
+  $effect(() => {
+    if (innerElement) {
+      const [initialize] = useOverlayScrollbars({
+        options: () => ({
+          scrollbars: {
+            theme: "global-os-theme-radicle",
+            autoHide: "scroll",
+          },
+        }),
+        defer: true,
+      });
+
+      initialize({ target: innerElement });
+    }
+  });
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
@@ -51,11 +76,25 @@
     <div style:margin-bottom="0.75rem">
       <Border
         variant="ghost"
+        styleMaxWidth="20rem"
+        flatBottom={tree.entries.length > 0}
         styleBackgroundColor="var(--color-background-default)">
         <div class="tab active" style:color="var(--color-foreground-contrast)">
           <RepoTeaser name={project.data.name} seeding={repo.seeding} />
         </div>
       </Border>
+      {#if tree.entries.length > 0}
+        <Border
+          bind:innerElement
+          variant="ghost"
+          styleMaxHeight="calc(100vh - 20rem)"
+          styleOverflow="scroll"
+          styleMaxWidth="20rem"
+          flatTop
+          styleWidth="100%">
+          <TreeComponent {tree} {fetchTree} {fetchBlob} />
+        </Border>
+      {/if}
     </div>
 
     <div style:margin-bottom="0.5rem">

@@ -10,6 +10,7 @@ import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Config } from "@bindings/config/Config";
 import type { Readme } from "@bindings/repo/Readme";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
+import type { Tree } from "@bindings/source/Tree";
 
 import type { DraftReview } from "@app/lib/draftReviewStorage";
 import { draftReviewStorage } from "@app/lib/draftReviewStorage";
@@ -22,6 +23,7 @@ export const DEFAULT_TAKE = 20;
 
 export interface RepoHomeRoute {
   resource: "repo.home";
+  sha?: string;
   rid: string;
 }
 
@@ -42,6 +44,8 @@ export interface LoadedRepoHomeRoute {
   resource: "repo.home";
   params: {
     repo: RepoInfo;
+    sha?: string;
+    tree: Tree;
     config: Config;
     readme: Readme | null;
     notificationCount: number;
@@ -230,7 +234,7 @@ export async function loadPatches(
 export async function loadRepoHome(
   route: RepoHomeRoute,
 ): Promise<LoadedRepoHomeRoute> {
-  const [notificationCount, config, repo, readme] = await Promise.all([
+  const [notificationCount, config, repo, readme, tree] = await Promise.all([
     invoke<number>("notification_count"),
     invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
@@ -239,11 +243,16 @@ export async function loadRepoHome(
     invoke<Readme | null>("repo_readme", {
       rid: route.rid,
     }),
+    invoke<Tree>("repo_tree", {
+      rid: route.rid,
+      path: "",
+      sha: route.sha,
+    }),
   ]);
 
   return {
     resource: "repo.home",
-    params: { notificationCount, repo, config, readme },
+    params: { notificationCount, repo, sha: route.sha, config, readme, tree },
   };
 }
 
@@ -387,7 +396,7 @@ export function repoUrlToRoute(
 
   if (rid) {
     if (resource === "home") {
-      return { resource: "repo.home", rid };
+      return { resource: "repo.home", rid, sha: segments.shift() };
     } else if (resource === "issues") {
       const idOrAction = segments.shift();
       if (idOrAction) {

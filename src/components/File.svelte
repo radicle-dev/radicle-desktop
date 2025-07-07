@@ -76,8 +76,8 @@
     position: absolute;
     z-index: -1;
     content: " ";
-    background-color: var(--color-background-float);
     clip-path: var(--2px-bottom-corner-fill);
+    background-color: var(--color-background-float);
     width: 100%;
     height: 100%;
     top: 0;

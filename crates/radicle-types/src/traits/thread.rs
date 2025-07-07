@@ -14,6 +14,8 @@ use crate::cobs;
 use crate::error::Error;
 use crate::traits::Profile;
 
+pub const MAX_EMBED_SIZE: usize = 10_485_760;
+
 pub trait Thread: Profile {
     fn get_embed(
         &self,
@@ -65,7 +67,7 @@ pub trait Thread: Profile {
         let repo = profile.storage.repository(rid)?;
         let bytes = fs::read(path.clone())?;
         let file_size = bytes.len();
-        if file_size > 10_485_760 {
+        if file_size > MAX_EMBED_SIZE {
             return Err(Error::FileTooLarge(file_size));
         }
         let name = path.file_name().and_then(|s| s.to_str()).unwrap_or("embed");
@@ -81,7 +83,7 @@ pub trait Thread: Profile {
         bytes: Vec<u8>,
     ) -> Result<git::Oid, Error> {
         let file_size = bytes.len();
-        if file_size > 10_485_760 {
+        if file_size > MAX_EMBED_SIZE {
             return Err(Error::FileTooLarge(file_size));
         }
         let profile = self.profile();

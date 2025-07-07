@@ -30,6 +30,7 @@
     flatBottom?: boolean;
     styleBackgroundColor?: string;
     styleFlexDirection?: string;
+    styleAlignSelf?: string;
     styleAlignItems?: string;
     styleJustifyContent?: string;
   }
@@ -57,6 +58,7 @@
     flatBottom = false,
     styleBackgroundColor = "var(--color-background-default)",
     styleFlexDirection = "row",
+    styleAlignSelf,
     styleAlignItems = "center",
     styleJustifyContent,
   }: Props = $props();
@@ -234,6 +236,7 @@
 <div
   style:width={styleWidth}
   style:max-width={styleMaxWidth}
+  style:align-self={styleAlignSelf}
   style:cursor={styleCursor}
   class="container"
   class:flat-top={flatTop}

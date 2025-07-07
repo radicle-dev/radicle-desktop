@@ -106,6 +106,10 @@ pub enum Error {
 
     /// Repository error.
     #[error(transparent)]
+    SurfFsError(#[from] radicle_surf::fs::error::Directory),
+
+    /// Repository error.
+    #[error(transparent)]
     Repository(#[from] radicle::storage::RepositoryError),
 
     /// Policy store error.
@@ -181,6 +185,7 @@ impl Error {
             Error::AliasError(radicle::node::AliasError::InvalidCharacter) => {
                 "AliasError.InvalidAlias"
             }
+            Error::FileTooLarge(_) => "PayloadError.TooLarge",
             _ => "UnknownError",
         }
     }

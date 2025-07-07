@@ -60,6 +60,8 @@ pub fn run() {
             repo::repo_by_id,
             repo::repo_count,
             repo::repo_readme,
+            repo::repo_tree,
+            repo::repo_blob,
             repo::seed,
             repo::seeded_not_replicated,
             repo::unseed,

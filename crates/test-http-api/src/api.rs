@@ -72,6 +72,8 @@ pub fn router(ctx: Context) -> Router {
             "/activity_by_patch",
             post(activity_patch_handler::<radicle::patch::Action, models::patch::Action>),
         )
+        .route("/repo_tree", post(tree_handler))
+        .route("/repo_blob", post(blob_handler))
         .route("/get_diff", post(diff_handler))
         .route("/list_issues", post(issues_handler))
         .route("/create_issue", post(create_issue_handler))
@@ -168,6 +170,36 @@ async fn diff_stats_handler(
 struct DiffBody {
     pub rid: identity::RepoId,
     pub options: types::cobs::diff::DiffOptions,
+}
+
+#[derive(Serialize, Deserialize)]
+struct TreeBody {
+    pub rid: identity::RepoId,
+    pub path: PathBuf,
+}
+
+async fn tree_handler(
+    State(ctx): State<Context>,
+    Json(TreeBody { rid, path }): Json<TreeBody>,
+) -> impl IntoResponse {
+    let info = ctx.repo_tree(rid, path)?;
+
+    Ok::<_, Error>(Json(info))
+}
+
+#[derive(Serialize, Deserialize)]
+struct BlobBody {
+    pub rid: identity::RepoId,
+    pub path: PathBuf,
+}
+
+async fn blob_handler(
+    State(ctx): State<Context>,
+    Json(BlobBody { rid, path }): Json<BlobBody>,
+) -> impl IntoResponse {
+    let info = ctx.repo_blob(rid, path)?;
+
+    Ok::<_, Error>(Json(info))
 }
 
 async fn diff_handler(

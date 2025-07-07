@@ -4078,6 +4078,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "either",
+ "infer",
  "log",
  "radicle",
  "radicle-surf",
@@ -4139,6 +4140,7 @@ dependencies = [
  "tree-sitter-toml-ng",
  "tree-sitter-typescript",
  "ts-rs",
+ "url",
 ]
 
 [[package]]

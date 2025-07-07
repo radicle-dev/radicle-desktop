@@ -133,3 +133,5 @@ export async function writeToClipboard(
     await navigator.clipboard.writeText(text);
   }
 }
+
+export { InvokeError };
