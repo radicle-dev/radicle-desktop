@@ -20,9 +20,11 @@ export async function invoke<T = null>(
  */
 class InvokeError extends Error {
   name = "InvokeError";
+  code: string;
 
-  constructor(message: string) {
+  constructor(message: string, code = "Unknown Error") {
     super(message);
+    this.code = code;
     Error.captureStackTrace?.(this, InvokeError);
   }
 }
@@ -41,7 +43,7 @@ async function withTestBackend<T>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return fn(cmd, args, options).catch((error: any) => {
       if (typeof error === "object" && error !== null && "message" in error) {
-        throw new InvokeError(String(error.message));
+        throw new InvokeError(String(error.message), String(error.code));
       } else {
         throw new InvokeError(`Invalid error object: ${error}`);
       }
@@ -59,7 +61,7 @@ async function withTestBackend<T>(
       const json = await response.json();
       if (!response.ok) {
         if (typeof json === "object" && json !== null && "message" in json) {
-          throw new InvokeError(String(json.message));
+          throw new InvokeError(String(json.message), String(json.code));
         } else {
           throw new InvokeError(`Invalid error object: ${json}`);
         }
