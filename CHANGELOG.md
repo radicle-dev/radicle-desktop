@@ -1,3 +1,9 @@
+### v0.6.1
+
+- Fixed a bug where the app wouldn't onboard new users or locked identities.
+- Fixed regression where the current version of the app wasn't including the commit it was built from.
+
+
 ### v0.6.0
 
 - UI polish: scrollbars now auto-hide across the app
