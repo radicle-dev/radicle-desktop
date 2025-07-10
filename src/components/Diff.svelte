@@ -326,6 +326,172 @@
   }
 </style>
 
+{#snippet lineDiff(line: Modification, lineIdx: number, hunkIdx: number)}
+  {@const thread = findLineThread(line)}
+  <div
+    class="line"
+    class:addition={line.type === "addition"}
+    class:deletion={line.type === "deletion"}
+    class:context={line.type === "context"}
+    class:selected={!thread &&
+      isSelected(filePath(file, "left"), hunkIdx, lineIdx)}>
+    <div
+      class="left"
+      class:selection-disabled={!codeComments || thread}
+      class:marker={selection?.start.side === "left" &&
+        selection.start.lineNumber === lineNumber(line, "left")}
+      onpointerdown={e => {
+        if (codeComments?.createComment && !thread) {
+          selectLine(e, file, "left", line, hunkIdx, lineIdx);
+        }
+      }}>
+      {lineNumber(line, "left")}
+    </div>
+
+    <div
+      class="right"
+      class:selection-disabled={!codeComments || thread}
+      class:marker={selection?.start.side === "right" &&
+        selection.start.lineNumber === lineNumber(line, "right")}
+      onpointerdown={e => {
+        if (codeComments?.createComment && !thread) {
+          selectLine(e, file, "right", line, hunkIdx, lineIdx);
+        }
+      }}>
+      {lineNumber(line, "right")}
+    </div>
+
+    <div class="sign">
+      {#if line.type === "addition"}
+        +
+      {:else if line.type === "deletion"}
+        -
+      {/if}
+    </div>
+
+    {#if line.highlight && line.highlight.items.length > 0}
+      <div class="code">
+        {@html line.highlight.items
+          .map(
+            paint =>
+              `<span class="global-syntax ${paint.style}">${escape(paint.item)}</span>`,
+          )
+          .join("")}
+      </div>
+    {:else if line.line !== ""}
+      <div class="code">{line.line}</div>
+    {:else}
+      <div class="code"><br /></div>
+    {/if}
+
+    <div class="global-flex comment-icon">
+      {#if thread}
+        {#if thread.root.resolved}
+          <Icon
+            name="comment-checkmark"
+            onclick={() => toggleCommentExpand(thread.root.id)} />
+        {:else}
+          <Icon
+            name="comment-cross"
+            onclick={() => toggleCommentExpand(thread.root.id)} />
+        {/if}
+      {/if}
+    </div>
+  </div>
+
+  {#if codeComments && thread && !threadExpandedStates[thread.root.id]}
+    <div class="thread">
+      <div class="global-flex" style:padding="0.5rem">
+        {@render commentHeader(
+          thread.root.location?.path,
+          rangeAnchorsFromCodeLocation(thread.root.location),
+        )}
+        {#if codeComments.changeCommentStatus && roles.isDelegateOrAuthor( codeComments.config.publicKey, codeComments.repoDelegates.map(delegate => delegate.did), thread.root.author.did, )}
+          <div style:margin-left="auto">
+            {#if thread.root.resolved}
+              <div title="Unresolve comment thread">
+                <Icon
+                  name="unresolve"
+                  onclick={partial(
+                    codeComments.changeCommentStatus,
+                    thread.root.id,
+                    false,
+                  )} />
+              </div>
+            {:else}
+              <div title="Resolve comment thread">
+                <Icon
+                  name="checkmark"
+                  onclick={partial(
+                    codeComments.changeCommentStatus,
+                    thread.root.id,
+                    true,
+                  )} />
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+      <ThreadComponent
+        inline
+        rid={codeComments.rid}
+        {thread}
+        reactOnComment={codeComments.reactOnComment &&
+          partial(codeComments.reactOnComment, codeComments.config.publicKey)}
+        createReply={(codeComments.canReply ?? true)
+          ? async (body, embeds) => {
+              await codeComments.createComment(body, embeds, thread.root.id);
+            }
+          : undefined}
+        editComment={codeComments.editComment}
+        canEditComment={partial(
+          roles.isDelegateOrAuthor,
+          codeComments.config.publicKey,
+          codeComments.repoDelegates.map(delegate => delegate.did),
+        )} />
+    </div>
+  {/if}
+
+  {#if codeComments && selection?.hunkIdx === hunkIdx && selection?.lineIdx === lineIdx}
+    <div
+      class="comment-form"
+      onpointerdown={e => {
+        e.stopPropagation();
+      }}>
+      <div style:margin-bottom="1rem">
+        {@render commentHeader(selection.file, {
+          start: selection.start,
+        })}
+      </div>
+      <CommentToggleInput
+        disallowEmptyBody
+        rid={codeComments.rid}
+        onclose={() => {
+          selection = undefined;
+        }}
+        focus
+        placeholder="Leave a comment"
+        disableAttachments={codeComments.disableAttachments}
+        submit={async (body, embeds) => {
+          if (selection?.codeLocation) {
+            try {
+              await codeComments.createComment(
+                body,
+                embeds,
+                undefined,
+                selection.codeLocation,
+              );
+            } catch (e) {
+              console.error("Comment creation failed", e);
+            } finally {
+              selection = undefined;
+            }
+          }
+        }} />
+    </div>
+  {/if}
+{/snippet}
+
 {#snippet commentHeader(filePath?: string, selectionRange?: SelectionRange)}
   {#if filePath && selectionRange}
     <div class="comment-header">
@@ -354,177 +520,8 @@
       </div>
 
       <div>
-        {#each hunk.lines as line, lineIdx}
-          {@const thread = findLineThread(line)}
-          <div
-            class="line"
-            class:addition={line.type === "addition"}
-            class:deletion={line.type === "deletion"}
-            class:context={line.type === "context"}
-            class:selected={!thread &&
-              isSelected(filePath(file, "left"), hunkIdx, lineIdx)}>
-            <div
-              class="left"
-              class:selection-disabled={!codeComments || thread}
-              class:marker={selection?.start.side === "left" &&
-                selection.start.lineNumber === lineNumber(line, "left")}
-              onpointerdown={e => {
-                if (codeComments?.createComment && !thread) {
-                  selectLine(e, file, "left", line, hunkIdx, lineIdx);
-                }
-              }}>
-              {lineNumber(line, "left")}
-            </div>
-
-            <div
-              class="right"
-              class:selection-disabled={!codeComments || thread}
-              class:marker={selection?.start.side === "right" &&
-                selection.start.lineNumber === lineNumber(line, "right")}
-              onpointerdown={e => {
-                if (codeComments?.createComment && !thread) {
-                  selectLine(e, file, "right", line, hunkIdx, lineIdx);
-                }
-              }}>
-              {lineNumber(line, "right")}
-            </div>
-
-            <div class="sign">
-              {#if line.type === "addition"}
-                +
-              {:else if line.type === "deletion"}
-                -
-              {/if}
-            </div>
-
-            {#if line.highlight && line.highlight.items.length > 0}
-              <div class="code">
-                {@html line.highlight.items
-                  .map(
-                    paint =>
-                      `<span class="global-syntax ${paint.style}">${escape(paint.item)}</span>`,
-                  )
-                  .join("")}
-              </div>
-            {:else if line.line !== ""}
-              <div class="code">{line.line}</div>
-            {:else}
-              <div class="code"><br /></div>
-            {/if}
-
-            <div class="global-flex comment-icon">
-              {#if thread}
-                {#if thread.root.resolved}
-                  <Icon
-                    name="comment-checkmark"
-                    onclick={() => toggleCommentExpand(thread.root.id)} />
-                {:else}
-                  <Icon
-                    name="comment-cross"
-                    onclick={() => toggleCommentExpand(thread.root.id)} />
-                {/if}
-              {/if}
-            </div>
-          </div>
-
-          {#if codeComments && thread && !threadExpandedStates[thread.root.id]}
-            <div class="thread">
-              <div class="global-flex" style:padding="0.5rem">
-                {@render commentHeader(
-                  thread.root.location?.path,
-                  rangeAnchorsFromCodeLocation(thread.root.location),
-                )}
-                {#if codeComments.changeCommentStatus && roles.isDelegateOrAuthor( codeComments.config.publicKey, codeComments.repoDelegates.map(delegate => delegate.did), thread.root.author.did, )}
-                  <div style:margin-left="auto">
-                    {#if thread.root.resolved}
-                      <div title="Unresolve comment thread">
-                        <Icon
-                          name="unresolve"
-                          onclick={partial(
-                            codeComments.changeCommentStatus,
-                            thread.root.id,
-                            false,
-                          )} />
-                      </div>
-                    {:else}
-                      <div title="Resolve comment thread">
-                        <Icon
-                          name="checkmark"
-                          onclick={partial(
-                            codeComments.changeCommentStatus,
-                            thread.root.id,
-                            true,
-                          )} />
-                      </div>
-                    {/if}
-                  </div>
-                {/if}
-              </div>
-              <ThreadComponent
-                inline
-                rid={codeComments.rid}
-                {thread}
-                reactOnComment={codeComments.reactOnComment &&
-                  partial(
-                    codeComments.reactOnComment,
-                    codeComments.config.publicKey,
-                  )}
-                createReply={(codeComments.canReply ?? true)
-                  ? async (body, embeds) => {
-                      await codeComments.createComment(
-                        body,
-                        embeds,
-                        thread.root.id,
-                      );
-                    }
-                  : undefined}
-                editComment={codeComments.editComment}
-                canEditComment={partial(
-                  roles.isDelegateOrAuthor,
-                  codeComments.config.publicKey,
-                  codeComments.repoDelegates.map(delegate => delegate.did),
-                )} />
-            </div>
-          {/if}
-
-          {#if codeComments && selection && selection.hunkIdx === hunkIdx && selection.lineIdx === lineIdx && selection.codeLocation}
-            <div
-              class="comment-form"
-              onpointerdown={e => {
-                e.stopPropagation();
-              }}>
-              <div style:margin-bottom="1rem">
-                {@render commentHeader(selection.file, {
-                  start: selection.start,
-                })}
-              </div>
-              <CommentToggleInput
-                disallowEmptyBody
-                rid={codeComments.rid}
-                onclose={() => {
-                  selection = undefined;
-                }}
-                focus
-                placeholder="Leave a comment"
-                disableAttachments={codeComments.disableAttachments}
-                submit={async (body, embeds) => {
-                  if (selection?.codeLocation) {
-                    try {
-                      await codeComments.createComment(
-                        body,
-                        embeds,
-                        undefined,
-                        selection.codeLocation,
-                      );
-                    } catch (e) {
-                      console.error("Comment creation failed", e);
-                    } finally {
-                      selection = undefined;
-                    }
-                  }
-                }} />
-            </div>
-          {/if}
+        {#each hunk.lines as modification, lineIdx}
+          {@render lineDiff(modification, lineIdx, hunkIdx)}
         {/each}
       </div>
     {/each}
