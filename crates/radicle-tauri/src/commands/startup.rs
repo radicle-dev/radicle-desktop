@@ -1,27 +1,12 @@
-use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 
 use radicle::cob::cache::COBS_DB_FILE;
 use radicle::node::{Handle, Node, NOTIFICATIONS_DB_FILE};
 
-use radicle_types::config::Config;
+use radicle_types::config::{Config, Version};
 use radicle_types::error::Error;
 use radicle_types::traits::Profile;
 use radicle_types::{domain, AppState};
-
-pub struct Version {
-    pub version: String,
-    pub head: String,
-}
-
-impl Serialize for Version {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&format!("{} ({})", self.version, self.head))
-    }
-}
 
 #[tauri::command]
 pub(crate) fn version(app: AppHandle) -> Result<Version, Error> {
