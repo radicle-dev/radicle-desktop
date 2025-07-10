@@ -17,6 +17,7 @@ use radicle_types::cobs::issue;
 use radicle_types::cobs::issue::NewIssue;
 use radicle_types::cobs::CobOptions;
 use radicle_types::cobs::{self, FromRadicleAction};
+use radicle_types::config::Version;
 use radicle_types::domain::patch::models;
 use radicle_types::domain::patch::service::Service;
 use radicle_types::domain::patch::traits::PatchService;
@@ -61,6 +62,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/repo_count", post(repo_count_handler))
         .route("/list_repos", post(repo_root_handler))
         .route("/repo_by_id", post(repo_handler))
+        .route("/version", post(version_handler))
         .route("/diff_stats", post(diff_stats_handler))
         .route(
             "/activity_by_issue",
@@ -135,6 +137,15 @@ async fn repo_handler(
     let info = ctx.repo_by_id(rid)?;
 
     Ok::<_, Error>(Json(info))
+}
+
+async fn version_handler() -> impl IntoResponse {
+    let version = Version {
+        version: String::from("0.6.1"),
+        head: String::from("51cf6cfbfe0be992ee709c49e6da589aa0f148c5"),
+    };
+
+    Ok::<_, Error>(Json(version))
 }
 
 #[derive(Serialize, Deserialize)]
