@@ -21,6 +21,7 @@
       authors: Author[],
       reaction: string,
     ) => Promise<void>;
+    deleteComment?: (commentId: string) => Promise<void>;
     // Defaults to `true`.
     canReply?: boolean;
     // See `ExtendedTextarea`.
@@ -446,7 +447,8 @@
           roles.isDelegateOrAuthor,
           codeComments.config.publicKey,
           codeComments.repoDelegates.map(delegate => delegate.did),
-        )} />
+        )}
+        deleteComment={codeComments.deleteComment} />
     </div>
   {/if}
 

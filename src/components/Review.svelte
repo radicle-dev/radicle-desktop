@@ -273,6 +273,15 @@
       await loadReview();
     }
   }
+
+  async function deleteDraftComment(commentId: string) {
+    if (!("draft" in review)) {
+      throw new Error("Cannot change comment status for draft review");
+    }
+
+    draftReviewStorage.deleteComment(review.id, commentId);
+    await loadReview();
+  }
 </script>
 
 <style>
@@ -478,6 +487,7 @@
       createComment,
       editComment,
       reactOnComment: "draft" in review ? undefined : reactOnComment,
+      deleteComment: "draft" in review ? deleteDraftComment : undefined,
       repoDelegates: repo.delegates,
       canReply: false,
       disableAttachments:

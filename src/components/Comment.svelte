@@ -34,6 +34,7 @@
     emptyBodyTooltip?: string;
     editComment?: (body: string, embeds: Embed[]) => Promise<void>;
     reactOnComment?: (authors: Author[], reaction: string) => Promise<void>;
+    deleteComment?: () => Promise<void>;
     styleWidth?: string;
     // See `ExtendedTextarea`
     disableAttachments?: boolean | string;
@@ -55,6 +56,7 @@
     disallowEmptyBody = false,
     editComment,
     reactOnComment,
+    deleteComment,
     styleWidth,
     emptyBodyTooltip,
     disableAttachments,
@@ -122,9 +124,7 @@
     font-size: var(--font-size-small);
     color: var(--color-fill-gray);
   }
-  .edit-buttons {
-    display: flex;
-    gap: 0.25rem;
+  .icon-button {
     cursor: pointer;
   }
 </style>
@@ -157,8 +157,13 @@
       {/if}
       <div class="header-right">
         {#if editComment}
-          <div class="edit-buttons">
+          <div class="icon-button">
             <Icon name="pen" onclick={toggleEdit} />
+          </div>
+        {/if}
+        {#if deleteComment}
+          <div class="icon-button">
+            <Icon name="cross" onclick={deleteComment} />
           </div>
         {/if}
         {#if reactions && reactOnComment}

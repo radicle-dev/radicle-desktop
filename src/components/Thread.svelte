@@ -32,6 +32,7 @@
       authors: Author[],
       reaction: string,
     ) => Promise<void>;
+    deleteComment?: (commentId: string) => Promise<void>;
     inline?: boolean;
   }
 
@@ -42,6 +43,7 @@
     editComment,
     createReply,
     reactOnComment,
+    deleteComment,
     inline = false,
   }: Props = $props();
 
@@ -152,7 +154,8 @@
       body={root.edits.slice(-1)[0].body}
       editComment={canEditComment(root.author.did) &&
         editComment?.bind(null, root.id)}
-      reactOnComment={reactOnComment?.bind(null, root.id)}>
+      reactOnComment={reactOnComment?.bind(null, root.id)}
+      deleteComment={deleteComment?.bind(null, root.id)}>
       {#snippet actions()}
         {#if createReply}
           <Icon name="reply" onclick={toggleReply} />

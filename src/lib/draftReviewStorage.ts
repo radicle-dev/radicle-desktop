@@ -116,6 +116,15 @@ export const draftReviewStorage = {
     storage.value = draftPatches;
   },
 
+  deleteComment(id: string, commentId: string) {
+    const draftReviews = storage.value;
+    const index = draftReviews[id].comments.findIndex(
+      comment => comment.id === commentId,
+    );
+    draftReviews[id].comments.splice(index, 1);
+    storage.value = draftReviews;
+  },
+
   addComment(
     id: string,
     comment: {
