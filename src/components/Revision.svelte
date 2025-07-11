@@ -5,8 +5,6 @@
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Config } from "@bindings/config/Config";
 
-  import partial from "lodash/partial";
-
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
@@ -49,18 +47,14 @@
         }, [])) as Thread[]) || [],
   );
 
-  async function editRevision(
-    revisionId: string,
-    description: string,
-    embeds: Embed[],
-  ) {
+  async function editRevision(description: string, embeds: Embed[]) {
     try {
       await invoke("edit_patch", {
         rid: rid,
         cobId: patchId,
         action: {
           type: "revision.edit",
-          revision: revisionId,
+          revision: revision.id,
           description,
           embeds,
         },
@@ -73,22 +67,17 @@
     }
   }
 
-  async function reactOnRevision(
-    publicKey: string,
-    revisionId: string,
-    authors: Author[],
-    reaction: string,
-  ) {
+  async function reactOnRevision(authors: Author[], reaction: string) {
     try {
       await invoke("edit_patch", {
         rid: rid,
         cobId: patchId,
         action: {
           type: "revision.react",
-          revision: revisionId,
+          revision: revision.id,
           reaction,
           active: !authors.find(
-            ({ did }) => publicKeyFromDid(did) === publicKey,
+            ({ did }) => publicKeyFromDid(did) === config.publicKey,
           ),
         },
         opts: { announce: $nodeRunning && $announce },
@@ -200,12 +189,12 @@
     reactions={revision.reactions}
     timestamp={revision.timestamp}
     body={revision.description.slice(-1)[0].body}
-    reactOnComment={partial(reactOnRevision, config.publicKey, revision.id)}
+    reactOnComment={reactOnRevision}
     editComment={roles.isDelegateOrAuthor(
       config.publicKey,
       repoDelegates.map(delegate => delegate.did),
       revision.author.did,
-    ) && partial(editRevision, revision.id)}>
+    ) && editRevision}>
   </CommentComponent>
 </div>
 
