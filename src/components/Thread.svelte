@@ -4,7 +4,6 @@
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
 
-  import partial from "lodash/partial";
   import { tick } from "svelte";
 
   import { scrollIntoView } from "@app/lib/utils";
@@ -111,11 +110,9 @@
           reactions={reply.reactions}
           timestamp={reply.edits[0].timestamp}
           body={reply.edits.slice(-1)[0].body}
-          editComment={editComment &&
-            canEditComment(reply.author.did) &&
-            partial(editComment, reply.id)}
-          reactOnComment={reactOnComment &&
-            partial(reactOnComment, reply.id)} />
+          editComment={canEditComment(root.author.did) &&
+            editComment?.bind(null, root.id)}
+          reactOnComment={reactOnComment?.bind(null, root.id)} />
       {/each}
     {/if}
     {#if createReply && showReplyForm}
@@ -153,10 +150,9 @@
       reactions={root.reactions}
       timestamp={root.edits.slice(-1)[0].timestamp}
       body={root.edits.slice(-1)[0].body}
-      editComment={editComment &&
-        canEditComment(root.author.did) &&
-        partial(editComment, root.id)}
-      reactOnComment={reactOnComment && partial(reactOnComment, root.id)}>
+      editComment={canEditComment(root.author.did) &&
+        editComment?.bind(null, root.id)}
+      reactOnComment={reactOnComment?.bind(null, root.id)}>
       {#snippet actions()}
         {#if createReply}
           <Icon name="reply" onclick={toggleReply} />
