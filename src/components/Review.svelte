@@ -221,7 +221,6 @@
   }
 
   async function reactOnComment(
-    publicKey: string,
     commentId: string,
     authors: Author[],
     reaction: string,
@@ -239,7 +238,7 @@
           reaction,
           review: review.id,
           active: !authors.find(
-            ({ did }) => publicKeyFromDid(did) === publicKey,
+            ({ did }) => publicKeyFromDid(did) === config.publicKey,
           ),
         },
         opts: { announce: $nodeRunning && $announce },

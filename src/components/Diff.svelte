@@ -17,7 +17,6 @@
       embeds: Embed[],
     ) => Promise<void>;
     reactOnComment?: (
-      publicKey: string,
       commentId: string,
       authors: Author[],
       reaction: string,
@@ -436,8 +435,7 @@
         inline
         rid={codeComments.rid}
         {thread}
-        reactOnComment={codeComments.reactOnComment &&
-          partial(codeComments.reactOnComment, codeComments.config.publicKey)}
+        reactOnComment={codeComments.reactOnComment}
         createReply={(codeComments.canReply ?? true)
           ? async (body, embeds) => {
               await codeComments.createComment(body, embeds, thread.root.id);

@@ -230,7 +230,6 @@
   }
 
   async function reactOnComment(
-    publicKey: string,
     commentId: string,
     authors: Author[],
     reaction: string,
@@ -244,7 +243,7 @@
           id: commentId,
           reaction,
           active: !authors.find(
-            ({ did }) => publicKeyFromDid(did) === publicKey,
+            ({ did }) => publicKeyFromDid(did) === config.publicKey,
           ),
         },
         opts: { announce: $nodeRunning && $announce },
@@ -456,11 +455,7 @@
           repo.delegates.map(delegate => delegate.did),
           issue.body.author.did,
         ) && partial(editComment, issue.body.id)}
-        reactOnComment={partial(
-          reactOnComment,
-          config.publicKey,
-          issue.body.id,
-        )}>
+        reactOnComment={partial(reactOnComment, issue.body.id)}>
       </CommentComponent>
     </div>
 

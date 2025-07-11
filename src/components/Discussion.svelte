@@ -31,7 +31,6 @@
       embeds: Embed[],
     ) => Promise<void>;
     reactOnComment: (
-      publicKey: string,
       commentId: string,
       authors: Author[],
       reaction: string,
@@ -149,7 +148,7 @@
         )}
         {editComment}
         createReply={createComment}
-        reactOnComment={partial(reactOnComment, config.publicKey)} />
+        {reactOnComment} />
       <div class="connector"></div>
     {/each}
 
