@@ -20,7 +20,7 @@
     "security": {
       "csp": {
         "default-src": "'self'",
-        "connect-src": "ipc: http://ipc.localhost",
+        "connect-src": "ipc: http://ipc.localhost https://minio-api.radworks.garden",
         "img-src": "'self' blob: data: https:",
         "style-src": "'unsafe-inline' 'self'"
       },
