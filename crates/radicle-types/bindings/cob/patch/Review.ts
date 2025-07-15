@@ -8,7 +8,7 @@ export type Review = {
   id: string;
   author: Author;
   verdict?: Verdict;
-  summary?: string;
+  summary: string;
   comments: Array<Comment<CodeLocation>>;
   timestamp: number;
   labels: Array<string>;

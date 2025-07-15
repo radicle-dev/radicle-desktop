@@ -115,23 +115,6 @@ impl From<patch::State> for State {
     }
 }
 
-#[derive(Serialize, Deserialize, TS)]
-#[serde(rename_all = "camelCase")]
-#[ts(export)]
-#[ts(export_to = "cob/patch/")]
-pub struct ReviewEdit {
-    #[ts(as = "String")]
-    pub review_id: cob::patch::ReviewId,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[ts(optional)]
-    pub verdict: Option<Verdict>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[ts(optional)]
-    pub summary: Option<String>,
-    #[ts(as = "Option<Vec<String>>", optional)]
-    pub labels: Vec<cob::Label>,
-}
-
 #[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
@@ -252,9 +235,7 @@ pub struct Review {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     verdict: Option<Verdict>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[ts(optional)]
-    summary: Option<String>,
+    summary: String,
     comments: Vec<cobs::thread::Comment<cobs::thread::CodeLocation>>,
     #[ts(type = "number")]
     timestamp: cob::common::Timestamp,
@@ -268,7 +249,7 @@ impl Review {
             id: review.id(),
             author: cobs::Author::new(&review.author().id, aliases),
             verdict: review.verdict().map(|v| v.into()),
-            summary: review.summary().map(|s| s.to_string()),
+            summary: review.summary().to_string(),
             labels: review.labels().cloned().collect::<Vec<_>>(),
             comments: review
                 .comments()
@@ -370,6 +351,9 @@ pub enum Action {
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         #[ts(as = "Option<Vec<String>>", optional)]
         labels: Vec<cob::Label>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[ts(as = "Option<_>", optional)]
+        embeds: Option<Vec<cobs::thread::Embed>>,
     },
     #[serde(rename = "review.redact")]
     ReviewRedact {
@@ -432,6 +416,14 @@ pub enum Action {
         review: patch::ReviewId,
         #[ts(as = "String")]
         comment: cob::EntryId,
+    },
+    #[serde(rename = "review.react")]
+    ReviewReact {
+        #[ts(as = "String")]
+        review: patch::ReviewId,
+        #[ts(as = "String")]
+        reaction: cob::Reaction,
+        active: bool,
     },
 
     #[serde(rename = "revision")]
@@ -657,16 +649,24 @@ impl FromRadicleAction<radicle::patch::Action> for Action {
             radicle::patch::Action::ReviewCommentUnresolve { review, comment } => {
                 Self::ReviewCommentUnresolve { review, comment }
             }
-            radicle::patch::Action::ReviewEdit {
+            radicle::patch::Action::ReviewReact {
                 review,
-                summary,
-                verdict,
-                labels,
-            } => Self::ReviewEdit {
+                reaction,
+                active,
+            } => Self::ReviewReact {
                 review,
-                summary,
-                verdict: verdict.map(Into::into),
-                labels,
+                reaction,
+                active,
+            },
+            radicle::patch::Action::ReviewEdit(review) => Self::ReviewEdit {
+                review: *review.review_id(),
+                summary: review.summary().cloned(),
+                verdict: review.verdict().cloned().map(Into::into),
+                labels: review.labels().to_vec(),
+                embeds: review
+                    .embeds()
+                    .cloned()
+                    .map(|s| s.into_iter().map(Into::into).collect::<Vec<_>>()),
             },
         }
     }

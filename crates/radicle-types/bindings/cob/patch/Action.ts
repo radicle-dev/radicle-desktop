@@ -23,6 +23,7 @@ export type Action =
     summary?: string;
     verdict?: Verdict;
     labels?: Array<string>;
+    embeds?: Array<Embed> | null;
   }
   | { "type": "review.redact"; review: string }
   | {
@@ -50,6 +51,12 @@ export type Action =
   }
   | { "type": "review.comment.resolve"; review: string; comment: string }
   | { "type": "review.comment.unresolve"; review: string; comment: string }
+  | {
+    "type": "review.react";
+    review: string;
+    reaction: string;
+    active: boolean;
+  }
   | {
     "type": "revision";
     description: string;

@@ -147,8 +147,27 @@ pub trait PatchesMut: Profile {
                 summary,
                 verdict,
                 labels,
+                embeds,
             } => {
-                patch.review_edit(review, verdict.map(|v| v.into()), summary, labels, &signer)?;
+                patch.review_edit(
+                    review,
+                    verdict.map(|v| v.into()),
+                    summary.unwrap_or_default(),
+                    labels,
+                    embeds
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(Into::into)
+                        .collect::<Vec<_>>(),
+                    &signer,
+                )?;
+            }
+            models::patch::Action::ReviewReact {
+                review,
+                reaction,
+                active,
+            } => {
+                patch.review_react(review, reaction, active, &signer)?;
             }
             models::patch::Action::Review {
                 revision,

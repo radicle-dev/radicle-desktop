@@ -3937,9 +3937,9 @@ checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
 
 [[package]]
 name = "radicle"
-version = "0.15.0"
+version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fbbbde9fb67cc5264a38ba0f106b55892a1aeb8c8ca9023ec36a6b7e0442700"
+checksum = "d5fe953b25a8f5c24baf1019f746912e7453746d617a1af04cb347904d241005"
 dependencies = [
  "amplify",
  "base64 0.21.7",
@@ -3953,13 +3953,13 @@ dependencies = [
  "log",
  "multibase",
  "nonempty",
- "once_cell",
  "qcheck",
  "radicle-cob",
  "radicle-crypto",
  "radicle-git-ext",
  "radicle-ssh",
  "serde",
+ "serde-untagged",
  "serde_json",
  "siphasher 1.0.1",
  "sqlite",
