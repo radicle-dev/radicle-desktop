@@ -72,6 +72,7 @@ pub fn router(ctx: Context) -> Router {
             "/activity_by_patch",
             post(activity_patch_handler::<radicle::patch::Action, models::patch::Action>),
         )
+        .route("/repo_readme", post(readme_handler))
         .route("/repo_tree", post(tree_handler))
         .route("/repo_blob", post(blob_handler))
         .route("/get_diff", post(diff_handler))
@@ -170,6 +171,20 @@ async fn diff_stats_handler(
 struct DiffBody {
     pub rid: identity::RepoId,
     pub options: types::cobs::diff::DiffOptions,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ReadmeBody {
+    pub rid: identity::RepoId,
+}
+
+async fn readme_handler(
+    State(ctx): State<Context>,
+    Json(ReadmeBody { rid }): Json<ReadmeBody>,
+) -> impl IntoResponse {
+    let readme = ctx.repo_readme(rid, None)?;
+
+    Ok::<_, Error>(Json(readme))
 }
 
 #[derive(Serialize, Deserialize)]
