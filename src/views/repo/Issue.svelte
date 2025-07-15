@@ -141,7 +141,7 @@
   }
 
   async function reload() {
-    [issue, activity, threads] = await Promise.all([
+    [issue, activity, threads, issues] = await Promise.all([
       invoke<Issue>("issue_by_id", {
         rid: repo.rid,
         id: issue.id,
@@ -153,6 +153,10 @@
       invoke<Thread[]>("comment_threads_by_issue_id", {
         rid: repo.rid,
         id: issue.id,
+      }),
+      invoke<Issue[]>("list_issues", {
+        rid: repo.rid,
+        status,
       }),
     ]);
   }
@@ -403,14 +407,7 @@
     <Border variant="ghost" styleGap="0">
       <div class="metadata-section" style:min-width="8rem">
         <div class="metadata-section-title">Status</div>
-        <IssueStateButton
-          selectedState={issue.state}
-          onSelect={newState => {
-            void saveState(newState);
-            if (status !== "all" && newState.status !== status) {
-              void loadIssues("all");
-            }
-          }} />
+        <IssueStateButton selectedState={issue.state} onSelect={saveState} />
       </div>
 
       <div class="metadata-divider"></div>
