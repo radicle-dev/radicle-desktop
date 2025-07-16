@@ -163,7 +163,7 @@
         {/if}
         {#if deleteComment}
           <div class="icon-button">
-            <Icon name="cross" onclick={deleteComment} />
+            <Icon name="trash" onclick={deleteComment} />
           </div>
         {/if}
         {#if reactions && reactOnComment}

@@ -115,6 +115,15 @@ export const draftReviewStorage = {
     });
   },
 
+  delete(id: string): DraftReviewStored | undefined {
+    const review = storage.value[id];
+    storage.update(reviews => {
+      delete reviews[id];
+      return reviews;
+    });
+    return review;
+  },
+
   deleteComment(id: string, commentId: string) {
     updateStoredDraftReview(id, review => {
       const index = review.comments.findIndex(
@@ -170,11 +179,13 @@ export const draftReviewStorage = {
   },
 
   async publish(id: string) {
-    const draftReviewStored = storage.value[id];
-    storage.update(reviews => {
-      delete reviews[id];
-      return reviews;
-    });
+    const draftReviewStored = draftReviewStorage.delete(id);
+    if (!draftReviewStored) {
+      throw new Error(
+        `Failed to publish draft review: Review ${id} does not exist`,
+      );
+    }
+
     await invoke<Patch>("create_patch_review", {
       args: {
         rid: draftReviewStored.rid,

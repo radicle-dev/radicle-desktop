@@ -363,32 +363,46 @@
         {/if}
       </span>
       {#if "draft" in review}
-        <div style:margin-inline-start="auto">
-          <Button
-            styleHeight="2.5rem"
-            variant="secondary"
-            title={canPublish
-              ? undefined
-              : "Add a summary or select a verdict to publish the review"}
-            disabled={!canPublish || publishingInProgress}
-            onclick={async () => {
-              publishingInProgress = true;
-              try {
-                await draftReviewStorage.publish(review.id);
-                await push({
-                  resource: "repo.patch",
-                  rid: repo.rid,
-                  patch: patchId,
-                  reviewId: undefined,
-                  status: undefined,
-                });
-              } finally {
-                publishingInProgress = false;
-              }
-            }}>
-            <Icon name="checkout" />Publish
-          </Button>
-        </div>
+        <div style:margin-inline-start="auto"></div>
+        <NakedButton
+          styleHeight="2.5rem"
+          variant="ghost"
+          onclick={() => {
+            draftReviewStorage.delete(review.id);
+            void push({
+              resource: "repo.patch",
+              rid: repo.rid,
+              patch: patchId,
+              reviewId: undefined,
+              status: undefined,
+            });
+          }}>
+          <Icon name="trash" />Delete
+        </NakedButton>
+        <Button
+          styleHeight="2.5rem"
+          variant="secondary"
+          title={canPublish
+            ? undefined
+            : "Add a summary or select a verdict to publish the review"}
+          disabled={!canPublish || publishingInProgress}
+          onclick={async () => {
+            publishingInProgress = true;
+            try {
+              await draftReviewStorage.publish(review.id);
+              await push({
+                resource: "repo.patch",
+                rid: repo.rid,
+                patch: patchId,
+                reviewId: undefined,
+                status: undefined,
+              });
+            } finally {
+              publishingInProgress = false;
+            }
+          }}>
+          <Icon name="checkout" />Publish
+        </Button>
       {/if}
     </div>
 

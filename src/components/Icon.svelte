@@ -82,6 +82,7 @@
       | "stop"
       | "sun"
       | "thumb-up"
+      | "trash"
       | "unresolve"
       | "user"
       | "warning";
@@ -1398,6 +1399,15 @@
     <path d="M7 6H8V7H7L7 6Z" />
     <path d="M7 10L8 10V11L7 11L7 10Z" />
     <path d="M7 12L8 12L8 13H7L7 12Z" />
+  {:else if name === "trash"}
+    <path d="M6.5 2L9.5 2V3L6.5 3V2Z" />
+    <path d="M3.5 5H4.5L4.5 13H3.5L3.5 5Z" />
+    <path d="M4.5 13L11.5 13V14L4.5 14V13Z" />
+    <path d="M11.5 5L12.5 5L12.5 13H11.5L11.5 5Z" />
+    <path d="M2.5 3L13.5 3V4L2.5 4L2.5 3Z" />
+    <path d="M9.5 5H10.5L10.5 12L9.5 12V5Z" />
+    <path d="M7.5 5L8.5 5V12H7.5L7.5 5Z" />
+    <path d="M5.5 5H6.5L6.5 12H5.5L5.5 5Z" />
   {:else if name === "unresolve"}
     <path d="M7 11.5V12.5H6V11.5H7Z" />
     <path d="M8 10.5V11.5L7 11.5L7 10.5H8Z" />
