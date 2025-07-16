@@ -46,14 +46,20 @@ export default function useLocalStorage<
     }
   }
 
+  function set(v: S) {
+    value = v;
+    if (!disableLocalStorage) localStorage.setItem(key, JSON.stringify(value));
+  }
+
   return {
     get value() {
       return value;
     },
     set value(v: S) {
-      value = v;
-      if (!disableLocalStorage)
-        localStorage.setItem(key, JSON.stringify(value));
+      set(v);
+    },
+    update(fn: (v: S) => S) {
+      set(fn(value));
     },
     clear() {
       value = initialValue;

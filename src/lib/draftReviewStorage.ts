@@ -62,6 +62,8 @@ const draftReviewStoredSchema = z.object({
   ),
 });
 
+type DraftReviewStored = z.infer<typeof draftReviewStoredSchema>;
+
 const storage = useLocalStorage(
   "repo.patches.draftReviews",
   z.record(z.string(), draftReviewStoredSchema),
@@ -89,19 +91,18 @@ export const draftReviewStorage = {
   },
 
   create(rid: string, revisionId: string): string {
-    const draftReviews = storage.value;
-
     const id = crypto.randomUUID();
-    draftReviews[id] = {
-      id,
-      rid,
-      revision: revisionId,
-      summary: "",
-      labels: [],
-      comments: [],
-    };
-
-    storage.value = draftReviews;
+    storage.update(reviews => {
+      reviews[id] = {
+        id,
+        rid,
+        revision: revisionId,
+        summary: "",
+        labels: [],
+        comments: [],
+      };
+      return reviews;
+    });
     return id;
   },
 
@@ -109,20 +110,19 @@ export const draftReviewStorage = {
     id: string,
     props: { summary: string; verdict: Verdict | undefined; labels: string[] },
   ) {
-    const draftPatches = storage.value;
-    draftPatches[id].summary = props.summary;
-    draftPatches[id].verdict = props.verdict;
-    draftPatches[id].labels = props.labels;
-    storage.value = draftPatches;
+    updateStoredDraftReview(id, review => {
+      return Object.assign(review, props);
+    });
   },
 
   deleteComment(id: string, commentId: string) {
-    const draftReviews = storage.value;
-    const index = draftReviews[id].comments.findIndex(
-      comment => comment.id === commentId,
-    );
-    draftReviews[id].comments.splice(index, 1);
-    storage.value = draftReviews;
+    updateStoredDraftReview(id, review => {
+      const index = review.comments.findIndex(
+        comment => comment.id === commentId,
+      );
+      review.comments.splice(index, 1);
+      return review;
+    });
   },
 
   addComment(
@@ -133,14 +133,15 @@ export const draftReviewStorage = {
       location: CodeLocation;
     },
   ): string {
-    const draftPatches = storage.value;
     const commentId = crypto.randomUUID();
-    draftPatches[id].comments.push({
-      id: crypto.randomUUID(),
-      body: comment.body,
-      location: comment.location,
+    updateStoredDraftReview(id, review => {
+      review.comments.push({
+        id: commentId,
+        body: comment.body,
+        location: comment.location,
+      });
+      return review;
     });
-    storage.value = draftPatches;
     return commentId;
   },
 
@@ -152,20 +153,28 @@ export const draftReviewStorage = {
       embeds: Embed[];
     },
   ) {
-    const draftPatches = storage.value;
-    const storedComment = draftPatches[id].comments.find(
-      comment => comment.id === commentId,
-    );
-    storedComment!.body = comment.body;
-    storage.value = draftPatches;
+    updateStoredDraftReview(id, review => {
+      const storedComment = review.comments.find(
+        comment => comment.id === commentId,
+      );
+
+      if (!storedComment) {
+        throw new Error(
+          `Comment ${commentId} does not exist for draft review ${id}`,
+        );
+      }
+
+      storedComment!.body = comment.body;
+      return review;
+    });
   },
 
   async publish(id: string) {
     const draftReviewStored = storage.value[id];
-    delete storage.value[id];
-    // We need to explicitly persist the storage
-    // eslint-disable-next-line no-self-assign
-    storage.value = storage.value;
+    storage.update(reviews => {
+      delete reviews[id];
+      return reviews;
+    });
     await invoke<Patch>("create_patch_review", {
       args: {
         rid: draftReviewStored.rid,
@@ -181,6 +190,21 @@ export const draftReviewStorage = {
     });
   },
 };
+
+function updateStoredDraftReview(
+  id: string,
+  update: (draftReviewStored: DraftReviewStored) => DraftReviewStored,
+): void {
+  storage.update(reviews => {
+    const review = reviews[id];
+    if (!review) {
+      throw new Error(`Draft review ${id} does not exist`);
+    }
+
+    reviews[id] = update(review);
+    return reviews;
+  });
+}
 
 function draftReviewFromStored(
   draftReviewStored: z.infer<typeof draftReviewStoredSchema>,
