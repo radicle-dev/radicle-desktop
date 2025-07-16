@@ -4,7 +4,13 @@
 
 - Bump the minor version in `crates/radicle-tauri/tauri.conf.json`.
 - Update `CHANGELOG.md` — only include changes relevant to users.
-- Update Arch Linux package info (See `arch/README.md` for more information)
+- Create a version bump patch, push to CI, and request a review.
+  - The commit message should start with `Release` followed by `v<version_number>`.
+- Wait for CI to pass and get peer approval.
+- Build the macOS app locally: `npm run tauri build`.
+  - Make sure to clean any transient dependencies with `cargo clean && rm -rf node_modules` before building.
+- Upload the macOS build to [MinIO][0] in the same folder as the latest Linux build.
+- Update Arch Linux package info
   - Update `pkgver` in `arch/radicle-desktop/PKGBUILD` to match the release version
   - Update `_commit` in `arch/radicle-desktop/PKGBUILD` to the release commit
     created above.
@@ -14,12 +20,8 @@
     cd arch && ./generate-srcinfo.sh
     ```
 
-- Create a version bump patch, push to CI, and request a review.
-  - The commit message should start with `Release` followed by `v<version_number>`.
-- Wait for CI to pass and get peer approval.
-- Build the macOS app locally: `npm run tauri build`.
-  - Make sure to clean any transient dependencies with `cargo clean && rm -rf node_modules` before building.
-- Upload the macOS build to [MinIO][0] in the same folder as the latest Linux build.
+  - Create a patch with the changes and wait for CI to pass
+
 - Publish the Arch package by pushing changes to the [Arch User Repository][4]:
 
   ```bash
