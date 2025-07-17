@@ -228,13 +228,7 @@
             <RepoCard
               focussed={searchResults.length === 1 && searchInput !== ""}
               repo={result.obj.repo}
-              selfDid={didFromPublicKey(config.publicKey)}
-              onclick={() => {
-                void router.push({
-                  resource: "repo.home",
-                  rid: result.obj.repo.rid,
-                });
-              }} />
+              selfDid={didFromPublicKey(config.publicKey)} />
           {/each}
         </div>
       {:else}

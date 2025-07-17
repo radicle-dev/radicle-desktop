@@ -232,7 +232,7 @@
   }
 </style>
 
-<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
   style:width={styleWidth}
   style:max-width={styleMaxWidth}
@@ -242,8 +242,8 @@
   class:flat-top={flatTop}
   class:flat-bottom={flatBottom}
   {onclick}
-  role="button"
-  tabindex={onclick !== undefined ? 0 : -1}
+  role={onclick !== undefined ? "button" : undefined}
+  tabindex={onclick !== undefined ? 0 : undefined}
   {style}
   style:min-height={styleMinHeight}
   style:height={styleHeight}>

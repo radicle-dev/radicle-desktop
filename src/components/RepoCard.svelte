@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import * as router from "@app/lib/router";
   import { formatRepositoryId, formatTimestamp } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
@@ -11,11 +12,10 @@
   interface Props {
     repo: RepoInfo;
     selfDid: string;
-    onclick?: () => void;
     focussed?: boolean;
   }
 
-  const { repo, selfDid, onclick, focussed }: Props = $props();
+  const { repo, selfDid, focussed }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
@@ -29,20 +29,29 @@
     color: var(--color-fill-gray);
     margin-top: 0.25rem;
   }
-  .container {
+  .content {
     width: 100%;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
   }
 </style>
 
 <Border
   variant={focussed ? "secondary" : "ghost"}
-  styleCursor="pointer"
   styleWidth="100%"
-  stylePadding="0.5rem 0.75rem"
   styleOverflow="hidden"
-  hoverable
-  {onclick}>
-  <div class="container txt-small">
+  hoverable>
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div
+    class="content txt-small"
+    onclick={event => {
+      if (!event.defaultPrevented)
+        void router.push({
+          resource: "repo.home",
+          rid: repo.rid,
+        });
+    }}>
     <RepoHeader {repo} {selfDid} />
 
     <div class="description txt-overflow" title={project.data.description}>
