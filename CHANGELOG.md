@@ -1,3 +1,15 @@
+### v0.7.0
+
+- Source code can now be browsed directly within the app
+- Draft reviews and their comments can now be deleted
+- Issue state changes no longer affect the issue list in the sidebar
+- Repo cards now support keyboard navigation for easier selection
+
+**Shout-out to our contributors 🙏✨**
+
+- [geigerzaehler](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
+
+
 ### v0.6.1
 
 - Fixed a bug where the app wouldn't onboard new users or locked identities.
