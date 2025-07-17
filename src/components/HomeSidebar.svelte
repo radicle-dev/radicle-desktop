@@ -27,7 +27,6 @@
     align-items: center;
     gap: 0.5rem;
     background-color: var(--color-background-float);
-    clip-path: var(--1px-corner-fill);
     display: flex;
     font-size: var(--font-size-small);
     justify-content: space-between;
@@ -54,65 +53,58 @@
       styleFlexDirection="column"
       styleGap="2px"
       styleBackgroundColor="var(--color-background-float)">
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
+      <a
+        tabindex="0"
         class="tab txt-small"
         class:active={activeTab === "all"}
-        onclick={() => router.push({ resource: "home", activeTab: "all" })}>
+        href={router.routeToPath({
+          resource: "home",
+          activeTab: "all",
+        })}>
         <div class="global-flex"><Icon name="repo" />Repositories</div>
         <div class="global-counter">
           {repoCount.total}
         </div>
-      </div>
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
+      </a>
+      <a
         class="tab"
         class:active={activeTab === "delegate"}
-        onclick={() =>
-          router.push({
-            resource: "home",
-            activeTab: "delegate",
-          })}>
+        href={router.routeToPath({
+          resource: "home",
+          activeTab: "delegate",
+        })}>
         <div class="global-flex">
           <Icon name="delegate" />
           <div>Delegate</div>
         </div>
         <div class="global-counter">{repoCount.delegate}</div>
-      </div>
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
+      </a>
+      <a
         class="tab"
         class:active={activeTab === "contributor"}
-        onclick={() =>
-          router.push({
-            resource: "home",
-            activeTab: "contributor",
-          })}>
+        href={router.routeToPath({
+          resource: "home",
+          activeTab: "contributor",
+        })}>
         <div class="global-flex">
           <Icon name="user" />
           <div>Contributor</div>
         </div>
         <div class="global-counter">{repoCount.contributor}</div>
-      </div>
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
+      </a>
+      <a
         class="tab"
         class:active={activeTab === "private"}
-        onclick={() =>
-          router.push({
-            resource: "home",
-            activeTab: "private",
-          })}>
+        href={router.routeToPath({
+          resource: "home",
+          activeTab: "private",
+        })}>
         <div class="global-flex">
           <Icon name="lock" />
           <div>Private</div>
         </div>
         <div class="global-counter">{repoCount.private}</div>
-      </div>
+      </a>
     </Border>
   </div>
 

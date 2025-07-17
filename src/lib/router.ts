@@ -1,4 +1,9 @@
+import {
+  homeRouteToPath as homeRouteToPath,
+  homeUrlToRoute,
+} from "@app/views/home/router";
 import { repoRouteToPath, repoUrlToRoute } from "@app/views/repo/router";
+import { on } from "svelte/events";
 import { get, writable } from "svelte/store";
 
 import * as mutexExecutor from "@app/lib/mutexExecutor";
@@ -50,7 +55,27 @@ async function navigateToUrl(
   }
 }
 
-window.addEventListener("popstate", () => loadFromLocation());
+const offPopstate = on(window, "popstate", () => loadFromLocation());
+
+const offNavigateAnchor = on(document, "click", e => {
+  const [anchor] = e
+    .composedPath()
+    .flatMap(target => (target instanceof HTMLAnchorElement ? [target] : []));
+  if (anchor && anchor.getAttribute("href")?.startsWith("/")) {
+    e.preventDefault();
+    void navigateToUrl(
+      "push",
+      new URL(anchor.getAttribute("href") ?? "", window.location.href),
+    );
+  }
+});
+
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    offPopstate();
+    offNavigateAnchor();
+  });
+}
 
 const loadExecutor = mutexExecutor.create();
 
@@ -100,13 +125,12 @@ function urlToRoute(url: URL): Route | null {
   const segments = url.pathname.substring(1).split("/");
   const resource = segments.shift();
 
+  const homeRoute = homeUrlToRoute(url);
+  if (homeRoute) {
+    return homeRoute;
+  }
+
   switch (resource) {
-    case "": {
-      return {
-        resource: "home",
-        activeTab: "all",
-      };
-    }
     case "repos": {
       return repoUrlToRoute(segments, url.searchParams);
     }
@@ -118,7 +142,7 @@ function urlToRoute(url: URL): Route | null {
 
 export function routeToPath(route: Route): string {
   if (route.resource === "home") {
-    return "/";
+    return homeRouteToPath(route);
   } else if (
     route.resource === "repo.home" ||
     route.resource === "repo.createIssue" ||

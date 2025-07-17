@@ -2,9 +2,18 @@ import type { Config } from "@bindings/config/Config";
 import type { RepoCount } from "@bindings/repo/RepoCount";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+import z from "zod";
+
 import { invoke } from "@app/lib/invoke";
 
 export type HomeReposTab = "all" | "delegate" | "private" | "contributor";
+
+const homeReposTabSchema = z.union([
+  z.literal("all"),
+  z.literal("delegate"),
+  z.literal("private"),
+  z.literal("contributor"),
+]);
 
 export interface HomeRoute {
   resource: "home";
@@ -55,4 +64,23 @@ export async function loadHome(route: HomeRoute): Promise<LoadedHomeRoute> {
       seededNotReplicated,
     },
   };
+}
+
+export function homeUrlToRoute(url: URL): HomeRoute | undefined {
+  if (url.pathname === "/") {
+    return {
+      resource: "home",
+      activeTab: homeReposTabSchema
+        .catch(() => "all" as const)
+        .parse(url.searchParams.get("tab")),
+    };
+  }
+}
+
+export function homeRouteToPath(route: HomeRoute): string {
+  const searchParams = new URLSearchParams();
+  if (route.activeTab !== "all") {
+    searchParams.append("tab", route.activeTab);
+  }
+  return `/?${searchParams.toString()}`;
 }
