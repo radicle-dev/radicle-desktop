@@ -1,3 +1,8 @@
+### v0.7.1
+
+- Fixed a bug in patch and notification lists caused by a library incompatibility
+
+
 ### v0.7.0
 
 - Source code can now be browsed directly within the app
@@ -12,8 +17,8 @@
 
 ### v0.6.1
 
-- Fixed a bug where the app wouldn't onboard new users or locked identities.
-- Fixed regression where the current version of the app wasn't including the commit it was built from.
+- Fixed a bug where the app wouldn't onboard new users or locked identities
+- Fixed regression where the current version of the app wasn't including the commit it was built from
 
 
 ### v0.6.0
