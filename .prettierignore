@@ -1,0 +1,5 @@
+arch/radicle-desktop
+arch/radicle-desktop.git
+crates
+*.md
+*.lock

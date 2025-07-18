@@ -51,8 +51,8 @@ steps:
       # Ensure .SCRINFO is up-to-date
       - makepkg --printsrcinfo > .SRCINFO && git diff --exit-code .SRCINFO
       - |
-          CI=true \
-          BUILDDIR=/home/builder/build \
-          PKGDEST=/home/builder/ \
-          SRCDEST=/home/builder/ \
-          makepkg --syncdeps --noconfirm --force
+        CI=true \
+        BUILDDIR=/home/builder/build \
+        PKGDEST=/home/builder/ \
+        SRCDEST=/home/builder/ \
+        makepkg --syncdeps --noconfirm --force
