@@ -10,7 +10,7 @@ interface LatestVersionInfo {
 
 const fetchLatestVersion = async (): Promise<LatestVersionInfo> => {
   const response = await fetch(
-    "https://minio-api.radworks.garden/radworks-releases/radicle-desktop/latest/latest.json",
+    "https://files.radicle.xyz/releases/radicle-desktop/latest/latest.json",
   );
   const body: LatestVersionInfo = await response.json();
   return body;
