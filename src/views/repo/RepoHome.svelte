@@ -19,7 +19,6 @@
 
   import { invoke, InvokeError } from "@app/lib/invoke";
   import { highlight } from "@app/lib/syntax";
-  import { formatOid } from "@app/lib/utils";
 
   import Border from "@app/components/Border.svelte";
   import CheckoutRepoButton from "@app/components/CheckoutRepoButton.svelte";
@@ -204,9 +203,10 @@
                   stylePadding="0 0.5rem"
                   styleAlignItems="center"
                   styleAlignSelf="flex-end">
-                  <Id variant="commit" id={blob.commit.id}>
-                    {formatOid(blob.commit.id)}
-                  </Id>
+                  <Id
+                    variant="commit"
+                    id={blob.commit.id}
+                    clipboard={blob.commit.id} />
                   <span class="commit-msg txt-overflow" style:max-width="20rem">
                     {blob.commit.message}
                   </span>

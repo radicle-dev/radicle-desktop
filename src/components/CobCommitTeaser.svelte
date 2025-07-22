@@ -100,7 +100,10 @@
   </div>
   <div class="right">
     <CompactCommitAuthorship {commit}>
-      <Id id={commit.id} variant={disabled ? "none" : "commit"} />
+      <Id
+        id={commit.id}
+        clipboard={commit.id}
+        variant={disabled ? "none" : "commit"} />
     </CompactCommitAuthorship>
   </div>
 </div>

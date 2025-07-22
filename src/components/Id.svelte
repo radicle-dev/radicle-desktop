@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ComponentProps, Snippet } from "svelte";
+  import type { ComponentProps } from "svelte";
 
   import debounce from "lodash/debounce";
 
@@ -25,33 +25,20 @@
   }
 
   let visible: boolean = $state(false);
+
   interface Props {
-    children?: Snippet;
+    ariaLabel?: string;
+    clipboard: string;
     id: string;
-    clipboard?: string;
     shorten?: boolean;
     variant: "oid" | "commit" | "none";
-    ariaLabel?: string;
-    debounceTimeout?: number;
-    styleBottom?: string;
-    styleLeft?: string;
   }
 
-  const {
-    children,
-    id,
-    clipboard = id,
-    shorten = true,
-    variant,
-    ariaLabel,
-    debounceTimeout = 50,
-    styleBottom = "1.5rem",
-    styleLeft = "1rem",
-  }: Props = $props();
+  const { ariaLabel, clipboard, id, shorten = true, variant }: Props = $props();
 
   const setVisible = debounce((value: boolean) => {
     visible = value;
-  }, debounceTimeout);
+  }, 50);
 </script>
 
 <style>
@@ -104,9 +91,7 @@
     }}
     role="button"
     tabindex="0">
-    {#if children}
-      {@render children()}
-    {:else if shorten}
+    {#if shorten}
       {formatOid(id)}
     {:else}
       {id}
@@ -115,7 +100,7 @@
 
   {#if visible}
     <div style:position="absolute">
-      <div class="popover" style:bottom={styleBottom} style:left={styleLeft}>
+      <div class="popover" style:bottom="1.5rem" style:left="1rem">
         <Icon name={icon} />
         {tooltip}
       </div>

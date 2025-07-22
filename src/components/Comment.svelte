@@ -135,7 +135,7 @@
       <NodeId {...utils.authorForNodeId(author)} />
       {caption}
       {#if id}
-        <Id {id} variant="oid" />
+        <Id {id} clipboard={id} variant="oid" />
       {/if}
       {#if beforeTimestamp}
         {@render beforeTimestamp()}

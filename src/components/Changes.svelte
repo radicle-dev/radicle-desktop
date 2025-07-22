@@ -170,6 +170,7 @@
             {pluralize("commit", commits.length)} on base
             <Id
               id={revision.base}
+              clipboard={revision.base}
               variant={selectedCommit ? "none" : "commit"} />
             <div class="global-counter">Base</div>
           </div>

@@ -476,7 +476,10 @@
           }, review.id)}
         body={review.summary}>
         {#snippet beforeTimestamp()}
-          on revision <Id id={revision.id} variant="oid" />
+          on revision <Id
+            id={revision.id}
+            clipboard={revision.id}
+            variant="oid" />
         {/snippet}
       </CommentComponent>
     </div>

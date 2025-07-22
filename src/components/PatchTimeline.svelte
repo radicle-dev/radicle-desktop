@@ -105,7 +105,9 @@
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            <div>opened patch <Id id={op.id} variant="oid" /></div>
+            <div>
+              opened patch <Id id={op.id} clipboard={op.id} variant="oid" />
+            </div>
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>
@@ -118,7 +120,9 @@
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            <div>created revision <Id id={op.id} variant="oid" /></div>
+            <div>
+              created revision <Id id={op.id} clipboard={op.id} variant="oid" />
+            </div>
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>
@@ -224,7 +228,10 @@
         <div class="wrapper">
           <NodeId {...authorForNodeId(op.author)} />
           <div>
-            merged patch at revision <Id id={op.revision} variant="oid" />
+            merged patch at revision <Id
+              id={op.revision}
+              clipboard={op.revision}
+              variant="oid" />
           </div>
           <div title={absoluteTimestamp(op.timestamp)}>
             {formatTimestamp(op.timestamp)}
@@ -256,7 +263,10 @@
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            accepted revision <Id id={op.revision} variant="oid" />
+            accepted revision <Id
+              id={op.revision}
+              clipboard={op.revision}
+              variant="oid" />
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>
@@ -267,7 +277,10 @@
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            rejected revision <Id id={op.revision} variant="oid" />
+            rejected revision <Id
+              id={op.revision}
+              clipboard={op.revision}
+              variant="oid" />
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>
@@ -278,7 +291,10 @@
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            reviewed revision <Id id={op.revision} variant="oid" />
+            reviewed revision <Id
+              id={op.revision}
+              clipboard={op.revision}
+              variant="oid" />
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>
@@ -294,6 +310,7 @@
           <NodeId {...authorForNodeId(op.author)} />
           {op.replyTo ? "replied to a comment" : "commented"} on review <Id
             id={op.review}
+            clipboard={op.review}
             variant="oid" />
           <div title={absoluteTimestamp(op.timestamp)}>
             {formatTimestamp(op.timestamp)}
@@ -309,6 +326,7 @@
           <NodeId {...authorForNodeId(op.author)} />
           {op.replyTo ? "replied to a comment" : "commented"} on revision <Id
             id={op.revision}
+            clipboard={op.revision}
             variant="oid" />
           <div title={absoluteTimestamp(op.timestamp)}>
             {formatTimestamp(op.timestamp)}

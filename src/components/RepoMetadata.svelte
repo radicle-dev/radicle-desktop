@@ -114,7 +114,10 @@
       <span>
         <span class="txt-selectable">{project.data.defaultBranch}</span>
         ->
-        <Id id={project.meta.head} variant="commit" />
+        <Id
+          id={project.meta.head}
+          clipboard={project.meta.head}
+          variant="commit" />
       </span>
     </div>
 

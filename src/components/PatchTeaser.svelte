@@ -116,7 +116,7 @@
         <div class="global-flex txt-small" style:flex-wrap="wrap">
           <NodeId {...authorForNodeId(patch.author)} />
           opened
-          <Id id={patch.id} variant="oid" />
+          <Id id={patch.id} clipboard={patch.id} variant="oid" />
           {formatTimestamp(patch.timestamp)}
         </div>
       </div>

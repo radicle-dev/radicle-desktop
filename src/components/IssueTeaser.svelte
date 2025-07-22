@@ -102,7 +102,7 @@
         <div class="global-flex txt-small" style:flex-wrap="wrap">
           <NodeId {...authorForNodeId(issue.author)} />
           opened
-          <Id id={issue.id} variant="oid" />
+          <Id id={issue.id} clipboard={issue.id} variant="oid" />
           {formatTimestamp(issue.timestamp)}
         </div>
       </div>
