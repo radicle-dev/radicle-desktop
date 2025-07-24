@@ -175,7 +175,7 @@
             <div class="global-counter">Base</div>
           </div>
           <div class="commits">
-            {#each commits.reverse() as commit}
+            {#each [...commits].reverse() as commit}
               <div
                 class="commit"
                 class:single-commit={commits.length === 1}
