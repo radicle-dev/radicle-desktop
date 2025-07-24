@@ -5,8 +5,10 @@
 
   interface Props {
     popover: Snippet;
-    stylePopoverPositionBottom: string | undefined;
-    stylePopoverPositionLeft: string | undefined;
+    stylePopoverPositionBottom?: string | undefined;
+    stylePopoverPositionLeft?: string | undefined;
+    stylePopoverPositionRight?: string | undefined;
+    stylePadding?: string | undefined;
     toggle: Snippet;
   }
 
@@ -14,6 +16,8 @@
     popover,
     stylePopoverPositionBottom,
     stylePopoverPositionLeft,
+    stylePopoverPositionRight,
+    stylePadding = "0.5rem 1rem",
     toggle,
   }: Props = $props();
 
@@ -31,8 +35,6 @@
   }
   .popover {
     background: var(--color-fill-ghost);
-    border-radius: var(--border-radius-regular);
-    padding: 0.5rem 1rem;
     box-shadow: var(--elevation-low);
     position: absolute;
     clip-path: var(--2px-corner-fill);
@@ -41,9 +43,13 @@
 </style>
 
 <div class="container">
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
     role="button"
     tabindex="0"
+    onclick={e => {
+      e.stopPropagation();
+    }}
     onmouseenter={() => setVisible(true)}
     onmouseleave={() => setVisible(false)}>
     {@render toggle()}
@@ -52,7 +58,9 @@
       <div style:position="absolute">
         <div
           class="popover"
+          style:padding={stylePadding}
           style:left={stylePopoverPositionLeft}
+          style:right={stylePopoverPositionRight}
           style:bottom={stylePopoverPositionBottom}>
           {@render popover()}
         </div>

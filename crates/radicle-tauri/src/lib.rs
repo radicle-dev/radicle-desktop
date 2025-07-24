@@ -32,6 +32,7 @@ pub fn run() {
             cob::issue::issue_by_id,
             cob::issue::list_issues,
             cob::issue::rebuild_issue_cache,
+            cob::job::list_jobs,
             cob::patch::activity_by_patch,
             cob::patch::edit_patch,
             cob::patch::list_patches,

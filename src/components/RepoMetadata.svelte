@@ -11,6 +11,8 @@
   import NodeId from "@app/components/NodeId.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
 
+  import JobCob from "./JobCob.svelte";
+
   interface Props {
     horizontal?: boolean;
     repo: RepoInfo;
@@ -111,13 +113,14 @@
     style:width="100%">
     <div class="metadata-section">
       <div class="metadata-section-title">Default branch</div>
-      <span>
+      <span class="global-flex">
         <span class="txt-selectable">{project.data.defaultBranch}</span>
         ->
         <Id
           id={project.meta.head}
           clipboard={project.meta.head}
           variant="commit" />
+        <JobCob rid={repo.rid} commit={project.meta.head} />
       </span>
     </div>
 

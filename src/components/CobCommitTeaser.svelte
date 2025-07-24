@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Commit } from "@bindings/repo/Commit";
+  import type { Snippet } from "svelte";
 
   import { twemoji } from "@app/lib/utils";
 
@@ -10,13 +11,20 @@
   import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {
-    disabled: boolean;
+    children?: Snippet;
     commit: Commit;
-    onclick: () => void;
+    disabled: boolean;
     hoverable?: boolean;
+    onclick: () => void;
   }
 
-  const { disabled, hoverable = false, commit, onclick }: Props = $props();
+  const {
+    children,
+    commit,
+    disabled,
+    hoverable = false,
+    onclick,
+  }: Props = $props();
 
   let commitMessageVisible = $state(false);
 </script>
@@ -99,6 +107,7 @@
     {/if}
   </div>
   <div class="right">
+    {@render children?.()}
     <CompactCommitAuthorship {commit}>
       <Id
         id={commit.id}

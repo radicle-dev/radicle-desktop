@@ -1,5 +1,6 @@
 use traits::cobs::Cobs;
 use traits::issue::{Issues, IssuesMut};
+use traits::job::Jobs;
 use traits::patch::{Patches, PatchesMut};
 use traits::repo::Repo;
 use traits::thread::Thread;
@@ -27,6 +28,7 @@ impl Thread for AppState {}
 impl Cobs for AppState {}
 impl Issues for AppState {}
 impl IssuesMut for AppState {}
+impl Jobs for AppState {}
 impl Patches for AppState {}
 impl PatchesMut for AppState {}
 impl Profile for AppState {

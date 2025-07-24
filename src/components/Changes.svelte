@@ -10,6 +10,7 @@
   import CommitsContainer from "@app/components/CommitsContainer.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
+  import JobCob from "@app/components/JobCob.svelte";
   import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {
@@ -175,7 +176,7 @@
             <div class="global-counter">Base</div>
           </div>
           <div class="commits">
-            {#each [...commits].reverse() as commit}
+            {#each [...commits].reverse() as commit, idx}
               <div
                 class="commit"
                 class:single-commit={commits.length === 1}
@@ -196,7 +197,11 @@
                       commitId: commit.id,
                     });
                   }}
-                  {commit} />
+                  {commit}>
+                  {#if idx === commits.length - 1}
+                    <JobCob {rid} commit={commit.id} />
+                  {/if}
+                </CobCommitTeaser>
               </div>
             {/each}
           </div>

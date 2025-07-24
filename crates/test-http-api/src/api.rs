@@ -25,6 +25,7 @@ use radicle_types::error::Error;
 use radicle_types::outbound::sqlite::Sqlite;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::issue::{Issues, IssuesMut};
+use radicle_types::traits::job::Jobs;
 use radicle_types::traits::patch::{Patches, PatchesMut};
 use radicle_types::traits::repo::{Repo, Show};
 use radicle_types::traits::thread::Thread;
@@ -41,6 +42,7 @@ impl Cobs for Context {}
 impl Thread for Context {}
 impl Issues for Context {}
 impl IssuesMut for Context {}
+impl Jobs for Context {}
 impl Patches for Context {}
 impl PatchesMut for Context {}
 impl Profile for Context {
@@ -90,6 +92,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/save_embed_by_clipboard", post(save_embed_handler))
         .route("/save_embed_by_bytes", post(save_embed_handler))
         .route("/save_embed_to_disk", post(save_embed_handler))
+        .route("/list_jobs", post(jobs_handler))
         .layer(
             CorsLayer::new()
                 .allow_origin(cors::Any)
@@ -469,4 +472,19 @@ async fn revision_handler(
     let revisions = ctx.revisions_by_patch(rid, id)?;
 
     Ok::<_, Error>(Json(revisions))
+}
+
+#[derive(Serialize, Deserialize)]
+struct JobsBody {
+    pub rid: identity::RepoId,
+    pub sha: git::Oid,
+}
+
+async fn jobs_handler(
+    State(ctx): State<Context>,
+    Json(JobsBody { rid, sha }): Json<JobsBody>,
+) -> impl IntoResponse {
+    let jobs = ctx.list_jobs(rid, sha)?;
+
+    Ok::<_, Error>(Json(jobs))
 }

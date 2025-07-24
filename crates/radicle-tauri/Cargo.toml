@@ -21,6 +21,7 @@ either = { version = "1.15" }
 infer = { version = "0.19.0" }
 log = { version = "0.4.22" }
 radicle = { version = "0.16.1" }
+radicle-job = { version = "0.2.0" }
 radicle-types = { version = "0.1.0", path = "../radicle-types" }
 radicle-surf = { version = "0.22.1", features = ["serde"] }
 serde = { version = "1.0.0", features = ["derive"] }
