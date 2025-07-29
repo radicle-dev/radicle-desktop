@@ -506,7 +506,7 @@
       reactOnComment: "draft" in review ? undefined : reactOnComment,
       deleteComment: "draft" in review ? deleteDraftComment : undefined,
       repoDelegates: repo.delegates,
-      canReply: false,
+      canReply: !("draft" in review),
       disableAttachments:
         "draft" in review ? "Publish your review to attach files" : false,
       rid: repo.rid,
