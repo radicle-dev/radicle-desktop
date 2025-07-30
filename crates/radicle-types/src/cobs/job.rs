@@ -33,7 +33,7 @@ impl Job {
                 .runs()
                 .iter()
                 .flat_map(|(node_id, runs)| {
-                    runs.iter().map(move |(run_id, run)| Run {
+                    runs.into_iter().map(|(run_id, run)| Run {
                         run_id: run_id.to_string(),
                         node: cobs::Author::new(&(*node_id).into(), aliases),
                         status: (*run.status()).into(),
