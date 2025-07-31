@@ -2,6 +2,7 @@ when:
   - event: pull_request
   - event: push
     branch: main
+  - event: manual
 
 steps:
   unit-tests:
