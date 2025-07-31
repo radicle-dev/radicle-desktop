@@ -1,3 +1,17 @@
+### v0.8.0
+
+- CI job run statuses are now shown for the default branch and in patch revision commit lists
+- Fixed an issue where commit listings reversed when switching between patches
+- Fixed a bug that prevented replying to review comments
+- Fixed app version check feature
+- Fixed incorrect IDs (e.g., patch revision, comments) being copied to clipboard
+- Improved accessibility and keyboard navigation in repository filters on the home view
+
+**Shout-out to our contributors 🙏✨**
+
+- [geigerzaehler](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
+
+
 ### v0.7.1
 
 - Fixed a bug in patch and notification lists caused by a library incompatibility
