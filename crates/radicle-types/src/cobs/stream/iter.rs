@@ -173,7 +173,7 @@ impl<'a, A> ActionsIter<'a, A> {
                     .map_or("unknown".to_string(), |kind| kind.to_string()),
             })?;
         let manifest = serde_json::from_slice::<Manifest>(blob.content()).map_err(|err| {
-            error::Actions::Manfiest {
+            error::Actions::Manifest {
                 oid: blob.id().into(),
                 err,
             }

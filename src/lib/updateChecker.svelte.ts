@@ -96,7 +96,7 @@ class UpdateChecker {
     );
   }
 
-  // Enable background udpate checking.
+  // Enable background update checking.
   public enable = (): void => {
     isEnabledStore.value = true;
 

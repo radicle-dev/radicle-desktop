@@ -85,7 +85,7 @@ export function createSummary(
   } else if (lastAction.type === "review") {
     summary = `left a review with a comment on revision %${formatOid(lastAction.revision)}%`;
   } else if (lastAction.type === "assign") {
-    summary = "changed assignes";
+    summary = "changed assigns";
   } else if (lastAction.type === "revision.comment.edit") {
     summary = `edited ${count > 1 ? count : "a"} ${pluralize("comment", count)}`;
   } else if (lastAction.type === "comment.redact") {

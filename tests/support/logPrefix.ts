@@ -33,7 +33,7 @@ export function logPrefix(label: string): string {
   }
 
   // We reset colors at the beginning of each line to avoid styles from previous
-  // lines messing up prefix colors. This is noticable in rust stack traces
+  // lines messing up prefix colors. This is noticeable in rust stack traces
   // where the `in` and `with` keywords have a white background color.
   return chalk.reset[assignedColors[label]](
     `${label.padEnd(PADDING_WIDTH)} | `,

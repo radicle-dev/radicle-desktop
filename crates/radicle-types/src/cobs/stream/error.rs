@@ -40,7 +40,7 @@ pub enum Actions {
         err: git2::Error,
     },
     #[error("failed to deserialize the COB manifest {oid}: {err}")]
-    Manfiest {
+    Manifest {
         oid: Oid,
         #[source]
         err: json::Error,

@@ -1,7 +1,7 @@
 import { expect, markdownRid, test } from "@tests/support/fixtures.js";
 import { chromium } from "playwright";
 
-// We explicitly run all clipboard tests withing the context of a single test
+// We explicitly run all clipboard tests within the context of a single test
 // so that we don't run into race conditions, because there is no way to isolate
 // the clipboard in Playwright yet.
 test("copy to clipboard", async () => {
