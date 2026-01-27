@@ -402,9 +402,10 @@
   }
   .markdown :global(td) {
     text-align: left;
-    text-overflow: ellipsis;
     border: 1px solid var(--color-border-subtle);
     padding: 0.5rem 1rem;
+    word-break: normal;
+    overflow-wrap: normal;
   }
   .markdown :global(tr:nth-child(even)) {
     background-color: var(--color-surface-base);
@@ -412,6 +413,8 @@
   .markdown :global(th) {
     text-align: center;
     padding: 0.5rem 1rem;
+    word-break: normal;
+    overflow-wrap: normal;
   }
 
   .markdown :global(*:first-child:not(pre)) {
