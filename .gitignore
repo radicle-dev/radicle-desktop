@@ -1,6 +1,7 @@
 /build/
 /target/
-/release-artifacts
+/target-release/
+/releases/
 node_modules/
 
 # Tauri

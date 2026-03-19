@@ -1,0 +1,57 @@
+on:
+  pull_request:
+    paths:
+      - 'arch/**'
+  push:
+    paths:
+      - 'arch/**'
+  workflow_dispatch:
+
+jobs:
+  build-arch:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:base-devel
+      options: --user root
+
+    steps:
+      - name: Install git
+        run: pacman -Sy --noconfirm git
+
+      - uses: actions/checkout@v4
+
+      - name: Set up builder user
+        run: |
+          useradd -m builder
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: /home/builder/.cargo/registry
+          key: arch-cargo-${{ hashFiles('arch/radicle-desktop/PKGBUILD') }}
+          restore-keys: arch-cargo-
+
+      - name: Install radicle-bin AUR dependency
+        run: |
+          cd /home/builder
+          git clone https://aur.archlinux.org/radicle-bin.git --depth=1
+          chown -R builder:builder radicle-bin
+          sudo -u builder makepkg --dir radicle-bin --install --syncdeps --noconfirm
+
+      - name: Check .SRCINFO is up-to-date
+        run: |
+          cd arch/radicle-desktop
+          sudo -u builder makepkg --printsrcinfo > .SRCINFO
+          sudo -u builder git -C "$GITHUB_WORKSPACE" diff --exit-code arch/radicle-desktop/.SRCINFO
+
+      - name: Build package
+        run: |
+          sudo -u builder env \
+            CI=true \
+            BUILDDIR=/home/builder/build \
+            PKGDEST=/home/builder \
+            SRCDEST=/home/builder \
+            makepkg --dir "$GITHUB_WORKSPACE/arch/radicle-desktop" \
+              --syncdeps --noconfirm --force

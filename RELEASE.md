@@ -1,11 +1,11 @@
 # Release process
 
-**Note:** We release every second Thursday, before the end of the cycle.
-
-- In your working shell set the following variable
+- In your working shell set the following variables
 
   ```bash
   VERSION="X.Y.Z"
+  RADICLE_DESKTOP_DIR="$(pwd)"                   # absolute path to this repo
+  SIGNING_KEY="$HOME/work/apt-signing/rudolfs"   # adjust to your signing key path
   ```
 
 - Create a new release branch
@@ -23,44 +23,6 @@
 
   ```bash
   RELEASE_SHA="$(git rev-parse HEAD)"
-  SHORT_RELEASE_SHA="$(git rev-parse --short=8 HEAD)"
-  ```
-
-- Create a _Release Patch_ with `git push rad HEAD:refs/patches`
-- Build the macOS app locally
-
-  ```bash
-  cargo clean
-  rm -rf node_modules
-  npm install
-  npm exec -- tauri build --bundles dmg
-  ```
-
-  This creates a file `target/release/bundle/dmg/Radicle_X.Y.Z_aarch64.dmg`.
-
-- Install the build macOS DMG and start the app to verify that it works.
-- Wait for CI of the Release Commit in the Release Patch to pass
-
-- Collect release artifacts
-
-  ```bash
-  rm -rf release-artifacts && mkdir release-artifacts
-  curl -fL \
-    "https://minio-api.radworks.garden/radworks-releases/radicle-desktop/pre-release/${VERSION}_${SHORT_RELEASE_SHA}/radicle-desktop_${VERSION}_amd64.AppImage" \
-    --output release-artifacts/radicle-desktop-amd64.AppImage
-  cp -a "target/release/bundle/dmg/Radicle_${VERSION}_aarch64.dmg" \
-    release-artifacts/radicle-desktop-aarch64.dmg
-  echo -n "{\"sha\": \"${RELEASE_SHA}\", \"version\": \"${VERSION}\"}" \
-    > release-artifacts/latest.json
-  ```
-
-  The content of `release-artifacts` should look like this:
-
-  ```plain
-  release-artifacts
-    latest.json
-    radicle-desktop-aarch64.dmg
-    radicle-desktop-amd64.AppImage
   ```
 
 - Update Arch Linux package info
@@ -73,18 +35,58 @@
     cd arch && ./generate-srcinfo.sh
     ```
 
-  - Commit and push the changes to `arch/radicle-desktop/PKGBUILD` and
-    `arch/radicle-desktop/.SRCINFO`:
+  - Commit the changes (from the repo root):
 
     ```bash
-    git add radicle-desktop/.SRCINFO
-    git add radicle-desktop/PKGBUILD
+    git add arch/radicle-desktop/.SRCINFO
+    git add arch/radicle-desktop/PKGBUILD
     git commit -m "Update arch package to v${VERSION}"
-    git push rad
     ```
 
+- Create a _Release Patch_ with `git push rad HEAD:refs/patches`
 - Wait for CI of the Release Patch to pass
 - Wait for approval of the Release Patch and merge it into `main`
+
+- Build all release artifacts
+
+  ```bash
+  scripts/release
+  ```
+
+  This builds the macOS DMG, Linux amd64 deb and AppImage.
+  Artifacts are written to `releases/v${VERSION}/`.
+
+  To build a single artifact, pass the corresponding flag:
+
+  ```bash
+  scripts/release --only-dmg        # macOS aarch64 DMG
+  scripts/release --only-deb        # Linux amd64 deb
+  scripts/release --only-appimage   # Linux amd64 AppImage
+  ```
+
+  The macOS DMG is built natively. The Linux builds run in an ARM64
+  Podman container (`Dockerfile.release`) that cross-compiles Rust to
+  x86_64. The AppImage additionally requires x86_64 emulation via
+  binfmt_misc + QEMU to run linuxdeploy inside the ARM64 container — see
+  `scripts/appimage-build` for details.
+
+  The Linux builds cache Rust artifacts in named Podman volumes across
+  runs. To start fully from scratch:
+
+  ```bash
+  scripts/release --clean && scripts/release
+  ```
+
+  `--clean` wipes `target-release/`, `node_modules/`, all Linux build
+  volumes, and the container image. To only rebuild the container image
+  while keeping the cached volumes (e.g. after updating
+  `Dockerfile.release`):
+
+  ```bash
+  scripts/release --rebuild-image
+  ```
+
+  After the build, install the macOS DMG and start the app to verify that it works.
 
 - Sign the Debian package from `radicle-apt-repo`
 
@@ -92,13 +94,12 @@
   cd radicle-apt-repo
   rad sync && git fetch
 
-  curl -fLO \
-    "https://minio-api.radworks.garden/radworks-releases/radicle-desktop/pre-release/${VERSION}_${SHORT_RELEASE_SHA}/radicle-desktop_${VERSION}_amd64.deb"
-
   podman build -t apt-import scripts
-  podman run --rm -v ~/work/apt-signing/rudolfs:/src/keys/signing-key -v $(pwd):/src/apt -v ./radicle-desktop_${VERSION}_amd64.deb:/src/tmp.deb apt-import
-
-  rm -rf ./radicle-desktop_${VERSION}_amd64.deb
+  podman run --rm \
+    -v "$SIGNING_KEY:/src/keys/signing-key" \
+    -v "$(pwd):/src/apt" \
+    -v "$RADICLE_DESKTOP_DIR/releases/v${VERSION}/radicle-desktop_${VERSION}_amd64.deb:/src/tmp.deb" \
+    apt-import
 
   git checkout -b release-v${VERSION}
   git add -A
@@ -113,15 +114,12 @@
 
 - Publish the Debian package to the APT repository from `radicle-apt-repo`
 
-    - Upload the signed deb packages to files.radicle.xyz
-    ```bash
-    scp -r -i "$(rad path)/keys/radicle" \
-      dists "release@files.radicle.xyz:/mnt/radicle/files/apt/"
-    scp -r -i "$(rad path)/keys/radicle" \
-      pool "release@files.radicle.xyz:/mnt/radicle/files/apt/"
-    ```
-
-    TODO: can we make scp skip the files that are already uploaded?
+  ```bash
+  scp -r -i "$(rad path)/keys/radicle" \
+    dists "release@files.radicle.xyz:/mnt/radicle/files/apt/"
+  scp -r -i "$(rad path)/keys/radicle" \
+    pool "release@files.radicle.xyz:/mnt/radicle/files/apt/"
+  ```
 
 - Publish release files from `radicle-desktop`
 
@@ -129,7 +127,7 @@
   cd radicle-desktop
 
   scp -i "$(rad path)/keys/radicle" \
-    release-artifacts/* "release@files.radicle.xyz:/mnt/radicle/files/releases/radicle-desktop/latest/"
+    releases/v${VERSION}/* "release@files.radicle.xyz:/mnt/radicle/files/releases/radicle-desktop/latest/"
   ```
 
 - Publish the Arch package by pushing changes to the [Arch User Repository][1]
