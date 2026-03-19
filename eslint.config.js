@@ -165,6 +165,7 @@ export default [
       "isolation/*",
       "node_modules/**/*",
       "target/*",
+      "target-release/*",
       "crates/radicle-tauri/**/*",
       "crates/radicle-types/**/*",
       "eslint.config.js",

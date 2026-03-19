@@ -1,0 +1,45 @@
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/radicle_garden/radicle-desktop-e2e:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: rust-e2e-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: rust-e2e-
+
+      - name: Cache node_modules
+        id: cache-npm
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
+      - run: npm ci
+        if: steps.cache-npm.outputs.cache-hit != 'true'
+
+      - name: Cache heartwood binaries
+        uses: actions/cache@v4
+        with:
+          path: tests/tmp/bin
+          key: heartwood-${{ hashFiles('tests/support/heartwood-release') }}
+
+      - run: scripts/install-binaries
+      - run: npm run build:http
+      - run: mkdir -p tests/artifacts
+
+      - name: Run e2e tests
+        run: npm run test:e2e -- --project webkit

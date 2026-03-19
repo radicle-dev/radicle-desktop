@@ -1,0 +1,44 @@
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+jobs:
+  lint-typescript:
+    runs-on: ubuntu-latest
+    container:
+      image: node:22.11.0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache node_modules
+        id: cache-npm
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
+      - run: npm ci
+        if: steps.cache-npm.outputs.cache-hit != 'true'
+
+      - run: npm run check-js
+
+  lint-rust:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/radicle_garden/radicle-desktop-base:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: rust-lint-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: rust-lint-
+
+      - run: scripts/check-rs
