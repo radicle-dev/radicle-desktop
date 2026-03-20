@@ -16,7 +16,7 @@
     "check-rs": "scripts/check-rs",
     "test:unit": "TZ='UTC' vitest run",
     "test:e2e": "TZ='UTC' playwright test",
-    "format": "npx prettier . --write",
+    "format": "npx prettier . --write && npx eslint --fix .",
     "generate-types": "cargo test --manifest-path ./crates/radicle-types/Cargo.toml",
     "tauri": "npx tauri"
   },
