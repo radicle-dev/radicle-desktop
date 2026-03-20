@@ -64,6 +64,10 @@ pub fn router(ctx: Context) -> Router {
         .route("/repo_count", post(repo_count_handler))
         .route("/list_repos", post(repo_root_handler))
         .route("/list_repos_summary", post(list_repos_summary_handler))
+        .route(
+            "/seeded_not_replicated",
+            post(seeded_not_replicated_handler),
+        )
         .route("/repo_by_id", post(repo_handler))
         .route("/version", post(version_handler))
         .route("/diff_stats", post(diff_stats_handler))
@@ -135,6 +139,11 @@ async fn repo_count_handler(State(ctx): State<Context>) -> impl IntoResponse {
 async fn list_repos_summary_handler(State(ctx): State<Context>) -> impl IntoResponse {
     let repos = ctx.list_repos_summary()?;
     Ok::<_, Error>(Json(repos))
+}
+
+async fn seeded_not_replicated_handler(State(ctx): State<Context>) -> impl IntoResponse {
+    let rids = ctx.seeded_not_replicated()?;
+    Ok::<_, Error>(Json(rids))
 }
 
 #[derive(Serialize, Deserialize)]
