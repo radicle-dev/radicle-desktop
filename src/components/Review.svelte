@@ -9,27 +9,23 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import partial from "lodash/partial";
-  import uniqBy from "lodash/uniqBy";
 
   import type { DraftReview } from "@app/lib/draftReviewStorage";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
-  import { push } from "@app/lib/router";
-  import { authorForNodeId, publicKeyFromDid } from "@app/lib/utils";
+  import * as router from "@app/lib/router";
+  import { formatOid, publicKeyFromDid, truncateId } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
-  import Border from "@app/components/Border.svelte";
   import Button from "@app/components/Button.svelte";
   import Changes from "@app/components/Changes.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import Discussion from "@app/components/Discussion.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
-  import LabelInput from "@app/components/LabelInput.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
+  import ScrollArea from "@app/components/ScrollArea.svelte";
   import VerdictBadge from "@app/components/VerdictBadge.svelte";
   import VerdictButton from "@app/components/VerdictButton.svelte";
 
@@ -52,18 +48,6 @@
     review,
     revision,
   }: Props = $props();
-
-  const contributors = $derived(
-    uniqBy(
-      [
-        review.author,
-        ...review.comments.map(c => {
-          return c.author;
-        }),
-      ],
-      "did",
-    ),
-  );
 
   let publishingInProgress = $state(false);
   const canPublish = $derived(review.verdict || review.summary);
@@ -113,7 +97,6 @@
   );
 
   let verdict: Review["verdict"] = $state(review.verdict);
-  let labelSaveInProgress: boolean = $state(false);
 
   async function editReview(
     reviewId: string,
@@ -128,7 +111,6 @@
     }
 
     try {
-      labelSaveInProgress = true;
       if ("draft" in review) {
         draftReviewStorage.update(review.id, {
           verdict,
@@ -152,7 +134,6 @@
     } catch (error) {
       console.error("Editing review failed: ", error);
     } finally {
-      labelSaveInProgress = false;
       await loadReview();
     }
   }
@@ -285,130 +266,86 @@
 </script>
 
 <style>
-  .content {
-    padding: 1rem 1rem 1rem 0;
-  }
-  .title {
-    font-size: var(--font-size-medium);
-    font-weight: var(--font-weight-medium);
-    -webkit-user-select: text;
-    user-select: text;
-    display: flex;
-    align-items: center;
-    white-space: nowrap;
-    min-height: 2.5rem;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
-  .metadata-divider {
-    width: 2px;
-    background-color: var(--color-fill-ghost);
-    height: calc(100% + 4px);
-    top: 0;
-    position: relative;
-  }
-  .metadata-section {
-    padding: 0.5rem;
-    font-size: var(--font-size-small);
+  .page {
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     height: 100%;
   }
-  .metadata-section-title {
-    margin-bottom: 0.5rem;
-    color: var(--color-foreground-dim);
+  .topbar {
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    height: 2.5rem;
+    flex-shrink: 0;
+    gap: 0.375rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+  }
+  .topbar-link {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+  }
+  .topbar-link:hover {
+    color: var(--color-text-primary);
+  }
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    font: var(--txt-heading-s);
+  }
+  .main {
+    padding: 1.5rem 2rem;
+    min-width: 0;
   }
   .review-body {
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-    position: relative;
-    z-index: 1;
-  }
-  /* We put the background and clip-path in a separate element to prevent
-     popovers being clipped in the main element. */
-  .review-body::after {
-    position: absolute;
-    z-index: -1;
-    content: " ";
-    background-color: var(--color-background-float);
-    clip-path: var(--2px-corner-fill);
-    width: 100%;
-    height: 100%;
-    top: 0;
+    margin: 1rem 0;
+    background-color: var(--color-surface-canvas);
+    border-radius: var(--border-radius-md);
   }
 </style>
 
-<div class="content">
-  <div style:margin-bottom="1rem">
-    <div class="title">
-      <NakedButton
-        styleHeight="2.5rem"
-        variant="ghost"
-        onclick={onNavigateBack}>
-        <Icon name="arrow-left" />
-      </NakedButton>
-      <span class="global-flex" style:gap="0">
-        <NodeId
-          {...authorForNodeId(review.author)}
-          styleFontSize="var(--font-size-medium)"
-          styleFontWeight="var(--font-weight-medium)" />'s review
+<div class="page">
+  <div class="topbar">
+    <Icon name="patch" />
+    <button
+      class="topbar-link"
+      onclick={() =>
+        router.push({
+          resource: "repo.patches",
+          rid: repo.rid,
+          status: undefined,
+        })}>
+      All Patches
+    </button>
+    <Icon name="chevron-right" />
+    <button class="topbar-link" onclick={onNavigateBack}>
+      {formatOid(patchId)}
+    </button>
+    <Icon name="chevron-right" />
+    <span>Review</span>
+  </div>
+
+  <ScrollArea style="flex: 1; min-height: 0;">
+    <div class="main">
+      <div class="title">
         {#if "draft" in review}
           <span
-            class="global-counter"
-            style:margin-left="0.5rem"
+            class="global-chip"
             title="This review is not yet visible to your peers">
             Draft
           </span>
         {/if}
-      </span>
-      {#if "draft" in review}
-        <div style:margin-inline-start="auto"></div>
-        <NakedButton
-          styleHeight="2.5rem"
-          variant="ghost"
-          onclick={() => {
-            draftReviewStorage.delete(review.id);
-            void push({
-              resource: "repo.patch",
-              rid: repo.rid,
-              patch: patchId,
-              reviewId: undefined,
-              status: undefined,
-            });
-          }}>
-          <Icon name="trash" />Delete
-        </NakedButton>
-        <Button
-          styleHeight="2.5rem"
-          variant="secondary"
-          title={canPublish
-            ? undefined
-            : "Add a summary or select a verdict to publish the review"}
-          disabled={!canPublish || publishingInProgress}
-          onclick={async () => {
-            publishingInProgress = true;
-            try {
-              await draftReviewStorage.publish(review.id);
-              await push({
-                resource: "repo.patch",
-                rid: repo.rid,
-                patch: patchId,
-                reviewId: undefined,
-                status: undefined,
-              });
-            } finally {
-              publishingInProgress = false;
-            }
-          }}>
-          <Icon name="checkout" />Publish
-        </Button>
-      {/if}
-    </div>
-
-    <Border variant="ghost" styleGap="0">
-      <div class="metadata-section" style:min-width="8rem">
-        <div class="metadata-section-title">Verdict</div>
+        <span>
+          {review.author.alias ??
+            truncateId(publicKeyFromDid(review.author.did))}'s verdict
+        </span>
         {#if !!roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), review.author.did, )}
           <VerdictButton
             selectedVerdict={verdict}
@@ -427,92 +364,106 @@
         {:else}
           <VerdictBadge {verdict} />
         {/if}
+        {#if "draft" in review}
+          <div class="global-flex" style:margin-left="auto" style:gap="0.5rem">
+            <Button
+              variant="naked"
+              styleHeight="2rem"
+              onclick={() => {
+                draftReviewStorage.delete(review.id);
+                void router.push({
+                  resource: "repo.patch",
+                  rid: repo.rid,
+                  patch: patchId,
+                  reviewId: undefined,
+                  status: undefined,
+                });
+              }}>
+              <Icon name="trash" />Delete
+            </Button>
+            <Button
+              styleHeight="2rem"
+              variant="secondary"
+              title={canPublish
+                ? undefined
+                : "Add a summary or select a verdict to publish the review"}
+              disabled={!canPublish || publishingInProgress}
+              onclick={async () => {
+                publishingInProgress = true;
+                try {
+                  await draftReviewStorage.publish(review.id);
+                  await router.push({
+                    resource: "repo.patch",
+                    rid: repo.rid,
+                    patch: patchId,
+                    reviewId: undefined,
+                    status: undefined,
+                  });
+                } finally {
+                  publishingInProgress = false;
+                }
+              }}>
+              <Icon name="checkout" />Publish
+            </Button>
+          </div>
+        {/if}
+      </div>
+      <div class="review-body">
+        <CommentComponent
+          disableAttachments
+          rid={repo.rid}
+          disallowEmptyBody={!("draft" in review) &&
+            review.verdict === undefined}
+          emptyBodyTooltip="Summary is mandatory when verdict is None"
+          styleWidth="100%"
+          caption={"draft" in review ? "draft review" : "published review"}
+          id={"draft" in review ? undefined : review.id}
+          author={review.author}
+          timestamp={"draft" in review ? undefined : review.timestamp}
+          editComment={(publicKeyFromDid(review.author.did) ===
+            config.publicKey ||
+            undefined) &&
+            partial(async (id: string, summary: string) => {
+              await editReview(id, verdict, review.labels, summary);
+            }, review.id)}
+          body={review.summary}>
+          {#snippet beforeTimestamp()}
+            on revision <Id id={revision.id} clipboard={revision.id} />
+          {/snippet}
+        </CommentComponent>
       </div>
 
-      <div class="metadata-divider"></div>
+      {#if !("draft" in review)}
+        <Discussion
+          cobId={patchId}
+          repoDelegates={repo.delegates}
+          rid={repo.rid}
+          {commentThreads}
+          {config}
+          {createComment}
+          {editComment}
+          {reactOnComment} />
+      {/if}
 
-      <div class="metadata-section" style:flex="1">
-        <LabelInput
-          allowedToEdit={!!roles.isDelegateOrAuthor(
-            config.publicKey,
-            repo.delegates.map(delegate => delegate.did),
-            review.author.did,
-          )}
-          labels={review.labels}
-          submitInProgress={labelSaveInProgress}
-          save={async labels => {
-            await editReview(review.id, verdict, labels, review.summary);
-          }} />
-      </div>
-
-      <div class="metadata-divider"></div>
-
-      <div class="metadata-section" style:flex="1">
-        <div class="metadata-section-title">Participants</div>
-        <div class="global-flex">
-          {#each contributors as contributor}
-            <NodeId {...authorForNodeId(contributor)} />
-          {/each}
-        </div>
-      </div>
-    </Border>
-
-    <div class="review-body">
-      <CommentComponent
-        disableAttachments
+      <Changes
+        codeComments={{
+          changeCommentStatus:
+            "draft" in review ? undefined : changeCommentStatus,
+          config,
+          createComment,
+          editComment,
+          reactOnComment: "draft" in review ? undefined : reactOnComment,
+          deleteComment: "draft" in review ? deleteDraftComment : undefined,
+          repoDelegates: repo.delegates,
+          canReply: !("draft" in review),
+          disableAttachments:
+            "draft" in review ? "Publish your review to attach files" : false,
+          rid: repo.rid,
+          threads: codeCommentThreads,
+        }}
         rid={repo.rid}
-        disallowEmptyBody={!("draft" in review) && review.verdict === undefined}
-        emptyBodyTooltip="Summary is mandatory when verdict is None"
-        styleWidth="100%"
-        caption={"draft" in review ? "draft review" : "published review"}
-        id={"draft" in review ? undefined : review.id}
-        author={review.author}
-        timestamp={"draft" in review ? undefined : review.timestamp}
-        editComment={(publicKeyFromDid(review.author.did) ===
-          config.publicKey ||
-          undefined) &&
-          partial(async (id: string, summary: string) => {
-            await editReview(id, verdict, review.labels, summary);
-          }, review.id)}
-        body={review.summary}>
-        {#snippet beforeTimestamp()}
-          on revision <Id
-            id={revision.id}
-            clipboard={revision.id}
-            variant="oid" />
-        {/snippet}
-      </CommentComponent>
+        {patchId}
+        {revision} />
     </div>
-  </div>
-
-  {#if !("draft" in review)}
-    <Discussion
-      cobId={patchId}
-      repoDelegates={repo.delegates}
-      rid={repo.rid}
-      {commentThreads}
-      {config}
-      {createComment}
-      {editComment}
-      {reactOnComment} />
-  {/if}
-
-  <Changes
-    codeComments={{
-      changeCommentStatus: "draft" in review ? undefined : changeCommentStatus,
-      config,
-      createComment,
-      editComment,
-      reactOnComment: "draft" in review ? undefined : reactOnComment,
-      deleteComment: "draft" in review ? deleteDraftComment : undefined,
-      repoDelegates: repo.delegates,
-      canReply: !("draft" in review),
-      disableAttachments:
-        "draft" in review ? "Publish your review to attach files" : false,
-      rid: repo.rid,
-      threads: codeCommentThreads,
-    }}
-    rid={repo.rid}
-    {patchId}
-    {revision} />
+  </ScrollArea>
 </div>

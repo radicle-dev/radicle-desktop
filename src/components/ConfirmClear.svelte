@@ -1,8 +1,6 @@
 <script lang="ts">
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
-  import OutlineButton from "@app/components/OutlineButton.svelte";
 
   interface Props {
     clear: () => void;
@@ -15,22 +13,22 @@
 </script>
 
 {#if closed}
-  <NakedButton
+  <Button
+    variant="naked"
     stylePadding="0 0.25rem"
-    variant="ghost"
     onclick={() => (closed = false)}>
-    <Icon name="broom-double" />
-  </NakedButton>
+    <Icon name="clear-all" />
+  </Button>
 {:else}
-  <div class="global-flex txt-small">
+  <div class="global-flex txt-body-m-regular">
     <div class="global-flex" style:justify-content="space-between">
       <Button variant="ghost" onclick={clear}>
-        <Icon name="broom-double" />
+        <Icon name="clear-all" />
         Clear all {count}
       </Button>
-      <OutlineButton variant="ghost" onclick={() => (closed = true)}>
-        <Icon name="cross" />Cancel
-      </OutlineButton>
+      <Button variant="outline" onclick={() => (closed = true)}>
+        <Icon name="close" />Cancel
+      </Button>
     </div>
   </div>
 {/if}

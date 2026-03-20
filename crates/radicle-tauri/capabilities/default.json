@@ -15,6 +15,7 @@
     "core:tray:default",
     "core:webview:default",
     "core:window:allow-set-badge-count",
+    "core:window:allow-start-dragging",
     "core:window:default",
     "dialog:default",
     "log:default",

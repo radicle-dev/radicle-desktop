@@ -1,9 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {
     leftHeader: Snippet;
@@ -19,10 +18,9 @@
   .header {
     display: flex;
     align-items: center;
-    height: 2rem;
+    height: 2.5rem;
     padding-left: 0.25rem;
-    font-size: var(--font-size-small);
-    background-color: var(--color-background-default);
+    font: var(--txt-body-m-regular);
   }
 
   .left {
@@ -30,39 +28,33 @@
     gap: 0.5rem;
     align-items: center;
   }
-  .divider {
-    width: calc(100% + 4px);
-    position: relative;
-    top: -6px;
-    left: -2px;
-    z-index: 1;
-    height: 2px;
-    background-color: var(--color-fill-ghost);
-  }
 </style>
 
-<Border
-  variant="ghost"
-  styleFlexDirection="column"
-  styleAlignItems="flex-start">
+<div
+  style:border="1px solid var(--color-border-subtle)"
+  style:border-radius="var(--border-radius-md)"
+  style:display="flex"
+  style:align-items="flex-start"
+  style:background-color="var(--color-surface-canvas)"
+  style:flex-direction="column">
   <div class="header" class:collapsed={!expanded}>
     <div class="left">
-      <NakedButton
-        stylePadding="0 0.25rem"
-        variant="ghost"
+      <Button
+        variant="naked"
         onclick={async () => {
           expanded = !expanded;
         }}>
         <Icon name={expanded ? "chevron-down" : "chevron-right"} />
-      </NakedButton>
+      </Button>
       {@render leftHeader()}
     </div>
   </div>
 
   {#if expanded}
-    <div class="divider"></div>
-    <div style:width="100%">
+    <div
+      style:width="100%"
+      style:border-top="1px solid var(--color-border-subtle)">
       {@render children()}
     </div>
   {/if}
-</Border>
+</div>

@@ -19,9 +19,9 @@
     patchStatusColor,
   } from "@app/lib/utils";
 
+  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import { closeFocused } from "@app/components/Popover.svelte";
 
@@ -62,10 +62,6 @@
     );
   });
 
-  const clearIcon = $derived(
-    uniqueActions.length > 1 ? "broom-double" : "broom",
-  );
-
   const title = $derived.by(() => {
     const lastDetail = notificationItems.at(-1);
     if (lastDetail && "title" in lastDetail) {
@@ -103,8 +99,8 @@
       };
     } else {
       return {
-        color: "var(--color-foreground-dim)",
-        background: "var(--color-fill-ghost)",
+        color: "var(--color-text-secondary)",
+        background: "var(--color-surface-subtle)",
       };
     }
   });
@@ -134,41 +130,46 @@
 
 <style>
   .notification-teaser {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.25rem;
     min-height: 5rem;
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-subtle);
     padding: 1rem;
     cursor: pointer;
-    font-size: var(--font-size-regular);
+    font: var(--txt-body-l-regular);
     word-break: break-word;
   }
   .clear-icon {
-    display: none;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    visibility: hidden;
+    color: var(--color-text-tertiary);
   }
   .notification-teaser:hover .clear-icon {
-    display: flex;
+    visibility: visible;
   }
   .selected {
-    background-color: var(--color-fill-float-hover);
+    background-color: var(--color-surface-mid);
   }
   .notification-teaser:hover {
-    background-color: var(--color-fill-float-hover);
+    background-color: var(--color-surface-mid);
   }
   .status {
     padding: 0;
     margin-right: 1rem;
   }
   .notification-teaser:first-of-type {
-    clip-path: var(--3px-top-corner-fill);
+    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
   }
   .notification-teaser:last-of-type {
-    clip-path: var(--3px-bottom-corner-fill);
+    border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
   }
   .notification-teaser:only-of-type {
-    clip-path: var(--3px-corner-fill);
+    border-radius: var(--border-radius-sm);
   }
 </style>
 
@@ -184,51 +185,51 @@
       closeFocused();
     }
   }}>
-  <div
-    class="global-flex"
-    style:justify-content="space-between"
-    style:align-items="flex-start"
-    style:width="100%">
-    <div class="global-flex">
-      <div
-        class="global-counter status"
-        style:align-self="flex-start"
-        style:color={statusColor.color}
-        style:background-color={statusColor.background}>
-        <Icon name={icon} />
-      </div>
-      <div
-        class="global-flex"
-        style:flex-direction="column"
-        style:align-items="flex-start">
-        {#if title}
-          <InlineTitle content={title} />
-        {/if}
-        <div class="txt-small">
-          {#each uniqueActions as action}
-            <div
-              class="global-flex"
-              style:gap="0.25rem"
-              style:min-height="2rem"
-              style:flex-wrap="wrap">
-              <NodeId {...authorForNodeId(action.items[0].author)} />
-              <span>{@html action.summary}</span>
-              <span>{formatTimestamp(action.items[0].timestamp)}</span>
-            </div>
-          {/each}
-        </div>
+  <div class="global-flex" style:width="100%">
+    <div
+      class="global-chip status"
+      style:align-self="flex-start"
+      style:color={statusColor.color}
+      style:background-color={statusColor.background}>
+      <Icon name={icon} />
+    </div>
+    <div
+      class="global-flex"
+      style:flex-direction="column"
+      style:align-items="flex-start"
+      style:width="100%">
+      {#if title}
+        <InlineTitle content={title} />
+      {/if}
+      <div class="txt-body-m-regular" style:width="100%">
+        {#each uniqueActions as action}
+          <div
+            class="global-flex"
+            style:gap="0.25rem"
+            style:min-height="2rem"
+            style:flex-wrap="wrap"
+            style:width="100%">
+            <NodeId {...authorForNodeId(action.items[0].author)} />
+            <span>{@html action.summary}</span>
+            <span
+              style:margin-left="auto"
+              style:color="var(--color-text-tertiary)">
+              {formatTimestamp(action.items[0].timestamp)}
+            </span>
+          </div>
+        {/each}
       </div>
     </div>
-    <div class="clear-icon">
-      <NakedButton
-        stylePadding="0 0.25rem"
-        variant="ghost"
-        onclick={e => {
-          e.stopPropagation();
-          void clearByIds(notificationItems.map(n => n.rowId));
-        }}>
-        <Icon name={clearIcon} />
-      </NakedButton>
-    </div>
+  </div>
+  <div class="clear-icon">
+    <Button
+      variant="naked"
+      stylePadding="0 0.25rem"
+      onclick={e => {
+        e.stopPropagation();
+        void clearByIds(notificationItems.map(n => n.rowId));
+      }}>
+      <Icon name="trash" />
+    </Button>
   </div>
 </div>

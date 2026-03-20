@@ -10,7 +10,6 @@
     issueStatusColor,
   } from "@app/lib/utils";
 
-  import Border from "@app/components/Border.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
@@ -18,22 +17,13 @@
   import NodeId from "@app/components/NodeId.svelte";
 
   interface Props {
-    compact?: boolean;
     focussed?: boolean;
     issue: Issue;
     rid: string;
-    selected?: boolean;
     status: IssueStatus;
   }
 
-  const {
-    compact = false,
-    focussed,
-    issue,
-    rid,
-    selected = false,
-    status,
-  }: Props = $props();
+  const { focussed, issue, rid, status }: Props = $props();
 </script>
 
 <style>
@@ -42,31 +32,28 @@
     align-items: center;
     gap: 0.25rem;
     min-height: 5rem;
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-canvas);
     padding: 1rem;
     cursor: pointer;
-    font-size: var(--font-size-regular);
+    font: var(--txt-body-l-regular);
     word-break: break-word;
     width: 100%;
   }
-  .selected {
-    background-color: var(--color-fill-float-hover);
-  }
   .issue-teaser:hover {
-    background-color: var(--color-fill-float-hover);
+    background-color: var(--color-surface-subtle);
   }
   .status {
     padding: 0;
     margin-right: 1rem;
   }
   .issue-teaser:first-of-type {
-    clip-path: var(--2px-top-corner-fill);
+    border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
   }
   .issue-teaser:last-of-type {
-    clip-path: var(--2px-bottom-corner-fill);
+    border-radius: 0 0 var(--border-radius-sm) var(--border-radius-sm);
   }
   .issue-teaser:only-of-type {
-    clip-path: var(--2px-corner-fill);
+    border-radius: var(--border-radius-sm);
   }
 </style>
 
@@ -76,7 +63,6 @@
     tabindex="0"
     role="button"
     class="issue-teaser"
-    class:selected
     style:align-items="flex-start"
     style:clip-path={focussed ? "none" : undefined}
     style:padding={focussed ? "1rem" : "20px"}
@@ -85,7 +71,7 @@
     }}>
     <div class="global-flex" style:align-items="flex-start">
       <div
-        class="global-counter status"
+        class="global-chip status"
         style:color={issueStatusColor[issue.state.status]}
         style:background-color={issueStatusBackgroundColor[issue.state.status]}>
         {#if issue.state.status === "open"}
@@ -99,24 +85,29 @@
         style:flex-direction="column"
         style:align-items="flex-start">
         <InlineTitle content={issue.title} />
-        <div class="global-flex txt-small" style:flex-wrap="wrap">
+        <div class="global-flex txt-body-m-regular" style:flex-wrap="wrap">
           <NodeId {...authorForNodeId(issue.author)} />
           opened
-          <Id id={issue.id} clipboard={issue.id} variant="oid" />
+          <Id id={issue.id} clipboard={issue.id} />
           {formatTimestamp(issue.timestamp)}
         </div>
       </div>
     </div>
 
     <div class="global-flex" style:margin-left="auto">
-      {#if !compact}
-        {#each issue.labels as label}
-          <Label {label} />
-        {/each}
-      {/if}
+      {#each issue.labels as label}
+        <Label {label} />
+      {/each}
 
       {#if issue.commentCount > 0}
-        <div class="txt-small global-flex" style:gap="0.25rem">
+        <div
+          class="txt-body-m-regular global-flex"
+          style:gap="0.25rem"
+          style:border="1px solid var(--color-border-subtle)"
+          style:border-radius="var(--border-radius-sm)"
+          style:height="1.5rem"
+          style:padding="0 0.5rem"
+          style:color="var(--color-text-tertiary)">
           <Icon name="comment" />
           {issue.commentCount}
         </div>
@@ -126,11 +117,15 @@
 {/snippet}
 
 {#if focussed}
-  <Border
-    styleBackgroundColor="var(--color-background-float)"
-    variant="secondary">
+  <div
+    style:border="1px solid var(--color-border-brand)"
+    style:border-radius="var(--border-radius-sm)"
+    style:display="flex"
+    style:gap="0.5rem"
+    style:align-items="center"
+    style:background-color="var(--color-surface-canvas)">
     {@render issueSnippet()}
-  </Border>
+  </div>
 {:else}
   {@render issueSnippet()}
 {/if}

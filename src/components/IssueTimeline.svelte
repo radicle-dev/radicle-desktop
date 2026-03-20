@@ -94,7 +94,7 @@
   }
 </style>
 
-<div class="timeline txt-small">
+<div class="timeline txt-body-m-regular">
   {#each timeline as op}
     {#if op.type === "lifecycle"}
       <div class="timeline-item">
@@ -154,7 +154,7 @@
     {:else if op.type === "assign"}
       <div class="timeline-item">
         <div class="icon">
-          <Icon name="user" />
+          <Icon name="avatar-incognito" />
         </div>
         <div class="wrapper">
           <NodeId {...authorForNodeId(op.author)} />
@@ -192,7 +192,7 @@
       {#if op.previous && op.previous.type === op.type}
         <div class="timeline-item">
           <div class="icon">
-            <Icon name="pen" />
+            <Icon name="edit" />
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
@@ -208,13 +208,13 @@
     {:else if op.type === "comment"}
       {#if op.id === activity[0].id}
         <div class="timeline-item">
-          <div class="icon" style:color="var(--color-fill-success)">
+          <div class="icon" style:color="var(--color-feedback-success-text)">
             <Icon name="issue" />
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
             <div>
-              opened issue <Id id={op.id} clipboard={op.id} variant="oid" />
+              opened issue <Id id={op.id} clipboard={op.id} />
             </div>
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}

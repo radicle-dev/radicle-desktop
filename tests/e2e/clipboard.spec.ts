@@ -1,8 +1,6 @@
 import { expect, markdownRid, test } from "@tests/support/fixtures.js";
 import { chromium } from "playwright";
 
-import { formatRepositoryId } from "@app/lib/utils";
-
 // We explicitly run all clipboard tests withing the context of a single test
 // so that we don't run into race conditions, because there is no way to isolate
 // the clipboard in Playwright yet.
@@ -19,7 +17,9 @@ test("copy to clipboard", async () => {
 
   // Repo ID.
   {
-    await page.getByText(formatRepositoryId(markdownRid)).click();
+    const repoLink = page.getByRole("link", { name: "markdown" });
+    await repoLink.hover();
+    await repoLink.getByRole("button", { name: "icon-copy" }).click();
     const clipboardContent = await page.evaluate<string>(
       "navigator.clipboard.readText()",
     );

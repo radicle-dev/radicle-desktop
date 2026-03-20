@@ -9,8 +9,8 @@ test("navigate single issue", async ({ page }) => {
 
 test("correct order of threads", async ({ page }) => {
   await page.goto("/repos");
-  await page.getByRole("button", { name: "cobs" }).click();
-  await page.getByRole("link", { name: "icon-issue Issues" }).click();
+  await page.getByRole("link", { name: "cobs" }).click();
+  await page.getByRole("link", { name: "Issues" }).click();
   await page.getByText("This title has **markdown**").click();
   const body = page.locator(".issue-body");
   await expect(body.getByText("This is a description")).toBeVisible();
@@ -30,8 +30,8 @@ test("correct order of threads", async ({ page }) => {
 
 test("creation of top level comments", async ({ page }) => {
   await page.goto("/repos");
-  await page.getByRole("button", { name: "cobs" }).click();
-  await page.getByRole("link", { name: "icon-issue Issues" }).click();
+  await page.getByRole("link", { name: "cobs" }).click();
+  await page.getByRole("link", { name: "Issues" }).click();
   await page.getByRole("button", { name: "New" }).click();
   await page
     .getByPlaceholder("Title")
@@ -43,14 +43,12 @@ test("creation of top level comments", async ({ page }) => {
     );
   await page.getByRole("button", { name: "icon-checkmark" }).click();
   await expect(
-    page.getByRole("button", { name: "icon-issue Make sure that" }),
+    page.getByText("Make sure that comment creation is working"),
   ).toBeVisible();
   await expect(
-    page
-      .getByText(
-        "It's important for us that the comment creation flow works as expected.",
-      )
-      .last(),
+    page.getByText(
+      "It's important for us that the comment creation flow works as expected.",
+    ),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "icon-comment Comment" }).click();

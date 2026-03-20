@@ -159,24 +159,12 @@
 <style>
   .patch-body {
     margin-bottom: 1rem;
-    position: relative;
-    z-index: 1;
-  }
-  /* We put the background and clip-path in a separate element to prevent
-     popovers being clipped in the main element. */
-  .patch-body::after {
-    position: absolute;
-    z-index: -1;
-    content: " ";
-    background-color: var(--color-background-float);
-    clip-path: var(--2px-corner-fill);
-    width: 100%;
-    height: 100%;
-    top: 0;
+    background-color: var(--color-surface-canvas);
+    border-radius: var(--border-radius-sm);
   }
 </style>
 
-<div class="txt-small patch-body">
+<div class="txt-body-m-regular patch-body">
   <CommentComponent
     caption={revision.id === patchId ? "opened patch" : "created revision"}
     {rid}

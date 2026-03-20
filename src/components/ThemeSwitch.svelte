@@ -1,36 +1,48 @@
 <script lang="ts" module>
+  import { writable } from "svelte/store";
+
   type Theme = "dark" | "light";
 
-  export const theme = writable<Theme>(loadTheme());
-
-  function loadTheme(): Theme {
+  export function loadTheme(): Theme {
     const { matches } = window.matchMedia("(prefers-color-scheme: dark)");
-    const storedTheme = localStorage ? localStorage.getItem("theme") : null;
-
-    if (storedTheme === null) {
-      return matches ? "dark" : "light";
-    } else {
-      return storedTheme as Theme;
-    }
+    return matches ? "dark" : "light";
   }
 
+  function initTheme(): Theme {
+    const storedTheme = localStorage ? localStorage.getItem("theme") : null;
+    if (storedTheme === "dark" || storedTheme === "light") {
+      return storedTheme;
+    }
+    return loadTheme();
+  }
+
+  export const followSystemTheme = writable<boolean>(
+    typeof localStorage !== "undefined"
+      ? !localStorage.getItem("theme")
+      : false,
+  );
+
+  export const theme = writable<Theme>(initTheme());
+
   export function storeTheme(newTheme: Theme): void {
+    followSystemTheme.set(false);
     theme.set(newTheme);
     if (localStorage) {
       localStorage.setItem("theme", newTheme);
-    } else {
-      console.warn(
-        "localStorage isn't available, not able to persist the selected theme without it.",
-      );
+    }
+  }
+
+  export function setSystemTheme(): void {
+    followSystemTheme.set(true);
+    theme.set(loadTheme());
+    if (localStorage) {
+      localStorage.removeItem("theme");
     }
   }
 </script>
 
 <script lang="ts">
-  import { writable } from "svelte/store";
-
   import Button from "@app/components/Button.svelte";
-  import Icon from "@app/components/Icon.svelte";
 </script>
 
 <style>
@@ -42,24 +54,25 @@
 
 <div class="container">
   <Button
+    variant="ghost"
     flatRight
-    active={$theme === "dark"}
-    variant="ghost"
-    onclick={() => {
-      storeTheme("dark");
-    }}>
-    <Icon name="moon" />
-    Dark
+    active={$followSystemTheme}
+    onclick={setSystemTheme}>
+    System
   </Button>
-
   <Button
-    flatLeft
     variant="ghost"
-    active={$theme === "light"}
-    onclick={() => {
-      storeTheme("light");
-    }}>
-    <Icon name="sun" />
+    flatLeft
+    flatRight
+    active={!$followSystemTheme && $theme === "light"}
+    onclick={() => storeTheme("light")}>
     Light
+  </Button>
+  <Button
+    variant="ghost"
+    flatLeft
+    active={!$followSystemTheme && $theme === "dark"}
+    onclick={() => storeTheme("dark")}>
+    Dark
   </Button>
 </div>

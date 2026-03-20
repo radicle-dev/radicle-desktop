@@ -270,7 +270,7 @@ export class RadiclePeer {
       resources: [
         `tcp:${this.#httpdBaseUrl.hostname}:${this.#httpdBaseUrl.port}`,
       ],
-      timeout: 20_000,
+      timeout: 120_000,
     });
   }
 

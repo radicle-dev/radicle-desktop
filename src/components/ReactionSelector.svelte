@@ -1,27 +1,19 @@
 <script lang="ts">
   import type { Reaction } from "@bindings/cob/Reaction";
+  import type { Placement } from "@floating-ui/dom";
 
   import { twemoji } from "@app/lib/utils";
 
-  import Border from "@app/components/Border.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
 
   interface Props {
     reactions?: Reaction[];
-    popoverPositionBottom?: string;
-    popoverPositionRight?: string;
-    popoverPositionLeft?: string;
+    placement?: Placement;
     select: (reaction: Reaction) => Promise<void>;
   }
 
-  const {
-    reactions,
-    popoverPositionBottom,
-    popoverPositionRight,
-    popoverPositionLeft,
-    select,
-  }: Props = $props();
+  const { reactions, placement, select }: Props = $props();
 
   const availableReactions = ["👍", "👎", "😄", "🎉", "🙁", "🚀", "👀"];
 </script>
@@ -30,7 +22,7 @@
   .selector {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
   }
 
   button {
@@ -38,29 +30,31 @@
     border: 0;
     background: none;
     height: 1.5rem;
-    clip-path: var(--1px-corner-fill);
+    border-radius: var(--border-radius-sm);
     margin: 0;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     width: 2rem;
     height: 2rem;
   }
 
   button:hover,
   button.active {
-    background-color: var(--color-fill-ghost);
+    background-color: var(--color-surface-subtle);
   }
 </style>
 
-<Popover
-  {popoverPositionBottom}
-  {popoverPositionRight}
-  {popoverPositionLeft}
-  popoverPadding="0">
+<Popover {placement} popoverPadding="0">
   {#snippet toggle(onclick)}
-    <Icon name="face" {onclick} />
+    <Icon name="emoji" {onclick} />
   {/snippet}
   {#snippet popover()}
-    <Border variant="ghost">
+    <div
+      style:border="1px solid var(--color-border-subtle)"
+      style:border-radius="var(--border-radius-md)"
+      style:display="flex"
+      style:gap="0.5rem"
+      style:align-items="center"
+      style:background-color="var(--color-surface-canvas)">
       <div class="selector">
         {#each availableReactions as reaction}
           {@const lookedUpReaction = reactions?.find(
@@ -75,6 +69,6 @@
           </button>
         {/each}
       </div>
-    </Border>
+    </div>
   {/snippet}
 </Popover>

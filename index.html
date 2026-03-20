@@ -3,9 +3,17 @@
   <head>
     <script>
       // Avoid flickering on app start.
-      if (localStorage.getItem("theme") === "dark") {
+      const storedTheme = localStorage.getItem("theme");
+      if (storedTheme === "dark" || storedTheme === "light") {
+        document.documentElement.setAttribute("data-theme", storedTheme);
+      } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
         document.documentElement.setAttribute("data-theme", "dark");
       }
+      const codefont = localStorage.getItem("codefont");
+      document.documentElement.setAttribute(
+        "data-codefont",
+        codefont === "system" ? "system" : "jetbrains",
+      );
     </script>
     <meta charset="UTF-8" />
     <link rel="icon" href="/radicle.svg" type="image/svg+xml" />
@@ -13,25 +21,19 @@
     <title>Radicle</title>
     <link
       rel="preload"
-      href="/fonts/Inter-Regular.woff2"
+      href="/fonts/Booton-Regular.woff2"
       as="font"
       type="font/woff2"
       crossorigin="anonymous" />
     <link
       rel="preload"
-      href="/fonts/Inter-Medium.woff2"
+      href="/fonts/Booton-Medium.woff2"
       as="font"
       type="font/woff2"
       crossorigin="anonymous" />
     <link
       rel="preload"
-      href="/fonts/Inter-SemiBold.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin="anonymous" />
-    <link
-      rel="preload"
-      href="/fonts/Inter-Bold.woff2"
+      href="/fonts/Booton-SemiBold.woff2"
       as="font"
       type="font/woff2"
       crossorigin="anonymous" />

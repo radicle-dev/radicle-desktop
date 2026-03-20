@@ -18,11 +18,11 @@
 </style>
 
 <div class="container">
-  <Button flatRight active={!active} variant="ghost" onclick={disable}>
+  <Button variant="ghost" flatRight active={!active} onclick={disable}>
     Disable
   </Button>
 
-  <Button flatLeft variant="ghost" active={Boolean(active)} onclick={enable}>
+  <Button variant="ghost" flatLeft active={Boolean(active)} onclick={enable}>
     Enable
   </Button>
 </div>

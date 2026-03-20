@@ -3,8 +3,10 @@
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
 
   import { listen } from "@tauri-apps/api/event";
+  import { getCurrentWindow } from "@tauri-apps/api/window";
   import delay from "lodash/delay";
   import { onDestroy, onMount } from "svelte";
+  import { get } from "svelte/store";
 
   import {
     decreaseFontSize,
@@ -16,6 +18,7 @@
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
+  import { hide } from "@app/lib/modal";
   import * as router from "@app/lib/router";
   import {
     setUnlistenNodeEvents,
@@ -23,11 +26,16 @@
   } from "@app/lib/startup.svelte";
   import { isMac, unreachable } from "@app/lib/utils";
 
-  import { theme } from "@app/components/ThemeSwitch.svelte";
-  import Auth from "@app/views/booting/Auth.svelte";
-  import CreateIdentity from "@app/views/booting/CreateIdentity.svelte";
-  import Repos from "@app/views/home/Repos.svelte";
-  import CreateIssue from "@app/views/repo/CreateIssue.svelte";
+  import { codeFont } from "@app/components/CodeFontSwitch.svelte";
+  import {
+    followSystemTheme,
+    loadTheme,
+    theme,
+  } from "@app/components/ThemeSwitch.svelte";
+  import GuideView from "@app/modals/Guide.svelte";
+  import Auth from "@app/views/auth/Auth.svelte";
+  import CreateIdentity from "@app/views/auth/CreateIdentity.svelte";
+  import InboxView from "@app/views/Inbox.svelte";
   import Issue from "@app/views/repo/Issue.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
@@ -36,10 +44,44 @@
 
   import Command from "./components/Command.svelte";
   import ExternalLink from "./components/ExternalLink.svelte";
+  import FullscreenModalPortal from "./components/FullscreenModalPortal.svelte";
   import FullWindowError from "./components/FullWindowError.svelte";
   import Spinner from "./components/Spinner.svelte";
 
   const activeRouteStore = router.activeRouteStore;
+
+  const DRAG_REGION_HEIGHT = 32;
+  const INTERACTIVE_TAGS = new Set([
+    "a",
+    "button",
+    "input",
+    "select",
+    "textarea",
+  ]);
+
+  function isDraggableArea(e: MouseEvent): boolean {
+    if (e.clientY > DRAG_REGION_HEIGHT) return false;
+    let el = e.target as HTMLElement | null;
+    while (el && el !== document.body) {
+      if (INTERACTIVE_TAGS.has(el.tagName.toLowerCase())) return false;
+      if (el.getAttribute("role") === "button") return false;
+      if (el.classList.contains("txt-selectable")) return false;
+      el = el.parentElement;
+    }
+    return true;
+  }
+
+  window
+    .matchMedia("(prefers-color-scheme: dark)")
+    .addEventListener("change", ({ matches }) => {
+      if (get(followSystemTheme)) {
+        theme.set(matches ? "dark" : "light");
+      }
+    });
+
+  if (get(followSystemTheme)) {
+    theme.set(loadTheme());
+  }
 
   let profile = $state<Config>();
 
@@ -90,6 +132,9 @@
     ),
   );
   $effect(() => document.documentElement.setAttribute("data-theme", $theme));
+  $effect(() =>
+    document.documentElement.setAttribute("data-codefont", $codeFont),
+  );
 </script>
 
 <style>
@@ -102,11 +147,18 @@
 </style>
 
 <svelte:document
+  onmousedown={e => {
+    if (window.__TAURI_INTERNALS__ && isDraggableArea(e)) {
+      void getCurrentWindow().startDragging();
+    }
+  }}
   onkeydown={e => {
     const auxiliarKey = isMac() ? e.metaKey : e.ctrlKey;
     // Handles the position of the plus key on different keyboard layouts.
     const plusKey = e.key === "1" || e.key === "=";
-    if (auxiliarKey && (e.key === "+" || plusKey)) {
+    if (e.key === "Escape") {
+      hide();
+    } else if (auxiliarKey && (e.key === "+" || plusKey)) {
       increaseFontSize();
     } else if (auxiliarKey && e.key === "-") {
       decreaseFontSize();
@@ -114,6 +166,7 @@
       resetFontSize();
     }
   }} />
+<FullscreenModalPortal />
 
 {#if $activeRouteStore.resource === "booting"}
   {#if startup.error?.code === "IdentityError.MissingProfile"}
@@ -141,12 +194,12 @@
   {:else if showSpinner}
     <div class="spinner"><Spinner /></div>
   {/if}
-{:else if $activeRouteStore.resource === "home"}
-  <Repos {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "inbox"}
+  <InboxView {...$activeRouteStore.params} />
+{:else if $activeRouteStore.resource === "guide"}
+  <GuideView {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.home"}
   <RepoHome {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "repo.createIssue"}
-  <CreateIssue {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.issue"}
   <Issue {...$activeRouteStore.params} />
 {:else if $activeRouteStore.resource === "repo.issues"}

@@ -33,32 +33,30 @@
     min-height: 2rem;
     padding: 0 0.75rem;
     white-space: nowrap;
-    font-size: var(--font-size-small);
-    font-weight: var(--font-weight-regular);
-    color: var(--color-foreground-contrast);
-    clip-path: var(--1px-corner-fill);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-primary);
+    border-radius: var(--border-radius-sm);
   }
   .item.disabled {
-    color: var(--color-foreground-disabled);
+    color: var(--color-text-disabled);
   }
   .item:hover,
   .selected {
-    background-color: var(--color-fill-ghost);
+    background-color: var(--color-surface-subtle);
   }
   .selected {
-    font-weight: var(--font-weight-semibold);
-    color: var(--color-foreground-contrast);
-    background-color: var(--color-fill-ghost);
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-subtle);
   }
   .item:hover.selected {
-    background-color: var(--color-fill-ghost-hover);
+    background-color: var(--color-surface-mid);
   }
   .item:hover.selected.disabled {
-    background-color: var(--color-fill-ghost);
+    background-color: var(--color-surface-subtle);
   }
   .item:hover.disabled {
     cursor: not-allowed;
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-canvas);
   }
 </style>
 

@@ -3,7 +3,7 @@
   import type { FileDiff } from "@bindings/diff/FileDiff";
 
   import Diff from "@app/components/Diff.svelte";
-  import File from "@app/components/File.svelte";
+  import FileBlock from "@app/components/FileBlock.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Path from "@app/components/Path.svelte";
 
@@ -58,32 +58,30 @@
 
 <style>
   .added {
-    color: var(--color-foreground-success);
-    background-color: var(--color-fill-diff-green-light);
+    color: var(--color-feedback-success-text);
+    background-color: var(--color-feedback-success-bg);
   }
   .deleted {
-    color: var(--color-foreground-red);
-    background-color: var(--color-fill-diff-red-light);
+    color: var(--color-feedback-error-text);
+    background-color: var(--color-feedback-error-bg);
   }
   .moved,
   .copied {
-    color: var(--color-foreground-dim);
-    background: var(--color-fill-ghost);
+    color: var(--color-text-secondary);
+    background: var(--color-surface-subtle);
   }
   .stats {
-    font-size: var(--font-size-tiny);
-    font-family: var(--font-family-monospace);
-    font-weight: var(--font-weight-semibold);
+    font: var(--txt-code-regular);
   }
 </style>
 
 {#snippet emptyPlaceholder()}
   <div class="global-flex" style:margin="1rem 0" style:justify-content="center">
-    <Icon name="none" />Empty file
+    Empty file
   </div>
 {/snippet}
 
-<File {expanded}>
+<FileBlock {expanded}>
   {#snippet leftHeader()}
     {#if file.status === "moved" || file.status === "copied"}
       <span style="display: flex; align-items: center; flex-wrap: wrap;">
@@ -96,23 +94,23 @@
     {/if}
 
     {#if file.status === "added"}
-      <span class="global-counter added">Added</span>
+      <span class="global-chip added">Added</span>
     {:else if file.status === "deleted"}
-      <span class="global-counter deleted">Deleted</span>
+      <span class="global-chip deleted">Deleted</span>
     {:else if file.status === "moved"}
-      <span class="global-counter moved">Moved</span>
+      <span class="global-chip moved">Moved</span>
     {:else if file.status === "copied"}
-      <span class="global-counter copied">Copied</span>
+      <span class="global-chip copied">Copied</span>
     {/if}
   {/snippet}
 
   {#snippet rightHeader()}
     {#if file.diff.type === "plain" && file.diff.hunks.length > 0}
       <div class="stats">
-        <span style:color="var(--color-foreground-success)">
+        <span style:color="var(--color-feedback-success-text)">
           +{file.diff.stats.additions}
         </span>
-        <span style:color="var(--color-foreground-red)">
+        <span style:color="var(--color-feedback-error-text)">
           -{file.diff.stats.deletions}
         </span>
       </div>
@@ -149,4 +147,4 @@
   {:else}
     {@render emptyPlaceholder()}
   {/if}
-</File>
+</FileBlock>

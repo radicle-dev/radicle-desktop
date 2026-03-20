@@ -2,6 +2,14 @@
   box-sizing: border-box;
 }
 
+:root {
+  --border-radius-xs: 0.0625rem;
+  --border-radius-sm: 0.125rem;
+  --border-radius-md: 0.25rem;
+  --border-radius-lg: 0.5rem;
+  --border-radius-full: 99rem;
+}
+
 html {
   height: 100%;
   width: 100%;
@@ -18,8 +26,8 @@ body {
   width: 100%;
   margin: 0;
   padding: 0;
-  color: var(--color-foreground-contrast);
-  background-color: var(--color-background-default);
+  color: var(--color-text-primary);
+  background-color: var(--color-surface-base);
 }
 
 a,
@@ -44,28 +52,8 @@ a {
 }
 
 ::selection {
-  background: var(--color-fill-yellow);
-  color: var(--color-foreground-black);
-}
-
-.global-oid {
-  color: var(--color-foreground-emphasized);
-  font-size: var(--font-size-small);
-  font-family: var(--font-family-monospace);
-  font-weight: var(--font-weight-regular);
-}
-
-.global-commit {
-  color: var(--color-foreground-dim);
-  font-size: var(--font-size-small);
-  font-family: var(--font-family-monospace);
-  font-weight: var(--font-weight-semibold);
-}
-
-.global-none {
-  color: var(--color-foreground-disabled);
-  font-weight: var(--font-weight-bold);
-  font-family: var(--font-family-monospace);
+  background: var(--color-feedback-warning-border);
+  color: var(--color-text-primary);
 }
 
 .global-flex {
@@ -76,7 +64,7 @@ a {
 
 .global-tab {
   padding-left: 0.5rem;
-  border-left: 1px solid var(--color-fill-ghost-hover);
+  border-left: 1px solid var(--color-border-mid);
   margin-left: 1rem;
   flex-direction: column;
   justify-content: space-between;
@@ -84,21 +72,35 @@ a {
   column-gap: 0.5rem;
 }
 
-.global-counter {
+.global-chip {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--color-fill-counter);
-  clip-path: var(--1px-corner-fill);
+  background-color: var(--color-surface-strong);
+  border-radius: var(--border-radius-sm);
   height: 1.5rem;
   padding: 0 0.5rem;
   min-width: 1.5rem;
-  font-weight: var(--font-weight-regular);
+  font: var(--txt-body-s-regular);
+  flex-shrink: 0;
+}
+
+.global-counter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 1.25rem;
+  padding: 0.125rem 0.25rem;
+  border-radius: 1px;
+  background-color: var(--color-surface-alpha-subtle);
+  color: var(--color-text-secondary);
+  font: var(--txt-body-s-regular);
   flex-shrink: 0;
 }
 
 .global-link {
-  color: var(--color-foreground-default);
+  color: var(--color-text-secondary);
   text-decoration: none;
 }
 .global-link:hover {
@@ -113,9 +115,9 @@ a {
     --os-handle-border-radius: 4px;
     --os-padding-perpendicular: 4px;
     --os-padding-axis: 2px;
-    --os-handle-bg: var(--color-border-default);
-    --os-handle-bg-hover: var(--color-border-default);
-    --os-handle-bg-active: var(--color-border-default);
+    --os-handle-bg: var(--color-border-mid);
+    --os-handle-bg-hover: var(--color-border-mid);
+    --os-handle-bg-active: var(--color-border-mid);
     --os-track-bg: transparent;
   }
 }
@@ -126,170 +128,6 @@ a {
 
 [data-theme="light"] {
   --elevation-low: 0 0 16px 0 #00000022;
-}
-
-:root {
-  --1px-corner-fill: polygon(
-    0 2px,
-    2px 2px,
-    2px 0,
-    calc(100% - 2px) 0,
-    calc(100% - 2px) 2px,
-    100% 2px,
-    100% calc(100% - 2px),
-    calc(100% - 2px) calc(100% - 2px),
-    calc(100% - 2px) calc(100% - 2px),
-    calc(100% - 2px) 100%,
-    2px 100%,
-    2px calc(100% - 2px),
-    0 calc(100% - 2px)
-  );
-
-  --1px-top-corner-fill: polygon(
-    0 2px,
-    2px 2px,
-    2px 0,
-    calc(100% - 2px) 0,
-    calc(100% - 2px) 2px,
-    100% 2px,
-    100% calc(100% - 2px),
-    100% 4px,
-    100% 100%,
-    0 100%
-  );
-
-  --1px-bottom-corner-fill: polygon(
-    0 0,
-    100% 0,
-    100% calc(100% - 2px),
-    calc(100% - 2px) calc(100% - 2px),
-    calc(100% - 2px) 100%,
-    2px 100%,
-    2px calc(100% - 2px),
-    0 calc(100% - 2px)
-  );
-
-  --2px-corner-fill: polygon(
-    0 4px,
-    2px 4px,
-    2px 2px,
-    4px 2px,
-    4px 0,
-    calc(100% - 4px) 0,
-    calc(100% - 4px) 2px,
-    calc(100% - 2px) 2px,
-    calc(100% - 2px) 4px,
-    100% 4px,
-    100% calc(100% - 4px),
-    calc(100% - 2px) calc(100% - 4px),
-    calc(100% - 2px) calc(100% - 2px),
-    calc(100% - 4px) calc(100% - 2px),
-    calc(100% - 4px) 100%,
-    4px 100%,
-    4px calc(100% - 2px),
-    2px calc(100% - 2px),
-    2px calc(100% - 4px),
-    0 calc(100% - 4px)
-  );
-
-  --2px-top-corner-fill: polygon(
-    0 4px,
-    2px 4px,
-    2px 2px,
-    4px 2px,
-    4px 0,
-    calc(100% - 4px) 0,
-    calc(100% - 4px) 2px,
-    calc(100% - 2px) 2px,
-    calc(100% - 2px) 4px,
-    100% 4px,
-    100% 100%,
-    0 100%
-  );
-
-  --2px-bottom-corner-fill: polygon(
-    0 0,
-    100% 0,
-    100% calc(100% - 4px),
-    calc(100% - 2px) calc(100% - 4px),
-    calc(100% - 2px) calc(100% - 2px),
-    calc(100% - 4px) calc(100% - 2px),
-    calc(100% - 4px) 100%,
-    4px 100%,
-    4px calc(100% - 2px),
-    2px calc(100% - 2px),
-    2px calc(100% - 4px),
-    0 calc(100% - 4px)
-  );
-
-  --3px-corner-fill: polygon(
-    0 6px,
-    2px 6px,
-    2px 4px,
-    4px 4px,
-    4px 2px,
-    6px 2px,
-    6px 0,
-    calc(100% - 6px) 0,
-    calc(100% - 6px) 2px,
-    calc(100% - 4px) 2px,
-    calc(100% - 4px) 4px,
-    calc(100% - 2px) 4px,
-    calc(100% - 2px) 6px,
-    100% 6px,
-    100% calc(100% - 6px),
-    calc(100% - 2px) calc(100% - 6px),
-    calc(100% - 2px) calc(100% - 4px),
-    calc(100% - 4px) calc(100% - 4px),
-    calc(100% - 4px) calc(100% - 2px),
-    calc(100% - 6px) calc(100% - 2px),
-    calc(100% - 6px) 100%,
-    6px 100%,
-    6px calc(100% - 2px),
-    4px calc(100% - 2px),
-    4px calc(100% - 4px),
-    2px calc(100% - 4px),
-    2px calc(100% - 6px),
-    0 calc(100% - 6px)
-  );
-
-  --3px-top-corner-fill: polygon(
-    0 6px,
-    2px 6px,
-    2px 4px,
-    4px 4px,
-    4px 2px,
-    6px 2px,
-    6px 0,
-    calc(100% - 6px) 0,
-    calc(100% - 6px) 2px,
-    calc(100% - 4px) 2px,
-    calc(100% - 4px) 4px,
-    calc(100% - 2px) 4px,
-    calc(100% - 2px) 6px,
-    100% 6px,
-    100% 100%,
-    0 100%
-  );
-
-  --3px-bottom-corner-fill: polygon(
-    0 0,
-    100% 0,
-    100% calc(100% - 6px),
-    calc(100% - 2px) calc(100% - 6px),
-    calc(100% - 2px) calc(100% - 4px),
-    calc(100% - 4px) calc(100% - 4px),
-    calc(100% - 4px) calc(100% - 2px),
-    calc(100% - 6px) calc(100% - 2px),
-    calc(100% - 6px) 100%,
-    6px 100%,
-    6px calc(100% - 2px),
-    4px calc(100% - 2px),
-    4px calc(100% - 4px),
-    2px calc(100% - 4px),
-    2px calc(100% - 6px),
-    0 calc(100% - 6px)
-  );
 }
 
 /*

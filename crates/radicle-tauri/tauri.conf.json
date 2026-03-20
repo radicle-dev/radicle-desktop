@@ -14,7 +14,9 @@
       {
         "title": "Radicle",
         "minWidth": 960,
-        "minHeight": 600
+        "minHeight": 600,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true
       }
     ],
     "security": {

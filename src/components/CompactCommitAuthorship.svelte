@@ -17,7 +17,7 @@
 <style>
   .authorship {
     display: flex;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     column-gap: 0.5rem;
     align-items: center;
     white-space: nowrap;
@@ -28,25 +28,19 @@
     flex-wrap: nowrap;
     white-space: nowrap;
     gap: 0.5rem;
-    font-family: var(--font-family-monospace);
-    font-weight: var(--font-weight-semibold);
+    font: var(--txt-code-regular);
   }
   .label {
-    font-family: var(--font-family-sans-serif);
-    font-weight: var(--font-weight-regular);
-    color: var(--color-foreground-dim);
+    color: var(--color-text-secondary);
   }
   .avatar {
     width: 1rem;
     height: 1rem;
-    clip-path: var(--1px-corner-fill);
   }
 </style>
 
 <div class="authorship">
-  <HoverPopover
-    stylePopoverPositionLeft="-8rem"
-    stylePopoverPositionBottom="1.5rem">
+  <HoverPopover placement="top-start">
     {#snippet toggle()}
       <div style="display: flex;">
         {#if commit.author.email === commit.committer.email}

@@ -1,23 +1,29 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  type Variant = "secondary" | "ghost" | "naked" | "outline";
+
   interface Props {
     id?: string;
     children: Snippet;
-    variant: "primary" | "secondary" | "ghost" | "success" | "danger";
-    onclick?: () => void;
+    variant?: Variant;
+    onclick?: (e: MouseEvent) => void;
     disabled?: boolean;
     active?: boolean;
     flatLeft?: boolean;
     flatRight?: boolean;
     title?: string;
     styleHeight?: "2rem" | "2.5rem";
+    styleWidth?: string;
+    styleJustifyContent?: string;
+    stylePadding?: string;
+    keyShortcuts?: string;
   }
 
   const {
     id,
     children,
-    variant,
+    variant = "ghost",
     onclick = undefined,
     disabled = false,
     active = false,
@@ -25,396 +31,149 @@
     flatRight = false,
     title,
     styleHeight = "2rem",
+    styleWidth = undefined,
+    styleJustifyContent = undefined,
+    stylePadding = "0 0.5rem",
+    keyShortcuts,
   }: Props = $props();
 
-  const style = $derived(
-    `--button-color-1: var(--color-fill-${variant});` +
-      `--button-color-2: var(--color-fill-${variant}-hover);` +
-      `--button-color-3: var(--color-fill-${variant}-shade);` +
-      // The ghost colors are called --color-fill-counter and --color-fill-counter-emphasized.
-      `--button-color-4: var(--color-fill${variant === "ghost" ? "" : `-${variant}`}-counter);` +
-      `--text-color: ${variant === "ghost" ? "var(--color-foreground-contrast)" : "var(--color-foreground-white)"};` +
-      `--text-color-active: ${variant === "ghost" ? "var(--color-foreground-emphasized)" : "var(--color-foreground-white)"};`,
-  );
+  const fills: Record<Variant, string> = {
+    secondary: "var(--color-surface-brand-secondary)",
+    ghost: "var(--color-surface-subtle)",
+    naked: "transparent",
+    outline: "transparent",
+  };
+  const fillsHover: Record<Variant, string> = {
+    secondary: "var(--color-surface-brand-secondary)",
+    ghost: "var(--color-surface-mid)",
+    naked: "var(--color-surface-subtle)",
+    outline: "var(--color-surface-subtle)",
+  };
+  const fillsActive: Record<Variant, string> = {
+    secondary: "var(--color-surface-brand-primary)",
+    ghost: "var(--color-surface-strong)",
+    naked: "var(--color-surface-strong)",
+    outline: "var(--color-surface-strong)",
+  };
+  const colors: Record<Variant, string> = {
+    secondary: "var(--color-text-on-brand)",
+    ghost: "var(--color-text-primary)",
+    naked: "inherit",
+    outline: "inherit",
+  };
+  const colorsHover: Record<Variant, string> = {
+    secondary: "var(--color-text-on-brand)",
+    ghost: "var(--color-text-primary)",
+    naked: "inherit",
+    outline: "var(--color-text-primary)",
+  };
+  const colorsActive: Record<Variant, string> = {
+    secondary: "var(--color-text-on-brand)",
+    ghost: "var(--color-text-primary)",
+    naked: "inherit",
+    outline: "var(--color-text-primary)",
+  };
 </script>
 
 <style>
-  .container {
+  .button {
     white-space: nowrap;
 
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     user-select: none;
 
-    color: var(--text-color);
-
-    column-gap: 0;
-    row-gap: 0;
-    display: grid;
-    grid-template-columns: 2px 2px auto 2px 2px;
-    grid-template-rows: 2px 2px auto 2px 2px;
-    grid-template-areas:
-      "p1-1 p1-2 p1-3 p1-4 p1-5"
-      "p2-1 p2-2 p2-3 p2-4 p2-5"
-      "p3-1 p3-2 p3-3 p3-4 p3-5"
-      "p4-1 p4-2 p4-3 p4-4 p4-5"
-      "p5-1 p5-2 p5-3 p5-4 p5-5";
-  }
-
-  .container:hover:not(.disabled) .p1-3,
-  .container:hover:not(.disabled) .p2-2,
-  .container:hover:not(.disabled) .p2-4,
-  .container:hover:not(.disabled) .p3-1,
-  .container:hover:not(.disabled) .p3-3,
-  .container:hover:not(.disabled) .p4-2 {
-    background-color: var(--button-color-2);
-  }
-
-  .container:hover:not(.disabled) .p2-3,
-  .container:hover:not(.disabled) .p3-2 {
-    background-color: var(--button-color-4);
-  }
-
-  .container:hover:not(.disabled) .p3-4,
-  .container:hover:not(.disabled) .p3-5,
-  .container:hover:not(.disabled) .p4-3,
-  .container:hover:not(.disabled) .p4-4,
-  .container:hover:not(.disabled) .p5-3 {
-    background-color: var(--button-color-1);
-  }
-
-  .container.active:not(.disabled) .p1-3,
-  .container.active:not(.disabled) .p2-2,
-  .container.active:not(.disabled) .p2-4,
-  .container.active:not(.disabled) .p3-1,
-  .container.active:not(.disabled) .p3-3,
-  .container.active:not(.disabled) .p3-5,
-  .container.active:not(.disabled) .p4-2,
-  .container.active:not(.disabled) .p4-4,
-  .container.active:not(.disabled) .p5-3,
-  .container:active:not(.disabled) .p1-3,
-  .container:active:not(.disabled) .p2-2,
-  .container:active:not(.disabled) .p2-4,
-  .container:active:not(.disabled) .p3-1,
-  .container:active:not(.disabled) .p3-3,
-  .container:active:not(.disabled) .p3-5,
-  .container:active:not(.disabled) .p4-2,
-  .container:active:not(.disabled) .p4-4,
-  .container:active:not(.disabled) .p5-3 {
-    background-color: var(--button-color-1);
-  }
-
-  .container.active:not(.disabled) .p2-3,
-  .container.active:not(.disabled) .p3-2,
-  .container:active:not(.disabled) .p2-3,
-  .container:active:not(.disabled) .p3-2 {
-    background-color: var(--button-color-3);
-  }
-
-  .container.active:not(.disabled) .p3-4,
-  .container.active:not(.disabled) .p4-3,
-  .container:active:not(.disabled) .p3-4,
-  .container:active:not(.disabled) .p4-3 {
-    background-color: var(--button-color-2);
-  }
-
-  .container.disabled {
-    color: var(--color-foreground-disabled);
-  }
-  .container.active:not(.disabled) {
-    color: var(--text-color-active);
-  }
-
-  .disabled .p1-3,
-  .disabled .p2-2,
-  .disabled .p2-3,
-  .disabled .p2-4,
-  .disabled .p3-1,
-  .disabled .p3-2,
-  .disabled .p3-3,
-  .disabled .p3-4,
-  .disabled .p3-5,
-  .disabled .p4-2,
-  .disabled .p4-3,
-  .disabled .p4-4,
-  .disabled .p5-3 {
-    background-color: var(--color-fill-ghost);
-  }
-
-  .flat-right .p1-4,
-  .flat-right .p1-5,
-  .flat-right .p2-5,
-  .flat-right .p3-4 {
-    background-color: var(--button-color-1);
-  }
-  .flat-right .p2-4 {
-    background-color: var(--button-color-2);
-  }
-  .flat-right .p4-5,
-  .flat-right .p5-4,
-  .flat-right .p5-5 {
-    background-color: var(--button-color-3);
-  }
-
-  .container:hover:not(.disabled).flat-right .p1-4,
-  .container:hover:not(.disabled).flat-right .p1-5,
-  .container:hover:not(.disabled).flat-right .p2-5,
-  .container:hover:not(.disabled).flat-right .p3-4 {
-    background-color: var(--button-color-2);
-  }
-  .container:hover:not(.disabled).flat-right .p2-4 {
-    background-color: var(--button-color-4);
-  }
-  .container:hover:not(.disabled).flat-right .p4-5,
-  .container:hover:not(.disabled).flat-right .p5-4,
-  .container:hover:not(.disabled).flat-right .p5-5 {
-    background-color: var(--button-color-1);
-  }
-
-  .container.active:not(.disabled).flat-right .p1-4,
-  .container.active:not(.disabled).flat-right .p1-5,
-  .container.active:not(.disabled).flat-right .p2-5,
-  .container.active:not(.disabled).flat-right .p3-4,
-  .container.active:not(.disabled).flat-right .p4-5,
-  .container.active:not(.disabled).flat-right .p5-4,
-  .container.active:not(.disabled).flat-right .p5-5,
-  .container:active:not(.disabled).flat-right .p1-4,
-  .container:active:not(.disabled).flat-right .p1-5,
-  .container:active:not(.disabled).flat-right .p2-5,
-  .container:active:not(.disabled).flat-right .p3-4,
-  .container:active:not(.disabled).flat-right .p4-5,
-  .container:active:not(.disabled).flat-right .p5-4,
-  .container:active:not(.disabled).flat-right .p5-5 {
-    background-color: var(--button-color-1);
-  }
-  .container.active:not(.disabled).flat-right .p2-4,
-  .container:active:not(.disabled).flat-right .p2-4 {
-    background-color: var(--button-color-3);
-  }
-  .container.active:not(.disabled).flat-right .p3-5,
-  .container.active:not(.disabled).flat-right .p4-4,
-  .container:active:not(.disabled).flat-right .p3-5,
-  .container:active:not(.disabled).flat-right .p4-4 {
-    background-color: var(--button-color-2);
-  }
-
-  .flat-left .p1-1,
-  .flat-left .p1-2,
-  .flat-left .p2-1,
-  .flat-left .p3-2 {
-    background-color: var(--button-color-1);
-  }
-  .flat-left .p2-2,
-  .flat-left .p3-1 {
-    background-color: var(--button-color-2);
-  }
-  .flat-left .p4-1,
-  .flat-left .p4-2,
-  .flat-left .p5-1,
-  .flat-left .p5-2 {
-    background-color: var(--button-color-3);
-  }
-
-  .container:hover:not(.disabled).flat-left .p1-1,
-  .container:hover:not(.disabled).flat-left .p1-2,
-  .container:hover:not(.disabled).flat-left .p2-1,
-  .container:hover:not(.disabled).flat-left .p3-2 {
-    background-color: var(--button-color-2);
-  }
-  .container:hover:not(.disabled).flat-left .p2-2,
-  .container:hover:not(.disabled).flat-left .p3-1 {
-    background-color: var(--button-color-4);
-  }
-  .container:hover:not(.disabled).flat-left .p4-1,
-  .container:hover:not(.disabled).flat-left .p4-2,
-  .container:hover:not(.disabled).flat-left .p5-1,
-  .container:hover:not(.disabled).flat-left .p5-2 {
-    background-color: var(--button-color-1);
-  }
-
-  .container.active:not(.disabled).flat-left .p1-1,
-  .container.active:not(.disabled).flat-left .p1-2,
-  .container.active:not(.disabled).flat-left .p2-1,
-  .container.active:not(.disabled).flat-left .p3-2,
-  .container.active:not(.disabled).flat-left .p4-1,
-  .container.active:not(.disabled).flat-left .p4-2,
-  .container.active:not(.disabled).flat-left .p5-1,
-  .container.active:not(.disabled).flat-left .p5-2,
-  .container:active:not(.disabled).flat-left .p1-1,
-  .container:active:not(.disabled).flat-left .p1-2,
-  .container:active:not(.disabled).flat-left .p2-1,
-  .container:active:not(.disabled).flat-left .p3-2,
-  .container:active:not(.disabled).flat-left .p4-1,
-  .container:active:not(.disabled).flat-left .p4-2,
-  .container:active:not(.disabled).flat-left .p5-1,
-  .container:active:not(.disabled).flat-left .p5-2 {
-    background-color: var(--button-color-1);
-  }
-  .container.active:not(.disabled).flat-left .p2-2,
-  .container.active:not(.disabled).flat-left .p3-1,
-  .container:active:not(.disabled).flat-left .p2-2,
-  .container:active:not(.disabled).flat-left .p3-1 {
-    background-color: var(--button-color-3);
-  }
-  .container.active:not(.disabled).flat-left .p4-2,
-  .container:active:not(.disabled).flat-left .p4-2 {
-    background-color: var(--button-color-2);
-  }
-
-  .p1-1 {
-    grid-area: p1-1;
-    background-color: transparent;
-  }
-  .p1-2 {
-    grid-area: p1-2;
-    background-color: transparent;
-  }
-  .p1-3 {
-    grid-area: p1-3;
-    background-color: var(--button-color-1);
-  }
-  .p1-4 {
-    grid-area: p1-4;
-    background-color: transparent;
-  }
-  .p1-5 {
-    grid-area: p1-5;
-    background-color: transparent;
-  }
-
-  .p2-1 {
-    grid-area: p2-1;
-    background-color: transparent;
-  }
-  .p2-2 {
-    grid-area: p2-2;
-    background-color: var(--button-color-1);
-  }
-  .p2-3 {
-    grid-area: p2-3;
-    background-color: var(--button-color-2);
-  }
-  .p2-4 {
-    grid-area: p2-4;
-    background-color: var(--button-color-1);
-  }
-  .p2-5 {
-    grid-area: p2-5;
-    background-color: transparent;
-  }
-
-  .p3-1 {
-    grid-area: p3-1;
-    background-color: var(--button-color-1);
-  }
-  .p3-2 {
-    grid-area: p3-2;
-    background-color: var(--button-color-2);
-  }
-  .p3-3 {
-    grid-area: p3-3;
-    background-color: var(--button-color-1);
-    padding: 0 0.5rem;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-  }
-  .p3-4 {
-    grid-area: p3-4;
-    background-color: var(--button-color-3);
-  }
-  .p3-5 {
-    grid-area: p3-5;
-    background-color: var(--button-color-3);
+    border-radius: var(--border-radius-sm);
+    border: none;
+    background-color: var(--color-fill);
+    color: var(--color-text);
+    transition: background-color 0.1s ease;
   }
 
-  .p4-1 {
-    grid-area: p4-1;
-    background-color: transparent;
-  }
-  .p4-2 {
-    grid-area: p4-2;
-    background-color: var(--button-color-1);
-  }
-  .p4-3 {
-    grid-area: p4-3;
-    background-color: var(--button-color-3);
-  }
-  .p4-4 {
-    grid-area: p4-4;
-    background-color: var(--button-color-3);
-  }
-  .p4-5 {
-    grid-area: p4-5;
-    background-color: transparent;
+  .button:hover:not(.disabled) {
+    background-color: var(--color-fill-hover);
+    color: var(--color-text-hover);
   }
 
-  .p5-1 {
-    grid-area: p5-1;
-    background-color: transparent;
+  .button.active:not(.disabled),
+  .button:active:not(.disabled) {
+    background-color: var(--color-fill-active);
+    color: var(--color-text-active);
   }
-  .p5-2 {
-    grid-area: p5-2;
-    background-color: transparent;
+
+  .button.disabled {
+    cursor: default;
+    color: var(--color-text-disabled);
   }
-  .p5-3 {
-    grid-area: p5-3;
-    background-color: var(--button-color-3);
+
+  .button.secondary.disabled,
+  .button.ghost.disabled {
+    background-color: var(--color-surface-subtle);
   }
-  .p5-4 {
-    grid-area: p5-4;
-    background-color: transparent;
+
+  .button.naked.disabled {
+    cursor: inherit;
   }
-  .p5-5 {
-    grid-area: p5-5;
-    background-color: transparent;
+
+  .button.outline {
+    border: 1px solid var(--color-fill);
+  }
+
+  .button.outline.active:not(.disabled),
+  .button.outline:active:not(.disabled) {
+    border-color: var(--color-fill-active);
+  }
+
+  .button.outline.disabled {
+    border-color: var(--color-border-subtle);
+  }
+
+  .button.flat-left {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  .button.flat-right {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
   }
 </style>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div
   {id}
-  class="container active"
-  style:cursor={!disabled ? "pointer" : "default"}
-  style:height={styleHeight}
+  class="button txt-body-m-medium"
+  class:secondary={variant === "secondary"}
+  class:ghost={variant === "ghost"}
+  class:naked={variant === "naked"}
+  class:outline={variant === "outline"}
   class:disabled
   class:active
-  class:flat-right={flatRight}
   class:flat-left={flatLeft}
+  class:flat-right={flatRight}
+  style:cursor={disabled
+    ? variant === "naked"
+      ? "inherit"
+      : "default"
+    : "pointer"}
+  style:height={styleHeight}
+  style:width={styleWidth}
+  style:padding={stylePadding}
+  style:justify-content={styleJustifyContent ??
+    (styleWidth ? "center" : undefined)}
+  style:--color-fill={fills[variant]}
+  style:--color-fill-hover={fillsHover[variant]}
+  style:--color-fill-active={fillsActive[variant]}
+  style:--color-text={colors[variant]}
+  style:--color-text-hover={colorsHover[variant]}
+  style:--color-text-active={colorsActive[variant]}
+  aria-keyshortcuts={keyShortcuts}
   onclick={!disabled ? onclick : undefined}
   role="button"
   tabindex="0"
-  {title}
-  {style}>
-  <div class="p1-1"></div>
-  <div class="p1-2"></div>
-  <div class="p1-3"></div>
-  <div class="p1-4"></div>
-  <div class="p1-5"></div>
-
-  <div class="p2-1"></div>
-  <div class="p2-2"></div>
-  <div class="p2-3"></div>
-  <div class="p2-4"></div>
-  <div class="p2-5"></div>
-
-  <div class="p3-1"></div>
-  <div class="p3-2"></div>
-  <div class="p3-3 txt-semibold txt-small">
-    {@render children()}
-  </div>
-  <div class="p3-4"></div>
-  <div class="p3-5"></div>
-
-  <div class="p4-1"></div>
-  <div class="p4-2"></div>
-  <div class="p4-3"></div>
-  <div class="p4-4"></div>
-  <div class="p4-5"></div>
-
-  <div class="p5-1"></div>
-  <div class="p5-2"></div>
-  <div class="p5-3"></div>
-  <div class="p5-4"></div>
-  <div class="p5-5"></div>
+  {title}>
+  {@render children()}
 </div>

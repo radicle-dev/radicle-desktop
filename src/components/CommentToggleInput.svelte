@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Embed } from "@bindings/cob/thread/Embed";
 
-  import Border from "@app/components/Border.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
 
   interface Props {
@@ -39,9 +38,14 @@
 <style>
   .inactive {
     padding: 0 0.75rem;
-    font-size: var(--font-size-small);
-    color: var(--color-fill-gray);
-    font-family: var(--font-family-sans-serif);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-quaternary);
+  }
+  .hoverable {
+    background-color: var(--color-surface-base);
+  }
+  .hoverable:hover {
+    background-color: var(--color-surface-canvas);
   }
 </style>
 
@@ -71,12 +75,19 @@
       }
     }} />
 {:else}
-  <Border
-    hoverable
-    styleCursor="text"
-    variant="ghost"
-    styleHeight="2.5rem"
-    styleWidth="100%"
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <div
+    class="hoverable"
+    style:border="1px solid var(--color-border-subtle)"
+    style:border-radius="var(--border-radius-sm)"
+    style:display="flex"
+    style:gap="0.5rem"
+    style:align-items="center"
+    style:cursor="text"
+    style:height="2rem"
+    style:width="100%"
+    role="button"
+    tabindex="0"
     onclick={e => {
       e.preventDefault();
       e.stopPropagation();
@@ -89,5 +100,5 @@
     <div style:width="100%" class="inactive">
       {placeholder}
     </div>
-  </Border>
+  </div>
 {/if}

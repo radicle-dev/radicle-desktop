@@ -8,7 +8,6 @@
 
   import { scrollIntoView } from "@app/lib/utils";
 
-  import Border from "@app/components/Border.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -67,8 +66,8 @@
   const replies = $derived(thread.replies);
   const style = $derived(
     replies.length > 0 || showReplyForm
-      ? "--local-clip-path: var(--2px-top-corner-fill)"
-      : "--local-clip-path: var(--2px-corner-fill)",
+      ? `--local-border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0`
+      : `--local-border-radius: var(--border-radius-sm)`,
   );
 </script>
 
@@ -77,24 +76,12 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    font-family: var(--font-family-sans-serif);
   }
 
   .top-level-comment {
-    position: relative;
-    z-index: 1;
-  }
-  /* We put the background and clip-path in a separate element to prevent
-     popovers being clipped in the main element. */
-  .top-level-comment::after {
-    position: absolute;
-    z-index: -1;
-    content: " ";
-    background-color: var(--color-background-float);
-    clip-path: var(--local-clip-path);
-    width: 100%;
-    height: 100%;
-    top: 0;
+    background-color: var(--color-surface-canvas);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--local-border-radius);
   }
 </style>
 
@@ -112,9 +99,9 @@
           reactions={reply.reactions}
           timestamp={reply.edits[0].timestamp}
           body={reply.edits.slice(-1)[0].body}
-          editComment={canEditComment(root.author.did) &&
-            editComment?.bind(null, root.id)}
-          reactOnComment={reactOnComment?.bind(null, root.id)} />
+          editComment={canEditComment(reply.author.did) &&
+            editComment?.bind(null, reply.id)}
+          reactOnComment={reactOnComment?.bind(null, reply.id)} />
       {/each}
     {/if}
     {#if createReply && showReplyForm}
@@ -166,14 +153,24 @@
   {#if replies.length > 0 || (createReply && showReplyForm)}
     {#if inline}
       <div
-        style:background-color="var(--color-background-deafult)"
-        style:border="2px solid var(--color-border-hint)">
+        style:background-color="var(--color-surface-canvas)"
+        style:border="1px solid var(--color-border-subtle)">
         {@render repliesSnippet()}
       </div>
     {:else}
-      <Border variant="ghost" styleOverflow="hidden" flatTop={!inline}>
+      <div
+        style:border="1px solid var(--color-border-subtle)"
+        style:border-top="none"
+        style:border-radius="var(--border-radius-sm)"
+        style:border-top-left-radius={!inline ? "0" : undefined}
+        style:border-top-right-radius={!inline ? "0" : undefined}
+        style:display="flex"
+        style:gap="0.5rem"
+        style:align-items="center"
+        style:background-color="var(--color-surface-canvas)"
+        style:overflow="hidden">
         {@render repliesSnippet()}
-      </Border>
+      </div>
     {/if}
   {/if}
 </div>

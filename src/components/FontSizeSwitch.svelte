@@ -14,21 +14,21 @@
 
 <div class="global-flex" style:gap="0">
   <Button
-    flatRight
     variant="ghost"
+    flatRight
     onclick={() => {
       decreaseFontSize();
     }}>
     <Icon name="minus" />
   </Button>
 
-  <Button flatRight flatLeft active variant="ghost">
+  <Button variant="ghost" flatRight flatLeft active>
     {fontSettings.size}
   </Button>
 
   <Button
-    flatLeft
     variant="ghost"
+    flatLeft
     onclick={() => {
       increaseFontSize();
     }}>

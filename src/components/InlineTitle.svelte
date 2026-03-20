@@ -18,19 +18,19 @@
 
 <style>
   .content :global(code) {
-    font-family: var(--font-family-monospace);
+    font-family: monospace;
     padding: 0.125rem 0.25rem;
-    background-color: var(--color-fill-ghost);
+    background-color: var(--color-surface-subtle);
     font-size: inherit;
   }
 </style>
 
 <span
   class="content"
-  class:txt-large={fontSize === "large"}
-  class:txt-medium={fontSize === "medium"}
-  class:txt-regular={fontSize === "regular"}
-  class:txt-small={fontSize === "small"}
-  class:txt-tiny={fontSize === "tiny"}>
+  class:txt-heading-l={fontSize === "large"}
+  class:txt-heading-m={fontSize === "medium"}
+  class:txt-body-l-regular={fontSize === "regular"}
+  class:txt-body-m-regular={fontSize === "small"}
+  class:txt-body-s-regular={fontSize === "tiny"}>
   {@html dompurify.sanitize(formatInlineTitle(escape(content)))}
 </span>

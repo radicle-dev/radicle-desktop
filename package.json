@@ -25,6 +25,7 @@
   },
   "license": "GPL-3.0-only",
   "dependencies": {
+    "@floating-ui/dom": "^1.7.6",
     "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-clipboard-manager": "^2.2.2",
     "@tauri-apps/plugin-dialog": "^2.2.1",

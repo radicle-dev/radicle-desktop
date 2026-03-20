@@ -229,8 +229,7 @@
     /* Make space for the box-shadow border, otherwise it gets cut off due to
        overflow: hide on the container. */
     padding: 0.5rem 0.0625rem;
-    font-size: var(--font-size-small);
-    font-family: var(--font-family-monospace);
+    font: var(--txt-code-regular);
   }
   .line {
     display: flex;
@@ -238,38 +237,38 @@
     white-space: pre-wrap;
   }
   .hunk-header {
-    color: var(--color-foreground-dim);
+    color: var(--color-text-secondary);
   }
   .hunk-header > .left,
   .hunk-header > .right {
     cursor: default;
   }
   .addition {
-    background-color: var(--color-fill-diff-green);
+    background-color: var(--color-feedback-success-bg);
   }
   .deletion {
-    background-color: var(--color-fill-diff-red);
+    background-color: var(--color-feedback-error-bg);
   }
   .addition > .left,
   .addition > .right,
   .addition > .sign {
-    color: var(--color-foreground-success);
+    color: var(--color-feedback-success-text);
   }
   .deletion > .left,
   .deletion > .right,
   .deletion > .sign {
-    color: var(--color-foreground-red);
+    color: var(--color-feedback-error-text);
   }
   .context > .left,
   .context > .right,
   .context > .sign {
-    color: var(--color-foreground-disabled);
+    color: var(--color-text-disabled);
   }
   .marker {
-    color: var(--color-foreground-contrast) !important;
+    color: var(--color-text-primary) !important;
   }
   .selected {
-    box-shadow: 0 0 0 1px var(--color-fill-secondary);
+    box-shadow: 0 0 0 1px var(--color-border-brand);
     z-index: 1;
   }
   .left,
@@ -286,7 +285,7 @@
   .right:hover:not(.selection-disabled),
   .left:active:not(.selection-disabled),
   .right:active:not(.selection-disabled) {
-    color: var(--color-foreground-contrast);
+    color: var(--color-text-primary);
   }
   .sign {
     min-width: 1.5rem;
@@ -305,22 +304,21 @@
     align-self: flex-start;
   }
   .thread {
-    background-color: var(--color-background-default);
-    box-shadow: inset 0 0 0 2px var(--color-border-hint);
+    background-color: var(--color-surface-base);
+    font: var(--txt-body-m-regular);
     padding: 0.5rem;
   }
   .comment-form {
-    background-color: var(--color-background-default);
-    box-shadow: inset 0 0 0 2px var(--color-border-default);
-    font-family: var(--font-family-sans-serif);
+    background-color: var(--color-surface-base);
     display: flex;
     flex-direction: column;
+    font: var(--txt-body-m-regular);
     padding: 1rem;
   }
   .comment-header {
     display: flex;
-    background-color: var(--color-fill-ghost);
-    clip-path: var(--1px-corner-fill);
+    background-color: var(--color-surface-subtle);
+    border-radius: var(--border-radius-sm);
     padding: 0 0.5rem;
     width: fit-content;
   }
@@ -411,7 +409,7 @@
             {#if thread.root.resolved}
               <div title="Unresolve comment thread">
                 <Icon
-                  name="unresolve"
+                  name="close"
                   onclick={partial(
                     codeComments.changeCommentStatus,
                     thread.root.id,

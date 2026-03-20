@@ -14,16 +14,16 @@
 {#if revisions.length > 1}
   {#if revision.id === revisions[0].id}
     <span
-      class="global-counter"
+      class="global-chip"
       style:height="1.375rem"
-      style:color="var(--color-foreground-contrast)">
+      style:color="var(--color-text-primary)">
       Initial
     </span>
   {:else if revision.id === revisions.slice(-1)[0].id}
     <span
-      class="global-counter"
+      class="global-chip"
       style:height="1.375rem"
-      style:color="var(--color-foreground-contrast)">
+      style:color="var(--color-text-primary)">
       Latest
     </span>
   {/if}

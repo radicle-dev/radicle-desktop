@@ -38,8 +38,8 @@
     overflow-y: auto;
   }
   .dropdown-item {
-    padding: 2px;
-    font-size: var(--font-size-small);
+    padding: 1px;
+    font: var(--txt-body-m-regular);
   }
 </style>
 

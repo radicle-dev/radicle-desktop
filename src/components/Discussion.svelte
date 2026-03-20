@@ -11,9 +11,9 @@
   import * as roles from "@app/lib/roles";
   import { scrollIntoView } from "@app/lib/utils";
 
+  import Button from "@app/components/Button.svelte";
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
 
   interface Props {
@@ -84,29 +84,28 @@
 
 <style>
   .connector {
-    width: 2px;
+    width: 1px;
     height: 1rem;
     margin-left: 1.25rem;
-    background-color: var(--color-border-hint);
+    background-color: var(--color-border-subtle);
   }
 </style>
 
 <div style:margin={hideDiscussion ? "1.5rem 0" : "1.5rem 0 2.5rem 0"}>
   <div class="global-flex">
     <div class="global-flex">
-      <NakedButton
-        variant="ghost"
-        stylePadding="0 4px"
+      <Button
+        variant="naked"
         disabled={commentThreads.length === 0}
         onclick={() => (hideDiscussion = !hideDiscussion)}>
         <Icon name={hideDiscussion ? "chevron-right" : "chevron-down"} />
-      </NakedButton>
+      </Button>
       <div
-        class="txt-semibold global-flex txt-regular"
+        class="txt-body-m-regular global-flex"
         style:color={commentThreads.length === 0
-          ? "var(--color-foreground-disabled)"
+          ? "var(--color-text-disabled)"
           : undefined}>
-        Discussion <span style:font-weight="var(--font-weight-regular)">
+        Discussion <span>
           {sum(
             commentThreads.map(t => {
               return t.replies.length + 1;
@@ -116,8 +115,8 @@
       </div>
     </div>
     <div style:margin-left="auto">
-      <NakedButton
-        variant="ghost"
+      <Button
+        variant="naked"
         active={topLevelReplyOpen}
         onclick={async () => {
           if (hideDiscussion) {
@@ -130,8 +129,8 @@
           await toggleReply();
         }}>
         <Icon name="comment" />
-        <span class="txt-small">Comment</span>
-      </NakedButton>
+        <span class="txt-body-m-regular">Comment</span>
+      </Button>
     </div>
   </div>
   <div

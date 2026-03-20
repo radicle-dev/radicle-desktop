@@ -146,33 +146,33 @@ export function scrollIntoView(id: string, options?: ScrollIntoViewOptions) {
 }
 
 export const issueStatusColor: Record<Issue["state"]["status"], string> = {
-  open: "var(--color-fill-success)",
-  closed: "var(--color-foreground-red)",
+  open: "var(--color-text-open)",
+  closed: "var(--color-text-closed)",
 };
 
 export const issueStatusBackgroundColor: Record<
   Issue["state"]["status"],
   string
 > = {
-  open: "var(--color-fill-diff-green)",
-  closed: "var(--color-fill-diff-red)",
+  open: "var(--color-surface-open)",
+  closed: "var(--color-surface-closed)",
 };
 
 export const patchStatusColor: Record<Patch["state"]["status"], string> = {
-  draft: "var(--color-fill-gray)",
-  open: "var(--color-fill-success)",
-  archived: "var(--color-foreground-yellow)",
-  merged: "var(--color-fill-primary)",
+  draft: "var(--color-text-draft)",
+  open: "var(--color-text-open)",
+  archived: "var(--color-text-archived)",
+  merged: "var(--color-text-merged)",
 };
 
 export const patchStatusBackgroundColor: Record<
   Patch["state"]["status"],
   string
 > = {
-  draft: "var(--color-fill-ghost)",
-  open: "var(--color-fill-diff-green)",
-  archived: "var(--color-fill-private)",
-  merged: "var(--color-fill-delegate)",
+  draft: "var(--color-surface-draft)",
+  open: "var(--color-surface-open)",
+  archived: "var(--color-surface-archived)",
+  merged: "var(--color-surface-merged)",
 };
 
 export function authorForNodeId(author: Author): ComponentProps<typeof NodeId> {
@@ -240,11 +240,11 @@ export function gravatarURL(email: string): string {
 
 export function verdictIcon(verdict: Review["verdict"]) {
   if (verdict === "accept") {
-    return "thumb-up";
+    return "thumbs-up";
   } else if (verdict === "reject") {
     return "stop";
   } else {
-    return "review";
+    return "comment";
   }
 }
 

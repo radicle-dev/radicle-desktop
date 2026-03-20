@@ -15,6 +15,8 @@ import type { Tree } from "@bindings/source/Tree";
 import type { DraftReview } from "@app/lib/draftReviewStorage";
 import { draftReviewStorage } from "@app/lib/draftReviewStorage";
 import { invoke } from "@app/lib/invoke";
+import type { SidebarData } from "@app/lib/router/definitions";
+import { loadSidebarData } from "@app/lib/router/definitions";
 import { didFromPublicKey, unreachable } from "@app/lib/utils";
 
 export type IssueStatus = "all" | Issue["state"]["status"];
@@ -34,12 +36,6 @@ export interface RepoIssueRoute {
   status: IssueStatus;
 }
 
-export interface RepoCreateIssueRoute {
-  resource: "repo.createIssue";
-  rid: string;
-  status: IssueStatus;
-}
-
 export interface LoadedRepoHomeRoute {
   resource: "repo.home";
   params: {
@@ -48,7 +44,7 @@ export interface LoadedRepoHomeRoute {
     tree: Tree;
     config: Config;
     readme: Readme | null;
-    notificationCount: number;
+    sidebarData: SidebarData;
   };
 }
 
@@ -62,18 +58,7 @@ export interface LoadedRepoIssueRoute {
     status: IssueStatus;
     activity: Operation<IssueAction>[];
     threads: Thread[];
-    notificationCount: number;
-  };
-}
-
-export interface LoadedRepoCreateIssueRoute {
-  resource: "repo.createIssue";
-  params: {
-    repo: RepoInfo;
-    config: Config;
-    issues: Issue[];
-    status: IssueStatus;
-    notificationCount: number;
+    sidebarData: SidebarData;
   };
 }
 
@@ -90,7 +75,7 @@ export interface LoadedRepoIssuesRoute {
     config: Config;
     issues: Issue[];
     status: IssueStatus;
-    notificationCount: number;
+    sidebarData: SidebarData;
   };
 }
 
@@ -115,7 +100,7 @@ export interface LoadedRepoPatchRoute {
     review: Review | DraftReview | undefined;
     revisions: Revision[];
     activity: Operation<PatchAction>[];
-    notificationCount: number;
+    sidebarData: SidebarData;
   };
 }
 
@@ -132,20 +117,18 @@ export interface LoadedRepoPatchesRoute {
     config: Config;
     patches: PaginatedQuery<Patch[]>;
     status: PatchStatus | undefined;
-    notificationCount: number;
+    sidebarData: SidebarData;
   };
 }
 
 export type RepoRoute =
   | RepoHomeRoute
-  | RepoCreateIssueRoute
   | RepoIssueRoute
   | RepoIssuesRoute
   | RepoPatchRoute
   | RepoPatchesRoute;
 export type LoadedRepoRoute =
   | LoadedRepoHomeRoute
-  | LoadedRepoCreateIssueRoute
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
   | LoadedRepoPatchRoute
@@ -154,9 +137,9 @@ export type LoadedRepoRoute =
 export async function loadPatch(
   route: RepoPatchRoute,
 ): Promise<LoadedRepoPatchRoute> {
-  const [notificationCount, config, repo, patches, patch, revisions, activity] =
+  const [sidebarData, config, repo, patches, patch, revisions, activity] =
     await Promise.all([
-      invoke<number>("notification_count"),
+      loadSidebarData(),
       invoke<Config>("config"),
       invoke<RepoInfo>("repo_by_id", {
         rid: route.rid,
@@ -204,7 +187,7 @@ export async function loadPatch(
       status: route.status,
       review,
       activity,
-      notificationCount,
+      sidebarData,
     },
   };
 }
@@ -212,8 +195,8 @@ export async function loadPatch(
 export async function loadPatches(
   route: RepoPatchesRoute,
 ): Promise<LoadedRepoPatchesRoute> {
-  const [notificationCount, config, repo, patches] = await Promise.all([
-    invoke<number>("notification_count"),
+  const [sidebarData, config, repo, patches] = await Promise.all([
+    loadSidebarData(),
     invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
@@ -227,15 +210,15 @@ export async function loadPatches(
 
   return {
     resource: "repo.patches",
-    params: { notificationCount, repo, config, patches, status: route.status },
+    params: { sidebarData, repo, config, patches, status: route.status },
   };
 }
 
 export async function loadRepoHome(
   route: RepoHomeRoute,
 ): Promise<LoadedRepoHomeRoute> {
-  const [notificationCount, config, repo, readme, tree] = await Promise.all([
-    invoke<number>("notification_count"),
+  const [sidebarData, config, repo, readme, tree] = await Promise.all([
+    loadSidebarData(),
     invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
@@ -252,37 +235,16 @@ export async function loadRepoHome(
 
   return {
     resource: "repo.home",
-    params: { notificationCount, repo, sha: route.sha, config, readme, tree },
-  };
-}
-
-export async function loadCreateIssue(
-  route: RepoCreateIssueRoute,
-): Promise<LoadedRepoCreateIssueRoute> {
-  const [notificationCount, config, repo, issues] = await Promise.all([
-    invoke<number>("notification_count"),
-    invoke<Config>("config"),
-    invoke<RepoInfo>("repo_by_id", {
-      rid: route.rid,
-    }),
-    invoke<Issue[]>("list_issues", {
-      rid: route.rid,
-      status: route.status,
-    }),
-  ]);
-
-  return {
-    resource: "repo.createIssue",
-    params: { notificationCount, repo, config, issues, status: route.status },
+    params: { sidebarData, repo, sha: route.sha, config, readme, tree },
   };
 }
 
 export async function loadIssue(
   route: RepoIssueRoute,
 ): Promise<LoadedRepoIssueRoute> {
-  const [notificationCount, config, repo, issue, activity, issues, threads] =
+  const [sidebarData, config, repo, issue, activity, issues, threads] =
     await Promise.all([
-      invoke<number>("notification_count"),
+      loadSidebarData(),
       invoke<Config>("config"),
       invoke<RepoInfo>("repo_by_id", {
         rid: route.rid,
@@ -308,7 +270,7 @@ export async function loadIssue(
   return {
     resource: "repo.issue",
     params: {
-      notificationCount,
+      sidebarData,
       repo,
       config,
       issue,
@@ -323,8 +285,8 @@ export async function loadIssue(
 export async function loadIssues(
   route: RepoIssuesRoute,
 ): Promise<LoadedRepoIssuesRoute> {
-  const [notificationCount, config, repo, issues] = await Promise.all([
-    invoke<number>("notification_count"),
+  const [sidebarData, config, repo, issues] = await Promise.all([
+    loadSidebarData(),
     invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
@@ -337,7 +299,7 @@ export async function loadIssues(
 
   return {
     resource: "repo.issues",
-    params: { notificationCount, repo, config, issues, status: route.status },
+    params: { sidebarData, repo, config, issues, status: route.status },
   };
 }
 
@@ -350,11 +312,6 @@ export function repoRouteToPath(route: RepoRoute): string {
     return url;
   } else if (route.resource === "repo.issue") {
     let url = [...pathSegments, "issues", route.issue].join("/");
-    searchParams.set("status", route.status);
-    url += `?${searchParams}`;
-    return url;
-  } else if (route.resource === "repo.createIssue") {
-    let url = [...pathSegments, "issues", "create"].join("/");
     searchParams.set("status", route.status);
     url += `?${searchParams}`;
     return url;
@@ -401,9 +358,7 @@ export function repoUrlToRoute(
       const idOrAction = segments.shift();
       if (idOrAction) {
         const status = (searchParams.get("status") ?? "all") as IssueStatus;
-        if (idOrAction === "create") {
-          return { resource: "repo.createIssue", rid, status };
-        } else {
+        if (idOrAction !== "create") {
           return {
             resource: "repo.issue",
             rid,
@@ -411,6 +366,7 @@ export function repoUrlToRoute(
             status,
           };
         }
+        return null;
       } else {
         const status = searchParams.get("status");
         if (status === "open" || status === "closed") {

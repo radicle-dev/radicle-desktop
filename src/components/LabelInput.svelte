@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Label from "@app/components/Label.svelte";
   import TextInput from "@app/components/TextInput.svelte";
@@ -8,6 +9,7 @@
     labels: string[];
     submitInProgress: boolean;
     save: (updatedLabels: string[]) => void;
+    preview?: boolean;
   }
 
   const {
@@ -15,6 +17,7 @@
     labels,
     submitInProgress = false,
     save,
+    preview = false,
   }: Props = $props();
 
   let updatedLabels: string[] = $state([]);
@@ -73,32 +76,33 @@
 </script>
 
 <style>
-  .add-icon {
-    display: none;
-  }
-  .title-button:hover .add-icon {
-    display: flex;
-  }
-  .title-button {
-    font-size: var(--font-size-small);
-    color: var(--color-foreground-dim);
-  }
-  .body {
+  .row {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    flex-direction: row;
     gap: 0.5rem;
-    font-size: var(--font-size-small);
-    margin-top: 1rem;
   }
   .validation-message {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    color: var(--color-foreground-red);
+    color: var(--color-feedback-error-text);
     position: relative;
     margin-top: 0.5rem;
+  }
+  .removable-label {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
   button {
     border: 0;
@@ -107,97 +111,87 @@
     background-color: transparent;
     border: none;
     display: flex;
-    color: var(--color-foreground-default);
+    color: var(--color-text-secondary);
     padding: 0;
     align-items: center;
   }
 </style>
 
-<div class="global-flex">
-  <button
-    disabled={!allowedToEdit}
-    style:color={allowedToEdit
-      ? "var(--color-foreground-dim)"
-      : "var(--color-foreground-disabled)"}
-    title={allowedToEdit
-      ? undefined
-      : "Only delegates are allowed to add labels"}
-    style:cursor={allowedToEdit ? "pointer" : "default"}
-    class="title-button"
-    onclick={() => {
-      inputValue = "";
-      showInput = !showInput;
-    }}>
-    {#if updatedLabels.length === 0}
-      Add labels
-    {:else}
-      Labels
-    {/if}
-
-    {#if !showInput && allowedToEdit}
-      <span class="add-icon">
-        <Icon name="add"></Icon>
-      </span>
-    {/if}
-  </button>
-
-  {#if allowedToEdit}
-    <div class="global-flex edit-icons">
-      {#if showInput}
-        <Icon
-          onclick={addLabel}
-          name="checkmark"
-          disabled={!valid || inputValue === ""} />
-        <Icon
-          onclick={() => {
-            inputValue = "";
-            showInput = false;
-          }}
-          name="cross" />
+{#if preview}
+  <div class="row">
+    <Button variant="outline" disabled>
+      <Icon name="label" />
+      {#if updatedLabels.length === 0}
+        Add labels
+      {:else}
+        Labels
       {/if}
-    </div>
-  {/if}
-</div>
-
-{#if showInput}
-  <div style:margin-top="1rem">
-    <TextInput
-      autofocus
-      {valid}
-      disabled={submitInProgress}
-      placeholder="Add label"
-      bind:value={inputValue}
-      onSubmit={addLabel} />
-    {#if !valid && validationMessage}
-      <div class="validation-message">
-        <Icon name="warning" />{validationMessage}
-      </div>
-    {/if}
+    </Button>
+    {#each updatedLabels as label}
+      <Label {label} />
+    {/each}
   </div>
-{/if}
+{:else}
+  <div class="row">
+    {#if showInput}
+      <div class="input-row">
+        <div style:flex="1" style:min-width="0">
+          <TextInput
+            autofocus
+            {valid}
+            disabled={submitInProgress}
+            placeholder="Add label"
+            bind:value={inputValue}
+            onSubmit={addLabel} />
+        </div>
+        <Button
+          variant="outline"
+          onclick={() => {
+            showInput = false;
+            inputValue = "";
+          }}>
+          <Icon name="close" />
+        </Button>
+      </div>
+    {:else}
+      <Button
+        variant="outline"
+        disabled={!allowedToEdit}
+        title={allowedToEdit
+          ? undefined
+          : "Only delegates are allowed to add labels"}
+        onclick={() => {
+          inputValue = "";
+          showInput = true;
+        }}>
+        <Icon name="label" />
+        {#if updatedLabels.length === 0}
+          Add labels
+        {:else}
+          Labels
+        {/if}
+      </Button>
+    {/if}
 
-{#if updatedLabels.length > 0}
-  <div class="body">
-    {#if allowedToEdit}
-      {#each updatedLabels as label}
+    {#each updatedLabels as label}
+      {#if allowedToEdit}
         <button
-          class="global-counter txt-small"
-          style:background-color="var(--color-fill-counter)"
-          style:padding="0 0.5rem"
-          style:max-width="10rem"
+          class="removable-label"
           onclick={() => (removeToggles[label] = !removeToggles[label])}>
-          <div class="txt-overflow" title={label}>{label}</div>
+          <Label {label} />
           {#if removeToggles[label]}
-            <span style:margin-right="0.5rem">
-              <Icon name="cross" onclick={() => removeLabel(label)} />
-            </span>
+            <Icon name="close" onclick={() => removeLabel(label)} />
           {/if}
         </button>
-      {/each}
-    {:else}
-      {#each updatedLabels as label}
+      {:else}
         <Label {label} />
-      {/each}
-    {/if}
+      {/if}
+    {/each}
   </div>
+
+  {#if !valid && validationMessage}
+    <div class="validation-message">
+      <Icon name="warning" />{validationMessage}
+    </div>
+  {/if}
 {/if}

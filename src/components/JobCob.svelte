@@ -27,10 +27,7 @@
 
 {#await invoke<Job[]>("list_jobs", { rid, sha: commit }) then jobs}
   {#if jobs.length > 0}
-    <HoverPopover
-      stylePadding="0.25rem"
-      stylePopoverPositionBottom="2rem"
-      stylePopoverPositionRight="-1.5rem">
+    <HoverPopover stylePadding="0.25rem" placement="bottom-end">
       {#snippet toggle()}
         {#if jobs.every(j => {
           return j.runs.every(r => {
@@ -38,11 +35,11 @@
           });
         })}
           <div
-            class="global-counter"
+            class="global-chip"
             style:padding="0"
-            style:color="var(--color-fill-success)"
-            style:background-color="var(--color-fill-diff-green)">
-            <Icon name="checkmark-double" />
+            style:color="var(--color-feedback-success-text)"
+            style:background-color="var(--color-feedback-success-bg)">
+            <Icon name="checkmark" />
           </div>
         {:else if jobs.every(j => {
           return j.runs.every(r => {
@@ -50,18 +47,18 @@
           });
         })}
           <div
-            class="global-counter"
-            style:color="var(--color-foreground-red)"
+            class="global-chip"
+            style:color="var(--color-feedback-error-text)"
             style:padding="0"
-            style:background-color="var(--color-fill-diff-red)">
-            <Icon name="cross-double" />
+            style:background-color="var(--color-feedback-error-bg)">
+            <Icon name="close" />
           </div>
         {:else}
           <div
-            class="global-counter"
+            class="global-chip"
             style:padding="0"
-            style:color="var(--color-fill-gray)"
-            style:background-color="var(--color-fill-ghost)">
+            style:color="var(--color-text-quaternary)"
+            style:background-color="var(--color-surface-subtle)">
             <Icon name="help" />
           </div>
         {/if}
@@ -79,30 +76,30 @@
               <DropdownListItem styleGap="0.5rem" selected={true}>
                 {#if run.status === "started"}
                   <div
-                    class="global-counter status"
-                    style:background-color="var(--color-fill-float)"
-                    style:color="var(--color-fill-gray)">
+                    class="global-chip status"
+                    style:background-color="var(--color-surface-canvas)"
+                    style:color="var(--color-text-quaternary)">
                     <Icon name="hourglass" /> Started
                   </div>
                 {:else if run.status === "failed"}
                   <div
-                    class="global-counter status"
-                    style:color="var(--color-foreground-red)"
-                    style:background-color="var(--color-fill-diff-red)">
-                    <Icon name="cross" /> Failed
+                    class="global-chip status"
+                    style:color="var(--color-feedback-error-text)"
+                    style:background-color="var(--color-feedback-error-bg)">
+                    <Icon name="close" /> Failed
                   </div>
                 {:else if run.status === "succeeded"}
                   <div
-                    class="global-counter status"
-                    style:color="var(--color-fill-success)"
-                    style:background-color="var(--color-fill-diff-green)">
+                    class="global-chip status"
+                    style:color="var(--color-feedback-success-text)"
+                    style:background-color="var(--color-feedback-success-bg)">
                     <Icon name="checkmark" /> Passed
                   </div>
                 {/if}
                 <NodeId {...authorForNodeId(run.node)} />
                 <div
                   style:margin-left="auto"
-                  style:color="var(--color-fill-gray)">
+                  style:color="var(--color-text-quaternary)">
                   <Icon name="open-external" />
                 </div>
               </DropdownListItem>

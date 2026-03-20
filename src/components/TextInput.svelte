@@ -4,8 +4,6 @@
 
   import { onMount } from "svelte";
 
-  import Border from "@app/components/Border.svelte";
-
   interface Props {
     autofocus?: boolean;
     autoselect?: boolean;
@@ -75,22 +73,20 @@
 
 <style>
   input {
-    background: var(--color-background-ghost);
-    font-family: inherit;
-    font-size: var(--font-size-small);
-    color: var(--color-foreground-contrast);
+    background: transparent;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-primary);
     line-height: 1.6;
     outline: none;
     text-overflow: ellipsis;
     width: 100%;
     height: 100%;
     margin: 0;
-    height: 2rem;
+    height: 30px; /* + 2px border = 2rem */
     border: 0;
   }
   input::placeholder {
-    font-family: var(--font-family-sans-serif);
-    color: var(--color-foreground-dim);
+    color: var(--color-text-secondary);
     opacity: 1 !important;
   }
   input[disabled] {
@@ -98,9 +94,14 @@
   }
 </style>
 
-<Border
-  variant={valid ? (focussed ? "secondary" : "ghost") : "danger"}
-  styleWidth="100%">
+<div
+  style:border={`1px solid ${!valid ? "var(--color-feedback-error-border)" : focussed ? "var(--color-border-brand)" : "var(--color-border-subtle)"}`}
+  style:border-radius="var(--border-radius-sm)"
+  style:display="flex"
+  style:gap="0.5rem"
+  style:align-items="center"
+  style:background-color="var(--color-surface-base)"
+  style:width="100%">
   {@render left?.()}
   <input
     style:padding={left ? "0.25rem 0.75rem 0.25rem 0" : "0.25rem 0.75rem"}
@@ -127,4 +128,4 @@
     spellcheck="false"
     onkeydown={handleKeydown}
     {oninput} />
-</Border>
+</div>

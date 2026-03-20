@@ -1,7 +1,3 @@
-import {
-  homeRouteToPath as homeRouteToPath,
-  homeUrlToRoute,
-} from "@app/views/home/router";
 import { repoRouteToPath, repoUrlToRoute } from "@app/views/repo/router";
 import { on } from "svelte/events";
 import { get, writable } from "svelte/store";
@@ -51,7 +47,7 @@ async function navigateToUrl(
     await navigate(action, route);
   } else {
     console.error("Could not resolve route for URL: ", url);
-    await navigate(action, { resource: "home", activeTab: "all" });
+    await navigate(action, { resource: "inbox" });
   }
 }
 
@@ -121,13 +117,34 @@ export async function replace(newRoute: Route): Promise<void> {
   await navigate("replace", newRoute);
 }
 
+function inboxUrlToRoute(url: URL): { resource: "inbox" } | undefined {
+  if (url.pathname === "/inbox") {
+    return { resource: "inbox" };
+  }
+}
+
+function guideUrlToRoute(url: URL): { resource: "guide" } | undefined {
+  if (url.pathname === "/guide") {
+    return { resource: "guide" };
+  }
+}
+
 function urlToRoute(url: URL): Route | null {
   const segments = url.pathname.substring(1).split("/");
   const resource = segments.shift();
 
-  const homeRoute = homeUrlToRoute(url);
-  if (homeRoute) {
-    return homeRoute;
+  if (url.pathname === "/") {
+    return { resource: "inbox" };
+  }
+
+  const inboxRoute = inboxUrlToRoute(url);
+  if (inboxRoute) {
+    return inboxRoute;
+  }
+
+  const guideRoute = guideUrlToRoute(url);
+  if (guideRoute) {
+    return guideRoute;
   }
 
   switch (resource) {
@@ -141,11 +158,12 @@ function urlToRoute(url: URL): Route | null {
 }
 
 export function routeToPath(route: Route): string {
-  if (route.resource === "home") {
-    return homeRouteToPath(route);
+  if (route.resource === "inbox") {
+    return "/inbox";
+  } else if (route.resource === "guide") {
+    return "/guide";
   } else if (
     route.resource === "repo.home" ||
-    route.resource === "repo.createIssue" ||
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||
     route.resource === "repo.patch" ||

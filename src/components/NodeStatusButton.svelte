@@ -1,10 +1,9 @@
 <script lang="ts">
   import { nodeRunning } from "@app/lib/events";
 
-  import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
   import Command from "@app/components/Command.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
   import Popover from "@app/components/Popover.svelte";
 
   let popoverExpanded: boolean = $state(false);
@@ -12,28 +11,40 @@
 
 <Popover
   popoverPadding="0"
-  popoverPositionTop="2.5rem"
-  bind:expanded={popoverExpanded}
-  popoverPositionRight="0">
+  placement="top-start"
+  bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
-    <NakedButton variant="ghost" {onclick} active={popoverExpanded}>
+    <Button
+      variant="naked"
+      {onclick}
+      active={popoverExpanded}
+      styleWidth="100%"
+      styleJustifyContent="flex-start">
       {#if $nodeRunning}
-        <Icon name="online" />
+        <span style:color="var(--color-text-tertiary)">
+          <Icon name="online" />
+        </span>
         Online
       {:else}
-        <Icon name="offline" />
+        <span style:color="var(--color-text-tertiary)">
+          <Icon name="offline" />
+        </span>
         Offline
       {/if}
-    </NakedButton>
+    </Button>
   {/snippet}
   {#snippet popover()}
-    <Border
-      variant="ghost"
-      stylePadding="1rem"
-      styleMinWidth="20rem"
-      styleAlignItems="flex-start"
-      styleFlexDirection="column">
-      <div class="txt-small" style:line-height="1.625rem">
+    <div
+      style:border="1px solid var(--color-border-subtle)"
+      style:border-radius="var(--border-radius-sm)"
+      style:display="flex"
+      style:gap="0.5rem"
+      style:align-items="flex-start"
+      style:background-color="var(--color-surface-canvas)"
+      style:padding="1rem"
+      style:width="22rem"
+      style:flex-direction="column">
+      <div class="txt-body-m-regular" style:line-height="1.625rem">
         {#if $nodeRunning}
           Your node is up and running, your changes will be synced
           automatically.
@@ -49,6 +60,6 @@
           </div>
         {/if}
       </div>
-    </Border>
+    </div>
   {/snippet}
 </Popover>

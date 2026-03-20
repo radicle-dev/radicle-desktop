@@ -3,12 +3,15 @@
 
   import Icon from "@app/components/Icon.svelte";
 
-  const { href, children }: { href: string; children?: Snippet } = $props();
+  const {
+    href,
+    title,
+    children,
+  }: { href: string; title?: string; children?: Snippet } = $props();
 </script>
 
 <style>
   a {
-    font-weight: var(--font-weight-semibold);
     color: inherit;
     display: inline-flex;
     align-items: center;
@@ -18,25 +21,25 @@
   a:hover {
     text-decoration: underline;
     text-underline-offset: 2px;
-    color: var(--color-fill-secondary);
+    color: var(--color-text-brand);
   }
 
   .icon {
-    color: var(--color-foreground-dim);
+    color: var(--color-text-secondary);
     position: relative;
     bottom: 1px;
   }
 
   a:hover .icon {
-    color: var(--color-fill-secondary-hover);
+    color: var(--color-text-brand);
   }
 </style>
 
-<a {href} target="_blank" rel="noreferrer">
+<a {href} {title} target="_blank" rel="noreferrer">
   {#if children}
     {@render children()}
+    <span class="icon"><Icon name="open-external" /></span>
   {:else}
-    {href}
+    <Icon name="open-external" />
   {/if}
-  <span class="icon"><Icon name="open-external" /></span>
 </a>

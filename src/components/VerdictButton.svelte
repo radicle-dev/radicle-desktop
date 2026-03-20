@@ -5,13 +5,12 @@
 
   import { verdictIcon } from "@app/lib/utils";
 
-  import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
   import { closeFocused } from "@app/components/Popover.svelte";
-  import VerdictBadge from "@app/components/VerdictBadge.svelte";
 
   interface Props {
     onSelect: (selectedVerdict: Review["verdict"]) => Promise<void>;
@@ -23,47 +22,48 @@
   const { onSelect, draft, summaryMissing, selectedVerdict }: Props = $props();
 
   let popoverExpanded: boolean = $state(false);
+
+  function verdictBgColor(verdict: Review["verdict"]): string {
+    if (verdict === "accept") return "var(--color-feedback-success-bg)";
+    if (verdict === "reject") return "var(--color-feedback-error-bg)";
+    return "var(--color-surface-subtle)";
+  }
+
+  function verdictColor(verdict: Review["verdict"]): string {
+    if (verdict === "accept") return "var(--color-feedback-success-text)";
+    if (verdict === "reject") return "var(--color-feedback-error-text)";
+    return "var(--color-text-secondary)";
+  }
 </script>
-
-<style>
-  button {
-    cursor: pointer;
-    border: 0;
-    background: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-small);
-  }
-  .accepted {
-    color: var(--color-foreground-success);
-  }
-
-  .rejected {
-    color: var(--color-foreground-red);
-  }
-
-  .no-verdict {
-    color: var(--color-foreground-dim);
-  }
-</style>
 
 <Popover
   popoverPadding="0"
-  popoverPositionLeft="0"
-  popoverPositionTop="2rem"
+  placement="bottom-start"
   bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
-    <button {onclick}>
-      <VerdictBadge verdict={selectedVerdict} hoverable>
-        <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
-      </VerdictBadge>
-    </button>
+    <Button variant="outline" {onclick} active={popoverExpanded}>
+      <span
+        class="global-chip"
+        style:padding="0"
+        style:margin-left="-0.25rem"
+        style:background-color={verdictBgColor(selectedVerdict)}
+        style:color={verdictColor(selectedVerdict)}>
+        <Icon name={verdictIcon(selectedVerdict)} />
+      </span>
+      <span style:color="var(--color-text-secondary)">
+        {selectedVerdict ? capitalize(`${selectedVerdict}ed`) : "None"}
+      </span>
+      <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
+    </Button>
   {/snippet}
   {#snippet popover()}
-    <Border variant="ghost">
+    <div
+      style:border="1px solid var(--color-border-subtle)"
+      style:border-radius="var(--border-radius-sm)"
+      style:display="flex"
+      style:gap="0.5rem"
+      style:align-items="center"
+      style:background-color="var(--color-surface-canvas)">
       <DropdownList items={[undefined, "accept", "reject"] as const}>
         {#snippet item(verdict)}
           <DropdownListItem
@@ -74,21 +74,25 @@
               verdict === undefined &&
               summaryMissing}
             selected={selectedVerdict === verdict}
+            styleGap="0.5rem"
             onclick={async () => {
               await onSelect(verdict);
               closeFocused();
             }}>
             <span
-              class="global-flex"
-              class:accepted={verdict === "accept"}
-              class:rejected={verdict === "reject"}
-              class:no-verdict={verdict === undefined}>
+              class="global-chip"
+              style:padding="0"
+              style:margin-left="-0.5rem"
+              style:background-color={verdictBgColor(verdict)}
+              style:color={verdictColor(verdict)}>
               <Icon name={verdictIcon(verdict)} />
+            </span>
+            <span style:color="var(--color-text-secondary)">
               {verdict ? capitalize(`${verdict}ed`) : "None"}
             </span>
           </DropdownListItem>
         {/snippet}
       </DropdownList>
-    </Border>
+    </div>
   {/snippet}
 </Popover>

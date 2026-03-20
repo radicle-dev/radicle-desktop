@@ -1,34 +1,33 @@
 <script lang="ts">
   import type { Tree } from "@bindings/source/Tree";
 
-  import File from "@app/components/Source/File.svelte";
-  import Folder from "@app/components/Source/Folder.svelte";
-  import { getCurrentPath } from "@app/views/repo/RepoHome.svelte";
+  import FileTreeFile from "@app/components/FileTreeFile.svelte";
+  import FileTreeFolder from "@app/components/FileTreeFolder.svelte";
 
   interface Props {
     tree: Tree;
-    path?: string;
+    currentPath: string;
     fetchTree: (path: string) => Promise<Tree>;
     fetchBlob: (path: string) => Promise<void>;
   }
 
-  const { path = "", tree, fetchTree, fetchBlob }: Props = $props();
+  const { currentPath, tree, fetchTree, fetchBlob }: Props = $props();
 </script>
 
-<div>
+<div style:display="flex" style:flex-direction="column" style:gap="0.25rem">
   {#each tree.entries as entry (entry.name)}
     {#if entry.kind === "tree"}
-      <Folder
+      <FileTreeFolder
         name={entry.name}
         prefix={`${entry.path}/`}
-        currentPath={path}
+        {currentPath}
         {fetchTree}
         {fetchBlob} />
     {:else}
-      <File
+      <FileTreeFile
         name={entry.name}
         fetchBlob={() => fetchBlob(entry.path)}
-        active={entry.path === getCurrentPath()} />
+        active={entry.path === currentPath} />
     {/if}
   {/each}
 </div>

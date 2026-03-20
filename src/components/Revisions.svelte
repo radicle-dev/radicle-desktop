@@ -56,10 +56,8 @@
 {#each revisionAuthors as author}
   <div class="author-revisions">
     <div style:padding-bottom="0.5rem">
-      <span class="global-flex txt-small" style:gap="0">
-        <NodeId
-          {...authorForNodeId(author)}
-          styleFontWeight="var(--font-weight-regular)" />'s revisions
+      <span class="global-flex txt-body-m-regular" style:gap="0">
+        <NodeId {...authorForNodeId(author)} />'s revisions
       </span>
     </div>
     {#each orderBy( revisions.filter(r => {
@@ -73,13 +71,13 @@
           }}>
           <div class="global-flex txt-overflow" style:width="100%">
             {#if patch.state.status === "merged" && patch.state.revision === revision.id}
-              <div style:color="var(--color-fill-primary)">
+              <div style:color="var(--color-brand-bg)">
                 <Icon name="patch-merged" />
               </div>
             {:else}
               <Icon name="revision" />
             {/if}
-            <span class="global-oid">
+            <span class="txt-id">
               {revision.id.substring(0, 4)}
             </span>
             <RevisionBadges {revision} {revisions} />
@@ -87,19 +85,12 @@
               {#if revision.description[0].body.trim()}
                 {revision.description[0].body.split("\n")[0]}
               {:else}
-                <span
-                  class="txt-missing"
-                  style:font-weight="var(--font-weight-regular)">
-                  No description.
-                </span>
+                <span class="txt-missing">No description.</span>
               {/if}
             </span>
             <div class="global-flex" style:margin-left="auto">
               {#if revision.discussion && revision.discussion.length > 0}
-                <div
-                  class="global-flex"
-                  style:font-weight="var(--font-weight-regular)"
-                  style:gap="0.25rem">
+                <div class="global-flex" style:gap="0.25rem">
                   <Icon name="comment" />{revision.discussion.length}
                 </div>
               {/if}

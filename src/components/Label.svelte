@@ -6,6 +6,20 @@
   const { label }: Props = $props();
 </script>
 
-<div class="global-counter txt-small" style:max-width="10rem">
+<style>
+  .label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    height: 1.5rem;
+    padding: 0 0.5rem;
+    color: var(--color-text-tertiary);
+    max-width: 10rem;
+  }
+</style>
+
+<div class="label txt-body-m-regular">
   <div class="txt-overflow" title={label}>{label}</div>
 </div>

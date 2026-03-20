@@ -40,8 +40,8 @@
 
 <div class="container">
   <Button
-    flatRight
     variant="ghost"
+    flatRight
     active={$announce}
     onclick={() => {
       storeAnnounce(true);
@@ -50,8 +50,8 @@
   </Button>
 
   <Button
-    flatLeft
     variant="ghost"
+    flatLeft
     active={!$announce}
     onclick={() => {
       storeAnnounce(false);

@@ -3,6 +3,9 @@ name = "radicle-types"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+doctest = false
+
 [dependencies]
 anyhow = { version = "1.0.90" }
 axum = { version = "0.8.1", default-features = false, features = ["json"] }

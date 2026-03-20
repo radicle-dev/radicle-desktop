@@ -14,16 +14,12 @@
     user-select: text;
   }
   .path {
-    color: var(--color-fill-gray);
-    font-weight: var(--font-weight-regular);
-  }
-  .filename {
-    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-quaternary);
   }
 </style>
 
 <!-- prettier-ignore -->
-<span class="txt-small container">
+<span class="txt-body-m-regular container">
   <span class="path">
     {fullPath
       .match(/^.*\/|/)

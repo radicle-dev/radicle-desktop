@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { UnlistenFn } from "@tauri-apps/api/event";
-  import type { ComponentProps } from "svelte";
+  import type { ComponentProps, Snippet } from "svelte";
 
   import { listen } from "@tauri-apps/api/event";
   import { open } from "@tauri-apps/plugin-dialog";
@@ -14,7 +14,6 @@
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Markdown from "@app/components/Markdown.svelte";
-  import OutlineButton from "@app/components/OutlineButton.svelte";
   import Textarea from "@app/components/Textarea.svelte";
 
   interface Props {
@@ -45,6 +44,8 @@
     // visible but disabled and uses the string as the title to indicate the
     // reason for disabling. Defaults to `false`
     disableAttachments?: boolean | string;
+    hideDiscard?: boolean;
+    belowTextarea?: Snippet;
   }
 
   /* eslint-disable prefer-const */
@@ -69,6 +70,8 @@
     submit,
     close,
     disableAttachments: attachDisabled = false,
+    hideDiscard = false,
+    belowTextarea,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -255,7 +258,6 @@
     gap: 1rem;
     width: 100%;
     flex: 1;
-    font-family: var(--font-family-sans-serif);
   }
   .inline {
     border: 0;
@@ -276,9 +278,8 @@
 
   .preview {
     width: 100%;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     min-height: 109px;
-    padding: 0.75rem;
     margin-left: 1px;
     margin-top: 1px;
     flex: 1;
@@ -287,7 +288,7 @@
 
 <div class="comment-section" aria-label="extended-textarea" class:inline>
   {#if preview}
-    <div class="preview">
+    <div class="preview" style:min-height={styleMinHeight}>
       {#if body.trim().length === 0}
         <span class="txt-missing">Nothing to preview.</span>
       {:else}
@@ -310,24 +311,27 @@
       bind:value={body}
       {placeholder} />
   {/if}
+  {@render belowTextarea?.()}
   <div class="actions">
-    <OutlineButton
-      disabled={submitInProgress}
-      variant="ghost"
-      onclick={() => {
-        preview = false;
-        close();
-      }}>
-      <Icon name="cross" />
-      <span class="global-hide-on-small-desktop-down">Discard</span>
-    </OutlineButton>
+    {#if !hideDiscard}
+      <Button
+        variant="outline"
+        disabled={submitInProgress}
+        onclick={() => {
+          preview = false;
+          close();
+        }}>
+        <Icon name="close" />
+        <span class="global-hide-on-small-desktop-down">Discard</span>
+      </Button>
+    {/if}
     {#if !preview}
       <div
         style:display=""
-        class="txt-overflow txt-small txt-missing"
+        class="txt-overflow txt-body-m-regular txt-missing"
         title={`${attachEnabled ? "Drag and drop files to add them. " : ""}Markdown is supported. Press ${utils.modifierKey()}↵ to submit.`}>
         {#if embedUploadError}
-          <span style:color="var(--color-fill-danger)">
+          <span style:color="var(--color-feedback-error-text)">
             <Icon
               styleDisplay="inline"
               styleVerticalAlign="text-top"
@@ -346,19 +350,19 @@
     {/if}
     <div class="buttons">
       {#if attachEnabled || attachDisabledReason}
-        <OutlineButton
-          variant="ghost"
+        <Button
+          variant="outline"
           onclick={selectFiles}
           disabled={preview || attachDisabledReason !== undefined}
           title={attachDisabledReason}>
-          <Icon name="attachment" />
+          <Icon name="attach" />
           Attach
-        </OutlineButton>
+        </Button>
       {/if}
-      <OutlineButton variant="ghost" onclick={() => (preview = !preview)}>
-        <Icon name={preview ? "pen" : "eye"} />
+      <Button variant="outline" onclick={() => (preview = !preview)}>
+        <Icon name={preview ? "edit" : "eye"} />
         {preview ? "Edit" : "Preview"}
-      </OutlineButton>
+      </Button>
       <Button
         variant="ghost"
         title={emptyBodyTooltip}

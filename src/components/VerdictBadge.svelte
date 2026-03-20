@@ -21,34 +21,36 @@
   .badge {
     gap: 0.375rem;
     padding-right: 0.625rem;
+    width: fit-content;
+    font: var(--txt-body-m-regular);
   }
   .no-verdict {
-    background-color: var(--color-fill-ghost);
-    color: var(--color-foreground-dim);
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-secondary);
   }
   .no-verdict.hoverable:hover {
-    background-color: var(--color-fill-ghost-hover);
+    background-color: var(--color-surface-mid);
   }
 
   .accepted {
-    background-color: var(--color-fill-diff-green-light);
-    color: var(--color-foreground-success);
+    background-color: var(--color-feedback-success-bg);
+    color: var(--color-feedback-success-text);
   }
   .accepted.hoverable:hover {
-    background-color: var(--color-fill-diff-green);
+    background-color: var(--color-feedback-success-bg);
   }
 
   .rejected {
-    background-color: var(--color-fill-diff-red-light);
-    color: var(--color-foreground-red);
+    background-color: var(--color-feedback-error-bg);
+    color: var(--color-feedback-error-text);
   }
   .rejected.hoverable:hover {
-    background-color: var(--color-fill-diff-red);
+    background-color: var(--color-feedback-error-bg);
   }
 </style>
 
 <span
-  class="global-counter badge"
+  class="global-chip badge"
   class:hoverable
   class:no-verdict={verdict === undefined}
   class:accepted={verdict === "accept"}

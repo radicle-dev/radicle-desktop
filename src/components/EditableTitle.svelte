@@ -1,7 +1,7 @@
 <script lang="ts">
+  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
@@ -40,14 +40,13 @@
 
 <style>
   .title {
-    font-size: var(--font-size-medium);
-    font-weight: var(--font-weight-medium);
+    font: var(--txt-heading-m);
     -webkit-user-select: text;
     user-select: text;
     display: flex;
     align-items: center;
     word-break: break-word;
-    min-height: 2.5rem;
+    min-height: 2rem;
     width: 100%;
   }
   .edit-title-icon {
@@ -70,22 +69,20 @@
         editingTitle = false;
       }} />
     <div class="global-flex" style:margin-left="0.5rem">
-      <NakedButton
-        variant="ghost"
-        styleHeight="2.5rem"
+      <Button
+        variant="naked"
         disabled={!(newTitle.trim().length > 0)}
         onclick={save}>
         <Icon name="checkmark" />
-      </NakedButton>
-      <NakedButton
-        variant="ghost"
-        styleHeight="2.5rem"
+      </Button>
+      <Button
+        variant="naked"
         onclick={() => {
           newTitle = title;
           editingTitle = false;
         }}>
-        <Icon name="cross" />
-      </NakedButton>
+        <Icon name="close" />
+      </Button>
     </div>
   {:else}
     <div class="global-flex" style:gap="0">
@@ -102,7 +99,7 @@
         tabindex="0">
         <InlineTitle content={title} fontSize="medium" />
         {#if allowedToEdit}
-          <div class="edit-title-icon"><Icon name="pen" /></div>
+          <div class="edit-title-icon"><Icon name="edit" /></div>
         {/if}
       </div>
     </div>

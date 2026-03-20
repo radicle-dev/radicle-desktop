@@ -3,7 +3,6 @@
   import type { CacheEvent } from "@bindings/cob/CacheEvent";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Patch } from "@bindings/cob/patch/Patch";
-  import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { DEFAULT_TAKE } from "@app/views/repo/router";
@@ -18,32 +17,26 @@
     updatePatchCounts,
   } from "@app/lib/patchCounts.svelte";
   import * as router from "@app/lib/router";
-  import { explorerUrl, modifierKey } from "@app/lib/utils";
+  import type { SidebarData } from "@app/lib/router/definitions";
+  import { modifierKey } from "@app/lib/utils";
 
-  import Border from "@app/components/Border.svelte";
-  import Button from "@app/components/Button.svelte";
+  import CobCacheWarning from "@app/components/CobCacheWarning.svelte";
+  import FuzzySearch from "@app/components/FuzzySearch.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
-  import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
-  import PatchesSecondColumn from "@app/components/PatchesSecondColumn.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
-  import Spinner from "@app/components/Spinner.svelte";
-  import TextInput from "@app/components/TextInput.svelte";
+  import ScrollArea from "@app/components/ScrollArea.svelte";
 
-  import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
   import Layout from "./Layout.svelte";
-  import PatchesBreadcrumb from "./PatchesBreadcrumb.svelte";
-  import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
 
   interface Props {
     repo: RepoInfo;
     patches: PaginatedQuery<Patch[]>;
-    config: Config;
     status: PatchStatus | undefined;
-    notificationCount: number;
+    sidebarData: SidebarData;
   }
 
-  const { repo, patches, config, status, notificationCount }: Props = $props();
+  const { repo, patches, status, sidebarData }: Props = $props();
 
   let items = $state(patches.content);
   let cursor = patches.cursor;
@@ -56,7 +49,6 @@
   $effect(() => {
     items = patches.content;
     cursor = patches.cursor;
-    // If the first page is not full, we know there are no more patches.
     if (patches.more === true && patches.content.length < DEFAULT_TAKE) {
       more = false;
     } else {
@@ -75,6 +67,7 @@
     status;
 
     searchInput = "";
+    showSearch = false;
   });
 
   async function rebuildPatchCache() {
@@ -125,7 +118,6 @@
         items = [...items, ...p.content];
       }
 
-      // If the newly fetched patches are empty, there is no more to fetch.
       if (p.content.length === 0) {
         more = false;
       }
@@ -136,8 +128,10 @@
     }
   }
 
+  let loadingMore: boolean = $state(false);
   let loading: boolean = $state(false);
   let searchInput = $state("");
+  let showSearch = $state(false);
 
   const searchablePatches = $derived(
     items
@@ -166,159 +160,220 @@
 </script>
 
 <style>
-  .container {
-    padding: 1rem 1rem 1rem 0;
+  .page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 1rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .topbar-title {
+    font: var(--txt-body-m-semibold);
+    color: var(--color-text-secondary);
+    padding-right: 0.25rem;
+  }
+  .filters {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .filter {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--border-radius-sm);
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .filter:hover {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
+  .filter.active {
+    background-color: var(--color-surface-subtle);
+  }
+  .filter .global-counter-badge {
+    margin-left: 0.25rem;
+  }
+  .filter-label {
+    display: none;
+  }
+  .filter.active .filter-label {
+    display: inline;
+  }
+  @media (min-width: 1011px) {
+    .filter-label {
+      display: inline;
+    }
   }
   .list {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-  }
-  .header {
-    font-weight: var(--font-weight-medium);
-    font-size: var(--font-size-medium);
-    display: flex;
-    align-items: center;
-    min-height: 2.5rem;
-    margin-bottom: 1rem;
-    gap: 0.75rem;
+    gap: 1px;
+    min-height: 100%;
   }
 </style>
 
-<Layout
-  {notificationCount}
-  {loadMoreContent}
-  hideSidebar
-  styleSecondColumnOverflow="visible"
-  {config}>
-  {#snippet breadcrumbs()}
-    <NodeBreadcrumb {config} />
-    <Icon name="chevron-right" />
-    <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
-    <Icon name="chevron-right" />
-    <PatchesBreadcrumb rid={repo.rid} {status} />
-    <BreadcrumbCopyButton
-      url={explorerUrl(`${repo.rid}/patches`)}
-      icon="repo"
-      id={repo.rid} />
-  {/snippet}
-
-  {#snippet secondColumn()}
-    <PatchesSecondColumn {project} {status} {repo} />
-  {/snippet}
-
-  <div class="container">
-    {#if patchCountMismatch(status)}
-      <div style="margin-bottom: 1rem;">
-        <Border
-          styleOverflow="hidden"
-          styleBackgroundColor="var(--color-fill-private)"
-          stylePadding="0.25rem 0.5rem"
-          styleGap="1rem"
-          variant="outline">
-          <div class="txt-overflow txt-small global-flex">
-            <Icon name="warning" />
-            <span class="txt-overflow">
-              There’s a problem with your COB cache, so some patches may not be
-              displayed. You can rebuild the cache to resolve this.
-            </span>
-          </div>
-          <div style:margin-left="auto">
-            <Button
-              variant="ghost"
-              onclick={rebuildPatchCache}
-              disabled={cacheState !== undefined}>
-              {#if cacheState?.event === "started" || cacheState?.event === "progress"}
-                Rebuilding
-                <Spinner />
-              {:else if cacheState?.event === "finished"}
-                Done
-                <Icon name="checkmark" />
-              {:else}
-                Rebuild cache
-              {/if}
-            </Button>
-          </div>
-        </Border>
+<Layout {sidebarData} activeRepo={repo} selfScroll>
+  <div class="page">
+    <div class="topbar">
+      <span class="topbar-title">Patches</span>
+      <div class="filters">
+        <a
+          class="filter"
+          class:active={status === undefined}
+          href={router.routeToPath({
+            resource: "repo.patches",
+            rid: repo.rid,
+            status: undefined,
+          })}>
+          <Icon name="patch" />
+          <span class="filter-label">All</span>
+          <span class="global-counter-badge">
+            {project.meta.patches.open +
+              project.meta.patches.draft +
+              project.meta.patches.archived +
+              project.meta.patches.merged}
+          </span>
+        </a>
+        <a
+          class="filter"
+          class:active={status === "open"}
+          href={router.routeToPath({
+            resource: "repo.patches",
+            rid: repo.rid,
+            status: "open",
+          })}>
+          <Icon name="patch" />
+          <span class="filter-label">Open</span>
+          <span class="global-counter-badge">{project.meta.patches.open}</span>
+        </a>
+        <a
+          class="filter"
+          class:active={status === "merged"}
+          href={router.routeToPath({
+            resource: "repo.patches",
+            rid: repo.rid,
+            status: "merged",
+          })}>
+          <Icon name="patch-merged" />
+          <span class="filter-label">Merged</span>
+          <span class="global-counter-badge">
+            {project.meta.patches.merged}
+          </span>
+        </a>
+        <a
+          class="filter"
+          class:active={status === "archived"}
+          href={router.routeToPath({
+            resource: "repo.patches",
+            rid: repo.rid,
+            status: "archived",
+          })}>
+          <Icon name="patch-archived" />
+          <span class="filter-label">Archived</span>
+          <span class="global-counter-badge">
+            {project.meta.patches.archived}
+          </span>
+        </a>
+        <a
+          class="filter"
+          class:active={status === "draft"}
+          href={router.routeToPath({
+            resource: "repo.patches",
+            rid: repo.rid,
+            status: "draft",
+          })}>
+          <Icon name="patch-draft" />
+          <span class="filter-label">Drafts</span>
+          <span class="global-counter-badge">{project.meta.patches.draft}</span>
+        </a>
       </div>
-    {/if}
-    <div class="header">
-      Patches
-
-      <div class="global-flex" style:margin-left="auto" style:gap="0.75rem">
-        {#if items.length > 0}
-          <TextInput
-            onFocus={async () => {
-              try {
-                loading = true;
-                // Load all patches.
-                await loadMoreContent(true);
-              } catch (e) {
-                console.error("Loading all patches failed: ", e);
-              } finally {
-                loading = false;
-              }
-            }}
-            onSubmit={async () => {
-              if (searchResults.length === 1) {
-                await router.push({
-                  patch: searchResults[0].obj.patch.id,
-                  resource: "repo.patch",
-                  reviewId: undefined,
-                  rid: repo.rid,
-                  status,
-                });
-              }
-            }}
-            onDismiss={() => {
-              searchInput = "";
-            }}
-            placeholder={`Fuzzy filter patches ${modifierKey()} + f`}
-            keyShortcuts="ctrl+f"
-            bind:value={searchInput}>
-            {#snippet left()}
-              <div
-                style:color="var(--color-foreground-dim)"
-                style:padding-left="0.5rem">
-                <Icon name={loading ? "clock" : "filter"} />
-              </div>
-            {/snippet}
-          </TextInput>
-        {/if}
+      <div class="global-flex" style:margin-left="auto" style:gap="0.5rem">
+        <FuzzySearch
+          hasItems={items.length > 0}
+          placeholder={`Fuzzy filter patches ${modifierKey()} + f`}
+          icon={loading ? "clock" : "filter"}
+          onFocus={async () => {
+            try {
+              loading = true;
+              await loadMoreContent(true);
+            } catch (e) {
+              console.error("Loading all patches failed: ", e);
+            } finally {
+              loading = false;
+            }
+          }}
+          onSubmit={async () => {
+            if (searchResults.length === 1) {
+              await router.push({
+                patch: searchResults[0].obj.patch.id,
+                resource: "repo.patch",
+                reviewId: undefined,
+                rid: repo.rid,
+                status,
+              });
+            }
+          }}
+          bind:show={showSearch}
+          bind:value={searchInput} />
         <NewPatchButton rid={repo.rid} />
       </div>
     </div>
 
-    <div class="list">
-      {#each searchResults as result}
-        <PatchTeaser
-          focussed={searchResults.length === 1 && searchInput !== ""}
-          patch={result.obj.patch}
-          rid={repo.rid}
-          {status} />
-      {/each}
+    <ScrollArea
+      style="height: 100%; min-width: 0;"
+      onScrollHalf={() => {
+        if (!loadingMore) {
+          loadingMore = true;
+          void loadMoreContent().finally(() => (loadingMore = false));
+        }
+      }}>
+      {#if patchCountMismatch(status)}
+        <CobCacheWarning
+          noun="patches"
+          {cacheState}
+          onRebuild={rebuildPatchCache} />
+      {/if}
 
-      {#if searchResults.length === 0}
-        <Border
-          variant="ghost"
-          styleFlexDirection="column"
-          styleAlignItems="center"
-          styleJustifyContent="center">
+      <div class="list">
+        {#each searchResults as result}
+          <PatchTeaser
+            focussed={searchResults.length === 1 && searchInput !== ""}
+            patch={result.obj.patch}
+            rid={repo.rid}
+            {status} />
+        {/each}
+
+        {#if searchResults.length === 0}
           <div
             class="global-flex"
-            style:height="84px"
-            style:justify-content="center">
-            <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
-              <Icon name="none" />
+            style:flex="1"
+            style:justify-content="center"
+            style:align-items="center">
+            <div
+              class="txt-missing txt-body-m-regular global-flex"
+              style:gap="0.25rem">
               {#if items.length > 0 && searchResults.length === 0}
-                No matching patches.
+                No matching patches
               {:else}
-                No {status === undefined ? "" : status} patches.
+                No {status === undefined ? "" : status} patches
               {/if}
             </div>
           </div>
-        </Border>
-      {/if}
-    </div>
+        {/if}
+      </div>
+    </ScrollArea>
   </div>
 </Layout>

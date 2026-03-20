@@ -13,7 +13,10 @@
 
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
+  import { show } from "@app/lib/modal";
   import * as roles from "@app/lib/roles";
+  import * as router from "@app/lib/router";
+  import type { SidebarData } from "@app/lib/router/definitions";
   import {
     explorerUrl,
     issueStatusBackgroundColor,
@@ -23,26 +26,20 @@
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
-  import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import Discussion from "@app/components/Discussion.svelte";
-  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
+  import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import InlineTitle from "@app/components/InlineTitle.svelte";
-  import IssueSecondColumn from "@app/components/IssueSecondColumn.svelte";
+  import Id from "@app/components/Id.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimeline from "@app/components/IssueTimeline.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
-  import MoreBreadcrumbsButton from "@app/components/MoreBreadcrumbsButton.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
-  import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
-  import Sidebar from "@app/components/Sidebar.svelte";
+  import ScrollArea from "@app/components/ScrollArea.svelte";
+  import CreateIssueModal from "@app/modals/CreateIssue.svelte";
 
-  import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
-  import IssuesBreadcrumb from "./IssuesBreadcrumb.svelte";
   import Layout from "./Layout.svelte";
-  import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
 
   interface Props {
     repo: RepoInfo;
@@ -52,7 +49,7 @@
     config: Config;
     threads: Thread[];
     status: IssueStatus;
-    notificationCount: number;
+    sidebarData: SidebarData;
   }
 
   /* eslint-disable prefer-const */
@@ -64,12 +61,12 @@
     config,
     threads,
     status: initialStatus,
-    notificationCount,
+    sidebarData,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
   let issues = $state(initialIssues);
-  let status = $state(initialStatus);
+  const status = initialStatus;
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let hideTimeline = $state(true);
@@ -85,20 +82,6 @@
 
     hideTimeline = true;
   });
-
-  const project = $derived(repo.payloads["xyz.radicle.project"]!);
-
-  async function loadIssues(filter: IssueStatus) {
-    try {
-      issues = await invoke<Issue[]>("list_issues", {
-        rid: repo.rid,
-        status: filter,
-      });
-      status = filter;
-    } catch (error) {
-      console.error("Loading issue list failed", error);
-    }
-  }
 
   async function saveLabels(labels: string[]) {
     try {
@@ -280,207 +263,226 @@
 </script>
 
 <style>
-  .status {
-    padding: 0;
+  .page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
     height: 2.5rem;
-    width: 2.5rem;
+    flex-shrink: 0;
+    gap: 0.375rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+  }
+  .topbar-link {
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+  }
+  .topbar-link:hover {
+    color: var(--color-text-primary);
+  }
+  .content {
+    display: grid;
+    grid-template-columns: 1fr 22rem;
+  }
+  .main {
+    padding: 1.5rem 2rem;
+    min-width: 0;
+  }
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .status-chip {
+    padding: 0;
+    height: 2rem;
+    width: 2rem;
+    flex-shrink: 0;
   }
   .issue-body {
     margin: 1rem 0;
     position: relative;
   }
-  /* We put the background and clip-path in a separate element to prevent
-     popovers being clipped in the main element. */
-  .issue-body::after {
-    position: absolute;
-    z-index: -1;
-    content: " ";
-    background-color: var(--color-background-float);
-    clip-path: var(--2px-corner-fill);
-    width: 100%;
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-left: 1px solid var(--color-border-subtle);
     height: 100%;
-    top: 0;
+    padding: 1.5rem 1rem;
   }
-  .content {
-    padding: 1rem 1rem 1rem 0;
-  }
-  .metadata-divider {
-    width: 2px;
-    background-color: var(--color-fill-ghost);
-    height: calc(100% + 4px);
-    top: 0;
-    position: relative;
-  }
-  .metadata-section {
+  .sidebar-section {
     padding: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    height: 100%;
   }
-  .metadata-section-title {
-    margin-bottom: 0.5rem;
-    color: var(--color-foreground-dim);
+  @media (max-width: 1349.98px) {
+    .content {
+      grid-template-columns: 1fr;
+    }
+    .sidebar {
+      order: -1;
+      border-left: none;
+      border-bottom: 1px solid var(--color-border-subtle);
+      flex-direction: row;
+      align-items: flex-start;
+    }
+    .sidebar-section {
+      flex: 1;
+    }
   }
 </style>
 
-<Layout {config} {notificationCount}>
-  {#snippet breadcrumbs()}
-    <div
-      class="global-flex global-hide-on-medium-desktop-down"
-      style:gap="0.25rem">
-      <NodeBreadcrumb {config} />
+<Layout {sidebarData} activeRepo={repo}>
+  <div class="page">
+    <div class="topbar">
+      <Icon name={issue.state.status === "open" ? "issue" : "issue-closed"} />
+      <button
+        class="topbar-link"
+        onclick={() =>
+          router.push({
+            resource: "repo.issues",
+            rid: repo.rid,
+            status: "all",
+          })}>
+        All Issues
+      </button>
       <Icon name="chevron-right" />
-      <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
-      <Icon name="chevron-right" />
-      <IssuesBreadcrumb rid={repo.rid} {status} />
-      <Icon name="chevron-right" />
-    </div>
-    <div
-      class="global-flex global-hide-on-desktop-up"
-      style:gap="0.25rem"
-      style:margin-right="0.5rem">
-      <MoreBreadcrumbsButton>
-        <DropdownListItem styleGap="0.5rem" selected={false} styleWidth="100%">
-          <NodeBreadcrumb {config} />
-        </DropdownListItem>
-        <DropdownListItem styleGap="0.5rem" selected={false} styleWidth="100%">
-          <Icon name="repo" />
-          <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
-        </DropdownListItem>
-        <DropdownListItem styleGap="0.5rem" selected={false} styleWidth="100%">
-          <Icon name={status === "open" ? "issue" : "issue-closed"} />
-          <IssuesBreadcrumb rid={repo.rid} {status} />
-        </DropdownListItem>
-      </MoreBreadcrumbsButton>
-    </div>
-
-    <span class="txt-overflow" style:max-width="16rem">
-      <InlineTitle content={issue.title} fontSize="small" />
-    </span>
-    <BreadcrumbCopyButton
-      url={explorerUrl(`${repo.rid}/issues/${issue.id}`)}
-      icon={issue.state.status === "open" ? "issue" : "issue-closed"}
-      id={issue.id} />
-  {/snippet}
-
-  {#snippet sidebar()}
-    <Sidebar activeTab="issues" rid={repo.rid} />
-  {/snippet}
-
-  {#snippet secondColumn()}
-    <IssueSecondColumn
-      {repo}
-      selectedIssueId={issue.id}
-      {issues}
-      {status}
-      changeFilter={async filter => {
-        await loadIssues(filter);
-      }} />
-  {/snippet}
-
-  <div class="content">
-    <div class="global-flex" style:margin-bottom="1rem" style:gap="0.75rem">
-      <div
-        class="global-counter status"
-        style:color={issueStatusColor[issue.state.status]}
-        style:background-color={issueStatusBackgroundColor[issue.state.status]}>
-        {#if issue.state.status === "open"}
-          <Icon name="issue" />
-        {:else}
-          <Icon name="issue-closed" />
-        {/if}
+      <Id id={issue.id} clipboard={issue.id} placement="bottom-start" />
+      <ExternalLink
+        href={explorerUrl(`${repo.rid}/issues/${issue.id}`)}
+        title="Open in app.radicle.xyz" />
+      <div style:margin-left="auto">
+        <Button
+          styleHeight="2rem"
+          variant="ghost"
+          onclick={() =>
+            show({
+              component: CreateIssueModal,
+              props: { repo },
+            })}>
+          <Icon name="plus" />New issue
+        </Button>
       </div>
-      <EditableTitle
-        {updateTitle}
-        allowedToEdit={roles.isDelegateOrAuthor(
-          config.publicKey,
-          repo.delegates.map(delegate => delegate.did),
-          issue.body.author.did,
-        )}
-        title={issue.title}
-        cobId={issue.id} />
     </div>
 
-    <Border variant="ghost" styleGap="0">
-      <div class="metadata-section" style:min-width="8rem">
-        <div class="metadata-section-title">Status</div>
-        <IssueStateButton selectedState={issue.state} onSelect={saveState} />
+    <ScrollArea style="flex: 1; min-height: 0;">
+      <div class="content">
+        <div class="main">
+          <div class="title">
+            <div
+              class="global-chip status-chip"
+              style:color={issueStatusColor[issue.state.status]}
+              style:background-color={issueStatusBackgroundColor[
+                issue.state.status
+              ]}>
+              <Icon
+                name={issue.state.status === "open"
+                  ? "issue"
+                  : "issue-closed"} />
+            </div>
+            <EditableTitle
+              {updateTitle}
+              allowedToEdit={roles.isDelegateOrAuthor(
+                config.publicKey,
+                repo.delegates.map(delegate => delegate.did),
+                issue.body.author.did,
+              )}
+              title={issue.title}
+              cobId={issue.id} />
+          </div>
+
+          <div class="issue-body">
+            <CommentComponent
+              rid={repo.rid}
+              id={issue.id}
+              lastEdit={issue.body.edits.length > 1
+                ? issue.body.edits.at(-1)
+                : undefined}
+              author={issue.body.author}
+              caption="opened"
+              reactions={issue.body.reactions}
+              timestamp={issue.body.edits.slice(-1)[0].timestamp}
+              body={issue.body.edits.slice(-1)[0].body}
+              editComment={roles.isDelegateOrAuthor(
+                config.publicKey,
+                repo.delegates.map(delegate => delegate.did),
+                issue.body.author.did,
+              ) && partial(editComment, issue.body.id)}
+              reactOnComment={partial(reactOnComment, issue.body.id)}>
+            </CommentComponent>
+          </div>
+
+          <Discussion
+            cobId={issue.id}
+            commentThreads={threads}
+            {config}
+            {createComment}
+            {editComment}
+            {reactOnComment}
+            repoDelegates={repo.delegates}
+            rid={repo.rid} />
+
+          <div class="global-flex" style:margin-top="1rem">
+            <Button
+              variant="naked"
+              onclick={() => (hideTimeline = !hideTimeline)}>
+              <Icon name={hideTimeline ? "chevron-right" : "chevron-down"} />
+            </Button>
+            <div class="txt-body-m-regular global-flex">Timeline</div>
+          </div>
+          <div
+            style:display={hideTimeline ? "none" : "revert"}
+            style:margin-top="1rem">
+            <IssueTimeline {activity} />
+          </div>
+        </div>
+
+        <div class="sidebar">
+          <div class="sidebar-section">
+            <IssueStateButton
+              selectedState={issue.state}
+              onSelect={saveState}
+              disabled={!roles.isDelegate(
+                config.publicKey,
+                repo.delegates.map(d => d.did),
+              )} />
+          </div>
+          <div class="sidebar-section">
+            <LabelInput
+              allowedToEdit={!!roles.isDelegate(
+                config.publicKey,
+                repo.delegates.map(delegate => delegate.did),
+              )}
+              labels={issue.labels}
+              submitInProgress={labelSaveInProgress}
+              save={saveLabels} />
+          </div>
+          <div class="sidebar-section">
+            <AssigneeInput
+              allowedToEdit={!!roles.isDelegate(
+                config.publicKey,
+                repo.delegates.map(delegate => delegate.did),
+              )}
+              assignees={issue.assignees}
+              submitInProgress={assigneesSaveInProgress}
+              save={saveAssignees} />
+          </div>
+        </div>
       </div>
-
-      <div class="metadata-divider"></div>
-
-      <div class="metadata-section" style:flex="1">
-        <LabelInput
-          allowedToEdit={!!roles.isDelegateOrAuthor(
-            config.publicKey,
-            repo.delegates.map(delegate => delegate.did),
-            issue.body.author.did,
-          )}
-          labels={issue.labels}
-          submitInProgress={labelSaveInProgress}
-          save={saveLabels} />
-      </div>
-
-      <div class="metadata-divider"></div>
-
-      <div class="metadata-section" style:flex="1">
-        <AssigneeInput
-          allowedToEdit={!!roles.isDelegateOrAuthor(
-            config.publicKey,
-            repo.delegates.map(delegate => delegate.did),
-            issue.body.author.did,
-          )}
-          assignees={issue.assignees}
-          submitInProgress={assigneesSaveInProgress}
-          save={saveAssignees} />
-      </div>
-    </Border>
-
-    <div class="issue-body">
-      <CommentComponent
-        rid={repo.rid}
-        id={issue.id}
-        lastEdit={issue.body.edits.length > 1
-          ? issue.body.edits.at(-1)
-          : undefined}
-        author={issue.body.author}
-        caption="opened"
-        reactions={issue.body.reactions}
-        timestamp={issue.body.edits.slice(-1)[0].timestamp}
-        body={issue.body.edits.slice(-1)[0].body}
-        editComment={roles.isDelegateOrAuthor(
-          config.publicKey,
-          repo.delegates.map(delegate => delegate.did),
-          issue.body.author.did,
-        ) && partial(editComment, issue.body.id)}
-        reactOnComment={partial(reactOnComment, issue.body.id)}>
-      </CommentComponent>
-    </div>
-
-    <Discussion
-      cobId={issue.id}
-      commentThreads={threads}
-      {config}
-      {createComment}
-      {editComment}
-      {reactOnComment}
-      repoDelegates={repo.delegates}
-      rid={repo.rid} />
-
-    <div class="global-flex">
-      <NakedButton
-        variant="ghost"
-        onclick={() => (hideTimeline = !hideTimeline)}>
-        <Icon name={hideTimeline ? "chevron-right" : "chevron-down"} />
-        <div class="txt-semibold global-flex txt-regular">Timeline</div>
-      </NakedButton>
-    </div>
-    <div
-      style:display={hideTimeline ? "none" : "revert"}
-      style:margin-top="1rem">
-      <IssueTimeline {activity} />
-    </div>
+    </ScrollArea>
   </div>
 </Layout>

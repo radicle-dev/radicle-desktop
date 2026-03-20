@@ -8,6 +8,7 @@
     publicKeyFromDid,
   } from "@app/lib/utils";
 
+  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import TextInput from "@app/components/TextInput.svelte";
@@ -17,6 +18,7 @@
     assignees: Author[];
     submitInProgress: boolean;
     save: (updatedAssignees: Author[]) => void;
+    preview?: boolean;
   }
 
   const {
@@ -24,6 +26,7 @@
     assignees = $bindable(),
     submitInProgress = false,
     save,
+    preview = false,
   }: Props = $props();
 
   let updatedAssignees: Author[] = $state([]);
@@ -94,32 +97,24 @@
 </script>
 
 <style>
-  .add-icon {
-    display: none;
-  }
-  .title-button:hover .add-icon {
-    display: flex;
-  }
-  .title-button {
-    font-size: var(--font-size-small);
-    color: var(--color-foreground-dim);
-  }
-  .body {
+  .row {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    flex-direction: row;
-    gap: 1rem;
-    font-size: var(--font-size-small);
-    margin-top: 1rem;
+    gap: 0.5rem;
   }
   .validation-message {
     display: flex;
     align-items: center;
     gap: 0.25rem;
-    color: var(--color-foreground-red);
+    color: var(--color-feedback-error-text);
     position: relative;
     margin-top: 0.5rem;
+  }
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
   button {
     border: 0;
@@ -128,86 +123,79 @@
     background-color: transparent;
     border: none;
     display: flex;
-    color: var(--color-foreground-default);
+    color: var(--color-text-secondary);
     padding: 0;
     align-items: center;
   }
 </style>
 
-<div class="global-flex">
-  <button
-    disabled={!allowedToEdit}
-    style:color={allowedToEdit
-      ? "var(--color-foreground-dim)"
-      : "var(--color-foreground-disabled)"}
-    title={allowedToEdit
-      ? undefined
-      : "Only delegates are allowed to add assignees"}
-    style:cursor={allowedToEdit ? "pointer" : "default"}
-    class="title-button"
-    onclick={() => {
-      inputValue = "";
-      showInput = !showInput;
-    }}>
-    {#if updatedAssignees.length === 0}
-      Add assignees
-    {:else}
-      Assignees
-    {/if}
-
-    {#if !showInput && allowedToEdit}
-      <span class="add-icon">
-        <Icon name="add" />
-      </span>
-    {/if}
-  </button>
-
-  {#if allowedToEdit}
-    <div class="global-flex edit-icons">
-      {#if showInput}
-        <Icon
-          onclick={addAssignee}
-          name="checkmark"
-          disabled={!valid || inputValue === ""} />
-        <Icon
-          onclick={() => {
-            inputValue = "";
-            showInput = false;
-          }}
-          name="cross" />
+{#if preview}
+  <div class="row">
+    <Button variant="outline" disabled>
+      <Icon name="avatar-incognito" />
+      {#if updatedAssignees.length === 0}
+        Add assignees
+      {:else}
+        Assignees
       {/if}
-    </div>
-  {/if}
-</div>
-
-{#if showInput}
-  <div style:margin-top="1rem">
-    <TextInput
-      autofocus
-      {valid}
-      disabled={submitInProgress}
-      placeholder="Assignee DID, e.g. did:key:z6MkwPUeUS2…"
-      bind:value={inputValue}
-      onSubmit={addAssignee} />
-    {#if !valid && validationMessage}
-      <div class="validation-message">
-        <Icon name="warning" />{validationMessage}
-      </div>
-    {/if}
+    </Button>
+    {#each updatedAssignees as assignee}
+      <span style:color="var(--color-text-secondary)">
+        <NodeId {...authorForNodeId(assignee)} />
+      </span>
+    {/each}
   </div>
-{/if}
+{:else}
+  <div class="row">
+    {#if showInput}
+      <div class="input-row">
+        <div style:flex="1" style:min-width="0">
+          <TextInput
+            autofocus
+            {valid}
+            disabled={submitInProgress}
+            placeholder="Assignee DID, e.g. did:key:z6MkwPUeUS2…"
+            bind:value={inputValue}
+            onSubmit={addAssignee} />
+        </div>
+        <Button
+          variant="outline"
+          onclick={() => {
+            showInput = false;
+            inputValue = "";
+          }}>
+          <Icon name="close" />
+        </Button>
+      </div>
+    {:else}
+      <Button
+        variant="outline"
+        disabled={!allowedToEdit}
+        title={allowedToEdit
+          ? undefined
+          : "Only delegates are allowed to add assignees"}
+        onclick={() => {
+          inputValue = "";
+          showInput = true;
+        }}>
+        <Icon name="avatar-incognito" />
+        {#if updatedAssignees.length === 0}
+          Add assignees
+        {:else}
+          Assignees
+        {/if}
+      </Button>
+    {/if}
 
-{#if updatedAssignees.length > 0}
-  <div class="body">
     {#if allowedToEdit}
       {#each updatedAssignees as assignee}
         <button
-          class="txt-small"
+          class="txt-body-m-regular"
           onclick={() =>
             (removeToggles[assignee.did] = !removeToggles[assignee.did])}>
           <NodeId {...authorForNodeId(assignee)} />
           {#if removeToggles[assignee.did]}
-            <Icon name="cross" onclick={() => removeAssignee(assignee)} />
+            <Icon name="close" onclick={() => removeAssignee(assignee)} />
           {/if}
         </button>
       {/each}
@@ -217,4 +205,10 @@
       {/each}
     {/if}
   </div>
+
+  {#if !valid && validationMessage}
+    <div class="validation-message">
+      <Icon name="warning" />{validationMessage}
+    </div>
+  {/if}
 {/if}

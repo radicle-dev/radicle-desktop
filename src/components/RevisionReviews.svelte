@@ -50,15 +50,15 @@
     padding: 0;
   }
   .accepted {
-    color: var(--color-foreground-success);
+    color: var(--color-feedback-success-text);
   }
 
   .rejected {
-    color: var(--color-foreground-red);
+    color: var(--color-feedback-error-text);
   }
 
   .no-verdict {
-    color: var(--color-foreground-dim);
+    color: var(--color-text-secondary);
   }
 </style>
 
@@ -89,14 +89,12 @@
           <Icon name={verdictIcon(review.verdict)} />
         </div>
         <span class="global-flex" style:gap="0">
-          <NodeId
-            {...authorForNodeId(review.author)}
-            styleFontWeight="var(--font-weight-regular)" />'s
+          <NodeId {...authorForNodeId(review.author)} />'s
         </span>
         review
         {#if "draft" in review}
           <span
-            class="global-counter"
+            class="global-chip"
             title="This review is not yet visible to your peers">
             Draft
           </span>

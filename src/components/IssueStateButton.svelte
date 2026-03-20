@@ -6,7 +6,7 @@
 
   import { issueStatusBackgroundColor, issueStatusColor } from "@app/lib/utils";
 
-  import Border from "@app/components/Border.svelte";
+  import Button from "@app/components/Button.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -16,56 +16,57 @@
   interface Props {
     selectedState: State;
     onSelect: (selectedStatus: State) => void;
+    disabled?: boolean;
   }
 
-  const { selectedState, onSelect }: Props = $props();
+  const { selectedState, onSelect, disabled = false }: Props = $props();
 
   let popoverExpanded: boolean = $state(false);
 </script>
 
-<style>
-  button {
-    cursor: pointer;
-    border: 0;
-    background: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: var(--font-size-small);
-  }
-  .badge {
-    gap: 0.375rem;
-    padding-right: 0.625rem;
-  }
-</style>
-
 <Popover
   popoverPadding="0"
-  popoverPositionTop="2rem"
-  popoverPositionLeft="0"
+  placement="bottom-start"
   bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
-    <button {onclick}>
+    <Button
+      variant="outline"
+      {disabled}
+      {onclick}
+      active={popoverExpanded}
+      title={disabled
+        ? "You must be a delegate to change the issue state"
+        : undefined}>
       <span
-        class="global-counter badge"
-        style:color={issueStatusColor[selectedState.status]}
-        style:background-color={issueStatusBackgroundColor[
-          selectedState.status
-        ]}>
+        class="global-chip"
+        style:padding="0"
+        style:margin-left="-0.25rem"
+        style:color={disabled
+          ? undefined
+          : issueStatusColor[selectedState.status]}
+        style:background-color={disabled
+          ? undefined
+          : issueStatusBackgroundColor[selectedState.status]}>
         <Icon
           name={selectedState.status === "open"
             ? "issue"
             : `issue-${selectedState.status}`} />
+      </span>
+      <span style:color={disabled ? undefined : "var(--color-text-secondary)"}>
         {capitalize(selectedState.status)}
         {selectedState.status === "closed" ? `as ${selectedState.reason}` : ""}
-        <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
       </span>
-    </button>
+      <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
+    </Button>
   {/snippet}
   {#snippet popover()}
-    <Border variant="ghost">
+    <div
+      style:border="1px solid var(--color-border-subtle)"
+      style:border-radius="var(--border-radius-sm)"
+      style:display="flex"
+      style:gap="0.5rem"
+      style:align-items="center"
+      style:background-color="var(--color-surface-canvas)">
       <DropdownList
         items={[
           { status: "open" },
@@ -75,23 +76,29 @@
         {#snippet item(state)}
           <DropdownListItem
             selected={isEqual(selectedState, state)}
+            styleGap="0.5rem"
             onclick={() => {
               onSelect(state);
               closeFocused();
             }}>
             <span
-              class="global-flex"
-              style:color={issueStatusColor[state.status]}>
+              class="global-chip"
+              style:padding="0"
+              style:margin-left="-0.5rem"
+              style:color={issueStatusColor[state.status]}
+              style:background-color={issueStatusBackgroundColor[state.status]}>
               <Icon
                 name={state.status === "open"
                   ? "issue"
                   : `issue-${state.status}`} />
+            </span>
+            <span style:color="var(--color-text-secondary)">
               {capitalize(state.status)}
               {state.status === "closed" ? `as ${state.reason}` : ""}
             </span>
           </DropdownListItem>
         {/snippet}
       </DropdownList>
-    </Border>
+    </div>
   {/snippet}
 </Popover>

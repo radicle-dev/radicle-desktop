@@ -38,7 +38,7 @@
         <div
           role="button"
           tabindex="0"
-          class="reaction txt-tiny"
+          class="reaction txt-body-s-regular"
           onclick={async () => {
             if (handleReaction) {
               await handleReaction(authors, emoji);
@@ -48,7 +48,7 @@
           <span>{authors.length}</span>
         </div>
       {:else}
-        <div class="reaction txt-tiny" style="padding: 2px 4px;">
+        <div class="reaction txt-body-s-regular" style="padding: 2px 4px;">
           <span>{@html emojiToTwemoji(emoji, ["21a9"])}</span>
           <span>{authors.length}</span>
         </div>

@@ -4,11 +4,11 @@
 
   import { twemoji } from "@app/lib/utils";
 
+  import Button from "@app/components/Button.svelte";
   import CompactCommitAuthorship from "@app/components/CompactCommitAuthorship.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
 
   interface Props {
     children?: Snippet;
@@ -32,7 +32,7 @@
 <style>
   .teaser {
     display: flex;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     align-items: start;
     padding: 0.125rem 0;
   }
@@ -59,7 +59,7 @@
     height: 1.3125rem;
   }
   .commit-message {
-    font-size: var(--font-size-tiny);
+    font: var(--txt-body-s-regular);
     -webkit-touch-callout: initial;
     -webkit-user-select: text;
     user-select: text;
@@ -70,7 +70,7 @@
     align-items: center;
   }
   .disabled {
-    color: var(--color-foreground-disabled) !important;
+    color: var(--color-text-disabled) !important;
   }
   pre {
     white-space: pre-wrap;
@@ -88,15 +88,15 @@
       </div>
       {#if commit.message.trim() !== commit.summary.trim()}
         <div class="commit-expand-button">
-          <NakedButton
+          <Button
+            variant="naked"
             stylePadding="0 0.25rem"
-            variant="ghost"
             onclick={e => {
               e.stopPropagation();
               commitMessageVisible = !commitMessageVisible;
             }}>
             <Icon name="ellipsis" />
-          </NakedButton>
+          </Button>
         </div>
       {/if}
     </div>
@@ -109,10 +109,7 @@
   <div class="right">
     {@render children?.()}
     <CompactCommitAuthorship {commit}>
-      <Id
-        id={commit.id}
-        clipboard={commit.id}
-        variant={disabled ? "none" : "commit"} />
+      <Id id={commit.id} clipboard={commit.id} />
     </CompactCommitAuthorship>
   </div>
 </div>

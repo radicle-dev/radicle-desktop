@@ -31,17 +31,17 @@ describe("Action summaries", () => {
     {
       summary: "Review without verdict",
       input: [createAction({ type: "review", revision })],
-      output: `left a review with a comment on revision <span class="global-oid">${formatOid(revision)}</span>`,
+      output: `left a review with a comment on revision <span class="txt-id">${formatOid(revision)}</span>`,
     },
     {
       summary: "Review with accepted verdict",
       input: [createAction({ type: "review", verdict: "accept", revision })],
-      output: `accepted revision <span class="global-oid">${formatOid(revision)}</span> with a review`,
+      output: `accepted revision <span class="txt-id">${formatOid(revision)}</span> with a review`,
     },
     {
       summary: "Review with rejected verdict",
       input: [createAction({ type: "review", verdict: "reject", revision })],
-      output: `rejected revision <span class="global-oid">${formatOid(revision)}</span> with a review`,
+      output: `rejected revision <span class="txt-id">${formatOid(revision)}</span> with a review`,
     },
     {
       summary: "Add multiple labels",
@@ -91,7 +91,7 @@ describe("Action summaries", () => {
           base: oid,
         }),
       ],
-      output: `created revision <span class="global-oid">${formatOid(revision)}</span>`,
+      output: `created revision <span class="txt-id">${formatOid(revision)}</span>`,
     },
     {
       summary: "Merge revision",
@@ -102,7 +102,7 @@ describe("Action summaries", () => {
           commit: actionOid,
         }),
       ],
-      output: `merged revision <span class="global-oid">${formatOid(revision)}</span>`,
+      output: `merged revision <span class="txt-id">${formatOid(revision)}</span>`,
     },
   ])(
     "$summary => $output",
@@ -172,13 +172,13 @@ describe("Action summaries", () => {
         createAction({ type: "edit", title: "Lorem ipsum" }, oid),
         createAction({ type: "comment", body: "A patch title" }, oid),
       ],
-      output: `opened patch <span class="global-oid">${formatOid(oid)}</span>`,
+      output: `opened patch <span class="txt-id">${formatOid(oid)}</span>`,
     },
     {
       summary: "Open issue where the action has the same oid than the cob",
       type: "issue" as const,
       input: [createAction({ type: "edit", title: "Lorem ipsum" }, oid)],
-      output: `opened issue <span class="global-oid">${formatOid(oid)}</span>`,
+      output: `opened issue <span class="txt-id">${formatOid(oid)}</span>`,
     },
     {
       summary: "Leave two comments in one operation",

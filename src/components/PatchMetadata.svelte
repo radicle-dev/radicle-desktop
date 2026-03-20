@@ -7,12 +7,10 @@
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
-  import { authorForNodeId } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
-  import NodeId from "@app/components/NodeId.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
 
   interface Props {
@@ -80,15 +78,11 @@
 <style>
   .metadata-section {
     padding: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     display: flex;
     flex-direction: column;
     align-items: flex;
     height: 100%;
-  }
-  .metadata-section-title {
-    margin-bottom: 0.5rem;
-    color: var(--color-foreground-dim);
   }
 </style>
 
@@ -99,29 +93,24 @@
   <div
     class="metadata-section"
     style={horizontal ? "flex: 1;" : "width: 100%;"}>
-    <div class="metadata-section-title">Author</div>
-    <NodeId {...authorForNodeId(patch.author)} />
-  </div>
-
-  <div
-    class="metadata-section"
-    style={horizontal ? "flex: 1;" : "width: 100%;"}>
-    <div class="metadata-section-title">Status</div>
     <PatchStateButton
       selectedState={patch.state}
       onSelect={newState => {
         void saveState(newState);
-      }} />
+      }}
+      disabled={!roles.isDelegate(
+        config.publicKey,
+        repo.delegates.map(d => d.did),
+      )} />
   </div>
 
   <div
     class="metadata-section"
     style={horizontal ? "flex: 1;" : "width: 100%;"}>
     <LabelInput
-      allowedToEdit={!!roles.isDelegateOrAuthor(
+      allowedToEdit={!!roles.isDelegate(
         config.publicKey,
         repo.delegates.map(delegate => delegate.did),
-        patch.author.did,
       )}
       labels={patch.labels}
       submitInProgress={labelSaveInProgress}
@@ -132,10 +121,9 @@
     class="metadata-section"
     style={horizontal ? "flex: 1;" : "width: 100%;"}>
     <AssigneeInput
-      allowedToEdit={!!roles.isDelegateOrAuthor(
+      allowedToEdit={!!roles.isDelegate(
         config.publicKey,
         repo.delegates.map(delegate => delegate.did),
-        patch.author.did,
       )}
       assignees={patch.assignees}
       submitInProgress={assigneesSaveInProgress}

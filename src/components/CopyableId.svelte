@@ -7,7 +7,13 @@
     inline = false,
     children,
     id,
-  }: { inline?: boolean; children?: Snippet; id: string } = $props();
+    styleFont = undefined,
+  }: {
+    inline?: boolean;
+    children?: Snippet;
+    id: string;
+    styleFont?: string;
+  } = $props();
 
   let clipboard: Clipboard;
 </script>
@@ -15,12 +21,12 @@
 <style>
   .copyable-id {
     cursor: pointer;
-    color: var(--color-foreground-dim);
+    color: var(--color-text-secondary);
     gap: 0.25rem;
   }
 
   .copyable-id:hover {
-    color: var(--color-foreground-contrast);
+    color: var(--color-text-primary);
   }
   .inline {
     display: inline-flex;
@@ -35,7 +41,8 @@
   tabindex="0"
   onclick={() => clipboard.copy()}
   class:inline
-  class="copyable-id global-flex txt-small txt-monospace">
+  class="copyable-id global-flex txt-code-regular"
+  style:font={styleFont}>
   {#if children}
     {@render children()}
   {:else}

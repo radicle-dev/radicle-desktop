@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { ComponentProps } from "svelte";
   import type {
     ClipboardEventHandler,
     FormEventHandler,
@@ -9,11 +8,9 @@
 
   import * as utils from "@app/lib/utils";
 
-  import Border from "@app/components/Border.svelte";
-
   interface Props {
     draggingOver?: boolean;
-    borderVariant?: ComponentProps<typeof Border>["variant"];
+    borderVariant?: "float" | "ghost";
     onpaste?: ClipboardEventHandler<HTMLTextAreaElement>;
     focus?: boolean;
     oninput?: FormEventHandler<HTMLTextAreaElement>;
@@ -49,6 +46,11 @@
     value = $bindable(undefined),
   }: Props = $props();
   /* eslint-enable prefer-const */
+
+  const borderColors: Record<NonNullable<Props["borderVariant"]>, string> = {
+    ghost: "var(--color-border-subtle)",
+    float: "var(--color-border-subtle)",
+  };
 
   let textareaElement: HTMLTextAreaElement | undefined = $state(undefined);
   let focussed = $state(false);
@@ -123,7 +125,7 @@
   textarea {
     background-color: transparent;
     border: 0;
-    color: var(--color-foreground-default);
+    color: var(--color-text-secondary);
     font-family: inherit;
     height: 100%;
     width: 100%;
@@ -146,7 +148,7 @@
   }
 
   textarea::placeholder {
-    color: var(--color-foreground-dim);
+    color: var(--color-text-secondary);
   }
 
   textarea::-webkit-scrollbar {
@@ -159,8 +161,8 @@
   }
 
   textarea::-webkit-scrollbar-thumb {
-    background-color: var(--color-fill-ghost);
-    border-radius: 4px;
+    background-color: var(--color-surface-subtle);
+    border-radius: var(--border-radius-md);
   }
 
   .dragover {
@@ -171,16 +173,20 @@
     align-items: center;
     width: 100%;
     height: 100%;
-    background-color: var(--color-background-float);
+    background-color: var(--color-surface-canvas);
   }
 </style>
 
-<Border
-  variant={focussed ? "secondary" : borderVariant}
-  stylePosition="relative"
-  styleWidth="100%"
-  {styleAlignItems}
-  {styleMinHeight}>
+<div
+  style:border={`1px solid ${focussed ? "var(--color-border-brand)" : borderColors[borderVariant]}`}
+  style:border-radius="var(--border-radius-sm)"
+  style:display="flex"
+  style:gap="0.5rem"
+  style:align-items={styleAlignItems}
+  style:background-color="var(--color-surface-base)"
+  style:position="relative"
+  style:width="100%"
+  style:min-height={styleMinHeight}>
   <textarea
     style:min-height={styleMinHeight}
     style:padding={stylePadding}
@@ -188,7 +194,7 @@
     bind:this={textareaElement}
     bind:value
     aria-label="textarea-comment"
-    class="txt-small"
+    class="txt-body-m-regular"
     style:resize={size === "resizable" ? "vertical" : undefined}
     style:overflow={size === "resizable" || size === "fixed-height"
       ? "scroll"
@@ -202,8 +208,8 @@
     onkeydown={handleKeydown}>
   </textarea>
   {#if draggingOver}
-    <div class="txt-small dragover">
+    <div class="txt-body-m-regular dragover">
       Drop files to add them as embeds. Embeds are limited to 10Mb.
     </div>
   {/if}
-</Border>
+</div>

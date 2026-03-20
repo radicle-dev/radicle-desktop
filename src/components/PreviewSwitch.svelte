@@ -14,8 +14,8 @@
 
 <div class="container">
   <Button
-    flatRight
     variant="ghost"
+    flatRight
     active={!preview}
     onclick={() => {
       preview = !preview;
@@ -24,8 +24,8 @@
   </Button>
 
   <Button
-    flatLeft
     variant="ghost"
+    flatLeft
     active={preview}
     onclick={() => {
       preview = !preview;

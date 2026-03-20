@@ -1,9 +1,9 @@
-import type { HomeRoute, LoadedHomeRoute } from "@app/views/home/router";
 import type { LoadedRepoRoute, RepoRoute } from "@app/views/repo/router";
+import type { NotificationsByRepo } from "@bindings/cob/inbox/NotificationsByRepo";
+import type { Config } from "@bindings/config/Config";
+import type { RepoSummary } from "@bindings/repo/RepoSummary";
 
-import { loadHome } from "@app/views/home/router";
 import {
-  loadCreateIssue,
   loadIssue,
   loadIssues,
   loadPatch,
@@ -11,25 +11,88 @@ import {
   loadRepoHome,
 } from "@app/views/repo/router";
 
+import { invoke } from "@app/lib/invoke";
+
 interface BootingRoute {
   resource: "booting";
 }
 
-export type Route = BootingRoute | HomeRoute | RepoRoute;
-export type LoadedRoute = BootingRoute | LoadedHomeRoute | LoadedRepoRoute;
+interface InboxRoute {
+  resource: "inbox";
+}
+
+interface GuideRoute {
+  resource: "guide";
+}
+
+export interface SidebarData {
+  config: Config;
+  repos: RepoSummary[];
+  notificationCount: number;
+  seededNotReplicated: string[];
+}
+
+export interface LoadedInboxRoute {
+  resource: "inbox";
+  params: {
+    sidebarData: SidebarData;
+    notificationsByRepo: NotificationsByRepo[];
+  };
+}
+
+export interface LoadedGuideRoute {
+  resource: "guide";
+  params: { sidebarData: SidebarData };
+}
+
+export type Route = BootingRoute | RepoRoute | InboxRoute | GuideRoute;
+export type LoadedRoute =
+  | BootingRoute
+  | LoadedRepoRoute
+  | LoadedInboxRoute
+  | LoadedGuideRoute;
+
+export async function loadSidebarData(): Promise<SidebarData> {
+  const [config, repos, notificationCount, seededNotReplicated] =
+    await Promise.all([
+      invoke<Config>("config"),
+      invoke<RepoSummary[]>("list_repos_summary"),
+      invoke<number>("notification_count"),
+      invoke<string[]>("seeded_not_replicated"),
+    ]);
+  return { config, repos, notificationCount, seededNotReplicated };
+}
+
+export async function loadGuide(): Promise<LoadedGuideRoute> {
+  const sidebarData = await loadSidebarData();
+  return { resource: "guide", params: { sidebarData } };
+}
+
+export async function loadInbox(): Promise<LoadedInboxRoute> {
+  const [sidebarData, notificationsByRepo] = await Promise.all([
+    loadSidebarData(),
+    invoke<NotificationsByRepo[]>("list_notifications", {
+      params: { take: 100 },
+    }),
+  ]);
+  return {
+    resource: "inbox",
+    params: { sidebarData, notificationsByRepo },
+  };
+}
 
 export async function loadRoute(
   route: Route,
   _previousLoaded: LoadedRoute,
 ): Promise<LoadedRoute> {
-  if (route.resource === "home") {
-    return loadHome(route);
+  if (route.resource === "inbox") {
+    return loadInbox();
+  } else if (route.resource === "guide") {
+    return loadGuide();
   } else if (route.resource === "repo.home") {
     return loadRepoHome(route);
   } else if (route.resource === "repo.issue") {
     return loadIssue(route);
-  } else if (route.resource === "repo.createIssue") {
-    return loadCreateIssue(route);
   } else if (route.resource === "repo.issues") {
     return loadIssues(route);
   } else if (route.resource === "repo.patch") {

@@ -2,7 +2,6 @@
   import type { IssueStatus } from "@app/views/repo/router";
   import type { CacheEvent } from "@bindings/cob/CacheEvent";
   import type { Issue } from "@bindings/cob/issue/Issue";
-  import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { Channel } from "@tauri-apps/api/core";
@@ -14,40 +13,36 @@
     issueCountMismatch,
     resetIssueCounts,
   } from "@app/lib/issueCounts.svelte";
+  import { show } from "@app/lib/modal";
   import * as router from "@app/lib/router";
-  import { explorerUrl, modifierKey } from "@app/lib/utils";
+  import type { SidebarData } from "@app/lib/router/definitions";
+  import { modifierKey } from "@app/lib/utils";
 
-  import Border from "@app/components/Border.svelte";
   import Button from "@app/components/Button.svelte";
+  import CobCacheWarning from "@app/components/CobCacheWarning.svelte";
+  import FuzzySearch from "@app/components/FuzzySearch.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import IssuesSecondColumn from "@app/components/IssuesSecondColumn.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
-  import NodeBreadcrumb from "@app/components/NodeBreadcrumb.svelte";
-  import Spinner from "@app/components/Spinner.svelte";
-  import TextInput from "@app/components/TextInput.svelte";
+  import ScrollArea from "@app/components/ScrollArea.svelte";
+  import CreateIssueModal from "@app/modals/CreateIssue.svelte";
 
-  import BreadcrumbCopyButton from "./BreadcrumbCopyButton.svelte";
-  import IssuesBreadcrumb from "./IssuesBreadcrumb.svelte";
   import Layout from "./Layout.svelte";
-  import RepoBreadcrumb from "./RepoBreadcrumb.svelte";
 
   interface Props {
     repo: RepoInfo;
     issues: Issue[];
-    config: Config;
     status: IssueStatus;
-    notificationCount: number;
+    sidebarData: SidebarData;
   }
 
   /* eslint-disable prefer-const */
-  let { notificationCount, repo, issues, config, status }: Props = $props();
+  let { repo, issues, status, sidebarData }: Props = $props();
   /* eslint-enable prefer-const */
 
   let cacheState: CacheEvent | undefined = $state();
 
-  const project = $derived(repo.payloads["xyz.radicle.project"]!);
-
   let searchInput = $state("");
+  let showSearch = $state(false);
 
   async function rebuildIssueCache() {
     try {
@@ -75,6 +70,7 @@
     status;
 
     searchInput = "";
+    showSearch = false;
   });
 
   const searchableIssues = $derived(
@@ -101,158 +97,170 @@
       all: true,
     }),
   );
+
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>
-  .container {
-    padding: 1rem 1rem 1rem 0;
+  .page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 1rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .topbar-title {
+    font: var(--txt-body-m-semibold);
+    color: var(--color-text-secondary);
+    padding-right: 0.25rem;
+  }
+  .filters {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .filter {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+    padding: 0.25rem 0.5rem;
+    border-radius: var(--border-radius-sm);
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .filter:hover {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
+  .filter.active {
+    background-color: var(--color-surface-subtle);
+  }
+  .filter .global-counter-badge {
+    margin-left: 0.25rem;
   }
   .list {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-  }
-  .header {
-    font-weight: var(--font-weight-medium);
-    font-size: var(--font-size-medium);
-    display: flex;
-    align-items: center;
-    min-height: 2.5rem;
-    margin-bottom: 1rem;
+    gap: 1px;
+    min-height: 100%;
   }
 </style>
 
-<Layout
-  hideSidebar
-  styleSecondColumnOverflow="visible"
-  {config}
-  {notificationCount}>
-  {#snippet breadcrumbs()}
-    <NodeBreadcrumb {config} />
-    <Icon name="chevron-right" />
-    <RepoBreadcrumb name={project.data.name} rid={repo.rid} />
-    <Icon name="chevron-right" />
-    <IssuesBreadcrumb rid={repo.rid} {status} />
-    <BreadcrumbCopyButton
-      url={explorerUrl(`${repo.rid}/issues`)}
-      icon="repo"
-      id={repo.rid} />
-  {/snippet}
-
-  {#snippet secondColumn()}
-    <IssuesSecondColumn {status} {repo} />
-  {/snippet}
-
-  <div class="container">
-    {#if issueCountMismatch(status)}
-      <div style="margin-bottom: 1rem;">
-        <Border
-          styleOverflow="hidden"
-          styleBackgroundColor="var(--color-fill-private)"
-          stylePadding="0.25rem 0.5rem"
-          styleGap="1rem"
-          variant="outline">
-          <div class="txt-overflow txt-small global-flex">
-            <Icon name="warning" />
-            <span class="txt-overflow">
-              There’s a problem with your COB cache, so some issues may not be
-              displayed. You can rebuild the cache to resolve this.
-            </span>
-          </div>
-          <div style:margin-left="auto">
-            <Button
-              variant="ghost"
-              onclick={rebuildIssueCache}
-              disabled={cacheState !== undefined}>
-              {#if cacheState?.event === "started" || cacheState?.event === "progress"}
-                Rebuilding
-                <Spinner />
-              {:else if cacheState?.event === "finished"}
-                Done
-                <Icon name="checkmark" />
-              {:else}
-                Rebuild cache
-              {/if}
-            </Button>
-          </div>
-        </Border>
+<Layout {sidebarData} activeRepo={repo} selfScroll>
+  <div class="page">
+    <div class="topbar">
+      <span class="topbar-title">Issues</span>
+      <div class="filters">
+        <a
+          class="filter"
+          class:active={status === "all"}
+          href={router.routeToPath({
+            resource: "repo.issues",
+            rid: repo.rid,
+            status: "all",
+          })}>
+          <Icon name="issue" />All
+          <span class="global-counter-badge">
+            {project.meta.issues.open + project.meta.issues.closed}
+          </span>
+        </a>
+        <a
+          class="filter"
+          class:active={status === "open"}
+          href={router.routeToPath({
+            resource: "repo.issues",
+            rid: repo.rid,
+            status: "open",
+          })}>
+          <Icon name="issue" />Open
+          <span class="global-counter-badge">{project.meta.issues.open}</span>
+        </a>
+        <a
+          class="filter"
+          class:active={status === "closed"}
+          href={router.routeToPath({
+            resource: "repo.issues",
+            rid: repo.rid,
+            status: "closed",
+          })}>
+          <Icon name="issue-closed" />Closed
+          <span class="global-counter-badge">{project.meta.issues.closed}</span>
+        </a>
       </div>
-    {/if}
-    <div class="header">
-      <div>Issues</div>
-      <div class="global-flex" style:margin-left="auto" style:gap="0.75rem">
-        {#if issues.length > 0}
-          <TextInput
-            onSubmit={async () => {
-              if (searchResults.length === 1) {
-                await router.push({
-                  resource: "repo.issue",
-                  rid: repo.rid,
-                  issue: searchResults[0].obj.issue.id,
-                  status,
-                });
-              }
-            }}
-            onDismiss={() => {
-              searchInput = "";
-            }}
-            placeholder={`Fuzzy filter issues ${modifierKey()} + f`}
-            keyShortcuts="ctrl+f"
-            bind:value={searchInput}>
-            {#snippet left()}
-              <div
-                style:color="var(--color-foreground-dim)"
-                style:padding-left="0.5rem">
-                <Icon name="filter" />
-              </div>
-            {/snippet}
-          </TextInput>
-        {/if}
+      <div class="global-flex" style:margin-left="auto" style:gap="0.5rem">
+        <FuzzySearch
+          hasItems={issues.length > 0}
+          placeholder={`Fuzzy filter issues ${modifierKey()} + f`}
+          onSubmit={async () => {
+            if (searchResults.length === 1) {
+              await router.push({
+                resource: "repo.issue",
+                rid: repo.rid,
+                issue: searchResults[0].obj.issue.id,
+                status,
+              });
+            }
+          }}
+          bind:show={showSearch}
+          bind:value={searchInput} />
         <Button
-          styleHeight="2.5rem"
+          styleHeight="2rem"
           variant="secondary"
-          onclick={() => {
-            void router.push({
-              resource: "repo.createIssue",
-              status,
-              rid: repo.rid,
-            });
-          }}>
-          <Icon name="add" />New issue
+          onclick={() =>
+            show({
+              component: CreateIssueModal,
+              props: { repo },
+            })}>
+          <Icon name="plus" />New issue
         </Button>
       </div>
     </div>
 
-    <div class="list">
-      {#each searchResults as result}
-        <IssueTeaser
-          focussed={searchResults.length === 1 && searchInput !== ""}
-          issue={result.obj.issue}
-          rid={repo.rid}
-          {status} />
-      {/each}
+    <ScrollArea style="height: 100%; min-width: 0;">
+      {#if issueCountMismatch(status)}
+        <CobCacheWarning
+          noun="issues"
+          {cacheState}
+          onRebuild={rebuildIssueCache} />
+      {/if}
 
-      {#if searchResults.length === 0}
-        <Border
-          variant="ghost"
-          styleFlexDirection="column"
-          styleAlignItems="center"
-          styleJustifyContent="center">
+      <div class="list">
+        {#each searchResults as result}
+          <IssueTeaser
+            focussed={searchResults.length === 1 && searchInput !== ""}
+            issue={result.obj.issue}
+            rid={repo.rid}
+            {status} />
+        {/each}
+
+        {#if searchResults.length === 0}
           <div
             class="global-flex"
-            style:height="5.25rem"
-            style:justify-content="center">
-            <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
-              <Icon name="none" />
+            style:flex="1"
+            style:justify-content="center"
+            style:align-items="center">
+            <div
+              class="txt-missing txt-body-m-regular global-flex"
+              style:gap="0.25rem">
               {#if issues.length > 0 && searchResults.length === 0}
-                No matching issues.
+                No matching issues
               {:else}
-                No {status === "all" ? "" : status} issues.
+                No {status === "all" ? "" : status} issues
               {/if}
             </div>
           </div>
-        </Border>
-      {/if}
-    </div>
+        {/if}
+      </div>
+    </ScrollArea>
   </div>
 </Layout>

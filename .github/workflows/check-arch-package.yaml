@@ -1,10 +1,10 @@
 on:
   pull_request:
     paths:
-      - 'arch/**'
+      - "arch/**"
   push:
     paths:
-      - 'arch/**'
+      - "arch/**"
   workflow_dispatch:
 
 jobs:

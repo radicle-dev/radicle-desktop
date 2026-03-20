@@ -95,18 +95,18 @@
   }
 </style>
 
-<div class="timeline txt-small">
+<div class="timeline txt-body-m-regular">
   {#each timeline as op}
     {#if op.type === "revision"}
       {#if op.id === patchId}
         <div class="timeline-item">
-          <div class="icon" style:color="var(--color-fill-success)">
+          <div class="icon" style:color="var(--color-feedback-success-text)">
             <Icon name="patch" />
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
             <div>
-              opened patch <Id id={op.id} clipboard={op.id} variant="oid" />
+              opened patch <Id id={op.id} clipboard={op.id} />
             </div>
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
@@ -121,7 +121,7 @@
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
             <div>
-              created revision <Id id={op.id} clipboard={op.id} variant="oid" />
+              created revision <Id id={op.id} clipboard={op.id} />
             </div>
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
@@ -188,7 +188,7 @@
     {:else if op.type === "assign"}
       <div class="timeline-item">
         <div class="icon">
-          <Icon name="user" />
+          <Icon name="avatar-incognito" />
         </div>
         <div class="wrapper">
           <NodeId {...authorForNodeId(op.author)} />
@@ -222,7 +222,7 @@
       </div>
     {:else if op.type === "merge"}
       <div class="timeline-item">
-        <div class="icon" style:color="var(--color-fill-primary)">
+        <div class="icon" style:color="var(--color-brand-bg)">
           <Icon name="patch-merged" />
         </div>
         <div class="wrapper">
@@ -230,8 +230,7 @@
           <div>
             merged patch at revision <Id
               id={op.revision}
-              clipboard={op.revision}
-              variant="oid" />
+              clipboard={op.revision} />
           </div>
           <div title={absoluteTimestamp(op.timestamp)}>
             {formatTimestamp(op.timestamp)}
@@ -242,7 +241,7 @@
       {#if op.previous && op.previous.type === op.type}
         <div class="timeline-item">
           <div class="icon">
-            <Icon name="pen" />
+            <Icon name="edit" />
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
@@ -258,29 +257,23 @@
     {:else if op.type === "review"}
       <div class="timeline-item">
         {#if op.verdict === "accept"}
-          <div class="icon" style:color="var(--color-foreground-success)">
-            <Icon name="thumb-up" />
+          <div class="icon" style:color="var(--color-feedback-success-text)">
+            <Icon name="thumbs-up" />
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            accepted revision <Id
-              id={op.revision}
-              clipboard={op.revision}
-              variant="oid" />
+            accepted revision <Id id={op.revision} clipboard={op.revision} />
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>
           </div>
         {:else if op.verdict === "reject"}
-          <div class="icon" style:color="var(--color-foreground-red)">
+          <div class="icon" style:color="var(--color-feedback-error-text)">
             <Icon name="stop" />
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            rejected revision <Id
-              id={op.revision}
-              clipboard={op.revision}
-              variant="oid" />
+            rejected revision <Id id={op.revision} clipboard={op.revision} />
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>
@@ -291,10 +284,7 @@
           </div>
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
-            reviewed revision <Id
-              id={op.revision}
-              clipboard={op.revision}
-              variant="oid" />
+            reviewed revision <Id id={op.revision} clipboard={op.revision} />
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}
             </div>
@@ -310,8 +300,7 @@
           <NodeId {...authorForNodeId(op.author)} />
           {op.replyTo ? "replied to a comment" : "commented"} on review <Id
             id={op.review}
-            clipboard={op.review}
-            variant="oid" />
+            clipboard={op.review} />
           <div title={absoluteTimestamp(op.timestamp)}>
             {formatTimestamp(op.timestamp)}
           </div>
@@ -326,8 +315,7 @@
           <NodeId {...authorForNodeId(op.author)} />
           {op.replyTo ? "replied to a comment" : "commented"} on revision <Id
             id={op.revision}
-            clipboard={op.revision}
-            variant="oid" />
+            clipboard={op.revision} />
           <div title={absoluteTimestamp(op.timestamp)}>
             {formatTimestamp(op.timestamp)}
           </div>

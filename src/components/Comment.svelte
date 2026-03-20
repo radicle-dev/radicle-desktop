@@ -94,11 +94,11 @@
     padding: 0 0.75rem;
     min-height: 1.5rem;
     gap: 0.5rem;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
   }
   .card-metadata {
-    color: var(--color-fill-gray);
-    font-size: var(--font-size-small);
+    color: var(--color-text-quaternary);
+    font: var(--txt-body-m-regular);
   }
   .header-right {
     display: flex;
@@ -110,7 +110,7 @@
     align-items: center;
     min-height: 1.625rem;
     word-wrap: break-word;
-    font-size: var(--font-size-small);
+    font: var(--txt-body-m-regular);
     padding: 0 0.75rem;
   }
   .actions {
@@ -121,8 +121,8 @@
     margin-left: 1rem;
   }
   .timestamp {
-    font-size: var(--font-size-small);
-    color: var(--color-fill-gray);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-quaternary);
   }
   .icon-button {
     cursor: pointer;
@@ -135,7 +135,7 @@
       <NodeId {...utils.authorForNodeId(author)} />
       {caption}
       {#if id}
-        <Id {id} clipboard={id} variant="oid" />
+        <Id {id} clipboard={id} />
       {/if}
       {#if beforeTimestamp}
         {@render beforeTimestamp()}
@@ -158,7 +158,7 @@
       <div class="header-right">
         {#if editComment}
           <div class="icon-button">
-            <Icon name="pen" onclick={toggleEdit} />
+            <Icon name="edit" onclick={toggleEdit} />
           </div>
         {/if}
         {#if deleteComment}
@@ -168,8 +168,7 @@
         {/if}
         {#if reactions && reactOnComment}
           <ReactionSelector
-            popoverPositionRight="0"
-            popoverPositionBottom="1.5rem"
+            placement="top-end"
             {reactions}
             select={async ({ authors, emoji }) => {
               try {
@@ -186,7 +185,7 @@
 
   {#if (body === undefined || body?.trim() === "") && state === "read"}
     <div class="card-body">
-      <span class="txt-missing txt-small" style:line-height="1.625rem">
+      <span class="txt-missing txt-body-m-regular" style:line-height="1.625rem">
         No description.
       </span>
     </div>
@@ -233,8 +232,7 @@
     <div class="actions">
       {#if id && reactions && reactOnComment}
         <ReactionSelector
-          popoverPositionLeft="0"
-          popoverPositionBottom="1.5rem"
+          placement="top-start"
           {reactions}
           select={async ({ authors, emoji }) => {
             try {

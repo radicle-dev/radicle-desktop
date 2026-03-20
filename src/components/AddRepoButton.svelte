@@ -3,7 +3,7 @@
 </script>
 
 <script lang="ts">
-  import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { RepoSummary } from "@bindings/repo/RepoSummary";
 
   import { z } from "zod";
 
@@ -13,20 +13,18 @@
   import { parseRepositoryId, twemoji } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
-  import Border from "@app/components/Border.svelte";
   import Button from "@app/components/Button.svelte";
   import Command from "@app/components/Command.svelte";
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import { closeFocused } from "@app/components/Popover.svelte";
   import Popover from "@app/components/Popover.svelte";
-  import Tab from "@app/components/Tab.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
     onOpen: () => void;
     reload: () => Promise<void>;
-    repos: RepoInfo[];
+    repos: RepoSummary[];
     seededNotReplicated: string[];
   }
 
@@ -107,188 +105,160 @@
   }
 </style>
 
-<Popover
-  popoverPositionRight="0"
-  popoverPositionTop="3rem"
-  bind:expanded={popoverExpanded}>
+<Popover placement="bottom-start" bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
     <Button
+      variant="naked"
       id={addRepoPopoverToggleId}
-      styleHeight="2.5rem"
-      variant="secondary"
       onclick={() => {
         onOpen();
         onclick();
       }}
       active={popoverExpanded}>
-      <Icon name="add" />Add repo
+      <Icon name="plus" />
     </Button>
   {/snippet}
 
   {#snippet popover()}
-    <Border
-      stylePosition="relative"
-      variant="ghost"
-      flatBottom
-      styleDisplay="flex"
-      styleWidth="100%"
-      styleGap="1rem"
-      styleMinWidth="27rem"
-      stylePadding="0 1rem">
-      <Tab
-        active={tab.value === "seed"}
-        onclick={() => {
-          tab.value = "seed";
-        }}>
-        Seed a repo
-      </Tab>
-      <Tab
-        active={tab.value === "publish"}
-        onclick={() => {
-          tab.value = "publish";
-        }}>
-        Publish existing repo
-      </Tab>
-    </Border>
+    <div
+      class="txt-body-m-regular"
+      style:line-height="1.625rem"
+      style:padding="1rem"
+      style:border-radius="var(--border-radius-md)"
+      style:border="1px solid var(--color-border-subtle)"
+      style:background-color="var(--color-surface-canvas)"
+      style:width="32rem">
+      <div class="global-flex" style:margin-bottom="1rem">
+        <Button
+          variant="naked"
+          active={tab.value === "seed"}
+          onclick={() => {
+            tab.value = "seed";
+          }}>
+          Seed a repo
+        </Button>
+        <Button
+          variant="naked"
+          active={tab.value === "publish"}
+          onclick={() => {
+            tab.value = "publish";
+          }}>
+          Publish existing
+        </Button>
+      </div>
 
-    <div style:margin-top="-2px">
-      <Border
-        variant="ghost"
-        flatTop
-        stylePadding="1rem"
-        styleDisplay="block"
-        styleFlexDirection="column"
-        styleAlignItems="flex-start">
-        <div class="txt-small" style:line-height="1.625rem">
-          {#if tab.value === "seed"}
-            <!-- prettier-ignore -->
-            <div style:margin-bottom="1rem">
+      {#if tab.value === "seed"}
+        <!-- prettier-ignore -->
+        <div style:margin-bottom="1rem" style:color="var(--color-text-primary)">
               You can search for Radicle repos by name or description at
               <ExternalLink href="https://search.radicle.xyz">
                 search.radicle.xyz
               </ExternalLink>.
             </div>
+        <div style:width="100%">
+          <div class="txt-body-l-semibold" style:margin-bottom="0.5rem"></div>
+          <div
+            class="global-flex"
+            style:flex-direction="column"
+            style:align-items="flex-start"
+            style:gap="1rem">
             <div style:width="100%">
-              <div class="txt-semibold" style:margin-bottom="0.5rem"></div>
-              <div
-                class="global-flex"
-                style:flex-direction="column"
-                style:align-items="flex-start"
-                style:gap="1rem">
-                <div style:width="100%">
-                  <div class="global-flex" style:width="100%">
-                    <TextInput
-                      autofocus
-                      valid={validationMessage === undefined}
-                      bind:value={rid}
-                      onSubmit={submit}
-                      placeholder="RID, e.g. rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5" />
-                    <Button
-                      variant="ghost"
-                      styleHeight="2.5rem"
-                      onclick={submit}
-                      disabled={rid.trim() === ""}>
-                      Seed
-                    </Button>
-                  </div>
-                  {#if validationMessage}
-                    <div
-                      class="txt-small global-flex"
-                      style:color="var(--color-foreground-red)"
-                      style:padding="0.25rem 0 0 0.25rem"
-                      style:gap="0.25rem">
-                      <Icon name="warning" />
-                      {validationMessage}
-                    </div>
-                  {/if}
-                </div>
+              <div class="global-flex" style:width="100%">
+                <TextInput
+                  autofocus
+                  valid={validationMessage === undefined}
+                  bind:value={rid}
+                  onSubmit={submit}
+                  placeholder="RID, e.g. rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5" />
+                <Button
+                  variant="secondary"
+                  onclick={submit}
+                  disabled={rid.trim() === ""}>
+                  <Icon name="seed" />
+                  Seed
+                </Button>
               </div>
-            </div>
-            <div
-              class="global-flex txt-missing"
-              style:align-items="flex-start"
-              style:margin-top="2rem">
-              <span style:margin-top="0.25rem">
-                <Icon name="info" />
-              </span>
-              By seeding a repository, your node fetches it from the network, allowing
-              you to interact with it locally while also making it available to others.
-            </div>
-            {#if !$nodeRunning}
-              <div
-                class="global-flex txt-missing"
-                style:align-items="flex-start"
-                style:margin-top="1rem">
-                <span style:margin-top="0.25rem">
-                  <Icon name="bulb" />
-                </span>
-
-                <div>
-                  Your node is
-                  <span class="txt-semibold">
-                    <span
-                      style:display="inline-block"
-                      style:vertical-align="text-top">
-                      <Icon name="offline" />
-                    </span>
-                    Offline.
-                  </span>
-                  You can still add repos, but they will only be fetched once your
-                  node is back online.
+              {#if validationMessage}
+                <div
+                  class="txt-body-m-regular global-flex"
+                  style:color="var(--color-feedback-error-text)"
+                  style:padding="0.25rem 0 0 0.25rem"
+                  style:gap="0.25rem">
+                  <Icon name="warning" />
+                  {validationMessage}
                 </div>
-              </div>
-            {/if}
-          {:else if tab.value === "publish"}
-            <p style="margin: 0 0 1rem 0">
-              Navigate to an existing Git repo in your terminal
-              <code
-                style:white-space="nowrap"
-                style:padding="0.125rem 0.25rem"
-                style:background-color="var(--color-fill-ghost)">
-                cd path/to/your/repo
-              </code>
-              and run the following command:
-            </p>
+              {/if}
+            </div>
+          </div>
+        </div>
+        <div
+          class="global-flex txt-missing"
+          style:align-items="flex-start"
+          style:margin-top="2rem">
+          By seeding a repository, your node fetches it from the network,
+          allowing you to interact with it locally while also making it
+          available to others.
+        </div>
+        {#if !$nodeRunning}
+          <div
+            class="global-flex txt-missing"
+            style:align-items="flex-start"
+            style:margin-top="1rem">
+            <div>
+              Your node is Offline. You can still add repos, but they will only
+              be fetched once your node is back online.
+            </div>
+          </div>
+        {/if}
+      {:else if tab.value === "publish"}
+        <p style="margin: 0 0 1rem 0" style:color="var(--color-text-primary)">
+          Navigate to an existing Git repo in your terminal
+          <code
+            style:white-space="nowrap"
+            style:padding="0.125rem 0.25rem"
+            style:background-color="var(--color-surface-subtle)">
+            cd path/to/your/repo
+          </code>
+          and run the following command:
+        </p>
 
-            <Command styleWidth="fit-content" command="rad init" />
+        <Command styleWidth="fit-content" command="rad init" />
 
-            <p style="margin: 1rem 0 0 0">
-              Follow the setup prompts to initialize the repo and publish it on
-              the Radicle network:
-            </p>
+        <p style="margin: 1rem 0 0 0" style:color="var(--color-text-primary)">
+          Follow the setup prompts to initialize the repo and publish it on the
+          Radicle network:
+        </p>
 
-            <ul style:padding="0 1rem">
-              <li>
-                <strong>Repository Name:</strong>
-                The name of your repo.
-              </li>
-              <li>
-                <strong>Description:</strong>
-                A brief summary of what your repo does.
-              </li>
-              <!-- prettier-ignore -->
-              <li>
+        <ul style:padding="0 1rem">
+          <li>
+            <strong>Repository Name:</strong>
+            The name of your repo.
+          </li>
+          <li>
+            <strong>Description:</strong>
+            A brief summary of what your repo does.
+          </li>
+          <!-- prettier-ignore -->
+          <li>
                 <strong>Default Branch:</strong>
                 Typically
                 <strong>main</strong>
                 or
                 <strong>master</strong>.
               </li>
-              <li>
-                <strong>Visibility:</strong>
-                Choose
-                <strong>public</strong>
-                to share with others or
-                <strong>private</strong>
-                to not publish it to the network yet.
-              </li>
-            </ul>
-            <p use:twemoji style:margin="2rem 0 0 0">
-              That's it! Your repo is now on the Radicle network. 🚀
-            </p>
-          {/if}
-        </div>
-      </Border>
+          <li>
+            <strong>Visibility:</strong>
+            Choose
+            <strong>public</strong>
+            to share with others or
+            <strong>private</strong>
+            to not publish it to the network yet.
+          </li>
+        </ul>
+        <p use:twemoji style:margin="2rem 0 0 0">
+          That's it! Your repo is now on the Radicle network.
+        </p>
+      {/if}
     </div>
   {/snippet}
 </Popover>

@@ -8,7 +8,7 @@ export type Action =
   | ActionWithAuthor<IssueAction>
   | ActionWithAuthor<PatchAction>;
 
-// N.b. I have taken the `%` char as indicator for a `global-oid` class
+// N.b. I have taken the `%` char as indicator for a `txt-id` class
 export function createSummary(
   a: Action[],
   kind: "issue" | "patch",
@@ -116,10 +116,7 @@ export function createSummary(
     summary = `redacted ${count > 1 ? count : "a"} ${pluralize("revision", count)}`;
   }
 
-  return summary.replaceAll(
-    /[%](\S+)[%]/g,
-    '<span class="global-oid">$1</span>',
-  );
+  return summary.replaceAll(/[%](\S+)[%]/g, '<span class="txt-id">$1</span>');
 }
 
 export function compressActions(

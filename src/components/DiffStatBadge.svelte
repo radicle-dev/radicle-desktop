@@ -11,27 +11,28 @@
 <style>
   .diff-stat-badge {
     display: flex;
-    clip-path: var(--1px-corner-fill);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
     height: 1.5rem;
+    overflow: hidden;
   }
 
   .insertions {
     display: flex;
     padding: 0 0.5rem;
     align-items: center;
-    color: var(--color-foreground-success);
-    background-color: var(--color-fill-diff-green-light);
+    color: var(--color-feedback-success-text);
   }
   .deletions {
     display: flex;
     padding: 0 0.5rem;
     align-items: center;
-    color: var(--color-foreground-red);
-    background-color: var(--color-fill-diff-red-light);
+    color: var(--color-feedback-error-text);
+    border-left: 1px solid var(--color-border-subtle);
   }
 </style>
 
-<div class="diff-stat-badge txt-mono txt-semibold txt-small">
+<div class="diff-stat-badge txt-code-regular">
   <div class="insertions">+{stats.insertions}</div>
   <div class="deletions">-{stats.deletions}</div>
 </div>

@@ -4,7 +4,6 @@
   import Button from "@app/components/Button.svelte";
   import ConfirmClear from "@app/components/ConfirmClear.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import NakedButton from "@app/components/NakedButton.svelte";
   import NotificationTeaser from "@app/components/NotificationTeaser.svelte";
 
   interface Props {
@@ -40,7 +39,6 @@
   .header {
     display: flex;
     align-items: center;
-    padding-right: 1rem;
     width: 100%;
     min-height: 2rem;
     gap: 0.75rem;
@@ -48,14 +46,16 @@
   .container {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
   }
   .action-buttons {
     display: flex;
     gap: 0.25rem;
+    color: var(--color-text-tertiary);
   }
   .clear-repo {
     margin-left: auto;
+    color: var(--color-text-tertiary);
   }
   .action-buttons,
   .clear-repo {
@@ -72,32 +72,32 @@
     class="header"
     class:txt-missing={hidden}
     style:margin-bottom={!hidden ? "1rem" : undefined}>
-    <span class="txt-bold">
+    <span class="txt-body-l-semibold">
       {name}
     </span>
-    {count}
+    <span class="global-counter-badge">{count}</span>
     <div
       class="action-buttons"
       style:display={pinned || hidden ? "flex" : undefined}>
       {#if !hidden}
-        <NakedButton
-          variant="ghost"
+        <Button
+          variant="naked"
           stylePadding="0 0.25rem"
           onclick={() => {
             togglePin(rid);
           }}>
-          <Icon name={pinned ? "pin" : "pin-hollow"} />
-        </NakedButton>
+          <Icon name={pinned ? "pin-filled" : "pin-hollow"} />
+        </Button>
       {/if}
       {#if !pinned}
-        <NakedButton
-          variant="ghost"
+        <Button
+          variant="naked"
           stylePadding="0 0.25rem"
           onclick={() => {
             toggleHide(rid);
           }}>
-          <Icon name={hidden ? "eye-closed" : "eye"} />
-        </NakedButton>
+          <Icon name={hidden ? "eye-slash" : "eye"} />
+        </Button>
       {/if}
     </div>
     {#if count > 0 && !hidden}
@@ -128,7 +128,9 @@
           style:height="100%"
           style:align-items="center"
           style:justify-content="center">
-          <div class="txt-missing txt-small global-flex" style:gap="0.25rem">
+          <div
+            class="txt-missing txt-body-m-regular global-flex"
+            style:gap="0.25rem">
             <Icon name="none" />
             No notifications.
           </div>
