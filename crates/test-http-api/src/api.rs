@@ -98,6 +98,9 @@ pub fn router(ctx: Context) -> Router {
         .route("/save_embed_by_bytes", post(save_embed_handler))
         .route("/save_embed_to_disk", post(save_embed_handler))
         .route("/list_jobs", post(jobs_handler))
+        .route("/list_notifications", post(list_notifications_handler))
+        .route("/notification_count", post(notification_count_handler))
+        .route("/clear_notifications", post(clear_notifications_handler))
         .layer(
             CorsLayer::new()
                 .allow_origin(cors::Any)
@@ -144,6 +147,20 @@ async fn list_repos_summary_handler(State(ctx): State<Context>) -> impl IntoResp
 async fn seeded_not_replicated_handler(State(ctx): State<Context>) -> impl IntoResponse {
     let rids = ctx.seeded_not_replicated()?;
     Ok::<_, Error>(Json(rids))
+}
+
+async fn list_notifications_handler() -> impl IntoResponse {
+    Ok::<_, Error>(Json(Vec::<
+        radicle_types::domain::inbox::models::notification::NotificationsByRepo,
+    >::new()))
+}
+
+async fn notification_count_handler() -> impl IntoResponse {
+    Ok::<_, Error>(Json(0_usize))
+}
+
+async fn clear_notifications_handler() -> impl IntoResponse {
+    Ok::<_, Error>(Json(()))
 }
 
 #[derive(Serialize, Deserialize)]
