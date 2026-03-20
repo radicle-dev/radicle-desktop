@@ -63,6 +63,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/authenticate", post(auth_handler))
         .route("/repo_count", post(repo_count_handler))
         .route("/list_repos", post(repo_root_handler))
+        .route("/list_repos_summary", post(list_repos_summary_handler))
         .route("/repo_by_id", post(repo_handler))
         .route("/version", post(version_handler))
         .route("/diff_stats", post(diff_stats_handler))
@@ -128,6 +129,11 @@ async fn repo_root_handler(
 
 async fn repo_count_handler(State(ctx): State<Context>) -> impl IntoResponse {
     let repos = ctx.repo_count()?;
+    Ok::<_, Error>(Json(repos))
+}
+
+async fn list_repos_summary_handler(State(ctx): State<Context>) -> impl IntoResponse {
+    let repos = ctx.list_repos_summary()?;
     Ok::<_, Error>(Json(repos))
 }
 

@@ -13,6 +13,16 @@ use crate::error;
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "repo/")]
+pub struct RepoSummary {
+    #[ts(as = "String")]
+    pub rid: identity::RepoId,
+    pub name: String,
+}
+
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
 pub struct RepoCount {
     pub total: usize,
     pub contributor: usize,

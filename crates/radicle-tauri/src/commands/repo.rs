@@ -23,6 +23,13 @@ pub fn list_repos(
 }
 
 #[tauri::command]
+pub fn list_repos_summary(
+    ctx: tauri::State<AppState>,
+) -> Result<Vec<types::repo::RepoSummary>, Error> {
+    ctx.list_repos_summary()
+}
+
+#[tauri::command]
 pub fn repo_count(ctx: tauri::State<AppState>) -> Result<types::repo::RepoCount, Error> {
     ctx.repo_count()
 }

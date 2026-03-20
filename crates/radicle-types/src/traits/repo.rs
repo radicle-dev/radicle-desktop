@@ -73,6 +73,31 @@ pub trait Repo: Profile {
         Ok::<_, Error>(entries)
     }
 
+    fn list_repos_summary(&self) -> Result<Vec<repo::RepoSummary>, Error> {
+        let profile = self.profile();
+        let storage = &profile.storage;
+        let repos = storage.repositories()?;
+        let mut entries = Vec::new();
+
+        for RepositoryInfo { rid, doc, .. } in repos {
+            let Some(data) = doc
+                .payload()
+                .get(&doc::PayloadId::project())
+                .and_then(|payload| repo::ProjectPayloadData::try_from((*payload).clone()).ok())
+            else {
+                continue;
+            };
+            entries.push(repo::RepoSummary {
+                rid,
+                name: data.name,
+            });
+        }
+
+        entries.sort_by_key(|r| r.name.to_lowercase());
+
+        Ok::<_, Error>(entries)
+    }
+
     fn repo_count(&self) -> Result<repo::RepoCount, Error> {
         let profile = self.profile();
         let storage = &profile.storage;
