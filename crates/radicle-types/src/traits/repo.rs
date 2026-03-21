@@ -77,26 +77,27 @@ pub trait Repo: Profile {
     fn list_repos_summary(&self) -> Result<Vec<repo::RepoSummary>, Error> {
         let profile = self.profile();
         let storage = &profile.storage;
-        let repos = storage.repositories()?;
-        let mut entries = Vec::new();
 
-        for RepositoryInfo { rid, doc, .. } in repos {
-            let Some(data) = doc
-                .payload()
-                .get(&doc::PayloadId::project())
-                .and_then(|payload| repo::ProjectPayloadData::try_from((*payload).clone()).ok())
-            else {
-                continue;
-            };
-            entries.push(repo::RepoSummary {
-                rid,
-                name: data.name,
-            });
-        }
+        let entries = storage
+            .repositories()?
+            .into_iter()
+            .filter_map(|RepositoryInfo { rid, doc, .. }| {
+                doc.payload()
+                    .get(&doc::PayloadId::project())
+                    .and_then(|payload| repo::ProjectPayloadData::try_from((*payload).clone()).ok())
+                    .map(|data| (rid, data))
+            })
+            .map(|(rid, data)| {
+                let summary = repo::RepoSummary {
+                    rid,
+                    name: data.name,
+                };
 
-        entries.sort_by_key(|r| r.name.to_lowercase());
+                (summary.name.to_lowercase(), summary)
+            })
+            .collect::<BTreeMap<_, _>>();
 
-        Ok::<_, Error>(entries)
+        Ok::<_, Error>(entries.values().collect())
     }
 
     fn repo_count(&self) -> Result<repo::RepoCount, Error> {
