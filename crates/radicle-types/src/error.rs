@@ -132,10 +132,6 @@ pub enum Error {
     #[error(transparent)]
     Storage(#[from] radicle::storage::Error),
 
-    /// Radicle Git error.
-    #[error(transparent)]
-    Git(#[from] radicle::git::Error),
-
     /// Surf error.
     #[error(transparent)]
     Surf(#[from] radicle_surf::Error),
