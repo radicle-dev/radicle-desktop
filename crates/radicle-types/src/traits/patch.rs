@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 
+use radicle::cob::Title;
 use radicle::node::device::BoxedSigner;
 use radicle::node::Handle;
 use radicle::patch::cache::Patches as _;
@@ -140,7 +141,7 @@ pub trait PatchesMut: Profile {
                 patch.unresolve_review_comment(review, comment, &signer)?;
             }
             models::patch::Action::Edit { title, target } => {
-                patch.edit::<BoxedSigner, String>(title, target, &signer)?;
+                patch.edit::<BoxedSigner, String>(Title::try_from(title)?, target, &signer)?;
             }
             models::patch::Action::ReviewEdit {
                 review,

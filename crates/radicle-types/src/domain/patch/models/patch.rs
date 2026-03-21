@@ -578,7 +578,10 @@ impl FromRadicleAction<radicle::patch::Action> for Action {
                     .map(|a| Author::new(a, aliases))
                     .collect::<BTreeSet<_>>(),
             },
-            radicle::patch::Action::Edit { title, target } => Self::Edit { title, target },
+            radicle::patch::Action::Edit { title, target } => Self::Edit {
+                title: title.to_string(),
+                target,
+            },
             radicle::patch::Action::Label { labels } => Self::Label { labels },
             radicle::patch::Action::Lifecycle { state } => Self::Lifecycle { state },
             radicle::patch::Action::Merge { revision, commit } => Self::Merge { revision, commit },

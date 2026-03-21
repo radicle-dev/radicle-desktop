@@ -230,7 +230,9 @@ impl FromRadicleAction<radicle::issue::Action> for Action {
             radicle::issue::Action::Lifecycle { state } => Self::Lifecycle {
                 state: state.into(),
             },
-            radicle::issue::Action::Edit { title } => Self::Edit { title },
+            radicle::issue::Action::Edit { title } => Self::Edit {
+                title: title.to_string(),
+            },
         }
     }
 }

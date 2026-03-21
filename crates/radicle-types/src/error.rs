@@ -152,6 +152,10 @@ pub enum Error {
     #[error(transparent)]
     Issue(#[from] radicle::issue::Error),
 
+    /// Invalid title.
+    #[error(transparent)]
+    Title(#[from] radicle::cob::TitleError),
+
     /// Node error.
     #[error(transparent)]
     Node(#[from] radicle::node::Error),

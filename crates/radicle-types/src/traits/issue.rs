@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 
+use radicle::cob::Title;
 use radicle::issue::cache::Issues as _;
 use radicle::node::Handle;
 use radicle::storage::ReadStorage;
@@ -106,8 +107,9 @@ pub trait IssuesMut: Profile {
         let signer = profile.signer()?;
         let aliases = profile.aliases();
         let mut issues = profile.issues_mut(&repo)?;
+        let title = Title::try_from(new.title)?;
         let issue = issues.create(
-            new.title,
+            title,
             new.description,
             &new.labels,
             &new.assignees,
@@ -183,7 +185,7 @@ pub trait IssuesMut: Profile {
                 )?;
             }
             cobs::issue::Action::Edit { title } => {
-                issue.edit(title, &signer)?;
+                issue.edit(Title::try_from(title)?, &signer)?;
             }
         }
 
