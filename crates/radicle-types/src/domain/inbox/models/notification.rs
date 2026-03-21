@@ -34,7 +34,7 @@ pub struct NotificationRow {
     pub repo: Option<identity::RepoId>,
 }
 
-pub type RepoGroup = Vec<(git::Qualified<'static>, Vec<NotificationRow>)>;
+pub type RepoGroup = Vec<(git::fmt::Qualified<'static>, Vec<NotificationRow>)>;
 pub type RepoGroupByItem = Vec<Vec<NotificationItem>>;
 
 pub type CountByRepo = (identity::RepoId, usize);
@@ -190,7 +190,7 @@ pub enum NotificationKind {
     /// Unknown reference.
     Unknown {
         #[ts(as = "String")]
-        refname: git::Qualified<'static>,
+        refname: git::fmt::Qualified<'static>,
     },
 }
 
@@ -260,7 +260,7 @@ impl From<TypedId> for cob::TypedId {
 pub enum RefUpdate {
     Updated {
         #[ts(as = "String")]
-        name: git::RefString,
+        name: git::fmt::RefString,
         #[ts(as = "String")]
         old: git::Oid,
         #[ts(as = "String")]
@@ -268,19 +268,19 @@ pub enum RefUpdate {
     },
     Created {
         #[ts(as = "String")]
-        name: git::RefString,
+        name: git::fmt::RefString,
         #[ts(as = "String")]
         oid: git::Oid,
     },
     Deleted {
         #[ts(as = "String")]
-        name: git::RefString,
+        name: git::fmt::RefString,
         #[ts(as = "String")]
         oid: git::Oid,
     },
     Skipped {
         #[ts(as = "String")]
-        name: git::RefString,
+        name: git::fmt::RefString,
         #[ts(as = "String")]
         oid: git::Oid,
     },
@@ -308,8 +308,8 @@ impl From<RefUpdate> for storage::RefUpdate {
     }
 }
 
-impl From<(git::RefString, Option<git::Oid>, Option<git::Oid>)> for RefUpdate {
-    fn from((name, new, old): (git::RefString, Option<git::Oid>, Option<git::Oid>)) -> Self {
+impl From<(git::fmt::RefString, Option<git::Oid>, Option<git::Oid>)> for RefUpdate {
+    fn from((name, new, old): (git::fmt::RefString, Option<git::Oid>, Option<git::Oid>)) -> Self {
         match (new, old) {
             (None, Some(b)) => RefUpdate::Deleted { name, oid: b },
             (Some(a), None) => RefUpdate::Created { name, oid: a },
