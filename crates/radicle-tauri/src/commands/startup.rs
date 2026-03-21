@@ -46,14 +46,13 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     let node_handle = app.app_handle().clone();
 
     let node = Node::new(profile.socket());
-    let node_status = node.clone();
 
     app.manage(inbox_service);
     app.manage(patch_service);
 
     tauri::async_runtime::spawn(async move {
         loop {
-            let _ = node_handle.emit("node_running", node_status.is_running());
+            let _ = node_handle.emit("node_running", node.is_running());
             tokio::time::sleep(std::time::Duration::from_secs(2)).await;
         }
     });
