@@ -13,8 +13,8 @@ anyhow = { version = "1.0.90" }
 axum = { version = "0.8.1", default-features = false, features = ["json", "query", "tokio", "http1"] }
 hyper = { version = "1.6", default-features = false }
 lexopt = { version = "0.3.0" }
-radicle = { version = "0.16.1" }
-radicle-surf = { version = "0.22.1", default-features = false, features = ["serde"] }
+radicle = { version = "0.22" }
+radicle-surf = { version = "0.27.0", default-features = false, features = ["serde"] }
 radicle-types = { path = "../radicle-types" }
 serde = { version = "1.0.0", features = ["derive"] }
 serde_json = { version = "1.0.0", features = ["preserve_order"] }
