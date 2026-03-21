@@ -292,7 +292,7 @@ pub trait PatchesMut: Profile {
         }
 
         if opts.announce() {
-            if let Err(e) = node.announce_refs(rid) {
+            if let Err(e) = node.announce_refs_for(rid, [profile.public_key]) {
                 log::error!("Not able to announce changes: {}", e)
             }
         }
