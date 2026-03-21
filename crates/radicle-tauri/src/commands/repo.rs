@@ -98,7 +98,7 @@ pub(crate) async fn create_repo(
     let profile = &ctx.profile;
     let storage = &profile.storage;
     let signer = ctx.profile.signer()?;
-    let config = radicle::git::raw::Config::open_default()?;
+    let config = git2::Config::open_default()?;
     // SAFETY: "master" is always a valid RefString
     let default_branch = git::RefString::try_from(
         config

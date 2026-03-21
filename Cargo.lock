@@ -4301,6 +4301,7 @@ dependencies = [
  "anyhow",
  "base64 0.22.1",
  "either",
+ "git2",
  "infer",
  "log",
  "radicle",
