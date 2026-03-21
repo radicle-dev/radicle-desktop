@@ -22,7 +22,7 @@
   GIT_HEAD ? null,
 }:
 let
-  rTc = rust-bin.fromRustupToolchainFile ./../rust-toolchain;
+  rTc = rust-bin.fromRustupToolchainFile ./../rust-toolchain.toml;
   rustPlatform = makeRustPlatform {
     cargo = rTc;
     rustc = rTc;
