@@ -13,10 +13,11 @@ pub const TIMESTAMP: u64 = 1671125284;
 /// Create a new profile.
 pub fn profile(home: &Path, seed: [u8; 32]) -> radicle::Profile {
     let home = Home::new(home).unwrap();
+    let alias = node::Alias::new("seed");
+    let config = profile::Config::new(alias.clone());
     let keystore = Keystore::new(&home.keys());
 
     let keypair = KeyPair::from_seed(Seed::from(seed));
-    let alias = node::Alias::new("seed");
     let storage = Storage::open(
         home.storage(),
         radicle::git::UserInfo {
@@ -29,7 +30,7 @@ pub fn profile(home: &Path, seed: [u8; 32]) -> radicle::Profile {
     let mut db = home.policies_mut().unwrap();
     db.follow(&keypair.pk.into(), Some(&alias)).unwrap();
 
-    let node_db = home.database_mut().unwrap();
+    let node_db = home.database_mut(config.node.database.clone()).unwrap();
     node_db
         .init(
             &keypair.pk.into(),
@@ -53,6 +54,6 @@ pub fn profile(home: &Path, seed: [u8; 32]) -> radicle::Profile {
         storage,
         keystore,
         public_key: keypair.pk.into(),
-        config: profile::Config::new(alias),
+        config,
     }
 }
