@@ -1,3 +1,28 @@
+### v0.9.0
+
+- Redesigned the entire app with a new UI kit — typography, colors, icons,
+  avatars, and border radii have all been updated for a more polished,
+  consistent appearance matching the rest of the ecosystem
+- Replaced blockies-based avatars with a new DID-based avatar system
+- Moved Settings and Create Issue into fullscreen modals
+- Default theme now follows the system theme
+- Removed window decorations on macOS for a cleaner, more native feel
+- Updated app icon
+- Rewrote app navigation and layouts
+- Added a sidebar that gives you access to all your repos
+- App now opens directly to the notification inbox on startup
+- Getting started guide shown to new users on first launch
+- Added a setting to disable the notification badge
+- Added a code font setting
+- Fixed reactions and edits incorrectly targeting the root comment instead of the intended reply
+- Restricted issue/patch state, labels, and assignees to delegates only
+
+**Shout-out to our contributors 🙏✨**
+
+- [brandonhaslegs](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkpwnLQxFBQXyMK3Es91s8A7Ew7G11BFFyng1dqZR8QhG3)
+- [julien](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkgvaRdahQZfnf7ccMHByeHtTYrMrM3MuSGYawF6ZL6DNj)
+
+
 ### v0.8.0
 
 - CI job run statuses are now shown for the default branch and in patch revision commit lists
