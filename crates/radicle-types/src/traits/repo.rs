@@ -41,7 +41,7 @@ pub trait Repo: Profile {
         let mut entries = Vec::new();
 
         for RepositoryInfo { rid, doc, refs, .. } in repos {
-            if refs.is_none() && show == Show::Contributor {
+            if refs.is_ok() && show == Show::Contributor {
                 continue;
             }
 
@@ -124,7 +124,7 @@ pub trait Repo: Profile {
                 delegate += 1;
             }
 
-            if refs.is_some() {
+            if refs.is_ok() {
                 contributor += 1;
             }
         }
