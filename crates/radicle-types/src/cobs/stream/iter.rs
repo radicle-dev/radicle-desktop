@@ -7,8 +7,8 @@ use serde_json as json;
 
 use radicle::cob::change::Storage;
 use radicle::cob::{Manifest, Op, TypeName};
-use radicle::git::raw as git2;
-use radicle::git::{Oid, PatternString};
+use radicle::git;
+use radicle::git::Oid;
 use radicle::profile::Aliases;
 use radicle::storage::git::Repository;
 
@@ -30,7 +30,7 @@ pub(super) struct Walk {
 #[derive(Clone, Debug)]
 pub enum Until {
     Tip(Oid),
-    Glob(PatternString),
+    Glob(git::fmt::refspec::PatternString),
 }
 
 impl From<Oid> for Until {
@@ -39,8 +39,8 @@ impl From<Oid> for Until {
     }
 }
 
-impl From<PatternString> for Until {
-    fn from(glob: PatternString) -> Self {
+impl From<git::fmt::refspec::PatternString> for Until {
+    fn from(glob: git::fmt::refspec::PatternString) -> Self {
         Self::Glob(glob)
     }
 }
@@ -86,14 +86,14 @@ impl Walk {
     }
 
     /// Get the iterator for the walk.
-    pub(super) fn iter(self, repo: &Repository) -> Result<WalkIter<'_>, git2::Error> {
+    pub(super) fn iter(self, repo: &Repository) -> Result<WalkIter<'_>, git::raw::Error> {
         let mut walk = repo.backend.revwalk()?;
         // N.b. ensure that we start from the `self.from` commit.
         walk.set_sorting(git2::Sort::TOPOLOGICAL.union(git2::Sort::REVERSE))?;
         match self.until {
             Until::Tip(tip) => walk.push_range(&format!("{}..{}", self.from, tip))?,
             Until::Glob(glob) => {
-                walk.push(*self.from)?;
+                walk.push(git2::Oid::from(self.from))?;
                 walk.push_glob(glob.as_str())?
             }
         }
@@ -107,13 +107,13 @@ impl Walk {
 }
 
 impl<'a> Iterator for WalkIter<'a> {
-    type Item = Result<git2::Commit<'a>, git2::Error>;
+    type Item = Result<git::raw::Commit<'a>, git::raw::Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // N.b. ensure that we start using the `from` commit and use the revwalk
         // after that.
         if let Some(from) = self.from.take() {
-            return Some(self.repo.backend.find_commit(*from));
+            return Some(self.repo.backend.find_commit(git2::Oid::from(from)));
         }
         let oid = self.inner.next()?;
         Some(oid.and_then(|oid| self.repo.backend.find_commit(oid)))
@@ -154,7 +154,7 @@ impl<'a, A> ActionsIter<'a, A> {
     fn matches_manifest(&self, tree: &git2::Tree) -> Result<bool, error::Actions> {
         let entry = match tree.get_path(Path::new("manifest")) {
             Ok(entry) => entry,
-            Err(err) if matches!(err.code(), git2::ErrorCode::NotFound) => return Ok(false),
+            Err(err) if matches!(err.code(), git::raw::ErrorCode::NotFound) => return Ok(false),
             Err(err) => {
                 return Err(error::Actions::ManifestPath {
                     oid: tree.id().into(),
@@ -298,14 +298,14 @@ where
 /// The entry is only an action if it is a blob and its name is numerical.
 fn from_tree_entry<A>(
     repo: &Repository,
-    entry: git2::TreeEntry,
+    entry: git2::TreeEntry<'_>,
     op: Op<Vec<u8>>,
     author: Author,
 ) -> Option<Result<ActionWithAuthor<A>, error::TreeAction>>
 where
     A: for<'de> Deserialize<'de>,
 {
-    let as_action = |entry: git2::TreeEntry| -> Result<ActionWithAuthor<A>, error::TreeAction> {
+    let as_action = |entry: git2::TreeEntry<'_>| -> Result<ActionWithAuthor<A>, error::TreeAction> {
         let object = entry
             .to_object(&repo.backend)
             .map_err(|err| error::TreeAction::InvalidEntry { err })?;
@@ -322,14 +322,14 @@ where
     // An entry is only considered an action if it:
     //   a) Is a blob
     //   b) Its name is numeric, e.g. 1, 2, 3, etc.
-    let is_action =
-        entry.filemode() == i32::from(git2::FileMode::Blob) && name.chars().all(|c| c.is_numeric());
+    let is_action = entry.filemode() == i32::from(git::raw::FileMode::Blob)
+        && name.chars().all(|c| c.is_numeric());
     is_action.then(|| as_action(entry))
 }
 
 /// Helper to deserialize an action from a blob's contents.
 fn action<A>(
-    blob: &git2::Blob,
+    blob: &git2::Blob<'_>,
     op: Op<Vec<u8>>,
     author: Author,
 ) -> Result<ActionWithAuthor<A>, error::Action>

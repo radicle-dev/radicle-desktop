@@ -4330,6 +4330,7 @@ dependencies = [
  "anyhow",
  "axum",
  "base64 0.22.1",
+ "git2",
  "infer",
  "log",
  "mime-infer",
