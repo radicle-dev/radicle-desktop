@@ -100,7 +100,7 @@ pub(crate) async fn create_repo(
     let signer = ctx.profile.signer()?;
     let config = git2::Config::open_default()?;
     // SAFETY: "master" is always a valid RefString
-    let default_branch = git::RefString::try_from(
+    let default_branch = git::fmt::RefString::try_from(
         config
             .get_string("init.defaultBranch")
             .unwrap_or("master".to_owned()),
