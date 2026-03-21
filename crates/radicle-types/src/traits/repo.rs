@@ -387,6 +387,7 @@ pub trait Repo: Profile {
         let policies = profile.policies()?;
         let entries = policies
             .seed_policies()?
+            .filter_map(Result::ok)
             .filter(|policy| !storage.contains(&policy.rid).unwrap_or(false))
             .map(|policy| policy.rid)
             .collect::<Vec<_>>();
