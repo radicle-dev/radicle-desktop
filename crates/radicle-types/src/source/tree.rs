@@ -21,7 +21,7 @@ pub struct Tree {
 impl Tree {
     pub fn from_surf(tree: surf::tree::Tree, path: &std::path::Path) -> Self {
         Tree {
-            id: tree.object_id(),
+            id: crate::oid::from_surf(tree.object_id()),
             path: path.to_path_buf(),
             entries: tree
                 .entries()
@@ -76,9 +76,9 @@ impl Entry {
 impl Entry {
     pub fn object_id(&self) -> Oid {
         match self.kind {
-            surf::tree::EntryKind::Blob(id) => id,
-            surf::tree::EntryKind::Tree(id) => id,
-            surf::tree::EntryKind::Submodule { id, .. } => id,
+            surf::tree::EntryKind::Blob(id) => crate::oid::from_surf(id),
+            surf::tree::EntryKind::Tree(id) => crate::oid::from_surf(id),
+            surf::tree::EntryKind::Submodule { id, .. } => crate::oid::from_surf(id),
         }
     }
 }

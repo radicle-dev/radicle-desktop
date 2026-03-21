@@ -531,7 +531,7 @@ pub trait Repo {
 
 impl Repo for git::raw::Repository {
     fn blob(&self, oid: git::Oid) -> Result<Blob, git::raw::Error> {
-        let blob = self.find_blob(*oid)?;
+        let blob = self.find_blob(oid.into())?;
 
         if blob.is_binary() {
             Ok(Blob::Binary)
@@ -721,8 +721,8 @@ impl ToPretty for surf::diff::Moved {
     type Context = ();
 
     fn pretty<R: Repo>(&self, hi: &mut Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
-        let old = Some((self.old_path.as_path(), self.old.oid));
-        let new = Some((self.new_path.as_path(), self.new.oid));
+        let old = Some((self.old_path.as_path(), crate::oid::from_surf(self.old.oid)));
+        let new = Some((self.new_path.as_path(), crate::oid::from_surf(self.new.oid)));
         let blobs = Blobs::from_paths(old, new, repo);
 
         types::diff::Moved {
@@ -741,7 +741,7 @@ impl ToPretty for surf::diff::Added {
 
     fn pretty<R: Repo>(&self, hi: &mut Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
         let old = None;
-        let new = Some((self.path.as_path(), self.new.oid));
+        let new = Some((self.path.as_path(), crate::oid::from_surf(self.new.oid)));
         let blobs = Blobs::from_paths(old, new, repo);
 
         types::diff::Added {
@@ -757,7 +757,7 @@ impl ToPretty for surf::diff::Deleted {
     type Context = ();
 
     fn pretty<R: Repo>(&self, hi: &mut Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
-        let old = Some((self.path.as_path(), self.old.oid));
+        let old = Some((self.path.as_path(), crate::oid::from_surf(self.old.oid)));
         let new = None;
         let blobs = Blobs::from_paths(old, new, repo);
 
@@ -774,8 +774,8 @@ impl ToPretty for surf::diff::Modified {
     type Context = ();
 
     fn pretty<R: Repo>(&self, hi: &mut Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
-        let old = Some((self.path.as_path(), self.old.oid));
-        let new = Some((self.path.as_path(), self.new.oid));
+        let old = Some((self.path.as_path(), crate::oid::from_surf(self.old.oid)));
+        let new = Some((self.path.as_path(), crate::oid::from_surf(self.new.oid)));
         let blobs = Blobs::from_paths(old, new, repo);
 
         types::diff::Modified {
@@ -792,8 +792,8 @@ impl ToPretty for surf::diff::Copied {
     type Context = ();
 
     fn pretty<R: Repo>(&self, hi: &mut Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
-        let old = Some((self.old_path.as_path(), self.old.oid));
-        let new = Some((self.new_path.as_path(), self.new.oid));
+        let old = Some((self.old_path.as_path(), crate::oid::from_surf(self.old.oid)));
+        let new = Some((self.new_path.as_path(), crate::oid::from_surf(self.new.oid)));
         let blobs = Blobs::from_paths(old, new, repo);
 
         types::diff::Copied {

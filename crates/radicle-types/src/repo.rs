@@ -172,12 +172,16 @@ pub struct Commit {
 impl From<surf::Commit> for Commit {
     fn from(value: surf::Commit) -> Self {
         Self {
-            id: value.id,
+            id: crate::oid::from_surf(value.id),
             author: value.author,
             committer: value.committer,
             message: value.message,
             summary: value.summary,
-            parents: value.parents,
+            parents: value
+                .parents
+                .into_iter()
+                .map(crate::oid::from_surf)
+                .collect(),
         }
     }
 }

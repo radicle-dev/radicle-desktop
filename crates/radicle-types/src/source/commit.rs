@@ -23,12 +23,16 @@ pub struct Commit {
 impl From<surf::Commit> for Commit {
     fn from(commit: surf::Commit) -> Self {
         Commit {
-            id: commit.id,
+            id: crate::oid::from_surf(commit.id),
             author: commit.author,
             committer: commit.committer,
             message: commit.message.to_string(),
             summary: commit.summary.to_string(),
-            parents: commit.parents.into_iter().collect::<Vec<_>>(),
+            parents: commit
+                .parents
+                .into_iter()
+                .map(crate::oid::from_surf)
+                .collect::<Vec<_>>(),
         }
     }
 }

@@ -35,7 +35,7 @@ impl<T: AsRef<[u8]>> From<surf::blob::Blob<T>> for Blob {
         let mime_type = infer::get(blob.content()).map(|i| i.mime_type().to_string());
 
         Blob {
-            id: blob.object_id(),
+            id: crate::oid::from_surf(blob.object_id()),
             binary: blob.is_binary(),
             commit: blob.commit().clone().into(),
             content,

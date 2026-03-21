@@ -1,4 +1,5 @@
 use base64::Engine;
+use radicle::git::Oid;
 use radicle_surf as surf;
 use serde::{Deserialize, Serialize};
 
@@ -158,13 +159,14 @@ pub trait Repo: Profile {
             "Readme.md",
         ];
 
-        let oid = sha.map_or_else(|| repo.head(), Ok)?;
+        let oid = sha.map_or_else(|| repo.head().map(|oid| Oid::from(*oid)), Ok)?;
+
         for path in paths
             .iter()
             .map(ToString::to_string)
             .chain(paths.iter().map(|p| p.to_lowercase()))
         {
-            if let Ok(blob) = repo.blob(oid, &path) {
+            if let Ok(blob) = repo.blob(crate::oid::into_surf(oid), &path) {
                 if blob.size() > MAX_BLOB_SIZE {
                     return Err(Error::FileTooLarge(blob.size()));
                 }
@@ -238,8 +240,8 @@ pub trait Repo: Profile {
             &profile.storage,
             &rid,
         ))?;
-        let base = repo.commit(base)?;
-        let commit = repo.commit(head)?;
+        let base = repo.commit(crate::oid::into_surf(base))?;
+        let commit = repo.commit(crate::oid::into_surf(head))?;
         let diff = repo.diff(base.id, commit.id)?;
         let stats = diff.stats();
 
@@ -309,8 +311,8 @@ pub trait Repo: Profile {
         let highlight = options.highlight.unwrap_or(true);
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?.backend;
-        let base = repo.find_commit(*options.base)?;
-        let head = repo.find_commit(*options.head)?;
+        let base = repo.find_commit(options.base.into())?;
+        let head = repo.find_commit(options.head.into())?;
 
         let mut opts = git::raw::DiffOptions::new();
         opts.patience(true).minimal(true).context_lines(unified);
