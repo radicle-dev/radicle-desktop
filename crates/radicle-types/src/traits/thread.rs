@@ -1,6 +1,5 @@
 use std::fs;
 
-use localtime::LocalTime;
 
 use radicle::cob;
 use radicle::git;
@@ -132,7 +131,7 @@ pub trait Thread: Profile {
                 id.into(),
                 None,
                 new.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                LocalTime::now().into(),
+                cob::Timestamp::from_secs(radicle_localtime::LocalTime::now().as_secs()),
             ),
             aliases,
         ))
@@ -175,7 +174,7 @@ pub trait Thread: Profile {
                 new.reply_to,
                 new.location.map(|l| l.into()),
                 new.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                LocalTime::now().into(),
+                cob::Timestamp::from_secs(radicle_localtime::LocalTime::now().as_secs()),
             ),
             aliases,
         ))

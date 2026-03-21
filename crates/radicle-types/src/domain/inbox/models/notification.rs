@@ -26,7 +26,7 @@ pub enum SetStatusNotifications {
 #[serde(rename = "camelCase")]
 pub struct NotificationRow {
     pub row_id: node::notifications::NotificationId,
-    pub timestamp: localtime::LocalTime,
+    pub timestamp: radicle_localtime::LocalTime,
     /// Node Id that provided us with this notification.
     pub remote: storage::RemoteId,
     pub old: Option<git::Oid>,
@@ -134,7 +134,7 @@ pub struct Issue {
     pub update: RefUpdate,
     pub title: String,
     #[ts(type = "number")]
-    pub timestamp: localtime::LocalTime,
+    pub timestamp: radicle_localtime::LocalTime,
     pub status: cobs::issue::State,
     pub actions: Vec<ActionWithAuthor<cobs::issue::Action>>,
     #[ts(as = "String")]
@@ -164,7 +164,7 @@ pub struct Patch {
     pub id: cob::ObjectId,
     pub update: RefUpdate,
     #[ts(type = "number")]
-    pub timestamp: localtime::LocalTime,
+    pub timestamp: radicle_localtime::LocalTime,
     pub title: String,
     pub status: models::patch::State,
     pub actions: Vec<ActionWithAuthor<models::patch::Action>>,

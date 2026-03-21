@@ -1,4 +1,4 @@
-use localtime::LocalTime;
+use radicle_localtime::LocalTime;
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize, ts_rs::TS)]
 #[serde(tag = "status")]
@@ -42,7 +42,6 @@ impl From<radicle::node::SyncStatus> for SyncStatus {
 pub struct SyncedAt {
     #[ts(as = "String")]
     pub oid: radicle::git::Oid,
-    #[serde(with = "radicle::serde_ext::localtime::time")]
     #[ts(type = "number")]
     pub timestamp: LocalTime,
 }
