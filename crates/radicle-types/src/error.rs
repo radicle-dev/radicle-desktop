@@ -11,6 +11,10 @@ pub enum Error {
     #[error(transparent)]
     ProfileError(#[from] radicle::profile::Error),
 
+    /// Profile signer error.
+    #[error(transparent)]
+    Signer(#[from] radicle::profile::SignerError),
+
     /// Radicle error.
     #[error("radicle is not installed")]
     RadicleNotInstalled,
