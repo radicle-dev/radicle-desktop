@@ -16,14 +16,54 @@ pub(crate) fn version(app: AppHandle) -> Result<Version, Error> {
     })
 }
 
+/// Check whether a binary can be found in the most common paths on Unix-like systems.
+/// We don't bother checking the `$PATH` variable, as we're only looking for very standard tools
+/// and prefer not to make this too complex.
+#[cfg(unix)]
+fn exists(cmd: &str) -> bool {
+    // Some common paths where system-installed binaries are found.
+    const PATHS: &[&str] = &["/usr/local/bin", "/usr/bin", "/bin"];
+
+    for dir in PATHS {
+        if std::path::Path::new(dir).join(cmd).exists() {
+            return true;
+        }
+    }
+    false
+}
+
+/// Check whether a binary can be found on `$PATH`.
+/// See:
+///  - <https://devblogs.microsoft.com/scripting/weekend-scripter-where-exethe-what-why-and-how/>
+///  - <https://learn.microsoft.com/windows-server/administration/windows-commands/where>
+#[cfg(windows)]
+fn exists(cmd: &str) -> bool {
+    use std::os::windows::process::CommandExt;
+
+    // See <https://learn.microsoft.com/windows/win32/procthread/process-creation-flags#flags>.
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+    std::process::Command::new("where.exe")
+        .arg("/q")
+        .arg("$PATH:".to_owned() + cmd)
+        .creation_flags(CREATE_NO_WINDOW)
+        .output()
+        .map(|output| output.status.success())
+        .unwrap_or_default()
+}
+
 #[tauri::command]
 pub(crate) fn check_radicle_cli(ctx: tauri::State<AppState>) -> Result<(), Error> {
-    let rad = ctx.profile().home().path().join("bin/rad");
-    if !rad.try_exists()? {
-        return Err(Error::RadicleNotInstalled);
+    let rad = ctx.profile().home().path().join("bin").join("rad");
+    if rad.exists() {
+        return Ok(());
     }
 
-    Ok(())
+    if exists("rad") {
+        return Ok(());
+    }
+
+    Err(Error::RadicleNotInstalled)
 }
 
 #[tauri::command]
