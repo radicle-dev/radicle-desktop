@@ -503,7 +503,6 @@ export const shortBobHead = formatOid(bobHead);
 export const cobRid = "rad:z3fpY7nttPPa6MBnAv2DccHzQJnqe";
 export const markdownRid = "rad:z2tchH2Ti4LxRKdssPQYs6VHE5rsg";
 export const shortNodeRemote = "z6MktU…1xB22S";
-export const defaultHttpdPort = 8081;
 export const gitOptions = {
   alice: {
     GIT_AUTHOR_NAME: "Alice Liddell",

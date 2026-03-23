@@ -49,11 +49,14 @@ async function withTestBackend<T>(
       }
     });
   } else {
-    return fetch(`http://127.0.0.1:8081/${cmd}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(args),
-    }).then(async response => {
+    return fetch(
+      `http://127.0.0.1:${import.meta.env.VITE_TEST_HTTP_API_PORT ?? 8081}/${cmd}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(args),
+      },
+    ).then(async response => {
       if (response.status === 404) {
         console.log("Got a 404 response:", response);
         return null;

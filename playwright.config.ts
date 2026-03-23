@@ -1,6 +1,22 @@
 import type { PlaywrightTestConfig } from "@playwright/test";
 
+import * as net from "node:net";
+
 import { devices } from "@playwright/test";
+
+function getFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(0, "127.0.0.1", () => {
+      const port = (server.address() as net.AddressInfo).port;
+      server.close(err => (err ? reject(err) : resolve(port)));
+    });
+    server.on("error", reject);
+  });
+}
+
+const testHttpApiPort = await getFreePort();
+process.env.VITE_TEST_HTTP_API_PORT = String(testHttpApiPort);
 
 const config: PlaywrightTestConfig = {
   outputDir: "./tests/artifacts",
@@ -33,8 +49,7 @@ const config: PlaywrightTestConfig = {
 
   webServer: [
     {
-      command:
-        "VITE_AUTH_LONG_DELAY=1000 npm run start -- --strictPort --port 3001",
+      command: `VITE_AUTH_LONG_DELAY=1000 VITE_TEST_HTTP_API_PORT=${testHttpApiPort} npm run start -- --strictPort --port 3001`,
       port: 3001,
     },
   ],

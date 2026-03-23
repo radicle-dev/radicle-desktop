@@ -5,7 +5,6 @@ import {
   createCobsFixture,
   createMarkdownFixture,
   defaultConfig,
-  defaultHttpdPort,
   gitOptions,
 } from "@tests/support/fixtures.js";
 import { createPeerManager } from "@tests/support/peerManager.js";
@@ -68,7 +67,7 @@ export default async function globalSetup(): Promise<() => void> {
         alias: "palm",
       },
     });
-    await palm.startHttpd(defaultHttpdPort);
+    await palm.startHttpd(parseInt(process.env.VITE_TEST_HTTP_API_PORT ?? "0"));
 
     try {
       console.log("Creating markdown fixture");
@@ -87,7 +86,7 @@ export default async function globalSetup(): Promise<() => void> {
     }
     await palm.stopNode();
   } else {
-    await palm.startHttpd(defaultHttpdPort);
+    await palm.startHttpd(parseInt(process.env.VITE_TEST_HTTP_API_PORT ?? "0"));
   }
 
   return async () => {
