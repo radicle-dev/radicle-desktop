@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -20,12 +21,14 @@
   import { invoke } from "@app/lib/invoke";
   import { hide } from "@app/lib/modal";
   import * as router from "@app/lib/router";
+  import { isLoadedRepoRoute } from "@app/lib/router/definitions";
   import {
     setUnlistenNodeEvents,
     unlistenNodeEvents,
   } from "@app/lib/startup.svelte";
   import { isMac, unreachable } from "@app/lib/utils";
 
+  import AppSidebar from "@app/components/AppSidebar.svelte";
   import { codeFont } from "@app/components/CodeFontSwitch.svelte";
   import {
     followSystemTheme,
@@ -49,6 +52,11 @@
   import Spinner from "./components/Spinner.svelte";
 
   const activeRouteStore = router.activeRouteStore;
+
+  const activeRepo = $derived.by((): RepoInfo | undefined => {
+    const route = $activeRouteStore;
+    return isLoadedRepoRoute(route) ? route.params.repo : undefined;
+  });
 
   const DRAG_REGION_HEIGHT = 32;
   const INTERACTIVE_TAGS = new Set([
@@ -144,6 +152,13 @@
     align-items: center;
     height: 100%;
   }
+  .layout {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
 </style>
 
 <svelte:document
@@ -194,20 +209,27 @@
   {:else if showSpinner}
     <div class="spinner"><Spinner /></div>
   {/if}
-{:else if $activeRouteStore.resource === "inbox"}
-  <InboxView {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "guide"}
-  <GuideView {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "repo.home"}
-  <RepoHome {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "repo.issue"}
-  <Issue {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "repo.issues"}
-  <Issues {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "repo.patch"}
-  <Patch {...$activeRouteStore.params} />
-{:else if $activeRouteStore.resource === "repo.patches"}
-  <Patches {...$activeRouteStore.params} />
 {:else}
-  {unreachable($activeRouteStore)}
+  <div class="layout">
+    <AppSidebar
+      sidebarData={$activeRouteStore.params.sidebarData}
+      {activeRepo} />
+    {#if $activeRouteStore.resource === "inbox"}
+      <InboxView {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "guide"}
+      <GuideView {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "repo.home"}
+      <RepoHome {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "repo.issue"}
+      <Issue {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "repo.issues"}
+      <Issues {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "repo.patch"}
+      <Patch {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "repo.patches"}
+      <Patches {...$activeRouteStore.params} />
+    {:else}
+      {unreachable($activeRouteStore)}
+    {/if}
+  </div>
 {/if}

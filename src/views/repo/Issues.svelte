@@ -15,7 +15,6 @@
   } from "@app/lib/issueCounts.svelte";
   import { show } from "@app/lib/modal";
   import * as router from "@app/lib/router";
-  import type { SidebarData } from "@app/lib/router/definitions";
   import { modifierKey } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
@@ -32,11 +31,10 @@
     repo: RepoInfo;
     issues: Issue[];
     status: IssueStatus;
-    sidebarData: SidebarData;
   }
 
   /* eslint-disable prefer-const */
-  let { repo, issues, status, sidebarData }: Props = $props();
+  let { repo, issues, status }: Props = $props();
   /* eslint-enable prefer-const */
 
   let cacheState: CacheEvent | undefined = $state();
@@ -156,7 +154,7 @@
   }
 </style>
 
-<Layout {sidebarData} activeRepo={repo} selfScroll>
+<Layout selfScroll>
   <div class="page">
     <div class="topbar">
       <span class="topbar-title">Issues</span>

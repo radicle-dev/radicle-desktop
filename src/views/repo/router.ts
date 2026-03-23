@@ -42,7 +42,6 @@ export interface LoadedRepoHomeRoute {
     repo: RepoInfo;
     sha?: string;
     tree: Tree;
-    config: Config;
     readme: Readme | null;
     sidebarData: SidebarData;
   };
@@ -72,7 +71,6 @@ export interface LoadedRepoIssuesRoute {
   resource: "repo.issues";
   params: {
     repo: RepoInfo;
-    config: Config;
     issues: Issue[];
     status: IssueStatus;
     sidebarData: SidebarData;
@@ -114,7 +112,6 @@ export interface LoadedRepoPatchesRoute {
   resource: "repo.patches";
   params: {
     repo: RepoInfo;
-    config: Config;
     patches: PaginatedQuery<Patch[]>;
     status: PatchStatus | undefined;
     sidebarData: SidebarData;
@@ -137,10 +134,9 @@ export type LoadedRepoRoute =
 export async function loadPatch(
   route: RepoPatchRoute,
 ): Promise<LoadedRepoPatchRoute> {
-  const [sidebarData, config, repo, patches, patch, revisions, activity] =
+  const [sidebarData, repo, patches, patch, revisions, activity] =
     await Promise.all([
       loadSidebarData(),
-      invoke<Config>("config"),
       invoke<RepoInfo>("repo_by_id", {
         rid: route.rid,
       }),
@@ -162,6 +158,8 @@ export async function loadPatch(
         id: route.patch,
       }),
     ]);
+
+  const config = sidebarData.config;
 
   const draftReview =
     route.reviewId !== undefined &&
@@ -195,9 +193,8 @@ export async function loadPatch(
 export async function loadPatches(
   route: RepoPatchesRoute,
 ): Promise<LoadedRepoPatchesRoute> {
-  const [sidebarData, config, repo, patches] = await Promise.all([
+  const [sidebarData, repo, patches] = await Promise.all([
     loadSidebarData(),
-    invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
     }),
@@ -210,16 +207,15 @@ export async function loadPatches(
 
   return {
     resource: "repo.patches",
-    params: { sidebarData, repo, config, patches, status: route.status },
+    params: { sidebarData, repo, patches, status: route.status },
   };
 }
 
 export async function loadRepoHome(
   route: RepoHomeRoute,
 ): Promise<LoadedRepoHomeRoute> {
-  const [sidebarData, config, repo, readme, tree] = await Promise.all([
+  const [sidebarData, repo, readme, tree] = await Promise.all([
     loadSidebarData(),
-    invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
     }),
@@ -235,17 +231,16 @@ export async function loadRepoHome(
 
   return {
     resource: "repo.home",
-    params: { sidebarData, repo, sha: route.sha, config, readme, tree },
+    params: { sidebarData, repo, sha: route.sha, readme, tree },
   };
 }
 
 export async function loadIssue(
   route: RepoIssueRoute,
 ): Promise<LoadedRepoIssueRoute> {
-  const [sidebarData, config, repo, issue, activity, issues, threads] =
+  const [sidebarData, repo, issue, activity, issues, threads] =
     await Promise.all([
       loadSidebarData(),
-      invoke<Config>("config"),
       invoke<RepoInfo>("repo_by_id", {
         rid: route.rid,
       }),
@@ -272,7 +267,7 @@ export async function loadIssue(
     params: {
       sidebarData,
       repo,
-      config,
+      config: sidebarData.config,
       issue,
       activity,
       issues,
@@ -285,9 +280,8 @@ export async function loadIssue(
 export async function loadIssues(
   route: RepoIssuesRoute,
 ): Promise<LoadedRepoIssuesRoute> {
-  const [sidebarData, config, repo, issues] = await Promise.all([
+  const [sidebarData, repo, issues] = await Promise.all([
     loadSidebarData(),
-    invoke<Config>("config"),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
     }),
@@ -299,7 +293,7 @@ export async function loadIssues(
 
   return {
     resource: "repo.issues",
-    params: { sidebarData, repo, config, issues, status: route.status },
+    params: { sidebarData, repo, issues, status: route.status },
   };
 }
 

@@ -13,7 +13,6 @@
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
-  import type { SidebarData } from "@app/lib/router/definitions";
   import {
     didFromPublicKey,
     explorerUrl,
@@ -46,7 +45,6 @@
     activity: Operation<Action>[];
     status: PatchStatus | undefined;
     review: Review | DraftReview | undefined;
-    sidebarData: SidebarData;
   }
 
   /* eslint-disable prefer-const */
@@ -58,7 +56,6 @@
     status: initialStatus,
     activity,
     review,
-    sidebarData,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -249,7 +246,7 @@
   }
 </style>
 
-<Layout {sidebarData} activeRepo={repo}>
+<Layout>
   {#if review}
     <ReviewComponent
       {config}

@@ -9,7 +9,6 @@
   import { useOverlayScrollbars } from "overlayscrollbars-svelte";
 
   import { invoke, InvokeError } from "@app/lib/invoke";
-  import type { SidebarData } from "@app/lib/router/definitions";
   import { highlight } from "@app/lib/syntax";
 
   import FileBlock from "@app/components/FileBlock.svelte";
@@ -27,11 +26,10 @@
     tree: Tree;
     repo: RepoInfo;
     readme: Readme | null;
-    sidebarData: SidebarData;
   }
 
   /* eslint-disable prefer-const */
-  let { tree, readme, repo, sidebarData }: Props = $props();
+  let { tree, readme, repo }: Props = $props();
   /* eslint-enable prefer-const */
 
   let currentPath = $state("");
@@ -120,7 +118,7 @@
   }
 </style>
 
-<Layout {sidebarData} activeRepo={repo} selfScroll>
+<Layout selfScroll>
   <div
     class="content"
     style:display="flex"

@@ -52,6 +52,18 @@ export type LoadedRoute =
   | LoadedInboxRoute
   | LoadedGuideRoute;
 
+export function isLoadedRepoRoute(
+  route: LoadedRoute,
+): route is LoadedRepoRoute {
+  return (
+    route.resource === "repo.home" ||
+    route.resource === "repo.issue" ||
+    route.resource === "repo.issues" ||
+    route.resource === "repo.patch" ||
+    route.resource === "repo.patches"
+  );
+}
+
 export async function loadSidebarData(): Promise<SidebarData> {
   const [config, repos, notificationCount, seededNotReplicated] =
     await Promise.all([

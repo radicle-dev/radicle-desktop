@@ -16,7 +16,6 @@
   import { show } from "@app/lib/modal";
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
-  import type { SidebarData } from "@app/lib/router/definitions";
   import {
     explorerUrl,
     issueStatusBackgroundColor,
@@ -49,7 +48,6 @@
     config: Config;
     threads: Thread[];
     status: IssueStatus;
-    sidebarData: SidebarData;
   }
 
   /* eslint-disable prefer-const */
@@ -61,7 +59,6 @@
     config,
     threads,
     status: initialStatus,
-    sidebarData,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -346,7 +343,7 @@
   }
 </style>
 
-<Layout {sidebarData} activeRepo={repo}>
+<Layout>
   <div class="page">
     <div class="topbar">
       <Icon name={issue.state.status === "open" ? "issue" : "issue-closed"} />

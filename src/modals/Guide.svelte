@@ -81,7 +81,7 @@
   }
 </style>
 
-<Layout {sidebarData}>
+<Layout>
   <div class="page">
     <div class="hero">
       <img src="/flower.png" alt="" />

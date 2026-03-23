@@ -107,7 +107,7 @@
   }
 </style>
 
-<Layout {sidebarData} selfScroll>
+<Layout selfScroll>
   {#if notificationCount.value === 0}
     <div class="inbox-zero">
       <div

@@ -17,7 +17,6 @@
     updatePatchCounts,
   } from "@app/lib/patchCounts.svelte";
   import * as router from "@app/lib/router";
-  import type { SidebarData } from "@app/lib/router/definitions";
   import { modifierKey } from "@app/lib/utils";
 
   import CobCacheWarning from "@app/components/CobCacheWarning.svelte";
@@ -33,10 +32,9 @@
     repo: RepoInfo;
     patches: PaginatedQuery<Patch[]>;
     status: PatchStatus | undefined;
-    sidebarData: SidebarData;
   }
 
-  const { repo, patches, status, sidebarData }: Props = $props();
+  const { repo, patches, status }: Props = $props();
 
   let items = $state(patches.content);
   let cursor = patches.cursor;
@@ -225,7 +223,7 @@
   }
 </style>
 
-<Layout {sidebarData} activeRepo={repo} selfScroll>
+<Layout selfScroll>
   <div class="page">
     <div class="topbar">
       <span class="topbar-title">Patches</span>
