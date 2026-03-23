@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "vite",
+    "dev": "npx tauri dev -- --profile dev-fast",
     "start:http": "cargo run --manifest-path ./crates/test-http-api/Cargo.toml",
     "build": "vite build && scripts/copy-katex-assets && scripts/install-twemoji-assets",
     "build:http": "cargo build --manifest-path ./crates/test-http-api/Cargo.toml",

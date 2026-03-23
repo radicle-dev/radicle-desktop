@@ -1,8 +1,15 @@
 [workspace]
 resolver = "1"
 
-members = [ 
+members = [
     "crates/radicle-tauri",
     "crates/radicle-types",
     "crates/test-http-api",
 ]
+
+# Fast dev builds: same as `dev` but with debug_assertions disabled.
+# Avoids the full sigrefs history walk in heartwood that is gated behind
+# `#[cfg(not(debug_assertions))]` and is O(history) in debug mode.
+[profile.dev-fast]
+inherits = "dev"
+debug-assertions = false
