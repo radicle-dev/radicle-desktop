@@ -1,6 +1,5 @@
 use std::fs;
 
-
 use radicle::cob;
 use radicle::git;
 use radicle::identity;

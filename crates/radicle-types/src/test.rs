@@ -30,7 +30,7 @@ pub fn profile(home: &Path, seed: [u8; 32]) -> radicle::Profile {
     let mut db = home.policies_mut().unwrap();
     db.follow(&keypair.pk.into(), Some(&alias)).unwrap();
 
-    let node_db = home.database_mut(config.node.database.clone()).unwrap();
+    let node_db = home.database_mut(config.node.database).unwrap();
     node_db
         .init(
             &keypair.pk.into(),
