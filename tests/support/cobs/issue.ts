@@ -15,7 +15,7 @@ export async function create(
     title,
     "--description",
     description,
-    ...labels.map(label => ["--label", label]).flat(),
+    ...(labels.length > 0 ? ["--labels", labels.join(",")] : []),
   ];
   const { stdout } = await peer.rad(issueOptions, options);
   const match = stdout.match(/Issue {3}([a-zA-Z0-9]*)/);

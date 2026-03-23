@@ -26,10 +26,9 @@ export const tmpDir = Path.resolve(supportDir, "..", "./tmp");
 export const fixturesDir = Path.resolve(supportDir, "..", "./fixtures");
 const workspacePaths = [Path.join(tmpDir, "peers"), Path.join(tmpDir, "repos")];
 
-export const heartwoodRelease = await Fs.readFile(
-  `${supportDir}/heartwood-release`,
-  "utf8",
-);
+export const heartwoodRelease = (
+  await Fs.readFile(`${supportDir}/heartwood-release`, "utf8")
+).trim();
 
 // Assert that binaries are installed and are the correct version.
 export async function assertBinariesInstalled(

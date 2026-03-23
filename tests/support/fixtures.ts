@@ -387,7 +387,7 @@ export async function createCobsFixture(
     createOptions(repoFolder, 1),
   );
   await eve.rad(
-    ["patch", "review", patchThree, "-m", "This looks better"],
+    ["patch", "review", patchThree, "-m", "This looks better", "--accept"],
     createOptions(repoFolder, 2),
   );
   await Fs.appendFile(
@@ -435,6 +435,7 @@ export async function createCobsFixture(
       patchFour,
       "-m",
       "No review due to patch being archived.",
+      "--accept",
     ],
     createOptions(repoFolder, 1),
   );
