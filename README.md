@@ -48,6 +48,14 @@ npm run tauri build
 
 Then run one of the builds that the script outputs at the end.
 
+## Development
+
+To start the app in development mode with hot reload:
+
+```
+npm run dev
+```
+
 ## Getting in touch
 
 To get in touch with the maintainers, sign up to our [official chat on Zulip][zul].

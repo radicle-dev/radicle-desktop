@@ -1,8 +1,13 @@
 [workspace]
 resolver = "1"
 
-members = [ 
+members = [
     "crates/radicle-tauri",
     "crates/radicle-types",
     "crates/test-http-api",
 ]
+
+# Same as `dev` but with debug_assertions disabled.
+[profile.dev-without-assertions]
+inherits = "dev"
+debug-assertions = false
