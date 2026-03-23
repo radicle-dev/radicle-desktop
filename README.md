@@ -1,33 +1,12 @@
 # Radicle Desktop
 
-[![status-badge](https://woodpecker.radworks.garden/api/badges/6/status.svg)](https://woodpecker.radworks.garden/repos/6)
+[![lint](https://github.com/radicle-dev/radicle-desktop/actions/workflows/lint.yaml/badge.svg?branch=main)](https://github.com/radicle-dev/radicle-desktop/actions/workflows/lint.yaml) [![unit-test](https://github.com/radicle-dev/radicle-desktop/actions/workflows/unit-test.yaml/badge.svg?branch=main)](https://github.com/radicle-dev/radicle-desktop/actions/workflows/unit-test.yaml) [![e2e](https://github.com/radicle-dev/radicle-desktop/actions/workflows/e2e.yaml/badge.svg?branch=main)](https://github.com/radicle-dev/radicle-desktop/actions/workflows/e2e.yaml)
 
 This desktop application lets you interact with [Radicle][rad], a peer-to-peer code collaboration and publishing stack.
 
 ## Installation
 
-**Requirements:**
-
-* *Linux* or *Unix* based operating system.
-* Git 2.34 or later
-* OpenSSH 9.1 or later with `ssh-agent`
-
-### From binaries
-
-**Debian**
-
-Add the following to your `sources.list`:
-
-```
-deb [trusted=yes] https://radicle.xyz/apt unstable main
-```
-
-Run from your shell:
-
-```
-sudo apt update
-sudo apt install radicle-desktop
-```
+See [desktop.radicle.xyz/#install](https://desktop.radicle.xyz/#install).
 
 ### From source
 
