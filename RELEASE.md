@@ -4,8 +4,15 @@
 
   ```bash
   VERSION="X.Y.Z"
-  RADICLE_DESKTOP_DIR="$(pwd)"                   # absolute path to this repo
-  SIGNING_KEY="$HOME/work/apt-signing/rudolfs"   # adjust to your signing key path
+  RADICLE_DESKTOP_DIR="$(pwd)"                      # absolute path to this repo
+
+  # User-specific — adjust these to your environment
+  FULL_NAME="Rūdolfs Ošiņš"
+  EMAIL="rudolfs@osins.org"
+  USERNAME="rudolfs"
+  SSH_KEY="$HOME/.ssh/id_ed25519"
+  SIGNING_KEY="$HOME/.ssh/rudolfs-apt-signing-key"
+  FILES_HOST="files.radicle.xyz"
   ```
 
 - Create a new release branch
@@ -94,15 +101,31 @@
   cd radicle-apt-repo
   rad sync && git fetch
 
-  podman build -t apt-import scripts
-  podman run --rm \
-    -v "$SIGNING_KEY:/src/keys/signing-key" \
-    -v "$(pwd):/src/apt" \
-    -v "$RADICLE_DESKTOP_DIR/releases/v${VERSION}/radicle-desktop_${VERSION}_amd64.deb:/src/tmp.deb" \
-    apt-import
+  cp "$RADICLE_DESKTOP_DIR/releases/v${VERSION}/radicle-desktop_${VERSION}_amd64.deb" .
 
+  docker build -t radicle-apt scripts
+  docker run --rm -it \
+    -v "$(pwd):/src/apt" \
+    -v "$SIGNING_KEY:/src/keys/signing-key" \
+    -e SIGNING_KEY=/src/keys/signing-key \
+    -e DEBEMAIL="$EMAIL" \
+    -e DEBFULLNAME="$FULL_NAME" \
+    -e SSH_USER="$USERNAME" \
+    -v "$SSH_KEY:/root/.ssh/id_ed25519:ro" \
+    radicle-apt
+  ```
+
+  Inside the container, run:
+
+  ```bash
+  RADICLE_APT_SIGNING_KEY=/src/keys/signing-key ./import-deb radicle-desktop_${VERSION}_amd64.deb
+  ```
+
+  Then from the host:
+
+  ```bash
   git checkout -b release-v${VERSION}
-  git add -A
+  git add db/ dists/ pool/
   git commit -m "Update radicle-desktop to ${VERSION}"
   git push rad HEAD:refs/patches
 
@@ -115,10 +138,7 @@
 - Publish the Debian package to the APT repository from `radicle-apt-repo`
 
   ```bash
-  scp -r -i "$(rad path)/keys/radicle" \
-    dists "release@files.radicle.xyz:/mnt/radicle/files/apt/"
-  scp -r -i "$(rad path)/keys/radicle" \
-    pool "release@files.radicle.xyz:/mnt/radicle/files/apt/"
+  make publish
   ```
 
 - Publish release files from `radicle-desktop`
@@ -126,8 +146,7 @@
   ```bash
   cd radicle-desktop
 
-  scp -i "$(rad path)/keys/radicle" \
-    releases/v${VERSION}/* "release@files.radicle.xyz:/mnt/radicle/files/releases/radicle-desktop/latest/"
+  scp -i "$(rad path)/keys/radicle" releases/v${VERSION}/* "${USERNAME}@${FILES_HOST}:/var/www/${FILES_HOST}/releases/radicle-desktop/latest"
   ```
 
 - Publish the Arch package by pushing changes to the [Arch User Repository][1]
