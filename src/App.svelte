@@ -5,7 +5,6 @@
 
   import { listen } from "@tauri-apps/api/event";
   import { getCurrentWindow } from "@tauri-apps/api/window";
-  import delay from "lodash/delay";
   import { onDestroy, onMount } from "svelte";
   import { get } from "svelte/store";
 
@@ -49,7 +48,6 @@
   import ExternalLink from "./components/ExternalLink.svelte";
   import FullscreenModalPortal from "./components/FullscreenModalPortal.svelte";
   import FullWindowError from "./components/FullWindowError.svelte";
-  import Spinner from "./components/Spinner.svelte";
 
   const activeRouteStore = router.activeRouteStore;
 
@@ -93,8 +91,11 @@
 
   let profile = $state<Config>();
 
-  let showSpinner = $state(false);
-  delay(() => (showSpinner = true), 1000);
+  $effect(() => {
+    if ($activeRouteStore.resource !== "booting" || startup.error) {
+      document.getElementById("loading")?.remove();
+    }
+  });
 
   onMount(async () => {
     try {
@@ -146,12 +147,6 @@
 </script>
 
 <style>
-  .spinner {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-  }
   .layout {
     display: grid;
     grid-template-columns: auto 1fr;
@@ -206,8 +201,6 @@
         <Command styleWidth="30rem" command="rad cob migrate" />
       </div>
     </FullWindowError>
-  {:else if showSpinner}
-    <div class="spinner"><Spinner /></div>
   {/if}
 {:else}
   <div class="layout">

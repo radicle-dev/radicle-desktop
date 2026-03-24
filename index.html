@@ -75,6 +75,25 @@
   </head>
 
   <body>
+    <div
+      id="loading"
+      style="
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: var(--color-surface-base);
+        color: var(--color-text-primary);
+      ">
+      <svg width="52" height="52" viewBox="0 0 16 16" fill="currentColor">
+        <path
+          d="M16 12H8V4H16V12ZM12 5.36035C10.542 5.36037 9.36035 6.54296 9.36035 8.00098C9.36051 9.45886 10.5421 10.6406 12 10.6406C13.4579 10.6406 14.6395 9.45887 14.6396 8.00098C14.6396 6.54294 13.458 5.36035 12 5.36035Z" />
+        <path
+          d="M1.87988 8.00012C1.87988 6.82928 2.82903 5.88013 3.99988 5.88013C5.17072 5.88013 6.11987 6.82928 6.11987 8.00012C6.11987 9.17097 5.17072 10.1201 3.99988 10.1201C2.82903 10.1201 1.87988 9.17097 1.87988 8.00012Z" />
+      </svg>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
