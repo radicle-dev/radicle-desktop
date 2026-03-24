@@ -1,3 +1,11 @@
+### v0.10.0
+
+- Fixed app loading indicator
+- Sidebar scroll position is now preserved when navigating between views
+- Changed default seed node to iris.radicle.xyz
+- Updated to Heartwood 1.7.1
+
+
 ### v0.9.0
 
 - Redesigned the entire app with a new UI kit — typography, colors, icons,
