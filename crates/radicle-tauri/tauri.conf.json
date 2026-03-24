@@ -22,7 +22,7 @@
     "security": {
       "csp": {
         "default-src": "'self'",
-        "connect-src": "ipc: http://ipc.localhost https://files.radicle.xyz tauri://localhost/assets/onig-CwjCXqnP.wasm",
+        "connect-src": "'self' ipc: http://ipc.localhost https://files.radicle.xyz",
         "img-src": "'self' blob: data: https:",
         "script-src": "'wasm-unsafe-eval'",
         "style-src": "'unsafe-inline' 'self'"
