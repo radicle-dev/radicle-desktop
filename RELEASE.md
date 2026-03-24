@@ -23,7 +23,8 @@
   ```
 
 - Update the version in `crates/radicle-tauri/tauri.conf.json`.
-- Update `CHANGELOG.md` — only include changes relevant to users.
+- Update `CHANGELOG.md` — only include changes relevant to users. Add a shoutout
+  to any external contributors.
 - Commit the changes `git commit -a -m "Release v${VERSION}"`. This commit is the
   _Release Commit_.
 - In your working shell, set the release commit SHA

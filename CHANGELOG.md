@@ -5,6 +5,10 @@
 - Changed default seed node to iris.radicle.xyz
 - Updated to Heartwood 1.7.1
 
+**Shout-out to our contributors 🙏✨**
+
+- [lorenz](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkkPvBfjP4bQmco5Dm7UGsX2ruDBieEHi8n9DVJWX5sTEz)
+
 
 ### v0.9.0
 
