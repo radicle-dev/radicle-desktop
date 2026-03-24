@@ -58,15 +58,15 @@ class UpdateChecker {
 
   public static init(): UpdateChecker {
     const updateChecker = new UpdateChecker();
-    if (isEnabledStore.value) {
-      updateChecker.enable();
-    }
 
     void invoke<string>("version").then(currentVersion => {
       updateChecker.currentVersion = currentVersion.toString();
       const version = semver.coerce(currentVersion);
       if (version) {
         updateChecker.sanitizedCurrentVersion = version.toString();
+      }
+      if (isEnabledStore.value) {
+        updateChecker.enable();
       }
     });
 
