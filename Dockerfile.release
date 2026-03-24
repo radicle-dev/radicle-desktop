@@ -59,7 +59,7 @@ RUN apt-get install -y --no-install-recommends \
 # Rust: native ARM64 toolchain so the Tauri CLI runs without emulation,
 # plus the x86_64 target for the actual compiled output.
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- -y --default-toolchain 1.84.1
+    sh -s -- -y --default-toolchain 1.90
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN rustup target add x86_64-unknown-linux-gnu
 
