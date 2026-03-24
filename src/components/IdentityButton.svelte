@@ -64,7 +64,7 @@
         target="_blank">
         <DropdownListItem styleGap="0.5rem" styleWidth="100%" selected={false}>
           <Icon name="seed" />
-          view on seed.radicle.garden
+          view on iris.radicle.xyz
           <span style:margin-left="auto"><Icon name="open-external" /></span>
         </DropdownListItem>
       </a>
