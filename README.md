@@ -16,6 +16,13 @@ See [radicle.dev/desktop#install](https://radicle.dev/desktop#install).
 - [Rust][rus] toolchain (1.77 or higher)
 - [Tauri system dependencies][tau]
 
+On Windows, NPM's script shell must be set to a POSIX compatible shell such as
+[Git Bash][gfw]:
+
+```
+npm config set script-shell "C:\\Program Files\\git\\bin\\bash.exe"
+```
+
 Run the following commands to build the desktop app locally:
 
 ```
@@ -43,6 +50,7 @@ To get in touch with the maintainers, sign up to our [official chat on Zulip][zu
 
 The UI is distributed under the terms of GPLv3. See [LICENSE][lic] for details.
 
+[gfw]: https://gitforwindows.org
 [lic]: ./LICENSE
 [rad]: https://radicle.dev
 [nod]: https://nodejs.org
