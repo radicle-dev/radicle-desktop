@@ -6,13 +6,11 @@
 
   import partial from "lodash/partial";
   import sum from "lodash/sum";
-  import { tick } from "svelte";
 
   import * as roles from "@app/lib/roles";
-  import { scrollIntoView } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
-  import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
+  import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
   import Icon from "@app/components/Icon.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
 
@@ -52,34 +50,23 @@
   }: Props = $props();
   /* eslint-enable prefer-const */
 
+  let previousCobId = cobId;
+  let focusReply: boolean = $state(false);
+  let commentFormKey = $state(0);
+
+  let hideDiscussion = $state(false);
+
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     cobId;
 
-    hideDiscussion = commentThreads.length === 0;
-    focusReply = false;
-    topLevelReplyOpen = false;
-  });
-
-  let focusReply: boolean = $state(false);
-  let topLevelReplyOpen = $state(false);
-
-  let hideDiscussion = $state(commentThreads.length === 0);
-
-  async function toggleReply() {
-    topLevelReplyOpen = !topLevelReplyOpen;
-    if (!topLevelReplyOpen) {
-      return;
+    if (cobId !== previousCobId) {
+      previousCobId = cobId;
+      hideDiscussion = false;
+      focusReply = false;
+      commentFormKey += 1;
     }
-
-    await tick();
-    scrollIntoView(`reply-${cobId}`, {
-      behavior: "smooth",
-      block: "center",
-    });
-    await tick();
-    focusReply = true;
-  }
+  });
 </script>
 
 <style>
@@ -114,24 +101,6 @@
         </span>
       </div>
     </div>
-    <div style:margin-left="auto">
-      <Button
-        variant="naked"
-        active={topLevelReplyOpen}
-        onclick={async () => {
-          if (hideDiscussion) {
-            hideDiscussion = false;
-          } else {
-            if (commentThreads.length === 0) {
-              hideDiscussion = true;
-            }
-          }
-          await toggleReply();
-        }}>
-        <Icon name="comment" />
-        <span class="txt-body-m-regular">Comment</span>
-      </Button>
-    </div>
   </div>
   <div
     style:display={hideDiscussion ? "none" : "revert"}
@@ -152,21 +121,29 @@
     {/each}
 
     <div id={`reply-${cobId}`}>
-      <CommentToggleInput
-        disallowEmptyBody
-        {rid}
-        focus={focusReply}
-        onexpand={toggleReply}
-        onclose={topLevelReplyOpen
-          ? () => {
-              if (commentThreads.length === 0) {
-                hideDiscussion = !hideDiscussion;
-              }
-              topLevelReplyOpen = false;
+      {#key commentFormKey}
+        <ExtendedTextarea
+          disallowEmptyBody
+          {rid}
+          focus={focusReply}
+          borderVariant="ghost"
+          stylePadding="0.5rem 0.75rem"
+          hideDiscard
+          placeholder="Leave a comment"
+          submitActiveVariant="secondary"
+          close={() => {
+            focusReply = false;
+            commentFormKey += 1;
+          }}
+          submit={async ({ comment, embeds }) => {
+            try {
+              await createComment(comment, Array.from(embeds.values()));
+            } finally {
+              focusReply = false;
+              commentFormKey += 1;
             }
-          : undefined}
-        placeholder="Leave a comment"
-        submit={createComment} />
+          }} />
+      {/key}
     </div>
   </div>
 </div>
