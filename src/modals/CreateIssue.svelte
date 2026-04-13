@@ -163,6 +163,7 @@
       disableSubmit={title.trim() === ""}
       disallowEmptyBody
       styleMinHeight="20rem"
+      submitVariant="secondary"
       submitCaption="Save"
       hideDiscard
       close={hide}

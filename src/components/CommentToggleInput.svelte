@@ -55,6 +55,7 @@
     {rid}
     {placeholder}
     borderVariant="ghost"
+    submitActiveVariant="secondary"
     submitInProgress={state === "submit"}
     {focus}
     stylePadding="0.5rem 0.75rem"

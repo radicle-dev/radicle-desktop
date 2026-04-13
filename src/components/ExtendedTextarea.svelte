@@ -22,6 +22,8 @@
     rid: string;
     placeholder?: string;
     submitCaption?: string;
+    submitVariant?: ComponentProps<typeof Button>["variant"];
+    submitActiveVariant?: ComponentProps<typeof Button>["variant"];
     focus?: boolean;
     inline?: boolean;
     body?: string;
@@ -56,6 +58,8 @@
     rid,
     placeholder = "Leave your comment",
     submitCaption = "Comment",
+    submitVariant = "ghost",
+    submitActiveVariant = undefined,
     focus = false,
     inline = false,
     body = $bindable(""),
@@ -78,6 +82,11 @@
   const attachEnabled = $derived(attachDisabled === false);
   const attachDisabledReason = $derived(
     typeof attachDisabled === "string" ? attachDisabled : undefined,
+  );
+  const effectiveSubmitVariant = $derived(
+    body.trim().length > 0 && submitActiveVariant !== undefined
+      ? submitActiveVariant
+      : submitVariant,
   );
 
   let selectionStart = $state(body.length);
@@ -364,7 +373,7 @@
         {preview ? "Edit" : "Preview"}
       </Button>
       <Button
-        variant="ghost"
+        variant={effectiveSubmitVariant}
         title={emptyBodyTooltip}
         disabled={!isValid() ||
           submitInProgress ||

@@ -112,6 +112,7 @@
           {rid}
           placeholder="Reply to comment"
           submitCaption="Reply"
+          submitActiveVariant="secondary"
           focus
           close={() => (showReplyForm = false)}
           submit={async ({ comment, embeds }) => {

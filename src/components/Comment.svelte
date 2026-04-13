@@ -202,6 +202,7 @@
             {emptyBodyTooltip}
             {disableAttachments}
             borderVariant="ghost"
+            submitVariant="secondary"
             submitInProgress={state === "submit"}
             submitCaption="Save"
             placeholder="Leave a comment"
