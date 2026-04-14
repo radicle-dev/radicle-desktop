@@ -371,7 +371,7 @@
     line-height: 1.625rem;
     list-style-type: decimal;
     margin-bottom: 1rem;
-    padding-left: 1.5rem;
+    padding-left: 2.5rem;
   }
 
   .markdown :global(ul) {
