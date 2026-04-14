@@ -20,7 +20,8 @@
       variant="secondary"
       {onclick}
       active={popoverExpanded}>
-      <Icon name="checkout" />Checkout repo
+      <Icon name="checkout" />
+      <span class="global-hide-on-medium-desktop-down">Checkout repo</span>
     </Button>
   {/snippet}
 

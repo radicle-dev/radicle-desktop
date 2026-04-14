@@ -45,6 +45,10 @@
     border-bottom: 1px solid var(--color-border-subtle);
     flex-shrink: 0;
   }
+  .project {
+    flex: 1;
+    min-width: 0;
+  }
   .name {
     font: var(--txt-body-l-semibold);
     color: var(--color-text-primary);
@@ -58,6 +62,7 @@
     align-items: center;
     gap: 1rem;
     margin-left: auto;
+    flex-shrink: 0;
   }
   .meta-item {
     display: flex;
@@ -86,6 +91,7 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    flex-shrink: 0;
   }
   a {
     color: inherit;
@@ -101,7 +107,7 @@
 </style>
 
 <div class="header">
-  <div class="txt-selectable">
+  <div class="project txt-selectable">
     <div class="name txt-overflow">{project.data.name}</div>
     {#if project.data.description}
       <div class="description txt-overflow">{project.data.description}</div>
@@ -162,7 +168,8 @@
 
   <div class="actions">
     <Button variant="ghost" styleHeight="2rem" onclick={copyLink}>
-      <Icon name={copyIcon} />Copy Link
+      <Icon name={copyIcon} />
+      <span class="global-hide-on-medium-desktop-down">Copy Link</span>
     </Button>
     <CheckoutRepoButton rid={repo.rid} />
   </div>
