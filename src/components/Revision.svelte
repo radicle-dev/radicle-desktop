@@ -22,10 +22,18 @@
     revision: Revision;
     config: Config;
     loadPatch: () => Promise<void>;
+    hideDescription?: boolean;
   }
 
-  const { rid, repoDelegates, patchId, revision, config, loadPatch }: Props =
-    $props();
+  const {
+    rid,
+    repoDelegates,
+    patchId,
+    revision,
+    config,
+    loadPatch,
+    hideDescription = false,
+  }: Props = $props();
 
   const commentThreads = $derived(
     ((revision.discussion &&
@@ -164,26 +172,28 @@
   }
 </style>
 
-<div class="txt-body-m-regular patch-body">
-  <CommentComponent
-    caption={revision.id === patchId ? "opened patch" : "created revision"}
-    {rid}
-    id={revision.id}
-    lastEdit={revision.description.length > 1
-      ? revision.description.at(-1)
-      : undefined}
-    author={revision.author}
-    reactions={revision.reactions}
-    timestamp={revision.timestamp}
-    body={revision.description.slice(-1)[0].body}
-    reactOnComment={reactOnRevision}
-    editComment={roles.isDelegateOrAuthor(
-      config.publicKey,
-      repoDelegates.map(delegate => delegate.did),
-      revision.author.did,
-    ) && editRevision}>
-  </CommentComponent>
-</div>
+{#if !hideDescription}
+  <div class="txt-body-m-regular patch-body">
+    <CommentComponent
+      caption={revision.id === patchId ? "opened patch" : "created revision"}
+      {rid}
+      id={revision.id}
+      lastEdit={revision.description.length > 1
+        ? revision.description.at(-1)
+        : undefined}
+      author={revision.author}
+      reactions={revision.reactions}
+      timestamp={revision.timestamp}
+      body={revision.description.slice(-1)[0].body}
+      reactOnComment={reactOnRevision}
+      editComment={roles.isDelegateOrAuthor(
+        config.publicKey,
+        repoDelegates.map(delegate => delegate.did),
+        revision.author.did,
+      ) && editRevision}>
+    </CommentComponent>
+  </div>
+{/if}
 
 <Discussion
   cobId={patchId}

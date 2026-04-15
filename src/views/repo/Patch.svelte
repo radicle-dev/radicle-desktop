@@ -27,6 +27,7 @@
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
+  import Markdown from "@app/components/Markdown.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchMetadata from "@app/components/PatchMetadata.svelte";
   import PatchTimeline from "@app/components/PatchTimeline.svelte";
@@ -175,6 +176,9 @@
       value => value.author.did === didFromPublicKey(config.publicKey),
     ),
   );
+  const patchDescription = $derived(
+    revisions[0]?.description.slice(-1)[0]?.body ?? "",
+  );
 </script>
 
 <style>
@@ -217,6 +221,13 @@
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
+  }
+  .patch-description {
+    background-color: var(--color-surface-canvas);
+    border-radius: var(--border-radius-sm);
+    font: var(--txt-body-m-regular);
+    margin-bottom: 1rem;
+    padding: 0.75rem;
   }
   .sidebar {
     display: flex;
@@ -341,6 +352,15 @@
                 </Button>
               </div>
             </div>
+            <div class="patch-description">
+              {#if patchDescription.trim()}
+                <Markdown rid={repo.rid} breaks content={patchDescription} />
+              {:else}
+                <span class="txt-missing txt-body-m-regular">
+                  No description.
+                </span>
+              {/if}
+            </div>
 
             <div class="sidebar-inline">
               <PatchMetadata
@@ -377,6 +397,7 @@
               patchId={patch.id}
               {loadPatch}
               revision={selectedRevision}
+              hideDescription={selectedRevision.id === revisions[0]?.id}
               {config} />
 
             <div class="global-flex" style:margin-top="1.5rem">
