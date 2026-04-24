@@ -51,7 +51,6 @@ test("creation of top level comments", async ({ page }) => {
     ),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "icon-comment Comment" }).click();
   await page
     .getByPlaceholder("Leave a comment")
     .fill("A top level comment by playwright");
@@ -66,7 +65,7 @@ test("creation of top level comments", async ({ page }) => {
     .fill(
       "A top level comment by playwright created by replying to the issue body",
     );
-  await page.getByRole("button", { name: "icon-checkmark" }).click();
+  await page.getByRole("button", { name: "icon-checkmark Reply" }).click();
   await expect(
     page.getByText(
       "A top level comment by playwright created by replying to the issue body",
@@ -77,7 +76,7 @@ test("creation of top level comments", async ({ page }) => {
   await page
     .getByPlaceholder("Reply to comment")
     .fill("A reply comment by playwright replying to the first comment");
-  await page.getByRole("button", { name: "icon-checkmark" }).click();
+  await page.getByRole("button", { name: "icon-checkmark Reply" }).click();
   await expect(
     page.getByText(
       "A reply comment by playwright replying to the first comment",
