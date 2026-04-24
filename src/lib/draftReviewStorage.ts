@@ -5,7 +5,6 @@ import type { Verdict } from "@bindings/cob/patch/Verdict";
 import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
 import type { CodeRange } from "@bindings/cob/thread/CodeRange";
 import type { Comment } from "@bindings/cob/thread/Comment";
-import type { Embed } from "@bindings/cob/thread/Embed";
 
 import { z } from "zod";
 
@@ -106,6 +105,12 @@ export const draftReviewStorage = {
     return id;
   },
 
+  hasForRevision(revisionId: string): boolean {
+    return Object.values(storage.value).some(
+      review => review.revision === revisionId,
+    );
+  },
+
   update(
     id: string,
     props: { summary: string; verdict: Verdict | undefined; labels: string[] },
@@ -138,7 +143,6 @@ export const draftReviewStorage = {
     id: string,
     comment: {
       body: string;
-      embeds: Embed[];
       location: CodeLocation;
     },
   ): string {
@@ -159,7 +163,6 @@ export const draftReviewStorage = {
     commentId: string,
     comment: {
       body: string;
-      embeds: Embed[];
     },
   ) {
     updateStoredDraftReview(id, review => {

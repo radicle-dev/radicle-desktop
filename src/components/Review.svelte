@@ -148,7 +148,6 @@
       if ("draft" in review) {
         draftReviewStorage.addComment(review.id, {
           body,
-          embeds,
           location: location!,
         });
       } else {
@@ -178,7 +177,6 @@
       if ("draft" in review) {
         draftReviewStorage.updateComment(review.id, commentId, {
           body,
-          embeds,
         });
       } else {
         await invoke("edit_patch", {

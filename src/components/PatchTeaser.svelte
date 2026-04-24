@@ -2,6 +2,7 @@
   import type { PatchStatus } from "@app/views/repo/router";
   import type { Patch } from "@bindings/cob/patch/Patch";
 
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { cachedDiffStats } from "@app/lib/invoke";
   import { push } from "@app/lib/router";
   import {
@@ -26,6 +27,10 @@
   }
 
   const { focussed, patch, rid, status }: Props = $props();
+
+  const hasDraftReview = $derived(
+    patch.revisionIds.some(id => draftReviewStorage.hasForRevision(id)),
+  );
 </script>
 
 <style>
@@ -103,6 +108,18 @@
     </div>
 
     <div class="global-flex" style:margin-left="auto">
+      {#if hasDraftReview}
+        <div
+          class="txt-body-m-regular"
+          style:white-space="nowrap"
+          style:border="1px solid var(--color-border-subtle)"
+          style:border-radius="var(--border-radius-sm)"
+          style:padding="0.125rem 0.5rem"
+          style:color="var(--color-text-primary)">
+          Review in progress
+        </div>
+      {/if}
+
       {#await cachedDiffStats(rid, patch.base, patch.head) then stats}
         <DiffStatBadge {stats} />
       {/await}
@@ -120,7 +137,7 @@
         style:padding="0 0.5rem"
         style:color="var(--color-text-tertiary)">
         <Icon name="revision" />
-        {patch.revisionCount}
+        {patch.revisionIds.length}
       </div>
     </div>
   </div>

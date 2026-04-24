@@ -171,9 +171,18 @@
       ...(selectedRevision.reviews ?? []),
     ].filter((review): review is Review | DraftReview => Boolean(review)),
   );
-  const hasOwnReview = $derived(
+  const ownDraftReview = $derived(
+    reviewsOfSelectedRevision.find(
+      value =>
+        value.author.did === didFromPublicKey(config.publicKey) &&
+        "draft" in value,
+    ),
+  );
+  const hasOwnPublishedReview = $derived(
     reviewsOfSelectedRevision.some(
-      value => value.author.did === didFromPublicKey(config.publicKey),
+      value =>
+        value.author.did === didFromPublicKey(config.publicKey) &&
+        !("draft" in value),
     ),
   );
   const patchDescription = $derived(
@@ -327,12 +336,11 @@
                   patchId={patch.id} />
                 <Button
                   variant="secondary"
-                  disabled={hasOwnReview}
+                  disabled={hasOwnPublishedReview}
                   onclick={() => {
-                    const id = draftReviewStorage.create(
-                      repo.rid,
-                      selectedRevision.id,
-                    );
+                    const id =
+                      ownDraftReview?.id ??
+                      draftReviewStorage.create(repo.rid, selectedRevision.id);
                     void router.push({
                       resource: "repo.patch",
                       rid: repo.rid,
@@ -341,13 +349,15 @@
                       status,
                     });
                   }}
-                  title={hasOwnReview
+                  title={hasOwnPublishedReview
                     ? "You already created a review for this revision"
-                    : "Review revision"}>
+                    : ownDraftReview
+                      ? "Continue review"
+                      : "Review revision"}>
                   <Icon name="comment" />
                   <span
                     class="txt-body-m-regular global-hide-on-medium-desktop-down">
-                    Review revision
+                    {ownDraftReview ? "Continue review" : "Review revision"}
                   </span>
                 </Button>
               </div>

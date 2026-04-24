@@ -1,14 +1,17 @@
 <script lang="ts">
+  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Author } from "@bindings/cob/Author";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Config } from "@bindings/config/Config";
 
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
-  import { publicKeyFromDid } from "@app/lib/utils";
+  import { didFromPublicKey, publicKeyFromDid } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Changes from "@app/components/Changes.svelte";
@@ -34,6 +37,85 @@
     loadPatch,
     hideDescription = false,
   }: Props = $props();
+
+  const currentUserAuthor: Author = $derived({
+    did: didFromPublicKey(config.publicKey),
+    alias: config.alias ?? undefined,
+  });
+
+  const draftReview = $derived(
+    draftReviewStorage.getForRevision(revision.id, currentUserAuthor),
+  );
+
+  const hasPublishedReview = $derived(
+    revision.reviews?.some(r => r.author.did === currentUserAuthor.did) ??
+      false,
+  );
+
+  const codeCommentThreads: Thread<CodeLocation>[] = $derived(
+    draftReview
+      ? (draftReview.comments
+          .filter(c => c.location && !c.replyTo)
+          .map(root => ({
+            root,
+            replies: draftReview.comments.filter(c => c.replyTo === root.id),
+          })) as Thread<CodeLocation>[])
+      : [],
+  );
+
+  async function createCodeComment(
+    body: string,
+    _embeds: Embed[],
+    _replyTo?: string,
+    location?: CodeLocation,
+  ) {
+    if (!location) return;
+    try {
+      let draftId = draftReview?.id;
+      if (!draftId) {
+        draftId = draftReviewStorage.create(rid, revision.id);
+      }
+      draftReviewStorage.addComment(draftId, { body, location });
+    } catch (error) {
+      console.error("Creating code comment failed", error);
+    } finally {
+      await loadPatch();
+    }
+  }
+
+  async function editCodeComment(
+    commentId: string,
+    body: string,
+    _embeds: Embed[],
+  ) {
+    if (!draftReview) return;
+    draftReviewStorage.updateComment(draftReview.id, commentId, {
+      body,
+    });
+    await loadPatch();
+  }
+
+  async function deleteCodeComment(commentId: string) {
+    if (!draftReview) return;
+    draftReviewStorage.deleteComment(draftReview.id, commentId);
+    await loadPatch();
+  }
+
+  const codeComments: CodeComments | undefined = $derived(
+    hasPublishedReview
+      ? undefined
+      : {
+          config,
+          createComment: createCodeComment,
+          editComment: editCodeComment,
+          deleteComment: deleteCodeComment,
+          repoDelegates,
+          rid,
+          threads: codeCommentThreads,
+          canReply: true,
+          disableAttachments: "Publish your review to attach files",
+        },
+  );
 
   const commentThreads = $derived(
     ((revision.discussion &&
@@ -206,4 +288,4 @@
   {repoDelegates}
   {rid} />
 
-<Changes {rid} {patchId} {revision} />
+<Changes {rid} {patchId} {revision} {codeComments} />
