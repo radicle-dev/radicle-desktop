@@ -246,7 +246,7 @@ impl Default for Highlighter {
 
 impl Highlighter {
     pub fn new() -> Self {
-        let configs: std::collections::HashMap<String, ts::HighlightConfiguration> = [
+        let mut configs: std::collections::HashMap<String, ts::HighlightConfiguration> = [
             ("rust", Self::config("rust")),
             ("json", Self::config("json")),
             ("jsdoc", Self::config("jsdoc")),
@@ -270,6 +270,10 @@ impl Highlighter {
         .filter_map(|(lang, cfg)| cfg.map(|c| (lang.to_string(), c)))
         .collect();
 
+        for cfg in configs.values_mut() {
+            cfg.configure(HIGHLIGHTS);
+        }
+
         Highlighter { configs }
     }
 
@@ -285,20 +289,16 @@ impl Highlighter {
         };
 
         // Check if there is a configuration if none found return plain lines.
-        let Some(config) = &mut Self::config(&language) else {
+        let Some(config) = self.configs.get(&language) else {
             let Ok(code) = std::str::from_utf8(code) else {
                 return Err(ts::Error::Unknown);
             };
             return Ok(code.lines().map(Line::new).collect());
         };
 
-        config.configure(HIGHLIGHTS);
-
-        let highlights = highlighter.highlight(config, code, None, |language| {
-            let l: &'static str = std::boxed::Box::leak(language.to_string().into_boxed_str());
-
-            self.configs.get(l)
-        })?;
+        let configs = &self.configs;
+        let highlights =
+            highlighter.highlight(config, code, None, |language| configs.get(language))?;
 
         Builder::default().run(highlights, code)
     }
