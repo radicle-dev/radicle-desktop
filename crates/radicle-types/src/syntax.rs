@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 
 use serde::Serialize;
 use tree_sitter_highlight as ts;
@@ -9,6 +10,15 @@ use radicle::git;
 use radicle_surf as surf;
 
 use crate as types;
+
+/// Shared syntax highlighter. Building the tree-sitter configurations is
+/// expensive, so we initialize a single `Highlighter` lazily and reuse it
+/// for the lifetime of the process. Post-construction the highlighter is
+/// immutable, so no synchronization is needed.
+pub fn highlighter() -> &'static Highlighter {
+    static HIGHLIGHTER: OnceLock<Highlighter> = OnceLock::new();
+    HIGHLIGHTER.get_or_init(Highlighter::new)
+}
 
 /// Highlight groups enabled.
 const HIGHLIGHTS: &[&str] = &[
@@ -278,7 +288,7 @@ impl Highlighter {
     }
 
     /// Highlight a source code file.
-    pub fn highlight(&mut self, path: &Path, code: &[u8]) -> Result<Vec<Line>, ts::Error> {
+    pub fn highlight(&self, path: &Path, code: &[u8]) -> Result<Vec<Line>, ts::Error> {
         let mut highlighter = ts::Highlighter::new();
         // Check for a language if none found return plain lines.
         let Some(language) = Self::detect(path, code) else {
@@ -576,7 +586,7 @@ impl<T> Blobs<T> {
 }
 
 impl Blobs<(PathBuf, Blob)> {
-    pub fn highlight(&self, hi: &mut Highlighter) -> Blobs<Vec<Line>> {
+    pub fn highlight(&self, hi: &Highlighter) -> Blobs<Vec<Line>> {
         let mut blobs = Blobs::default();
         if let Some((path, Blob::Plain(content))) = &self.old {
             blobs.old = hi.highlight(path, content).ok();
@@ -625,24 +635,14 @@ pub trait ToPretty {
     type Context;
 
     /// Render to pretty diff output.
-    fn pretty<R: Repo>(
-        &self,
-        hi: &mut Highlighter,
-        context: &Self::Context,
-        repo: &R,
-    ) -> Self::Output;
+    fn pretty<R: Repo>(&self, hi: &Highlighter, context: &Self::Context, repo: &R) -> Self::Output;
 }
 
 impl ToPretty for surf::diff::Diff {
     type Output = types::diff::Diff;
     type Context = ();
 
-    fn pretty<R: Repo>(
-        &self,
-        hi: &mut Highlighter,
-        context: &Self::Context,
-        repo: &R,
-    ) -> Self::Output {
+    fn pretty<R: Repo>(&self, hi: &Highlighter, context: &Self::Context, repo: &R) -> Self::Output {
         let files = self
             .files()
             .map(|f| f.pretty(hi, context, repo))
@@ -661,7 +661,7 @@ impl ToPretty for surf::diff::FileDiff {
 
     fn pretty<R: Repo>(
         &self,
-        hi: &mut Highlighter,
+        hi: &Highlighter,
         _context: &Self::Context,
         repo: &R,
     ) -> Self::Output {
@@ -685,12 +685,7 @@ impl ToPretty for surf::diff::DiffContent {
     type Output = types::diff::DiffContent;
     type Context = Blobs<(PathBuf, Blob)>;
 
-    fn pretty<R: Repo>(
-        &self,
-        hi: &mut Highlighter,
-        blobs: &Self::Context,
-        repo: &R,
-    ) -> Self::Output {
+    fn pretty<R: Repo>(&self, hi: &Highlighter, blobs: &Self::Context, repo: &R) -> Self::Output {
         match self {
             surf::diff::DiffContent::Plain {
                 hunks: surf::diff::Hunks(hunks),
@@ -720,7 +715,7 @@ impl ToPretty for surf::diff::Moved {
     type Output = types::diff::Moved;
     type Context = ();
 
-    fn pretty<R: Repo>(&self, hi: &mut Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
+    fn pretty<R: Repo>(&self, hi: &Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
         let old = Some((self.old_path.as_path(), crate::oid::from_surf(self.old.oid)));
         let new = Some((self.new_path.as_path(), crate::oid::from_surf(self.new.oid)));
         let blobs = Blobs::from_paths(old, new, repo);
@@ -739,7 +734,7 @@ impl ToPretty for surf::diff::Added {
     type Output = types::diff::Added;
     type Context = ();
 
-    fn pretty<R: Repo>(&self, hi: &mut Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
+    fn pretty<R: Repo>(&self, hi: &Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
         let old = None;
         let new = Some((self.path.as_path(), crate::oid::from_surf(self.new.oid)));
         let blobs = Blobs::from_paths(old, new, repo);
@@ -756,7 +751,7 @@ impl ToPretty for surf::diff::Deleted {
     type Output = types::diff::Deleted;
     type Context = ();
 
-    fn pretty<R: Repo>(&self, hi: &mut Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
+    fn pretty<R: Repo>(&self, hi: &Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
         let old = Some((self.path.as_path(), crate::oid::from_surf(self.old.oid)));
         let new = None;
         let blobs = Blobs::from_paths(old, new, repo);
@@ -773,7 +768,7 @@ impl ToPretty for surf::diff::Modified {
     type Output = types::diff::Modified;
     type Context = ();
 
-    fn pretty<R: Repo>(&self, hi: &mut Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
+    fn pretty<R: Repo>(&self, hi: &Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
         let old = Some((self.path.as_path(), crate::oid::from_surf(self.old.oid)));
         let new = Some((self.path.as_path(), crate::oid::from_surf(self.new.oid)));
         let blobs = Blobs::from_paths(old, new, repo);
@@ -791,7 +786,7 @@ impl ToPretty for surf::diff::Copied {
     type Output = types::diff::Copied;
     type Context = ();
 
-    fn pretty<R: Repo>(&self, hi: &mut Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
+    fn pretty<R: Repo>(&self, hi: &Highlighter, _: &Self::Context, repo: &R) -> Self::Output {
         let old = Some((self.old_path.as_path(), crate::oid::from_surf(self.old.oid)));
         let new = Some((self.new_path.as_path(), crate::oid::from_surf(self.new.oid)));
         let blobs = Blobs::from_paths(old, new, repo);
@@ -810,12 +805,7 @@ impl ToPretty for surf::diff::Hunk<surf::diff::Modification> {
     type Output = types::diff::Hunk;
     type Context = Blobs<Vec<Line>>;
 
-    fn pretty<R: Repo>(
-        &self,
-        hi: &mut Highlighter,
-        blobs: &Self::Context,
-        repo: &R,
-    ) -> Self::Output {
+    fn pretty<R: Repo>(&self, hi: &Highlighter, blobs: &Self::Context, repo: &R) -> Self::Output {
         let lines = self
             .lines
             .clone()
@@ -838,7 +828,7 @@ impl ToPretty for surf::diff::Modification {
 
     fn pretty<R: Repo>(
         &self,
-        _hi: &mut Highlighter,
+        _hi: &Highlighter,
         blobs: &<radicle_surf::diff::Modification as ToPretty>::Context,
         _repo: &R,
     ) -> Self::Output {

@@ -17,7 +17,7 @@ use crate::diff::Diff;
 use crate::error::Error;
 use crate::repo;
 use crate::source;
-use crate::syntax::{Highlighter, ToPretty};
+use crate::syntax::{highlighter, ToPretty};
 use crate::traits::Profile;
 
 pub const MAX_BLOB_SIZE: usize = 10_485_760;
@@ -329,9 +329,7 @@ pub trait Repo: Profile {
         let diff = surf::diff::Diff::try_from(diff)?;
 
         if highlight {
-            let mut hi = Highlighter::new();
-
-            return Ok::<_, Error>(diff.pretty(&mut hi, &(), &repo));
+            return Ok::<_, Error>(diff.pretty(highlighter(), &(), &repo));
         }
 
         Ok::<_, Error>(diff.into())
