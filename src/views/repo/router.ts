@@ -8,13 +8,15 @@ import type { Review } from "@bindings/cob/patch/Review";
 import type { Revision } from "@bindings/cob/patch/Revision";
 import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Config } from "@bindings/config/Config";
+import type { Diff } from "@bindings/diff/Diff";
+import type { Commit } from "@bindings/repo/Commit";
 import type { Readme } from "@bindings/repo/Readme";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { Tree } from "@bindings/source/Tree";
 
 import type { DraftReview } from "@app/lib/draftReviewStorage";
 import { draftReviewStorage } from "@app/lib/draftReviewStorage";
-import { invoke } from "@app/lib/invoke";
+import { cachedGetCommitDiff, invoke } from "@app/lib/invoke";
 import type { SidebarData } from "@app/lib/router/definitions";
 import { loadSidebarData } from "@app/lib/router/definitions";
 import { didFromPublicKey, unreachable } from "@app/lib/utils";
@@ -22,11 +24,23 @@ import { didFromPublicKey, unreachable } from "@app/lib/utils";
 export type IssueStatus = "all" | Issue["state"]["status"];
 
 export const DEFAULT_TAKE = 20;
+export const COMMITS_PAGE_SIZE = 300;
 
 export interface RepoHomeRoute {
   resource: "repo.home";
   sha?: string;
   rid: string;
+}
+
+export interface RepoCommitsRoute {
+  resource: "repo.commits";
+  rid: string;
+}
+
+export interface RepoCommitRoute {
+  resource: "repo.commit";
+  rid: string;
+  commit: string;
 }
 
 export interface RepoIssueRoute {
@@ -43,6 +57,25 @@ export interface LoadedRepoHomeRoute {
     sha?: string;
     tree: Tree;
     readme: Readme | null;
+    sidebarData: SidebarData;
+  };
+}
+
+export interface LoadedRepoCommitsRoute {
+  resource: "repo.commits";
+  params: {
+    repo: RepoInfo;
+    commits: PaginatedQuery<Commit[]>;
+    sidebarData: SidebarData;
+  };
+}
+
+export interface LoadedRepoCommitRoute {
+  resource: "repo.commit";
+  params: {
+    repo: RepoInfo;
+    commit: Commit;
+    diff: Diff;
     sidebarData: SidebarData;
   };
 }
@@ -120,12 +153,16 @@ export interface LoadedRepoPatchesRoute {
 
 export type RepoRoute =
   | RepoHomeRoute
+  | RepoCommitsRoute
+  | RepoCommitRoute
   | RepoIssueRoute
   | RepoIssuesRoute
   | RepoPatchRoute
   | RepoPatchesRoute;
 export type LoadedRepoRoute =
   | LoadedRepoHomeRoute
+  | LoadedRepoCommitsRoute
+  | LoadedRepoCommitRoute
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
   | LoadedRepoPatchRoute
@@ -235,6 +272,48 @@ export async function loadRepoHome(
   };
 }
 
+export async function loadRepoCommits(
+  route: RepoCommitsRoute,
+): Promise<LoadedRepoCommitsRoute> {
+  const [sidebarData, repo, commits] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<PaginatedQuery<Commit[]>>("list_repo_commits", {
+      rid: route.rid,
+      skip: 0,
+      take: COMMITS_PAGE_SIZE,
+    }),
+  ]);
+
+  return {
+    resource: "repo.commits",
+    params: { sidebarData, repo, commits },
+  };
+}
+
+export async function loadRepoCommit(
+  route: RepoCommitRoute,
+): Promise<LoadedRepoCommitRoute> {
+  const [sidebarData, repo, commit, diff] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Commit>("repo_commit", {
+      rid: route.rid,
+      sha: route.commit,
+    }),
+    cachedGetCommitDiff(route.rid, route.commit, 3, true),
+  ]);
+
+  return {
+    resource: "repo.commit",
+    params: { sidebarData, repo, commit, diff },
+  };
+}
+
 export async function loadIssue(
   route: RepoIssueRoute,
 ): Promise<LoadedRepoIssueRoute> {
@@ -304,6 +383,10 @@ export function repoRouteToPath(route: RepoRoute): string {
   if (route.resource === "repo.home") {
     const url = [...pathSegments, "home"].join("/");
     return url;
+  } else if (route.resource === "repo.commits") {
+    return [...pathSegments, "commits"].join("/");
+  } else if (route.resource === "repo.commit") {
+    return [...pathSegments, "commits", route.commit].join("/");
   } else if (route.resource === "repo.issue") {
     let url = [...pathSegments, "issues", route.issue].join("/");
     searchParams.set("status", route.status);
@@ -348,6 +431,14 @@ export function repoUrlToRoute(
   if (rid) {
     if (resource === "home") {
       return { resource: "repo.home", rid, sha: segments.shift() };
+    } else if (resource === "commits") {
+      const sha = segments.shift();
+
+      if (sha) {
+        return { resource: "repo.commit", rid, commit: sha };
+      }
+
+      return { resource: "repo.commits", rid };
     } else if (resource === "issues") {
       const idOrAction = segments.shift();
       if (idOrAction) {

@@ -7,7 +7,7 @@
 
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval, resetDynamicInterval } from "@app/lib/interval";
-  import { invoke } from "@app/lib/invoke";
+  import { cachedRepoCommitCount, invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import useLocalStorage from "@app/lib/useLocalStorage.svelte";
   import { formatRepositoryId } from "@app/lib/utils";
@@ -32,6 +32,7 @@
 
   let repos = $state<RepoSummary[]>(initialRepos);
   let seededNotReplicated = $state<string[]>(initialSeededNotReplicated);
+  let activeCommitCount = $state<number | undefined>(undefined);
   let filterOpen = $state(false);
   let filterQuery = $state("");
   let filterInputElement: HTMLInputElement | undefined = $state(undefined);
@@ -42,6 +43,25 @@
 
   $effect(() => {
     seededNotReplicated = initialSeededNotReplicated;
+  });
+
+  $effect(() => {
+    const rid = activeRepo?.rid;
+    const head = activeRepo?.payloads["xyz.radicle.project"]?.meta.head;
+
+    activeCommitCount = undefined;
+
+    if (!rid || !head) return;
+
+    void cachedRepoCommitCount(rid, head)
+      .then(count => {
+        if (activeRepo?.rid === rid) {
+          activeCommitCount = count;
+        }
+      })
+      .catch(error => {
+        console.error("Failed to load commit count", error);
+      });
   });
 
   $effect(() => {
@@ -114,6 +134,14 @@
     return (
       ($activeRoute.resource === "repo.issues" ||
         $activeRoute.resource === "repo.issue") &&
+      activeRid() === rid
+    );
+  }
+
+  function isCommits(rid: string): boolean {
+    return (
+      ($activeRoute.resource === "repo.commits" ||
+        $activeRoute.resource === "repo.commit") &&
       activeRid() === rid
     );
   }
@@ -394,6 +422,19 @@
         </a>
         {#if activeRid() === repo.rid}
           {@const activeProject = activeRepo?.payloads["xyz.radicle.project"]}
+          <a
+            class="nav-item sub-item"
+            class:active={isCommits(repo.rid)}
+            href={router.routeToPath({
+              resource: "repo.commits",
+              rid: repo.rid,
+            })}>
+            <span class="icon"><Icon name="branch" /></span>
+            Commits
+            {#if activeCommitCount !== undefined}
+              <span class="global-counter-badge">{activeCommitCount}</span>
+            {/if}
+          </a>
           <a
             class="nav-item sub-item"
             class:active={isIssues(repo.rid)}

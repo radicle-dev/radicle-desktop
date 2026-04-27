@@ -335,6 +335,44 @@ pub trait Repo: Profile {
         Ok::<_, Error>(diff.into())
     }
 
+    fn get_commit_diff(
+        &self,
+        rid: identity::RepoId,
+        sha: git::Oid,
+        unified: Option<u32>,
+        highlight: Option<bool>,
+    ) -> Result<Diff, Error> {
+        let unified = unified.unwrap_or(5);
+        let highlight = highlight.unwrap_or(true);
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?.backend;
+        let head = repo.find_commit(sha.into())?;
+
+        let mut opts = git::raw::DiffOptions::new();
+        opts.patience(true).minimal(true).context_lines(unified);
+
+        let mut find_opts = git::raw::DiffFindOptions::new();
+        find_opts.exact_match_only(true);
+        find_opts.all(true);
+
+        let left = head
+            .parents()
+            .next()
+            .map(|parent| parent.tree())
+            .transpose()?;
+        let right = head.tree()?;
+
+        let mut diff = repo.diff_tree_to_tree(left.as_ref(), Some(&right), Some(&mut opts))?;
+        diff.find_similar(Some(&mut find_opts))?;
+        let diff = surf::diff::Diff::try_from(diff)?;
+
+        if highlight {
+            return Ok::<_, Error>(diff.pretty(highlighter(), &(), &repo));
+        }
+
+        Ok::<_, Error>(diff.into())
+    }
+
     fn list_commits(
         &self,
         rid: identity::RepoId,
@@ -359,6 +397,77 @@ pub trait Repo: Profile {
             .collect();
 
         Ok(commits)
+    }
+
+    fn list_repo_commits(
+        &self,
+        rid: identity::RepoId,
+        head: Option<git::Oid>,
+        skip: Option<usize>,
+        take: Option<usize>,
+    ) -> Result<crate::cobs::PaginatedQuery<Vec<repo::Commit>>, Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+
+        let repo = surf::Repository::open(repo.path())?;
+        let head = match head {
+            Some(head) => crate::oid::into_surf(head),
+            None => repo.head()?,
+        };
+        let commits = repo.history(head)?;
+        let cursor = skip.unwrap_or(0);
+
+        match take {
+            None => {
+                let content: Vec<repo::Commit> =
+                    commits.filter_map(|c| c.map(Into::into).ok()).collect();
+
+                Ok(crate::cobs::PaginatedQuery {
+                    cursor: 0,
+                    more: false,
+                    content,
+                })
+            }
+            Some(take) => {
+                let content: Vec<repo::Commit> = commits
+                    .filter_map(|c| c.map(Into::into).ok())
+                    .skip(cursor)
+                    .take(take + 1)
+                    .collect();
+                let more = content.len() > take;
+                let content = if more {
+                    content[..take].to_vec()
+                } else {
+                    content
+                };
+
+                Ok(crate::cobs::PaginatedQuery {
+                    cursor,
+                    more,
+                    content,
+                })
+            }
+        }
+    }
+
+    fn repo_commit_count(&self, rid: identity::RepoId, head: git::Oid) -> Result<usize, Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+
+        let repo = surf::Repository::open(repo.path())?;
+        let count = repo.history(crate::oid::into_surf(head))?.count();
+
+        Ok(count)
+    }
+
+    fn repo_commit(&self, rid: identity::RepoId, sha: git::Oid) -> Result<repo::Commit, Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+
+        let repo = surf::Repository::open(repo.path())?;
+        let commit = repo.commit(crate::oid::into_surf(sha))?;
+
+        Ok(commit.into())
     }
 
     fn unseed(&self, rid: identity::RepoId) -> Result<(), Error> {

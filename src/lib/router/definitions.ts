@@ -8,6 +8,8 @@ import {
   loadIssues,
   loadPatch,
   loadPatches,
+  loadRepoCommit,
+  loadRepoCommits,
   loadRepoHome,
 } from "@app/views/repo/router";
 
@@ -57,6 +59,8 @@ export function isLoadedRepoRoute(
 ): route is LoadedRepoRoute {
   return (
     route.resource === "repo.home" ||
+    route.resource === "repo.commits" ||
+    route.resource === "repo.commit" ||
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||
     route.resource === "repo.patch" ||
@@ -103,6 +107,10 @@ export async function loadRoute(
     return loadGuide();
   } else if (route.resource === "repo.home") {
     return loadRepoHome(route);
+  } else if (route.resource === "repo.commits") {
+    return loadRepoCommits(route);
+  } else if (route.resource === "repo.commit") {
+    return loadRepoCommit(route);
   } else if (route.resource === "repo.issue") {
     return loadIssue(route);
   } else if (route.resource === "repo.issues") {

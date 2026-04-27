@@ -164,6 +164,8 @@ export function routeToPath(route: Route): string {
     return "/guide";
   } else if (
     route.resource === "repo.home" ||
+    route.resource === "repo.commits" ||
+    route.resource === "repo.commit" ||
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||
     route.resource === "repo.patch" ||

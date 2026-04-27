@@ -83,6 +83,10 @@ pub fn router(ctx: Context) -> Router {
         .route("/repo_tree", post(tree_handler))
         .route("/repo_blob", post(blob_handler))
         .route("/get_diff", post(diff_handler))
+        .route("/get_commit_diff", post(commit_diff_handler))
+        .route("/list_repo_commits", post(list_repo_commits_handler))
+        .route("/repo_commit_count", post(repo_commit_count_handler))
+        .route("/repo_commit", post(repo_commit_handler))
         .route("/list_issues", post(issues_handler))
         .route("/create_issue", post(create_issue_handler))
         .route("/create_issue_comment", post(create_issue_comment_handler))
@@ -259,6 +263,80 @@ async fn diff_handler(
     let info = ctx.get_diff(rid, options)?;
 
     Ok::<_, Error>(Json(info))
+}
+
+#[derive(Serialize, Deserialize)]
+struct CommitDiffBody {
+    pub rid: identity::RepoId,
+    pub sha: git::Oid,
+    pub unified: Option<u32>,
+    pub highlight: Option<bool>,
+}
+
+async fn commit_diff_handler(
+    State(ctx): State<Context>,
+    Json(CommitDiffBody {
+        rid,
+        sha,
+        unified,
+        highlight,
+    }): Json<CommitDiffBody>,
+) -> impl IntoResponse {
+    let diff = ctx.get_commit_diff(rid, sha, unified, highlight)?;
+
+    Ok::<_, Error>(Json(diff))
+}
+
+#[derive(Serialize, Deserialize)]
+struct ListRepoCommitsBody {
+    pub rid: identity::RepoId,
+    pub head: Option<git::Oid>,
+    pub skip: Option<usize>,
+    pub take: Option<usize>,
+}
+
+async fn list_repo_commits_handler(
+    State(ctx): State<Context>,
+    Json(ListRepoCommitsBody {
+        rid,
+        head,
+        skip,
+        take,
+    }): Json<ListRepoCommitsBody>,
+) -> impl IntoResponse {
+    let commits = ctx.list_repo_commits(rid, head, skip, take)?;
+
+    Ok::<_, Error>(Json(commits))
+}
+
+#[derive(Serialize, Deserialize)]
+struct RepoCommitCountBody {
+    pub rid: identity::RepoId,
+    pub head: git::Oid,
+}
+
+async fn repo_commit_count_handler(
+    State(ctx): State<Context>,
+    Json(RepoCommitCountBody { rid, head }): Json<RepoCommitCountBody>,
+) -> impl IntoResponse {
+    let count = ctx.repo_commit_count(rid, head)?;
+
+    Ok::<_, Error>(Json(count))
+}
+
+#[derive(Serialize, Deserialize)]
+struct RepoCommitBody {
+    pub rid: identity::RepoId,
+    pub sha: git::Oid,
+}
+
+async fn repo_commit_handler(
+    State(ctx): State<Context>,
+    Json(RepoCommitBody { rid, sha }): Json<RepoCommitBody>,
+) -> impl IntoResponse {
+    let commit = ctx.repo_commit(rid, sha)?;
+
+    Ok::<_, Error>(Json(commit))
 }
 
 #[derive(Serialize, Deserialize)]

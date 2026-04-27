@@ -15,15 +15,17 @@
     commit: Commit;
     disabled: boolean;
     hoverable?: boolean;
-    onclick: () => void;
+    onclick?: () => void;
+    flush?: boolean;
   }
 
   const {
     children,
     commit,
     disabled,
+    flush = false,
     hoverable = false,
-    onclick,
+    onclick = undefined,
   }: Props = $props();
 
   let commitMessageVisible = $state(false);
@@ -81,7 +83,7 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <div class="teaser" class:disabled {onclick} aria-label="commit-teaser">
-  <div class="left">
+  <div class="left" style:padding={flush ? "0" : undefined}>
     <div class="message">
       <div style:cursor={hoverable ? "pointer" : "default"} use:twemoji>
         <InlineTitle fontSize="small" content={commit.summary} />

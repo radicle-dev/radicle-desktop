@@ -103,6 +103,16 @@ export const cachedListCommits = cached(
   { max: 5_000 },
 );
 
+async function repoCommitCount(rid: string, head: string): Promise<number> {
+  return withTestBackend(tauri.invoke, "repo_commit_count", { rid, head });
+}
+
+export const cachedRepoCommitCount = cached(
+  repoCommitCount,
+  (...[rid, head]) => `repo_commit_count:${rid}:${head}`,
+  { max: 5_000 },
+);
+
 async function diffStats(
   rid: string,
   base: string,
@@ -119,6 +129,29 @@ export const cachedDiffStats = cached(
   diffStats,
   (...[rid, base, head]) => `diff_stats:${rid}:${base}:${head}`,
   { max: 10_000 },
+);
+
+async function getCommitDiff(
+  rid: string,
+  sha: string,
+  unified = 3,
+  highlight = true,
+): Promise<Diff> {
+  return withTestBackend(tauri.invoke, "get_commit_diff", {
+    rid,
+    sha,
+    unified,
+    highlight,
+  });
+}
+
+// Commits are immutable, so SHA is a perfect cache key. Cap entries since
+// each highlighted Diff can be sizeable.
+export const cachedGetCommitDiff = cached(
+  getCommitDiff,
+  (...[rid, sha, unified, highlight]) =>
+    `get_commit_diff:${rid}:${sha}:${unified}:${highlight}`,
+  { max: 100 },
 );
 
 export async function writeToClipboard(

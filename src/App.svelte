@@ -42,6 +42,8 @@
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
+  import RepoCommit from "@app/views/repo/RepoCommit.svelte";
+  import RepoCommits from "@app/views/repo/RepoCommits.svelte";
   import RepoHome from "@app/views/repo/RepoHome.svelte";
 
   import Command from "./components/Command.svelte";
@@ -213,6 +215,10 @@
       <GuideView {...$activeRouteStore.params} />
     {:else if $activeRouteStore.resource === "repo.home"}
       <RepoHome {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "repo.commits"}
+      <RepoCommits {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "repo.commit"}
+      <RepoCommit {...$activeRouteStore.params} />
     {:else if $activeRouteStore.resource === "repo.issue"}
       <Issue {...$activeRouteStore.params} />
     {:else if $activeRouteStore.resource === "repo.issues"}
