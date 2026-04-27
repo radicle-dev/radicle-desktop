@@ -2,12 +2,12 @@
 
 - Fixed app loading indicator
 - Sidebar scroll position is now preserved when navigating between views
-- Changed default seed node to iris.radicle.xyz
+- Changed default seed node to iris.radicle.network
 - Updated to Heartwood 1.7.1
 
 **Shout-out to our contributors 🙏✨**
 
-- [lorenz](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkkPvBfjP4bQmco5Dm7UGsX2ruDBieEHi8n9DVJWX5sTEz)
+- [lorenz](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkkPvBfjP4bQmco5Dm7UGsX2ruDBieEHi8n9DVJWX5sTEz)
 
 
 ### v0.9.0
@@ -31,8 +31,8 @@
 
 **Shout-out to our contributors 🙏✨**
 
-- [brandonhaslegs](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkpwnLQxFBQXyMK3Es91s8A7Ew7G11BFFyng1dqZR8QhG3)
-- [julien](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkgvaRdahQZfnf7ccMHByeHtTYrMrM3MuSGYawF6ZL6DNj)
+- [brandonhaslegs](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkpwnLQxFBQXyMK3Es91s8A7Ew7G11BFFyng1dqZR8QhG3)
+- [julien](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkgvaRdahQZfnf7ccMHByeHtTYrMrM3MuSGYawF6ZL6DNj)
 
 
 ### v0.8.0
@@ -46,7 +46,7 @@
 
 **Shout-out to our contributors 🙏✨**
 
-- [geigerzaehler](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
+- [geigerzaehler](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
 
 
 ### v0.7.1
@@ -63,7 +63,7 @@
 
 **Shout-out to our contributors 🙏✨**
 
-- [geigerzaehler](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
+- [geigerzaehler](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
 
 
 ### v0.6.1
@@ -82,7 +82,7 @@
 
 **Shout-out to our contributors 🙏✨**
 
-- [geigerzaehler](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
+- [geigerzaehler](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
 
 
 ### v0.5.0
@@ -100,10 +100,10 @@
 
 **Shout-out to our contributors 🙏✨**
 
-- [geigerzaehler](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
-- [Kuehle](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkgFWv1K9Lqvi5VHm4mtfDo5MvanWVNYU1gkvT9Rwr1Lu7)
-- [lorenz](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkkPvBfjP4bQmco5Dm7UGsX2ruDBieEHi8n9DVJWX5sTEz)
-- [tippfehlr](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MksSTAFPKk7eQju9aGzK64qpfiSnKQ1tJWv1rdzRd5bMHU)
+- [geigerzaehler](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
+- [Kuehle](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkgFWv1K9Lqvi5VHm4mtfDo5MvanWVNYU1gkvT9Rwr1Lu7)
+- [lorenz](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkkPvBfjP4bQmco5Dm7UGsX2ruDBieEHi8n9DVJWX5sTEz)
+- [tippfehlr](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MksSTAFPKk7eQju9aGzK64qpfiSnKQ1tJWv1rdzRd5bMHU)
 
 
 ### v0.4.1
@@ -117,7 +117,7 @@
 - Notification inbox is now accessible from any view without navigating away
 - App icon now shows a badge with the unread notification count and polls for updates
 - Added global breadcrumbs for easier navigation
-- Added quick copy actions for IDs and links to https://app.radicle.xyz
+- Added quick copy actions for IDs and links to https://radicle.network
 - Syntax highlighting added for diffs in markdown code blocks (` ```diff `)
 - Improved dropdown UI — triggers are now visually distinct when active
 - Fixed AppImage bug affecting Arch, Fedora, and Red Hat users
@@ -125,11 +125,11 @@
 
 **Shout-out to our contributors 🙏✨**
 
-- [fintohaps](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkireRatUThvd3qzfKht1S44wpm4FEWSSa4PRMTSQZ3voM)
-- [geigerzaehler](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
-- [lorenz](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkkPvBfjP4bQmco5Dm7UGsX2ruDBieEHi8n9DVJWX5sTEz)
-- [tshepang](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MkfPSKW7AgQqXSi8fgEJMduHpm9ABmsPYwPhMeF7PssonK)
-- [youthlic](https://app.radicle.xyz/nodes/iris.radicle.xyz/users/did:key:z6MktsSuE4bVYbuTtEPjmhrQWA7dMri7GUg9Qp9o8tRCsmhu)
+- [fintohaps](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkireRatUThvd3qzfKht1S44wpm4FEWSSa4PRMTSQZ3voM)
+- [geigerzaehler](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6Mki9XNNHeVRnYS88U59iCBzKUp2xWM3f4zvA3cXuKJFvWF)
+- [lorenz](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkkPvBfjP4bQmco5Dm7UGsX2ruDBieEHi8n9DVJWX5sTEz)
+- [tshepang](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkfPSKW7AgQqXSi8fgEJMduHpm9ABmsPYwPhMeF7PssonK)
+- [youthlic](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MktsSuE4bVYbuTtEPjmhrQWA7dMri7GUg9Qp9o8tRCsmhu)
 
 
 ### v0.3.0

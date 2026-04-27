@@ -137,7 +137,7 @@
         Version {updateChecker.currentVersion}
       </span>
       {#if updateChecker.newVersion}
-        · <ExternalLink href="https://radicle.xyz/desktop">
+        · <ExternalLink href="https://radicle.dev/desktop">
           Update to {updateChecker.newVersion}
         </ExternalLink>
       {:else}

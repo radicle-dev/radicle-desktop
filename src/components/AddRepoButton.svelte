@@ -150,9 +150,9 @@
       {#if tab.value === "seed"}
         <!-- prettier-ignore -->
         <div style:margin-bottom="1rem" style:color="var(--color-text-primary)">
-              You can search for Radicle repos by name or description at
-              <ExternalLink href="https://search.radicle.xyz">
-                search.radicle.xyz
+              You can look for Radicle repos on
+              <ExternalLink href="https://radicle.network">
+                radicle.network
               </ExternalLink>.
             </div>
         <div style:width="100%">

@@ -24,7 +24,7 @@ install() {
     esac
     case "$1" in
     heartwood)
-      FETCH_URL="https://files.radicle.xyz/releases/$2/radicle-$ARCH.tar.xz"
+      FETCH_URL="https://files.radicle.dev/releases/$2/radicle-$ARCH.tar.xz"
       FILENAME="radicle-$2-$ARCH"
       ;;
     *)

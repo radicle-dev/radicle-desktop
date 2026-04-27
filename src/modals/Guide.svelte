@@ -134,7 +134,7 @@
             </div>
             <Command
               styleWidth="fit-content"
-              command="curl -sSf https://radicle.xyz/install | sh" />
+              command="curl -sSf https://radicle.dev/install | sh" />
           </div>
         {/if}
 

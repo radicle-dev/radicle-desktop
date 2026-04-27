@@ -250,8 +250,8 @@ export function verdictIcon(verdict: Review["verdict"]) {
 
 export function explorerUrl(
   path: string,
-  seed = "iris.radicle.xyz",
-  explorer = "https://app.radicle.xyz",
+  seed = "iris.radicle.network",
+  explorer = "https://radicle.network",
 ) {
   return `${explorer}/nodes/${seed}/${path}`;
 }

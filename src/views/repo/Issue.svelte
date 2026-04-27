@@ -361,7 +361,7 @@
       <Id id={issue.id} clipboard={issue.id} placement="bottom-start" />
       <ExternalLink
         href={explorerUrl(`${repo.rid}/issues/${issue.id}`)}
-        title="Open in app.radicle.xyz" />
+        title="Open in radicle.network" />
       <div style:margin-left="auto">
         <Button
           styleHeight="2rem"

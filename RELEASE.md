@@ -12,7 +12,7 @@
   USERNAME="rudolfs"
   SSH_KEY="$HOME/.ssh/id_ed25519"
   SIGNING_KEY="$HOME/.ssh/rudolfs-apt-signing-key"
-  FILES_HOST="files.radicle.xyz"
+  FILES_HOST="files.radicle.dev"
   ```
 
 - Create a new release branch

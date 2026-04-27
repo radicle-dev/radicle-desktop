@@ -279,7 +279,7 @@
         <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
         <ExternalLink
           href={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
-          title="Open in app.radicle.xyz" />
+          title="Open in radicle.network" />
         <div style:margin-left="auto">
           <NewPatchButton rid={repo.rid} ghost />
         </div>

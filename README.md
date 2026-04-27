@@ -6,7 +6,7 @@ This desktop application lets you interact with [Radicle][rad], a peer-to-peer c
 
 ## Installation
 
-See [desktop.radicle.xyz/#install](https://desktop.radicle.xyz/#install).
+See [radicle.dev/desktop#install](https://radicle.dev/desktop#install).
 
 ### From source
 
@@ -19,7 +19,7 @@ See [desktop.radicle.xyz/#install](https://desktop.radicle.xyz/#install).
 Run the following commands to build the desktop app locally:
 
 ```
-git clone https://seed.radicle.xyz/z4D5UCArafTzTQpDZNQRuqswh3ury.git radicle-desktop
+git clone https://seed.radicle.dev/z4D5UCArafTzTQpDZNQRuqswh3ury.git radicle-desktop
 cd radicle-desktop
 npm install
 npm run tauri build
@@ -44,7 +44,7 @@ To get in touch with the maintainers, sign up to our [official chat on Zulip][zu
 The UI is distributed under the terms of GPLv3. See [LICENSE][lic] for details.
 
 [lic]: ./LICENSE
-[rad]: https://radicle.xyz
+[rad]: https://radicle.dev
 [nod]: https://nodejs.org
 [npm]: https://www.npmjs.com
 [rus]: https://www.rust-lang.org/

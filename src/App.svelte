@@ -189,7 +189,7 @@
       is outdated.
       <br />
       If you have an existing Radicle installation, make sure you have
-      <ExternalLink href="https://radicle.xyz/download">
+      <ExternalLink href="https://radicle.dev/download">
         the latest version.
       </ExternalLink>
       <br />
