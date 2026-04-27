@@ -36,6 +36,7 @@
   import IssueTimeline from "@app/components/IssueTimeline.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
+  import Topbar from "@app/components/Topbar.svelte";
   import CreateIssueModal from "@app/modals/CreateIssue.svelte";
 
   import Layout from "./Layout.svelte";
@@ -265,18 +266,12 @@
     flex-direction: column;
     height: 100%;
   }
-  .topbar {
+  .breadcrumb {
     display: flex;
     align-items: center;
-    padding: 0 1rem;
-    height: 2.5rem;
-    flex-shrink: 0;
     gap: 0.375rem;
-    border-bottom: 1px solid var(--color-border-subtle);
-    font: var(--txt-body-m-regular);
-    color: var(--color-text-secondary);
   }
-  .topbar-link {
+  .breadcrumb-link {
     cursor: pointer;
     background: none;
     border: none;
@@ -284,7 +279,7 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
   }
-  .topbar-link:hover {
+  .breadcrumb-link:hover {
     color: var(--color-text-primary);
   }
   .content {
@@ -345,23 +340,25 @@
 
 <Layout>
   <div class="page">
-    <div class="topbar">
-      <Icon name={issue.state.status === "open" ? "issue" : "issue-closed"} />
-      <button
-        class="topbar-link"
-        onclick={() =>
-          router.push({
-            resource: "repo.issues",
-            rid: repo.rid,
-            status: "all",
-          })}>
-        All Issues
-      </button>
-      <Icon name="chevron-right" />
-      <Id id={issue.id} clipboard={issue.id} placement="bottom-start" />
-      <ExternalLink
-        href={explorerUrl(`${repo.rid}/issues/${issue.id}`)}
-        title="Open in radicle.network" />
+    <Topbar>
+      <div class="breadcrumb">
+        <Icon name={issue.state.status === "open" ? "issue" : "issue-closed"} />
+        <button
+          class="breadcrumb-link"
+          onclick={() =>
+            router.push({
+              resource: "repo.issues",
+              rid: repo.rid,
+              status: "all",
+            })}>
+          All Issues
+        </button>
+        <Icon name="chevron-right" />
+        <Id id={issue.id} clipboard={issue.id} placement="bottom-start" />
+        <ExternalLink
+          href={explorerUrl(`${repo.rid}/issues/${issue.id}`)}
+          title="Open in radicle.network" />
+      </div>
       <div style:margin-left="auto">
         <Button
           styleHeight="2rem"
@@ -374,7 +371,7 @@
           <Icon name="plus" />New issue
         </Button>
       </div>
-    </div>
+    </Topbar>
 
     <ScrollArea style="flex: 1; min-height: 0;">
       <div class="content">

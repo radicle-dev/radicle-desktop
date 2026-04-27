@@ -23,6 +23,7 @@
   import Icon from "@app/components/Icon.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
+  import Topbar from "@app/components/Topbar.svelte";
   import CreateIssueModal from "@app/modals/CreateIssue.svelte";
 
   import Layout from "./Layout.svelte";
@@ -105,15 +106,6 @@
     flex-direction: column;
     height: 100%;
   }
-  .topbar {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0 1rem;
-    height: 2.75rem;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--color-border-subtle);
-  }
   .topbar-title {
     font: var(--txt-body-m-semibold);
     color: var(--color-text-secondary);
@@ -156,7 +148,7 @@
 
 <Layout selfScroll>
   <div class="page">
-    <div class="topbar">
+    <Topbar>
       <span class="topbar-title">Issues</span>
       <div class="filters">
         <a
@@ -222,7 +214,7 @@
           <Icon name="plus" />New issue
         </Button>
       </div>
-    </div>
+    </Topbar>
 
     <ScrollArea style="height: 100%; min-width: 0;">
       {#if issueCountMismatch(status)}

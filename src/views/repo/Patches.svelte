@@ -25,6 +25,7 @@
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
+  import Topbar from "@app/components/Topbar.svelte";
 
   import Layout from "./Layout.svelte";
 
@@ -163,15 +164,6 @@
     flex-direction: column;
     height: 100%;
   }
-  .topbar {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0 1rem;
-    height: 2.75rem;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--color-border-subtle);
-  }
   .topbar-title {
     font: var(--txt-body-m-semibold);
     color: var(--color-text-secondary);
@@ -225,7 +217,7 @@
 
 <Layout selfScroll>
   <div class="page">
-    <div class="topbar">
+    <Topbar>
       <span class="topbar-title">Patches</span>
       <div class="filters">
         <a
@@ -328,7 +320,7 @@
           bind:value={searchInput} />
         <NewPatchButton rid={repo.rid} />
       </div>
-    </div>
+    </Topbar>
 
     <ScrollArea
       style="height: 100%; min-width: 0;"
