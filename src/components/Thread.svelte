@@ -15,6 +15,7 @@
   interface Props {
     thread: Thread<CodeLocation>;
     rid: string;
+    currentUserNid?: string;
     canEditComment: (author: string) => true | undefined;
     editComment?: (
       commentId: string,
@@ -38,6 +39,7 @@
   const {
     thread,
     rid,
+    currentUserNid,
     canEditComment,
     editComment,
     createReply,
@@ -64,11 +66,6 @@
 
   const root = $derived(thread.root);
   const replies = $derived(thread.replies);
-  const style = $derived(
-    replies.length > 0 || showReplyForm
-      ? `--local-border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0`
-      : `--local-border-radius: var(--border-radius-sm)`,
-  );
 </script>
 
 <style>
@@ -76,22 +73,64 @@
     display: flex;
     flex-direction: column;
     width: 100%;
+    gap: 0.5rem;
   }
 
   .top-level-comment {
     background-color: var(--color-surface-canvas);
     border: 1px solid var(--color-border-subtle);
-    border-radius: var(--local-border-radius);
+    border-radius: var(--border-radius-sm);
+  }
+
+  .replies-wrapper {
+    position: relative;
+    margin-left: 3rem;
+  }
+  .replies-wrapper::before,
+  .replies-wrapper::after {
+    content: "";
+    position: absolute;
+    top: -0.5rem;
+    height: calc(100% + 0.5rem);
+    width: 1px;
+    background-color: var(--color-border-subtle);
+  }
+  .replies-wrapper::before {
+    left: -1.75rem;
+  }
+  .replies-wrapper::after {
+    left: 1.25rem;
+  }
+  .replies-wrapper-inline {
+    background-color: var(--color-surface-canvas);
+    border: 1px solid var(--color-border-subtle);
+  }
+  .replies-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .reply-box,
+  .reply-form-box {
+    position: relative;
+    z-index: 1;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+  }
+  .reply-form-box {
+    padding: 1rem;
   }
 </style>
 
 {#snippet repliesSnippet()}
-  <div style:width="100%">
-    {#if replies.length > 0}
-      {#each replies as reply}
+  <div class="replies-list">
+    {#each replies as reply}
+      <div class="reply-box">
         <CommentComponent
           disallowEmptyBody
           {rid}
+          {currentUserNid}
           lastEdit={reply.edits.length > 1 ? reply.edits.at(-1) : undefined}
           id={reply.id}
           author={reply.author}
@@ -102,11 +141,12 @@
           editComment={canEditComment(reply.author.did) &&
             editComment?.bind(null, reply.id)}
           reactOnComment={reactOnComment?.bind(null, reply.id)} />
-      {/each}
-    {/if}
+      </div>
+    {/each}
     {#if createReply && showReplyForm}
-      <div id={`reply-${root.id}`} style:padding="1rem">
+      <div class="reply-form-box" id={`reply-${root.id}`}>
         <ExtendedTextarea
+          inline
           disallowEmptyBody
           {submitInProgress}
           {rid}
@@ -129,11 +169,12 @@
   </div>
 {/snippet}
 
-<div class="comments" {style}>
+<div class="comments">
   <div class:top-level-comment={!inline}>
     <CommentComponent
       disallowEmptyBody
       {rid}
+      {currentUserNid}
       id={root.id}
       lastEdit={root.edits.length > 1 ? root.edits.at(-1) : undefined}
       author={root.author}
@@ -153,23 +194,11 @@
   </div>
   {#if replies.length > 0 || (createReply && showReplyForm)}
     {#if inline}
-      <div
-        style:background-color="var(--color-surface-canvas)"
-        style:border="1px solid var(--color-border-subtle)">
+      <div class="replies-wrapper-inline">
         {@render repliesSnippet()}
       </div>
     {:else}
-      <div
-        style:border="1px solid var(--color-border-subtle)"
-        style:border-top="none"
-        style:border-radius="var(--border-radius-sm)"
-        style:border-top-left-radius={!inline ? "0" : undefined}
-        style:border-top-right-radius={!inline ? "0" : undefined}
-        style:display="flex"
-        style:gap="0.5rem"
-        style:align-items="center"
-        style:background-color="var(--color-surface-canvas)"
-        style:overflow="hidden">
+      <div class="replies-wrapper">
         {@render repliesSnippet()}
       </div>
     {/if}
