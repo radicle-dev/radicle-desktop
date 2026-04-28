@@ -433,6 +433,7 @@
       <ThreadComponent
         inline
         rid={codeComments.rid}
+        currentUserNid={codeComments.config.publicKey}
         {thread}
         reactOnComment={codeComments.reactOnComment}
         createReply={(codeComments.canReply ?? true)

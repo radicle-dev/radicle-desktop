@@ -23,6 +23,7 @@
     beforeTimestamp?: Snippet;
     id?: string;
     rid: string;
+    currentUserNid?: string;
     author: Author;
     body?: string;
     reactions?: Reaction[];
@@ -46,6 +47,7 @@
     beforeTimestamp,
     id,
     rid,
+    currentUserNid,
     author,
     body = $bindable(),
     reactions,
@@ -243,7 +245,7 @@
             }
           }} />
       {/if}
-      <Reactions handleReaction={reactOnComment} {reactions} />
+      <Reactions handleReaction={reactOnComment} {currentUserNid} {reactions} />
     </div>
   {/if}
 </div>

@@ -402,6 +402,7 @@
           <div class="issue-body">
             <CommentComponent
               rid={repo.rid}
+              currentUserNid={config.publicKey}
               id={issue.id}
               lastEdit={issue.body.edits.length > 1
                 ? issue.body.edits.at(-1)

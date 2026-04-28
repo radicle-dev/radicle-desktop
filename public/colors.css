@@ -67,6 +67,8 @@
 
   --color-surface-brand-primary: var(--color-brand-bg);
   --color-surface-brand-secondary: var(--color-brand-hover);
+  --color-surface-brand-subtle: var(--color-accent-blue-100);
+  --color-surface-brand-mid: var(--color-accent-blue-200);
   --color-border-brand: var(--color-brand-hover);
   --color-text-brand: var(--color-brand-text-light);
 }
@@ -123,6 +125,9 @@
   --color-code-comments: var(--color-neutrals-opaque-dark-700);
   --color-code-error: var(--color-semantic-red-400);
   --color-code-functions: var(--color-accent-emerald-400);
+
+  --color-surface-brand-subtle: var(--color-accent-blue-900);
+  --color-surface-brand-mid: var(--color-accent-blue-800);
 
   --color-text-brand: var(--color-brand-text-dark);
 }

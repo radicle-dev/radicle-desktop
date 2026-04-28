@@ -177,6 +177,7 @@
     <CommentComponent
       caption={revision.id === patchId ? "opened patch" : "created revision"}
       {rid}
+      currentUserNid={config.publicKey}
       id={revision.id}
       lastEdit={revision.description.length > 1
         ? revision.description.at(-1)

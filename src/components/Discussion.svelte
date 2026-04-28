@@ -109,6 +109,7 @@
       <ThreadComponent
         {thread}
         {rid}
+        currentUserNid={config.publicKey}
         canEditComment={partial(
           roles.isDelegateOrAuthor,
           config.publicKey,

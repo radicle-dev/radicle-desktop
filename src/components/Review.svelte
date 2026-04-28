@@ -412,6 +412,7 @@
         <CommentComponent
           disableAttachments
           rid={repo.rid}
+          currentUserNid={config.publicKey}
           disallowEmptyBody={!("draft" in review) &&
             review.verdict === undefined}
           emptyBodyTooltip="Summary is mandatory when verdict is None"
