@@ -106,6 +106,25 @@
     display: flex;
     margin-left: auto;
     gap: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.1s ease-in-out;
+    will-change: opacity;
+  }
+  .card:is(
+      :hover,
+      :has(:focus-visible),
+      :has(:global([data-expanded])),
+      .editing
+    )
+    :is(.header-right, .hover-only) {
+    opacity: 1;
+  }
+  .hover-only {
+    display: flex;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.1s ease-in-out;
+    will-change: opacity;
   }
   .card-body {
     display: flex;
@@ -120,9 +139,10 @@
     flex-direction: row;
     align-items: center;
     gap: 0.5rem;
-    margin-left: 1rem;
+    padding: 0 0.75rem 0.25rem;
   }
-  .timestamp {
+  .timestamp,
+  .caption {
     font: var(--txt-body-m-regular);
     color: var(--color-text-quaternary);
   }
@@ -131,14 +151,15 @@
   }
 </style>
 
-<div class="card" {id} style:width={styleWidth}>
+<div
+  class="card"
+  class:editing={state !== "read"}
+  {id}
+  style:width={styleWidth}>
   <div style:position="relative">
     <div class="card-header">
       <NodeId {...utils.authorForNodeId(author)} />
-      {caption}
-      {#if id}
-        <Id {id} clipboard={id} />
-      {/if}
+      <span class="caption">{caption}</span>
       {#if beforeTimestamp}
         {@render beforeTimestamp()}
       {/if}
@@ -158,6 +179,9 @@
         </div>
       {/if}
       <div class="header-right">
+        {#if id}
+          <Id {id} clipboard={id} />
+        {/if}
         {#if editComment}
           <div class="icon-button">
             <Icon name="edit" onclick={toggleEdit} />
@@ -233,19 +257,21 @@
   {/if}
   {#if reactions && reactions.length > 0}
     <div class="actions">
-      {#if id && reactions && reactOnComment}
-        <ReactionSelector
-          placement="top-start"
-          {reactions}
-          select={async ({ authors, emoji }) => {
-            try {
-              await reactOnComment(authors, emoji);
-            } finally {
-              closeFocused();
-            }
-          }} />
-      {/if}
       <Reactions handleReaction={reactOnComment} {currentUserNid} {reactions} />
+      {#if reactOnComment}
+        <div class="hover-only">
+          <ReactionSelector
+            placement="top-start"
+            {reactions}
+            select={async ({ authors, emoji }) => {
+              try {
+                await reactOnComment(authors, emoji);
+              } finally {
+                closeFocused();
+              }
+            }} />
+        </div>
+      {/if}
     </div>
   {/if}
 </div>

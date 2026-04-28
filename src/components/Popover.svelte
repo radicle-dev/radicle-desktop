@@ -104,7 +104,11 @@
 
 <svelte:window onclick={clickOutside} ontouchstart={clickOutside} />
 
-<div data-popover-id={id} bind:this={containerEl} class="container">
+<div
+  data-popover-id={id}
+  data-expanded={expanded || undefined}
+  bind:this={containerEl}
+  class="container">
   {@render toggle(toggleFn)}
 
   {#if expanded}
