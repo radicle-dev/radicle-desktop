@@ -209,7 +209,7 @@
   </textarea>
   {#if draggingOver}
     <div class="txt-body-m-regular dragover">
-      Drop files to add them as embeds. Embeds are limited to 10Mb.
+      Drop files to add them as embeds. Embeds are limited to 10MB.
     </div>
   {/if}
 </div>

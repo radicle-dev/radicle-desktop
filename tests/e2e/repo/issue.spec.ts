@@ -41,7 +41,7 @@ test("creation of top level comments", async ({ page }) => {
     .fill(
       "It's important for us that the comment creation flow works as expected.",
     );
-  await page.getByRole("button", { name: "icon-checkmark" }).click();
+  await page.getByRole("button", { name: /^Save/ }).click();
   await expect(
     page.getByText("Make sure that comment creation is working"),
   ).toBeVisible();
@@ -54,7 +54,7 @@ test("creation of top level comments", async ({ page }) => {
   await page
     .getByPlaceholder("Leave a comment")
     .fill("A top level comment by playwright");
-  await page.getByRole("button", { name: "icon-checkmark" }).click();
+  await page.getByRole("button", { name: /^Comment/ }).click();
   await expect(
     page.getByText("A top level comment by playwright"),
   ).toBeVisible();
@@ -65,7 +65,7 @@ test("creation of top level comments", async ({ page }) => {
     .fill(
       "A top level comment by playwright created by replying to the issue body",
     );
-  await page.getByRole("button", { name: "icon-checkmark Reply" }).click();
+  await page.getByRole("button", { name: /^Reply/ }).click();
   await expect(
     page.getByText(
       "A top level comment by playwright created by replying to the issue body",
@@ -76,7 +76,7 @@ test("creation of top level comments", async ({ page }) => {
   await page
     .getByPlaceholder("Reply to comment")
     .fill("A reply comment by playwright replying to the first comment");
-  await page.getByRole("button", { name: "icon-checkmark Reply" }).click();
+  await page.getByRole("button", { name: /^Reply/ }).click();
   await expect(
     page.getByText(
       "A reply comment by playwright replying to the first comment",

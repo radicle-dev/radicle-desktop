@@ -284,14 +284,25 @@
     margin-left: auto;
     gap: 0.5rem;
   }
+  .shortcut {
+    opacity: 0.6;
+    margin-left: 0.25rem;
+  }
 
   .preview {
     width: 100%;
     font: var(--txt-body-m-regular);
     min-height: 109px;
-    margin-left: 1px;
-    margin-top: 1px;
     flex: 1;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    padding: 0.75rem;
+  }
+  .inline .preview {
+    border: 0;
+    padding: 0;
+    background-color: transparent;
   }
 </style>
 
@@ -321,72 +332,72 @@
       {placeholder} />
   {/if}
   {@render belowTextarea?.()}
-  <div class="actions">
-    {#if !hideDiscard}
-      <Button
-        variant="outline"
-        disabled={submitInProgress}
-        onclick={() => {
-          preview = false;
-          close();
-        }}>
-        <Icon name="close" />
-        <span class="global-hide-on-small-desktop-down">Discard</span>
-      </Button>
-    {/if}
-    {#if !preview}
-      <div
-        style:display=""
-        class="txt-overflow txt-body-m-regular txt-missing"
-        title={`${attachEnabled ? "Drag and drop files to add them. " : ""}Markdown is supported. Press ${utils.modifierKey()}↵ to submit.`}>
-        {#if embedUploadError}
-          <span style:color="var(--color-feedback-error-text)">
-            <Icon
-              styleDisplay="inline"
-              styleVerticalAlign="text-top"
-              name="warning" />
-            {embedUploadError}
-          </span>
-        {:else if attachEnabled}
-          Drag and drop files to add them.
-        {/if}
-        <Icon
-          name="markdown"
-          styleDisplay="inline"
-          styleVerticalAlign="text-top" />
-        Markdown is supported. Press {utils.modifierKey()}↵ to submit.
-      </div>
-    {/if}
-    <div class="buttons">
-      {#if attachEnabled || attachDisabledReason}
+  {#if !hideDiscard || body.trim() !== ""}
+    <div class="actions">
+      {#if !hideDiscard}
         <Button
           variant="outline"
-          onclick={selectFiles}
-          disabled={preview || attachDisabledReason !== undefined}
-          title={attachDisabledReason}>
-          <Icon name="attach" />
-          Attach
+          disabled={submitInProgress}
+          onclick={() => {
+            preview = false;
+            close();
+          }}>
+          <Icon name="close" />
+          <span class="global-hide-on-small-desktop-down">Discard</span>
         </Button>
       {/if}
-      <Button variant="outline" onclick={() => (preview = !preview)}>
-        <Icon name={preview ? "edit" : "eye"} />
-        {preview ? "Edit" : "Preview"}
-      </Button>
-      <Button
-        variant={effectiveSubmitVariant}
-        title={emptyBodyTooltip}
-        disabled={!isValid() ||
-          submitInProgress ||
-          disableSubmit ||
-          (disallowEmptyBody && body.trim() === "")}
-        onclick={submitFn}>
-        <Icon name="checkmark" />
-        {#if submitInProgress}
-          Saving…
-        {:else}
-          {submitCaption}
+      {#if !preview}
+        <div
+          style:display=""
+          class="txt-overflow txt-body-m-regular txt-missing"
+          title="Markdown is supported.">
+          {#if embedUploadError}
+            <span style:color="var(--color-feedback-error-text)">
+              <Icon
+                styleDisplay="inline"
+                styleVerticalAlign="text-top"
+                name="warning" />
+              {embedUploadError}
+            </span>
+          {/if}
+          <Icon
+            name="markdown"
+            styleDisplay="inline"
+            styleVerticalAlign="text-top" />
+          Markdown is supported.
+        </div>
+      {/if}
+      <div class="buttons">
+        {#if attachEnabled || attachDisabledReason}
+          <Button
+            variant="outline"
+            onclick={selectFiles}
+            disabled={preview || attachDisabledReason !== undefined}
+            title={attachDisabledReason}>
+            <Icon name="attach" />
+            Attach
+          </Button>
         {/if}
-      </Button>
+        <Button variant="outline" onclick={() => (preview = !preview)}>
+          <Icon name={preview ? "edit" : "eye"} />
+          {preview ? "Edit" : "Preview"}
+        </Button>
+        <Button
+          variant={effectiveSubmitVariant}
+          title={emptyBodyTooltip}
+          disabled={!isValid() ||
+            submitInProgress ||
+            disableSubmit ||
+            (disallowEmptyBody && body.trim() === "")}
+          onclick={submitFn}>
+          {#if submitInProgress}
+            Saving…
+          {:else}
+            {submitCaption}
+            <span class="shortcut">{utils.modifierKey()}↵</span>
+          {/if}
+        </Button>
+      </div>
     </div>
-  </div>
+  {/if}
 </div>

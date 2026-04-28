@@ -221,6 +221,7 @@
         <div id={`edit-${id}`} style:width="100%">
           <ExtendedTextarea
             focus
+            inline
             {body}
             {rid}
             {embeds}
