@@ -22,7 +22,6 @@
 
   const { patchId, revision, rid, codeComments }: Props = $props();
 
-  let hideChanges = $state(false);
   let filesExpanded = $state(true);
   let selectedCommit = $state<string>();
   // Parent reuses this component across patch revisions; a sibling $effect
@@ -36,7 +35,6 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     patchId;
 
-    hideChanges = false;
     filesExpanded = true;
     selectedCommit = undefined;
     base = revision.base;
@@ -122,29 +120,20 @@
 
 <div
   class="txt-body-m-regular global-flex"
-  style:margin-bottom={hideChanges ? undefined : "1rem"}>
-  <div class="global-flex">
-    <Button variant="naked" onclick={() => (hideChanges = !hideChanges)}>
-      <Icon name={hideChanges ? "chevron-right" : "chevron-down"} />
-    </Button>
-    <div class="txt-body-m-regular global-flex">Changes</div>
-  </div>
-  {#if !hideChanges}
-    <div style:margin-left="auto">
-      <Button variant="naked" onclick={() => (filesExpanded = !filesExpanded)}>
-        {#if filesExpanded === true}
-          <Icon name="collapse-vertical" />
-          Collapse all
-        {:else}
-          <Icon name="expand-vertical" />
-          Expand all
-        {/if}
-      </Button>
-    </div>
-  {/if}
+  style:margin-bottom="1rem"
+  style:justify-content="flex-end">
+  <Button variant="naked" onclick={() => (filesExpanded = !filesExpanded)}>
+    {#if filesExpanded === true}
+      <Icon name="collapse-vertical" />
+      Collapse all
+    {:else}
+      <Icon name="expand-vertical" />
+      Expand all
+    {/if}
+  </Button>
 </div>
 
-<div style:display={hideChanges ? "none" : "revert"}>
+<div>
   {#await cachedListCommits(rid, revision.base, revision.head) then commits}
     <div style:margin-bottom="1rem">
       <CommitsContainer>

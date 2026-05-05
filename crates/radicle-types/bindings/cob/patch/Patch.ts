@@ -12,5 +12,7 @@ export type Patch = {
   assignees: Array<Author>;
   labels: Array<string>;
   timestamp: number;
-  revisionIds: Array<string>;
+  revisionCount: number;
+  commentCount: number;
+  reviewCount: number;
 };

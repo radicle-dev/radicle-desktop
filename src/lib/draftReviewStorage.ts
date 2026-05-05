@@ -41,6 +41,7 @@ const codeRangeSchema: z.Schema<CodeRange> = z.union([
 const draftReviewStoredSchema = z.object({
   id: z.string(),
   rid: z.string(),
+  patchId: z.string().optional(),
   revision: z.string(),
   verdict: z.union([z.literal("accept"), z.literal("reject")]).optional(),
   summary: z.string().default(""),
@@ -89,12 +90,13 @@ export const draftReviewStorage = {
     }
   },
 
-  create(rid: string, revisionId: string): string {
+  create(rid: string, patchId: string, revisionId: string): string {
     const id = crypto.randomUUID();
     storage.update(reviews => {
       reviews[id] = {
         id,
         rid,
+        patchId,
         revision: revisionId,
         summary: "",
         labels: [],
@@ -105,9 +107,9 @@ export const draftReviewStorage = {
     return id;
   },
 
-  hasForRevision(revisionId: string): boolean {
+  hasForPatch(patchId: string): boolean {
     return Object.values(storage.value).some(
-      review => review.revision === revisionId,
+      review => review.patchId === patchId,
     );
   },
 

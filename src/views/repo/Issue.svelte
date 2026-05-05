@@ -28,13 +28,17 @@
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Button from "@app/components/Button.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
-  import Discussion from "@app/components/Discussion.svelte";
+  import Discussion, {
+    type ActivityItem,
+  } from "@app/components/Discussion.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
+  import IssueActivityItem, {
+    type FlattenedIssueOperation,
+  } from "@app/components/IssueActivityItem.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
-  import IssueTimeline from "@app/components/IssueTimeline.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
@@ -74,19 +78,42 @@
   const status = initialStatus;
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
-  let hideTimeline = $state(true);
 
-  $effect(() => {
-    // The component doesn't get destroyed when we switch between different
-    // issues in the second column and because of that the top-level state
-    // gets retained when the issue changes. This reactive statement makes
-    // sure we always reset the state to defaults.
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    issue.id;
-
-    hideTimeline = true;
-  });
+  const activityItems: ActivityItem<FlattenedIssueOperation>[] = $derived.by(
+    () => {
+      const tracker: Partial<Record<Action["type"], Action>> = {};
+      const items: ActivityItem<FlattenedIssueOperation>[] = [];
+      activity.forEach(operation => {
+        operation.actions.forEach((action, actionIndex) => {
+          if (action.type === "comment") {
+            tracker[action.type] = action;
+            return;
+          }
+          const previous = tracker[action.type];
+          // The first `edit` action has nothing to diff against, so the
+          // renderer skips it. Skip it here too so we don't leave a gap.
+          if (action.type === "edit" && !previous) {
+            tracker[action.type] = action;
+            return;
+          }
+          const op: FlattenedIssueOperation = {
+            ...action,
+            id: operation.id,
+            author: operation.author,
+            timestamp: operation.timestamp,
+            previous,
+          };
+          tracker[action.type] = action;
+          items.push({
+            key: `${operation.id}:${actionIndex}`,
+            timestamp: operation.timestamp,
+            data: op,
+          });
+        });
+      });
+      return items;
+    },
+  );
 
   async function saveLabels(labels: string[]) {
     try {
@@ -428,6 +455,10 @@
             </CommentComponent>
           </div>
 
+          {#snippet renderActivity(op: FlattenedIssueOperation)}
+            <IssueActivityItem {op} />
+          {/snippet}
+
           <Discussion
             cobId={issue.id}
             commentThreads={threads}
@@ -436,21 +467,9 @@
             {editComment}
             {reactOnComment}
             repoDelegates={repo.delegates}
-            rid={repo.rid} />
-
-          <div class="global-flex" style:margin-top="1rem">
-            <Button
-              variant="naked"
-              onclick={() => (hideTimeline = !hideTimeline)}>
-              <Icon name={hideTimeline ? "chevron-right" : "chevron-down"} />
-            </Button>
-            <div class="txt-body-m-regular global-flex">Timeline</div>
-          </div>
-          <div
-            style:display={hideTimeline ? "none" : "revert"}
-            style:margin-top="1rem">
-            <IssueTimeline {activity} />
-          </div>
+            rid={repo.rid}
+            {activityItems}
+            {renderActivity} />
         </div>
 
         <div class="sidebar">

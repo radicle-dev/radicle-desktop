@@ -35,8 +35,11 @@ pub struct Patch {
     labels: Vec<cob::Label>,
     #[ts(type = "number")]
     timestamp: cob::Timestamp,
-    #[ts(as = "Vec<String>")]
-    revision_ids: Vec<patch::RevisionId>,
+    revision_count: usize,
+    #[ts(type = "number")]
+    comment_count: usize,
+    #[ts(type = "number")]
+    review_count: usize,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -64,7 +67,24 @@ impl Patch {
                 .collect::<Vec<_>>(),
             labels: patch.labels().cloned().collect::<Vec<_>>(),
             timestamp: patch.timestamp(),
-            revision_ids: patch.revisions().map(|(id, _)| id).collect(),
+            revision_count: patch.revisions().count(),
+            comment_count: patch
+                .revisions()
+                .map(|(_, revision)| {
+                    let discussion_comments =
+                        revision.discussion().comments().count().saturating_sub(1);
+                    let review_comments = revision
+                        .reviews()
+                        .map(|(_, review)| review.comments().count())
+                        .sum::<usize>();
+
+                    discussion_comments + review_comments
+                })
+                .sum(),
+            review_count: patch
+                .revisions()
+                .map(|(_, revision)| revision.reviews().count())
+                .sum(),
         }
     }
 

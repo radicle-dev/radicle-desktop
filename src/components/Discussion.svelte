@@ -1,17 +1,23 @@
-<script lang="ts">
+<script lang="ts" module>
+  export interface ActivityItem<T = unknown> {
+    key: string;
+    timestamp: number;
+    data: T;
+  }
+</script>
+
+<script lang="ts" generics="A">
   import type { Author } from "@bindings/cob/Author";
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Config } from "@bindings/config/Config";
+  import type { Snippet } from "svelte";
 
   import partial from "lodash/partial";
-  import sum from "lodash/sum";
 
   import * as roles from "@app/lib/roles";
 
-  import Button from "@app/components/Button.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
-  import Icon from "@app/components/Icon.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
 
   interface Props {
@@ -35,6 +41,8 @@
     ) => Promise<void>;
     repoDelegates: Author[];
     rid: string;
+    activityItems?: ActivityItem<A>[];
+    renderActivity?: Snippet<[A]>;
   }
 
   /* eslint-disable prefer-const */
@@ -47,22 +55,51 @@
     reactOnComment,
     repoDelegates,
     rid,
+    activityItems,
+    renderActivity,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
-  let previousCobId: string | undefined;
+  let previousCobId = cobId;
   let focusReply: boolean = $state(false);
   let commentFormKey = $state(0);
 
-  let hideDiscussion = $state(false);
+  type TimelineEntry =
+    | { kind: "thread"; key: string; timestamp: number; thread: Thread }
+    | { kind: "activity"; key: string; timestamp: number; data: A };
+
+  const timeline: TimelineEntry[] = $derived(
+    [
+      ...commentThreads.map(
+        thread =>
+          ({
+            kind: "thread",
+            key: thread.root.id,
+            timestamp: thread.root.edits[0].timestamp,
+            thread,
+          }) satisfies TimelineEntry,
+      ),
+      ...(activityItems ?? []).map(
+        item =>
+          ({
+            kind: "activity",
+            key: item.key,
+            timestamp: item.timestamp,
+            data: item.data,
+          }) satisfies TimelineEntry,
+      ),
+    ].sort((a, b) => a.timestamp - b.timestamp),
+  );
 
   $effect(() => {
-    if (previousCobId !== undefined && cobId !== previousCobId) {
-      hideDiscussion = false;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    cobId;
+
+    if (cobId !== previousCobId) {
+      previousCobId = cobId;
       focusReply = false;
       commentFormKey += 1;
     }
-    previousCobId = cobId;
   });
 </script>
 
@@ -75,47 +112,27 @@
   }
 </style>
 
-<div style:margin={hideDiscussion ? "1.5rem 0" : "1.5rem 0 2.5rem 0"}>
-  <div class="global-flex">
-    <div class="global-flex">
-      <Button
-        variant="naked"
-        disabled={commentThreads.length === 0}
-        onclick={() => (hideDiscussion = !hideDiscussion)}>
-        <Icon name={hideDiscussion ? "chevron-right" : "chevron-down"} />
-      </Button>
-      <div
-        class="txt-body-m-regular global-flex"
-        style:color={commentThreads.length === 0
-          ? "var(--color-text-disabled)"
-          : undefined}>
-        Discussion <span>
-          {sum(
-            commentThreads.map(t => {
-              return t.replies.length + 1;
-            }),
+<div style:margin="1.5rem 0 2.5rem 0">
+  <div>
+    {#each timeline as entry (entry.kind + ":" + entry.key)}
+      {#if entry.kind === "thread"}
+        <ThreadComponent
+          thread={entry.thread}
+          {rid}
+          currentUserNid={config.publicKey}
+          canEditComment={partial(
+            roles.isDelegateOrAuthor,
+            config.publicKey,
+            repoDelegates.map(delegate => delegate.did),
           )}
-        </span>
-      </div>
-    </div>
-  </div>
-  <div
-    style:display={hideDiscussion ? "none" : "revert"}
-    style:margin-top="1rem">
-    {#each commentThreads as thread}
-      <ThreadComponent
-        {thread}
-        {rid}
-        currentUserNid={config.publicKey}
-        canEditComment={partial(
-          roles.isDelegateOrAuthor,
-          config.publicKey,
-          repoDelegates.map(delegate => delegate.did),
-        )}
-        {editComment}
-        createReply={createComment}
-        {reactOnComment} />
-      <div class="connector"></div>
+          {editComment}
+          createReply={createComment}
+          {reactOnComment} />
+        <div class="connector"></div>
+      {:else if renderActivity}
+        {@render renderActivity(entry.data)}
+        <div class="connector"></div>
+      {/if}
     {/each}
 
     <div id={`reply-${cobId}`}>

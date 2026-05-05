@@ -28,9 +28,7 @@
 
   const { focussed, patch, rid, status }: Props = $props();
 
-  const hasDraftReview = $derived(
-    patch.revisionIds.some(id => draftReviewStorage.hasForRevision(id)),
-  );
+  const hasDraftReview = $derived(draftReviewStorage.hasForPatch(patch.id));
 </script>
 
 <style>
@@ -127,6 +125,32 @@
       {#each patch.labels as label}
         <Label {label} />
       {/each}
+      {#if patch.commentCount > 0}
+        <div
+          class="txt-body-m-regular global-flex"
+          style:gap="0.25rem"
+          style:border="1px solid var(--color-border-subtle)"
+          style:border-radius="var(--border-radius-sm)"
+          style:height="1.5rem"
+          style:padding="0 0.5rem"
+          style:color="var(--color-text-tertiary)">
+          <Icon name="comment" />
+          {patch.commentCount}
+        </div>
+      {/if}
+      {#if patch.reviewCount > 0}
+        <div
+          class="txt-body-m-regular global-flex"
+          style:gap="0.25rem"
+          style:border="1px solid var(--color-border-subtle)"
+          style:border-radius="var(--border-radius-sm)"
+          style:height="1.5rem"
+          style:padding="0 0.5rem"
+          style:color="var(--color-text-tertiary)">
+          <Icon name="badge" />
+          {patch.reviewCount}
+        </div>
+      {/if}
       <div
         class="txt-body-m-regular global-flex"
         style:gap="0.25rem"
@@ -137,7 +161,7 @@
         style:padding="0 0.5rem"
         style:color="var(--color-text-tertiary)">
         <Icon name="revision" />
-        {patch.revisionIds.length}
+        {patch.revisionCount}
       </div>
     </div>
   </div>

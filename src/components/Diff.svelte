@@ -26,6 +26,9 @@
     canReply?: boolean;
     // See `ExtendedTextarea`.
     disableAttachments?: boolean | string;
+    // When `true`, the file:line chip rendered above each inline thread is
+    // hidden. Useful when the surrounding context already shows the file path.
+    hideThreadFileHeader?: boolean;
     repoDelegates: Author[];
     rid: string;
     threads: Thread<CodeLocation>[];
@@ -397,10 +400,12 @@
   {#if codeComments && thread && !threadExpandedStates[thread.root.id]}
     <div class="thread">
       <div class="global-flex" style:padding="0.5rem">
-        {@render commentHeader(
-          thread.root.location?.path,
-          rangeAnchorsFromCodeLocation(thread.root.location),
-        )}
+        {#if !codeComments.hideThreadFileHeader}
+          {@render commentHeader(
+            thread.root.location?.path,
+            rangeAnchorsFromCodeLocation(thread.root.location),
+          )}
+        {/if}
         {#if codeComments.changeCommentStatus && roles.isDelegateOrAuthor( codeComments.config.publicKey, codeComments.repoDelegates.map(delegate => delegate.did), thread.root.author.did, )}
           <div style:margin-left="auto">
             {#if thread.root.resolved}
@@ -428,7 +433,6 @@
         {/if}
       </div>
       <ThreadComponent
-        inline
         rid={codeComments.rid}
         currentUserNid={codeComments.config.publicKey}
         {thread}
