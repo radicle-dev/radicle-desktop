@@ -103,6 +103,12 @@
   .timestamp {
     color: var(--color-text-quaternary);
   }
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
   .diff {
     margin: 0.5rem 0 0 2rem;
     display: flex;
@@ -138,19 +144,17 @@
     {#if !hideAuthor}
       <span class="author">{commit.author.name}</span>
     {/if}
-    {#if !expanded}
-      <div class="summary-line">
-        committed <Id id={commit.id} clipboard={commit.id} /> — {commit.summary}
+    <div class="summary-line">
+      <span class="txt-body-m-medium">committed</span>
+      {#if !expanded}{commit.summary}{/if}
+    </div>
+    <div class="meta">
+      <Id id={commit.id} clipboard={commit.id} />
+      <div
+        class="timestamp"
+        title={absoluteTimestamp(commit.committer.time * 1000)}>
+        {formatTimestamp(commit.committer.time * 1000)}
       </div>
-    {:else}
-      <div class="summary-line">
-        committed <Id id={commit.id} clipboard={commit.id} />
-      </div>
-    {/if}
-    <div
-      class="timestamp"
-      title={absoluteTimestamp(commit.committer.time * 1000)}>
-      {formatTimestamp(commit.committer.time * 1000)}
     </div>
     {#if draftReviewId}
       <Button

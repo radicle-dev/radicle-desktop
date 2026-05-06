@@ -93,6 +93,12 @@
   .timestamp {
     color: var(--color-text-quaternary);
   }
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
   .verdict-accept {
     background-color: var(--color-feedback-success-bg);
     color: var(--color-feedback-success-text);
@@ -138,13 +144,14 @@
     <div class="wrapper">
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
-        created revision <Id id={op.id} clipboard={op.id} />
-        {#if summary && !expanded}
-          — {summary}
-        {/if}
+        <span class="txt-body-m-medium">created revision</span>
+        {#if summary && !expanded}{summary}{/if}
       </div>
-      <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-        {formatTimestamp(op.timestamp)}
+      <div class="meta">
+        <Id id={op.id} clipboard={op.id} />
+        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
+          {formatTimestamp(op.timestamp)}
+        </div>
       </div>
     </div>
   </div>
@@ -159,16 +166,20 @@
     <div class="wrapper">
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
-        {#if op.state.status === "draft"}
-          converted patch to draft
-        {:else if op.state.status === "archived"}
-          archived patch
-        {:else if op.state.status === "open"}
-          reopened patch
-        {/if}
+        <span class="txt-body-m-medium">
+          {#if op.state.status === "draft"}
+            converted patch to draft
+          {:else if op.state.status === "archived"}
+            archived patch
+          {:else if op.state.status === "open"}
+            reopened patch
+          {/if}
+        </span>
       </div>
-      <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-        {formatTimestamp(op.timestamp)}
+      <div class="meta">
+        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
+          {formatTimestamp(op.timestamp)}
+        </div>
       </div>
     </div>
   </div>
@@ -184,27 +195,35 @@
           {@const changed = itemDiff(op.previous?.labels ?? [], op.labels)}
           {#if changed.added.length || changed.removed.length}
             {#if changed.added.length}
-              added {pluralize("label", changed.added.length)}
+              <span class="txt-body-m-medium">
+                added {pluralize("label", changed.added.length)}
+              </span>
               {#each changed.added as label}
                 <b>{label}</b>
               {/each}
             {/if}
             {#if changed.removed.length}
-              removed {pluralize("label", changed.removed.length)}
+              <span class="txt-body-m-medium">
+                removed {pluralize("label", changed.removed.length)}
+              </span>
               {#each changed.removed as label}
                 <b>{label}</b>
               {/each}
             {/if}
           {/if}
         {:else}
-          added {pluralize("label", op.labels.length)}
+          <span class="txt-body-m-medium">
+            added {pluralize("label", op.labels.length)}
+          </span>
           {#each op.labels as label}
             <b>{label}</b>
           {/each}
         {/if}
       </div>
-      <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-        {formatTimestamp(op.timestamp)}
+      <div class="meta">
+        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
+          {formatTimestamp(op.timestamp)}
+        </div>
       </div>
     </div>
   </div>
@@ -222,26 +241,28 @@
             op.assignees,
           )}
           {#if changed.added.length}
-            assigned
+            <span class="txt-body-m-medium">assigned</span>
             {#each changed.added as assignee}
               <NodeId {...authorForNodeId(assignee)} />
             {/each}
           {/if}
           {#if changed.removed.length}
-            unassigned
+            <span class="txt-body-m-medium">unassigned</span>
             {#each changed.removed as assignee}
               <NodeId {...authorForNodeId(assignee)} />
             {/each}
           {/if}
         {:else}
-          assigned
+          <span class="txt-body-m-medium">assigned</span>
           {#each op.assignees as assignee}
             <NodeId {...authorForNodeId(assignee)} />
           {/each}
         {/if}
       </div>
-      <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-        {formatTimestamp(op.timestamp)}
+      <div class="meta">
+        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
+          {formatTimestamp(op.timestamp)}
+        </div>
       </div>
     </div>
   </div>
@@ -253,10 +274,13 @@
     <div class="wrapper">
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
-        merged patch at revision <Id id={op.revision} clipboard={op.revision} />
+        <span class="txt-body-m-medium">merged patch</span>
       </div>
-      <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-        {formatTimestamp(op.timestamp)}
+      <div class="meta">
+        <Id id={op.revision} clipboard={op.revision} />
+        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
+          {formatTimestamp(op.timestamp)}
+        </div>
       </div>
     </div>
   </div>
@@ -269,11 +293,14 @@
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
-          changed title <s>{op.previous.title}</s>
+          <span class="txt-body-m-medium">changed title</span>
+          <s>{op.previous.title}</s>
           → {op.title}
         </div>
-        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-          {formatTimestamp(op.timestamp)}
+        <div class="meta">
+          <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
+            {formatTimestamp(op.timestamp)}
+          </div>
         </div>
       </div>
     </div>
@@ -287,13 +314,14 @@
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
-          accepted revision <Id id={op.revision} clipboard={op.revision} />
-          {#if op.summary && op.summary.trim() !== ""}
-            — {op.summary}
-          {/if}
+          <span class="txt-body-m-medium">accepted revision</span>
+          {#if op.summary && op.summary.trim() !== ""}{op.summary}{/if}
         </div>
-        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-          {formatTimestamp(op.timestamp)}
+        <div class="meta">
+          <Id id={op.revision} clipboard={op.revision} />
+          <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
+            {formatTimestamp(op.timestamp)}
+          </div>
         </div>
       </div>
     </div>
@@ -305,13 +333,14 @@
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
-          rejected revision <Id id={op.revision} clipboard={op.revision} />
-          {#if op.summary && op.summary.trim() !== ""}
-            — {op.summary}
-          {/if}
+          <span class="txt-body-m-medium">rejected revision</span>
+          {#if op.summary && op.summary.trim() !== ""}{op.summary}{/if}
         </div>
-        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-          {formatTimestamp(op.timestamp)}
+        <div class="meta">
+          <Id id={op.revision} clipboard={op.revision} />
+          <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
+            {formatTimestamp(op.timestamp)}
+          </div>
         </div>
       </div>
     </div>
@@ -323,10 +352,13 @@
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
-          reviewed revision <Id id={op.revision} clipboard={op.revision} />
+          <span class="txt-body-m-medium">reviewed revision</span>
         </div>
-        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-          {formatTimestamp(op.timestamp)}
+        <div class="meta">
+          <Id id={op.revision} clipboard={op.revision} />
+          <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
+            {formatTimestamp(op.timestamp)}
+          </div>
         </div>
       </div>
     </div>
