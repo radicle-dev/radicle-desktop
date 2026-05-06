@@ -166,12 +166,12 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
-  }
-  .run-ellipsis {
-    color: var(--color-text-quaternary);
+    margin-bottom: 0.25rem;
   }
   .run-children {
-    margin-left: 1.5rem;
+    margin-left: 0.5rem;
+    padding-left: 1rem;
+    border-left: 1px solid var(--color-border-subtle);
   }
 </style>
 
@@ -196,9 +196,10 @@
         {@render renderActivity(run.entry.data, { hideAuthor: false })}
         <div class="connector"></div>
       {:else if run.kind === "group" && renderActivity}
-        <div class="run-header txt-body-m-regular">
-          <NodeId {...authorForNodeId(run.author)} />
-          <span class="run-ellipsis">…</span>
+        <div class="run-header">
+          <NodeId
+            {...authorForNodeId(run.author)}
+            styleFont="var(--txt-body-m-medium)" />
         </div>
         <div class="run-children">
           {#each run.entries as entry (entry.key)}
