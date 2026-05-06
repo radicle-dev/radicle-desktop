@@ -291,7 +291,7 @@
     color: var(--color-text-primary) !important;
   }
   .selected {
-    box-shadow: 0 0 0 1px var(--color-border-brand);
+    box-shadow: inset 0 0 0 9999px var(--hover-bg, transparent);
     z-index: 1;
   }
   .left,
