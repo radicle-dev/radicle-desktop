@@ -124,10 +124,6 @@
     opacity: 1;
     transform: rotate(0);
   }
-  .timeline-item:hover .icon-expanded,
-  .timeline-item:focus-visible .icon-expanded {
-    transform: rotate(-90deg);
-  }
   .author {
     color: var(--color-text-primary);
   }

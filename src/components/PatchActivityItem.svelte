@@ -103,10 +103,6 @@
     opacity: 1;
     transform: rotate(0);
   }
-  .timeline-item.toggleable:hover .icon-expanded,
-  .timeline-item.toggleable:focus-visible .icon-expanded {
-    transform: rotate(-90deg);
-  }
   .summary-line {
     flex: 1 1 0;
     min-width: 0;
