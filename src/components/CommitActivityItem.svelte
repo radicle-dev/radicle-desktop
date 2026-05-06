@@ -134,6 +134,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .action-verb {
+    color: var(--color-text-tertiary);
+  }
+  .summary-content {
+    color: var(--color-text-primary);
+  }
   .full-message {
     margin: 0.5rem 0 0;
     white-space: pre-wrap;
@@ -215,12 +221,10 @@
         <span class="author">{commit.author.name}</span>
       {/if}
       <div class="summary-line">
-        {#if hideAuthor}
-          {commit.summary}
-        {:else}
-          <span class="txt-body-m-medium">committed</span>
-          {commit.summary}
+        {#if !hideAuthor}
+          <span class="action-verb">committed</span>
         {/if}
+        <span class="txt-body-m-medium summary-content">{commit.summary}</span>
       </div>
       <div class="meta">
         <div class="meta-hash">

@@ -113,6 +113,9 @@
   .summary-secondary {
     color: var(--color-text-tertiary);
   }
+  .summary-content {
+    color: var(--color-text-primary);
+  }
   .timestamp {
     color: var(--color-text-quaternary);
   }
@@ -188,8 +191,10 @@
     <div class="wrapper">
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
-        <span class="txt-body-m-medium summary-secondary">created revision</span>
-        {#if summary && !expanded}{summary}{/if}
+        <span class="summary-secondary">created revision</span>
+        {#if summary && !expanded}
+          <span class="txt-body-m-medium summary-content">{summary}</span>
+        {/if}
       </div>
       <div class="meta">
         <div class="meta-hash">
@@ -212,7 +217,7 @@
     <div class="wrapper">
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
-        <span class="txt-body-m-medium summary-secondary">
+        <span class="txt-body-m-medium summary-content">
           {#if op.state.status === "draft"}
             converted patch to draft
           {:else if op.state.status === "archived"}
@@ -241,28 +246,28 @@
           {@const changed = itemDiff(op.previous?.labels ?? [], op.labels)}
           {#if changed.added.length || changed.removed.length}
             {#if changed.added.length}
-              <span class="txt-body-m-medium">
+              <span class="summary-secondary">
                 added {pluralize("label", changed.added.length)}
               </span>
               {#each changed.added as label}
-                <b>{label}</b>
+                <b class="summary-content">{label}</b>
               {/each}
             {/if}
             {#if changed.removed.length}
-              <span class="txt-body-m-medium">
+              <span class="summary-secondary">
                 removed {pluralize("label", changed.removed.length)}
               </span>
               {#each changed.removed as label}
-                <b>{label}</b>
+                <b class="summary-content">{label}</b>
               {/each}
             {/if}
           {/if}
         {:else}
-          <span class="txt-body-m-medium">
+          <span class="summary-secondary">
             added {pluralize("label", op.labels.length)}
           </span>
           {#each op.labels as label}
-            <b>{label}</b>
+            <b class="summary-content">{label}</b>
           {/each}
         {/if}
       </div>
@@ -287,13 +292,13 @@
             op.assignees,
           )}
           {#if changed.added.length}
-            <span class="txt-body-m-medium">assigned</span>
+            <span class="summary-secondary">assigned</span>
             {#each changed.added as assignee}
               <NodeId {...authorForNodeId(assignee)} />
             {/each}
           {/if}
           {#if changed.removed.length}
-            <span class="txt-body-m-medium">unassigned</span>
+            <span class="summary-secondary">unassigned</span>
             {#each changed.removed as assignee}
               <NodeId {...authorForNodeId(assignee)} />
             {/each}
@@ -342,9 +347,10 @@
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
-          <span class="txt-body-m-medium">changed title</span>
-          <s>{op.previous.title}</s>
-          → {op.title}
+          <span class="summary-secondary">changed title</span>
+          <s class="summary-secondary">{op.previous.title}</s>
+          <span class="summary-secondary">→</span>
+          <span class="txt-body-m-medium summary-content">{op.title}</span>
         </div>
         <div class="meta">
           <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
@@ -363,8 +369,10 @@
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
-          <span class="txt-body-m-medium">accepted revision</span>
-          {#if op.summary && op.summary.trim() !== ""}{op.summary}{/if}
+          <span class="summary-secondary">accepted revision</span>
+          {#if op.summary && op.summary.trim() !== ""}
+            <span class="txt-body-m-medium summary-content">{op.summary}</span>
+          {/if}
         </div>
         <div class="meta">
           <Id id={op.revision} clipboard={op.revision} />
@@ -382,8 +390,10 @@
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
-          <span class="txt-body-m-medium">rejected revision</span>
-          {#if op.summary && op.summary.trim() !== ""}{op.summary}{/if}
+          <span class="summary-secondary">rejected revision</span>
+          {#if op.summary && op.summary.trim() !== ""}
+            <span class="txt-body-m-medium summary-content">{op.summary}</span>
+          {/if}
         </div>
         <div class="meta">
           <Id id={op.revision} clipboard={op.revision} />
