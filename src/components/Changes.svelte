@@ -141,7 +141,8 @@
 <div
   class="txt-body-m-regular global-flex"
   style:margin-bottom="1rem"
-  style:gap="0.5rem">
+  style:gap="0.5rem"
+  style:justify-content="flex-end">
   {#if sortedRevisions.length > 1 && onSelectRevision}
     <Popover
       popoverPadding="0"
@@ -181,17 +182,15 @@
       {/snippet}
     </Popover>
   {/if}
-  <div style:margin-left="auto">
-    <Button variant="naked" onclick={() => (filesExpanded = !filesExpanded)}>
-      {#if filesExpanded === true}
-        <Icon name="collapse-vertical" />
-        Collapse all
-      {:else}
-        <Icon name="expand-vertical" />
-        Expand all
-      {/if}
-    </Button>
-  </div>
+  <Button variant="naked" onclick={() => (filesExpanded = !filesExpanded)}>
+    {#if filesExpanded === true}
+      <Icon name="collapse-vertical" />
+      Collapse all
+    {:else}
+      <Icon name="expand-vertical" />
+      Expand all
+    {/if}
+  </Button>
 </div>
 
 <div>
