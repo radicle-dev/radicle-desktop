@@ -19,6 +19,11 @@
   let expanded = $state(false);
 
   const parent = $derived(commit.parents[0]);
+  const description = $derived.by(() => {
+    const idx = commit.message.indexOf("\n");
+    if (idx === -1) return "";
+    return commit.message.slice(idx + 1).trim();
+  });
 
   function toggle() {
     expanded = !expanded;
@@ -61,6 +66,16 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .summary-line.expanded {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+  .description {
+    margin: 0.25rem 0 0 2rem;
+    white-space: pre-wrap;
+    color: var(--color-text-secondary);
+  }
   .timestamp {
     color: var(--color-text-quaternary);
   }
@@ -92,7 +107,7 @@
   </div>
   <div class="wrapper">
     <span class="author">{commit.author.name}</span>
-    <div class="summary-line">
+    <div class="summary-line" class:expanded>
       committed <Id id={commit.id} clipboard={commit.id} /> — {commit.summary}
     </div>
     <div
@@ -104,6 +119,9 @@
 </div>
 
 {#if expanded}
+  {#if description}
+    <div class="description txt-body-m-regular">{description}</div>
+  {/if}
   {#if !parent}
     <div class="fallback txt-body-m-regular">
       Initial commit; no diff to show.
