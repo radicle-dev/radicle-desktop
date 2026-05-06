@@ -118,7 +118,7 @@
       <NodeId {...authorForNodeId(op.author)} />
       <div class="summary-line">
         created revision <Id id={op.id} clipboard={op.id} />
-        {#if summary}
+        {#if summary && !expanded}
           — {summary}
         {/if}
       </div>
