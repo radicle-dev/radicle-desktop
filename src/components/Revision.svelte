@@ -507,6 +507,7 @@
                       <CommitActivityItem
                         {commit}
                         {rid}
+                        {codeComments}
                         {draftReviewId}
                         hideAuthor />
                     {/each}
@@ -516,6 +517,7 @@
                 <CommitActivityItem
                   commit={group[0]}
                   {rid}
+                  {codeComments}
                   {draftReviewId} />
               {/if}
             {/each}

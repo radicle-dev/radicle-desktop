@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { FileDiff as FileDiffType } from "@bindings/diff/FileDiff";
   import type { Commit } from "@bindings/repo/Commit";
 
@@ -16,9 +17,11 @@
     rid: string;
     draftReviewId?: string;
     hideAuthor?: boolean;
+    codeComments?: CodeComments;
   }
 
-  const { commit, rid, draftReviewId, hideAuthor }: Props = $props();
+  const { commit, rid, draftReviewId, hideAuthor, codeComments }: Props =
+    $props();
 
   let expanded = $state(false);
   let filesExpanded = $state(true);
@@ -30,6 +33,16 @@
     draftReviewId
       ? draftReviewStorage.isCommitChecked(draftReviewId, commit.id)
       : false,
+  );
+  const commitCodeComments = $derived(
+    codeComments
+      ? {
+          ...codeComments,
+          threads: codeComments.threads.filter(
+            thread => thread.root.location?.commit === commit.id,
+          ),
+        }
+      : undefined,
   );
 
   function toggle() {
@@ -148,10 +161,10 @@
     color: inherit;
   }
   .diff {
-    margin: 0.5rem 0 0;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0;
   }
   .fallback {
     margin: 0.5rem 0 0;
@@ -253,6 +266,7 @@
               {file}
               head={commit.id}
               expanded={filesExpanded}
+              codeComments={commitCodeComments}
               {draftReviewId} />
           {/each}
         </div>

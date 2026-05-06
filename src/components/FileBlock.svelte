@@ -3,7 +3,6 @@
 
   import { tick } from "svelte";
 
-  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
 
   interface Props {
@@ -31,6 +30,15 @@
   /* eslint-enable prefer-const */
 
   let header: HTMLElement | undefined = $state();
+
+  async function toggleExpanded() {
+    if (!expandable) return;
+    expanded = !expanded;
+    if (!expanded && header) {
+      await tick();
+      header.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
 </script>
 
 <style>
@@ -45,6 +53,14 @@
     background-color: var(--header-background);
     border-top-left-radius: var(--border-radius-md);
     border-top-right-radius: var(--border-radius-md);
+  }
+  .header.expandable {
+    cursor: pointer;
+    transition: background-color 0.1s ease-in-out;
+  }
+  .header.expandable:hover,
+  .header.expandable:focus-visible {
+    background-color: var(--color-surface-subtle);
   }
   .header.collapsed {
     border-bottom-left-radius: var(--border-radius-md);
@@ -77,27 +93,29 @@
 
 <div
   class="header"
+  class:expandable
   class:sticky
   class:collapsed={!expanded}
   bind:this={header}
   style:--header-background={headerBackground}
+  role={expandable ? "button" : undefined}
+  tabindex={expandable ? 0 : undefined}
   style:border={border ? "1px solid var(--color-border-subtle)" : undefined}
   style:border-bottom={border
     ? "undefined"
-    : "1px solid var(--color-border-subtle)"}>
+    : "1px solid var(--color-border-subtle)"}
+  onclick={toggleExpanded}
+  onkeydown={async event => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      await toggleExpanded();
+    }
+  }}>
   <div class="left">
     {#if expandable}
-      <Button
-        variant="naked"
-        onclick={async () => {
-          expanded = !expanded;
-          if (!expanded && header) {
-            await tick();
-            header.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          }
-        }}>
+      <div class="global-flex" style:padding="0 0.5rem">
         <Icon name={expanded ? "chevron-down" : "chevron-right"} />
-      </Button>
+      </div>
     {/if}
     {@render leftHeader?.()}
   </div>

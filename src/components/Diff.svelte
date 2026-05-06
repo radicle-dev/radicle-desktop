@@ -234,6 +234,31 @@
     position: relative;
     white-space: pre-wrap;
   }
+  .line.commentable:has(> .left:hover),
+  .line.commentable:has(> .right:hover) {
+    box-shadow: inset 0 0 0 9999px var(--hover-bg, transparent);
+  }
+  .line.commentable.context {
+    --hover-bg: color-mix(
+      in srgb,
+      var(--color-surface-subtle) 85%,
+      var(--color-surface-canvas)
+    );
+  }
+  .line.commentable.addition {
+    --hover-bg: color-mix(
+      in srgb,
+      var(--color-feedback-success-bg) 92%,
+      var(--color-feedback-success-text) 8%
+    );
+  }
+  .line.commentable.deletion {
+    --hover-bg: color-mix(
+      in srgb,
+      var(--color-feedback-error-bg) 92%,
+      var(--color-feedback-error-text) 8%
+    );
+  }
   .hunk-header {
     color: var(--color-text-secondary);
   }
@@ -279,12 +304,6 @@
   .selection-disabled {
     cursor: default;
   }
-  .left:hover:not(.selection-disabled),
-  .right:hover:not(.selection-disabled),
-  .left:active:not(.selection-disabled),
-  .right:active:not(.selection-disabled) {
-    color: var(--color-text-primary);
-  }
   .sign {
     min-width: 1.5rem;
   }
@@ -294,6 +313,7 @@
     user-select: text;
     width: 100%;
     word-break: break-word;
+    cursor: text;
   }
   .comment-icon {
     margin-left: auto;
@@ -326,6 +346,7 @@
   {@const thread = findLineThread(line)}
   <div
     class="line"
+    class:commentable={Boolean(codeComments?.createComment && !thread)}
     class:addition={line.type === "addition"}
     class:deletion={line.type === "deletion"}
     class:context={line.type === "context"}
