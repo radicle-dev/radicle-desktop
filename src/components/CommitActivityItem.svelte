@@ -15,9 +15,10 @@
     commit: Commit;
     rid: string;
     draftReviewId?: string;
+    hideAuthor?: boolean;
   }
 
-  const { commit, rid, draftReviewId }: Props = $props();
+  const { commit, rid, draftReviewId, hideAuthor }: Props = $props();
 
   let expanded = $state(false);
   let filesExpanded = $state(true);
@@ -134,7 +135,9 @@
     {/if}
   </div>
   <div class="wrapper">
-    <span class="author">{commit.author.name}</span>
+    {#if !hideAuthor}
+      <span class="author">{commit.author.name}</span>
+    {/if}
     {#if !expanded}
       <div class="summary-line">
         committed <Id id={commit.id} clipboard={commit.id} /> — {commit.summary}

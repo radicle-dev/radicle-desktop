@@ -88,6 +88,19 @@
     };
   }
 
+  function groupCommitsByAuthor(commits: Commit[]): Commit[][] {
+    const groups: Commit[][] = [];
+    for (const commit of commits) {
+      const last = groups[groups.length - 1];
+      if (last && last[0].author.name === commit.author.name) {
+        last.push(commit);
+      } else {
+        groups.push([commit]);
+      }
+    }
+    return groups;
+  }
+
   const draftReview = $derived(
     draftReviewStorage.getForRevision(revision.id, currentUserAuthor),
   );
@@ -420,6 +433,26 @@
     background-color: var(--color-surface-canvas);
     border-radius: var(--border-radius-sm);
   }
+  .commit-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .commit-group-author {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--color-text-primary);
+  }
+  .commit-group-ellipsis {
+    color: var(--color-text-quaternary);
+  }
+  .commit-group-children {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-left: 0.5rem;
+  }
   .revision-commits {
     display: flex;
     flex-direction: column;
@@ -462,8 +495,31 @@
           onToggle={() => toggleRevision(revId)} />
         {#if expanded && data.commits && data.commits.length > 0}
           <div class="revision-commits">
-            {#each data.commits as commit (commit.id)}
-              <CommitActivityItem {commit} {rid} {draftReviewId} />
+            {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
+              {#if group.length > 1}
+                <div class="commit-group">
+                  <div class="commit-group-author txt-body-m-regular">
+                    <span class="commit-group-author-name">
+                      {group[0].author.name}
+                    </span>
+                    <span class="commit-group-ellipsis">…</span>
+                  </div>
+                  <div class="commit-group-children">
+                    {#each group as commit (commit.id)}
+                      <CommitActivityItem
+                        {commit}
+                        {rid}
+                        {draftReviewId}
+                        hideAuthor />
+                    {/each}
+                  </div>
+                </div>
+              {:else}
+                <CommitActivityItem
+                  commit={group[0]}
+                  {rid}
+                  {draftReviewId} />
+              {/if}
             {/each}
           </div>
         {/if}
