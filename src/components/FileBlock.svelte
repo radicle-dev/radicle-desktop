@@ -80,6 +80,43 @@
     flex: 1;
     min-width: 0;
   }
+  .toggle-icon {
+    width: 1.5rem;
+    display: flex;
+    justify-content: center;
+    color: var(--color-text-secondary);
+  }
+  .icon-stack {
+    display: grid;
+  }
+  .icon-expanded {
+    transition: transform 150ms ease;
+  }
+  .icon-default,
+  .icon-hover {
+    grid-area: 1 / 1;
+    transition:
+      opacity 150ms ease,
+      transform 150ms ease;
+  }
+  .icon-hover {
+    opacity: 0;
+    transform: rotate(-90deg);
+  }
+  .header.expandable:hover .icon-default,
+  .header.expandable:focus-visible .icon-default {
+    opacity: 0;
+    transform: rotate(90deg);
+  }
+  .header.expandable:hover .icon-hover,
+  .header.expandable:focus-visible .icon-hover {
+    opacity: 1;
+    transform: rotate(0);
+  }
+  .header.expandable:hover .icon-expanded,
+  .header.expandable:focus-visible .icon-expanded {
+    transform: rotate(-90deg);
+  }
 
   .container {
     position: relative;
@@ -113,8 +150,15 @@
   }}>
   <div class="left">
     {#if expandable}
-      <div class="global-flex" style:padding="0 0.5rem">
-        <Icon name={expanded ? "chevron-down" : "chevron-right"} />
+      <div class="toggle-icon" style:padding="0 0.5rem">
+        {#if expanded}
+          <span class="icon-expanded"><Icon name="chevron-down" /></span>
+        {:else}
+          <span class="icon-stack">
+            <span class="icon-default"><Icon name="document" /></span>
+            <span class="icon-hover"><Icon name="chevron-right" /></span>
+          </span>
+        {/if}
       </div>
     {/if}
     {@render leftHeader?.()}

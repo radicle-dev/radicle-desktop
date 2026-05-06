@@ -90,6 +90,9 @@
   .icon-stack {
     display: grid;
   }
+  .icon-expanded {
+    transition: transform 150ms ease;
+  }
   .icon-default,
   .icon-hover {
     grid-area: 1 / 1;
@@ -110,6 +113,10 @@
   .timeline-item:focus-visible .icon-hover {
     opacity: 1;
     transform: rotate(0);
+  }
+  .timeline-item:hover .icon-expanded,
+  .timeline-item:focus-visible .icon-expanded {
+    transform: rotate(-90deg);
   }
   .author {
     color: var(--color-text-primary);
@@ -164,7 +171,7 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 0.5rem;
   }
   .fallback {
     margin: 0.5rem 0 0;
@@ -186,7 +193,7 @@
     }}>
     <div class="icon">
       {#if expanded}
-        <Icon name="chevron-down" />
+        <span class="icon-expanded"><Icon name="chevron-down" /></span>
       {:else}
         <span class="icon-stack">
           <span class="icon-default"><Icon name="commit" /></span>

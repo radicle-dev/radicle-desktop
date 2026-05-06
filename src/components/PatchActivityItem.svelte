@@ -76,6 +76,9 @@
   .icon-stack {
     display: grid;
   }
+  .icon-expanded {
+    transition: transform 150ms ease;
+  }
   .icon-default,
   .icon-hover {
     grid-area: 1 / 1;
@@ -96,6 +99,10 @@
   .timeline-item.toggleable:focus-visible .icon-hover {
     opacity: 1;
     transform: rotate(0);
+  }
+  .timeline-item.toggleable:hover .icon-expanded,
+  .timeline-item.toggleable:focus-visible .icon-expanded {
+    transform: rotate(-90deg);
   }
   .summary-line {
     flex: 1 1 0;
@@ -169,7 +176,7 @@
     onclick={onToggle}>
     <div class="icon">
       {#if onToggle && expanded}
-        <Icon name="chevron-down" />
+        <span class="icon-expanded"><Icon name="chevron-down" /></span>
       {:else if onToggle}
         <span class="icon-stack">
           <span class="icon-default"><Icon name="revision" /></span>
