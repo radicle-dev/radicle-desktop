@@ -53,6 +53,13 @@
   }
   .timeline-item.toggleable {
     cursor: pointer;
+    padding: 0.125rem 0.25rem;
+    margin: 0 -0.25rem;
+    border-radius: var(--border-radius-sm);
+  }
+  .timeline-item.toggleable:hover,
+  .timeline-item.toggleable:focus-visible {
+    background-color: var(--color-surface-canvas);
   }
   .wrapper {
     display: flex;

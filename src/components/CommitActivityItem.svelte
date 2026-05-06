@@ -49,6 +49,13 @@
     gap: 0.5rem;
     min-width: 0;
     cursor: pointer;
+    padding: 0.125rem 0.25rem;
+    margin: 0 -0.25rem;
+    border-radius: var(--border-radius-sm);
+  }
+  .timeline-item:hover,
+  .timeline-item:focus-visible {
+    background-color: var(--color-surface-canvas);
   }
   .wrapper {
     display: flex;
