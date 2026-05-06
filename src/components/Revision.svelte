@@ -445,7 +445,7 @@
     gap: 0.25rem;
   }
   .commit-group-author {
-    color: var(--color-text-primary);
+    color: var(--color-text-tertiary);
   }
   .commit-group-children {
     display: flex;
@@ -498,7 +498,7 @@
             {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
               {#if group.length > 1}
                 <div class="commit-group">
-                  <div class="commit-group-author txt-body-m-medium">
+                  <div class="commit-group-author txt-body-m-regular">
                     {group[0].author.name} &lt;{group[0].author.email}&gt;
                     committed
                   </div>
@@ -515,7 +515,7 @@
                 </div>
               {:else}
                 <div class="commit-group">
-                  <div class="commit-group-author txt-body-m-medium">
+                  <div class="commit-group-author txt-body-m-regular">
                     {group[0].author.name} &lt;{group[0].author.email}&gt;
                     committed
                   </div>
