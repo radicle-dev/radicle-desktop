@@ -164,17 +164,14 @@
   $effect(() => {
     const ridLocal = rid;
     void Promise.all(
-      revisions.map(async (rev): Promise<[string, Commit[]]> => {
+      revisions.map(async (rev, index): Promise<[string, Commit[]]> => {
+        const base = index === 0 ? rev.base : revisions[index - 1].head;
         try {
-          const commits = await cachedListCommits(
-            ridLocal,
-            rev.base,
-            rev.head,
-          );
+          const commits = await cachedListCommits(ridLocal, base, rev.head);
           return [rev.id, commits];
         } catch (error) {
           console.error(
-            `Failed to load commits for revision ${rev.id} (${rev.base}..${rev.head})`,
+            `Failed to load commits for revision ${rev.id} (${base}..${rev.head})`,
             error,
           );
           return [rev.id, []];
