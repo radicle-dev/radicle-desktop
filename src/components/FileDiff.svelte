@@ -2,6 +2,9 @@
   import type { CodeComments } from "@app/components/Diff.svelte";
   import type { FileDiff } from "@bindings/diff/FileDiff";
 
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
+
+  import Button from "@app/components/Button.svelte";
   import Diff from "@app/components/Diff.svelte";
   import FileBlock from "@app/components/FileBlock.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -12,9 +15,22 @@
     file: FileDiff;
     head: string;
     codeComments?: CodeComments;
+    draftReviewId?: string;
   }
 
-  const { expanded, file, head, codeComments }: Props = $props();
+  const { expanded, file, head, codeComments, draftReviewId }: Props =
+    $props();
+
+  const filePathKey = $derived(
+    file.status === "moved" || file.status === "copied"
+      ? file.newPath
+      : file.path,
+  );
+  const checked = $derived(
+    draftReviewId
+      ? draftReviewStorage.isFileChecked(draftReviewId, filePathKey)
+      : false,
+  );
 
   // Pass down only the comments that apply to the given diff.
   function filterThreadsByFilePath() {
@@ -128,6 +144,19 @@
           {resolvedThreads}
         </div>
       {/if}
+    {/if}
+    {#if draftReviewId}
+      <Button
+        variant={checked ? "ghost" : "naked"}
+        active={checked}
+        onclick={e => {
+          e.stopPropagation();
+          draftReviewStorage.toggleCheckedFile(draftReviewId, filePathKey);
+        }}
+        title={checked ? "Mark file as not reviewed" : "Mark file as reviewed"}>
+        <Icon name={checked ? "checkmark" : "eye"} />
+        Checked
+      </Button>
     {/if}
   {/snippet}
 

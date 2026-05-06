@@ -31,3 +31,6 @@ tests/artifacts/**/*
 
 # direnv cache
 /.direnv/
+
+# Claude Code local state
+.claude/

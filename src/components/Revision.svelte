@@ -43,6 +43,7 @@
     activity?: Operation<Action>[];
     revisions?: Revision[];
     onSelectRevision?: (revision: Revision) => void;
+    draftReviewId?: string;
   }
 
   const {
@@ -56,6 +57,7 @@
     activity = [],
     revisions = [],
     onSelectRevision,
+    draftReviewId,
   }: Props = $props();
   const currentUserAuthor: Author = $derived({
     did: didFromPublicKey(config.publicKey),
@@ -455,7 +457,7 @@
         {#if expanded && data.commits && data.commits.length > 0}
           <div class="revision-commits">
             {#each data.commits as commit (commit.id)}
-              <CommitActivityItem {commit} {rid} />
+              <CommitActivityItem {commit} {rid} {draftReviewId} />
             {/each}
           </div>
         {/if}
@@ -491,5 +493,6 @@
     {revision}
     {codeComments}
     {revisions}
-    {onSelectRevision} />
+    {onSelectRevision}
+    {draftReviewId} />
 {/if}

@@ -23,6 +23,7 @@
     codeComments?: CodeComments;
     revisions?: Revision[];
     onSelectRevision?: (revision: Revision) => void;
+    draftReviewId?: string;
   }
 
   const {
@@ -32,6 +33,7 @@
     codeComments,
     revisions = [],
     onSelectRevision,
+    draftReviewId,
   }: Props = $props();
 
   let revisionPickerExpanded = $state(false);
@@ -274,6 +276,11 @@
         {pluralize("deletion", diff.stats.deletions)}
       </span>
     </div>
-    <Changeset expanded={filesExpanded} {head} {diff} {codeComments} />
+    <Changeset
+      expanded={filesExpanded}
+      {head}
+      {diff}
+      {codeComments}
+      {draftReviewId} />
   {/await}
 </div>

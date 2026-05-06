@@ -300,7 +300,8 @@
               view={patchView}
               {activity}
               {revisions}
-              onSelectRevision={rev => (selectedRevision = rev)} />
+              onSelectRevision={rev => (selectedRevision = rev)}
+              draftReviewId={ownDraftReviewForPatch?.id} />
           </div>
 
           <div class="sidebar">

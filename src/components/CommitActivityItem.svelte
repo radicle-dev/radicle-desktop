@@ -2,6 +2,7 @@
   import type { FileDiff as FileDiffType } from "@bindings/diff/FileDiff";
   import type { Commit } from "@bindings/repo/Commit";
 
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { cachedGetDiff } from "@app/lib/invoke";
   import { absoluteTimestamp, formatTimestamp } from "@app/lib/utils";
 
@@ -13,15 +14,21 @@
   interface Props {
     commit: Commit;
     rid: string;
+    draftReviewId?: string;
   }
 
-  const { commit, rid }: Props = $props();
+  const { commit, rid, draftReviewId }: Props = $props();
 
   let expanded = $state(false);
   let filesExpanded = $state(true);
 
   const parent = $derived(commit.parents[0]);
   const fullMessage = $derived(commit.message.trim());
+  const checked = $derived(
+    draftReviewId
+      ? draftReviewStorage.isCommitChecked(draftReviewId, commit.id)
+      : false,
+  );
 
   function toggle() {
     expanded = !expanded;
@@ -135,6 +142,21 @@
       title={absoluteTimestamp(commit.committer.time * 1000)}>
       {formatTimestamp(commit.committer.time * 1000)}
     </div>
+    {#if draftReviewId}
+      <Button
+        variant={checked ? "ghost" : "naked"}
+        active={checked}
+        onclick={e => {
+          e.stopPropagation();
+          draftReviewStorage.toggleCheckedCommit(draftReviewId, commit.id);
+        }}
+        title={checked
+          ? "Mark commit as not reviewed"
+          : "Mark commit as reviewed"}>
+        <Icon name={checked ? "checkmark" : "eye"} />
+        Checked
+      </Button>
+    {/if}
   </div>
 </div>
 
@@ -165,7 +187,11 @@
     {:then diff}
       <div class="diff">
         {#each diff.files as file (fileKey(file))}
-          <FileDiff {file} head={commit.id} expanded={filesExpanded} />
+          <FileDiff
+            {file}
+            head={commit.id}
+            expanded={filesExpanded}
+            {draftReviewId} />
         {/each}
       </div>
     {:catch error}

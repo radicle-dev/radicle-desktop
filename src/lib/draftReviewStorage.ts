@@ -24,6 +24,8 @@ export interface DraftReview {
   summary?: string;
   labels: string[];
   comments: Array<Comment<CodeLocation>>;
+  checkedFiles: string[];
+  checkedCommits: string[];
 }
 
 const codeRangeSchema: z.Schema<CodeRange> = z.union([
@@ -60,6 +62,8 @@ const draftReviewStoredSchema = z.object({
         .optional(),
     }),
   ),
+  checkedFiles: z.array(z.string()).default([]),
+  checkedCommits: z.array(z.string()).default([]),
 });
 
 type DraftReviewStored = z.infer<typeof draftReviewStoredSchema>;
@@ -101,10 +105,44 @@ export const draftReviewStorage = {
         summary: "",
         labels: [],
         comments: [],
+        checkedFiles: [],
+        checkedCommits: [],
       };
       return reviews;
     });
     return id;
+  },
+
+  isFileChecked(id: string, filePath: string): boolean {
+    return storage.value[id]?.checkedFiles?.includes(filePath) ?? false;
+  },
+
+  isCommitChecked(id: string, commitId: string): boolean {
+    return storage.value[id]?.checkedCommits?.includes(commitId) ?? false;
+  },
+
+  toggleCheckedFile(id: string, filePath: string) {
+    updateStoredDraftReview(id, review => {
+      const set = new Set(review.checkedFiles);
+      if (set.has(filePath)) {
+        set.delete(filePath);
+      } else {
+        set.add(filePath);
+      }
+      return { ...review, checkedFiles: [...set] };
+    });
+  },
+
+  toggleCheckedCommit(id: string, commitId: string) {
+    updateStoredDraftReview(id, review => {
+      const set = new Set(review.checkedCommits);
+      if (set.has(commitId)) {
+        set.delete(commitId);
+      } else {
+        set.add(commitId);
+      }
+      return { ...review, checkedCommits: [...set] };
+    });
   },
 
   hasForPatch(patchId: string): boolean {
@@ -244,6 +282,8 @@ function draftReviewFromStored(
     revisionId: draftReviewStored.revision,
     verdict: draftReviewStored.verdict,
     labels: draftReviewStored.labels,
+    checkedFiles: draftReviewStored.checkedFiles,
+    checkedCommits: draftReviewStored.checkedCommits,
     comments: draftReviewStored.comments.map(rawComment => ({
       id: rawComment.id,
       author,

@@ -9,9 +9,16 @@
     diff: Diff;
     expanded?: boolean;
     head: string;
+    draftReviewId?: string;
   }
 
-  const { codeComments, diff, expanded = true, head }: Props = $props();
+  const {
+    codeComments,
+    diff,
+    expanded = true,
+    head,
+    draftReviewId,
+  }: Props = $props();
 </script>
 
 <style>
@@ -28,7 +35,12 @@
 <div class="diff-list">
   {#each diff.files as file}
     <div class="diff">
-      <FileDiffComponent {codeComments} {expanded} {file} {head} />
+      <FileDiffComponent
+        {codeComments}
+        {expanded}
+        {file}
+        {head}
+        {draftReviewId} />
     </div>
   {/each}
 </div>
