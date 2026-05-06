@@ -442,7 +442,7 @@
   .commit-group {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
+    gap: 1rem;
   }
   .commit-group-author {
     color: var(--color-text-tertiary);
@@ -450,13 +450,23 @@
   .commit-group-children {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
   }
   .revision-commits {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    margin: 0.5rem 0 0 1.5rem;
+    gap: 1rem;
+    margin: 1rem 0 0 1.5rem;
+  }
+  .revision-commits::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0.5rem;
+    width: 1px;
+    background-color: var(--color-border-subtle);
   }
 </style>
 

@@ -141,22 +141,23 @@
     color: var(--color-text-primary);
   }
   .full-message {
-    margin: 0.5rem 0 0;
+    margin: 1rem 0 0;
     white-space: pre-wrap;
     color: var(--color-text-secondary);
   }
   .expanded-header {
-    margin: 0.5rem 0 0;
+    margin: 1rem 0 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0.75rem;
     align-items: start;
   }
   .expanded-header .full-message {
-    margin: 0;
+    margin: 0 0 1rem;
     padding-top: 0.375rem;
   }
   .diff-summary {
+    margin-top: 1rem;
     color: var(--color-text-secondary);
   }
   .diff-toolbar {
@@ -183,13 +184,13 @@
     color: inherit;
   }
   .diff {
-    margin: 0;
+    margin: 1rem 0 0;
     display: flex;
     flex-direction: column;
     gap: 0;
   }
   .fallback {
-    margin: 0.5rem 0 0;
+    margin: 1rem 0 0;
     color: var(--color-text-secondary);
   }
 </style>
