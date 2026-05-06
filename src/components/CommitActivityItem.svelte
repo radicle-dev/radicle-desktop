@@ -125,7 +125,7 @@
     transform: rotate(0);
   }
   .author {
-    color: var(--color-text-primary);
+    color: var(--color-text-tertiary);
   }
   .summary-line {
     flex: 1 1 0;
