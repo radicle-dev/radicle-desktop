@@ -73,8 +73,11 @@
   .icon {
     padding-top: 0.1875rem;
   }
-  .icon-stack {
+  .icon-stack,
+  .icon-expanded {
     display: grid;
+    width: 1rem;
+    place-items: center;
   }
   .icon-expanded {
     transition: transform 150ms ease;

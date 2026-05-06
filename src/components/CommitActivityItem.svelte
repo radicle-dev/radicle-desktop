@@ -94,8 +94,11 @@
     display: flex;
     justify-content: center;
   }
-  .icon-stack {
+  .icon-stack,
+  .icon-expanded {
     display: grid;
+    width: 1rem;
+    place-items: center;
   }
   .icon-expanded {
     transition: transform 150ms ease;
