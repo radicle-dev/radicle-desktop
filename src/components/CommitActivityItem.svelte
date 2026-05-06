@@ -22,6 +22,9 @@
 
   let expanded = $state(false);
   let filesExpanded = $state(true);
+  let hovered = $state(false);
+  let peekMounted = $state(false);
+  let leaveTimer: ReturnType<typeof setTimeout> | undefined;
 
   const parent = $derived(commit.parents[0]);
   const fullMessage = $derived(commit.message.trim());
@@ -33,6 +36,22 @@
 
   function toggle() {
     expanded = !expanded;
+  }
+
+  function handleMouseEnter() {
+    if (leaveTimer) {
+      clearTimeout(leaveTimer);
+      leaveTimer = undefined;
+    }
+    hovered = true;
+    peekMounted = true;
+  }
+
+  function handleMouseLeave() {
+    leaveTimer = setTimeout(() => {
+      hovered = false;
+      leaveTimer = undefined;
+    }, 80);
   }
 
   function fileKey(file: FileDiffType): string {
@@ -132,6 +151,33 @@
     margin: 0.5rem 0 0 2rem;
     color: var(--color-text-secondary);
   }
+  .peek {
+    position: relative;
+    margin: 0 0 0 2rem;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 200ms ease;
+  }
+  .peek-shown {
+    max-height: 8rem;
+  }
+  .peek-inner {
+    padding-top: 0.5rem;
+  }
+  .peek::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 3rem;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--color-surface-base)
+    );
+    pointer-events: none;
+  }
 </style>
 
 <div
@@ -139,6 +185,8 @@
   role="button"
   tabindex="0"
   onclick={toggle}
+  onmouseenter={handleMouseEnter}
+  onmouseleave={handleMouseLeave}
   onkeydown={e => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -188,6 +236,31 @@
     {/if}
   </div>
 </div>
+
+{#if !expanded && parent && peekMounted}
+  <div
+    class="peek"
+    class:peek-shown={hovered}
+    onmouseenter={handleMouseEnter}
+    onmouseleave={handleMouseLeave}
+    role="presentation">
+    <div class="peek-inner">
+      {#await cachedGetDiff( rid, { base: parent, head: commit.id, unified: 3, highlight: true }, )}
+        <div class="fallback txt-body-m-regular">Loading…</div>
+      {:then diff}
+        <div class="diff">
+          {#each diff.files as file (fileKey(file))}
+            <FileDiff {file} head={commit.id} expanded={true} />
+          {/each}
+        </div>
+      {:catch error}
+        <div class="fallback txt-body-m-regular">
+          Failed to load diff: {error.message ?? error}
+        </div>
+      {/await}
+    </div>
+  </div>
+{/if}
 
 {#if expanded}
   {#if fullMessage}
