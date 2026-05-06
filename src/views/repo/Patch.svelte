@@ -9,7 +9,11 @@
 
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
-  import { invoke } from "@app/lib/invoke";
+  import {
+    cachedGetDiff,
+    cachedListCommits,
+    invoke,
+  } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import {
     didFromPublicKey,
@@ -125,6 +129,48 @@
       alias: config.alias,
     }),
   );
+
+  let reviewProgress: { checked: number; total: number } | undefined =
+    $state();
+  $effect(() => {
+    const draft = ownDraftReviewForPatch;
+    const rev = selectedRevision;
+    if (!draft) {
+      reviewProgress = undefined;
+      return;
+    }
+    let cancelled = false;
+    void Promise.all([
+      cachedListCommits(repo.rid, rev.base, rev.head),
+      cachedGetDiff(repo.rid, {
+        base: rev.base,
+        head: rev.head,
+        unified: 3,
+        highlight: false,
+      }),
+    ]).then(([commits, diff]) => {
+      if (cancelled) return;
+      const commitIds = new Set(commits.map(c => c.id));
+      const filePaths = new Set(
+        diff.files.map(f =>
+          f.status === "moved" || f.status === "copied" ? f.newPath : f.path,
+        ),
+      );
+      const checkedCommits = draft.checkedCommits.filter(id =>
+        commitIds.has(id),
+      ).length;
+      const checkedFiles = draft.checkedFiles.filter(p =>
+        filePaths.has(p),
+      ).length;
+      reviewProgress = {
+        checked: checkedCommits + checkedFiles,
+        total: commits.length + diff.files.length,
+      };
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
 </script>
 
 <style>
@@ -148,6 +194,17 @@
   }
   .breadcrumb-link:hover {
     color: var(--color-text-primary);
+  }
+  .review-progress {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-left: 0.75rem;
+    padding: 0.125rem 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-secondary);
+    font: var(--txt-body-m-regular);
   }
   .content {
     display: grid;
@@ -215,6 +272,12 @@
             href={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
             title="Open in radicle.network" />
         </div>
+        {#if reviewProgress}
+          <div class="review-progress" title="Items reviewed in this revision">
+            <Icon name="comment" />
+            {reviewProgress.checked}/{reviewProgress.total} reviewed
+          </div>
+        {/if}
         <div style:margin-left="auto">
           <NewPatchButton rid={repo.rid} ghost />
         </div>
