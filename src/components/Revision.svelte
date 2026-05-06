@@ -211,7 +211,7 @@
         const [, commits] = entries[i];
         const novel = commits.filter(c => !seen.has(c.id));
         novel.forEach(c => seen.add(c.id));
-        next[rev.id] = novel;
+        next[rev.id] = [...novel].reverse();
       });
       commitsByRevision = next;
     });

@@ -25,6 +25,7 @@
 
   const parent = $derived(commit.parents[0]);
   const fullMessage = $derived(commit.message.trim());
+  const authoredAt = $derived(commit.author.time * 1000);
   const checked = $derived(
     draftReviewId
       ? draftReviewStorage.isCommitChecked(draftReviewId, commit.id)
@@ -192,10 +193,8 @@
         <div class="meta-hash">
           <Id id={commit.id} clipboard={commit.id} />
         </div>
-        <div
-          class="timestamp"
-          title={absoluteTimestamp(commit.committer.time * 1000)}>
-          {formatTimestamp(commit.committer.time * 1000)}
+        <div class="timestamp" title={absoluteTimestamp(authoredAt)}>
+          {formatTimestamp(authoredAt)}
         </div>
       </div>
       {#if draftReviewId}
