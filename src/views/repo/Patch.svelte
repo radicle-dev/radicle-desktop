@@ -400,7 +400,8 @@
               {config}
               view={patchView}
               {activity}
-              {revisions} />
+              {revisions}
+              onSelectRevision={rev => (selectedRevision = rev)} />
           </div>
 
           <div class="sidebar">

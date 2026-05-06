@@ -9,18 +9,38 @@
   import Changeset from "@app/components/Changeset.svelte";
   import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
   import CommitsContainer from "@app/components/CommitsContainer.svelte";
+  import DropdownList from "@app/components/DropdownList.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import JobCob from "@app/components/JobCob.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
 
   interface Props {
     patchId: string;
     revision: Revision;
     rid: string;
     codeComments?: CodeComments;
+    revisions?: Revision[];
+    onSelectRevision?: (revision: Revision) => void;
   }
 
-  const { patchId, revision, rid, codeComments }: Props = $props();
+  const {
+    patchId,
+    revision,
+    rid,
+    codeComments,
+    revisions = [],
+    onSelectRevision,
+  }: Props = $props();
+
+  let revisionPickerExpanded = $state(false);
+  const sortedRevisions = $derived(
+    [...revisions].sort((a, b) => a.timestamp - b.timestamp),
+  );
+  const revisionIndex = $derived(
+    sortedRevisions.findIndex(r => r.id === revision.id),
+  );
 
   let filesExpanded = $state(true);
   let selectedCommit = $state<string>();
@@ -121,16 +141,57 @@
 <div
   class="txt-body-m-regular global-flex"
   style:margin-bottom="1rem"
-  style:justify-content="flex-end">
-  <Button variant="naked" onclick={() => (filesExpanded = !filesExpanded)}>
-    {#if filesExpanded === true}
-      <Icon name="collapse-vertical" />
-      Collapse all
-    {:else}
-      <Icon name="expand-vertical" />
-      Expand all
-    {/if}
-  </Button>
+  style:gap="0.5rem">
+  {#if sortedRevisions.length > 1 && onSelectRevision}
+    <Popover
+      popoverPadding="0"
+      placement="bottom-start"
+      bind:expanded={revisionPickerExpanded}>
+      {#snippet toggle(onclick)}
+        <Button variant="outline" {onclick} active={revisionPickerExpanded}>
+          <Icon name="revision" />
+          <span style:color="var(--color-text-secondary)">
+            Revision {revisionIndex >= 0 ? revisionIndex + 1 : "?"} of
+            {sortedRevisions.length}
+          </span>
+          <span class="txt-id">{revision.id.substring(0, 7)}</span>
+          <Icon name={revisionPickerExpanded ? "chevron-up" : "chevron-down"} />
+        </Button>
+      {/snippet}
+      {#snippet popover()}
+        <div
+          style:border="1px solid var(--color-border-subtle)"
+          style:border-radius="var(--border-radius-sm)"
+          style:background-color="var(--color-surface-canvas)">
+          <DropdownList items={sortedRevisions}>
+            {#snippet item(rev)}
+              <DropdownListItem
+                selected={rev.id === revision.id}
+                styleGap="0.5rem"
+                onclick={() => {
+                  onSelectRevision?.(rev);
+                  closeFocused();
+                }}>
+                <Icon name="revision" />
+                <span class="txt-id">{rev.id.substring(0, 7)}</span>
+              </DropdownListItem>
+            {/snippet}
+          </DropdownList>
+        </div>
+      {/snippet}
+    </Popover>
+  {/if}
+  <div style:margin-left="auto">
+    <Button variant="naked" onclick={() => (filesExpanded = !filesExpanded)}>
+      {#if filesExpanded === true}
+        <Icon name="collapse-vertical" />
+        Collapse all
+      {:else}
+        <Icon name="expand-vertical" />
+        Expand all
+      {/if}
+    </Button>
+  </div>
 </div>
 
 <div>
@@ -198,6 +259,17 @@
   {#await cachedGetDiff(rid, { base, head, unified: 3, highlight: true })}
     <span class="txt-body-m-regular">Loading…</span>
   {:then diff}
+    <div
+      class="txt-body-m-regular"
+      style:color="var(--color-text-secondary)"
+      style:margin-bottom="0.5rem">
+      {diff.stats.filesChanged}
+      {pluralize("file", diff.stats.filesChanged)} modified with
+      {diff.stats.insertions}
+      {pluralize("insertion", diff.stats.insertions)} and
+      {diff.stats.deletions}
+      {pluralize("deletion", diff.stats.deletions)}
+    </div>
     <Changeset expanded={filesExpanded} {head} {diff} {codeComments} />
   {/await}
 </div>

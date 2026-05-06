@@ -42,6 +42,7 @@
     view?: "description" | "activity" | "changes";
     activity?: Operation<Action>[];
     revisions?: Revision[];
+    onSelectRevision?: (revision: Revision) => void;
   }
 
   const {
@@ -54,6 +55,7 @@
     view = "activity",
     activity = [],
     revisions = [],
+    onSelectRevision,
   }: Props = $props();
   const currentUserAuthor: Author = $derived({
     did: didFromPublicKey(config.publicKey),
@@ -483,5 +485,11 @@
     {activityItems}
     {renderActivity} />
 {:else}
-  <Changes {rid} {patchId} {revision} {codeComments} />
+  <Changes
+    {rid}
+    {patchId}
+    {revision}
+    {codeComments}
+    {revisions}
+    {onSelectRevision} />
 {/if}
