@@ -5,7 +5,11 @@
 
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { cachedGetDiff } from "@app/lib/invoke";
-  import { absoluteTimestamp, formatTimestamp } from "@app/lib/utils";
+  import {
+    absoluteTimestamp,
+    formatTimestamp,
+    pluralize,
+  } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import FileDiff from "@app/components/FileDiff.svelte";
@@ -147,6 +151,9 @@
     margin: 0;
     padding-top: 0.375rem;
   }
+  .diff-summary {
+    color: var(--color-text-secondary);
+  }
   .diff-toolbar {
     margin: 0;
     display: flex;
@@ -174,7 +181,7 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0;
   }
   .fallback {
     margin: 0.5rem 0 0;
@@ -256,11 +263,24 @@
       {:then diff}
         {#if expandedBody || diff.files.length > 1}
           <div class="expanded-header">
-            {#if expandedBody}
-              <div class="full-message txt-body-m-regular">{expandedBody}</div>
-            {:else}
-              <div></div>
-            {/if}
+            <div>
+              {#if expandedBody}
+                <div class="full-message txt-body-m-regular">{expandedBody}</div>
+              {/if}
+              <div class="diff-summary txt-body-m-regular">
+                {diff.stats.filesChanged}
+                {pluralize("file", diff.stats.filesChanged)} modified with
+                <span style:color="var(--color-feedback-success-text)">
+                  {diff.stats.insertions}
+                  {pluralize("insertion", diff.stats.insertions)}
+                </span>
+                and
+                <span style:color="var(--color-feedback-error-text)">
+                  {diff.stats.deletions}
+                  {pluralize("deletion", diff.stats.deletions)}
+                </span>
+              </div>
+            </div>
             {#if diff.files.length > 1}
               <div class="diff-toolbar txt-body-m-regular">
                 <Button
@@ -276,6 +296,20 @@
                 </Button>
               </div>
             {/if}
+          </div>
+        {:else}
+          <div class="diff-summary txt-body-m-regular">
+            {diff.stats.filesChanged}
+            {pluralize("file", diff.stats.filesChanged)} modified with
+            <span style:color="var(--color-feedback-success-text)">
+              {diff.stats.insertions}
+              {pluralize("insertion", diff.stats.insertions)}
+            </span>
+            and
+            <span style:color="var(--color-feedback-error-text)">
+              {diff.stats.deletions}
+              {pluralize("deletion", diff.stats.deletions)}
+            </span>
           </div>
         {/if}
         <div class="diff">

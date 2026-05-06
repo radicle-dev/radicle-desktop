@@ -45,7 +45,7 @@
   .header {
     display: flex;
     align-items: center;
-    height: 2.5rem;
+    min-height: 2.5rem;
     padding-left: 0.25rem;
     z-index: 2;
     font: var(--txt-body-m-regular);
@@ -53,6 +53,9 @@
     background-color: var(--header-background);
     border-top-left-radius: var(--border-radius-md);
     border-top-right-radius: var(--border-radius-md);
+  }
+  .header:not(:first-child) {
+    margin-top: 0.5rem;
   }
   .header.expandable {
     cursor: pointer;

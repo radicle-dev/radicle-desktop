@@ -226,7 +226,7 @@
   .container {
     /* Make space for the box-shadow border, otherwise it gets cut off due to
        overflow: hide on the container. */
-    padding: 0.5rem 0.0625rem;
+    padding: 0 0.0625rem 0.5rem;
     font: var(--txt-code-regular);
   }
   .line {
