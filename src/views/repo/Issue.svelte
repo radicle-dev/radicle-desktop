@@ -20,6 +20,7 @@
     explorerUrl,
     issueStatusBackgroundColor,
     issueStatusColor,
+    issueStatusLabel,
     publicKeyFromDid,
   } from "@app/lib/utils";
 
@@ -349,9 +350,9 @@
             router.push({
               resource: "repo.issues",
               rid: repo.rid,
-              status: "all",
+              status: issue.state.status,
             })}>
-          All Issues
+          {issueStatusLabel[issue.state.status]}
         </button>
         <Icon name="chevron-right" />
         <Id id={issue.id} clipboard={issue.id} placement="bottom-start" />

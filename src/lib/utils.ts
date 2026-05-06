@@ -158,6 +158,11 @@ export const issueStatusBackgroundColor: Record<
   closed: "var(--color-surface-closed)",
 };
 
+export const issueStatusLabel: Record<Issue["state"]["status"], string> = {
+  open: "Open Issues",
+  closed: "Closed Issues",
+};
+
 export const patchStatusColor: Record<Patch["state"]["status"], string> = {
   draft: "var(--color-text-draft)",
   open: "var(--color-text-open)",
@@ -176,10 +181,10 @@ export const patchStatusBackgroundColor: Record<
 };
 
 export const patchStatusLabel: Record<Patch["state"]["status"], string> = {
-  draft: "Drafts",
+  draft: "Draft Patches",
   open: "Open Patches",
-  archived: "Archived",
-  merged: "Merged",
+  archived: "Archived Patches",
+  merged: "Merged Patches",
 };
 
 export function authorForNodeId(author: Author): ComponentProps<typeof NodeId> {
