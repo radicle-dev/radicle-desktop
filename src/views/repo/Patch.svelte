@@ -3,12 +3,10 @@
   import type { Operation } from "@bindings/cob/Operation";
   import type { Action } from "@bindings/cob/patch/Action";
   import type { Patch } from "@bindings/cob/patch/Patch";
-  import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import type { DraftReview } from "@app/lib/draftReviewStorage";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
@@ -31,7 +29,6 @@
   import Id from "@app/components/Id.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchMetadata from "@app/components/PatchMetadata.svelte";
-  import ReviewComponent from "@app/components/Review.svelte";
   import RevisionComponent from "@app/components/Revision.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
@@ -45,12 +42,10 @@
     config: Config;
     activity: Operation<Action>[];
     status: PatchStatus | undefined;
-    review: Review | DraftReview | undefined;
   }
 
   /* eslint-disable prefer-const */
-  let { repo, patch, revisions, config, activity, status, review }: Props =
-    $props();
+  let { repo, patch, revisions, config, activity }: Props = $props();
   /* eslint-enable prefer-const */
 
   let tab: "patch" | "revisions" | "timeline" = $state(
@@ -124,60 +119,6 @@
     ]);
   }
 
-  async function loadReview() {
-    if (!review) {
-      return;
-    }
-
-    if ("draft" in review) {
-      review = draftReviewStorage.get(review.id, review.author);
-    } else {
-      review = await invoke<Review>("review_by_patch_and_revision_and_id", {
-        rid: repo.rid,
-        id: patch.id,
-        revisionId: findReviewRevision(review).id,
-        reviewId: review.id,
-      });
-    }
-  }
-
-  function findReviewRevision(review: Review | DraftReview): Revision {
-    // Every review is guaranteed to have a revision according to the protocol
-    // model, so using type assertions here is safe.
-    if ("draft" in review) {
-      return revisions.find(
-        revision => revision.id === review.revisionId,
-      ) as Revision;
-    } else {
-      return revisions.find(revision =>
-        revision.reviews?.find(rev => rev.id === review.id),
-      ) as Revision;
-    }
-  }
-
-  const reviewsOfSelectedRevision: Array<Review | DraftReview> = $derived(
-    [
-      draftReviewStorage.getForRevision(selectedRevision.id, {
-        did: didFromPublicKey(config.publicKey),
-        alias: config.alias,
-      }),
-      ...(selectedRevision.reviews ?? []),
-    ].filter((review): review is Review | DraftReview => Boolean(review)),
-  );
-  const ownDraftReview = $derived(
-    reviewsOfSelectedRevision.find(
-      (value): value is DraftReview =>
-        value.author.did === didFromPublicKey(config.publicKey) &&
-        "draft" in value,
-    ),
-  );
-  const hasOwnPublishedReview = $derived(
-    reviewsOfSelectedRevision.some(
-      value =>
-        value.author.did === didFromPublicKey(config.publicKey) &&
-        !("draft" in value),
-    ),
-  );
   const ownDraftReviewForPatch = $derived(
     draftReviewStorage.getForPatch(patch.id, {
       did: didFromPublicKey(config.publicKey),
@@ -251,18 +192,6 @@
 </style>
 
 <Layout>
-  {#if review}
-    <ReviewComponent
-      {config}
-      patchId={patch.id}
-      {repo}
-      {loadReview}
-      {review}
-      revision={findReviewRevision(review)}
-      onNavigateBack={() => {
-        review = undefined;
-      }} />
-  {:else}
     <div class="page">
       <Topbar>
         <div class="breadcrumb">
@@ -323,36 +252,6 @@
                   {tab}
                   selectedRevisionId={selectedRevision.id}
                   patchId={patch.id} />
-                <Button
-                  variant="secondary"
-                  disabled={hasOwnPublishedReview}
-                  onclick={() => {
-                    const id =
-                      ownDraftReview?.id ??
-                      draftReviewStorage.create(
-                        repo.rid,
-                        patch.id,
-                        selectedRevision.id,
-                      );
-                    void router.push({
-                      resource: "repo.patch",
-                      rid: repo.rid,
-                      patch: patch.id,
-                      reviewId: id,
-                      status,
-                    });
-                  }}
-                  title={hasOwnPublishedReview
-                    ? "You already created a review for this revision"
-                    : ownDraftReview
-                      ? "Continue review"
-                      : "Review revision"}>
-                  <Icon name="comment" />
-                  <span
-                    class="txt-body-m-regular global-hide-on-medium-desktop-down">
-                    {ownDraftReview ? "Continue review" : "Review revision"}
-                  </span>
-                </Button>
               </div>
             </div>
             <div class="sidebar-inline">
@@ -423,5 +322,4 @@
           }} />
       {/if}
     </div>
-  {/if}
 </Layout>
