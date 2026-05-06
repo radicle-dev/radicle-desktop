@@ -355,6 +355,7 @@
 
             <RevisionComponent
               rid={repo.rid}
+              {repo}
               repoDelegates={repo.delegates}
               patchId={patch.id}
               {loadPatch}
@@ -381,6 +382,7 @@
 
             <RevisionComponent
               rid={repo.rid}
+              {repo}
               repoDelegates={repo.delegates}
               patchId={patch.id}
               {loadPatch}

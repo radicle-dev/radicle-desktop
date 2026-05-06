@@ -28,9 +28,10 @@
     expanded?: boolean;
     onToggle?: () => void;
     hideAuthor?: boolean;
+    targetBranch?: string;
   }
 
-  const { op, expanded, onToggle, hideAuthor }: Props = $props();
+  const { op, expanded, onToggle, hideAuthor, targetBranch }: Props = $props();
 
   function lastLine(text: string): string | undefined {
     const lines = text.trim().split("\n");
@@ -103,6 +104,9 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  .summary-secondary {
+    color: var(--color-text-tertiary);
+  }
   .timestamp {
     color: var(--color-text-quaternary);
   }
@@ -111,6 +115,15 @@
     align-items: center;
     gap: 0.5rem;
     flex-shrink: 0;
+  }
+  .meta-hash {
+    color: var(--color-text-quaternary);
+  }
+  .meta-hash :global(.txt-id) {
+    color: inherit;
+  }
+  .meta-hash :global(.txt-id:hover) {
+    color: inherit;
   }
   .verdict-accept {
     background-color: var(--color-feedback-success-bg);
@@ -131,6 +144,16 @@
   .verdict-reject,
   .verdict-reject :global(*) {
     color: var(--color-feedback-error-text);
+  }
+  .merge-badge {
+    background-color: var(--color-surface-brand-subtle);
+    color: var(--color-text-brand);
+    padding: 0.375rem 0.5rem;
+    border-radius: var(--border-radius-sm);
+  }
+  .merge-badge,
+  .merge-badge :global(*) {
+    color: inherit;
   }
 </style>
 
@@ -159,11 +182,13 @@
     <div class="wrapper">
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
-        <span class="txt-body-m-medium">created revision</span>
+        <span class="txt-body-m-medium summary-secondary">created revision</span>
         {#if summary && !expanded}{summary}{/if}
       </div>
       <div class="meta">
-        <Id id={op.id} clipboard={op.id} />
+        <div class="meta-hash">
+          <Id id={op.id} clipboard={op.id} />
+        </div>
         <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
           {formatTimestamp(op.timestamp)}
         </div>
@@ -181,7 +206,7 @@
     <div class="wrapper">
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
-        <span class="txt-body-m-medium">
+        <span class="txt-body-m-medium summary-secondary">
           {#if op.state.status === "draft"}
             converted patch to draft
           {:else if op.state.status === "archived"}
@@ -282,14 +307,17 @@
     </div>
   </div>
 {:else if op.type === "merge"}
-  <div class="timeline-item txt-body-m-regular">
-    <div class="icon" style:color="var(--color-brand-bg)">
+  <div class="timeline-item txt-body-m-regular merge-badge">
+    <div class="icon" style:color="var(--color-text-brand)">
       <Icon name="patch-merged" />
     </div>
     <div class="wrapper">
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
         <span class="txt-body-m-medium">merged patch</span>
+        {#if targetBranch}
+          into <b>{targetBranch}</b>
+        {/if}
       </div>
       <div class="meta">
         <Id id={op.revision} clipboard={op.revision} />

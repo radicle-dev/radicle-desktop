@@ -45,9 +45,10 @@
 
 <style>
   .timeline-item {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    column-gap: 0.5rem;
     align-items: flex-start;
-    gap: 0.5rem;
     min-width: 0;
     cursor: pointer;
     padding: 0.125rem 0.25rem;
@@ -66,8 +67,11 @@
     flex: 1 1 0;
   }
   .icon {
+    width: 1.25rem;
     padding-top: 0.1875rem;
     color: var(--color-text-secondary);
+    display: flex;
+    justify-content: center;
   }
   .icon-stack {
     display: grid;
@@ -104,12 +108,23 @@
     text-overflow: ellipsis;
   }
   .full-message {
-    margin: 0.25rem 0 0 2rem;
+    margin: 0.5rem 0 0;
     white-space: pre-wrap;
     color: var(--color-text-secondary);
   }
+  .expanded-header {
+    margin: 0.5rem 0 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: start;
+  }
+  .expanded-header .full-message {
+    margin: 0;
+    padding-top: 0.375rem;
+  }
   .diff-toolbar {
-    margin: 0.5rem 0 0 2rem;
+    margin: 0;
     display: flex;
     justify-content: flex-end;
   }
@@ -122,111 +137,131 @@
     gap: 0.5rem;
     flex-shrink: 0;
   }
+  .meta-hash {
+    color: var(--color-text-quaternary);
+  }
+  .meta-hash :global(.txt-id) {
+    color: inherit;
+  }
+  .meta-hash :global(.txt-id:hover) {
+    color: inherit;
+  }
   .diff {
-    margin: 0.5rem 0 0 2rem;
+    margin: 0.5rem 0 0;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
   .fallback {
-    margin: 0.5rem 0 0 2rem;
+    margin: 0.5rem 0 0;
     color: var(--color-text-secondary);
   }
 </style>
 
-<div
-  class="timeline-item txt-body-m-regular"
-  role="button"
-  tabindex="0"
-  onclick={toggle}
-  onkeydown={e => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      toggle();
-    }
-  }}>
-  <div class="icon">
-    {#if expanded}
-      <Icon name="chevron-down" />
-    {:else}
-      <span class="icon-stack">
-        <span class="icon-default"><Icon name="commit" /></span>
-        <span class="icon-hover"><Icon name="chevron-down" /></span>
-      </span>
-    {/if}
-  </div>
-  <div class="wrapper">
-    {#if !hideAuthor}
-      <span class="author">{commit.author.name}</span>
-    {/if}
-    <div class="summary-line">
-      <span class="txt-body-m-medium">committed</span>
-      {#if !expanded}{commit.summary}{/if}
+<div class="commit-entry">
+  <div
+    class="timeline-item txt-body-m-regular"
+    role="button"
+    tabindex="0"
+    onclick={toggle}
+    onkeydown={e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggle();
+      }
+    }}>
+    <div class="icon">
+      {#if expanded}
+        <Icon name="chevron-down" />
+      {:else}
+        <span class="icon-stack">
+          <span class="icon-default"><Icon name="commit" /></span>
+          <span class="icon-hover"><Icon name="chevron-down" /></span>
+        </span>
+      {/if}
     </div>
-    <div class="meta">
-      <Id id={commit.id} clipboard={commit.id} />
-      <div
-        class="timestamp"
-        title={absoluteTimestamp(commit.committer.time * 1000)}>
-        {formatTimestamp(commit.committer.time * 1000)}
+    <div class="wrapper">
+      {#if !hideAuthor}
+        <span class="author">{commit.author.name}</span>
+      {/if}
+      <div class="summary-line">
+        <span class="txt-body-m-medium">committed</span>
+        {#if !expanded}{commit.summary}{/if}
       </div>
+      <div class="meta">
+        <div class="meta-hash">
+          <Id id={commit.id} clipboard={commit.id} />
+        </div>
+        <div
+          class="timestamp"
+          title={absoluteTimestamp(commit.committer.time * 1000)}>
+          {formatTimestamp(commit.committer.time * 1000)}
+        </div>
+      </div>
+      {#if draftReviewId}
+        <Button
+          variant={checked ? "ghost" : "naked"}
+          active={checked}
+          onclick={e => {
+            e.stopPropagation();
+            draftReviewStorage.toggleCheckedCommit(draftReviewId, commit.id);
+          }}
+          title={checked
+            ? "Mark commit as not reviewed"
+            : "Mark commit as reviewed"}>
+          <Icon name={checked ? "checkmark" : "eye"} />
+          Checked
+        </Button>
+      {/if}
     </div>
-    {#if draftReviewId}
-      <Button
-        variant={checked ? "ghost" : "naked"}
-        active={checked}
-        onclick={e => {
-          e.stopPropagation();
-          draftReviewStorage.toggleCheckedCommit(draftReviewId, commit.id);
-        }}
-        title={checked
-          ? "Mark commit as not reviewed"
-          : "Mark commit as reviewed"}>
-        <Icon name={checked ? "checkmark" : "eye"} />
-        Checked
-      </Button>
-    {/if}
   </div>
-</div>
 
-{#if expanded}
-  {#if fullMessage}
-    <div class="full-message txt-body-m-regular">{fullMessage}</div>
-  {/if}
-  {#if !parent}
-    <div class="fallback txt-body-m-regular">
-      Initial commit; no diff to show.
-    </div>
-  {:else}
-    <div class="diff-toolbar txt-body-m-regular">
-      <Button
-        variant="naked"
-        onclick={() => (filesExpanded = !filesExpanded)}>
-        {#if filesExpanded}
-          <Icon name="collapse-vertical" />
-          Collapse all
-        {:else}
-          <Icon name="expand-vertical" />
-          Expand all
-        {/if}
-      </Button>
-    </div>
-    {#await cachedGetDiff( rid, { base: parent, head: commit.id, unified: 3, highlight: true }, )}
-      <div class="fallback txt-body-m-regular">Loading diff…</div>
-    {:then diff}
-      <div class="diff">
-        {#each diff.files as file (fileKey(file))}
-          <FileDiff
-            {file}
-            head={commit.id}
-            expanded={filesExpanded}
-            {draftReviewId} />
-        {/each}
-      </div>
-    {:catch error}
+  {#if expanded}
+    {#if !parent}
+      {#if fullMessage}
+        <div class="full-message txt-body-m-regular">{fullMessage}</div>
+      {/if}
       <div class="fallback txt-body-m-regular">
-        Failed to load diff: {error.message ?? error}
+        Initial commit; no diff to show.
       </div>
-    {/await}
+    {:else}
+      <div class="expanded-header">
+        {#if fullMessage}
+          <div class="full-message txt-body-m-regular">{fullMessage}</div>
+        {:else}
+          <div></div>
+        {/if}
+        <div class="diff-toolbar txt-body-m-regular">
+          <Button
+            variant="naked"
+            onclick={() => (filesExpanded = !filesExpanded)}>
+            {#if filesExpanded}
+              <Icon name="collapse-vertical" />
+              Collapse all
+            {:else}
+              <Icon name="expand-vertical" />
+              Expand all
+            {/if}
+          </Button>
+        </div>
+      </div>
+      {#await cachedGetDiff( rid, { base: parent, head: commit.id, unified: 3, highlight: true }, )}
+        <div class="fallback txt-body-m-regular">Loading diff…</div>
+      {:then diff}
+        <div class="diff">
+          {#each diff.files as file (fileKey(file))}
+            <FileDiff
+              {file}
+              head={commit.id}
+              expanded={filesExpanded}
+              {draftReviewId} />
+          {/each}
+        </div>
+      {:catch error}
+        <div class="fallback txt-body-m-regular">
+          Failed to load diff: {error.message ?? error}
+        </div>
+      {/await}
+    {/if}
   {/if}
-{/if}
+</div>

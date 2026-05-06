@@ -9,6 +9,7 @@
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Config } from "@bindings/config/Config";
   import type { Commit } from "@bindings/repo/Commit";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
@@ -34,6 +35,7 @@
 
   interface Props {
     rid: string;
+    repo: RepoInfo;
     repoDelegates: Author[];
     patchId: string;
     revision: Revision;
@@ -48,6 +50,7 @@
 
   const {
     rid,
+    repo,
     repoDelegates,
     patchId,
     revision,
@@ -66,6 +69,9 @@
 
   const latestRevisionId = $derived(
     [...revisions].sort((a, b) => b.timestamp - a.timestamp)[0]?.id,
+  );
+  const targetBranch = $derived(
+    repo.payloads["xyz.radicle.project"]?.data.defaultBranch,
   );
   let revisionToggles: Record<string, boolean> = $state({});
   let lastPatchIdSeen = patchId;
@@ -516,7 +522,10 @@
           </div>
         {/if}
       {:else}
-        <PatchActivityItem op={data.op} hideAuthor={opts.hideAuthor} />
+        <PatchActivityItem
+          op={data.op}
+          hideAuthor={opts.hideAuthor}
+          targetBranch={data.op.type === "merge" ? targetBranch : undefined} />
       {/if}
     {:else}
       <ReviewCodeThread

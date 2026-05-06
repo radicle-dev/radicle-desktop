@@ -175,7 +175,7 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
   }
   .run-children {
     margin-left: 1.5rem;
