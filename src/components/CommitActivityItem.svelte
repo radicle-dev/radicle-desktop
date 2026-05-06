@@ -69,16 +69,29 @@
     padding-top: 0.1875rem;
     color: var(--color-text-secondary);
   }
+  .icon-stack {
+    display: grid;
+  }
+  .icon-default,
   .icon-hover {
-    display: none;
+    grid-area: 1 / 1;
+    transition:
+      opacity 150ms ease,
+      transform 150ms ease;
+  }
+  .icon-hover {
+    opacity: 0;
+    transform: rotate(-90deg);
   }
   .timeline-item:hover .icon-default,
   .timeline-item:focus-visible .icon-default {
-    display: none;
+    opacity: 0;
+    transform: rotate(90deg);
   }
   .timeline-item:hover .icon-hover,
   .timeline-item:focus-visible .icon-hover {
-    display: inline;
+    opacity: 1;
+    transform: rotate(0);
   }
   .author {
     color: var(--color-text-primary);
@@ -136,8 +149,10 @@
     {#if expanded}
       <Icon name="chevron-down" />
     {:else}
-      <span class="icon-default"><Icon name="commit" /></span>
-      <span class="icon-hover"><Icon name="chevron-right" /></span>
+      <span class="icon-stack">
+        <span class="icon-default"><Icon name="commit" /></span>
+        <span class="icon-hover"><Icon name="chevron-down" /></span>
+      </span>
     {/if}
   </div>
   <div class="wrapper">

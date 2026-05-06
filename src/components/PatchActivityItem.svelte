@@ -72,16 +72,29 @@
   .icon {
     padding-top: 0.1875rem;
   }
+  .icon-stack {
+    display: grid;
+  }
+  .icon-default,
   .icon-hover {
-    display: none;
+    grid-area: 1 / 1;
+    transition:
+      opacity 150ms ease,
+      transform 150ms ease;
+  }
+  .icon-hover {
+    opacity: 0;
+    transform: rotate(-90deg);
   }
   .timeline-item.toggleable:hover .icon-default,
   .timeline-item.toggleable:focus-visible .icon-default {
-    display: none;
+    opacity: 0;
+    transform: rotate(90deg);
   }
   .timeline-item.toggleable:hover .icon-hover,
   .timeline-item.toggleable:focus-visible .icon-hover {
-    display: inline;
+    opacity: 1;
+    transform: rotate(0);
   }
   .summary-line {
     flex: 1 1 0;
@@ -135,8 +148,10 @@
       {#if onToggle && expanded}
         <Icon name="chevron-down" />
       {:else if onToggle}
-        <span class="icon-default"><Icon name="revision" /></span>
-        <span class="icon-hover"><Icon name="chevron-right" /></span>
+        <span class="icon-stack">
+          <span class="icon-default"><Icon name="revision" /></span>
+          <span class="icon-hover"><Icon name="chevron-down" /></span>
+        </span>
       {:else}
         <Icon name="revision" />
       {/if}
