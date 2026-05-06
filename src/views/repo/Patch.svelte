@@ -29,7 +29,6 @@
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
-  import Markdown from "@app/components/Markdown.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchMetadata from "@app/components/PatchMetadata.svelte";
   import ReviewComponent from "@app/components/Review.svelte";
@@ -179,6 +178,12 @@
         !("draft" in value),
     ),
   );
+  const ownDraftReviewForPatch = $derived(
+    draftReviewStorage.getForPatch(patch.id, {
+      did: didFromPublicKey(config.publicKey),
+      alias: config.alias,
+    }),
+  );
 </script>
 
 <style>
@@ -221,13 +226,6 @@
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
-  }
-  .patch-description {
-    background-color: var(--color-surface-canvas);
-    border-radius: var(--border-radius-sm);
-    font: var(--txt-body-m-regular);
-    margin-bottom: 1rem;
-    padding: 0.75rem;
   }
   .sidebar {
     display: flex;
@@ -357,16 +355,6 @@
                 </Button>
               </div>
             </div>
-            <div class="patch-description">
-              {#if patchDescription.trim()}
-                <Markdown rid={repo.rid} breaks content={patchDescription} />
-              {:else}
-                <span class="txt-missing txt-body-m-regular">
-                  No description.
-                </span>
-              {/if}
-            </div>
-
             <div class="sidebar-inline">
               <PatchMetadata
                 {config}
@@ -382,7 +370,7 @@
               repoDelegates={repo.delegates}
               patchId={patch.id}
               {loadPatch}
-              revision={selectedRevision}
+              revision={revisions[0]}
               {config}
               view="description" />
 
@@ -421,15 +409,15 @@
         </div>
       </ScrollArea>
 
-      {#if ownDraftReview}
+      {#if ownDraftReviewForPatch}
         <DraftReviewBar
-          draftReview={ownDraftReview}
+          draftReview={ownDraftReviewForPatch}
           onChange={loadPatch}
           onPublish={async () => {
             await loadPatch();
           }}
           onCancel={() => {
-            draftReviewStorage.delete(ownDraftReview.id);
+            draftReviewStorage.delete(ownDraftReviewForPatch.id);
             void loadPatch();
           }} />
       {/if}

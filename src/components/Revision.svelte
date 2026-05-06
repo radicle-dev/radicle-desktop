@@ -20,7 +20,6 @@
   import Changes from "@app/components/Changes.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CommitActivityItem from "@app/components/CommitActivityItem.svelte";
-  import CommitGroupActivityItem from "@app/components/CommitGroupActivityItem.svelte";
   import Discussion, {
     type ActivityItem,
   } from "@app/components/Discussion.svelte";
@@ -30,12 +29,8 @@
   import ReviewCodeThread from "@app/components/ReviewCodeThread.svelte";
 
   type ActivityData =
-    | { kind: "op"; op: FlattenedPatchOperation }
-    | { kind: "commit"; commit: Commit }
-    | { kind: "commitGroup"; groupId: string; commits: Commit[] }
+    | { kind: "op"; op: FlattenedPatchOperation; commits?: Commit[] }
     | { kind: "reviewCode"; thread: Thread<CodeLocation> };
-
-  const COMMIT_COLLAPSE_THRESHOLD = 5;
 
   interface Props {
     rid: string;
@@ -64,6 +59,30 @@
     did: didFromPublicKey(config.publicKey),
     alias: config.alias ?? undefined,
   });
+
+  const latestRevisionId = $derived(
+    [...revisions].sort((a, b) => b.timestamp - a.timestamp)[0]?.id,
+  );
+  let revisionToggles: Record<string, boolean> = $state({});
+  let lastPatchIdSeen = patchId;
+  $effect(() => {
+    if (patchId !== lastPatchIdSeen) {
+      lastPatchIdSeen = patchId;
+      revisionToggles = {};
+    }
+  });
+  function isRevisionExpanded(revId: string): boolean {
+    if (revId in revisionToggles) {
+      return revisionToggles[revId];
+    }
+    return revId === latestRevisionId;
+  }
+  function toggleRevision(revId: string) {
+    revisionToggles = {
+      ...revisionToggles,
+      [revId]: !isRevisionExpanded(revId),
+    };
+  }
 
   const draftReview = $derived(
     draftReviewStorage.getForRevision(revision.id, currentUserAuthor),
@@ -144,17 +163,18 @@
 
   $effect(() => {
     const ridLocal = rid;
-    const revs = [...revisions].sort((a, b) => a.timestamp - b.timestamp);
     void Promise.all(
-      revs.map(async (rev, idx): Promise<[string, Commit[]]> => {
-        const prev = revs[idx - 1];
-        const base = prev ? prev.head : rev.base;
+      revisions.map(async (rev): Promise<[string, Commit[]]> => {
         try {
-          const commits = await cachedListCommits(ridLocal, base, rev.head);
+          const commits = await cachedListCommits(
+            ridLocal,
+            rev.base,
+            rev.head,
+          );
           return [rev.id, commits];
         } catch (error) {
           console.error(
-            `Failed to load commits for revision ${rev.id} (${base}..${rev.head})`,
+            `Failed to load commits for revision ${rev.id} (${rev.base}..${rev.head})`,
             error,
           );
           return [rev.id, []];
@@ -211,10 +231,14 @@
           previous,
         };
         tracker[action.type] = action;
+        const commits =
+          action.type === "revision"
+            ? commitsByRevision[operation.id]
+            : undefined;
         items.push({
           key: `${operation.id}:${actionIndex}`,
           timestamp: operation.timestamp,
-          data: { kind: "op", op },
+          data: { kind: "op", op, commits },
         });
       });
     });
@@ -236,64 +260,8 @@
         });
     });
 
-    const sortedRevs = [...revisions].sort((a, b) => a.timestamp - b.timestamp);
-    const patchOpenTimestamp = sortedRevs[0]?.timestamp ?? 0;
-    const seenCommitIds = new Set<string>();
-    Object.values(commitsByRevision).forEach(commits => {
-      commits.forEach(commit => {
-        if (seenCommitIds.has(commit.id)) {
-          return;
-        }
-        seenCommitIds.add(commit.id);
-        const timestampMs = commit.committer.time * 1000;
-        if (timestampMs < patchOpenTimestamp) {
-          return;
-        }
-        items.push({
-          key: `commit:${commit.id}`,
-          timestamp: timestampMs,
-          data: { kind: "commit", commit },
-        });
-      });
-    });
-
     items.sort((a, b) => a.timestamp - b.timestamp);
-
-    const grouped: ActivityItem<ActivityData>[] = [];
-    let i = 0;
-    while (i < items.length) {
-      if (items[i].data.kind !== "commit") {
-        grouped.push(items[i]);
-        i++;
-        continue;
-      }
-      let j = i;
-      while (j < items.length && items[j].data.kind === "commit") {
-        j++;
-      }
-      const runLength = j - i;
-      if (runLength > COMMIT_COLLAPSE_THRESHOLD) {
-        const commits = items.slice(i, j).map(item => {
-          if (item.data.kind !== "commit") {
-            throw new Error("unreachable");
-          }
-          return item.data.commit;
-        });
-        const groupId = `commit-group:${commits[0].id}:${commits[commits.length - 1].id}`;
-        grouped.push({
-          key: groupId,
-          timestamp: items[i].timestamp,
-          data: { kind: "commitGroup", groupId, commits },
-        });
-      } else {
-        for (let k = i; k < j; k++) {
-          grouped.push(items[k]);
-        }
-      }
-      i = j;
-    }
-
-    return grouped;
+    return items;
   });
   const reviewSummaryFingerprints = $derived(
     new Set(
@@ -443,6 +411,12 @@
     background-color: var(--color-surface-canvas);
     border-radius: var(--border-radius-sm);
   }
+  .revision-commits {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin: 0.5rem 0 0 2rem;
+  }
 </style>
 
 {#if view === "description"}
@@ -470,11 +444,23 @@
 {:else if view === "activity"}
   {#snippet renderActivity(data: ActivityData)}
     {#if data.kind === "op"}
-      <PatchActivityItem op={data.op} {patchId} />
-    {:else if data.kind === "commit"}
-      <CommitActivityItem commit={data.commit} {rid} />
-    {:else if data.kind === "commitGroup"}
-      <CommitGroupActivityItem commits={data.commits} {rid} />
+      {#if data.op.type === "revision"}
+        {@const revId = data.op.id}
+        {@const expanded = isRevisionExpanded(revId)}
+        <PatchActivityItem
+          op={data.op}
+          {expanded}
+          onToggle={() => toggleRevision(revId)} />
+        {#if expanded && data.commits && data.commits.length > 0}
+          <div class="revision-commits">
+            {#each data.commits as commit (commit.id)}
+              <CommitActivityItem {commit} {rid} />
+            {/each}
+          </div>
+        {/if}
+      {:else}
+        <PatchActivityItem op={data.op} />
+      {/if}
     {:else}
       <ReviewCodeThread
         {rid}

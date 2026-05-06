@@ -25,10 +25,11 @@
 
   interface Props {
     op: FlattenedPatchOperation;
-    patchId: string;
+    expanded?: boolean;
+    onToggle?: () => void;
   }
 
-  const { op, patchId }: Props = $props();
+  const { op, expanded, onToggle }: Props = $props();
 
   function lastLine(text: string): string | undefined {
     const lines = text.trim().split("\n");
@@ -49,6 +50,9 @@
     align-items: flex-start;
     gap: 0.5rem;
     min-width: 0;
+  }
+  .timeline-item.toggleable {
+    cursor: pointer;
   }
   .wrapper {
     display: flex;
@@ -93,41 +97,36 @@
 </style>
 
 {#if op.type === "revision"}
-  {#if op.id === patchId}
-    <div class="timeline-item txt-body-m-regular">
-      <div class="icon" style:color="var(--color-feedback-success-text)">
-        <Icon name="patch" />
+  {@const summary = lastLine(op.description)}
+  <!-- svelte-ignore a11y_click_events_have_key_events -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div
+    class="timeline-item txt-body-m-regular"
+    class:toggleable={onToggle !== undefined}
+    role={onToggle ? "button" : undefined}
+    tabindex={onToggle ? 0 : undefined}
+    onclick={onToggle}>
+    <div class="icon">
+      <Icon
+        name={onToggle
+          ? expanded
+            ? "chevron-down"
+            : "chevron-right"
+          : "revision"} />
+    </div>
+    <div class="wrapper">
+      <NodeId {...authorForNodeId(op.author)} />
+      <div class="summary-line">
+        created revision <Id id={op.id} clipboard={op.id} />
+        {#if summary}
+          — {summary}
+        {/if}
       </div>
-      <div class="wrapper">
-        <NodeId {...authorForNodeId(op.author)} />
-        <div class="summary-line">
-          opened patch <Id id={op.id} clipboard={op.id} />
-        </div>
-        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-          {formatTimestamp(op.timestamp)}
-        </div>
+      <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
+        {formatTimestamp(op.timestamp)}
       </div>
     </div>
-  {:else}
-    {@const summary = lastLine(op.description)}
-    <div class="timeline-item txt-body-m-regular">
-      <div class="icon">
-        <Icon name="revision" />
-      </div>
-      <div class="wrapper">
-        <NodeId {...authorForNodeId(op.author)} />
-        <div class="summary-line">
-          created revision <Id id={op.id} clipboard={op.id} />
-          {#if summary}
-            — {summary}
-          {/if}
-        </div>
-        <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
-          {formatTimestamp(op.timestamp)}
-        </div>
-      </div>
-    </div>
-  {/if}
+  </div>
 {:else if op.type === "lifecycle"}
   <div class="timeline-item txt-body-m-regular">
     <div class="icon" style:color={patchStatusColor[op.state.status]}>

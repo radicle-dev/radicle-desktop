@@ -113,6 +113,15 @@ export const draftReviewStorage = {
     );
   },
 
+  getForPatch(patchId: string, author: Author): DraftReview | undefined {
+    const draftReviewStored = Object.values(storage.value).find(
+      review => review.patchId === patchId,
+    );
+    if (draftReviewStored) {
+      return draftReviewFromStored(draftReviewStored, author);
+    }
+  },
+
   update(
     id: string,
     props: { summary: string; verdict: Verdict | undefined; labels: string[] },
