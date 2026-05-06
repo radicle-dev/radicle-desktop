@@ -550,7 +550,7 @@
     {activityItems}
     {renderActivity}
     authorOf={data =>
-      data.kind === "op" ? data.op.author.did : data.thread.root.author.did} />
+      data.kind === "op" ? data.op.author : data.thread.root.author} />
 {:else}
   <Changes
     {rid}

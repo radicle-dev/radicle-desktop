@@ -16,8 +16,10 @@
   import partial from "lodash/partial";
 
   import * as roles from "@app/lib/roles";
+  import { authorForNodeId } from "@app/lib/utils";
 
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
 
   interface Props {
@@ -43,7 +45,7 @@
     rid: string;
     activityItems?: ActivityItem<A>[];
     renderActivity?: Snippet<[A, { hideAuthor: boolean }]>;
-    authorOf?: (data: A) => string | undefined;
+    authorOf?: (data: A) => Author | undefined;
   }
 
   /* eslint-disable prefer-const */
@@ -93,21 +95,50 @@
     ].sort((a, b) => a.timestamp - b.timestamp),
   );
 
-  function entryAuthor(entry: TimelineEntry): string | undefined {
+  function entryAuthor(entry: TimelineEntry): Author | undefined {
     if (entry.kind === "thread") {
-      return entry.thread.root.author.did;
+      return entry.thread.root.author;
     }
     return authorOf?.(entry.data);
   }
 
-  const hideAuthorByEntryKey = $derived.by(() => {
-    const result: Record<string, boolean> = {};
-    let prev: string | undefined;
+  type Run =
+    | { kind: "thread"; entry: Extract<TimelineEntry, { kind: "thread" }> }
+    | { kind: "single"; entry: Extract<TimelineEntry, { kind: "activity" }> }
+    | {
+        kind: "group";
+        author: Author;
+        entries: Extract<TimelineEntry, { kind: "activity" }>[];
+      };
+
+  const runs: Run[] = $derived.by(() => {
+    const result: Run[] = [];
     for (const entry of timeline) {
-      const did = entryAuthor(entry);
-      result[entry.kind + ":" + entry.key] =
-        did !== undefined && did === prev;
-      prev = did;
+      if (entry.kind === "thread") {
+        result.push({ kind: "thread", entry });
+        continue;
+      }
+      const author = entryAuthor(entry);
+      const last = result[result.length - 1];
+      if (
+        author &&
+        last &&
+        ((last.kind === "single" &&
+          entryAuthor(last.entry)?.did === author.did) ||
+          (last.kind === "group" && last.author.did === author.did))
+      ) {
+        if (last.kind === "single") {
+          result[result.length - 1] = {
+            kind: "group",
+            author,
+            entries: [last.entry, entry],
+          };
+        } else {
+          last.entries.push(entry);
+        }
+      } else {
+        result.push({ kind: "single", entry });
+      }
     }
     return result;
   });
@@ -131,14 +162,25 @@
     margin-left: 1.25rem;
     background-color: var(--color-border-subtle);
   }
+  .run-header {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .run-ellipsis {
+    color: var(--color-text-quaternary);
+  }
+  .run-children {
+    margin-left: 1.5rem;
+  }
 </style>
 
 <div style:margin="1.5rem 0 2.5rem 0">
   <div>
-    {#each timeline as entry (entry.kind + ":" + entry.key)}
-      {#if entry.kind === "thread"}
+    {#each runs as run, runIndex (runIndex)}
+      {#if run.kind === "thread"}
         <ThreadComponent
-          thread={entry.thread}
+          thread={run.entry.thread}
           {rid}
           currentUserNid={config.publicKey}
           canEditComment={partial(
@@ -150,12 +192,20 @@
           createReply={createComment}
           {reactOnComment} />
         <div class="connector"></div>
-      {:else if renderActivity}
-        {@render renderActivity(entry.data, {
-          hideAuthor:
-            hideAuthorByEntryKey[entry.kind + ":" + entry.key] ?? false,
-        })}
+      {:else if run.kind === "single" && renderActivity}
+        {@render renderActivity(run.entry.data, { hideAuthor: false })}
         <div class="connector"></div>
+      {:else if run.kind === "group" && renderActivity}
+        <div class="run-header txt-body-m-regular">
+          <NodeId {...authorForNodeId(run.author)} />
+          <span class="run-ellipsis">…</span>
+        </div>
+        <div class="run-children">
+          {#each run.entries as entry (entry.key)}
+            {@render renderActivity(entry.data, { hideAuthor: true })}
+            <div class="connector"></div>
+          {/each}
+        </div>
       {/if}
     {/each}
 
