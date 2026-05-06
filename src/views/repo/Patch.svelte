@@ -129,6 +129,11 @@
       alias: config.alias,
     }),
   );
+  const hasOwnPublishedReviewOnSelected = $derived(
+    selectedRevision.reviews?.some(
+      r => r.author.did === didFromPublicKey(config.publicKey),
+    ) ?? false,
+  );
 
   let reviewProgress: { checked: number; total: number } | undefined =
     $state();
@@ -315,6 +320,27 @@
                   {tab}
                   selectedRevisionId={selectedRevision.id}
                   patchId={patch.id} />
+                {#if !ownDraftReviewForPatch}
+                  <Button
+                    variant="secondary"
+                    disabled={hasOwnPublishedReviewOnSelected}
+                    onclick={() => {
+                      draftReviewStorage.create(
+                        repo.rid,
+                        patch.id,
+                        selectedRevision.id,
+                      );
+                    }}
+                    title={hasOwnPublishedReviewOnSelected
+                      ? "You already created a review for this revision"
+                      : "Start a review of this revision"}>
+                    <Icon name="comment" />
+                    <span
+                      class="txt-body-m-regular global-hide-on-medium-desktop-down">
+                      Review revision
+                    </span>
+                  </Button>
+                {/if}
               </div>
             </div>
             <div class="sidebar-inline">
