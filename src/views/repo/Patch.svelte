@@ -18,6 +18,7 @@
     explorerUrl,
     patchStatusBackgroundColor,
     patchStatusColor,
+    patchStatusLabel,
   } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
@@ -287,9 +288,9 @@
               router.push({
                 resource: "repo.patches",
                 rid: repo.rid,
-                status: undefined,
+                status: patch.state.status,
               })}>
-            All Patches
+            {patchStatusLabel[patch.state.status]}
           </button>
           <Icon name="chevron-right" />
           <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />

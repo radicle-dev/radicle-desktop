@@ -175,6 +175,13 @@ export const patchStatusBackgroundColor: Record<
   merged: "var(--color-surface-merged)",
 };
 
+export const patchStatusLabel: Record<Patch["state"]["status"], string> = {
+  draft: "Drafts",
+  open: "Open Patches",
+  archived: "Archived",
+  merged: "Merged",
+};
+
 export function authorForNodeId(author: Author): ComponentProps<typeof NodeId> {
   return { publicKey: publicKeyFromDid(author.did), alias: author.alias };
 }
