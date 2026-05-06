@@ -156,11 +156,20 @@
 </script>
 
 <style>
-  .connector {
+  .timeline-rail {
+    position: relative;
+  }
+  .timeline-rail::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0.5rem;
     width: 1px;
-    height: 1rem;
-    margin-left: 1.25rem;
     background-color: var(--color-border-subtle);
+  }
+  .connector {
+    height: 1rem;
   }
   .run-header {
     display: flex;
@@ -169,14 +178,12 @@
     margin-bottom: 0.25rem;
   }
   .run-children {
-    margin-left: 0.5rem;
-    padding-left: 1rem;
-    border-left: 1px solid var(--color-border-subtle);
+    margin-left: 1.5rem;
   }
 </style>
 
 <div style:margin="1.5rem 0 2.5rem 0">
-  <div>
+  <div class="timeline-rail">
     {#each runs as run, runIndex (runIndex)}
       {#if run.kind === "thread"}
         <ThreadComponent
