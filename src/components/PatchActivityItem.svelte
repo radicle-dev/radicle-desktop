@@ -59,7 +59,7 @@
   }
   .timeline-item.toggleable:hover,
   .timeline-item.toggleable:focus-visible {
-    background-color: var(--color-surface-canvas);
+    background-color: var(--color-surface-subtle);
   }
   .wrapper {
     display: flex;
