@@ -217,7 +217,7 @@
     <div class="wrapper">
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
-        <span class="txt-body-m-medium summary-content">
+        <span class="summary-secondary">
           {#if op.state.status === "draft"}
             converted patch to draft
           {:else if op.state.status === "archived"}
