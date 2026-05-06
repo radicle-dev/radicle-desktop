@@ -28,6 +28,9 @@
 
   const parent = $derived(commit.parents[0]);
   const fullMessage = $derived(commit.message.trim());
+  const expandedBody = $derived(
+    fullMessage === commit.summary ? undefined : fullMessage,
+  );
   const authoredAt = $derived(commit.author.time * 1000);
   const checked = $derived(
     draftReviewId
@@ -206,8 +209,12 @@
         <span class="author">{commit.author.name}</span>
       {/if}
       <div class="summary-line">
-        <span class="txt-body-m-medium">committed</span>
-        {#if !expanded}{commit.summary}{/if}
+        {#if hideAuthor}
+          {commit.summary}
+        {:else}
+          <span class="txt-body-m-medium">committed</span>
+          {commit.summary}
+        {/if}
       </div>
       <div class="meta">
         <div class="meta-hash">
@@ -237,36 +244,40 @@
 
   {#if expanded}
     {#if !parent}
-      {#if fullMessage}
-        <div class="full-message txt-body-m-regular">{fullMessage}</div>
+      {#if expandedBody}
+        <div class="full-message txt-body-m-regular">{expandedBody}</div>
       {/if}
       <div class="fallback txt-body-m-regular">
         Initial commit; no diff to show.
       </div>
     {:else}
-      <div class="expanded-header">
-        {#if fullMessage}
-          <div class="full-message txt-body-m-regular">{fullMessage}</div>
-        {:else}
-          <div></div>
-        {/if}
-        <div class="diff-toolbar txt-body-m-regular">
-          <Button
-            variant="naked"
-            onclick={() => (filesExpanded = !filesExpanded)}>
-            {#if filesExpanded}
-              <Icon name="collapse-vertical" />
-              Collapse all
-            {:else}
-              <Icon name="expand-vertical" />
-              Expand all
-            {/if}
-          </Button>
-        </div>
-      </div>
       {#await cachedGetDiff( rid, { base: parent, head: commit.id, unified: 3, highlight: true }, )}
         <div class="fallback txt-body-m-regular">Loading diff…</div>
       {:then diff}
+        {#if expandedBody || diff.files.length > 1}
+          <div class="expanded-header">
+            {#if expandedBody}
+              <div class="full-message txt-body-m-regular">{expandedBody}</div>
+            {:else}
+              <div></div>
+            {/if}
+            {#if diff.files.length > 1}
+              <div class="diff-toolbar txt-body-m-regular">
+                <Button
+                  variant="naked"
+                  onclick={() => (filesExpanded = !filesExpanded)}>
+                  {#if filesExpanded}
+                    <Icon name="collapse-vertical" />
+                    Collapse all
+                  {:else}
+                    <Icon name="expand-vertical" />
+                    Expand all
+                  {/if}
+                </Button>
+              </div>
+            {/if}
+          </div>
+        {/if}
         <div class="diff">
           {#each diff.files as file (fileKey(file))}
             <FileDiff

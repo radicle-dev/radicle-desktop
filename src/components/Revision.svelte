@@ -451,13 +451,12 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    margin-left: 0.5rem;
   }
   .revision-commits {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    margin: 0.5rem 0 0 2rem;
+    margin: 0.5rem 0 0 1.5rem;
   }
 </style>
 
@@ -500,7 +499,8 @@
               {#if group.length > 1}
                 <div class="commit-group">
                   <div class="commit-group-author txt-body-m-medium">
-                    {group[0].author.name}
+                    {group[0].author.name} &lt;{group[0].author.email}&gt;
+                    committed
                   </div>
                   <div class="commit-group-children">
                     {#each group as commit (commit.id)}
@@ -514,11 +514,20 @@
                   </div>
                 </div>
               {:else}
-                <CommitActivityItem
-                  commit={group[0]}
-                  {rid}
-                  {codeComments}
-                  {draftReviewId} />
+                <div class="commit-group">
+                  <div class="commit-group-author txt-body-m-medium">
+                    {group[0].author.name} &lt;{group[0].author.email}&gt;
+                    committed
+                  </div>
+                  <div class="commit-group-children">
+                    <CommitActivityItem
+                      commit={group[0]}
+                      {rid}
+                      {codeComments}
+                      {draftReviewId}
+                      hideAuthor />
+                  </div>
+                </div>
               {/if}
             {/each}
           </div>
