@@ -176,6 +176,7 @@
     align-items: center;
     gap: 0.375rem;
     margin-bottom: 0.5rem;
+    color: var(--color-text-tertiary);
   }
   .run-children {
     margin-left: 1.5rem;
