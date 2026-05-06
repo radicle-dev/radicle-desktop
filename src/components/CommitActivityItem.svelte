@@ -121,9 +121,15 @@
   </div>
   <div class="wrapper">
     <span class="author">{commit.author.name}</span>
-    <div class="summary-line">
-      committed <Id id={commit.id} clipboard={commit.id} /> — {commit.summary}
-    </div>
+    {#if !expanded}
+      <div class="summary-line">
+        committed <Id id={commit.id} clipboard={commit.id} /> — {commit.summary}
+      </div>
+    {:else}
+      <div class="summary-line">
+        committed <Id id={commit.id} clipboard={commit.id} />
+      </div>
+    {/if}
     <div
       class="timestamp"
       title={absoluteTimestamp(commit.committer.time * 1000)}>
