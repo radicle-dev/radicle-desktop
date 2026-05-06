@@ -167,17 +167,19 @@
 
   $effect(() => {
     const ridLocal = rid;
+    const sorted = [...revisions].sort((a, b) => a.timestamp - b.timestamp);
     void Promise.all(
-      revisions.map(async (rev, index): Promise<[string, Commit[]]> => {
-        const previous = index > 0 ? revisions[index - 1] : undefined;
-        const base =
-          previous && previous.base === rev.base ? previous.head : rev.base;
+      sorted.map(async (rev): Promise<[string, Commit[]]> => {
         try {
-          const commits = await cachedListCommits(ridLocal, base, rev.head);
+          const commits = await cachedListCommits(
+            ridLocal,
+            rev.base,
+            rev.head,
+          );
           return [rev.id, commits];
         } catch (error) {
           console.error(
-            `Failed to load commits for revision ${rev.id} (${base}..${rev.head})`,
+            `Failed to load commits for revision ${rev.id} (${rev.base}..${rev.head})`,
             error,
           );
           return [rev.id, []];
@@ -185,8 +187,12 @@
       }),
     ).then(entries => {
       const next: Record<string, Commit[]> = {};
-      entries.forEach(([id, commits]) => {
-        next[id] = commits;
+      const seen = new Set<string>();
+      sorted.forEach((rev, i) => {
+        const [, commits] = entries[i];
+        const novel = commits.filter(c => !seen.has(c.id));
+        novel.forEach(c => seen.add(c.id));
+        next[rev.id] = novel;
       });
       commitsByRevision = next;
     });
