@@ -56,6 +56,17 @@
     padding-top: 0.1875rem;
     color: var(--color-text-secondary);
   }
+  .icon-hover {
+    display: none;
+  }
+  .timeline-item:hover .icon-default,
+  .timeline-item:focus-visible .icon-default {
+    display: none;
+  }
+  .timeline-item:hover .icon-hover,
+  .timeline-item:focus-visible .icon-hover {
+    display: inline;
+  }
   .author {
     color: var(--color-text-primary);
   }
@@ -103,7 +114,12 @@
     }
   }}>
   <div class="icon">
-    <Icon name={expanded ? "chevron-down" : "commit"} />
+    {#if expanded}
+      <Icon name="chevron-down" />
+    {:else}
+      <span class="icon-default"><Icon name="commit" /></span>
+      <span class="icon-hover"><Icon name="chevron-right" /></span>
+    {/if}
   </div>
   <div class="wrapper">
     <span class="author">{commit.author.name}</span>
