@@ -484,7 +484,7 @@
     </CommentComponent>
   </div>
 {:else if view === "activity"}
-  {#snippet renderActivity(data: ActivityData)}
+  {#snippet renderActivity(data: ActivityData, opts: { hideAuthor: boolean })}
     {#if data.kind === "op"}
       {#if data.op.type === "revision"}
         {@const revId = data.op.id}
@@ -492,6 +492,7 @@
         <PatchActivityItem
           op={data.op}
           {expanded}
+          hideAuthor={opts.hideAuthor}
           onToggle={() => toggleRevision(revId)} />
         {#if expanded && data.commits && data.commits.length > 0}
           <div class="revision-commits">
@@ -524,7 +525,7 @@
           </div>
         {/if}
       {:else}
-        <PatchActivityItem op={data.op} />
+        <PatchActivityItem op={data.op} hideAuthor={opts.hideAuthor} />
       {/if}
     {:else}
       <ReviewCodeThread
@@ -547,7 +548,9 @@
     {repoDelegates}
     {rid}
     {activityItems}
-    {renderActivity} />
+    {renderActivity}
+    authorOf={data =>
+      data.kind === "op" ? data.op.author.did : data.thread.root.author.did} />
 {:else}
   <Changes
     {rid}

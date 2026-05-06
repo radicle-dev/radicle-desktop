@@ -27,9 +27,10 @@
     op: FlattenedPatchOperation;
     expanded?: boolean;
     onToggle?: () => void;
+    hideAuthor?: boolean;
   }
 
-  const { op, expanded, onToggle }: Props = $props();
+  const { op, expanded, onToggle, hideAuthor }: Props = $props();
 
   function lastLine(text: string): string | undefined {
     const lines = text.trim().split("\n");
@@ -135,7 +136,7 @@
       {/if}
     </div>
     <div class="wrapper">
-      <NodeId {...authorForNodeId(op.author)} />
+      {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
         created revision <Id id={op.id} clipboard={op.id} />
         {#if summary && !expanded}
@@ -156,7 +157,7 @@
           : `patch-${op.state.status}`} />
     </div>
     <div class="wrapper">
-      <NodeId {...authorForNodeId(op.author)} />
+      {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
         {#if op.state.status === "draft"}
           converted patch to draft
@@ -177,7 +178,7 @@
       <Icon name="label" />
     </div>
     <div class="wrapper">
-      <NodeId {...authorForNodeId(op.author)} />
+      {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
         {#if op.previous && op.previous.type === op.type}
           {@const changed = itemDiff(op.previous?.labels ?? [], op.labels)}
@@ -213,7 +214,7 @@
       <Icon name="avatar-incognito" />
     </div>
     <div class="wrapper">
-      <NodeId {...authorForNodeId(op.author)} />
+      {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
         {#if op.previous && op.previous.type === op.type}
           {@const changed = itemDiff<Author>(
@@ -250,7 +251,7 @@
       <Icon name="patch-merged" />
     </div>
     <div class="wrapper">
-      <NodeId {...authorForNodeId(op.author)} />
+      {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
         merged patch at revision <Id id={op.revision} clipboard={op.revision} />
       </div>
@@ -266,7 +267,7 @@
         <Icon name="edit" />
       </div>
       <div class="wrapper">
-        <NodeId {...authorForNodeId(op.author)} />
+        {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           changed title <s>{op.previous.title}</s>
           → {op.title}
@@ -284,7 +285,7 @@
         <Icon name="thumbs-up" />
       </div>
       <div class="wrapper">
-        <NodeId {...authorForNodeId(op.author)} />
+        {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           accepted revision <Id id={op.revision} clipboard={op.revision} />
           {#if op.summary && op.summary.trim() !== ""}
@@ -302,7 +303,7 @@
         <Icon name="stop" />
       </div>
       <div class="wrapper">
-        <NodeId {...authorForNodeId(op.author)} />
+        {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           rejected revision <Id id={op.revision} clipboard={op.revision} />
           {#if op.summary && op.summary.trim() !== ""}
@@ -320,7 +321,7 @@
         <Icon name="comment" />
       </div>
       <div class="wrapper">
-        <NodeId {...authorForNodeId(op.author)} />
+        {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           reviewed revision <Id id={op.revision} clipboard={op.revision} />
         </div>

@@ -42,7 +42,8 @@
     repoDelegates: Author[];
     rid: string;
     activityItems?: ActivityItem<A>[];
-    renderActivity?: Snippet<[A]>;
+    renderActivity?: Snippet<[A, { hideAuthor: boolean }]>;
+    authorOf?: (data: A) => string | undefined;
   }
 
   /* eslint-disable prefer-const */
@@ -57,6 +58,7 @@
     rid,
     activityItems,
     renderActivity,
+    authorOf,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -90,6 +92,25 @@
       ),
     ].sort((a, b) => a.timestamp - b.timestamp),
   );
+
+  function entryAuthor(entry: TimelineEntry): string | undefined {
+    if (entry.kind === "thread") {
+      return entry.thread.root.author.did;
+    }
+    return authorOf?.(entry.data);
+  }
+
+  const hideAuthorByEntryKey = $derived.by(() => {
+    const result: Record<string, boolean> = {};
+    let prev: string | undefined;
+    for (const entry of timeline) {
+      const did = entryAuthor(entry);
+      result[entry.kind + ":" + entry.key] =
+        did !== undefined && did === prev;
+      prev = did;
+    }
+    return result;
+  });
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -130,7 +151,10 @@
           {reactOnComment} />
         <div class="connector"></div>
       {:else if renderActivity}
-        {@render renderActivity(entry.data)}
+        {@render renderActivity(entry.data, {
+          hideAuthor:
+            hideAuthorByEntryKey[entry.kind + ":" + entry.key] ?? false,
+        })}
         <div class="connector"></div>
       {/if}
     {/each}
