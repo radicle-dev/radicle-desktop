@@ -5,6 +5,7 @@
   import { cachedGetDiff } from "@app/lib/invoke";
   import { absoluteTimestamp, formatTimestamp } from "@app/lib/utils";
 
+  import Button from "@app/components/Button.svelte";
   import FileDiff from "@app/components/FileDiff.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
@@ -17,13 +18,10 @@
   const { commit, rid }: Props = $props();
 
   let expanded = $state(false);
+  let filesExpanded = $state(true);
 
   const parent = $derived(commit.parents[0]);
-  const description = $derived.by(() => {
-    const idx = commit.message.indexOf("\n");
-    if (idx === -1) return "";
-    return commit.message.slice(idx + 1).trim();
-  });
+  const fullMessage = $derived(commit.message.trim());
 
   function toggle() {
     expanded = !expanded;
@@ -77,15 +75,15 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .summary-line.expanded {
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-  }
-  .description {
+  .full-message {
     margin: 0.25rem 0 0 2rem;
     white-space: pre-wrap;
     color: var(--color-text-secondary);
+  }
+  .diff-toolbar {
+    margin: 0.5rem 0 0 2rem;
+    display: flex;
+    justify-content: flex-end;
   }
   .timestamp {
     color: var(--color-text-quaternary);
@@ -123,7 +121,7 @@
   </div>
   <div class="wrapper">
     <span class="author">{commit.author.name}</span>
-    <div class="summary-line" class:expanded>
+    <div class="summary-line">
       committed <Id id={commit.id} clipboard={commit.id} /> — {commit.summary}
     </div>
     <div
@@ -135,20 +133,33 @@
 </div>
 
 {#if expanded}
-  {#if description}
-    <div class="description txt-body-m-regular">{description}</div>
+  {#if fullMessage}
+    <div class="full-message txt-body-m-regular">{fullMessage}</div>
   {/if}
   {#if !parent}
     <div class="fallback txt-body-m-regular">
       Initial commit; no diff to show.
     </div>
   {:else}
+    <div class="diff-toolbar txt-body-m-regular">
+      <Button
+        variant="naked"
+        onclick={() => (filesExpanded = !filesExpanded)}>
+        {#if filesExpanded}
+          <Icon name="collapse-vertical" />
+          Collapse all
+        {:else}
+          <Icon name="expand-vertical" />
+          Expand all
+        {/if}
+      </Button>
+    </div>
     {#await cachedGetDiff( rid, { base: parent, head: commit.id, unified: 3, highlight: true }, )}
       <div class="fallback txt-body-m-regular">Loading diff…</div>
     {:then diff}
       <div class="diff">
         {#each diff.files as file (fileKey(file))}
-          <FileDiff {file} head={commit.id} expanded />
+          <FileDiff {file} head={commit.id} expanded={filesExpanded} />
         {/each}
       </div>
     {:catch error}

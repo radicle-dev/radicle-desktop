@@ -264,10 +264,15 @@
       style:margin-bottom="0.5rem">
       {diff.stats.filesChanged}
       {pluralize("file", diff.stats.filesChanged)} modified with
-      {diff.stats.insertions}
-      {pluralize("insertion", diff.stats.insertions)} and
-      {diff.stats.deletions}
-      {pluralize("deletion", diff.stats.deletions)}
+      <span style:color="var(--color-feedback-success-text)">
+        {diff.stats.insertions}
+        {pluralize("insertion", diff.stats.insertions)}
+      </span>
+      and
+      <span style:color="var(--color-feedback-error-text)">
+        {diff.stats.deletions}
+        {pluralize("deletion", diff.stats.deletions)}
+      </span>
     </div>
     <Changeset expanded={filesExpanded} {head} {diff} {codeComments} />
   {/await}
