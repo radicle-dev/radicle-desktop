@@ -71,6 +71,17 @@
   .icon {
     padding-top: 0.1875rem;
   }
+  .icon-hover {
+    display: none;
+  }
+  .timeline-item.toggleable:hover .icon-default,
+  .timeline-item.toggleable:focus-visible .icon-default {
+    display: none;
+  }
+  .timeline-item.toggleable:hover .icon-hover,
+  .timeline-item.toggleable:focus-visible .icon-hover {
+    display: inline;
+  }
   .summary-line {
     flex: 1 1 0;
     min-width: 0;
@@ -114,12 +125,14 @@
     tabindex={onToggle ? 0 : undefined}
     onclick={onToggle}>
     <div class="icon">
-      <Icon
-        name={onToggle
-          ? expanded
-            ? "chevron-down"
-            : "chevron-right"
-          : "revision"} />
+      {#if onToggle && expanded}
+        <Icon name="chevron-down" />
+      {:else if onToggle}
+        <span class="icon-default"><Icon name="revision" /></span>
+        <span class="icon-hover"><Icon name="chevron-right" /></span>
+      {:else}
+        <Icon name="revision" />
+      {/if}
     </div>
     <div class="wrapper">
       <NodeId {...authorForNodeId(op.author)} />
