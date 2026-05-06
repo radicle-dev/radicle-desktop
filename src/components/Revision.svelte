@@ -165,7 +165,9 @@
     const ridLocal = rid;
     void Promise.all(
       revisions.map(async (rev, index): Promise<[string, Commit[]]> => {
-        const base = index === 0 ? rev.base : revisions[index - 1].head;
+        const previous = index > 0 ? revisions[index - 1] : undefined;
+        const base =
+          previous && previous.base === rev.base ? previous.head : rev.base;
         try {
           const commits = await cachedListCommits(ridLocal, base, rev.head);
           return [rev.id, commits];
