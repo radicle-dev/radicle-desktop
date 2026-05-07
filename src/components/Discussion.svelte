@@ -159,15 +159,6 @@
   .timeline-rail {
     position: relative;
   }
-  .timeline-rail::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0.5rem;
-    width: 1px;
-    background-color: var(--color-border-subtle);
-  }
   .connector {
     height: 1rem;
   }

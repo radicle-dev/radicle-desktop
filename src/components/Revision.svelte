@@ -235,6 +235,10 @@
     "review.react",
   ]);
 
+  const firstRevisionId = $derived(
+    [...revisions].sort((a, b) => a.timestamp - b.timestamp)[0]?.id,
+  );
+
   const activityItems: ActivityItem<ActivityData>[] = $derived.by(() => {
     const tracker: Partial<Record<Action["type"], Action>> = {};
     const items: ActivityItem<ActivityData>[] = [];
@@ -457,7 +461,8 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    margin: 1rem 0 0 1.5rem;
+    margin: 1rem 0 0;
+    padding-left: 1.25rem;
   }
   .revision-commits::before {
     content: "";
@@ -497,13 +502,22 @@
     {#if data.kind === "op"}
       {#if data.op.type === "revision"}
         {@const revId = data.op.id}
-        {@const expanded = isRevisionExpanded(revId)}
-        <PatchActivityItem
-          op={data.op}
-          {expanded}
-          hideAuthor={opts.hideAuthor}
-          onToggle={() => toggleRevision(revId)} />
-        {#if expanded && data.commits && data.commits.length > 0}
+        {@const isFirst = revId === firstRevisionId}
+        {@const expanded = isFirst ? true : isRevisionExpanded(revId)}
+        {#if !isFirst}
+          <PatchActivityItem
+            op={data.op}
+            {expanded}
+            hideAuthor={opts.hideAuthor}
+            onToggle={() => toggleRevision(revId)} />
+        {/if}
+        {#if expanded && data.commits && data.commits.length === 1}
+          <CommitActivityItem
+            commit={data.commits[0]}
+            {rid}
+            {codeComments}
+            {draftReviewId} />
+        {:else if expanded && data.commits && data.commits.length > 1}
           <div class="revision-commits">
             {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
               {#if group.length > 1}
@@ -524,20 +538,11 @@
                   </div>
                 </div>
               {:else}
-                <div class="commit-group">
-                  <div class="commit-group-author txt-body-m-regular">
-                    {group[0].author.name} &lt;{group[0].author.email}&gt;
-                    committed
-                  </div>
-                  <div class="commit-group-children">
-                    <CommitActivityItem
-                      commit={group[0]}
-                      {rid}
-                      {codeComments}
-                      {draftReviewId}
-                      hideAuthor />
-                  </div>
-                </div>
+                <CommitActivityItem
+                  commit={group[0]}
+                  {rid}
+                  {codeComments}
+                  {draftReviewId} />
               {/if}
             {/each}
           </div>
