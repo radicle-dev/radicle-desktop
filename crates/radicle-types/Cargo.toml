@@ -14,10 +14,10 @@ git2 = { version = "0.20.4", default-features = false, features = ["vendored-lib
 log = { version = "0.4.22" }
 infer = { version = "0.19.0" }
 mime-infer = { version = "3.0.0" }
-radicle = { version = "0.22" }
-radicle-job = { version = "0.5.2" }
+radicle = { version = "0.24" }
+radicle-job = { version = "0.6" }
 radicle-localtime = { version = "0.1.0", features = ["serde"] }
-radicle-surf = { version = "0.27.0", features = ["serde"] }
+radicle-surf = { version = "0.27.1", features = ["serde"] }
 serde = { version = "1.0.0", features = ["derive"] }
 serde_json = { version = "1.0.0" }
 sqlite = { version = "0.37.0", features = ["bundled"] }
@@ -53,4 +53,4 @@ ts-rs = { version = "12.0.1", features = [
 url = { version = "2.5.4", features = ["serde"] }
 
 [dev-dependencies]
-radicle = { version = "0.22", features = ["test"] }
+radicle = { version = "0.24", features = ["test"] }

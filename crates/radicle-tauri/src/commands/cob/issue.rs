@@ -77,7 +77,8 @@ pub async fn rebuild_issue_cache(
     on_event: tauri::ipc::Channel<types::cobs::CacheEvent>,
 ) -> Result<(), Error> {
     let repo = ctx.profile.storage.repository(rid)?;
-    let mut issues = ctx.profile.issues_mut(&repo)?;
+    let signer = ctx.profile.signer()?;
+    let mut issues = ctx.profile.issues_mut(&repo, &signer)?;
     on_event.send(types::cobs::CacheEvent::Started { rid })?;
     issues.write_all(|result, progress| {
         match result {

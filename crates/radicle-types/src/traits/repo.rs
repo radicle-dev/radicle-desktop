@@ -41,7 +41,9 @@ pub trait Repo: Profile {
         let mut entries = Vec::new();
 
         for RepositoryInfo { rid, doc, refs, .. } in repos {
-            if refs.is_ok() && show == Show::Contributor {
+            if matches!(refs, radicle::storage::SignedRefsInfo::Some(_))
+                && show == Show::Contributor
+            {
                 continue;
             }
 
@@ -124,7 +126,7 @@ pub trait Repo: Profile {
                 delegate += 1;
             }
 
-            if refs.is_ok() {
+            if matches!(refs, radicle::storage::SignedRefsInfo::Some(_)) {
                 contributor += 1;
             }
         }
@@ -472,7 +474,7 @@ pub trait Repo: Profile {
 
     fn unseed(&self, rid: identity::RepoId) -> Result<(), Error> {
         let profile = self.profile();
-        let mut node = radicle::Node::new(profile.socket());
+        let mut node = radicle::Node::new(profile.home().socket_from_env());
 
         profile.unseed(rid, &mut node)?;
 
@@ -481,7 +483,7 @@ pub trait Repo: Profile {
 
     fn seed(&self, rid: identity::RepoId) -> Result<(), Error> {
         let profile = self.profile();
-        let mut node = radicle::Node::new(profile.socket());
+        let mut node = radicle::Node::new(profile.home().socket_from_env());
 
         profile.seed(rid, node::policy::Scope::All, &mut node)?;
 

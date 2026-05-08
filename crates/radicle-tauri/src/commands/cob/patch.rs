@@ -128,7 +128,7 @@ pub fn create_patch_review(
 ) -> Result<ReviewId, Error> {
     let repo = ctx.profile.storage.repository(args.rid)?;
     let signer = ctx.profile.signer()?;
-    let mut patches = ctx.profile.patches_mut(&repo)?;
+    let mut patches = ctx.profile.patches_mut(&repo, &signer)?;
     let patch_id = match patches.find_by_revision(&args.revision)? {
         Some(found) => found.id,
         None => return Err(cob::patch::Error::RevisionNotFound(args.revision).into()),
@@ -139,7 +139,6 @@ pub fn create_patch_review(
         args.verdict.map(Into::into),
         args.summary,
         args.labels,
-        &signer,
     )?;
 
     for comment in args.comments {
@@ -149,7 +148,6 @@ pub fn create_patch_review(
             comment.location.map(Into::into),
             None,
             vec![],
-            &signer,
         )?;
     }
 
@@ -172,7 +170,8 @@ pub async fn rebuild_patch_cache(
     on_event: tauri::ipc::Channel<cobs::CacheEvent>,
 ) -> Result<(), Error> {
     let repo = ctx.profile.storage.repository(rid)?;
-    let mut patches = ctx.profile.patches_mut(&repo)?;
+    let signer = ctx.profile.signer()?;
+    let mut patches = ctx.profile.patches_mut(&repo, &signer)?;
     on_event.send(types::cobs::CacheEvent::Started { rid })?;
     patches.write_all(|result, progress| {
         match result {

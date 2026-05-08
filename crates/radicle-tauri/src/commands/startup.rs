@@ -85,7 +85,7 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
 
     let node_handle = app.app_handle().clone();
 
-    let node = Node::new(profile.socket());
+    let node = Node::new(profile.home().socket_from_env());
 
     app.manage(inbox_service);
     app.manage(patch_service);

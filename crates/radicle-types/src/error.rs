@@ -102,7 +102,11 @@ pub enum Error {
 
     /// SSH Agent error.
     #[error(transparent)]
-    Agent(#[from] radicle::crypto::ssh::agent::Error),
+    Agent(#[from] radicle::crypto::ssh::agent::AgentError),
+
+    /// SSH Agent connection error.
+    #[error(transparent)]
+    AgentConnect(#[from] radicle::crypto::ssh::agent::ConnectError),
 
     /// Node database error.
     #[error(transparent)]

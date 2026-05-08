@@ -1,7 +1,6 @@
 use std::collections::BTreeSet;
 
 use radicle::cob::Title;
-use radicle::node::device::BoxedSigner;
 use radicle::node::Handle;
 use radicle::patch::cache::Patches as _;
 use radicle::storage::ReadStorage;
@@ -100,11 +99,11 @@ pub trait PatchesMut: Profile {
         opts: cobs::CobOptions,
     ) -> Result<models::patch::Patch, Error> {
         let profile = self.profile();
-        let mut node = Node::new(profile.socket());
+        let mut node = Node::new(profile.home().socket_from_env());
         let repo = profile.storage.repository(rid)?;
         let signer = profile.signer()?;
         let aliases = profile.aliases();
-        let mut patches = profile.patches_mut(&repo)?;
+        let mut patches = profile.patches_mut(&repo, &signer)?;
         let mut patch = patches.get_mut(&cob_id.into())?;
 
         match action {
@@ -117,14 +116,13 @@ pub trait PatchesMut: Profile {
                     revision,
                     description,
                     embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &signer,
                 )?;
             }
             models::patch::Action::RevisionCommentRedact { revision, comment } => {
-                patch.comment_redact(revision, comment, &signer)?;
+                patch.comment_redact(revision, comment)?;
             }
             models::patch::Action::ReviewCommentRedact { review, comment } => {
-                patch.redact_review_comment(review, comment, &signer)?;
+                patch.redact_review_comment(review, comment)?;
             }
             models::patch::Action::ReviewCommentReact {
                 review,
@@ -132,16 +130,16 @@ pub trait PatchesMut: Profile {
                 reaction,
                 active,
             } => {
-                patch.react_review_comment(review, comment, reaction, active, &signer)?;
+                patch.react_review_comment(review, comment, reaction, active)?;
             }
             models::patch::Action::ReviewCommentResolve { review, comment } => {
-                patch.resolve_review_comment(review, comment, &signer)?;
+                patch.resolve_review_comment(review, comment)?;
             }
             models::patch::Action::ReviewCommentUnresolve { review, comment } => {
-                patch.unresolve_review_comment(review, comment, &signer)?;
+                patch.unresolve_review_comment(review, comment)?;
             }
             models::patch::Action::Edit { title, target } => {
-                patch.edit::<BoxedSigner, String>(Title::try_from(title)?, target, &signer)?;
+                patch.edit(Title::try_from(title)?, target)?;
             }
             models::patch::Action::ReviewEdit {
                 review,
@@ -160,7 +158,6 @@ pub trait PatchesMut: Profile {
                         .into_iter()
                         .map(Into::into)
                         .collect::<Vec<_>>(),
-                    &signer,
                 )?;
             }
             models::patch::Action::ReviewReact {
@@ -168,7 +165,7 @@ pub trait PatchesMut: Profile {
                 reaction,
                 active,
             } => {
-                patch.review_react(review, reaction, active, &signer)?;
+                patch.review_react(review, reaction, active)?;
             }
             models::patch::Action::Review {
                 revision,
@@ -176,16 +173,10 @@ pub trait PatchesMut: Profile {
                 verdict,
                 labels,
             } => {
-                patch.review(
-                    revision,
-                    verdict.map(|v| v.into()),
-                    summary,
-                    labels,
-                    &signer,
-                )?;
+                patch.review(revision, verdict.map(|v| v.into()), summary, labels)?;
             }
             models::patch::Action::ReviewRedact { review } => {
-                patch.redact_review(review, &signer)?;
+                patch.redact_review(review)?;
             }
             models::patch::Action::ReviewComment {
                 review,
@@ -200,7 +191,6 @@ pub trait PatchesMut: Profile {
                     location.map(|l| l.into()),
                     reply_to,
                     embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &signer,
                 )?;
             }
             models::patch::Action::ReviewCommentEdit {
@@ -214,20 +204,16 @@ pub trait PatchesMut: Profile {
                     comment,
                     body,
                     embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &signer,
                 )?;
             }
             models::patch::Action::Lifecycle { state } => {
-                patch.lifecycle(state, &signer)?;
+                patch.lifecycle(state)?;
             }
             models::patch::Action::Assign { assignees } => {
-                patch.assign(
-                    assignees.iter().map(|a| *a.did()).collect::<BTreeSet<_>>(),
-                    &signer,
-                )?;
+                patch.assign(assignees.iter().map(|a| *a.did()).collect::<BTreeSet<_>>())?;
             }
             models::patch::Action::Label { labels } => {
-                patch.label(labels, &signer)?;
+                patch.label(labels)?;
             }
             models::patch::Action::RevisionReact {
                 revision,
@@ -235,13 +221,7 @@ pub trait PatchesMut: Profile {
                 location,
                 active,
             } => {
-                patch.react(
-                    revision,
-                    reaction,
-                    location.map(|l| l.into()),
-                    active,
-                    &signer,
-                )?;
+                patch.react(revision, reaction, location.map(|l| l.into()), active)?;
             }
             models::patch::Action::RevisionComment {
                 revision,
@@ -256,7 +236,6 @@ pub trait PatchesMut: Profile {
                     reply_to,
                     location.map(|l| l.into()),
                     embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &signer,
                 )?;
             }
             models::patch::Action::RevisionCommentEdit {
@@ -270,7 +249,6 @@ pub trait PatchesMut: Profile {
                     comment,
                     body,
                     embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &signer,
                 )?;
             }
             models::patch::Action::RevisionCommentReact {
@@ -279,10 +257,10 @@ pub trait PatchesMut: Profile {
                 reaction,
                 active,
             } => {
-                patch.comment_react(revision, comment, reaction, active, &signer)?;
+                patch.comment_react(revision, comment, reaction, active)?;
             }
             models::patch::Action::RevisionRedact { revision } => {
-                patch.redact(revision, &signer)?;
+                patch.redact(revision)?;
             }
             models::patch::Action::Merge { .. } => {
                 unimplemented!("We don't support merging of patches through the desktop")

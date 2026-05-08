@@ -1,3 +1,4 @@
+use radicle::cob::store::access::ReadOnly;
 use radicle::storage::ReadStorage;
 use radicle::{git, identity};
 use radicle_job::{Job, JobId, Jobs as JobsStore};
@@ -12,7 +13,7 @@ pub trait Jobs: Profile {
         let repo = profile.storage.repository(rid)?;
         let aliases = &profile.aliases();
 
-        let jobs = JobsStore::open(&repo).unwrap();
+        let jobs = JobsStore::open(&repo, ReadOnly).unwrap();
         let found_jobs: Result<Vec<(JobId, Job)>, _> = jobs.find_by_commit(sha)?.collect();
 
         Ok(found_jobs?

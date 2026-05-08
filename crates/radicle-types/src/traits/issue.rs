@@ -102,11 +102,11 @@ pub trait IssuesMut: Profile {
         opts: cobs::CobOptions,
     ) -> Result<cobs::issue::Issue, Error> {
         let profile = self.profile();
-        let mut node = Node::new(profile.socket());
+        let mut node = Node::new(profile.home().socket_from_env());
         let repo = profile.storage.repository(rid)?;
         let signer = profile.signer()?;
         let aliases = profile.aliases();
-        let mut issues = profile.issues_mut(&repo)?;
+        let mut issues = profile.issues_mut(&repo, &signer)?;
         let title = Title::try_from(new.title)?;
         let issue = issues.create(
             title,
@@ -114,7 +114,6 @@ pub trait IssuesMut: Profile {
             &new.labels,
             &new.assignees,
             new.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-            &signer,
         )?;
 
         if opts.announce() {
@@ -134,35 +133,32 @@ pub trait IssuesMut: Profile {
         opts: cobs::CobOptions,
     ) -> Result<cobs::issue::Issue, Error> {
         let profile = self.profile();
-        let mut node = Node::new(profile.socket());
+        let mut node = Node::new(profile.home().socket_from_env());
         let repo = profile.storage.repository(rid)?;
         let signer = profile.signer()?;
         let aliases = profile.aliases();
-        let mut issues = profile.issues_mut(&repo)?;
+        let mut issues = profile.issues_mut(&repo, &signer)?;
         let mut issue = issues.get_mut(&cob_id.into())?;
 
         match action {
             cobs::issue::Action::Lifecycle { state } => {
-                issue.lifecycle(state.into(), &signer)?;
+                issue.lifecycle(state.into())?;
             }
             cobs::issue::Action::Assign { assignees } => {
-                issue.assign(
-                    assignees.iter().map(|a| *a.did()).collect::<BTreeSet<_>>(),
-                    &signer,
-                )?;
+                issue.assign(assignees.iter().map(|a| *a.did()).collect::<BTreeSet<_>>())?;
             }
             cobs::issue::Action::Label { labels } => {
-                issue.label(labels, &signer)?;
+                issue.label(labels)?;
             }
             cobs::issue::Action::CommentReact {
                 id,
                 reaction,
                 active,
             } => {
-                issue.react(id, reaction, active, &signer)?;
+                issue.react(id, reaction, active)?;
             }
             cobs::issue::Action::CommentRedact { id } => {
-                issue.redact_comment(id, &signer)?;
+                issue.redact_comment(id)?;
             }
             cobs::issue::Action::Comment {
                 body,
@@ -173,7 +169,6 @@ pub trait IssuesMut: Profile {
                     body,
                     reply_to.unwrap_or(cob_id),
                     embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &signer,
                 )?;
             }
             cobs::issue::Action::CommentEdit { id, body, embeds } => {
@@ -181,11 +176,10 @@ pub trait IssuesMut: Profile {
                     id,
                     body,
                     embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-                    &signer,
                 )?;
             }
             cobs::issue::Action::Edit { title } => {
-                issue.edit(Title::try_from(title)?, &signer)?;
+                issue.edit(Title::try_from(title)?)?;
             }
         }
 

@@ -189,7 +189,8 @@ pub(crate) async fn create_repo(
         .backend
         .reference(ns_head.as_str(), base, false, "Created namespace ref")?;
 
-    project.set_head()?;
+    project.set_canonical_symbolic_refs("set-canonical from create_repo")?;
+    project.set_default_branch_to_canonical_head()?;
     project.sign_refs(&signer)?;
 
     Ok(())

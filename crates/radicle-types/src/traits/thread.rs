@@ -99,10 +99,10 @@ pub trait Thread: Profile {
     ) -> Result<cobs::thread::Comment<cobs::Never>, Error> {
         let profile = self.profile();
         let aliases = &profile.aliases();
-        let mut node = Node::new(profile.socket());
+        let mut node = Node::new(profile.home().socket_from_env());
         let signer = profile.signer()?;
         let repo = profile.storage.repository(rid)?;
-        let mut issues = profile.issues_mut(&repo)?;
+        let mut issues = profile.issues_mut(&repo, &signer)?;
         let mut issue = issues.get_mut(&new.id.into())?;
         let id = new.reply_to.unwrap_or_else(|| {
             let (root_id, _) = issue.root();
@@ -113,7 +113,6 @@ pub trait Thread: Profile {
             n.body,
             id,
             n.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-            &signer,
         )?;
 
         if opts.announce() {
@@ -144,10 +143,10 @@ pub trait Thread: Profile {
     ) -> Result<cobs::thread::Comment<cobs::thread::CodeLocation>, Error> {
         let profile = self.profile();
         let aliases = &profile.aliases();
-        let mut node = Node::new(profile.socket());
+        let mut node = Node::new(profile.home().socket_from_env());
         let signer = profile.signer()?;
         let repo = profile.storage.repository(rid)?;
-        let mut patches = profile.patches_mut(&repo)?;
+        let mut patches = profile.patches_mut(&repo, &signer)?;
         let mut patch = patches.get_mut(&new.id.into())?;
         let n = new.clone();
         let oid = patch.comment(
@@ -156,7 +155,6 @@ pub trait Thread: Profile {
             n.reply_to,
             n.location.map(|l| l.into()),
             n.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
-            &signer,
         )?;
 
         if opts.announce() {
