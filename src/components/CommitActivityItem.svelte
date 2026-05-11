@@ -330,7 +330,7 @@
   </div>
 
   {#if expanded}
-    <div transition:slide={{ duration: 180 }}>
+    <div transition:slide={{ duration: 300, axis: "y" }}>
       {#if !parent}
         {#if expandedBody}
           <div class="full-message txt-body-m-regular">{expandedBody}</div>
@@ -342,6 +342,14 @@
       {#await cachedGetDiff( rid, { base: parent, head: commit.id, unified: 3, highlight: true }, )}
         <div class="diff-skeleton" aria-label="Loading diff">
           <div class="skeleton-row skeleton-row-summary"></div>
+          <div class="skeleton-file">
+            <div class="skeleton-row skeleton-row-header"></div>
+            <div class="skeleton-row skeleton-row-hunk"></div>
+            <div class="skeleton-row skeleton-row-hunk"></div>
+            <div class="skeleton-row skeleton-row-hunk"></div>
+            <div class="skeleton-row skeleton-row-hunk"></div>
+            <div class="skeleton-row skeleton-row-hunk"></div>
+          </div>
           <div class="skeleton-file">
             <div class="skeleton-row skeleton-row-header"></div>
             <div class="skeleton-row skeleton-row-hunk"></div>
