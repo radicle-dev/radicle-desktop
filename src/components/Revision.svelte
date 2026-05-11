@@ -11,6 +11,8 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import { slide } from "svelte/transition";
+
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { cachedListCommits, invoke } from "@app/lib/invoke";
@@ -443,6 +445,9 @@
     background-color: var(--color-surface-canvas);
     border-radius: var(--border-radius-sm);
   }
+  .inline-commit {
+    margin-top: 1rem;
+  }
   .commit-group {
     display: flex;
     flex-direction: column;
@@ -503,22 +508,27 @@
       {#if data.op.type === "revision"}
         {@const revId = data.op.id}
         {@const isFirst = revId === firstRevisionId}
-        {@const expanded = isFirst ? true : isRevisionExpanded(revId)}
+        {@const hasCommits = !!data.commits && data.commits.length > 0}
+        {@const expanded = isFirst
+          ? true
+          : hasCommits && isRevisionExpanded(revId)}
         {#if !isFirst}
           <PatchActivityItem
             op={data.op}
             {expanded}
             hideAuthor={opts.hideAuthor}
-            onToggle={() => toggleRevision(revId)} />
+            onToggle={hasCommits ? () => toggleRevision(revId) : undefined} />
         {/if}
-        {#if expanded && data.commits && data.commits.length === 1}
-          <CommitActivityItem
-            commit={data.commits[0]}
-            {rid}
-            {codeComments}
-            {draftReviewId} />
-        {:else if expanded && data.commits && data.commits.length > 1}
-          <div class="revision-commits">
+        {#if expanded && isFirst && data.commits && data.commits.length === 1}
+          <div class="inline-commit" transition:slide={{ duration: 180 }}>
+            <CommitActivityItem
+              commit={data.commits[0]}
+              {rid}
+              {codeComments}
+              {draftReviewId} />
+          </div>
+        {:else if expanded && data.commits && data.commits.length > 0}
+          <div class="revision-commits" transition:slide={{ duration: 180 }}>
             {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
               {#if group.length > 1}
                 <div class="commit-group">
