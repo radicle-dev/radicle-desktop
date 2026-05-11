@@ -1,7 +1,10 @@
 <script lang="ts">
   import type { CodeComments } from "@app/components/Diff.svelte";
+  import type { Diff } from "@bindings/diff/Diff";
   import type { FileDiff as FileDiffType } from "@bindings/diff/FileDiff";
   import type { Commit } from "@bindings/repo/Commit";
+
+  import { slide } from "svelte/transition";
 
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { cachedGetDiff } from "@app/lib/invoke";
@@ -29,6 +32,7 @@
 
   let expanded = $state(false);
   let filesExpanded = $state(true);
+  let commitDiff: Diff | undefined = $state();
 
   const parent = $derived(commit.parents[0]);
   const fullMessage = $derived(commit.message.trim());
@@ -36,11 +40,37 @@
     fullMessage === commit.summary ? undefined : fullMessage,
   );
   const authoredAt = $derived(commit.author.time * 1000);
-  const checked = $derived(
-    draftReviewId
-      ? draftReviewStorage.isCommitChecked(draftReviewId, commit.id)
-      : false,
-  );
+
+  function filePathOf(file: FileDiffType): string {
+    return file.status === "moved" || file.status === "copied"
+      ? file.newPath
+      : file.path;
+  }
+
+  $effect(() => {
+    if (!parent) return;
+    let cancelled = false;
+    void cachedGetDiff(rid, {
+      base: parent,
+      head: commit.id,
+      unified: 0,
+      highlight: false,
+    }).then(diff => {
+      if (cancelled) return;
+      commitDiff = diff;
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  const totalFiles = $derived(commitDiff?.files.length ?? 0);
+  const reviewedFiles = $derived.by(() => {
+    if (!draftReviewId || !commitDiff) return 0;
+    return commitDiff.files.filter(f =>
+      draftReviewStorage.isFileChecked(draftReviewId, filePathOf(f)),
+    ).length;
+  });
   const commitCodeComments = $derived(
     codeComments
       ? {
@@ -160,6 +190,9 @@
     margin-top: 1rem;
     color: var(--color-text-secondary);
   }
+  .expanded-header .diff-summary {
+    margin-top: 0;
+  }
   .diff-toolbar {
     margin: 0;
     display: flex;
@@ -182,6 +215,53 @@
   }
   .meta-hash :global(.txt-id:hover) {
     color: inherit;
+  }
+  .reviewed-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--color-text-quaternary);
+    flex-shrink: 0;
+  }
+  .diff-skeleton {
+    margin: 1rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .skeleton-file {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding: 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+  }
+  .skeleton-row {
+    height: 0.75rem;
+    background-color: var(--color-surface-subtle);
+    border-radius: var(--border-radius-sm);
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+  }
+  .skeleton-row-summary {
+    width: 60%;
+  }
+  .skeleton-row-header {
+    width: 40%;
+    height: 1rem;
+    margin-bottom: 0.25rem;
+  }
+  .skeleton-row-hunk {
+    width: 100%;
+  }
+  @keyframes skeleton-pulse {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.9;
+    }
   }
   .diff {
     margin: 1rem 0 0;
@@ -235,35 +315,40 @@
           {formatTimestamp(authoredAt)}
         </div>
       </div>
-      {#if draftReviewId}
-        <Button
-          variant={checked ? "ghost" : "naked"}
-          active={checked}
-          onclick={e => {
-            e.stopPropagation();
-            draftReviewStorage.toggleCheckedCommit(draftReviewId, commit.id);
-          }}
-          title={checked
-            ? "Mark commit as not reviewed"
-            : "Mark commit as reviewed"}>
-          <Icon name={checked ? "checkmark" : "eye"} />
-          Checked
-        </Button>
+      {#if draftReviewId && totalFiles > 0}
+        <span
+          class="reviewed-count txt-body-s-regular"
+          title="{reviewedFiles} of {totalFiles} {pluralize(
+            'file',
+            totalFiles,
+          )} reviewed in this commit">
+          <Icon name="eye" />
+          {reviewedFiles}/{totalFiles}
+        </span>
       {/if}
     </div>
   </div>
 
   {#if expanded}
-    {#if !parent}
-      {#if expandedBody}
-        <div class="full-message txt-body-m-regular">{expandedBody}</div>
-      {/if}
-      <div class="fallback txt-body-m-regular">
-        Initial commit; no diff to show.
-      </div>
-    {:else}
+    <div transition:slide={{ duration: 180 }}>
+      {#if !parent}
+        {#if expandedBody}
+          <div class="full-message txt-body-m-regular">{expandedBody}</div>
+        {/if}
+        <div class="fallback txt-body-m-regular">
+          Initial commit; no diff to show.
+        </div>
+      {:else}
       {#await cachedGetDiff( rid, { base: parent, head: commit.id, unified: 3, highlight: true }, )}
-        <div class="fallback txt-body-m-regular">Loading diff…</div>
+        <div class="diff-skeleton" aria-label="Loading diff">
+          <div class="skeleton-row skeleton-row-summary"></div>
+          <div class="skeleton-file">
+            <div class="skeleton-row skeleton-row-header"></div>
+            <div class="skeleton-row skeleton-row-hunk"></div>
+            <div class="skeleton-row skeleton-row-hunk"></div>
+            <div class="skeleton-row skeleton-row-hunk"></div>
+          </div>
+        </div>
       {:then diff}
         {#if expandedBody || diff.files.length > 1}
           <div class="expanded-header">
@@ -327,10 +412,11 @@
           {/each}
         </div>
       {:catch error}
-        <div class="fallback txt-body-m-regular">
-          Failed to load diff: {error.message ?? error}
-        </div>
-      {/await}
-    {/if}
+          <div class="fallback txt-body-m-regular">
+            Failed to load diff: {error.message ?? error}
+          </div>
+        {/await}
+      {/if}
+    </div>
   {/if}
 </div>
