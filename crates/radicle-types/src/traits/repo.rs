@@ -32,6 +32,16 @@ pub enum Show {
     Private,
 }
 
+/// A repo counts as one the local node contributes to whenever it has
+/// local signed refs, even if those refs are at an outdated feature
+/// level pending node-side migration.
+fn is_contributor(refs: &storage::SignedRefsInfo) -> bool {
+    matches!(
+        refs,
+        storage::SignedRefsInfo::Some(_) | storage::SignedRefsInfo::NeedsMigration,
+    )
+}
+
 pub trait Repo: Profile {
     fn list_repos(&self, show: Show) -> Result<Vec<repo::RepoInfo>, Error> {
         let profile = self.profile();
@@ -41,9 +51,7 @@ pub trait Repo: Profile {
         let mut entries = Vec::new();
 
         for RepositoryInfo { rid, doc, refs, .. } in repos {
-            if matches!(refs, radicle::storage::SignedRefsInfo::Some(_))
-                && show == Show::Contributor
-            {
+            if !is_contributor(&refs) && show == Show::Contributor {
                 continue;
             }
 
@@ -126,7 +134,7 @@ pub trait Repo: Profile {
                 delegate += 1;
             }
 
-            if matches!(refs, radicle::storage::SignedRefsInfo::Some(_)) {
+            if is_contributor(&refs) {
                 contributor += 1;
             }
         }
