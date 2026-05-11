@@ -192,7 +192,7 @@
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
         <span class="summary-secondary">created revision</span>
-        {#if summary && !expanded}
+        {#if summary}
           <span class="txt-body-m-medium summary-content">{summary}</span>
         {/if}
       </div>
