@@ -147,15 +147,18 @@
     {/if}
     {#if draftReviewId}
       <Button
-        variant={checked ? "ghost" : "naked"}
+        variant="ghost"
         active={checked}
+        bordered
+        styleHeight="1.5rem"
+        stylePadding="0 0.375rem"
         onclick={e => {
           e.stopPropagation();
           draftReviewStorage.toggleCheckedFile(draftReviewId, filePathKey);
         }}
         title={checked ? "Mark file as not reviewed" : "Mark file as reviewed"}>
         <Icon name={checked ? "checkmark" : "eye"} />
-        Checked
+        Reviewed
       </Button>
     {/if}
   {/snippet}
