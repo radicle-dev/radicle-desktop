@@ -54,7 +54,6 @@ pub fn run() {
             inbox::list_notifications,
             profile::alias,
             profile::config,
-            repo::create_repo,
             repo::diff_stats,
             repo::list_commits,
             repo::list_repo_commits,
