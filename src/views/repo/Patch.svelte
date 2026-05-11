@@ -55,7 +55,7 @@
   let tab: "patch" | "revisions" | "timeline" = $state(
     revisions.length > 1 ? "revisions" : "patch",
   );
-  let patchView: "activity" | "changes" = $state("activity");
+  let patchView: "activity" | "changes" = $state("changes");
   let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
 
   let lastPatchId = $state(patch.id);
@@ -64,7 +64,7 @@
       lastPatchId = patch.id;
       tab = revisions.length > 1 ? "revisions" : "patch";
       selectedRevision = revisions.slice(-1)[0];
-      patchView = "activity";
+      patchView = "changes";
     }
   });
 
@@ -365,18 +365,18 @@
 
             <div class="tabs">
               <Button
-                variant={patchView === "activity" ? "ghost" : "naked"}
-                active={patchView === "activity"}
-                onclick={() => (patchView = "activity")}>
-                <Icon name="activity" />
-                Activity
-              </Button>
-              <Button
                 variant={patchView === "changes" ? "ghost" : "naked"}
                 active={patchView === "changes"}
                 onclick={() => (patchView = "changes")}>
                 <Icon name="diff" />
                 Changes
+              </Button>
+              <Button
+                variant={patchView === "activity" ? "ghost" : "naked"}
+                active={patchView === "activity"}
+                onclick={() => (patchView = "activity")}>
+                <Icon name="activity" />
+                Activity
               </Button>
             </div>
 
