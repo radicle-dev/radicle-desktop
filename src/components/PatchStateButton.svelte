@@ -30,6 +30,7 @@
   {#snippet toggle(onclick)}
     <Button
       variant="outline"
+      bordered
       disabled={selectedState.status === "merged" || disabled}
       {onclick}
       active={popoverExpanded}
@@ -39,24 +40,9 @@
           ? "You must be a delegate or the patch author to change the patch state"
           : undefined}>
       <span
-        class="global-chip"
-        style:padding="0"
-        style:margin-left="-0.25rem"
         style:color={selectedState.status === "merged" || disabled
           ? undefined
-          : patchStatusColor[selectedState.status]}
-        style:background-color={selectedState.status === "merged" || disabled
-          ? undefined
-          : patchStatusBackgroundColor[selectedState.status]}>
-        <Icon
-          name={selectedState.status === "open"
-            ? "patch"
-            : `patch-${selectedState.status}`} />
-      </span>
-      <span
-        style:color={selectedState.status === "merged" || disabled
-          ? undefined
-          : "var(--color-text-secondary)"}>
+          : patchStatusColor[selectedState.status]}>
         {capitalize(selectedState.status)}
       </span>
       {#if selectedState.status !== "merged"}

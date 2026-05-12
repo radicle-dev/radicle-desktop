@@ -5,6 +5,7 @@
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Config } from "@bindings/config/Config";
+  import type { Stats } from "@bindings/diff/Stats";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
@@ -57,6 +58,24 @@
   );
   let patchView: "activity" | "changes" = $state("activity");
   let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
+  let selectedRevisionStats: Stats | undefined = $state();
+
+  $effect(() => {
+    const rev = selectedRevision;
+    let cancelled = false;
+    void cachedGetDiff(repo.rid, {
+      base: rev.base,
+      head: rev.head,
+      unified: 0,
+      highlight: false,
+    }).then(diff => {
+      if (cancelled) return;
+      selectedRevisionStats = diff.stats;
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
 
   let lastPatchId = $state(patch.id);
   $effect(() => {
@@ -211,17 +230,8 @@
     color: var(--color-text-secondary);
     font: var(--txt-body-m-regular);
   }
-  .content {
-    display: grid;
-    grid-template-columns: 1fr 22rem;
-  }
-  @media (max-width: 1349.98px) {
-    .content {
-      grid-template-columns: 1fr;
-    }
-  }
   .main {
-    padding: 1.5rem 2rem;
+    padding: 1.5rem 6rem;
     min-width: 0;
   }
   .title {
@@ -230,26 +240,8 @@
     gap: 0.75rem;
     margin-bottom: 1rem;
   }
-  .sidebar {
-    display: flex;
-    flex-direction: column;
-    border-left: 1px solid var(--color-border-subtle);
-    height: 100%;
-    padding: 1.5rem 1rem;
-    gap: 0.5rem;
-  }
-  @media (max-width: 1349.98px) {
-    .sidebar {
-      display: none;
-    }
-    .sidebar-inline {
-      display: block;
-    }
-  }
-  @media (min-width: 1350px) {
-    .sidebar-inline {
-      display: none;
-    }
+  .meta-bar {
+    margin-bottom: 1.5rem;
   }
 </style>
 
@@ -289,7 +281,7 @@
       </Topbar>
 
       <ScrollArea style="flex: 1; min-height: 0;">
-        <div class="content">
+        <div>
           <div class="main">
             <div class="title">
               <div
@@ -343,14 +335,14 @@
                 {/if}
               </div>
             </div>
-            <div class="sidebar-inline">
+            <div class="meta-bar">
               <PatchMetadata
                 {config}
                 {loadPatch}
                 {patch}
                 {repo}
                 {saveState}
-                horizontal />
+                stats={selectedRevisionStats} />
             </div>
 
             <RevisionComponent
@@ -393,10 +385,6 @@
               {revisions}
               onSelectRevision={rev => (selectedRevision = rev)}
               draftReviewId={ownDraftReviewForPatch?.id} />
-          </div>
-
-          <div class="sidebar">
-            <PatchMetadata {config} {loadPatch} {patch} {repo} {saveState} />
           </div>
         </div>
       </ScrollArea>

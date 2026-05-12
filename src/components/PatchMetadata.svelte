@@ -2,34 +2,30 @@
   import type { Author } from "@bindings/cob/Author";
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { Config } from "@bindings/config/Config";
+  import type { Stats } from "@bindings/diff/Stats";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
+  import { pluralize } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
+  import Icon from "@app/components/Icon.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
 
   interface Props {
     config: Config;
-    horizontal?: boolean;
     loadPatch: () => Promise<void>;
     patch: Patch;
     repo: RepoInfo;
     saveState: (newState: Patch["state"]) => Promise<void>;
+    stats?: Stats;
   }
 
-  const {
-    config,
-    horizontal = false,
-    loadPatch,
-    patch,
-    repo,
-    saveState,
-  }: Props = $props();
+  const { config, loadPatch, patch, repo, saveState, stats }: Props = $props();
 
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
@@ -76,58 +72,69 @@
 </script>
 
 <style>
-  .metadata-section {
-    padding: 0.5rem;
-    font: var(--txt-body-m-regular);
+  .row {
     display: flex;
-    flex-direction: column;
-    align-items: flex;
-    height: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font: var(--txt-body-m-regular);
+  }
+  .stats {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-tertiary);
+  }
+  .stats .insertions {
+    color: var(--color-feedback-success-text);
+  }
+  .stats .deletions {
+    color: var(--color-feedback-error-text);
   }
 </style>
 
-<div
-  class="global-flex"
-  style:flex-direction={horizontal ? "row" : "column"}
-  style:align-items="flex-start">
-  <div
-    class="metadata-section"
-    style={horizontal ? "flex: 1;" : "width: 100%;"}>
-    <PatchStateButton
-      selectedState={patch.state}
-      onSelect={newState => {
-        void saveState(newState);
-      }}
-      disabled={!roles.isDelegateOrAuthor(
-        config.publicKey,
-        repo.delegates.map(d => d.did),
-        patch.author.did,
-      )} />
-  </div>
-
-  <div
-    class="metadata-section"
-    style={horizontal ? "flex: 1;" : "width: 100%;"}>
-    <LabelInput
-      allowedToEdit={!!roles.isDelegate(
-        config.publicKey,
-        repo.delegates.map(delegate => delegate.did),
-      )}
-      labels={patch.labels}
-      submitInProgress={labelSaveInProgress}
-      save={saveLabels} />
-  </div>
-
-  <div
-    class="metadata-section"
-    style={horizontal ? "flex: 1;" : "width: 100%;"}>
-    <AssigneeInput
-      allowedToEdit={!!roles.isDelegate(
-        config.publicKey,
-        repo.delegates.map(delegate => delegate.did),
-      )}
-      assignees={patch.assignees}
-      submitInProgress={assigneesSaveInProgress}
-      save={saveAssignees} />
-  </div>
+<div class="row">
+  <PatchStateButton
+    selectedState={patch.state}
+    onSelect={newState => {
+      void saveState(newState);
+    }}
+    disabled={!roles.isDelegateOrAuthor(
+      config.publicKey,
+      repo.delegates.map(d => d.did),
+      patch.author.did,
+    )} />
+  <LabelInput
+    allowedToEdit={!!roles.isDelegate(
+      config.publicKey,
+      repo.delegates.map(delegate => delegate.did),
+    )}
+    labels={patch.labels}
+    submitInProgress={labelSaveInProgress}
+    save={saveLabels} />
+  <AssigneeInput
+    allowedToEdit={!!roles.isDelegate(
+      config.publicKey,
+      repo.delegates.map(delegate => delegate.did),
+    )}
+    assignees={patch.assignees}
+    submitInProgress={assigneesSaveInProgress}
+    save={saveAssignees} />
+  {#if stats}
+    <div class="stats">
+      <Icon name="diff" />
+      <span>
+        {stats.filesChanged}
+        {pluralize("file", stats.filesChanged)}
+      </span>
+      <span class="insertions">+{stats.insertions}</span>
+      <span class="deletions">-{stats.deletions}</span>
+    </div>
+  {/if}
 </div>
