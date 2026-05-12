@@ -83,7 +83,6 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    margin-left: auto;
     height: 2rem;
     padding: 0 0.5rem;
     border: 1px solid var(--color-border-subtle);
