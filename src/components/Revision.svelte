@@ -470,8 +470,12 @@
 <style>
   .patch-body {
     margin-bottom: 1rem;
-    background-color: var(--color-surface-canvas);
-    border-radius: var(--border-radius-sm);
+  }
+  .patch-body :global(.card-header),
+  .patch-body :global(.card-body),
+  .patch-body :global(.actions) {
+    padding-left: 0;
+    padding-right: 0;
   }
   .commit-group {
     display: flex;
