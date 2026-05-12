@@ -266,6 +266,16 @@
           tracker[action.type] = action;
           return;
         }
+        if (action.type === "label") {
+          const prev =
+            previous && previous.type === "label" ? previous.labels : [];
+          const added = action.labels.filter(l => !prev.includes(l));
+          const removed = prev.filter(l => !action.labels.includes(l));
+          if (added.length === 0 && removed.length === 0) {
+            tracker[action.type] = action;
+            return;
+          }
+        }
         const op: FlattenedPatchOperation = {
           ...action,
           id: operation.id,
