@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
+  import { slide } from "svelte/transition";
+
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
 
@@ -53,7 +55,8 @@
   {#if expanded}
     <div
       style:width="100%"
-      style:border-top="1px solid var(--color-border-subtle)">
+      style:border-top="1px solid var(--color-border-subtle)"
+      transition:slide={{ duration: 180 }}>
       {@render children()}
     </div>
   {/if}
