@@ -33,7 +33,7 @@
 
   type ActivityData =
     | { kind: "op"; op: FlattenedPatchOperation; commits?: Commit[] }
-    | { kind: "reviewCode"; thread: Thread<CodeLocation> };
+    | { kind: "reviewCode"; thread: Thread<CodeLocation>; reviewId: string };
 
   interface Props {
     rid: string;
@@ -76,11 +76,13 @@
     repo.payloads["xyz.radicle.project"]?.data.defaultBranch,
   );
   let revisionToggles: Record<string, boolean> = $state({});
+  let reviewToggles: Record<string, boolean> = $state({});
   let lastPatchIdSeen = patchId;
   $effect(() => {
     if (patchId !== lastPatchIdSeen) {
       lastPatchIdSeen = patchId;
       revisionToggles = {};
+      reviewToggles = {};
     }
   });
   function isRevisionExpanded(revId: string): boolean {
@@ -93,6 +95,15 @@
     revisionToggles = {
       ...revisionToggles,
       [revId]: !isRevisionExpanded(revId),
+    };
+  }
+  function isReviewExpanded(opId: string): boolean {
+    return opId in reviewToggles ? reviewToggles[opId] : true;
+  }
+  function toggleReview(opId: string) {
+    reviewToggles = {
+      ...reviewToggles,
+      [opId]: !isReviewExpanded(opId),
     };
   }
 
@@ -289,7 +300,7 @@
           items.push({
             key: `review:${review.id}:${root.id}`,
             timestamp: root.edits[0].timestamp,
-            data: { kind: "reviewCode", thread },
+            data: { kind: "reviewCode", thread, reviewId: review.id },
           });
         });
     });
@@ -297,6 +308,13 @@
     items.sort((a, b) => a.timestamp - b.timestamp);
     return items;
   });
+  const reviewsWithThreads = $derived(
+    new Set(
+      activityItems
+        .filter(item => item.data.kind === "reviewCode")
+        .map(item => (item.data as { reviewId: string }).reviewId),
+    ),
+  );
   const reviewSummaryFingerprints = $derived(
     new Set(
       (revision.reviews ?? [])
@@ -557,13 +575,24 @@
             {/each}
           </div>
         {/if}
+      {:else if data.op.type === "review"}
+        {@const opId = data.op.id}
+        {@const hasSummary =
+          !!data.op.summary && data.op.summary.trim() !== ""}
+        {@const hasThreads = reviewsWithThreads.has(opId)}
+        {@const toggleable = hasSummary || hasThreads}
+        <PatchActivityItem
+          op={data.op}
+          expanded={toggleable ? isReviewExpanded(opId) : undefined}
+          onToggle={toggleable ? () => toggleReview(opId) : undefined}
+          hideAuthor={opts.hideAuthor} />
       {:else}
         <PatchActivityItem
           op={data.op}
           hideAuthor={opts.hideAuthor}
           targetBranch={data.op.type === "merge" ? targetBranch : undefined} />
       {/if}
-    {:else}
+    {:else if isReviewExpanded(data.reviewId)}
       <ReviewCodeThread
         {rid}
         base={revision.base}

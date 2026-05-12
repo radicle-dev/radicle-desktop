@@ -19,6 +19,8 @@
     pluralize,
   } from "@app/lib/utils";
 
+  import { slide } from "svelte/transition";
+
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import NodeId from "@app/components/NodeId.svelte";
@@ -94,14 +96,21 @@
     transform: rotate(-90deg);
   }
   .timeline-item.toggleable:hover .icon-default,
-  .timeline-item.toggleable:focus-visible .icon-default {
+  .timeline-item.toggleable:focus-visible .icon-default,
+  .timeline-item.verdict-toggleable:hover .icon-default,
+  .timeline-item.verdict-toggleable:focus-visible .icon-default {
     opacity: 0;
     transform: rotate(90deg);
   }
   .timeline-item.toggleable:hover .icon-hover,
-  .timeline-item.toggleable:focus-visible .icon-hover {
+  .timeline-item.toggleable:focus-visible .icon-hover,
+  .timeline-item.verdict-toggleable:hover .icon-hover,
+  .timeline-item.verdict-toggleable:focus-visible .icon-hover {
     opacity: 1;
     transform: rotate(0);
+  }
+  .verdict-toggleable {
+    cursor: pointer;
   }
   .summary-line {
     flex: 1 1 0;
@@ -366,10 +375,28 @@
     </div>
   {/if}
 {:else if op.type === "review"}
+  {@const hasSummary = !!op.summary && op.summary.trim() !== ""}
+  {@const isToggleable = onToggle !== undefined}
   {#if op.verdict === "accept"}
-    <div class="timeline-item txt-body-m-regular verdict-accept">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <div
+      class="timeline-item txt-body-m-regular verdict-accept"
+      class:verdict-toggleable={isToggleable}
+      role={isToggleable ? "button" : undefined}
+      tabindex={isToggleable ? 0 : undefined}
+      onclick={isToggleable ? onToggle : undefined}>
       <div class="icon" style:color="var(--color-feedback-success-text)">
-        <Icon name="thumbs-up" />
+        {#if isToggleable && expanded}
+          <span class="icon-expanded"><Icon name="chevron-down" /></span>
+        {:else if isToggleable}
+          <span class="icon-stack">
+            <span class="icon-default"><Icon name="thumbs-up" /></span>
+            <span class="icon-hover"><Icon name="chevron-down" /></span>
+          </span>
+        {:else}
+          <Icon name="thumbs-up" />
+        {/if}
       </div>
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
@@ -382,15 +409,35 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
-        {#if op.summary && op.summary.trim() !== ""}
-          <div class="verdict-summary txt-body-m-medium">{op.summary}</div>
+        {#if hasSummary && (expanded || !isToggleable)}
+          <div
+            class="verdict-summary txt-body-m-medium"
+            transition:slide={{ duration: 180 }}>
+            {op.summary}
+          </div>
         {/if}
       </div>
     </div>
   {:else if op.verdict === "reject"}
-    <div class="timeline-item txt-body-m-regular verdict-reject">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <div
+      class="timeline-item txt-body-m-regular verdict-reject"
+      class:verdict-toggleable={isToggleable}
+      role={isToggleable ? "button" : undefined}
+      tabindex={isToggleable ? 0 : undefined}
+      onclick={isToggleable ? onToggle : undefined}>
       <div class="icon" style:color="var(--color-feedback-error-text)">
-        <Icon name="stop" />
+        {#if isToggleable && expanded}
+          <span class="icon-expanded"><Icon name="chevron-down" /></span>
+        {:else if isToggleable}
+          <span class="icon-stack">
+            <span class="icon-default"><Icon name="stop" /></span>
+            <span class="icon-hover"><Icon name="chevron-down" /></span>
+          </span>
+        {:else}
+          <Icon name="stop" />
+        {/if}
       </div>
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
@@ -403,15 +450,35 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
-        {#if op.summary && op.summary.trim() !== ""}
-          <div class="verdict-summary txt-body-m-medium">{op.summary}</div>
+        {#if hasSummary && (expanded || !isToggleable)}
+          <div
+            class="verdict-summary txt-body-m-medium"
+            transition:slide={{ duration: 180 }}>
+            {op.summary}
+          </div>
         {/if}
       </div>
     </div>
   {:else if op.verdict === undefined}
-    <div class="timeline-item txt-body-m-regular">
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <div
+      class="timeline-item txt-body-m-regular"
+      class:toggleable={isToggleable}
+      role={isToggleable ? "button" : undefined}
+      tabindex={isToggleable ? 0 : undefined}
+      onclick={isToggleable ? onToggle : undefined}>
       <div class="icon">
-        <Icon name="comment" />
+        {#if isToggleable && expanded}
+          <span class="icon-expanded"><Icon name="chevron-down" /></span>
+        {:else if isToggleable}
+          <span class="icon-stack">
+            <span class="icon-default"><Icon name="comment" /></span>
+            <span class="icon-hover"><Icon name="chevron-down" /></span>
+          </span>
+        {:else}
+          <Icon name="comment" />
+        {/if}
       </div>
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
