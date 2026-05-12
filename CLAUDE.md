@@ -45,7 +45,7 @@ npm run test:unit
 
 ```sh
 npm run test:e2e -- --project webkit
-npm run test:e2e -- --project webkit tests/e2e/<file>.spec.ts
+npm run test:e2e -- tests/e2e/<file>.spec.ts --project webkit
 ```
 
 `SKIP_SETUP=true` skips fixture creation for faster iteration.

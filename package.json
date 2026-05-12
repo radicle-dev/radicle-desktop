@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.26.0",
-    "@playwright/test": "^1.52.0",
+    "@playwright/test": "1.60.0",
     "@radicle/gray-matter": "4.1.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@tauri-apps/cli": "^2.5.0",
@@ -78,7 +78,7 @@
     "marked-katex-extension": "^5.1.4",
     "marked-linkify-it": "^3.1.12",
     "md5": "^2.3.0",
-    "playwright": "^1.52.0",
+    "playwright": "1.60.0",
     "prettier": "^3.5.3",
     "prettier-plugin-svelte": "^3.3.3",
     "svelte": "^5.28.2",
