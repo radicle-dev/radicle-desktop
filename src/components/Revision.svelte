@@ -11,8 +11,6 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import { slide } from "svelte/transition";
-
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { cachedListCommits, invoke } from "@app/lib/invoke";
@@ -496,6 +494,18 @@
     width: 1px;
     background-color: var(--color-border-subtle);
   }
+  .collapsible {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 180ms ease-out;
+  }
+  .collapsible.open {
+    grid-template-rows: 1fr;
+  }
+  .collapsible-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
 </style>
 
 {#if view === "description"}
@@ -537,42 +547,46 @@
             hideAuthor={opts.hideAuthor}
             onToggle={hasCommits ? () => toggleRevision(revId) : undefined} />
         {/if}
-        {#if expanded && isFirst && data.commits && data.commits.length === 1}
-          <div class="inline-commit" transition:slide={{ duration: 180 }}>
-            <CommitActivityItem
-              commit={data.commits[0]}
-              {rid}
-              {codeComments}
-              {draftReviewId} />
+        {#if isFirst && data.commits && data.commits.length === 1}
+          <div class="collapsible" class:open={expanded}>
+            <div class="collapsible-inner inline-commit">
+              <CommitActivityItem
+                commit={data.commits[0]}
+                {rid}
+                {codeComments}
+                {draftReviewId} />
+            </div>
           </div>
-        {:else if expanded && data.commits && data.commits.length > 0}
-          <div class="revision-commits" transition:slide={{ duration: 180 }}>
-            {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
-              {#if group.length > 1}
-                <div class="commit-group">
-                  <div class="commit-group-author txt-body-m-regular">
-                    {group[0].author.name} &lt;{group[0].author.email}&gt;
-                    committed
+        {:else if data.commits && data.commits.length > 0}
+          <div class="collapsible" class:open={expanded}>
+            <div class="collapsible-inner revision-commits">
+              {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
+                {#if group.length > 1}
+                  <div class="commit-group">
+                    <div class="commit-group-author txt-body-m-regular">
+                      {group[0].author.name} &lt;{group[0].author.email}&gt;
+                      committed
+                    </div>
+                    <div class="commit-group-children">
+                      {#each group as commit (commit.id)}
+                        <CommitActivityItem
+                          {commit}
+                          {rid}
+                          {codeComments}
+                          {draftReviewId}
+                          hideAuthor />
+                      {/each}
+                    </div>
                   </div>
-                  <div class="commit-group-children">
-                    {#each group as commit (commit.id)}
-                      <CommitActivityItem
-                        {commit}
-                        {rid}
-                        {codeComments}
-                        {draftReviewId}
-                        hideAuthor />
-                    {/each}
-                  </div>
-                </div>
-              {:else}
-                <CommitActivityItem
-                  commit={group[0]}
-                  {rid}
-                  {codeComments}
-                  {draftReviewId} />
-              {/if}
-            {/each}
+                {:else}
+                  <CommitActivityItem
+                    commit={group[0]}
+                    {rid}
+                    {codeComments}
+                    {draftReviewId} />
+                {/if}
+              {/each}
+            </div>
           </div>
         {/if}
       {:else if data.op.type === "review"}
@@ -592,14 +606,18 @@
           hideAuthor={opts.hideAuthor}
           targetBranch={data.op.type === "merge" ? targetBranch : undefined} />
       {/if}
-    {:else if isReviewExpanded(data.reviewId)}
-      <ReviewCodeThread
-        {rid}
-        base={revision.base}
-        head={revision.head}
-        thread={data.thread}
-        {config}
-        {repoDelegates} />
+    {:else}
+      <div class="collapsible" class:open={isReviewExpanded(data.reviewId)}>
+        <div class="collapsible-inner">
+          <ReviewCodeThread
+            {rid}
+            base={revision.base}
+            head={revision.head}
+            thread={data.thread}
+            {config}
+            {repoDelegates} />
+        </div>
+      </div>
     {/if}
   {/snippet}
 

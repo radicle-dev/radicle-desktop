@@ -4,8 +4,6 @@
   import type { FileDiff as FileDiffType } from "@bindings/diff/FileDiff";
   import type { Commit } from "@bindings/repo/Commit";
 
-  import { slide } from "svelte/transition";
-
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { cachedGetDiff } from "@app/lib/invoke";
   import {
@@ -31,8 +29,13 @@
     $props();
 
   let expanded = $state(false);
+  let hasEverExpanded = $state(false);
   let filesExpanded = $state(true);
   let commitDiff: Diff | undefined = $state();
+
+  $effect(() => {
+    if (expanded) hasEverExpanded = true;
+  });
 
   const parent = $derived(commit.parents[0]);
   const fullMessage = $derived(commit.message.trim());
@@ -273,6 +276,18 @@
     margin: 1rem 0 0;
     color: var(--color-text-secondary);
   }
+  .collapsible {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 180ms ease-out;
+  }
+  .collapsible.open {
+    grid-template-rows: 1fr;
+  }
+  .collapsible-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
 </style>
 
 <div class="commit-entry">
@@ -329,8 +344,9 @@
     </div>
   </div>
 
-  {#if expanded}
-    <div transition:slide={{ duration: 300, axis: "y" }}>
+  <div class="collapsible" class:open={expanded}>
+    <div class="collapsible-inner">
+      {#if hasEverExpanded}
       {#if !parent}
         {#if expandedBody}
           <div class="full-message txt-body-m-regular">{expandedBody}</div>
@@ -425,6 +441,7 @@
           </div>
         {/await}
       {/if}
+      {/if}
     </div>
-  {/if}
+  </div>
 </div>

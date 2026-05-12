@@ -30,6 +30,11 @@
   /* eslint-enable prefer-const */
 
   let header: HTMLElement | undefined = $state();
+  let hasEverExpanded = $state(expanded);
+
+  $effect(() => {
+    if (expanded) hasEverExpanded = true;
+  });
 
   async function toggleExpanded() {
     if (!expandable) return;
@@ -129,6 +134,18 @@
     border-bottom-left-radius: var(--border-radius-md);
     border-bottom-right-radius: var(--border-radius-md);
   }
+  .collapsible {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 180ms ease-out;
+  }
+  .collapsible.open {
+    grid-template-rows: 1fr;
+  }
+  .collapsible-inner {
+    overflow: hidden;
+    min-height: 0;
+  }
 </style>
 
 <div
@@ -177,11 +194,17 @@
   {/if}
 </div>
 
-{#if expanded}
-  <div
-    class="container"
-    style:border={border ? "1px solid var(--color-border-subtle)" : "undefined"}
-    style:border-top="none">
-    {@render children()}
+{#if hasEverExpanded}
+  <div class="collapsible" class:open={expanded}>
+    <div class="collapsible-inner">
+      <div
+        class="container"
+        style:border={border
+          ? "1px solid var(--color-border-subtle)"
+          : "undefined"}
+        style:border-top="none">
+        {@render children()}
+      </div>
+    </div>
   </div>
 {/if}
