@@ -154,6 +154,11 @@
   .verdict-reject :global(*) {
     color: var(--color-feedback-error-text);
   }
+  .verdict-summary {
+    flex-basis: 100%;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
   .merge-badge {
     background-color: var(--color-surface-brand-subtle);
     color: var(--color-text-brand);
@@ -370,9 +375,6 @@
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           <span class="summary-secondary">accepted revision</span>
-          {#if op.summary && op.summary.trim() !== ""}
-            <span class="txt-body-m-medium summary-content">{op.summary}</span>
-          {/if}
         </div>
         <div class="meta">
           <Id id={op.revision} clipboard={op.revision} />
@@ -380,6 +382,9 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
+        {#if op.summary && op.summary.trim() !== ""}
+          <div class="verdict-summary txt-body-m-medium">{op.summary}</div>
+        {/if}
       </div>
     </div>
   {:else if op.verdict === "reject"}
@@ -391,9 +396,6 @@
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           <span class="summary-secondary">rejected revision</span>
-          {#if op.summary && op.summary.trim() !== ""}
-            <span class="txt-body-m-medium summary-content">{op.summary}</span>
-          {/if}
         </div>
         <div class="meta">
           <Id id={op.revision} clipboard={op.revision} />
@@ -401,6 +403,9 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
+        {#if op.summary && op.summary.trim() !== ""}
+          <div class="verdict-summary txt-body-m-medium">{op.summary}</div>
+        {/if}
       </div>
     </div>
   {:else if op.verdict === undefined}
