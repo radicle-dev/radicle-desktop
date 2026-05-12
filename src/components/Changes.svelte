@@ -44,6 +44,13 @@
     sortedRevisions.findIndex(r => r.id === revision.id),
   );
 
+  function revisionTitle(rev: Revision): string | undefined {
+    const body = rev.description.at(-1)?.body?.trim();
+    if (!body) return undefined;
+    const line = body.split("\n")[0].trim();
+    return line.length > 0 ? line : undefined;
+  }
+
   let filesExpanded = $state(true);
   let selectedCommit = $state<string>();
   // Parent reuses this component across patch revisions; a sibling $effect
@@ -138,6 +145,14 @@
   .single-commit {
     cursor: default !important;
   }
+  .revision-title {
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    max-width: 24rem;
+  }
 </style>
 
 <div
@@ -168,6 +183,7 @@
           style:background-color="var(--color-surface-canvas)">
           <DropdownList items={sortedRevisions}>
             {#snippet item(rev)}
+              {@const title = revisionTitle(rev)}
               <DropdownListItem
                 selected={rev.id === revision.id}
                 styleGap="0.5rem"
@@ -177,6 +193,9 @@
                 }}>
                 <Icon name="revision" />
                 <span class="txt-id">{rev.id.substring(0, 7)}</span>
+                {#if title}
+                  <span class="revision-title">{title}</span>
+                {/if}
               </DropdownListItem>
             {/snippet}
           </DropdownList>
