@@ -98,9 +98,10 @@
       onSelect={newState => {
         void saveState(newState);
       }}
-      disabled={!roles.isDelegate(
+      disabled={!roles.isDelegateOrAuthor(
         config.publicKey,
         repo.delegates.map(d => d.did),
+        patch.author.did,
       )} />
   </div>
 
