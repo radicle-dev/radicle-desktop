@@ -11,6 +11,8 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import { slide } from "svelte/transition";
+
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { cachedListCommits, invoke } from "@app/lib/invoke";
@@ -471,9 +473,6 @@
     background-color: var(--color-surface-canvas);
     border-radius: var(--border-radius-sm);
   }
-  .inline-commit {
-    margin-top: 1rem;
-  }
   .commit-group {
     display: flex;
     flex-direction: column;
@@ -492,8 +491,10 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    margin: 1rem 0 0;
     padding-left: 1.25rem;
+  }
+  .revision-commits.has-header {
+    margin-top: 1rem;
   }
   .revision-commits::before {
     content: "";
@@ -508,6 +509,8 @@
     display: grid;
     grid-template-rows: 0fr;
     transition: grid-template-rows 180ms ease-out;
+    overflow: hidden;
+    min-height: 0;
   }
   .collapsible.open {
     grid-template-rows: 1fr;
@@ -557,46 +560,45 @@
             hideAuthor={opts.hideAuthor}
             onToggle={hasCommits ? () => toggleRevision(revId) : undefined} />
         {/if}
-        {#if isFirst && data.commits && data.commits.length === 1}
-          <div class="collapsible" class:open={expanded}>
-            <div class="collapsible-inner inline-commit">
-              <CommitActivityItem
-                commit={data.commits[0]}
-                {rid}
-                {codeComments}
-                {draftReviewId} />
-            </div>
+        {#if expanded && isFirst && data.commits && data.commits.length === 1}
+          <div transition:slide={{ duration: 180 }}>
+            <CommitActivityItem
+              commit={data.commits[0]}
+              {rid}
+              {codeComments}
+              {draftReviewId} />
           </div>
-        {:else if data.commits && data.commits.length > 0}
-          <div class="collapsible" class:open={expanded}>
-            <div class="collapsible-inner revision-commits">
-              {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
-                {#if group.length > 1}
-                  <div class="commit-group">
-                    <div class="commit-group-author txt-body-m-regular">
-                      {group[0].author.name} &lt;{group[0].author.email}&gt;
-                      committed
-                    </div>
-                    <div class="commit-group-children">
-                      {#each group as commit (commit.id)}
-                        <CommitActivityItem
-                          {commit}
-                          {rid}
-                          {codeComments}
-                          {draftReviewId}
-                          hideAuthor />
-                      {/each}
-                    </div>
+        {:else if expanded && data.commits && data.commits.length > 0}
+          <div
+            class="revision-commits"
+            class:has-header={!isFirst}
+            transition:slide={{ duration: 180 }}>
+            {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
+              {#if group.length > 1}
+                <div class="commit-group">
+                  <div class="commit-group-author txt-body-m-regular">
+                    {group[0].author.name} &lt;{group[0].author.email}&gt;
+                    committed
                   </div>
-                {:else}
-                  <CommitActivityItem
-                    commit={group[0]}
-                    {rid}
-                    {codeComments}
-                    {draftReviewId} />
-                {/if}
-              {/each}
-            </div>
+                  <div class="commit-group-children">
+                    {#each group as commit (commit.id)}
+                      <CommitActivityItem
+                        {commit}
+                        {rid}
+                        {codeComments}
+                        {draftReviewId}
+                        hideAuthor />
+                    {/each}
+                  </div>
+                </div>
+              {:else}
+                <CommitActivityItem
+                  commit={group[0]}
+                  {rid}
+                  {codeComments}
+                  {draftReviewId} />
+              {/if}
+            {/each}
           </div>
         {/if}
       {:else if data.op.type === "review"}

@@ -166,7 +166,7 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
     color: var(--color-text-tertiary);
   }
   .run-children {
