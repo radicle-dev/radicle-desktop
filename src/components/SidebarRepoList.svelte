@@ -9,13 +9,16 @@
 
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval, resetDynamicInterval } from "@app/lib/interval";
-  import { cachedRepoCommitCount, invoke } from "@app/lib/invoke";
+  import {
+    cachedRepoCommitCount,
+    invoke,
+    writeToClipboard,
+  } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import useLocalStorage from "@app/lib/useLocalStorage.svelte";
-  import { formatRepositoryId } from "@app/lib/utils";
+  import { explorerUrl, formatRepositoryId } from "@app/lib/utils";
 
   import AddRepoButton from "@app/components/AddRepoButton.svelte";
-  import Clipboard from "@app/components/Clipboard.svelte";
   import Icon from "@app/components/Icon.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
@@ -46,6 +49,49 @@
   $effect(() => {
     repos = initialRepos;
   });
+
+  async function showRepoContextMenu(event: MouseEvent, repo: RepoSummary) {
+    event.preventDefault();
+    if (!window.__TAURI_INTERNALS__) return;
+
+    const { Menu } = await import("@tauri-apps/api/menu");
+    const { open } = await import("@tauri-apps/plugin-shell");
+    const url = explorerUrl(repo.rid);
+
+    const menu = await Menu.new({
+      items: [
+        {
+          id: "copy-rid",
+          text: "Copy RID",
+          action: () => {
+            void writeToClipboard(repo.rid);
+          },
+        },
+        {
+          id: "copy-checkout",
+          text: "Copy checkout command",
+          action: () => {
+            void writeToClipboard(`rad checkout ${repo.rid}`);
+          },
+        },
+        {
+          id: "copy-link",
+          text: "Copy link to radicle.network",
+          action: () => {
+            void writeToClipboard(url);
+          },
+        },
+        {
+          id: "open-explorer",
+          text: "Open on radicle.network",
+          action: () => {
+            void open(url);
+          },
+        },
+      ],
+    });
+    await menu.popup();
+  }
 
   $effect(() => {
     seededNotReplicated = initialSeededNotReplicated;
@@ -581,6 +627,7 @@
     draggable="false"
     onmousedown={pinned ? e => drag.onMouseDown(e, repo.rid) : undefined}
     onclick={pinned ? drag.onClick : undefined}
+    oncontextmenu={e => showRepoContextMenu(e, repo)}
     href={router.routeToPath({ resource: "repo.home", rid: repo.rid })}>
     <RepoAvatar name={repo.name} rid={repo.rid} styleWidth="1rem" />
     <span class="txt-overflow">{repo.name}</span>
@@ -597,9 +644,6 @@
         onclick={() => togglePin(repo.rid)}>
         <Icon name={pinState ? "pin-filled" : "pin-hollow"} />
       </button>
-      <span title="Copy RID">
-        <Clipboard text={repo.rid} noPopover />
-      </span>
       {#if pinned}
         <span class="drag-handle" title="Drag to reorder">
           <Icon name="drag-handle" />

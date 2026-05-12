@@ -19,6 +19,9 @@
     "core:window:default",
     "dialog:default",
     "log:default",
-    "shell:allow-open"
+    {
+      "identifier": "shell:allow-open",
+      "allow": [{ "url": "https://radicle.network/**" }]
+    }
   ]
 }
