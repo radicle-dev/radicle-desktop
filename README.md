@@ -12,7 +12,7 @@ See [radicle.dev/desktop#install](https://radicle.dev/desktop#install).
 
 **Prerequisites:**
 
-- [Node.js][nod] (22.11.0 or higher) and [npm][npm]
+- [Node.js][nod] (24 or higher) and [npm][npm]
 - [Rust][rus] toolchain (1.77 or higher)
 - [Tauri system dependencies][tau]
 
