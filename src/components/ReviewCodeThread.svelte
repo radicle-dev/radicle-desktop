@@ -11,6 +11,7 @@
   import { cachedGetDiff } from "@app/lib/invoke";
 
   import Diff from "@app/components/Diff.svelte";
+  import Icon from "@app/components/Icon.svelte";
 
   interface Props {
     rid: string;
@@ -22,6 +23,8 @@
   }
 
   const { rid, base, head, thread, config, repoDelegates }: Props = $props();
+
+  let expanded = $state(false);
 
   const noop = () => Promise.resolve();
 
@@ -62,6 +65,78 @@
     });
   }
 
+  function sliceHunkAroundRange(
+    hunk: Hunk,
+    range: { start: number; end: number },
+    side: "old" | "new",
+    context: number,
+  ): Hunk {
+    const matches: number[] = [];
+    hunk.lines.forEach((line, idx) => {
+      let lineNo: number | undefined;
+      if (line.type === "context") {
+        lineNo = side === "new" ? line.lineNoNew : line.lineNoOld;
+      } else if (side === "new" && line.type === "addition") {
+        lineNo = line.lineNo;
+      } else if (side === "old" && line.type === "deletion") {
+        lineNo = line.lineNo;
+      }
+      if (lineNo !== undefined && lineNo >= range.start && lineNo < range.end) {
+        matches.push(idx);
+      }
+    });
+
+    if (matches.length === 0) return hunk;
+
+    const startIdx = Math.max(0, matches[0] - context);
+    const endIdx = Math.min(
+      hunk.lines.length - 1,
+      matches[matches.length - 1] + context,
+    );
+
+    if (startIdx === 0 && endIdx === hunk.lines.length - 1) return hunk;
+
+    const slicedLines = hunk.lines.slice(startIdx, endIdx + 1);
+
+    let oldStart: number | undefined;
+    let oldEnd: number | undefined;
+    let newStart: number | undefined;
+    let newEnd: number | undefined;
+    for (const line of slicedLines) {
+      if (line.type === "context") {
+        oldStart ??= line.lineNoOld;
+        oldEnd = line.lineNoOld;
+        newStart ??= line.lineNoNew;
+        newEnd = line.lineNoNew;
+      } else if (line.type === "addition") {
+        newStart ??= line.lineNo;
+        newEnd = line.lineNo;
+      } else if (line.type === "deletion") {
+        oldStart ??= line.lineNo;
+        oldEnd = line.lineNo;
+      }
+    }
+
+    const slicedOld =
+      oldStart !== undefined && oldEnd !== undefined
+        ? { start: oldStart, end: oldEnd + 1 }
+        : hunk.old;
+    const slicedNew =
+      newStart !== undefined && newEnd !== undefined
+        ? { start: newStart, end: newEnd + 1 }
+        : hunk.new;
+
+    const oldLen = slicedOld.end - slicedOld.start;
+    const newLen = slicedNew.end - slicedNew.start;
+
+    return {
+      header: `@@ -${slicedOld.start},${oldLen} +${slicedNew.start},${newLen} @@`,
+      lines: slicedLines,
+      old: slicedOld,
+      new: slicedNew,
+    };
+  }
+
   function sliceFileDiff(file: FileDiff, hunk: Hunk): FileDiff {
     if (file.diff.type !== "plain") return file;
     return {
@@ -82,11 +157,37 @@
     padding-bottom: 0;
   }
   .file-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
     padding: 0.5rem 0.75rem;
     border-bottom: 1px solid var(--color-border-subtle);
     background-color: var(--color-surface-canvas);
+  }
+  .file-path {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0.125rem;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    color: var(--color-text-tertiary);
+  }
+  .toggle:hover,
+  .toggle:focus-visible {
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-subtle);
   }
   .fallback {
     font: var(--txt-body-m-regular);
@@ -103,9 +204,29 @@
     {#if file}
       {@const hunk = findHunk(file, location)}
       {#if hunk}
+        {@const codeRange = location.new ?? location.old}
+        {@const targetSide = location.new ? "new" : "old"}
+        {@const clampedHunk =
+          codeRange && codeRange.type === "lines"
+            ? sliceHunkAroundRange(hunk, codeRange.range, targetSide, 3)
+            : hunk}
+        {@const isClamped = clampedHunk !== hunk}
+        {@const displayHunk = expanded ? hunk : clampedHunk}
         <div class="wrapper">
-          <div class="file-header">{location.path}</div>
-          <Diff file={sliceFileDiff(file, hunk)} {head} {codeComments} />
+          <div class="file-header">
+            <span class="file-path">{location.path}</span>
+            {#if isClamped}
+              <button
+                class="toggle"
+                type="button"
+                title={expanded ? "Collapse hunk" : "Expand hunk"}
+                onclick={() => (expanded = !expanded)}>
+                <Icon
+                  name={expanded ? "collapse-vertical" : "expand-vertical"} />
+              </button>
+            {/if}
+          </div>
+          <Diff file={sliceFileDiff(file, displayHunk)} {head} {codeComments} />
         </div>
       {:else}
         <div class="fallback">Code unavailable for {location.path}</div>
