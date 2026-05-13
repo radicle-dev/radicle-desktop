@@ -25,7 +25,6 @@
   import Icon from "@app/components/Icon.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import NodeId from "@app/components/NodeId.svelte";
-  import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
 
@@ -35,12 +34,10 @@
     patch: Patch;
     repo: RepoInfo;
     revisions: Revision[];
-    saveState: (newState: Patch["state"]) => Promise<void>;
     stats?: Stats;
   }
 
-  const { config, loadPatch, patch, repo, revisions, saveState, stats }: Props =
-    $props();
+  const { config, loadPatch, patch, repo, revisions, stats }: Props = $props();
 
   type ReviewerSummary = {
     author: Author;
@@ -268,16 +265,6 @@
       {/snippet}
     </Popover>
   {/if}
-  <PatchStateButton
-    selectedState={patch.state}
-    onSelect={newState => {
-      void saveState(newState);
-    }}
-    disabled={!roles.isDelegateOrAuthor(
-      config.publicKey,
-      repo.delegates.map(d => d.did),
-      patch.author.did,
-    )} />
   <LabelInput
     allowedToEdit={!!roles.isDelegate(
       config.publicKey,

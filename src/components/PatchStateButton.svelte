@@ -42,7 +42,14 @@
       <span
         style:color={selectedState.status === "merged" || disabled
           ? undefined
-          : patchStatusColor[selectedState.status]}>
+          : patchStatusColor[selectedState.status]}
+        style:display="inline-flex"
+        style:align-items="center"
+        style:gap="0.375rem">
+        <Icon
+          name={selectedState.status === "open"
+            ? "patch"
+            : `patch-${selectedState.status}`} />
         {capitalize(selectedState.status)}
       </span>
       {#if selectedState.status !== "merged"}

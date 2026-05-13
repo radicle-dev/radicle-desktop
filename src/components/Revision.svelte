@@ -170,23 +170,78 @@
     }
   }
 
+  const commentToReviewId = $derived.by(() => {
+    const map = new Map<string, string>();
+    for (const [reviewId, threads] of threadsByReview.entries()) {
+      for (const thread of threads) {
+        map.set(thread.root.id, reviewId);
+        for (const reply of thread.replies) {
+          map.set(reply.id, reviewId);
+        }
+      }
+    }
+    return map;
+  });
+
   async function editCodeComment(
     commentId: string,
     body: string,
     embeds: Embed[],
   ) {
-    if (!draftReview) return;
-    draftReviewStorage.updateComment(draftReview.id, commentId, {
-      body,
-      embeds,
-    });
-    await loadPatch();
+    if (draftReview?.comments.find(c => c.id === commentId)) {
+      draftReviewStorage.updateComment(draftReview.id, commentId, {
+        body,
+        embeds,
+      });
+      await loadPatch();
+      return;
+    }
+    const reviewId = commentToReviewId.get(commentId);
+    if (!reviewId) return;
+    try {
+      await invoke("edit_patch", {
+        rid,
+        cobId: patchId,
+        action: {
+          type: "review.comment.edit",
+          review: reviewId,
+          comment: commentId,
+          body,
+          embeds,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing review comment failed", error);
+    } finally {
+      await loadPatch();
+    }
   }
 
   async function deleteCodeComment(commentId: string) {
-    if (!draftReview) return;
-    draftReviewStorage.deleteComment(draftReview.id, commentId);
-    await loadPatch();
+    if (draftReview?.comments.find(c => c.id === commentId)) {
+      draftReviewStorage.deleteComment(draftReview.id, commentId);
+      await loadPatch();
+      return;
+    }
+    const reviewId = commentToReviewId.get(commentId);
+    if (!reviewId) return;
+    try {
+      await invoke("edit_patch", {
+        rid,
+        cobId: patchId,
+        action: {
+          type: "review.comment.redact",
+          review: reviewId,
+          comment: commentId,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Deleting review comment failed", error);
+    } finally {
+      await loadPatch();
+    }
   }
 
   const publishedReviewThreads: Thread<CodeLocation>[] = $derived.by(() => {
@@ -787,7 +842,9 @@
                     head={revision.head}
                     {thread}
                     {config}
-                    {repoDelegates} />
+                    {repoDelegates}
+                    editComment={editCodeComment}
+                    deleteComment={deleteCodeComment} />
                 {/each}
               </div>
             </div>

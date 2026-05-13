@@ -13,12 +13,11 @@
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { cachedGetDiff, cachedListCommits, invoke } from "@app/lib/invoke";
+  import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
   import {
     didFromPublicKey,
     explorerUrl,
-    patchStatusBackgroundColor,
-    patchStatusColor,
     patchStatusLabel,
   } from "@app/lib/utils";
 
@@ -34,6 +33,7 @@
   import Id from "@app/components/Id.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchMetadata from "@app/components/PatchMetadata.svelte";
+  import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import ReviewPage from "@app/components/ReviewPage.svelte";
   import RevisionComponent from "@app/components/Revision.svelte";
@@ -56,6 +56,14 @@
   let { repo, patch, revisions, config, activity, status, review }: Props =
     $props();
   /* eslint-enable prefer-const */
+
+  const currentReview = $derived.by(() => {
+    if (!review) return undefined;
+    if ("draft" in review) return review;
+    return revisions
+      .flatMap(r => r.reviews ?? [])
+      .find(r => r.id === review.id);
+  });
 
   let tab: "patch" | "revisions" | "timeline" = $state(
     revisions.length > 1 ? "revisions" : "patch",
@@ -308,7 +316,7 @@
           {patchStatusLabel[patch.state.status]}
         </button>
         <Icon name="chevron-right" />
-        {#if review}
+        {#if currentReview}
           <button
             class="breadcrumb-link"
             onclick={() =>
@@ -323,7 +331,8 @@
           </button>
           <Icon name="chevron-right" />
           <span style:color="var(--color-text-secondary)">
-            Review by {review.author.alias ?? review.author.did.slice(0, 16)}
+            Review by {currentReview.author.alias ??
+              currentReview.author.did.slice(0, 16)}
           </span>
         {:else}
           <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
@@ -347,20 +356,16 @@
       <div>
         <div class="main">
           <div class="title">
-            <div
-              class="global-chip"
-              style:color={patchStatusColor[patch.state.status]}
-              style:background-color={patchStatusBackgroundColor[
-                patch.state.status
-              ]}
-              style:height="2rem"
-              style:width="2rem"
-              style:padding="0">
-              <Icon
-                name={patch.state.status === "open"
-                  ? "patch"
-                  : `patch-${patch.state.status}`} />
-            </div>
+            <PatchStateButton
+              selectedState={patch.state}
+              onSelect={newState => {
+                void saveState(newState);
+              }}
+              disabled={!roles.isDelegateOrAuthor(
+                config.publicKey,
+                repo.delegates.map(d => d.did),
+                patch.author.did,
+              )} />
             <EditableTitle
               {updateTitle}
               allowedToEdit={true}
@@ -405,7 +410,6 @@
               {patch}
               {repo}
               {revisions}
-              {saveState}
               stats={selectedRevisionStats} />
           </div>
 
@@ -419,12 +423,13 @@
             {config}
             view="description" />
 
-          {#if review}
+          {#if currentReview}
             <ReviewPage
               {config}
+              {loadPatch}
               {patch}
               repoDelegates={repo.delegates}
-              {review}
+              review={currentReview}
               {revisions}
               rid={repo.rid}
               {status} />

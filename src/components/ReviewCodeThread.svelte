@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Author } from "@bindings/cob/Author";
+  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Config } from "@bindings/config/Config";
@@ -20,9 +21,24 @@
     thread: Thread<CodeLocation>;
     config: Config;
     repoDelegates: Author[];
+    editComment?: (
+      commentId: string,
+      body: string,
+      embeds: Embed[],
+    ) => Promise<void>;
+    deleteComment?: (commentId: string) => Promise<void>;
   }
 
-  const { rid, base, head, thread, config, repoDelegates }: Props = $props();
+  const {
+    rid,
+    base,
+    head,
+    thread,
+    config,
+    repoDelegates,
+    editComment,
+    deleteComment,
+  }: Props = $props();
 
   let expanded = $state(false);
 
@@ -36,7 +52,8 @@
     canReply: false,
     hideThreadFileHeader: true,
     createComment: noop,
-    editComment: noop,
+    editComment: editComment ?? noop,
+    deleteComment,
   };
 
   function findFileDiff(
