@@ -127,14 +127,10 @@
     display: flex;
     justify-content: center;
   }
-  .icon-stack,
-  .icon-expanded {
+  .icon-stack {
     display: grid;
     width: 1rem;
     place-items: center;
-  }
-  .icon-expanded {
-    transition: transform 150ms ease;
   }
   .icon-default,
   .icon-hover {
@@ -303,14 +299,10 @@
       }
     }}>
     <div class="icon">
-      {#if expanded}
-        <span class="icon-expanded"><Icon name="chevron-down" /></span>
-      {:else}
-        <span class="icon-stack">
-          <span class="icon-default"><Icon name="commit" /></span>
-          <span class="icon-hover"><Icon name="chevron-down" /></span>
-        </span>
-      {/if}
+      <span class="icon-stack">
+        <span class="icon-default"><Icon name="commit" /></span>
+        <span class="icon-hover"><Icon name="chevron-down" /></span>
+      </span>
     </div>
     <div class="wrapper">
       {#if !hideAuthor}
@@ -347,39 +339,72 @@
   <div class="collapsible" class:open={expanded}>
     <div class="collapsible-inner">
       {#if hasEverExpanded}
-      {#if !parent}
-        {#if expandedBody}
-          <div class="full-message txt-body-m-regular">{expandedBody}</div>
-        {/if}
-        <div class="fallback txt-body-m-regular">
-          Initial commit; no diff to show.
-        </div>
-      {:else}
-      {#await cachedGetDiff( rid, { base: parent, head: commit.id, unified: 3, highlight: true }, )}
-        <div class="diff-skeleton" aria-label="Loading diff">
-          <div class="skeleton-row skeleton-row-summary"></div>
-          <div class="skeleton-file">
-            <div class="skeleton-row skeleton-row-header"></div>
-            <div class="skeleton-row skeleton-row-hunk"></div>
-            <div class="skeleton-row skeleton-row-hunk"></div>
-            <div class="skeleton-row skeleton-row-hunk"></div>
-            <div class="skeleton-row skeleton-row-hunk"></div>
-            <div class="skeleton-row skeleton-row-hunk"></div>
+        {#if !parent}
+          {#if expandedBody}
+            <div class="full-message txt-body-m-regular">{expandedBody}</div>
+          {/if}
+          <div class="fallback txt-body-m-regular">
+            Initial commit; no diff to show.
           </div>
-          <div class="skeleton-file">
-            <div class="skeleton-row skeleton-row-header"></div>
-            <div class="skeleton-row skeleton-row-hunk"></div>
-            <div class="skeleton-row skeleton-row-hunk"></div>
-            <div class="skeleton-row skeleton-row-hunk"></div>
-          </div>
-        </div>
-      {:then diff}
-        {#if expandedBody || diff.files.length > 1}
-          <div class="expanded-header">
-            <div>
-              {#if expandedBody}
-                <div class="full-message txt-body-m-regular">{expandedBody}</div>
-              {/if}
+        {:else}
+          {#await cachedGetDiff( rid, { base: parent, head: commit.id, unified: 3, highlight: true }, )}
+            <div class="diff-skeleton" aria-label="Loading diff">
+              <div class="skeleton-row skeleton-row-summary"></div>
+              <div class="skeleton-file">
+                <div class="skeleton-row skeleton-row-header"></div>
+                <div class="skeleton-row skeleton-row-hunk"></div>
+                <div class="skeleton-row skeleton-row-hunk"></div>
+                <div class="skeleton-row skeleton-row-hunk"></div>
+                <div class="skeleton-row skeleton-row-hunk"></div>
+                <div class="skeleton-row skeleton-row-hunk"></div>
+              </div>
+              <div class="skeleton-file">
+                <div class="skeleton-row skeleton-row-header"></div>
+                <div class="skeleton-row skeleton-row-hunk"></div>
+                <div class="skeleton-row skeleton-row-hunk"></div>
+                <div class="skeleton-row skeleton-row-hunk"></div>
+              </div>
+            </div>
+          {:then diff}
+            {#if expandedBody || diff.files.length > 1}
+              <div class="expanded-header">
+                <div>
+                  {#if expandedBody}
+                    <div class="full-message txt-body-m-regular">
+                      {expandedBody}
+                    </div>
+                  {/if}
+                  <div class="diff-summary txt-body-m-regular">
+                    {diff.stats.filesChanged}
+                    {pluralize("file", diff.stats.filesChanged)} modified with
+                    <span style:color="var(--color-feedback-success-text)">
+                      {diff.stats.insertions}
+                      {pluralize("insertion", diff.stats.insertions)}
+                    </span>
+                    and
+                    <span style:color="var(--color-feedback-error-text)">
+                      {diff.stats.deletions}
+                      {pluralize("deletion", diff.stats.deletions)}
+                    </span>
+                  </div>
+                </div>
+                {#if diff.files.length > 1}
+                  <div class="diff-toolbar txt-body-m-regular">
+                    <Button
+                      variant="naked"
+                      onclick={() => (filesExpanded = !filesExpanded)}>
+                      {#if filesExpanded}
+                        <Icon name="collapse-vertical" />
+                        Collapse all
+                      {:else}
+                        <Icon name="expand-vertical" />
+                        Expand all
+                      {/if}
+                    </Button>
+                  </div>
+                {/if}
+              </div>
+            {:else}
               <div class="diff-summary txt-body-m-regular">
                 {diff.stats.filesChanged}
                 {pluralize("file", diff.stats.filesChanged)} modified with
@@ -393,54 +418,23 @@
                   {pluralize("deletion", diff.stats.deletions)}
                 </span>
               </div>
-            </div>
-            {#if diff.files.length > 1}
-              <div class="diff-toolbar txt-body-m-regular">
-                <Button
-                  variant="naked"
-                  onclick={() => (filesExpanded = !filesExpanded)}>
-                  {#if filesExpanded}
-                    <Icon name="collapse-vertical" />
-                    Collapse all
-                  {:else}
-                    <Icon name="expand-vertical" />
-                    Expand all
-                  {/if}
-                </Button>
-              </div>
             {/if}
-          </div>
-        {:else}
-          <div class="diff-summary txt-body-m-regular">
-            {diff.stats.filesChanged}
-            {pluralize("file", diff.stats.filesChanged)} modified with
-            <span style:color="var(--color-feedback-success-text)">
-              {diff.stats.insertions}
-              {pluralize("insertion", diff.stats.insertions)}
-            </span>
-            and
-            <span style:color="var(--color-feedback-error-text)">
-              {diff.stats.deletions}
-              {pluralize("deletion", diff.stats.deletions)}
-            </span>
-          </div>
+            <div class="diff">
+              {#each diff.files as file (fileKey(file))}
+                <FileDiff
+                  {file}
+                  head={commit.id}
+                  expanded={filesExpanded}
+                  codeComments={commitCodeComments}
+                  {draftReviewId} />
+              {/each}
+            </div>
+          {:catch error}
+            <div class="fallback txt-body-m-regular">
+              Failed to load diff: {error.message ?? error}
+            </div>
+          {/await}
         {/if}
-        <div class="diff">
-          {#each diff.files as file (fileKey(file))}
-            <FileDiff
-              {file}
-              head={commit.id}
-              expanded={filesExpanded}
-              codeComments={commitCodeComments}
-              {draftReviewId} />
-          {/each}
-        </div>
-      {:catch error}
-          <div class="fallback txt-body-m-regular">
-            Failed to load diff: {error.message ?? error}
-          </div>
-        {/await}
-      {/if}
       {/if}
     </div>
   </div>

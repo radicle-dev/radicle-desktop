@@ -75,14 +75,10 @@
   .icon {
     padding-top: 0.1875rem;
   }
-  .icon-stack,
-  .icon-expanded {
+  .icon-stack {
     display: grid;
     width: 1rem;
     place-items: center;
-  }
-  .icon-expanded {
-    transition: transform 150ms ease;
   }
   .icon-default,
   .icon-hover {
@@ -191,9 +187,7 @@
     tabindex={onToggle ? 0 : undefined}
     onclick={onToggle}>
     <div class="icon">
-      {#if onToggle && expanded}
-        <span class="icon-expanded"><Icon name="chevron-down" /></span>
-      {:else if onToggle}
+      {#if onToggle}
         <span class="icon-stack">
           <span class="icon-default"><Icon name="revision" /></span>
           <span class="icon-hover"><Icon name="chevron-down" /></span>
@@ -387,9 +381,7 @@
       tabindex={isToggleable ? 0 : undefined}
       onclick={isToggleable ? onToggle : undefined}>
       <div class="icon" style:color="var(--color-feedback-success-text)">
-        {#if isToggleable && expanded}
-          <span class="icon-expanded"><Icon name="chevron-down" /></span>
-        {:else if isToggleable}
+        {#if isToggleable}
           <span class="icon-stack">
             <span class="icon-default"><Icon name="thumbs-up" /></span>
             <span class="icon-hover"><Icon name="chevron-down" /></span>
@@ -428,9 +420,7 @@
       tabindex={isToggleable ? 0 : undefined}
       onclick={isToggleable ? onToggle : undefined}>
       <div class="icon" style:color="var(--color-feedback-error-text)">
-        {#if isToggleable && expanded}
-          <span class="icon-expanded"><Icon name="chevron-down" /></span>
-        {:else if isToggleable}
+        {#if isToggleable}
           <span class="icon-stack">
             <span class="icon-default"><Icon name="stop" /></span>
             <span class="icon-hover"><Icon name="chevron-down" /></span>
@@ -469,9 +459,7 @@
       tabindex={isToggleable ? 0 : undefined}
       onclick={isToggleable ? onToggle : undefined}>
       <div class="icon">
-        {#if isToggleable && expanded}
-          <span class="icon-expanded"><Icon name="chevron-down" /></span>
-        {:else if isToggleable}
+        {#if isToggleable}
           <span class="icon-stack">
             <span class="icon-default"><Icon name="comment" /></span>
             <span class="icon-hover"><Icon name="chevron-down" /></span>
