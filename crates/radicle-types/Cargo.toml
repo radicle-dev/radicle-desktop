@@ -22,7 +22,7 @@ serde = { version = "1.0.0", features = ["derive"] }
 serde_json = { version = "1.0.0" }
 sqlite = { version = "0.37.0", features = ["bundled"] }
 ssh-key = { version = "0.6.3" }
-tauri = { version = "2.10.3", features = ["isolation"] }
+tauri = { version = "2.11.1", features = ["isolation"] }
 tauri-plugin-clipboard-manager = { version = "2.3.2" }
 tauri-plugin-fs = { version = "2.5.0" }
 tempfile = { version = "3.19.0" }
