@@ -63,10 +63,17 @@
   /* eslint-enable prefer-const */
 
   let hideTimeline = $state(true);
+  // The initial status filter is captured at mount so it stays fixed while
+  // navigating between sibling patches.
+  // svelte-ignore state_referenced_locally
   const status = initialStatus;
+  // Parent reuses this component across patch navigations; a sibling $effect
+  // resets tab and selectedRevision when patch.id changes.
+  // svelte-ignore state_referenced_locally
   let tab: "patch" | "revisions" | "timeline" = $state(
     revisions.length > 1 ? "revisions" : "patch",
   );
+  // svelte-ignore state_referenced_locally
   let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
 
   $effect(() => {

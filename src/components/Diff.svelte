@@ -328,6 +328,7 @@
     class:context={line.type === "context"}
     class:selected={!thread &&
       isSelected(filePath(file, "left"), hunkIdx, lineIdx)}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="left"
       class:selection-disabled={!codeComments || thread}
@@ -341,6 +342,7 @@
       {lineNumber(line, "left")}
     </div>
 
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="right"
       class:selection-disabled={!codeComments || thread}
@@ -447,6 +449,7 @@
   {/if}
 
   {#if codeComments && selection?.hunkIdx === hunkIdx && selection?.lineIdx === lineIdx}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="comment-form"
       onpointerdown={e => {

@@ -50,7 +50,11 @@
     commits: Commit[];
   };
 
+  // Parent reuses this component across navigations; a sibling $effect resets
+  // pagination state when the commits prop changes.
+  // svelte-ignore state_referenced_locally
   let items = $state(commits.content);
+  // svelte-ignore state_referenced_locally
   let more = $state(commits.more);
   let loadingMore = $state(false);
   let loading = $state(false);

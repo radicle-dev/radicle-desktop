@@ -21,7 +21,9 @@
   let { sidebarData, notificationsByRepo }: Props = $props();
   /* eslint-enable prefer-const */
 
-  notificationCount.value = sidebarData.notificationCount;
+  $effect(() => {
+    notificationCount.value = sidebarData.notificationCount;
+  });
 
   async function updateCount() {
     const count = await invoke<number>("notification_count");

@@ -25,7 +25,11 @@
   let hideChanges = $state(false);
   let filesExpanded = $state(true);
   let selectedCommit = $state<string>();
+  // Parent reuses this component across patch revisions; a sibling $effect
+  // resets base and head when patchId changes.
+  // svelte-ignore state_referenced_locally
   let base = $state(revision.base);
+  // svelte-ignore state_referenced_locally
   let head = $state(revision.head);
 
   $effect(() => {

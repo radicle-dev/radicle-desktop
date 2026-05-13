@@ -41,13 +41,15 @@
     return el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
   }
 
-  const scrollHalfHandler = onScrollHalf
-    ? (instance: Parameters<typeof shouldLoadMore>[0]) => {
-        if (shouldLoadMore(instance)) {
-          onScrollHalf();
+  const scrollHalfHandler = $derived(
+    onScrollHalf
+      ? (instance: Parameters<typeof shouldLoadMore>[0]) => {
+          if (shouldLoadMore(instance)) {
+            onScrollHalf();
+          }
         }
-      }
-    : undefined;
+      : undefined,
+  );
 </script>
 
 <OverlayScrollbarsComponent

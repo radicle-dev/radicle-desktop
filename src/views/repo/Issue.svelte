@@ -64,7 +64,13 @@
   }: Props = $props();
   /* eslint-enable prefer-const */
 
+  // Parent reuses this component across issue navigations; a sibling $effect
+  // resets local state when issue.id changes.
+  // svelte-ignore state_referenced_locally
   let issues = $state(initialIssues);
+  // The initial status filter is captured at mount so it stays fixed while
+  // navigating between sibling issues.
+  // svelte-ignore state_referenced_locally
   const status = initialStatus;
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);

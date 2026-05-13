@@ -37,8 +37,13 @@
 
   const { repo, patches, status }: Props = $props();
 
+  // Parent reuses this component across status filter changes; a sibling
+  // $effect resets pagination state when the patches prop changes.
+  // svelte-ignore state_referenced_locally
   let items = $state(patches.content);
+  // svelte-ignore state_referenced_locally
   let cursor = patches.cursor;
+  // svelte-ignore state_referenced_locally
   let more = patches.more;
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);

@@ -78,6 +78,9 @@
 
   let preview = $derived(isMarkdownPath(currentPath));
 
+  // Parent reuses this component across routes; a sibling $effect resets blob
+  // when the readme prop changes, and fetchBlob mutates it during navigation.
+  // svelte-ignore state_referenced_locally
   let blob: Blob | Readme | null = $state(readme);
   const showLineNumbers = $derived(
     blob && !blob.binary && blob.content.trim() !== "" && !preview && !error,

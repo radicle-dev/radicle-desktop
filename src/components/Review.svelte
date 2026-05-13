@@ -96,6 +96,9 @@
         }, [])) as Thread<CodeLocation>[]) || [],
   );
 
+  // The verdict prop seeds a local working copy that the form mutates until
+  // submit; later prop updates intentionally do not overwrite it.
+  // svelte-ignore state_referenced_locally
   let verdict: Review["verdict"] = $state(review.verdict);
 
   async function editReview(

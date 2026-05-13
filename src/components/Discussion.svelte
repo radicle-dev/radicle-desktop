@@ -50,22 +50,19 @@
   }: Props = $props();
   /* eslint-enable prefer-const */
 
-  let previousCobId = cobId;
+  let previousCobId: string | undefined;
   let focusReply: boolean = $state(false);
   let commentFormKey = $state(0);
 
   let hideDiscussion = $state(false);
 
   $effect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    cobId;
-
-    if (cobId !== previousCobId) {
-      previousCobId = cobId;
+    if (previousCobId !== undefined && cobId !== previousCobId) {
       hideDiscussion = false;
       focusReply = false;
       commentFormKey += 1;
     }
+    previousCobId = cobId;
   });
 </script>
 
