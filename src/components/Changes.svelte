@@ -76,49 +76,75 @@
     display: flex;
     flex-direction: column;
     font: var(--txt-body-m-regular);
-    margin-left: 0.5rem;
     gap: 0.5rem;
-    padding: 1rem 0.5rem 0.5rem 1rem;
-    border-left: 1px solid var(--color-border-subtle);
+    padding: 1rem 0 0.5rem 0;
   }
-  .commit:last-of-type::after {
+  .commits::before {
     content: "";
     position: absolute;
-    left: -18.5px;
-    top: 14px;
-    bottom: -0.5rem;
-    border-left: 4px solid var(--color-surface-canvas);
-  }
-  .commit-dot {
-    width: 0.25rem;
-    height: 0.25rem;
-    position: absolute;
-    top: 0.625rem;
-    left: -18.5px;
+    top: 1rem;
+    bottom: 0.5rem;
+    left: 7.5px;
+    width: 1px;
     background-color: var(--color-border-subtle);
+    pointer-events: none;
   }
   .commit {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     cursor: pointer;
+    padding: 0.125rem 0.5rem;
+    margin: 0 -0.5rem;
+    border-radius: var(--border-radius-sm);
   }
-  .commit-dot.active {
-    background-color: var(--color-border-brand);
-  }
-  .commit:hover:not(.single-commit) .commit-dot:not(.active) {
-    background-color: var(--color-text-primary);
+  .commit > :global(.teaser) {
+    flex: 1;
+    min-width: 0;
   }
   .commit:hover:not(.single-commit) {
-    background-color: var(--color-surface-canvas);
+    background-color: var(--color-surface-subtle);
   }
-  .disabled {
-    color: var(--color-text-disabled) !important;
+  .commit.active {
+    background-color: var(--color-surface-subtle);
+  }
+  .commit-marker {
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    position: relative;
+  }
+  .commit-marker-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .commit-marker-hover {
+    display: none;
+  }
+  .commit:hover:not(.single-commit) .commit-marker-default {
+    display: none;
+  }
+  .commit:hover:not(.single-commit) .commit-marker-hover {
+    display: flex;
+  }
+  .commit-marker-dot {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    width: 4px;
+    height: 4px;
+    background-color: var(--color-border-subtle);
+  }
+  .commit.active .commit-marker {
+    color: var(--color-text-primary);
   }
   .summary {
-    cursor: pointer;
     padding: 0.25rem 0;
-  }
-  .summary:hover:not(.single-commit) {
-    background-color: var(--color-surface-canvas);
-    color: var(--color-text-primary) !important;
   }
   .single-commit {
     cursor: default !important;
@@ -130,50 +156,57 @@
     <div style:margin-bottom="1rem">
       <CommitsContainer>
         {#snippet leftHeader()}
-          <div class="txt-body-m-regular">Commits</div>
-        {/snippet}
-        <div style:padding="0 1rem">
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <!-- svelte-ignore a11y_click_events_have_key_events -->
-          <div
-            class="global-flex txt-body-m-regular summary"
-            class:single-commit={commits.length === 1}
-            class:disabled={selectedCommit}
-            onclick={() => {
-              if (commits.length === 1) return;
-              selectRevision({
-                headId: revision.head,
-                baseId: revision.base,
-              });
-            }}>
-            <Icon name="branch" />
+          <div class="global-flex txt-body-m-regular summary">
             {commits.length}
             {pluralize("commit", commits.length)} on base
             <Id id={revision.base} clipboard={revision.base} />
             <div class="global-chip">Base</div>
           </div>
+        {/snippet}
+        <div style:padding="0 1rem">
           <div class="commits">
             {#each [...commits].reverse() as commit, idx}
+              {@const active = isActiveCommit(commit.id)}
+              {@const toggle = () => {
+                if (commits.length === 1) return;
+                if (active) {
+                  selectRevision({
+                    headId: revision.head,
+                    baseId: revision.base,
+                  });
+                } else {
+                  selectRevision({
+                    headId: commit.id,
+                    baseId: commit.parents[0],
+                    commitId: commit.id,
+                  });
+                }
+              }}
               <div
                 class="commit"
                 class:single-commit={commits.length === 1}
+                class:active
                 style:position="relative">
-                <div class="commit-dot"></div>
-                <div
-                  class="commit-dot"
-                  class:active={isActiveCommit(commit.id)}>
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div class="commit-marker" onclick={toggle}>
+                  {#if active}
+                    <div class="commit-marker-state">
+                      <Icon name="close" />
+                    </div>
+                  {:else}
+                    <div class="commit-marker-state commit-marker-default">
+                      <div class="commit-marker-dot"></div>
+                    </div>
+                    <div class="commit-marker-state commit-marker-hover">
+                      <Icon name="eye" />
+                    </div>
+                  {/if}
                 </div>
                 <CobCommitTeaser
                   hoverable={commits.length > 1}
                   disabled={isTeaserDisabled(commit.id)}
-                  onclick={() => {
-                    if (commits.length === 1) return;
-                    selectRevision({
-                      headId: commit.id,
-                      baseId: commit.parents[0],
-                      commitId: commit.id,
-                    });
-                  }}
+                  onclick={toggle}
                   {commit}>
                   {#if idx === commits.length - 1}
                     <JobCob {rid} commit={commit.id} />

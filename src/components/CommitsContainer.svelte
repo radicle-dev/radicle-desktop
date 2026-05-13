@@ -10,7 +10,7 @@
 
   const { leftHeader, children }: Props = $props();
 
-  let expanded = $state(true);
+  let expanded = $state(false);
 </script>
 
 <style>
@@ -35,6 +35,34 @@
     display: flex;
     gap: 0.5rem;
     align-items: center;
+  }
+  .icon-stack,
+  .icon-expanded {
+    display: grid;
+    width: 1rem;
+    height: 1rem;
+    place-items: center;
+  }
+  .icon-default,
+  .icon-hover {
+    grid-area: 1 / 1;
+    transition:
+      opacity 150ms ease,
+      transform 150ms ease;
+  }
+  .icon-hover {
+    opacity: 0;
+    transform: rotate(-90deg);
+  }
+  .header:hover .icon-default,
+  .header:focus-visible .icon-default {
+    opacity: 0;
+    transform: rotate(90deg);
+  }
+  .header:hover .icon-hover,
+  .header:focus-visible .icon-hover {
+    opacity: 1;
+    transform: rotate(0);
   }
   .collapsible {
     display: grid;
@@ -70,7 +98,14 @@
     onclick={() => (expanded = !expanded)}
     style:width="100%">
     <div class="left">
-      <Icon name={expanded ? "chevron-down" : "chevron-right"} />
+      {#if expanded}
+        <span class="icon-expanded"><Icon name="chevron-down" /></span>
+      {:else}
+        <span class="icon-stack">
+          <span class="icon-default"><Icon name="commit" /></span>
+          <span class="icon-hover"><Icon name="chevron-down" /></span>
+        </span>
+      {/if}
       {@render leftHeader()}
     </div>
   </div>
