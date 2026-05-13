@@ -279,6 +279,14 @@
     [...revisions].sort((a, b) => a.timestamp - b.timestamp)[0]?.id,
   );
 
+  const olderRevisionIds = $derived(
+    new Set(
+      revisions
+        .filter(r => r.id !== firstRevisionId && r.id !== latestRevisionId)
+        .map(r => r.id),
+    ),
+  );
+
   const threadsByReview = $derived.by(() => {
     const map = new Map<string, Thread<CodeLocation>[]>();
     (revision.reviews ?? []).forEach(review => {
@@ -349,12 +357,6 @@
     });
 
     items.sort((a, b) => a.timestamp - b.timestamp);
-
-    const olderRevisionIds = new Set(
-      revisions
-        .filter(r => r.id !== firstRevisionId && r.id !== latestRevisionId)
-        .map(r => r.id),
-    );
 
     if (olderRevisionsExpanded || olderRevisionIds.size < 2) {
       return items;
@@ -616,43 +618,26 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    cursor: pointer;
-    padding: 0.125rem 0.25rem;
-    margin: 0 -0.25rem;
-    border-radius: var(--border-radius-sm);
-  }
-  .older-revisions:hover,
-  .older-revisions:focus-visible {
-    background-color: var(--color-surface-subtle);
   }
   .older-revisions .icon {
     padding-top: 0.1875rem;
-  }
-  .older-revisions .icon-stack {
-    display: grid;
     width: 1rem;
+    display: grid;
     place-items: center;
   }
-  .older-revisions .icon-default,
-  .older-revisions .icon-hover {
-    grid-area: 1 / 1;
-    transition:
-      opacity 150ms ease,
-      transform 150ms ease;
+  .show-all {
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--border-radius-sm);
+    font: inherit;
   }
-  .older-revisions .icon-hover {
-    opacity: 0;
-    transform: rotate(-90deg);
-  }
-  .older-revisions:hover .icon-default,
-  .older-revisions:focus-visible .icon-default {
-    opacity: 0;
-    transform: rotate(90deg);
-  }
-  .older-revisions:hover .icon-hover,
-  .older-revisions:focus-visible .icon-hover {
-    opacity: 1;
-    transform: rotate(0);
+  .show-all:hover,
+  .show-all:focus-visible {
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-subtle);
   }
   .summary-secondary {
     color: var(--color-text-tertiary);
@@ -721,18 +706,32 @@
       {#if data.op.type === "revision"}
         {@const revId = data.op.id}
         {@const isFirst = revId === firstRevisionId}
+        {@const isOlder = olderRevisionIds.has(revId)}
         {@const hasCommits = !!data.commits && data.commits.length > 0}
         {@const expanded = isFirst
           ? true
           : hasCommits && isRevisionExpanded(revId)}
-        <PatchActivityItem
-          op={data.op}
-          {expanded}
-          hideAuthor={opts.hideAuthor}
-          firstRevision={isFirst}
-          onToggle={!isFirst && hasCommits
-            ? () => toggleRevision(revId)
-            : undefined} />
+        {#if isOlder}
+          <div
+            class="older-revision-entry"
+            transition:slide={{ duration: 180 }}>
+            <PatchActivityItem
+              op={data.op}
+              {expanded}
+              hideAuthor={opts.hideAuthor}
+              firstRevision={isFirst}
+              onToggle={hasCommits ? () => toggleRevision(revId) : undefined} />
+          </div>
+        {:else}
+          <PatchActivityItem
+            op={data.op}
+            {expanded}
+            hideAuthor={opts.hideAuthor}
+            firstRevision={isFirst}
+            onToggle={!isFirst && hasCommits
+              ? () => toggleRevision(revId)
+              : undefined} />
+        {/if}
         {#if expanded && isFirst && data.commits && data.commits.length === 1}
           <div
             class="single-commit-with-header"
@@ -825,23 +824,22 @@
           targetBranch={data.op.type === "merge" ? targetBranch : undefined} />
       {/if}
     {:else if data.kind === "olderRevisions"}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <div
         class="older-revisions txt-body-m-regular"
-        role="button"
-        tabindex="0"
-        onclick={() => (olderRevisionsExpanded = true)}>
+        transition:slide={{ duration: 180 }}>
         <div class="icon">
-          <span class="icon-stack">
-            <span class="icon-default"><Icon name="revision" /></span>
-            <span class="icon-hover"><Icon name="expand-vertical" /></span>
-          </span>
+          <Icon name="revision" />
         </div>
         <span class="summary-secondary">
-          Show {data.count}
+          Created {data.count}
           {data.count === 1 ? "older revision" : "older revisions"}
         </span>
+        <button
+          type="button"
+          class="show-all"
+          onclick={() => (olderRevisionsExpanded = true)}>
+          Show all
+        </button>
       </div>
     {/if}
   {/snippet}
