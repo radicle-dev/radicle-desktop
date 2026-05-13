@@ -34,7 +34,6 @@
 
   let currentPath = $state("");
   let codeElement: HTMLElement | undefined = $state();
-  let preview = $state(true);
   let error: InvokeError | undefined = $state();
 
   $effect(() => {
@@ -77,9 +76,7 @@
     }
   });
 
-  $effect(() => {
-    preview = isMarkdownPath(currentPath);
-  });
+  let preview = $derived(isMarkdownPath(currentPath));
 
   let blob: Blob | Readme | null = $state(readme);
   const showLineNumbers = $derived(

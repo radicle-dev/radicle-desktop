@@ -28,11 +28,9 @@
   }: Props = $props();
   /* eslint-enable prefer-const */
 
-  let state: "collapsed" | "expanded" | "submit" | undefined = $state();
-
-  $effect(() => {
-    state = onclose !== undefined ? "expanded" : "collapsed";
-  });
+  let state: "collapsed" | "expanded" | "submit" | undefined = $derived(
+    onclose !== undefined ? "expanded" : "collapsed",
+  );
 </script>
 
 <style>

@@ -7,6 +7,7 @@
   import { open } from "@tauri-apps/plugin-dialog";
   import debounce from "lodash/debounce";
   import { onDestroy, onMount } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import { invoke } from "@app/lib/invoke";
   import * as utils from "@app/lib/utils";
@@ -63,7 +64,7 @@
     focus = false,
     inline = false,
     body = $bindable(""),
-    embeds = new Map(),
+    embeds = new SvelteMap<string, Embed>(),
     submitInProgress = false,
     disableSubmit = false,
     disallowEmptyBody = false,

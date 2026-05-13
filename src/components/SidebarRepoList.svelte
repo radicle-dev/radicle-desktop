@@ -36,20 +36,12 @@
     activeRepo = undefined,
   }: Props = $props();
 
-  let repos = $state<RepoSummary[]>(initialRepos);
-  let seededNotReplicated = $state<string[]>(initialSeededNotReplicated);
+  let repos: RepoSummary[] = $derived(initialRepos);
+  let seededNotReplicated: string[] = $derived(initialSeededNotReplicated);
   let activeCommitCount = $state<number | undefined>(undefined);
   let filterOpen = $state(false);
   let filterQuery = $state("");
   let filterInputElement: HTMLInputElement | undefined = $state(undefined);
-
-  $effect(() => {
-    repos = initialRepos;
-  });
-
-  $effect(() => {
-    seededNotReplicated = initialSeededNotReplicated;
-  });
 
   $effect(() => {
     const rid = activeRepo?.rid;

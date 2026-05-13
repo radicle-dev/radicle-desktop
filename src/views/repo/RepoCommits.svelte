@@ -113,8 +113,11 @@
   function dayLabel(timestamp: number) {
     const date = new Date(timestamp);
     const today = new Date();
-    const yesterday = new Date();
-    yesterday.setDate(today.getDate() - 1);
+    const yesterday = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - 1,
+    );
 
     if (dayKey(date.getTime()) === dayKey(today.getTime())) {
       return "Today";
@@ -151,25 +154,25 @@
   const filteredCommits = $derived(searchResults.map(r => r.obj.commit));
 
   const groupedCommits = $derived.by<CommitGroup[]>(() => {
-    const groups = new Map<string, CommitGroup>();
+    const groups: Record<string, CommitGroup> = {};
 
     for (const commit of filteredCommits) {
       const timestamp = commit.committer.time * 1000;
       const key = dayKey(timestamp);
-      const current = groups.get(key);
+      const current = groups[key];
 
       if (current) {
         current.commits.push(commit);
       } else {
-        groups.set(key, {
+        groups[key] = {
           key,
           label: dayLabel(timestamp),
           commits: [commit],
-        });
+        };
       }
     }
 
-    return [...groups.values()];
+    return Object.values(groups);
   });
 </script>
 

@@ -203,13 +203,8 @@
     }
   }
 
-  let threadExpandedStates: Record<string, boolean> = $state(
-    codeComments
-      ? Object.fromEntries(
-          codeComments.threads.map(t => [t.root.id, t.root.resolved]),
-        )
-      : {},
-  );
+  // eslint-disable-next-line svelte/prefer-writable-derived -- needs a $state proxy so toggleCommentExpand's property mutation triggers reactivity
+  let threadExpandedStates: Record<string, boolean> = $state({});
 
   $effect(() => {
     threadExpandedStates = codeComments
