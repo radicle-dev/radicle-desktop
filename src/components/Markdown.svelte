@@ -1,11 +1,11 @@
 <script lang="ts">
   import type { Embed } from "@bindings/cob/Embed";
 
-  import matter from "@radicle/gray-matter";
   import dompurify from "dompurify";
   import { toDom } from "hast-util-to-dom";
   import { tick } from "svelte";
 
+  import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
   import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
   import { highlight } from "@app/lib/syntax";
@@ -22,7 +22,7 @@
 
   let container: HTMLElement;
 
-  const doc = $derived(matter(content));
+  const doc = $derived(parseFrontmatter(content));
   const frontMatter = $derived.by(() => {
     try {
       return Object.entries(doc.data).filter(
