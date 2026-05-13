@@ -487,6 +487,13 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
+        {#if hasSummary && (expanded || !isToggleable)}
+          <div
+            class="verdict-summary txt-body-m-medium"
+            transition:slide={{ duration: 180 }}>
+            {op.summary}
+          </div>
+        {/if}
       </div>
     </div>
   {/if}
