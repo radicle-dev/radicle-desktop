@@ -10,8 +10,8 @@
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import { closeFocused } from "@app/components/Popover.svelte";
   import Popover from "@app/components/Popover.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
 
   interface Props {
     selectedState: State;

@@ -60,7 +60,7 @@
     "dompurify": "^3.4.2",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-simple-import-sort": "^13.0.0",
     "eslint-plugin-svelte": "^3.17.1",
     "execa": "^9.6.1",
     "fuzzysort": "^3.1.0",

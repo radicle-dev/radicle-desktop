@@ -17,8 +17,8 @@
   import Command from "@app/components/Command.svelte";
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import { closeFocused } from "@app/components/Popover.svelte";
   import Popover from "@app/components/Popover.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
   import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {

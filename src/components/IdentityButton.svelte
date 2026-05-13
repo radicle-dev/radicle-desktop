@@ -9,8 +9,8 @@
   import Button from "@app/components/Button.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import { closeFocused } from "@app/components/Popover.svelte";
   import Popover from "@app/components/Popover.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
 
   interface Props {
