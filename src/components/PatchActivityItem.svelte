@@ -190,7 +190,9 @@
       {#if onToggle}
         <span class="icon-stack">
           <span class="icon-default"><Icon name="revision" /></span>
-          <span class="icon-hover"><Icon name="chevron-down" /></span>
+          <span class="icon-hover">
+            <Icon name={expanded ? "collapse-vertical" : "expand-vertical"} />
+          </span>
         </span>
       {:else}
         <Icon name="revision" />
@@ -384,7 +386,9 @@
         {#if isToggleable}
           <span class="icon-stack">
             <span class="icon-default"><Icon name="thumbs-up" /></span>
-            <span class="icon-hover"><Icon name="chevron-down" /></span>
+            <span class="icon-hover">
+              <Icon name={expanded ? "collapse-vertical" : "expand-vertical"} />
+            </span>
           </span>
         {:else}
           <Icon name="thumbs-up" />
@@ -423,7 +427,9 @@
         {#if isToggleable}
           <span class="icon-stack">
             <span class="icon-default"><Icon name="stop" /></span>
-            <span class="icon-hover"><Icon name="chevron-down" /></span>
+            <span class="icon-hover">
+              <Icon name={expanded ? "collapse-vertical" : "expand-vertical"} />
+            </span>
           </span>
         {:else}
           <Icon name="stop" />
@@ -462,7 +468,9 @@
         {#if isToggleable}
           <span class="icon-stack">
             <span class="icon-default"><Icon name="comment" /></span>
-            <span class="icon-hover"><Icon name="chevron-down" /></span>
+            <span class="icon-hover">
+              <Icon name={expanded ? "collapse-vertical" : "expand-vertical"} />
+            </span>
           </span>
         {:else}
           <Icon name="comment" />

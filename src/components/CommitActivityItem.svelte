@@ -301,7 +301,9 @@
     <div class="icon">
       <span class="icon-stack">
         <span class="icon-default"><Icon name="commit" /></span>
-        <span class="icon-hover"><Icon name="chevron-down" /></span>
+        <span class="icon-hover">
+          <Icon name={expanded ? "collapse-vertical" : "expand-vertical"} />
+        </span>
       </span>
     </div>
     <div class="wrapper">
