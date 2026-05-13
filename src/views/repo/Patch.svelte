@@ -252,6 +252,8 @@
   .main {
     padding: 1.5rem 6rem;
     min-width: 0;
+    max-width: 80rem;
+    margin: 0 auto;
   }
   .title {
     display: flex;
