@@ -97,9 +97,6 @@
   .icon-stack {
     display: grid;
   }
-  .icon-expanded {
-    transition: transform 150ms ease;
-  }
   .icon-default,
   .icon-hover {
     grid-area: 1 / 1;
@@ -120,10 +117,6 @@
   .header.expandable:focus-visible .icon-hover {
     opacity: 1;
     transform: rotate(0);
-  }
-  .header.expandable:hover .icon-expanded,
-  .header.expandable:focus-visible .icon-expanded {
-    transform: rotate(-90deg);
   }
 
   .container {
@@ -171,14 +164,12 @@
   <div class="left">
     {#if expandable}
       <div class="toggle-icon" style:padding="0 0.5rem">
-        {#if expanded}
-          <span class="icon-expanded"><Icon name="chevron-down" /></span>
-        {:else}
-          <span class="icon-stack">
-            <span class="icon-default"><Icon name="document" /></span>
-            <span class="icon-hover"><Icon name="chevron-right" /></span>
+        <span class="icon-stack">
+          <span class="icon-default"><Icon name="document" /></span>
+          <span class="icon-hover">
+            <Icon name={expanded ? "collapse-vertical" : "expand-vertical"} />
           </span>
-        {/if}
+        </span>
       </div>
     {/if}
     {@render leftHeader?.()}
