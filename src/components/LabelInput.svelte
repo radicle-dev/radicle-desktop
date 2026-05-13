@@ -155,7 +155,7 @@
         disabled={!allowedToEdit}
         title={allowedToEdit
           ? undefined
-          : "Only delegates are allowed to add labels"}
+          : "Only delegates can add labels"}
         onclick={() => {
           inputValue = "";
           showInput = true;

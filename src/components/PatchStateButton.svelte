@@ -37,7 +37,7 @@
       title={selectedState.status === "merged"
         ? "The state of merged patches can not be changed"
         : disabled
-          ? "You must be a delegate or the patch author to change the patch state"
+          ? "Only delegates and the patch author can change the patch state"
           : undefined}>
       <span
         style:color={selectedState.status === "merged" || disabled

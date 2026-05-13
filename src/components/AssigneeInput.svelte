@@ -173,7 +173,7 @@
         disabled={!allowedToEdit}
         title={allowedToEdit
           ? undefined
-          : "Only delegates are allowed to add assignees"}
+          : "Only delegates can add assignees"}
         onclick={() => {
           inputValue = "";
           showInput = true;
