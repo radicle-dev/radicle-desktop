@@ -99,6 +99,17 @@
 </style>
 
 <div class="row">
+  {#if stats}
+    <div class="stats">
+      <Icon name="diff" />
+      <span>
+        {stats.filesChanged}
+        {pluralize("file", stats.filesChanged)}
+      </span>
+      <span class="insertions">+{stats.insertions}</span>
+      <span class="deletions">-{stats.deletions}</span>
+    </div>
+  {/if}
   <PatchStateButton
     selectedState={patch.state}
     onSelect={newState => {
@@ -125,15 +136,4 @@
     assignees={patch.assignees}
     submitInProgress={assigneesSaveInProgress}
     save={saveAssignees} />
-  {#if stats}
-    <div class="stats">
-      <Icon name="diff" />
-      <span>
-        {stats.filesChanged}
-        {pluralize("file", stats.filesChanged)}
-      </span>
-      <span class="insertions">+{stats.insertions}</span>
-      <span class="deletions">-{stats.deletions}</span>
-    </div>
-  {/if}
 </div>
