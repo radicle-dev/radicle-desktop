@@ -28,12 +28,15 @@
   import Button from "@app/components/Button.svelte";
   import CheckoutPatchButton from "@app/components/CheckoutPatchButton.svelte";
   import DraftReviewBar from "@app/components/DraftReviewBar.svelte";
+  import DropdownList from "@app/components/DropdownList.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchMetadata from "@app/components/PatchMetadata.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import RevisionComponent from "@app/components/Revision.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
@@ -59,6 +62,22 @@
   let patchView: "activity" | "changes" = $state("activity");
   let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
   let selectedRevisionStats: Stats | undefined = $state();
+  let revisionPickerExpanded = $state(false);
+  let filesExpanded = $state(true);
+
+  const sortedRevisions = $derived(
+    [...revisions].sort((a, b) => a.timestamp - b.timestamp),
+  );
+  const selectedRevisionIndex = $derived(
+    sortedRevisions.findIndex(r => r.id === selectedRevision.id),
+  );
+
+  function revisionTitle(rev: Revision): string | undefined {
+    const body = rev.description.at(-1)?.body?.trim();
+    if (!body) return undefined;
+    const line = body.split("\n")[0].trim();
+    return line.length > 0 ? line : undefined;
+  }
 
   $effect(() => {
     const rev = selectedRevision;
@@ -243,6 +262,29 @@
   .meta-bar {
     margin-bottom: 1.5rem;
   }
+  .tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .tabs-left,
+  .tabs-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .tabs-right {
+    margin-left: auto;
+  }
+  .revision-title {
+    color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    max-width: 24rem;
+  }
 </style>
 
 <Layout>
@@ -356,20 +398,92 @@
               view="description" />
 
             <div class="tabs">
-              <Button
-                variant={patchView === "activity" ? "ghost" : "naked"}
-                active={patchView === "activity"}
-                onclick={() => (patchView = "activity")}>
-                <Icon name="activity" />
-                Activity
-              </Button>
-              <Button
-                variant={patchView === "changes" ? "ghost" : "naked"}
-                active={patchView === "changes"}
-                onclick={() => (patchView = "changes")}>
-                <Icon name="diff" />
-                Changes
-              </Button>
+              <div class="tabs-left">
+                <Button
+                  variant={patchView === "activity" ? "ghost" : "naked"}
+                  active={patchView === "activity"}
+                  onclick={() => (patchView = "activity")}>
+                  <Icon name="activity" />
+                  Activity
+                </Button>
+                <Button
+                  variant={patchView === "changes" ? "ghost" : "naked"}
+                  active={patchView === "changes"}
+                  onclick={() => (patchView = "changes")}>
+                  <Icon name="diff" />
+                  Changes
+                </Button>
+              </div>
+              {#if patchView === "changes"}
+                <div class="tabs-right">
+                  {#if sortedRevisions.length > 1}
+                    <Popover
+                      popoverPadding="0"
+                      placement="bottom-start"
+                      bind:expanded={revisionPickerExpanded}>
+                      {#snippet toggle(onclick)}
+                        <Button
+                          variant="outline"
+                          {onclick}
+                          active={revisionPickerExpanded}>
+                          <Icon name="revision" />
+                          <span style:color="var(--color-text-secondary)">
+                            Revision {selectedRevisionIndex >= 0
+                              ? selectedRevisionIndex + 1
+                              : "?"} of
+                            {sortedRevisions.length}
+                          </span>
+                          <span class="txt-id">
+                            {selectedRevision.id.substring(0, 7)}
+                          </span>
+                          <Icon
+                            name={revisionPickerExpanded
+                              ? "chevron-up"
+                              : "chevron-down"} />
+                        </Button>
+                      {/snippet}
+                      {#snippet popover()}
+                        <div
+                          style:border="1px solid var(--color-border-subtle)"
+                          style:border-radius="var(--border-radius-sm)"
+                          style:background-color="var(--color-surface-canvas)">
+                          <DropdownList items={sortedRevisions}>
+                            {#snippet item(rev)}
+                              {@const title = revisionTitle(rev)}
+                              <DropdownListItem
+                                selected={rev.id === selectedRevision.id}
+                                styleGap="0.5rem"
+                                onclick={() => {
+                                  selectedRevision = rev;
+                                  closeFocused();
+                                }}>
+                                <Icon name="revision" />
+                                <span class="txt-id">
+                                  {rev.id.substring(0, 7)}
+                                </span>
+                                {#if title}
+                                  <span class="revision-title">{title}</span>
+                                {/if}
+                              </DropdownListItem>
+                            {/snippet}
+                          </DropdownList>
+                        </div>
+                      {/snippet}
+                    </Popover>
+                  {/if}
+                  <Button
+                    variant="naked"
+                    onclick={() => (filesExpanded = !filesExpanded)}>
+                    {#if filesExpanded}
+                      <Icon name="collapse-vertical" />
+                      Collapse all
+                    {:else}
+                      <Icon name="expand-vertical" />
+                      Expand all
+                    {/if}
+                  </Button>
+                </div>
+              {/if}
             </div>
 
             <RevisionComponent
@@ -383,8 +497,8 @@
               view={patchView}
               {activity}
               {revisions}
-              onSelectRevision={rev => (selectedRevision = rev)}
-              draftReviewId={ownDraftReviewForPatch?.id} />
+              draftReviewId={ownDraftReviewForPatch?.id}
+              bind:filesExpanded />
           </div>
         </div>
       </ScrollArea>

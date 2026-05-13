@@ -5,53 +5,31 @@
   import { cachedGetDiff, cachedListCommits } from "@app/lib/invoke";
   import { pluralize } from "@app/lib/utils";
 
-  import Button from "@app/components/Button.svelte";
   import Changeset from "@app/components/Changeset.svelte";
   import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
   import CommitsContainer from "@app/components/CommitsContainer.svelte";
-  import DropdownList from "@app/components/DropdownList.svelte";
-  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import JobCob from "@app/components/JobCob.svelte";
-  import Popover, { closeFocused } from "@app/components/Popover.svelte";
 
   interface Props {
     patchId: string;
     revision: Revision;
     rid: string;
     codeComments?: CodeComments;
-    revisions?: Revision[];
-    onSelectRevision?: (revision: Revision) => void;
     draftReviewId?: string;
+    filesExpanded?: boolean;
   }
 
-  const {
+  let {
     patchId,
     revision,
     rid,
     codeComments,
-    revisions = [],
-    onSelectRevision,
     draftReviewId,
+    filesExpanded = $bindable(true),
   }: Props = $props();
 
-  let revisionPickerExpanded = $state(false);
-  const sortedRevisions = $derived(
-    [...revisions].sort((a, b) => a.timestamp - b.timestamp),
-  );
-  const revisionIndex = $derived(
-    sortedRevisions.findIndex(r => r.id === revision.id),
-  );
-
-  function revisionTitle(rev: Revision): string | undefined {
-    const body = rev.description.at(-1)?.body?.trim();
-    if (!body) return undefined;
-    const line = body.split("\n")[0].trim();
-    return line.length > 0 ? line : undefined;
-  }
-
-  let filesExpanded = $state(true);
   let selectedCommit = $state<string>();
   // Parent reuses this component across patch revisions; a sibling $effect
   // resets base and head when patchId changes.
@@ -145,74 +123,7 @@
   .single-commit {
     cursor: default !important;
   }
-  .revision-title {
-    color: var(--color-text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    min-width: 0;
-    max-width: 24rem;
-  }
 </style>
-
-<div
-  class="txt-body-m-regular global-flex"
-  style:margin-bottom="1rem"
-  style:gap="0.5rem"
-  style:justify-content="flex-end">
-  {#if sortedRevisions.length > 1 && onSelectRevision}
-    <Popover
-      popoverPadding="0"
-      placement="bottom-start"
-      bind:expanded={revisionPickerExpanded}>
-      {#snippet toggle(onclick)}
-        <Button variant="outline" {onclick} active={revisionPickerExpanded}>
-          <Icon name="revision" />
-          <span style:color="var(--color-text-secondary)">
-            Revision {revisionIndex >= 0 ? revisionIndex + 1 : "?"} of
-            {sortedRevisions.length}
-          </span>
-          <span class="txt-id">{revision.id.substring(0, 7)}</span>
-          <Icon name={revisionPickerExpanded ? "chevron-up" : "chevron-down"} />
-        </Button>
-      {/snippet}
-      {#snippet popover()}
-        <div
-          style:border="1px solid var(--color-border-subtle)"
-          style:border-radius="var(--border-radius-sm)"
-          style:background-color="var(--color-surface-canvas)">
-          <DropdownList items={sortedRevisions}>
-            {#snippet item(rev)}
-              {@const title = revisionTitle(rev)}
-              <DropdownListItem
-                selected={rev.id === revision.id}
-                styleGap="0.5rem"
-                onclick={() => {
-                  onSelectRevision?.(rev);
-                  closeFocused();
-                }}>
-                <Icon name="revision" />
-                <span class="txt-id">{rev.id.substring(0, 7)}</span>
-                {#if title}
-                  <span class="revision-title">{title}</span>
-                {/if}
-              </DropdownListItem>
-            {/snippet}
-          </DropdownList>
-        </div>
-      {/snippet}
-    </Popover>
-  {/if}
-  <Button variant="naked" onclick={() => (filesExpanded = !filesExpanded)}>
-    {#if filesExpanded === true}
-      <Icon name="collapse-vertical" />
-      Collapse all
-    {:else}
-      <Icon name="expand-vertical" />
-      Expand all
-    {/if}
-  </Button>
-</div>
 
 <div>
   {#await cachedListCommits(rid, revision.base, revision.head) then commits}

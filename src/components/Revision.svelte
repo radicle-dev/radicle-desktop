@@ -46,11 +46,11 @@
     view?: "description" | "activity" | "changes";
     activity?: Operation<Action>[];
     revisions?: Revision[];
-    onSelectRevision?: (revision: Revision) => void;
     draftReviewId?: string;
+    filesExpanded?: boolean;
   }
 
-  const {
+  let {
     rid,
     repo,
     repoDelegates,
@@ -61,8 +61,8 @@
     view = "activity",
     activity = [],
     revisions = [],
-    onSelectRevision,
     draftReviewId,
+    filesExpanded = $bindable(true),
   }: Props = $props();
   const currentUserAuthor: Author = $derived({
     did: didFromPublicKey(config.publicKey),
@@ -656,7 +656,6 @@
     {patchId}
     {revision}
     {codeComments}
-    {revisions}
-    {onSelectRevision}
-    {draftReviewId} />
+    {draftReviewId}
+    bind:filesExpanded />
 {/if}
