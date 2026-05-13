@@ -174,28 +174,16 @@
     white-space: pre-wrap;
     color: var(--color-text-secondary);
   }
-  .expanded-header {
-    margin: 1rem 0 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.75rem;
-    align-items: start;
-  }
-  .expanded-header .full-message {
-    margin: 0 0 1rem;
-    padding-top: 0.375rem;
+  .stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 1rem;
   }
   .diff-summary {
-    margin-top: 1rem;
+    min-width: 0;
     color: var(--color-text-secondary);
-  }
-  .expanded-header .diff-summary {
-    margin-top: 0;
-  }
-  .diff-toolbar {
-    margin: 0;
-    display: flex;
-    justify-content: flex-end;
   }
   .timestamp {
     color: var(--color-text-quaternary);
@@ -368,46 +356,13 @@
               </div>
             </div>
           {:then diff}
-            {#if expandedBody || diff.files.length > 1}
-              <div class="expanded-header">
-                <div>
-                  {#if expandedBody}
-                    <div class="full-message txt-body-m-regular">
-                      {expandedBody}
-                    </div>
-                  {/if}
-                  <div class="diff-summary txt-body-m-regular">
-                    {diff.stats.filesChanged}
-                    {pluralize("file", diff.stats.filesChanged)} modified with
-                    <span style:color="var(--color-feedback-success-text)">
-                      {diff.stats.insertions}
-                      {pluralize("insertion", diff.stats.insertions)}
-                    </span>
-                    and
-                    <span style:color="var(--color-feedback-error-text)">
-                      {diff.stats.deletions}
-                      {pluralize("deletion", diff.stats.deletions)}
-                    </span>
-                  </div>
-                </div>
-                {#if diff.files.length > 1}
-                  <div class="diff-toolbar txt-body-m-regular">
-                    <Button
-                      variant="naked"
-                      onclick={() => (filesExpanded = !filesExpanded)}>
-                      {#if filesExpanded}
-                        <Icon name="collapse-vertical" />
-                        Collapse all
-                      {:else}
-                        <Icon name="expand-vertical" />
-                        Expand all
-                      {/if}
-                    </Button>
-                  </div>
-                {/if}
+            {#if expandedBody}
+              <div class="full-message txt-body-m-regular">
+                {expandedBody}
               </div>
-            {:else}
-              <div class="diff-summary txt-body-m-regular">
+            {/if}
+            <div class="stats-row txt-body-m-regular">
+              <div class="diff-summary">
                 {diff.stats.filesChanged}
                 {pluralize("file", diff.stats.filesChanged)} modified with
                 <span style:color="var(--color-feedback-success-text)">
@@ -420,7 +375,20 @@
                   {pluralize("deletion", diff.stats.deletions)}
                 </span>
               </div>
-            {/if}
+              {#if diff.files.length > 1}
+                <Button
+                  variant="naked"
+                  onclick={() => (filesExpanded = !filesExpanded)}>
+                  {#if filesExpanded}
+                    <Icon name="collapse-vertical" />
+                    Collapse all
+                  {:else}
+                    <Icon name="expand-vertical" />
+                    Expand all
+                  {/if}
+                </Button>
+              {/if}
+            </div>
             <div class="diff">
               {#each diff.files as file (fileKey(file))}
                 <FileDiff
