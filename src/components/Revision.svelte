@@ -333,7 +333,7 @@
         .map(r => r.id),
     );
 
-    if (olderRevisionsExpanded || olderRevisionIds.size === 0) {
+    if (olderRevisionsExpanded || olderRevisionIds.size < 2) {
       return items;
     }
 
