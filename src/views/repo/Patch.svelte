@@ -262,7 +262,7 @@
     margin-bottom: 1rem;
   }
   .meta-bar {
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
   }
   .tabs {
     display: flex;
