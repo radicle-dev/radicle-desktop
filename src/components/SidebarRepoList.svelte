@@ -102,7 +102,7 @@
     !window.localStorage,
   );
 
-  const pinnedRepoIds = useLocalStorage<string[]>(
+  const pinnedRepoIds = useLocalStorage(
     "sidebarPinnedRepos",
     array(string()),
     [],

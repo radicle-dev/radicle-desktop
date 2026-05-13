@@ -37,7 +37,7 @@
     "overlayscrollbars": "^2.16.0",
     "overlayscrollbars-svelte": "^0.5.5",
     "semver": "^7.8.0",
-    "zod": "^3.25.76"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

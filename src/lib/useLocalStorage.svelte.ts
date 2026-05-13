@@ -1,37 +1,31 @@
-import { type SafeParseReturnType, z } from "zod";
+import { z } from "zod";
 
-export default function useLocalStorage<
-  S extends z.infer<T>,
-  T extends z.ZodType = z.ZodType<S>,
->(
+export default function useLocalStorage<T extends z.ZodType>(
   key: string,
   schema: T,
-  initialValue: z.infer<typeof schema>,
+  initialValue: z.infer<T>,
   disableLocalStorage = false,
 ) {
   const stored = !disableLocalStorage ? localStorage.getItem(key) : null;
 
-  const parseFromJson = (
-    content: string,
-  ): SafeParseReturnType<string, T["_output"]> => {
-    return z
+  const parseFromJson = (content: string) =>
+    z
       .string()
       .transform((_, ctx) => {
         try {
           return JSON.parse(content);
         } catch {
           ctx.addIssue({
-            code: z.ZodIssueCode.custom,
+            code: "custom",
             message: "invalid json",
           });
-          return z.never;
+          return z.NEVER;
         }
       })
       .pipe(schema)
       .safeParse(content);
-  };
 
-  let value = $state<S>(initialValue);
+  let value = $state<z.infer<T>>(initialValue);
 
   if (stored) {
     try {
@@ -46,7 +40,7 @@ export default function useLocalStorage<
     }
   }
 
-  function set(v: S) {
+  function set(v: z.infer<T>) {
     value = v;
     if (!disableLocalStorage) localStorage.setItem(key, JSON.stringify(value));
   }
@@ -55,10 +49,10 @@ export default function useLocalStorage<
     get value() {
       return value;
     },
-    set value(v: S) {
+    set value(v: z.infer<T>) {
       set(v);
     },
-    update(fn: (v: S) => S) {
+    update(fn: (v: z.infer<T>) => z.infer<T>) {
       set(fn(value));
     },
     clear() {
