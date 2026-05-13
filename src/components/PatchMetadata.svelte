@@ -161,7 +161,7 @@
   }
   .reviews:hover,
   .reviews:focus-visible {
-    border-color: var(--color-border-default);
+    background-color: var(--color-surface-subtle);
     color: var(--color-text-primary);
   }
   .reviewer-stack {
