@@ -32,6 +32,7 @@
     hideAuthor?: boolean;
     targetBranch?: string;
     firstRevision?: boolean;
+    onViewFullReview?: () => void;
   }
 
   const {
@@ -41,6 +42,7 @@
     hideAuthor,
     targetBranch,
     firstRevision = false,
+    onViewFullReview,
   }: Props = $props();
 
   function lastLine(text: string): string | undefined {
@@ -182,7 +184,49 @@
   .merge-badge :global(*) {
     color: inherit;
   }
+  .view-full-review {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.125rem;
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: inherit;
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--border-radius-sm);
+    font: inherit;
+  }
+  .view-full-review:hover,
+  .view-full-review:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
+  .verdict-accept .view-full-review:hover,
+  .verdict-accept .view-full-review:focus-visible {
+    background-color: var(--color-surface-canvas);
+    color: var(--color-feedback-success-text);
+  }
+  .verdict-reject .view-full-review:hover,
+  .verdict-reject .view-full-review:focus-visible {
+    background-color: var(--color-surface-canvas);
+    color: var(--color-feedback-error-text);
+  }
 </style>
+
+{#snippet viewFullReviewButton()}
+  {#if onViewFullReview}
+    <button
+      type="button"
+      class="view-full-review"
+      onclick={e => {
+        e.stopPropagation();
+        onViewFullReview();
+      }}>
+      View full review
+      <Icon name="chevron-right" />
+    </button>
+  {/if}
+{/snippet}
 
 {#if op.type === "revision"}
   {@const summary = lastLine(op.description)}
@@ -410,6 +454,7 @@
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           <span class="summary-secondary">accepted revision</span>
+          {@render viewFullReviewButton()}
         </div>
         <div class="meta">
           <Id id={op.revision} clipboard={op.revision} />
@@ -451,6 +496,7 @@
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           <span class="summary-secondary">rejected revision</span>
+          {@render viewFullReviewButton()}
         </div>
         <div class="meta">
           <Id id={op.revision} clipboard={op.revision} />
@@ -492,6 +538,7 @@
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           <span class="txt-body-m-medium">reviewed revision</span>
+          {@render viewFullReviewButton()}
         </div>
         <div class="meta">
           <Id id={op.revision} clipboard={op.revision} />

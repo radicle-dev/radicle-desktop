@@ -642,24 +642,6 @@
   .summary-secondary {
     color: var(--color-text-tertiary);
   }
-  .view-full-review {
-    align-self: flex-start;
-    background: none;
-    border: 1px solid transparent;
-    cursor: pointer;
-    color: var(--color-text-secondary);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.125rem 0.5rem;
-    margin-left: 1.5rem;
-    border-radius: var(--border-radius-sm);
-  }
-  .view-full-review:hover,
-  .view-full-review:focus-visible {
-    color: var(--color-text-primary);
-    background-color: var(--color-surface-subtle);
-  }
 </style>
 
 {#if view === "description"}
@@ -785,7 +767,15 @@
           op={data.op}
           expanded={toggleable ? expanded : undefined}
           onToggle={toggleable ? () => toggleReview(opId) : undefined}
-          hideAuthor={opts.hideAuthor} />
+          hideAuthor={opts.hideAuthor}
+          onViewFullReview={() =>
+            void push({
+              resource: "repo.patch",
+              rid,
+              patch: patchId,
+              status: undefined,
+              reviewId: opId,
+            })} />
         {#if hasThreads}
           <div class="collapsible" class:open={expanded}>
             <div class="collapsible-inner">
@@ -803,20 +793,6 @@
             </div>
           </div>
         {/if}
-        <button
-          type="button"
-          class="view-full-review txt-body-m-regular"
-          onclick={() =>
-            void push({
-              resource: "repo.patch",
-              rid,
-              patch: patchId,
-              status: undefined,
-              reviewId: opId,
-            })}>
-          View full review
-          <Icon name="chevron-right" />
-        </button>
       {:else}
         <PatchActivityItem
           op={data.op}
