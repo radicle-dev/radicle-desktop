@@ -24,6 +24,7 @@
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import { closeFocused } from "@app/components/Popover.svelte";
+  import { revealRepoInSidebar } from "@app/components/SidebarRepoList.svelte";
 
   interface Props {
     rid: string;
@@ -181,6 +182,7 @@
   class="notification-teaser"
   onclick={() => {
     if (route) {
+      revealRepoInSidebar(rid);
       void push(route);
       closeFocused();
     }

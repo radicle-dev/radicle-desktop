@@ -1,3 +1,41 @@
+<script lang="ts" module>
+  import { array, boolean, string } from "zod";
+
+  import useLocalStorage from "@app/lib/useLocalStorage.svelte";
+
+  let filterOpen = $state(false);
+  let filterQuery = $state("");
+
+  const reposExpanded = useLocalStorage(
+    "sidebarReposExpanded",
+    boolean(),
+    true,
+    !window.localStorage,
+  );
+
+  const pinnedRepoIds = useLocalStorage(
+    "sidebarPinnedRepos",
+    array(string()),
+    [],
+    !window.localStorage,
+  );
+
+  export function revealRepoInSidebar(rid: string) {
+    if (pinnedRepoIds.value.includes(rid)) return;
+
+    filterQuery = "";
+    filterOpen = false;
+    reposExpanded.value = true;
+
+    requestAnimationFrame(() => {
+      const row = document.querySelector(
+        `[data-unpinned-rid="${CSS.escape(rid)}"]`,
+      );
+      row?.scrollIntoView({ block: "nearest" });
+    });
+  }
+</script>
+
 <script lang="ts">
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { RepoSummary } from "@bindings/repo/RepoSummary";
@@ -5,13 +43,11 @@
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
   import { crossfade } from "svelte/transition";
-  import { array, boolean, string } from "zod";
 
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval, resetDynamicInterval } from "@app/lib/interval";
   import { cachedRepoCommitCount, invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
-  import useLocalStorage from "@app/lib/useLocalStorage.svelte";
   import { formatRepositoryId } from "@app/lib/utils";
 
   import AddRepoButton from "@app/components/AddRepoButton.svelte";
@@ -39,8 +75,6 @@
   let repos: RepoSummary[] = $derived(initialRepos);
   let seededNotReplicated: string[] = $derived(initialSeededNotReplicated);
   let activeCommitCount = $state<number | undefined>(undefined);
-  let filterOpen = $state(false);
-  let filterQuery = $state("");
   let filterInputElement: HTMLInputElement | undefined = $state(undefined);
 
   $effect(() => {
@@ -88,24 +122,10 @@
       : repos,
   );
 
-  const reposExpanded = useLocalStorage(
-    "sidebarReposExpanded",
-    boolean(),
-    true,
-    !window.localStorage,
-  );
-
   const fetchingExpanded = useLocalStorage(
     "sidebarFetchingExpanded",
     boolean(),
     true,
-    !window.localStorage,
-  );
-
-  const pinnedRepoIds = useLocalStorage(
-    "sidebarPinnedRepos",
-    array(string()),
-    [],
     !window.localStorage,
   );
 
@@ -656,6 +676,7 @@
       {#each unpinnedFilteredRepos as repo (repo.rid)}
         <div
           class="repo-row-group"
+          data-unpinned-rid={repo.rid}
           animate:flip={{ duration: animationDuration }}
           in:receive={{ key: repo.rid, duration: animationDuration }}
           out:send={{ key: repo.rid, duration: animationDuration }}>
