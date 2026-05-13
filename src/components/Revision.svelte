@@ -23,6 +23,7 @@
   import Changes from "@app/components/Changes.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import CommitActivityItem from "@app/components/CommitActivityItem.svelte";
+  import Icon from "@app/components/Icon.svelte";
   import Discussion, {
     type ActivityItem,
   } from "@app/components/Discussion.svelte";
@@ -31,12 +32,14 @@
   } from "@app/components/PatchActivityItem.svelte";
   import ReviewCodeThread from "@app/components/ReviewCodeThread.svelte";
 
-  type ActivityData = {
-    kind: "op";
-    op: FlattenedPatchOperation;
-    commits?: Commit[];
-    reviewThreads?: Thread<CodeLocation>[];
-  };
+  type ActivityData =
+    | {
+        kind: "op";
+        op: FlattenedPatchOperation;
+        commits?: Commit[];
+        reviewThreads?: Thread<CodeLocation>[];
+      }
+    | { kind: "olderRevisions"; count: number; author?: Author };
 
   interface Props {
     rid: string;
@@ -80,12 +83,14 @@
   );
   let revisionToggles: Record<string, boolean> = $state({});
   let reviewToggles: Record<string, boolean> = $state({});
+  let olderRevisionsExpanded = $state(false);
   let lastPatchIdSeen = patchId;
   $effect(() => {
     if (patchId !== lastPatchIdSeen) {
       lastPatchIdSeen = patchId;
       revisionToggles = {};
       reviewToggles = {};
+      olderRevisionsExpanded = false;
     }
   });
   function isRevisionExpanded(revId: string): boolean {
@@ -321,7 +326,45 @@
     });
 
     items.sort((a, b) => a.timestamp - b.timestamp);
-    return items;
+
+    const olderRevisionIds = new Set(
+      revisions
+        .filter(r => r.id !== firstRevisionId && r.id !== latestRevisionId)
+        .map(r => r.id),
+    );
+
+    if (olderRevisionsExpanded || olderRevisionIds.size === 0) {
+      return items;
+    }
+
+    const folded: ActivityItem<ActivityData>[] = [];
+    let placeholderInserted = false;
+    let placeholderAuthor: Author | undefined;
+    for (const item of items) {
+      const isOlderRevisionOp =
+        item.data.kind === "op" &&
+        item.data.op.type === "revision" &&
+        olderRevisionIds.has(item.data.op.id);
+      if (!isOlderRevisionOp) {
+        folded.push(item);
+        continue;
+      }
+      if (!placeholderInserted) {
+        placeholderAuthor =
+          item.data.kind === "op" ? item.data.op.author : undefined;
+        folded.push({
+          key: "older-revisions",
+          timestamp: item.timestamp,
+          data: {
+            kind: "olderRevisions",
+            count: olderRevisionIds.size,
+            author: placeholderAuthor,
+          },
+        });
+        placeholderInserted = true;
+      }
+    }
+    return folded;
   });
   const reviewSummaryFingerprints = $derived(
     new Set(
@@ -538,6 +581,51 @@
     width: 1px;
     background-color: var(--color-border-subtle);
   }
+  .older-revisions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.125rem 0.25rem;
+    margin: 0 -0.25rem;
+    border-radius: var(--border-radius-sm);
+  }
+  .older-revisions:hover,
+  .older-revisions:focus-visible {
+    background-color: var(--color-surface-subtle);
+  }
+  .older-revisions .icon {
+    padding-top: 0.1875rem;
+  }
+  .older-revisions .icon-stack {
+    display: grid;
+    width: 1rem;
+    place-items: center;
+  }
+  .older-revisions .icon-default,
+  .older-revisions .icon-hover {
+    grid-area: 1 / 1;
+    transition:
+      opacity 150ms ease,
+      transform 150ms ease;
+  }
+  .older-revisions .icon-hover {
+    opacity: 0;
+    transform: rotate(-90deg);
+  }
+  .older-revisions:hover .icon-default,
+  .older-revisions:focus-visible .icon-default {
+    opacity: 0;
+    transform: rotate(90deg);
+  }
+  .older-revisions:hover .icon-hover,
+  .older-revisions:focus-visible .icon-hover {
+    opacity: 1;
+    transform: rotate(0);
+  }
+  .summary-secondary {
+    color: var(--color-text-tertiary);
+  }
 </style>
 
 {#if view === "description"}
@@ -655,6 +743,25 @@
           hideAuthor={opts.hideAuthor}
           targetBranch={data.op.type === "merge" ? targetBranch : undefined} />
       {/if}
+    {:else if data.kind === "olderRevisions"}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+      <div
+        class="older-revisions txt-body-m-regular"
+        role="button"
+        tabindex="0"
+        onclick={() => (olderRevisionsExpanded = true)}>
+        <div class="icon">
+          <span class="icon-stack">
+            <span class="icon-default"><Icon name="revision" /></span>
+            <span class="icon-hover"><Icon name="expand-vertical" /></span>
+          </span>
+        </div>
+        <span class="summary-secondary">
+          Show {data.count}
+          {data.count === 1 ? "older revision" : "older revisions"}
+        </span>
+      </div>
     {/if}
   {/snippet}
 
@@ -669,7 +776,7 @@
     {rid}
     {activityItems}
     {renderActivity}
-    authorOf={data => data.op.author} />
+    authorOf={data => (data.kind === "op" ? data.op.author : data.author)} />
 {:else}
   <Changes
     {rid}
