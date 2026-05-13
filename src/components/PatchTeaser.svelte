@@ -10,6 +10,8 @@
     formatTimestamp,
     patchStatusBackgroundColor,
     patchStatusColor,
+    pluralize,
+    publicKeyFromDid,
   } from "@app/lib/utils";
 
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
@@ -18,6 +20,7 @@
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import Label from "@app/components/Label.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import UserAvatar from "@app/components/UserAvatar.svelte";
 
   interface Props {
     focussed?: boolean;
@@ -60,6 +63,38 @@
   }
   .patch-teaser:only-of-type {
     border-radius: var(--border-radius-sm);
+  }
+  .reviews {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.5rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+  }
+  .reviewer-stack {
+    display: inline-flex;
+    align-items: center;
+  }
+  .reviewer-stack :global(img) {
+    outline: 1px solid var(--color-surface-canvas);
+    margin-left: -0.25rem;
+  }
+  .reviewer-stack :global(img:first-child) {
+    margin-left: 0;
+  }
+  .reviewer-overflow {
+    margin-left: 0.25rem;
+    color: var(--color-text-tertiary);
+  }
+  .verdict-accept {
+    color: var(--color-feedback-success-text);
+  }
+  .verdict-reject {
+    color: var(--color-feedback-error-text);
   }
 </style>
 
@@ -138,17 +173,36 @@
           {patch.commentCount}
         </div>
       {/if}
-      {#if patch.reviewCount > 0}
+      {#if patch.reviewers.length > 0}
+        {@const verdicts = patch.reviewers.map(r => r.verdict)}
+        {@const hasReject = verdicts.includes("reject")}
+        {@const allAccept =
+          verdicts.length > 0 && verdicts.every(v => v === "accept")}
         <div
-          class="txt-body-m-regular global-flex"
-          style:gap="0.25rem"
-          style:border="1px solid var(--color-border-subtle)"
-          style:border-radius="var(--border-radius-sm)"
-          style:height="1.5rem"
-          style:padding="0 0.5rem"
-          style:color="var(--color-text-tertiary)">
-          <Icon name="badge" />
-          {patch.reviewCount}
+          class="reviews txt-body-m-regular"
+          title="{patch.reviewers.length} {pluralize(
+            'reviewer',
+            patch.reviewers.length,
+          )}">
+          <span
+            class:verdict-accept={allAccept}
+            class:verdict-reject={hasReject}>
+            <Icon
+              name={hasReject ? "stop" : allAccept ? "thumbs-up" : "comment"} />
+          </span>
+          <span>{patch.reviewers.length}</span>
+          <span class="reviewer-stack">
+            {#each patch.reviewers.slice(0, 3) as reviewer (reviewer.author.did)}
+              <UserAvatar
+                nodeId={publicKeyFromDid(reviewer.author.did)}
+                styleWidth="1rem" />
+            {/each}
+            {#if patch.reviewers.length > 3}
+              <span class="reviewer-overflow">
+                +{patch.reviewers.length - 3}
+              </span>
+            {/if}
+          </span>
         </div>
       {/if}
       <div

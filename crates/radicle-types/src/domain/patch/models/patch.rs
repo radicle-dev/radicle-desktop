@@ -21,6 +21,17 @@ use crate::cobs::FromRadicleAction;
 #[ts(export)]
 #[ts(export_to = "cob/patch/")]
 #[serde(rename_all = "camelCase")]
+pub struct Reviewer {
+    author: cobs::Author,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    verdict: Option<Verdict>,
+}
+
+#[derive(Debug, TS, Serialize)]
+#[ts(export)]
+#[ts(export_to = "cob/patch/")]
+#[serde(rename_all = "camelCase")]
 pub struct Patch {
     id: String,
     author: cobs::Author,
@@ -40,6 +51,7 @@ pub struct Patch {
     comment_count: usize,
     #[ts(type = "number")]
     review_count: usize,
+    reviewers: Vec<Reviewer>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -54,6 +66,21 @@ pub enum ListPatchesError {
 
 impl Patch {
     pub fn new(id: patch::PatchId, patch: &patch::Patch, aliases: &impl AliasStore) -> Self {
+        let mut sorted_revisions: Vec<_> = patch.revisions().collect();
+        sorted_revisions.sort_by_key(|(_, revision)| revision.timestamp());
+        let mut reviewer_map: BTreeMap<radicle::identity::Did, Reviewer> = BTreeMap::new();
+        for (_, revision) in &sorted_revisions {
+            for (_, review) in revision.reviews() {
+                let did: radicle::identity::Did = (*review.author().public_key()).into();
+                reviewer_map.insert(
+                    did,
+                    Reviewer {
+                        author: cobs::Author::new(&did, aliases),
+                        verdict: review.verdict().map(|v| v.into()),
+                    },
+                );
+            }
+        }
         Self {
             id: id.to_string(),
             author: cobs::Author::new(patch.author().id(), aliases),
@@ -85,6 +112,7 @@ impl Patch {
                 .revisions()
                 .map(|(_, revision)| revision.reviews().count())
                 .sum(),
+            reviewers: reviewer_map.into_values().collect(),
         }
     }
 

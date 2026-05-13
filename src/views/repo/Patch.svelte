@@ -380,6 +380,7 @@
               {loadPatch}
               {patch}
               {repo}
+              {revisions}
               {saveState}
               stats={selectedRevisionStats} />
           </div>
