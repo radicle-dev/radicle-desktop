@@ -3,11 +3,13 @@
   import type { Operation } from "@bindings/cob/Operation";
   import type { Action } from "@bindings/cob/patch/Action";
   import type { Patch } from "@bindings/cob/patch/Patch";
+  import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Config } from "@bindings/config/Config";
   import type { Stats } from "@bindings/diff/Stats";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import type { DraftReview } from "@app/lib/draftReviewStorage";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { cachedGetDiff, cachedListCommits, invoke } from "@app/lib/invoke";
@@ -33,6 +35,7 @@
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchMetadata from "@app/components/PatchMetadata.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
+  import ReviewPage from "@app/components/ReviewPage.svelte";
   import RevisionComponent from "@app/components/Revision.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
@@ -46,10 +49,12 @@
     config: Config;
     activity: Operation<Action>[];
     status: PatchStatus | undefined;
+    review?: Review | DraftReview;
   }
 
   /* eslint-disable prefer-const */
-  let { repo, patch, revisions, config, activity }: Props = $props();
+  let { repo, patch, revisions, config, activity, status, review }: Props =
+    $props();
   /* eslint-enable prefer-const */
 
   let tab: "patch" | "revisions" | "timeline" = $state(
@@ -303,7 +308,26 @@
           {patchStatusLabel[patch.state.status]}
         </button>
         <Icon name="chevron-right" />
-        <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
+        {#if review}
+          <button
+            class="breadcrumb-link"
+            onclick={() =>
+              router.push({
+                resource: "repo.patch",
+                rid: repo.rid,
+                patch: patch.id,
+                status,
+                reviewId: undefined,
+              })}>
+            <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
+          </button>
+          <Icon name="chevron-right" />
+          <span style:color="var(--color-text-secondary)">
+            Review by {review.author.alias ?? review.author.did.slice(0, 16)}
+          </span>
+        {:else}
+          <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
+        {/if}
         <ExternalLink
           href={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
           title="Open in radicle.network" />
@@ -395,97 +419,108 @@
             {config}
             view="description" />
 
-          <div class="tabs">
-            <div class="tabs-left">
-              <Button
-                variant={patchView === "activity" ? "ghost" : "naked"}
-                active={patchView === "activity"}
-                onclick={() => (patchView = "activity")}>
-                <Icon name="activity" />
-                Activity
-              </Button>
-              <Button
-                variant={patchView === "changes" ? "ghost" : "naked"}
-                active={patchView === "changes"}
-                onclick={() => (patchView = "changes")}>
-                <Icon name="diff" />
-                Changes
-              </Button>
-            </div>
-            {#if patchView === "changes"}
-              <div class="tabs-right">
-                {#if sortedRevisions.length > 1}
-                  <Popover
-                    popoverPadding="0"
-                    placement="bottom-start"
-                    bind:expanded={revisionPickerExpanded}>
-                    {#snippet toggle(onclick)}
-                      <Button
-                        variant="outline"
-                        {onclick}
-                        active={revisionPickerExpanded}>
-                        <Icon name="revision" />
-                        <span style:color="var(--color-text-secondary)">
-                          Revision {selectedRevisionIndex >= 0
-                            ? selectedRevisionIndex + 1
-                            : "?"} of
-                          {sortedRevisions.length}
-                        </span>
-                        <span class="txt-id">
-                          {selectedRevision.id.substring(0, 7)}
-                        </span>
-                        <Icon
-                          name={revisionPickerExpanded
-                            ? "chevron-up"
-                            : "chevron-down"} />
-                      </Button>
-                    {/snippet}
-                    {#snippet popover()}
-                      <div
-                        style:border="1px solid var(--color-border-subtle)"
-                        style:border-radius="var(--border-radius-sm)"
-                        style:background-color="var(--color-surface-canvas)">
-                        <DropdownList items={sortedRevisions}>
-                          {#snippet item(rev)}
-                            {@const title = revisionTitle(rev)}
-                            <DropdownListItem
-                              selected={rev.id === selectedRevision.id}
-                              styleGap="0.5rem"
-                              onclick={() => {
-                                selectedRevision = rev;
-                                closeFocused();
-                              }}>
-                              <Icon name="revision" />
-                              <span class="txt-id">
-                                {rev.id.substring(0, 7)}
-                              </span>
-                              {#if title}
-                                <span class="revision-title">{title}</span>
-                              {/if}
-                            </DropdownListItem>
-                          {/snippet}
-                        </DropdownList>
-                      </div>
-                    {/snippet}
-                  </Popover>
-                {/if}
+          {#if review}
+            <ReviewPage
+              {config}
+              {patch}
+              repoDelegates={repo.delegates}
+              {review}
+              {revisions}
+              rid={repo.rid}
+              {status} />
+          {:else}
+            <div class="tabs">
+              <div class="tabs-left">
+                <Button
+                  variant={patchView === "activity" ? "ghost" : "naked"}
+                  active={patchView === "activity"}
+                  onclick={() => (patchView = "activity")}>
+                  <Icon name="activity" />
+                  Activity
+                </Button>
+                <Button
+                  variant={patchView === "changes" ? "ghost" : "naked"}
+                  active={patchView === "changes"}
+                  onclick={() => (patchView = "changes")}>
+                  <Icon name="diff" />
+                  Changes
+                </Button>
               </div>
-            {/if}
-          </div>
+              {#if patchView === "changes"}
+                <div class="tabs-right">
+                  {#if sortedRevisions.length > 1}
+                    <Popover
+                      popoverPadding="0"
+                      placement="bottom-start"
+                      bind:expanded={revisionPickerExpanded}>
+                      {#snippet toggle(onclick)}
+                        <Button
+                          variant="outline"
+                          {onclick}
+                          active={revisionPickerExpanded}>
+                          <Icon name="revision" />
+                          <span style:color="var(--color-text-secondary)">
+                            Revision {selectedRevisionIndex >= 0
+                              ? selectedRevisionIndex + 1
+                              : "?"} of
+                            {sortedRevisions.length}
+                          </span>
+                          <span class="txt-id">
+                            {selectedRevision.id.substring(0, 7)}
+                          </span>
+                          <Icon
+                            name={revisionPickerExpanded
+                              ? "chevron-up"
+                              : "chevron-down"} />
+                        </Button>
+                      {/snippet}
+                      {#snippet popover()}
+                        <div
+                          style:border="1px solid var(--color-border-subtle)"
+                          style:border-radius="var(--border-radius-sm)"
+                          style:background-color="var(--color-surface-canvas)">
+                          <DropdownList items={sortedRevisions}>
+                            {#snippet item(rev)}
+                              {@const title = revisionTitle(rev)}
+                              <DropdownListItem
+                                selected={rev.id === selectedRevision.id}
+                                styleGap="0.5rem"
+                                onclick={() => {
+                                  selectedRevision = rev;
+                                  closeFocused();
+                                }}>
+                                <Icon name="revision" />
+                                <span class="txt-id">
+                                  {rev.id.substring(0, 7)}
+                                </span>
+                                {#if title}
+                                  <span class="revision-title">{title}</span>
+                                {/if}
+                              </DropdownListItem>
+                            {/snippet}
+                          </DropdownList>
+                        </div>
+                      {/snippet}
+                    </Popover>
+                  {/if}
+                </div>
+              {/if}
+            </div>
 
-          <RevisionComponent
-            rid={repo.rid}
-            {repo}
-            repoDelegates={repo.delegates}
-            patchId={patch.id}
-            {loadPatch}
-            revision={selectedRevision}
-            {config}
-            view={patchView}
-            {activity}
-            {revisions}
-            draftReviewId={ownDraftReviewForPatch?.id}
-            bind:filesExpanded />
+            <RevisionComponent
+              rid={repo.rid}
+              {repo}
+              repoDelegates={repo.delegates}
+              patchId={patch.id}
+              {loadPatch}
+              revision={selectedRevision}
+              {config}
+              view={patchView}
+              {activity}
+              {revisions}
+              draftReviewId={ownDraftReviewForPatch?.id}
+              bind:filesExpanded />
+          {/if}
         </div>
       </div>
     </ScrollArea>

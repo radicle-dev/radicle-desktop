@@ -405,15 +405,9 @@
 
     <div class="global-flex comment-icon">
       {#if thread}
-        {#if thread.root.resolved}
-          <Icon
-            name="comment-checkmark"
-            onclick={() => toggleCommentExpand(thread.root.id)} />
-        {:else}
-          <Icon
-            name="comment-cross"
-            onclick={() => toggleCommentExpand(thread.root.id)} />
-        {/if}
+        <Icon
+          name={thread.root.resolved ? "comment-checkmark" : "comment"}
+          onclick={() => toggleCommentExpand(thread.root.id)} />
       {/if}
     </div>
   </div>

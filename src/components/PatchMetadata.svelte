@@ -10,13 +10,23 @@
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
-  import { pluralize, publicKeyFromDid } from "@app/lib/utils";
+  import { push } from "@app/lib/router";
+  import {
+    authorForNodeId,
+    pluralize,
+    publicKeyFromDid,
+    verdictIcon,
+  } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
+  import DropdownList from "@app/components/DropdownList.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
 
   interface Props {
@@ -32,7 +42,11 @@
   const { config, loadPatch, patch, repo, revisions, saveState, stats }: Props =
     $props();
 
-  type ReviewerSummary = { author: Author; verdict?: Verdict };
+  type ReviewerSummary = {
+    author: Author;
+    verdict?: Verdict;
+    reviewId: string;
+  };
 
   const reviewers: ReviewerSummary[] = $derived.by(() => {
     const sorted = [...revisions].sort((a, b) => a.timestamp - b.timestamp);
@@ -42,11 +56,26 @@
         map.set(review.author.did, {
           author: review.author,
           verdict: review.verdict,
+          reviewId: review.id,
         });
       }
     }
     return [...map.values()];
   });
+
+  let reviewersPopoverExpanded = $state(false);
+
+  function openReview(reviewId: string) {
+    reviewersPopoverExpanded = false;
+    closeFocused();
+    void push({
+      resource: "repo.patch",
+      rid: repo.rid,
+      patch: patch.id,
+      status: undefined,
+      reviewId,
+    });
+  }
 
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
@@ -127,6 +156,13 @@
     border-radius: var(--border-radius-sm);
     background-color: var(--color-surface-canvas);
     color: var(--color-text-tertiary);
+    cursor: pointer;
+    font: var(--txt-body-m-regular);
+  }
+  .reviews:hover,
+  .reviews:focus-visible {
+    border-color: var(--color-border-default);
+    color: var(--color-text-primary);
   }
   .reviewer-stack {
     display: inline-flex;
@@ -168,27 +204,69 @@
     {@const hasReject = verdicts.includes("reject")}
     {@const allAccept =
       verdicts.length > 0 && verdicts.every(v => v === "accept")}
-    <div
-      class="reviews"
-      title="{reviewers.length} {pluralize('reviewer', reviewers.length)}">
-      <span class:verdict-accept={allAccept} class:verdict-reject={hasReject}>
-        <Icon name={hasReject ? "stop" : allAccept ? "thumbs-up" : "comment"} />
-      </span>
-      <span>
-        {reviewers.length}
-        {pluralize("review", reviewers.length)}
-      </span>
-      <span class="reviewer-stack">
-        {#each reviewers.slice(0, 3) as reviewer (reviewer.author.did)}
-          <UserAvatar
-            nodeId={publicKeyFromDid(reviewer.author.did)}
-            styleWidth="1.125rem" />
-        {/each}
-        {#if reviewers.length > 3}
-          <span class="reviewer-overflow">+{reviewers.length - 3}</span>
-        {/if}
-      </span>
-    </div>
+    <Popover
+      popoverPadding="0"
+      placement="bottom-start"
+      bind:expanded={reviewersPopoverExpanded}>
+      {#snippet toggle(onclick)}
+        <button
+          type="button"
+          class="reviews"
+          {onclick}
+          aria-haspopup="menu"
+          aria-expanded={reviewersPopoverExpanded}
+          title="{reviewers.length} {pluralize('reviewer', reviewers.length)}">
+          <span
+            class:verdict-accept={allAccept}
+            class:verdict-reject={hasReject}>
+            <Icon
+              name={hasReject ? "stop" : allAccept ? "thumbs-up" : "comment"} />
+          </span>
+          <span>
+            {reviewers.length}
+            {pluralize("review", reviewers.length)}
+          </span>
+          <span class="reviewer-stack">
+            {#each reviewers.slice(0, 3) as reviewer (reviewer.author.did)}
+              <UserAvatar
+                nodeId={publicKeyFromDid(reviewer.author.did)}
+                styleWidth="1.125rem" />
+            {/each}
+            {#if reviewers.length > 3}
+              <span class="reviewer-overflow">+{reviewers.length - 3}</span>
+            {/if}
+          </span>
+        </button>
+      {/snippet}
+      {#snippet popover()}
+        <div
+          style:border="1px solid var(--color-border-subtle)"
+          style:border-radius="var(--border-radius-sm)"
+          style:background-color="var(--color-surface-canvas)"
+          style:min-width="14rem">
+          <DropdownList items={reviewers}>
+            {#snippet item(reviewer)}
+              <DropdownListItem
+                selected={false}
+                styleGap="0.5rem"
+                onclick={() => openReview(reviewer.reviewId)}>
+                <span
+                  class:verdict-accept={reviewer.verdict === "accept"}
+                  class:verdict-reject={reviewer.verdict === "reject"}>
+                  <Icon name={verdictIcon(reviewer.verdict)} />
+                </span>
+                <NodeId {...authorForNodeId(reviewer.author)} />
+                <span
+                  style:margin-left="auto"
+                  style:color="var(--color-text-quaternary)">
+                  View
+                </span>
+              </DropdownListItem>
+            {/snippet}
+          </DropdownList>
+        </div>
+      {/snippet}
+    </Popover>
   {/if}
   <PatchStateButton
     selectedState={patch.state}

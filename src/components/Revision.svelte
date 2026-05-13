@@ -17,6 +17,7 @@
   import { nodeRunning } from "@app/lib/events";
   import { cachedListCommits, invoke } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
+  import { push } from "@app/lib/router";
   import { didFromPublicKey, publicKeyFromDid } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
@@ -187,21 +188,42 @@
     await loadPatch();
   }
 
-  const codeComments: CodeComments | undefined = $derived(
-    hasPublishedReview
-      ? undefined
-      : {
-          config,
-          createComment: createCodeComment,
-          editComment: editCodeComment,
-          deleteComment: deleteCodeComment,
-          repoDelegates,
-          rid,
-          threads: codeCommentThreads,
-          canReply: true,
-          disableAttachments: "Publish your review to attach files",
-        },
-  );
+  const publishedReviewThreads: Thread<CodeLocation>[] = $derived.by(() => {
+    const list: Thread<CodeLocation>[] = [];
+    for (const threads of threadsByReview.values()) {
+      list.push(...threads);
+    }
+    return list;
+  });
+
+  const noopAsync = async () => {};
+
+  const codeComments: CodeComments | undefined = $derived.by(() => {
+    const combinedThreads = [...codeCommentThreads, ...publishedReviewThreads];
+    if (hasPublishedReview) {
+      if (combinedThreads.length === 0) return undefined;
+      return {
+        config,
+        createComment: noopAsync,
+        editComment: noopAsync,
+        repoDelegates,
+        rid,
+        threads: combinedThreads,
+        canReply: false,
+      };
+    }
+    return {
+      config,
+      createComment: createCodeComment,
+      editComment: editCodeComment,
+      deleteComment: deleteCodeComment,
+      repoDelegates,
+      rid,
+      threads: combinedThreads,
+      canReply: false,
+      disableAttachments: "Publish your review to attach files",
+    };
+  });
 
   let commitsByRevision: Record<string, Commit[]> = $state({});
 
@@ -626,6 +648,24 @@
   .summary-secondary {
     color: var(--color-text-tertiary);
   }
+  .view-full-review {
+    align-self: flex-start;
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: var(--color-text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    margin-left: 1.5rem;
+    border-radius: var(--border-radius-sm);
+  }
+  .view-full-review:hover,
+  .view-full-review:focus-visible {
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-subtle);
+  }
 </style>
 
 {#if view === "description"}
@@ -737,6 +777,20 @@
             </div>
           </div>
         {/if}
+        <button
+          type="button"
+          class="view-full-review txt-body-m-regular"
+          onclick={() =>
+            void push({
+              resource: "repo.patch",
+              rid,
+              patch: patchId,
+              status: undefined,
+              reviewId: opId,
+            })}>
+          View full review
+          <Icon name="chevron-right" />
+        </button>
       {:else}
         <PatchActivityItem
           op={data.op}
