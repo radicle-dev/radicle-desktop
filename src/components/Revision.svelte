@@ -22,7 +22,8 @@
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Changes from "@app/components/Changes.svelte";
-  import CommentComponent from "@app/components/Comment.svelte";
+  import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
+  import Markdown from "@app/components/Markdown.svelte";
   import CommitActivityItem from "@app/components/CommitActivityItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Discussion, {
@@ -421,6 +422,8 @@
         }, [])) as Thread[]) || [],
   );
 
+  let editingDescription = $state(false);
+
   async function editRevision(description: string, embeds: Embed[]) {
     try {
       await invoke("edit_patch", {
@@ -436,28 +439,6 @@
       });
     } catch (error) {
       console.error("Editing revision failed: ", error);
-    } finally {
-      await loadPatch();
-    }
-  }
-
-  async function reactOnRevision(authors: Author[], reaction: string) {
-    try {
-      await invoke("edit_patch", {
-        rid: rid,
-        cobId: patchId,
-        action: {
-          type: "revision.react",
-          revision: revision.id,
-          reaction,
-          active: !authors.find(
-            ({ did }) => publicKeyFromDid(did) === config.publicKey,
-          ),
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Editing reactions failed", error);
     } finally {
       await loadPatch();
     }
@@ -532,7 +513,34 @@
 
 <style>
   .patch-body {
+    position: relative;
     margin-bottom: 1rem;
+  }
+  .edit-description {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0.25rem;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    color: var(--color-text-tertiary);
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .patch-body:hover .edit-description,
+  .patch-body:focus-within .edit-description,
+  .edit-description:focus-visible {
+    opacity: 1;
+  }
+  .edit-description:hover,
+  .edit-description:focus-visible {
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-subtle);
   }
   .patch-body :global(.card-header),
   .patch-body :global(.card-body),
@@ -560,7 +568,8 @@
     gap: 1rem;
     padding-left: 1.25rem;
   }
-  .revision-commits.has-header {
+  .revision-commits.has-header,
+  .single-commit-with-header {
     margin-top: 1rem;
   }
   .revision-commits::before {
@@ -669,27 +678,43 @@
 </style>
 
 {#if view === "description"}
-  <div class="txt-body-m-regular patch-body">
-    <CommentComponent
-      caption={revision.id === patchId ? "opened patch" : "created revision"}
-      {rid}
-      currentUserNid={config.publicKey}
-      id={revision.id}
-      lastEdit={revision.description.length > 1
-        ? revision.description.at(-1)
-        : undefined}
-      author={revision.author}
-      reactions={revision.reactions}
-      timestamp={revision.timestamp}
-      body={revision.description.slice(-1)[0].body}
-      reactOnComment={reactOnRevision}
-      editComment={roles.isDelegateOrAuthor(
-        config.publicKey,
-        repoDelegates.map(delegate => delegate.did),
-        revision.author.did,
-      ) && editRevision}>
-    </CommentComponent>
-  </div>
+  {@const body = revision.description.slice(-1)[0].body}
+  {@const canEdit = roles.isDelegateOrAuthor(
+    config.publicKey,
+    repoDelegates.map(d => d.did),
+    revision.author.did,
+  )}
+  {#if editingDescription}
+    <div class="patch-body">
+      <ExtendedTextarea
+        {rid}
+        body={body ?? ""}
+        focus
+        submitCaption="Save"
+        submit={async ({ comment, embeds }) => {
+          await editRevision(comment, Array.from(embeds.values()));
+          editingDescription = false;
+        }}
+        close={() => (editingDescription = false)} />
+    </div>
+  {:else if body.trim() !== "" || canEdit}
+    <div class="patch-body txt-body-m-regular">
+      {#if body.trim() !== ""}
+        <Markdown {rid} breaks content={body} />
+      {:else}
+        <span style:color="var(--color-text-tertiary)">No description.</span>
+      {/if}
+      {#if canEdit}
+        <button
+          type="button"
+          class="edit-description"
+          title="Edit description"
+          onclick={() => (editingDescription = true)}>
+          <Icon name="edit" />
+        </button>
+      {/if}
+    </div>
+  {/if}
 {:else if view === "activity"}
   {#snippet renderActivity(data: ActivityData, opts: { hideAuthor: boolean })}
     {#if data.kind === "op"}
@@ -700,15 +725,18 @@
         {@const expanded = isFirst
           ? true
           : hasCommits && isRevisionExpanded(revId)}
-        {#if !isFirst}
-          <PatchActivityItem
-            op={data.op}
-            {expanded}
-            hideAuthor={opts.hideAuthor}
-            onToggle={hasCommits ? () => toggleRevision(revId) : undefined} />
-        {/if}
+        <PatchActivityItem
+          op={data.op}
+          {expanded}
+          hideAuthor={opts.hideAuthor}
+          firstRevision={isFirst}
+          onToggle={!isFirst && hasCommits
+            ? () => toggleRevision(revId)
+            : undefined} />
         {#if expanded && isFirst && data.commits && data.commits.length === 1}
-          <div transition:slide={{ duration: 180 }}>
+          <div
+            class="single-commit-with-header"
+            transition:slide={{ duration: 180 }}>
             <CommitActivityItem
               commit={data.commits[0]}
               {rid}
@@ -717,8 +745,7 @@
           </div>
         {:else if expanded && data.commits && data.commits.length > 0}
           <div
-            class="revision-commits"
-            class:has-header={!isFirst}
+            class="revision-commits has-header"
             transition:slide={{ duration: 180 }}>
             {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
               {#if group.length > 1}

@@ -31,9 +31,17 @@
     onToggle?: () => void;
     hideAuthor?: boolean;
     targetBranch?: string;
+    firstRevision?: boolean;
   }
 
-  const { op, expanded, onToggle, hideAuthor, targetBranch }: Props = $props();
+  const {
+    op,
+    expanded,
+    onToggle,
+    hideAuthor,
+    targetBranch,
+    firstRevision = false,
+  }: Props = $props();
 
   function lastLine(text: string): string | undefined {
     const lines = text.trim().split("\n");
@@ -189,20 +197,24 @@
     <div class="icon">
       {#if onToggle}
         <span class="icon-stack">
-          <span class="icon-default"><Icon name="revision" /></span>
+          <span class="icon-default">
+            <Icon name={firstRevision ? "patch" : "revision"} />
+          </span>
           <span class="icon-hover">
             <Icon name={expanded ? "collapse-vertical" : "expand-vertical"} />
           </span>
         </span>
       {:else}
-        <Icon name="revision" />
+        <Icon name={firstRevision ? "patch" : "revision"} />
       {/if}
     </div>
     <div class="wrapper">
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
-        <span class="summary-secondary">created revision</span>
-        {#if summary}
+        <span class="summary-secondary">
+          {firstRevision ? "opened patch" : "created revision"}
+        </span>
+        {#if !firstRevision && summary}
           <span class="txt-body-m-medium summary-content">{summary}</span>
         {/if}
       </div>
