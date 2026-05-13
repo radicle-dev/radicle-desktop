@@ -52,9 +52,9 @@
         (a, b) =>
           Boolean(
             a.oid === b.oid &&
-              a.type === b.type &&
-              a.author.did &&
-              b.author.did,
+            a.type === b.type &&
+            a.author.did &&
+            b.author.did,
           ),
       ).sort((a, b) => b.timestamp - a.timestamp),
       kind,

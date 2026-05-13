@@ -113,8 +113,7 @@
           <button onclick={() => show({ component: SettingsView, props: {} })}>
             Settings
           </button>
-          and enable 'Notify on new versions' to receive notifications about new
-          releases.
+          and enable 'Notify on new versions' to receive notifications about new releases.
         </div>
 
         {#if !radicleInstalled() && !$nodeRunning}
