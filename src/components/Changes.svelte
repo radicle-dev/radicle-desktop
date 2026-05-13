@@ -5,6 +5,7 @@
   import { cachedGetDiff, cachedListCommits } from "@app/lib/invoke";
   import { pluralize } from "@app/lib/utils";
 
+  import Button from "@app/components/Button.svelte";
   import Changeset from "@app/components/Changeset.svelte";
   import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
   import CommitsContainer from "@app/components/CommitsContainer.svelte";
@@ -71,6 +72,16 @@
 </script>
 
 <style>
+  .stats-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .stats {
+    min-width: 0;
+  }
   .commits {
     position: relative;
     display: flex;
@@ -223,21 +234,33 @@
   {#await cachedGetDiff(rid, { base, head, unified: 3, highlight: true })}
     <span class="txt-body-m-regular">Loading…</span>
   {:then diff}
-    <div
-      class="txt-body-m-regular"
-      style:color="var(--color-text-secondary)"
-      style:margin-bottom="0.5rem">
-      {diff.stats.filesChanged}
-      {pluralize("file", diff.stats.filesChanged)} modified with
-      <span style:color="var(--color-feedback-success-text)">
-        {diff.stats.insertions}
-        {pluralize("insertion", diff.stats.insertions)}
-      </span>
-      and
-      <span style:color="var(--color-feedback-error-text)">
-        {diff.stats.deletions}
-        {pluralize("deletion", diff.stats.deletions)}
-      </span>
+    <div class="stats-row txt-body-m-regular">
+      <div class="stats" style:color="var(--color-text-secondary)">
+        {diff.stats.filesChanged}
+        {pluralize("file", diff.stats.filesChanged)} modified with
+        <span style:color="var(--color-feedback-success-text)">
+          {diff.stats.insertions}
+          {pluralize("insertion", diff.stats.insertions)}
+        </span>
+        and
+        <span style:color="var(--color-feedback-error-text)">
+          {diff.stats.deletions}
+          {pluralize("deletion", diff.stats.deletions)}
+        </span>
+      </div>
+      {#if diff.stats.filesChanged > 0}
+        <Button
+          variant="naked"
+          onclick={() => (filesExpanded = !filesExpanded)}>
+          {#if filesExpanded}
+            <Icon name="collapse-vertical" />
+            Collapse all
+          {:else}
+            <Icon name="expand-vertical" />
+            Expand all
+          {/if}
+        </Button>
+      {/if}
     </div>
     <Changeset
       expanded={filesExpanded}

@@ -10,11 +10,7 @@
 
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
-  import {
-    cachedGetDiff,
-    cachedListCommits,
-    invoke,
-  } from "@app/lib/invoke";
+  import { cachedGetDiff, cachedListCommits, invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import {
     didFromPublicKey,
@@ -173,8 +169,7 @@
     ) ?? false,
   );
 
-  let reviewProgress: { checked: number; total: number } | undefined =
-    $state();
+  let reviewProgress: { checked: number; total: number } | undefined = $state();
   $effect(() => {
     const draft = ownDraftReviewForPatch;
     const rev = selectedRevision;
@@ -290,232 +285,221 @@
 </style>
 
 <Layout>
-    <div class="page">
-      <Topbar>
-        <div class="breadcrumb">
-          <Icon
-            name={patch.state.status === "open"
-              ? "patch"
-              : `patch-${patch.state.status}`} />
-          <button
-            class="breadcrumb-link"
-            onclick={() =>
-              router.push({
-                resource: "repo.patches",
-                rid: repo.rid,
-                status: patch.state.status,
-              })}>
-            {patchStatusLabel[patch.state.status]}
-          </button>
-          <Icon name="chevron-right" />
-          <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
-          <ExternalLink
-            href={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
-            title="Open in radicle.network" />
+  <div class="page">
+    <Topbar>
+      <div class="breadcrumb">
+        <Icon
+          name={patch.state.status === "open"
+            ? "patch"
+            : `patch-${patch.state.status}`} />
+        <button
+          class="breadcrumb-link"
+          onclick={() =>
+            router.push({
+              resource: "repo.patches",
+              rid: repo.rid,
+              status: patch.state.status,
+            })}>
+          {patchStatusLabel[patch.state.status]}
+        </button>
+        <Icon name="chevron-right" />
+        <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
+        <ExternalLink
+          href={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
+          title="Open in radicle.network" />
+      </div>
+      {#if reviewProgress}
+        <div class="review-progress" title="Items reviewed in this revision">
+          <Icon name="comment" />
+          {reviewProgress.checked}/{reviewProgress.total} reviewed
         </div>
-        {#if reviewProgress}
-          <div class="review-progress" title="Items reviewed in this revision">
-            <Icon name="comment" />
-            {reviewProgress.checked}/{reviewProgress.total} reviewed
-          </div>
-        {/if}
-        <div style:margin-left="auto">
-          <NewPatchButton rid={repo.rid} ghost />
-        </div>
-      </Topbar>
+      {/if}
+      <div style:margin-left="auto">
+        <NewPatchButton rid={repo.rid} ghost />
+      </div>
+    </Topbar>
 
-      <ScrollArea style="flex: 1; min-height: 0;">
-        <div>
-          <div class="main">
-            <div class="title">
-              <div
-                class="global-chip"
-                style:color={patchStatusColor[patch.state.status]}
-                style:background-color={patchStatusBackgroundColor[
-                  patch.state.status
-                ]}
-                style:height="2rem"
-                style:width="2rem"
-                style:padding="0">
-                <Icon
-                  name={patch.state.status === "open"
-                    ? "patch"
-                    : `patch-${patch.state.status}`} />
-              </div>
-              <EditableTitle
-                {updateTitle}
-                allowedToEdit={true}
-                title={patch.title}
-                cobId={patch.id} />
-              <div
-                class="global-flex"
-                style:margin-left="auto"
-                style:z-index="40"
-                style:gap="1rem">
-                <CheckoutPatchButton
-                  {tab}
-                  selectedRevisionId={selectedRevision.id}
-                  patchId={patch.id} />
-                {#if !ownDraftReviewForPatch}
-                  <Button
-                    variant="secondary"
-                    disabled={hasOwnPublishedReviewOnSelected}
-                    onclick={() => {
-                      draftReviewStorage.create(
-                        repo.rid,
-                        patch.id,
-                        selectedRevision.id,
-                      );
-                    }}
-                    title={hasOwnPublishedReviewOnSelected
-                      ? "You already created a review for this revision"
-                      : "Start a review of this revision"}>
-                    <Icon name="comment" />
-                    <span
-                      class="txt-body-m-regular global-hide-on-medium-desktop-down">
-                      Review revision
-                    </span>
-                  </Button>
-                {/if}
-              </div>
+    <ScrollArea style="flex: 1; min-height: 0;">
+      <div>
+        <div class="main">
+          <div class="title">
+            <div
+              class="global-chip"
+              style:color={patchStatusColor[patch.state.status]}
+              style:background-color={patchStatusBackgroundColor[
+                patch.state.status
+              ]}
+              style:height="2rem"
+              style:width="2rem"
+              style:padding="0">
+              <Icon
+                name={patch.state.status === "open"
+                  ? "patch"
+                  : `patch-${patch.state.status}`} />
             </div>
-            <div class="meta-bar">
-              <PatchMetadata
-                {config}
-                {loadPatch}
-                {patch}
-                {repo}
-                {saveState}
-                stats={selectedRevisionStats} />
-            </div>
-
-            <RevisionComponent
-              rid={repo.rid}
-              {repo}
-              repoDelegates={repo.delegates}
-              patchId={patch.id}
-              {loadPatch}
-              revision={revisions[0]}
-              {config}
-              view="description" />
-
-            <div class="tabs">
-              <div class="tabs-left">
+            <EditableTitle
+              {updateTitle}
+              allowedToEdit={true}
+              title={patch.title}
+              cobId={patch.id} />
+            <div
+              class="global-flex"
+              style:margin-left="auto"
+              style:z-index="40"
+              style:gap="1rem">
+              <CheckoutPatchButton
+                {tab}
+                selectedRevisionId={selectedRevision.id}
+                patchId={patch.id} />
+              {#if !ownDraftReviewForPatch}
                 <Button
-                  variant={patchView === "activity" ? "ghost" : "naked"}
-                  active={patchView === "activity"}
-                  onclick={() => (patchView = "activity")}>
-                  <Icon name="activity" />
-                  Activity
+                  variant="secondary"
+                  disabled={hasOwnPublishedReviewOnSelected}
+                  onclick={() => {
+                    draftReviewStorage.create(
+                      repo.rid,
+                      patch.id,
+                      selectedRevision.id,
+                    );
+                  }}
+                  title={hasOwnPublishedReviewOnSelected
+                    ? "You already created a review for this revision"
+                    : "Start a review of this revision"}>
+                  <Icon name="comment" />
+                  <span
+                    class="txt-body-m-regular global-hide-on-medium-desktop-down">
+                    Review revision
+                  </span>
                 </Button>
-                <Button
-                  variant={patchView === "changes" ? "ghost" : "naked"}
-                  active={patchView === "changes"}
-                  onclick={() => (patchView = "changes")}>
-                  <Icon name="diff" />
-                  Changes
-                </Button>
-              </div>
-              {#if patchView === "changes"}
-                <div class="tabs-right">
-                  {#if sortedRevisions.length > 1}
-                    <Popover
-                      popoverPadding="0"
-                      placement="bottom-start"
-                      bind:expanded={revisionPickerExpanded}>
-                      {#snippet toggle(onclick)}
-                        <Button
-                          variant="outline"
-                          {onclick}
-                          active={revisionPickerExpanded}>
-                          <Icon name="revision" />
-                          <span style:color="var(--color-text-secondary)">
-                            Revision {selectedRevisionIndex >= 0
-                              ? selectedRevisionIndex + 1
-                              : "?"} of
-                            {sortedRevisions.length}
-                          </span>
-                          <span class="txt-id">
-                            {selectedRevision.id.substring(0, 7)}
-                          </span>
-                          <Icon
-                            name={revisionPickerExpanded
-                              ? "chevron-up"
-                              : "chevron-down"} />
-                        </Button>
-                      {/snippet}
-                      {#snippet popover()}
-                        <div
-                          style:border="1px solid var(--color-border-subtle)"
-                          style:border-radius="var(--border-radius-sm)"
-                          style:background-color="var(--color-surface-canvas)">
-                          <DropdownList items={sortedRevisions}>
-                            {#snippet item(rev)}
-                              {@const title = revisionTitle(rev)}
-                              <DropdownListItem
-                                selected={rev.id === selectedRevision.id}
-                                styleGap="0.5rem"
-                                onclick={() => {
-                                  selectedRevision = rev;
-                                  closeFocused();
-                                }}>
-                                <Icon name="revision" />
-                                <span class="txt-id">
-                                  {rev.id.substring(0, 7)}
-                                </span>
-                                {#if title}
-                                  <span class="revision-title">{title}</span>
-                                {/if}
-                              </DropdownListItem>
-                            {/snippet}
-                          </DropdownList>
-                        </div>
-                      {/snippet}
-                    </Popover>
-                  {/if}
-                  <Button
-                    variant="naked"
-                    onclick={() => (filesExpanded = !filesExpanded)}>
-                    {#if filesExpanded}
-                      <Icon name="collapse-vertical" />
-                      Collapse all
-                    {:else}
-                      <Icon name="expand-vertical" />
-                      Expand all
-                    {/if}
-                  </Button>
-                </div>
               {/if}
             </div>
-
-            <RevisionComponent
-              rid={repo.rid}
-              {repo}
-              repoDelegates={repo.delegates}
-              patchId={patch.id}
-              {loadPatch}
-              revision={selectedRevision}
-              {config}
-              view={patchView}
-              {activity}
-              {revisions}
-              draftReviewId={ownDraftReviewForPatch?.id}
-              bind:filesExpanded />
           </div>
-        </div>
-      </ScrollArea>
+          <div class="meta-bar">
+            <PatchMetadata
+              {config}
+              {loadPatch}
+              {patch}
+              {repo}
+              {saveState}
+              stats={selectedRevisionStats} />
+          </div>
 
-      {#if ownDraftReviewForPatch}
-        <DraftReviewBar
-          draftReview={ownDraftReviewForPatch}
-          onChange={loadPatch}
-          onPublish={async () => {
-            await loadPatch();
-          }}
-          onCancel={() => {
-            draftReviewStorage.delete(ownDraftReviewForPatch.id);
-            void loadPatch();
-          }} />
-      {/if}
-    </div>
+          <RevisionComponent
+            rid={repo.rid}
+            {repo}
+            repoDelegates={repo.delegates}
+            patchId={patch.id}
+            {loadPatch}
+            revision={revisions[0]}
+            {config}
+            view="description" />
+
+          <div class="tabs">
+            <div class="tabs-left">
+              <Button
+                variant={patchView === "activity" ? "ghost" : "naked"}
+                active={patchView === "activity"}
+                onclick={() => (patchView = "activity")}>
+                <Icon name="activity" />
+                Activity
+              </Button>
+              <Button
+                variant={patchView === "changes" ? "ghost" : "naked"}
+                active={patchView === "changes"}
+                onclick={() => (patchView = "changes")}>
+                <Icon name="diff" />
+                Changes
+              </Button>
+            </div>
+            {#if patchView === "changes"}
+              <div class="tabs-right">
+                {#if sortedRevisions.length > 1}
+                  <Popover
+                    popoverPadding="0"
+                    placement="bottom-start"
+                    bind:expanded={revisionPickerExpanded}>
+                    {#snippet toggle(onclick)}
+                      <Button
+                        variant="outline"
+                        {onclick}
+                        active={revisionPickerExpanded}>
+                        <Icon name="revision" />
+                        <span style:color="var(--color-text-secondary)">
+                          Revision {selectedRevisionIndex >= 0
+                            ? selectedRevisionIndex + 1
+                            : "?"} of
+                          {sortedRevisions.length}
+                        </span>
+                        <span class="txt-id">
+                          {selectedRevision.id.substring(0, 7)}
+                        </span>
+                        <Icon
+                          name={revisionPickerExpanded
+                            ? "chevron-up"
+                            : "chevron-down"} />
+                      </Button>
+                    {/snippet}
+                    {#snippet popover()}
+                      <div
+                        style:border="1px solid var(--color-border-subtle)"
+                        style:border-radius="var(--border-radius-sm)"
+                        style:background-color="var(--color-surface-canvas)">
+                        <DropdownList items={sortedRevisions}>
+                          {#snippet item(rev)}
+                            {@const title = revisionTitle(rev)}
+                            <DropdownListItem
+                              selected={rev.id === selectedRevision.id}
+                              styleGap="0.5rem"
+                              onclick={() => {
+                                selectedRevision = rev;
+                                closeFocused();
+                              }}>
+                              <Icon name="revision" />
+                              <span class="txt-id">
+                                {rev.id.substring(0, 7)}
+                              </span>
+                              {#if title}
+                                <span class="revision-title">{title}</span>
+                              {/if}
+                            </DropdownListItem>
+                          {/snippet}
+                        </DropdownList>
+                      </div>
+                    {/snippet}
+                  </Popover>
+                {/if}
+              </div>
+            {/if}
+          </div>
+
+          <RevisionComponent
+            rid={repo.rid}
+            {repo}
+            repoDelegates={repo.delegates}
+            patchId={patch.id}
+            {loadPatch}
+            revision={selectedRevision}
+            {config}
+            view={patchView}
+            {activity}
+            {revisions}
+            draftReviewId={ownDraftReviewForPatch?.id}
+            bind:filesExpanded />
+        </div>
+      </div>
+    </ScrollArea>
+
+    {#if ownDraftReviewForPatch}
+      <DraftReviewBar
+        draftReview={ownDraftReviewForPatch}
+        onChange={loadPatch}
+        onPublish={async () => {
+          await loadPatch();
+        }}
+        onCancel={() => {
+          draftReviewStorage.delete(ownDraftReviewForPatch.id);
+          void loadPatch();
+        }} />
+    {/if}
+  </div>
 </Layout>
