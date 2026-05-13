@@ -31,9 +31,12 @@
   } from "@app/components/PatchActivityItem.svelte";
   import ReviewCodeThread from "@app/components/ReviewCodeThread.svelte";
 
-  type ActivityData =
-    | { kind: "op"; op: FlattenedPatchOperation; commits?: Commit[] }
-    | { kind: "reviewCode"; thread: Thread<CodeLocation>; reviewId: string };
+  type ActivityData = {
+    kind: "op";
+    op: FlattenedPatchOperation;
+    commits?: Commit[];
+    reviewThreads?: Thread<CodeLocation>[];
+  };
 
   interface Props {
     rid: string;
@@ -203,11 +206,7 @@
     void Promise.all(
       sorted.map(async (rev): Promise<[string, Commit[]]> => {
         try {
-          const commits = await cachedListCommits(
-            ridLocal,
-            rev.base,
-            rev.head,
-          );
+          const commits = await cachedListCommits(ridLocal, rev.base, rev.head);
           return [rev.id, commits];
         } catch (error) {
           console.error(
@@ -252,6 +251,25 @@
     [...revisions].sort((a, b) => a.timestamp - b.timestamp)[0]?.id,
   );
 
+  const threadsByReview = $derived.by(() => {
+    const map = new Map<string, Thread<CodeLocation>[]>();
+    (revision.reviews ?? []).forEach(review => {
+      const reviewComments = review.comments ?? [];
+      const threads = reviewComments
+        .filter(c => c.location && !c.replyTo && c.id !== review.id)
+        .map(root => {
+          const replies = reviewComments
+            .filter(c => c.replyTo === root.id)
+            .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp);
+          return { root, replies } as Thread<CodeLocation>;
+        });
+      if (threads.length > 0) {
+        map.set(review.id, threads);
+      }
+    });
+    return map;
+  });
+
   const activityItems: ActivityItem<ActivityData>[] = $derived.by(() => {
     const tracker: Partial<Record<Action["type"], Action>> = {};
     const items: ActivityItem<ActivityData>[] = [];
@@ -290,41 +308,21 @@
           action.type === "revision"
             ? commitsByRevision[operation.id]
             : undefined;
+        const reviewThreads =
+          action.type === "review"
+            ? threadsByReview.get(operation.id)
+            : undefined;
         items.push({
           key: `${operation.id}:${actionIndex}`,
           timestamp: operation.timestamp,
-          data: { kind: "op", op, commits },
+          data: { kind: "op", op, commits, reviewThreads },
         });
       });
-    });
-
-    (revision.reviews ?? []).forEach(review => {
-      const reviewComments = review.comments ?? [];
-      reviewComments
-        .filter(c => c.location && !c.replyTo && c.id !== review.id)
-        .forEach(root => {
-          const replies = reviewComments
-            .filter(c => c.replyTo === root.id)
-            .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp);
-          const thread = { root, replies } as Thread<CodeLocation>;
-          items.push({
-            key: `review:${review.id}:${root.id}`,
-            timestamp: root.edits[0].timestamp,
-            data: { kind: "reviewCode", thread, reviewId: review.id },
-          });
-        });
     });
 
     items.sort((a, b) => a.timestamp - b.timestamp);
     return items;
   });
-  const reviewsWithThreads = $derived(
-    new Set(
-      activityItems
-        .filter(item => item.data.kind === "reviewCode")
-        .map(item => (item.data as { reviewId: string }).reviewId),
-    ),
-  );
   const reviewSummaryFingerprints = $derived(
     new Set(
       (revision.reviews ?? [])
@@ -523,6 +521,23 @@
     overflow: hidden;
     min-height: 0;
   }
+  .review-threads {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-left: 1.25rem;
+    margin-top: 1rem;
+  }
+  .review-threads::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0.5rem;
+    width: 1px;
+    background-color: var(--color-border-subtle);
+  }
 </style>
 
 {#if view === "description"}
@@ -607,33 +622,39 @@
         {/if}
       {:else if data.op.type === "review"}
         {@const opId = data.op.id}
-        {@const hasSummary =
-          !!data.op.summary && data.op.summary.trim() !== ""}
-        {@const hasThreads = reviewsWithThreads.has(opId)}
+        {@const hasSummary = !!data.op.summary && data.op.summary.trim() !== ""}
+        {@const threads = data.reviewThreads ?? []}
+        {@const hasThreads = threads.length > 0}
         {@const toggleable = hasSummary || hasThreads}
+        {@const expanded = toggleable ? isReviewExpanded(opId) : true}
         <PatchActivityItem
           op={data.op}
-          expanded={toggleable ? isReviewExpanded(opId) : undefined}
+          expanded={toggleable ? expanded : undefined}
           onToggle={toggleable ? () => toggleReview(opId) : undefined}
           hideAuthor={opts.hideAuthor} />
+        {#if hasThreads}
+          <div class="collapsible" class:open={expanded}>
+            <div class="collapsible-inner">
+              <div class="review-threads">
+                {#each threads as thread (thread.root.id)}
+                  <ReviewCodeThread
+                    {rid}
+                    base={revision.base}
+                    head={revision.head}
+                    {thread}
+                    {config}
+                    {repoDelegates} />
+                {/each}
+              </div>
+            </div>
+          </div>
+        {/if}
       {:else}
         <PatchActivityItem
           op={data.op}
           hideAuthor={opts.hideAuthor}
           targetBranch={data.op.type === "merge" ? targetBranch : undefined} />
       {/if}
-    {:else}
-      <div class="collapsible" class:open={isReviewExpanded(data.reviewId)}>
-        <div class="collapsible-inner">
-          <ReviewCodeThread
-            {rid}
-            base={revision.base}
-            head={revision.head}
-            thread={data.thread}
-            {config}
-            {repoDelegates} />
-        </div>
-      </div>
     {/if}
   {/snippet}
 
@@ -648,8 +669,7 @@
     {rid}
     {activityItems}
     {renderActivity}
-    authorOf={data =>
-      data.kind === "op" ? data.op.author : data.thread.root.author} />
+    authorOf={data => data.op.author} />
 {:else}
   <Changes
     {rid}
