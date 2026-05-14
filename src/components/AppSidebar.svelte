@@ -173,6 +173,13 @@
       stylePadding="0 4px">
       <span class="icon"><Icon name="arrow-right" /></span>
     </Button>
+    <Button
+      variant="naked"
+      title="Reload"
+      onclick={() => window.location.reload()}
+      stylePadding="0 4px">
+      <span class="icon"><Icon name="refresh" /></span>
+    </Button>
   </div>
 
   <div class="nav">
