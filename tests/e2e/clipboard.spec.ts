@@ -18,8 +18,8 @@ test("copy to clipboard", async () => {
   // Repo ID.
   {
     const repoLink = page.getByRole("link", { name: "markdown" });
-    await repoLink.hover();
-    await repoLink.getByRole("button", { name: "icon-copy" }).click();
+    await repoLink.click({ button: "right" });
+    await page.getByRole("menuitem", { name: "Copy RID" }).click();
     const clipboardContent = await page.evaluate<string>(
       "navigator.clipboard.readText()",
     );

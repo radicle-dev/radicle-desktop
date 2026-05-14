@@ -46,12 +46,16 @@
 
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval, resetDynamicInterval } from "@app/lib/interval";
-  import { cachedRepoCommitCount, invoke } from "@app/lib/invoke";
+  import {
+    cachedRepoCommitCount,
+    invoke,
+    writeToClipboard,
+  } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
-  import { formatRepositoryId } from "@app/lib/utils";
+  import { explorerUrl, formatRepositoryId } from "@app/lib/utils";
 
   import AddRepoButton from "@app/components/AddRepoButton.svelte";
-  import Clipboard from "@app/components/Clipboard.svelte";
+  import ContextMenu from "@app/components/ContextMenu.svelte";
   import Icon from "@app/components/Icon.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
@@ -76,6 +80,25 @@
   let seededNotReplicated: string[] = $derived(initialSeededNotReplicated);
   let activeCommitCount = $state<number | undefined>(undefined);
   let filterInputElement: HTMLInputElement | undefined = $state(undefined);
+
+  let contextMenu = $state<
+    { x: number; y: number; repo: RepoSummary; target: HTMLElement } | undefined
+  >(undefined);
+
+  function openContextMenu(event: MouseEvent, repo: RepoSummary) {
+    event.preventDefault();
+    event.stopPropagation();
+    contextMenu = {
+      x: event.clientX,
+      y: event.clientY,
+      repo,
+      target: event.currentTarget as HTMLElement,
+    };
+  }
+
+  function closeContextMenu() {
+    contextMenu = undefined;
+  }
 
   $effect(() => {
     const rid = activeRepo?.rid;
@@ -317,7 +340,8 @@
   .nav-item :global(svg) {
     -webkit-user-drag: none;
   }
-  .nav-item:hover {
+  .nav-item:hover,
+  .nav-item.context-active {
     background-color: var(--color-surface-subtle);
   }
   .nav-item.active {
@@ -362,6 +386,7 @@
     color: var(--color-text-tertiary);
   }
   .nav-item:hover .row-actions,
+  .nav-item.context-active .row-actions,
   .nav-item .row-actions:has(:focus-visible) {
     visibility: visible;
   }
@@ -439,6 +464,33 @@
 
   .icon {
     color: var(--color-text-tertiary);
+  }
+
+  .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 2rem;
+    padding: 0 0.75rem;
+    background: transparent;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-primary);
+    font: var(--txt-body-m-regular);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .menu-item :global(svg) {
+    color: var(--color-text-tertiary);
+    flex-shrink: 0;
+  }
+  .menu-item:hover {
+    background-color: var(--color-surface-subtle);
+  }
+  .menu-item:hover :global(svg) {
+    color: var(--color-text-primary);
   }
 </style>
 
@@ -589,10 +641,12 @@
   <a
     class="nav-item"
     class:active={isRepoHome(repo.rid)}
+    class:context-active={contextMenu?.repo.rid === repo.rid}
     class:dragging={pinned && drag.draggingRid === repo.rid}
     draggable="false"
     onmousedown={pinned ? e => drag.onMouseDown(e, repo.rid) : undefined}
     onclick={pinned ? drag.onClick : undefined}
+    oncontextmenu={e => openContextMenu(e, repo)}
     href={router.routeToPath({ resource: "repo.home", rid: repo.rid })}>
     <RepoAvatar name={repo.name} rid={repo.rid} styleWidth="1rem" />
     <span class="txt-overflow">{repo.name}</span>
@@ -609,9 +663,6 @@
         onclick={() => togglePin(repo.rid)}>
         <Icon name={pinState ? "pin-filled" : "pin-hollow"} />
       </button>
-      <span title="Copy RID">
-        <Clipboard text={repo.rid} noPopover />
-      </span>
       {#if pinned}
         <span class="drag-handle" title="Drag to reorder">
           <Icon name="drag-handle" />
@@ -698,4 +749,45 @@
       styleWidth="1rem" />
     <span class="txt-overflow">{drag.draggedRepo.name}</span>
   </div>
+{/if}
+
+{#if contextMenu}
+  {@const repo = contextMenu.repo}
+  {@const url = explorerUrl(repo.rid)}
+  <ContextMenu
+    x={contextMenu.x}
+    y={contextMenu.y}
+    target={contextMenu.target}
+    onclose={closeContextMenu}>
+    <button
+      class="menu-item"
+      role="menuitem"
+      onclick={() => writeToClipboard(repo.rid)}>
+      <Icon name="copy" />
+      Copy RID
+    </button>
+    <button
+      class="menu-item"
+      role="menuitem"
+      onclick={() => writeToClipboard(`rad checkout ${repo.rid}`)}>
+      <Icon name="checkout" />
+      Copy checkout command
+    </button>
+    <button
+      class="menu-item"
+      role="menuitem"
+      onclick={() => writeToClipboard(url)}>
+      <Icon name="link" />
+      Copy link to radicle.network
+    </button>
+    <a
+      class="menu-item"
+      role="menuitem"
+      href={url}
+      target="_blank"
+      rel="noreferrer noopener">
+      <Icon name="open-external" />
+      Open on radicle.network
+    </a>
+  </ContextMenu>
 {/if}
