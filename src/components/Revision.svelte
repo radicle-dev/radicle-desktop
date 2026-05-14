@@ -858,8 +858,8 @@
           <Icon name="revision" />
         </div>
         <span class="summary-secondary">
-          Created {data.count}
-          {data.count === 1 ? "older revision" : "older revisions"}
+          created {data.count}
+          {data.count === 1 ? "revision" : "revisions"}
         </span>
         <button
           type="button"
