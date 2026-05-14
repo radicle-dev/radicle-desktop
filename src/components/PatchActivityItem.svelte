@@ -153,6 +153,7 @@
     background-color: var(--color-feedback-success-bg);
     color: var(--color-feedback-success-text);
     padding: 0.375rem 0.5rem;
+    margin-left: -0.5rem;
     border-radius: var(--border-radius-sm);
   }
   .verdict-accept,
@@ -163,6 +164,7 @@
     background-color: var(--color-feedback-error-bg);
     color: var(--color-feedback-error-text);
     padding: 0.375rem 0.5rem;
+    margin-left: -0.5rem;
     border-radius: var(--border-radius-sm);
   }
   .verdict-reject,
@@ -178,6 +180,7 @@
     background-color: var(--color-surface-brand-subtle);
     color: var(--color-text-brand);
     padding: 0.375rem 0.5rem;
+    margin-left: -0.5rem;
     border-radius: var(--border-radius-sm);
   }
   .merge-badge,

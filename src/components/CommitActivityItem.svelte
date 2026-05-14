@@ -100,7 +100,7 @@
 <style>
   .timeline-item {
     display: grid;
-    grid-template-columns: 1.25rem minmax(0, 1fr);
+    grid-template-columns: 1rem minmax(0, 1fr);
     column-gap: 0.5rem;
     align-items: flex-start;
     min-width: 0;
@@ -121,11 +121,9 @@
     flex: 1 1 0;
   }
   .icon {
-    width: 1.25rem;
+    width: 1rem;
     padding-top: 0.1875rem;
     color: var(--color-text-secondary);
-    display: flex;
-    justify-content: center;
   }
   .icon-stack {
     display: grid;
