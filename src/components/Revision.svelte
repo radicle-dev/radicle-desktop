@@ -31,6 +31,7 @@
   } from "@app/components/Discussion.svelte";
   import PatchActivityItem, {
     type FlattenedPatchOperation,
+    splitDescription,
   } from "@app/components/PatchActivityItem.svelte";
   import ReviewCodeThread from "@app/components/ReviewCodeThread.svelte";
 
@@ -745,27 +746,34 @@
         {@const isFirst = revId === firstRevisionId}
         {@const isOlder = olderRevisionIds.has(revId)}
         {@const hasCommits = !!data.commits && data.commits.length > 0}
+        {@const hasBody =
+          !isFirst && !!splitDescription(data.op.description).body}
+        {@const toggleable = !isFirst && (hasCommits || hasBody)}
         {@const expanded = isFirst
           ? true
-          : hasCommits && isRevisionExpanded(revId)}
+          : toggleable && isRevisionExpanded(revId)}
         {#if isOlder}
           <div
             class="older-revision-entry"
             transition:slide={{ duration: 180 }}>
             <PatchActivityItem
               op={data.op}
+              {rid}
               {expanded}
               hideAuthor={opts.hideAuthor}
               firstRevision={isFirst}
-              onToggle={hasCommits ? () => toggleRevision(revId) : undefined} />
+              onToggle={toggleable
+                ? () => toggleRevision(revId)
+                : undefined} />
           </div>
         {:else}
           <PatchActivityItem
             op={data.op}
+            {rid}
             {expanded}
             hideAuthor={opts.hideAuthor}
             firstRevision={isFirst}
-            onToggle={!isFirst && hasCommits
+            onToggle={toggleable
               ? () => toggleRevision(revId)
               : undefined} />
         {/if}

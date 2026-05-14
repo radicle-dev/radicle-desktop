@@ -8,6 +8,22 @@
     timestamp: number;
     previous?: Action;
   };
+
+  export function splitDescription(text: string): {
+    subject?: string;
+    body?: string;
+  } {
+    const trimmed = text.trim();
+    if (!trimmed) return {};
+    const idx = trimmed.indexOf("\n");
+    if (idx === -1) return { subject: trimmed };
+    const subject = trimmed.slice(0, idx).trim();
+    const body = trimmed.slice(idx + 1).trim();
+    return {
+      subject: subject || undefined,
+      body: body || undefined,
+    };
+  }
 </script>
 
 <script lang="ts">
@@ -23,6 +39,7 @@
 
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
+  import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
 
   interface Props {
@@ -33,6 +50,7 @@
     targetBranch?: string;
     firstRevision?: boolean;
     onViewFullReview?: () => void;
+    rid?: string;
   }
 
   const {
@@ -43,13 +61,8 @@
     targetBranch,
     firstRevision = false,
     onViewFullReview,
+    rid,
   }: Props = $props();
-
-  function lastLine(text: string): string | undefined {
-    const lines = text.trim().split("\n");
-    const last = lines[lines.length - 1]?.trim();
-    return last && last.length > 0 ? last : undefined;
-  }
 
   function itemDiff<A>(previousState: A[], newState: A[]) {
     const removed = previousState.filter(x => !newState.includes(x));
@@ -176,6 +189,11 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
+  .revision-body {
+    flex-basis: 100%;
+    color: var(--color-text-primary);
+    overflow-wrap: anywhere;
+  }
   .merge-badge {
     background-color: var(--color-surface-brand-subtle);
     color: var(--color-text-brand);
@@ -232,7 +250,7 @@
 {/snippet}
 
 {#if op.type === "revision"}
-  {@const summary = lastLine(op.description)}
+  {@const desc = splitDescription(op.description)}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <div
@@ -261,8 +279,8 @@
         <span class="summary-secondary">
           {firstRevision ? "opened patch" : "created revision"}
         </span>
-        {#if !firstRevision && summary}
-          <span class="txt-body-m-medium summary-content">{summary}</span>
+        {#if !firstRevision && desc.subject}
+          <span class="txt-body-m-medium summary-content">{desc.subject}</span>
         {/if}
       </div>
       <div class="meta">
@@ -273,6 +291,11 @@
           {formatTimestamp(op.timestamp)}
         </div>
       </div>
+      {#if !firstRevision && desc.body && expanded}
+        <div class="revision-body" transition:slide={{ duration: 180 }}>
+          <Markdown {rid} breaks content={desc.body} />
+        </div>
+      {/if}
     </div>
   </div>
 {:else if op.type === "lifecycle"}
