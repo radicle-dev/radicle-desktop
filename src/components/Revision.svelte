@@ -81,6 +81,9 @@
   const latestRevisionId = $derived(
     [...revisions].sort((a, b) => b.timestamp - a.timestamp)[0]?.id,
   );
+  const firstRevisionId = $derived(
+    [...revisions].sort((a, b) => a.timestamp - b.timestamp)[0]?.id,
+  );
   const targetBranch = $derived(
     repo.payloads["xyz.radicle.project"]?.data.defaultBranch,
   );
@@ -100,7 +103,7 @@
     if (revId in revisionToggles) {
       return revisionToggles[revId];
     }
-    return revId === latestRevisionId;
+    return revId === latestRevisionId || revId === firstRevisionId;
   }
   function toggleRevision(revId: string) {
     revisionToggles = {
@@ -330,10 +333,6 @@
     "review.redact",
     "review.react",
   ]);
-
-  const firstRevisionId = $derived(
-    [...revisions].sort((a, b) => a.timestamp - b.timestamp)[0]?.id,
-  );
 
   const olderRevisionIds = $derived(
     new Set(
@@ -626,8 +625,7 @@
     gap: 1rem;
     padding-left: 1.25rem;
   }
-  .revision-commits.has-header,
-  .single-commit-with-header {
+  .revision-commits.has-header {
     margin-top: 1rem;
   }
   .revision-commits::before {
@@ -748,10 +746,8 @@
         {@const hasCommits = !!data.commits && data.commits.length > 0}
         {@const hasBody =
           !isFirst && !!splitDescription(data.op.description).body}
-        {@const toggleable = !isFirst && (hasCommits || hasBody)}
-        {@const expanded = isFirst
-          ? true
-          : toggleable && isRevisionExpanded(revId)}
+        {@const toggleable = hasCommits || hasBody}
+        {@const expanded = toggleable && isRevisionExpanded(revId)}
         {#if isOlder}
           <div
             class="older-revision-entry"
@@ -777,17 +773,7 @@
               ? () => toggleRevision(revId)
               : undefined} />
         {/if}
-        {#if expanded && isFirst && data.commits && data.commits.length === 1}
-          <div
-            class="single-commit-with-header"
-            transition:slide={{ duration: 180 }}>
-            <CommitActivityItem
-              commit={data.commits[0]}
-              {rid}
-              {codeComments}
-              {draftReviewId} />
-          </div>
-        {:else if expanded && data.commits && data.commits.length > 0}
+        {#if expanded && data.commits && data.commits.length > 0}
           <div
             class="revision-commits has-header"
             transition:slide={{ duration: 180 }}>
