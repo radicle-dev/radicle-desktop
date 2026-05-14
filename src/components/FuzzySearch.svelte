@@ -6,7 +6,7 @@
   import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
-    hasItems: boolean;
+    hasItems?: boolean;
     placeholder: string;
     icon?: ComponentProps<typeof Icon>["name"];
     show: boolean;
@@ -17,7 +17,7 @@
 
   /* eslint-disable prefer-const */
   let {
-    hasItems,
+    hasItems = true,
     placeholder,
     icon = "filter",
     show = $bindable(),
@@ -55,8 +55,13 @@
       {/snippet}
     </TextInput>
   {:else}
-    <Button variant="naked" keyShortcuts="ctrl+f" onclick={() => (show = true)}>
-      <Icon name="filter" />
-    </Button>
+    <div style:display="flex" style:padding="0 1px">
+      <Button
+        variant="naked"
+        keyShortcuts="ctrl+f"
+        onclick={() => (show = true)}>
+        <Icon name="filter" />
+      </Button>
+    </div>
   {/if}
 {/if}

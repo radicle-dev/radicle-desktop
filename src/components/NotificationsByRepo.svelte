@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { NotificationsByRepo } from "@bindings/cob/inbox/NotificationsByRepo";
 
+  import { preserveFocus } from "@app/lib/utils";
+
   import Button from "@app/components/Button.svelte";
   import ConfirmClear from "@app/components/ConfirmClear.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -10,8 +12,10 @@
     clearByIds: (ids: string[]) => Promise<void>;
     clearByRepo: (rid: string) => Promise<void>;
     count: number;
+    excludeGroup?: (id: string) => void;
     groupedNotifications: NotificationsByRepo["notifications"];
     hidden: boolean;
+    isFiltering?: boolean;
     name: string;
     pinned: boolean;
     rid: string;
@@ -24,8 +28,10 @@
     clearByIds,
     clearByRepo,
     count,
+    excludeGroup,
     groupedNotifications,
     hidden,
+    isFiltering = false,
     name,
     pinned,
     rid,
@@ -76,32 +82,34 @@
       {name}
     </span>
     <span class="global-counter-badge">{count}</span>
-    <div
-      class="action-buttons"
-      style:display={pinned || hidden ? "flex" : undefined}>
-      {#if !hidden}
-        <Button
-          variant="naked"
-          stylePadding="0 0.25rem"
-          onclick={() => {
-            togglePin(rid);
-          }}>
-          <Icon name={pinned ? "pin-filled" : "pin-hollow"} />
-        </Button>
-      {/if}
-      {#if !pinned}
-        <Button
-          variant="naked"
-          stylePadding="0 0.25rem"
-          onclick={() => {
-            toggleHide(rid);
-          }}>
-          <Icon name={hidden ? "eye-slash" : "eye"} />
-        </Button>
-      {/if}
-    </div>
+    {#if !isFiltering}
+      <div
+        class="action-buttons"
+        style:display={pinned || hidden ? "flex" : undefined}>
+        {#if !hidden}
+          <Button
+            variant="naked"
+            stylePadding="0 0.25rem"
+            onclick={() => {
+              togglePin(rid);
+            }}>
+            <Icon name={pinned ? "pin-filled" : "pin-hollow"} />
+          </Button>
+        {/if}
+        {#if !pinned}
+          <Button
+            variant="naked"
+            stylePadding="0 0.25rem"
+            onclick={() => {
+              toggleHide(rid);
+            }}>
+            <Icon name={hidden ? "eye-slash" : "eye"} />
+          </Button>
+        {/if}
+      </div>
+    {/if}
     {#if count > 0 && !hidden}
-      <div class="clear-repo">
+      <div class="clear-repo" use:preserveFocus>
         <ConfirmClear
           {count}
           clear={() => {
@@ -120,7 +128,10 @@
             {rid}
             kind={notificationGroup[0].type}
             oid={notificationGroup[0].id}
-            notificationItems={notificationGroup} />
+            notificationItems={notificationGroup}
+            onExclude={excludeGroup
+              ? () => excludeGroup(notificationGroup[0].id)
+              : undefined} />
         {/each}
       {:else}
         <div
@@ -138,7 +149,7 @@
       {/if}
     </div>
 
-    {#if groupedNotifications.length > 0 && groupedNotifications.length < count}
+    {#if !isFiltering && groupedNotifications.length > 0 && groupedNotifications.length < count}
       <div style:width="100%" style:margin-top="1rem">
         <div style:width="7rem" style:margin="auto">
           <Button

@@ -102,6 +102,21 @@ export const formatTimestamp = (
   return new Date(timestamp).toUTCString();
 };
 
+// Svelte action that swallows mousedown so the activating element does not
+// steal focus from whatever is currently focused. Useful for click targets
+// that should not collapse a focused input.
+//
+// Usage: <div use:preserveFocus>...</div>
+export function preserveFocus(node: HTMLElement) {
+  const handler = (e: MouseEvent) => e.preventDefault();
+  node.addEventListener("mousedown", handler);
+  return {
+    destroy() {
+      node.removeEventListener("mousedown", handler);
+    },
+  };
+}
+
 // Svelte action for replacing emojis within an element with Twemoji SVGs.
 // This action is non-reactive; it only runs when the element is mounted.
 //

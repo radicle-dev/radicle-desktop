@@ -32,12 +32,14 @@
     oid: string;
     clearByIds: (ids: string[]) => Promise<void>;
     notificationItems: NotificationItem[];
+    onExclude?: () => void;
     selected?: boolean;
   }
 
   const {
     clearByIds,
     notificationItems,
+    onExclude,
     rid,
     oid,
     kind,
@@ -143,14 +145,16 @@
     font: var(--txt-body-l-regular);
     word-break: break-word;
   }
-  .clear-icon {
+  .hover-actions {
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;
     visibility: hidden;
+    display: flex;
+    gap: 0.25rem;
     color: var(--color-text-tertiary);
   }
-  .notification-teaser:hover .clear-icon {
+  .notification-teaser:hover .hover-actions {
     visibility: visible;
   }
   .selected {
@@ -223,10 +227,23 @@
       </div>
     </div>
   </div>
-  <div class="clear-icon">
+  <div class="hover-actions">
+    {#if onExclude}
+      <Button
+        variant="naked"
+        stylePadding="0 0.25rem"
+        title="Exclude from filter results"
+        onclick={e => {
+          e.stopPropagation();
+          onExclude();
+        }}>
+        <Icon name="close" />
+      </Button>
+    {/if}
     <Button
       variant="naked"
       stylePadding="0 0.25rem"
+      title="Delete"
       onclick={e => {
         e.stopPropagation();
         void clearByIds(notificationItems.map(n => n.rowId));
