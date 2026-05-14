@@ -672,6 +672,14 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.125rem 0.25rem;
+    margin: 0 -0.25rem;
+    border-radius: var(--border-radius-sm);
+  }
+  .older-revisions:hover,
+  .older-revisions:focus-visible {
+    background-color: var(--color-surface-subtle);
   }
   .older-revisions .icon {
     padding-top: 0.1875rem;
@@ -679,19 +687,31 @@
     display: grid;
     place-items: center;
   }
-  .show-all {
-    background: none;
-    border: 1px solid transparent;
-    cursor: pointer;
-    color: var(--color-text-secondary);
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--border-radius-sm);
-    font: inherit;
+  .older-revisions .icon-stack {
+    display: grid;
+    width: 1rem;
+    place-items: center;
   }
-  .show-all:hover,
-  .show-all:focus-visible {
-    color: var(--color-text-primary);
-    background-color: var(--color-surface-subtle);
+  .older-revisions .icon-default,
+  .older-revisions .icon-hover {
+    grid-area: 1 / 1;
+    transition:
+      opacity 150ms ease,
+      transform 150ms ease;
+  }
+  .older-revisions .icon-hover {
+    opacity: 0;
+    transform: rotate(-90deg);
+  }
+  .older-revisions:hover .icon-default,
+  .older-revisions:focus-visible .icon-default {
+    opacity: 0;
+    transform: rotate(90deg);
+  }
+  .older-revisions:hover .icon-hover,
+  .older-revisions:focus-visible .icon-hover {
+    opacity: 1;
+    transform: rotate(0);
   }
   .summary-secondary {
     color: var(--color-text-tertiary);
@@ -851,22 +871,24 @@
           targetBranch={data.op.type === "merge" ? targetBranch : undefined} />
       {/if}
     {:else if data.kind === "olderRevisions"}
+      <!-- svelte-ignore a11y_click_events_have_key_events -->
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <div
         class="older-revisions txt-body-m-regular"
-        transition:slide={{ duration: 180 }}>
+        role="button"
+        tabindex="0"
+        transition:slide={{ duration: 180 }}
+        onclick={() => (olderRevisionsExpanded = true)}>
         <div class="icon">
-          <Icon name="revision" />
+          <span class="icon-stack">
+            <span class="icon-default"><Icon name="revision" /></span>
+            <span class="icon-hover"><Icon name="expand-vertical" /></span>
+          </span>
         </div>
         <span class="summary-secondary">
           created {data.count}
           {data.count === 1 ? "revision" : "revisions"}
         </span>
-        <button
-          type="button"
-          class="show-all"
-          onclick={() => (olderRevisionsExpanded = true)}>
-          Show all
-        </button>
       </div>
     {/if}
   {/snippet}
