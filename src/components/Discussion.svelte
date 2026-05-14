@@ -159,6 +159,25 @@
   .timeline-rail {
     position: relative;
   }
+  .timeline-rail::before {
+    content: "";
+    position: absolute;
+    top: 0.5rem;
+    bottom: 0.5rem;
+    left: 0.5rem;
+    width: 1px;
+    background-color: var(--color-border-subtle);
+    pointer-events: none;
+    z-index: -1;
+  }
+  .timeline-rail :global(.icon) {
+    background-color: var(--color-surface-canvas);
+  }
+  .timeline-rail :global(.verdict-accept .icon),
+  .timeline-rail :global(.verdict-reject .icon),
+  .timeline-rail :global(.merge-badge .icon) {
+    background-color: transparent;
+  }
   .connector {
     height: 1rem;
   }
