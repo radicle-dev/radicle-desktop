@@ -5,7 +5,6 @@
 
   import { patchStatusBackgroundColor, patchStatusColor } from "@app/lib/utils";
 
-  import Button from "@app/components/Button.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -21,81 +20,118 @@
   const { selectedState, onSelect, disabled = false }: Props = $props();
 
   let popoverExpanded: boolean = $state(false);
+  const isStatic = $derived(selectedState.status === "merged" || disabled);
 </script>
 
-<Popover
-  popoverPadding="0"
-  placement="bottom-start"
-  bind:expanded={popoverExpanded}>
-  {#snippet toggle(onclick)}
-    <Button
-      variant="outline"
-      bordered
-      disabled={selectedState.status === "merged" || disabled}
-      {onclick}
-      active={popoverExpanded}
-      title={selectedState.status === "merged"
-        ? "The state of merged patches can not be changed"
-        : disabled
-          ? "Only delegates and the patch author can change the patch state"
-          : undefined}>
-      <span
-        style:color={selectedState.status === "merged" || disabled
-          ? undefined
-          : patchStatusColor[selectedState.status]}
-        style:display="inline-flex"
-        style:align-items="center"
-        style:gap="0.375rem">
+<style>
+  .status-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    font: var(--txt-body-m-regular);
+    cursor: pointer;
+  }
+  .status-button:hover:not(:disabled),
+  .status-button.active {
+    filter: brightness(0.95);
+  }
+  .status-button:disabled {
+    cursor: default;
+  }
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border-radius: var(--border-radius-sm);
+    font: var(--txt-body-m-regular);
+  }
+</style>
+
+{#if isStatic}
+  <span
+    class="status-chip"
+    style:color={patchStatusColor[selectedState.status]}
+    style:background-color={patchStatusBackgroundColor[selectedState.status]}
+    title={selectedState.status === "merged"
+      ? "The state of merged patches can not be changed"
+      : "Only delegates and the patch author can change the patch state"}>
+    <Icon
+      name={selectedState.status === "open"
+        ? "patch"
+        : `patch-${selectedState.status}`} />
+    <span>{capitalize(selectedState.status)}</span>
+  </span>
+{:else}
+  <Popover
+    popoverPadding="0"
+    placement="bottom-start"
+    bind:expanded={popoverExpanded}>
+    {#snippet toggle(onclick)}
+      <button
+        type="button"
+        class="status-button"
+        class:active={popoverExpanded}
+        style:color={patchStatusColor[selectedState.status]}
+        style:background-color={patchStatusBackgroundColor[
+          selectedState.status
+        ]}
+        {onclick}>
         <Icon
           name={selectedState.status === "open"
             ? "patch"
             : `patch-${selectedState.status}`} />
-        {capitalize(selectedState.status)}
-      </span>
-      {#if selectedState.status !== "merged"}
+        <span>{capitalize(selectedState.status)}</span>
         <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
-      {/if}
-    </Button>
-  {/snippet}
-  {#snippet popover()}
-    <div
-      style:border="1px solid var(--color-border-subtle)"
-      style:border-radius="var(--border-radius-sm)"
-      style:display="flex"
-      style:gap="0.5rem"
-      style:align-items="center"
-      style:background-color="var(--color-surface-canvas)">
-      <DropdownList
-        items={[
-          { status: "open" },
-          { status: "draft" },
-          { status: "archived" },
-        ] as State[]}>
-        {#snippet item(state)}
-          <DropdownListItem
-            selected={selectedState.status === state.status}
-            styleGap="0.5rem"
-            onclick={() => {
-              onSelect(state);
-              closeFocused();
-            }}>
-            <span
-              class="global-chip"
-              style:padding="0"
-              style:margin-left="-0.5rem"
-              style:color={patchStatusColor[state.status]}
-              style:background-color={patchStatusBackgroundColor[state.status]}>
-              <Icon
-                name={state.status === "open"
-                  ? "patch"
-                  : `patch-${state.status}`} />
-            </span>
-            <span style:color="var(--color-text-secondary)">
-              {capitalize(state.status)}
-            </span>
-          </DropdownListItem>
-        {/snippet}
-      </DropdownList>
-    </div>
-  {/snippet}
-</Popover>
+      </button>
+    {/snippet}
+    {#snippet popover()}
+      <div
+        style:border="1px solid var(--color-border-subtle)"
+        style:border-radius="var(--border-radius-sm)"
+        style:display="flex"
+        style:gap="0.5rem"
+        style:align-items="center"
+        style:background-color="var(--color-surface-canvas)">
+        <DropdownList
+          items={[
+            { status: "open" },
+            { status: "draft" },
+            { status: "archived" },
+          ] as State[]}>
+          {#snippet item(state)}
+            <DropdownListItem
+              selected={selectedState.status === state.status}
+              styleGap="0.5rem"
+              onclick={() => {
+                onSelect(state);
+                closeFocused();
+              }}>
+              <span
+                class="global-chip"
+                style:padding="0"
+                style:margin-left="-0.5rem"
+                style:color={patchStatusColor[state.status]}
+                style:background-color={patchStatusBackgroundColor[
+                  state.status
+                ]}>
+                <Icon
+                  name={state.status === "open"
+                    ? "patch"
+                    : `patch-${state.status}`} />
+              </span>
+              <span style:color="var(--color-text-secondary)">
+                {capitalize(state.status)}
+              </span>
+            </DropdownListItem>
+          {/snippet}
+        </DropdownList>
+      </div>
+    {/snippet}
+  </Popover>
+{/if}
