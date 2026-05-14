@@ -27,6 +27,14 @@ pub fn repo_count(ctx: tauri::State<AppState>) -> Result<types::repo::RepoCount,
 }
 
 #[tauri::command]
+pub fn list_repo_refs(
+    ctx: tauri::State<AppState>,
+    rid: RepoId,
+) -> Result<types::repo::RepoRefs, Error> {
+    ctx.list_repo_refs(rid)
+}
+
+#[tauri::command]
 pub fn repo_by_id(
     ctx: tauri::State<AppState>,
     rid: RepoId,
@@ -48,8 +56,9 @@ pub fn repo_tree(
     ctx: tauri::State<AppState>,
     rid: RepoId,
     path: std::path::PathBuf,
+    sha: Option<git::Oid>,
 ) -> Result<types::source::tree::Tree, Error> {
-    ctx.repo_tree(rid, path)
+    ctx.repo_tree(rid, path, sha)
 }
 
 #[tauri::command]
@@ -57,8 +66,9 @@ pub fn repo_blob(
     ctx: tauri::State<AppState>,
     rid: RepoId,
     path: std::path::PathBuf,
+    sha: Option<git::Oid>,
 ) -> Result<types::source::blob::Blob, Error> {
-    ctx.repo_blob(rid, path)
+    ctx.repo_blob(rid, path, sha)
 }
 
 #[tauri::command]

@@ -12,6 +12,7 @@ import type { Diff } from "@bindings/diff/Diff";
 import type { Commit } from "@bindings/repo/Commit";
 import type { Readme } from "@bindings/repo/Readme";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
+import type { RepoRefs } from "@bindings/repo/RepoRefs";
 import type { Tree } from "@bindings/source/Tree";
 
 import type { DraftReview } from "@app/lib/draftReviewStorage";
@@ -28,8 +29,9 @@ export const COMMITS_PAGE_SIZE = 300;
 
 export interface RepoHomeRoute {
   resource: "repo.home";
-  sha?: string;
   rid: string;
+  peer?: string;
+  revision?: string;
 }
 
 export interface RepoCommitsRoute {
@@ -54,7 +56,10 @@ export interface LoadedRepoHomeRoute {
   resource: "repo.home";
   params: {
     repo: RepoInfo;
-    sha?: string;
+    refs: RepoRefs;
+    peer?: string;
+    revision?: string;
+    oid: string;
     tree: Tree;
     readme: Readme | null;
     sidebarData: SidebarData;
@@ -251,25 +256,101 @@ export async function loadPatches(
 export async function loadRepoHome(
   route: RepoHomeRoute,
 ): Promise<LoadedRepoHomeRoute> {
-  const [sidebarData, repo, readme, tree] = await Promise.all([
+  const [sidebarData, repo, refs] = await Promise.all([
     loadSidebarData(),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
     }),
+    invoke<RepoRefs>("list_repo_refs", {
+      rid: route.rid,
+    }),
+  ]);
+
+  const oid = resolveRevision({
+    repo,
+    refs,
+    peer: route.peer,
+    revision: route.revision,
+  });
+
+  const [readme, tree] = await Promise.all([
     invoke<Readme | null>("repo_readme", {
       rid: route.rid,
+      sha: oid,
     }),
     invoke<Tree>("repo_tree", {
       rid: route.rid,
       path: "",
-      sha: route.sha,
+      sha: oid,
     }),
   ]);
 
   return {
     resource: "repo.home",
-    params: { sidebarData, repo, sha: route.sha, readme, tree },
+    params: {
+      sidebarData,
+      repo,
+      refs,
+      peer: route.peer,
+      revision: route.revision,
+      oid,
+      readme,
+      tree,
+    },
   };
+}
+
+export function resolveRevision({
+  repo,
+  refs,
+  peer,
+  revision,
+}: {
+  repo: RepoInfo;
+  refs: RepoRefs;
+  peer?: string;
+  revision?: string;
+}): string {
+  const project = repo.payloads["xyz.radicle.project"];
+  const defaultBranch = project?.data.defaultBranch;
+
+  if (peer !== undefined) {
+    const remote = refs.remotes.find(r => r.id === peer);
+    if (!remote) {
+      throw new Error(`Peer ${peer} not found in repo ${repo.rid}`);
+    }
+    const refName = revision ?? defaultBranch;
+    if (refName !== undefined) {
+      if (refName in remote.branches) {
+        return remote.branches[refName];
+      }
+      if (refName in remote.tags) {
+        return remote.tags[refName].oid;
+      }
+    }
+    if (revision !== undefined) {
+      return revision;
+    }
+    throw new Error(`Cannot resolve revision for peer ${peer}`);
+  }
+
+  if (revision !== undefined) {
+    if (revision in refs.canonical.branches) {
+      return refs.canonical.branches[revision];
+    }
+    if (revision in refs.canonical.tags) {
+      return refs.canonical.tags[revision].oid;
+    }
+    if (revision === defaultBranch && project) {
+      return project.meta.head;
+    }
+    return revision;
+  }
+
+  if (project) {
+    return project.meta.head;
+  }
+  throw new Error(`Cannot resolve revision for repo ${repo.rid}`);
 }
 
 export async function loadRepoCommits(
@@ -381,8 +462,14 @@ export function repoRouteToPath(route: RepoRoute): string {
   const searchParams = new URLSearchParams();
 
   if (route.resource === "repo.home") {
-    const url = [...pathSegments, "home"].join("/");
-    return url;
+    const segments = [...pathSegments, "home"];
+    if (route.peer !== undefined) {
+      segments.push("remotes", route.peer);
+    }
+    if (route.revision !== undefined) {
+      segments.push(route.revision);
+    }
+    return segments.join("/");
   } else if (route.resource === "repo.commits") {
     return [...pathSegments, "commits"].join("/");
   } else if (route.resource === "repo.commit") {
@@ -430,7 +517,13 @@ export function repoUrlToRoute(
 
   if (rid) {
     if (resource === "home") {
-      return { resource: "repo.home", rid, sha: segments.shift() };
+      let peer: string | undefined;
+      if (segments[0] === "remotes") {
+        segments.shift();
+        peer = segments.shift();
+      }
+      const revision = segments.length > 0 ? segments.join("/") : undefined;
+      return { resource: "repo.home", rid, peer, revision };
     } else if (resource === "commits") {
       const sha = segments.shift();
 

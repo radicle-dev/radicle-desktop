@@ -69,6 +69,7 @@ pub fn router(ctx: Context) -> Router {
             post(seeded_not_replicated_handler),
         )
         .route("/repo_by_id", post(repo_handler))
+        .route("/list_repo_refs", post(list_repo_refs_handler))
         .route("/version", post(version_handler))
         .route("/diff_stats", post(diff_stats_handler))
         .route(
@@ -181,6 +182,15 @@ async fn repo_handler(
     Ok::<_, Error>(Json(info))
 }
 
+async fn list_repo_refs_handler(
+    State(ctx): State<Context>,
+    Json(RepoBody { rid }): Json<RepoBody>,
+) -> impl IntoResponse {
+    let refs = ctx.list_repo_refs(rid)?;
+
+    Ok::<_, Error>(Json(refs))
+}
+
 async fn version_handler() -> impl IntoResponse {
     let version = Version {
         version: String::from("0.6.1"),
@@ -230,13 +240,15 @@ async fn readme_handler(
 struct TreeBody {
     pub rid: identity::RepoId,
     pub path: PathBuf,
+    #[serde(default)]
+    pub sha: Option<git::Oid>,
 }
 
 async fn tree_handler(
     State(ctx): State<Context>,
-    Json(TreeBody { rid, path }): Json<TreeBody>,
+    Json(TreeBody { rid, path, sha }): Json<TreeBody>,
 ) -> impl IntoResponse {
-    let info = ctx.repo_tree(rid, path)?;
+    let info = ctx.repo_tree(rid, path, sha)?;
 
     Ok::<_, Error>(Json(info))
 }
@@ -245,13 +257,15 @@ async fn tree_handler(
 struct BlobBody {
     pub rid: identity::RepoId,
     pub path: PathBuf,
+    #[serde(default)]
+    pub sha: Option<git::Oid>,
 }
 
 async fn blob_handler(
     State(ctx): State<Context>,
-    Json(BlobBody { rid, path }): Json<BlobBody>,
+    Json(BlobBody { rid, path, sha }): Json<BlobBody>,
 ) -> impl IntoResponse {
-    let info = ctx.repo_blob(rid, path)?;
+    let info = ctx.repo_blob(rid, path, sha)?;
 
     Ok::<_, Error>(Json(info))
 }

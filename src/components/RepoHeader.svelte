@@ -1,9 +1,12 @@
 <script lang="ts">
+  import type { RepoHomeRoute } from "@app/views/repo/router";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { RepoRefs } from "@bindings/repo/RepoRefs";
 
   import debounce from "lodash/debounce";
 
   import { writeToClipboard } from "@app/lib/invoke";
+  import * as router from "@app/lib/router";
   import { explorerUrl, truncateDid } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
@@ -12,14 +15,20 @@
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import JobCob from "@app/components/JobCob.svelte";
+  import PeerSelector from "@app/components/PeerSelector/PeerSelector.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
 
   interface Props {
     repo: RepoInfo;
+    refs?: RepoRefs;
+    peer?: string;
+    revision?: string;
+    oid?: string;
+    baseRoute?: RepoHomeRoute;
   }
 
-  const { repo }: Props = $props();
+  const { repo, refs, peer, revision, oid, baseRoute }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
@@ -104,6 +113,20 @@
   a:hover {
     color: var(--color-text-primary);
   }
+  .reset {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2rem;
+    width: 2rem;
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+  }
+  .reset:hover {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
 </style>
 
 <div class="header">
@@ -115,17 +138,34 @@
   </div>
 
   <div class="meta">
-    <VisibilityBadge type={repo.visibility.type} />
-
     <div class="meta-item">
-      <span class="meta-label">{project.data.defaultBranch}</span>
+      {#if refs && baseRoute}
+        <PeerSelector {baseRoute} {repo} {refs} {peer} {revision} />
+        {#if peer !== undefined || revision !== undefined}
+          <a
+            class="reset"
+            title="Reset to canonical default branch"
+            href={router.routeToPath({
+              resource: "repo.home",
+              rid: repo.rid,
+              peer: undefined,
+              revision: undefined,
+            })}>
+            <Icon name="close" />
+          </a>
+        {/if}
+      {:else}
+        <span class="meta-label">{project.data.defaultBranch}</span>
+      {/if}
       <Icon name="arrow-right" />
       <Id
-        id={project.meta.head}
-        clipboard={project.meta.head}
+        id={oid ?? project.meta.head}
+        clipboard={oid ?? project.meta.head}
         placement="bottom-start" />
-      <JobCob rid={repo.rid} commit={project.meta.head} />
+      <JobCob rid={repo.rid} commit={oid ?? project.meta.head} />
     </div>
+
+    <VisibilityBadge type={repo.visibility.type} />
 
     <div class="meta-item">
       <span class="meta-label">Delegates</span>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Readme } from "@bindings/repo/Readme";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { RepoRefs } from "@bindings/repo/RepoRefs";
   import type { Blob } from "@bindings/source/Blob";
   import type { Tree } from "@bindings/source/Tree";
 
@@ -25,12 +26,23 @@
   interface Props {
     tree: Tree;
     repo: RepoInfo;
+    refs: RepoRefs;
+    peer?: string;
+    revision?: string;
+    oid: string;
     readme: Readme | null;
   }
 
   /* eslint-disable prefer-const */
-  let { tree, readme, repo }: Props = $props();
+  let { tree, readme, repo, refs, peer, revision, oid }: Props = $props();
   /* eslint-enable prefer-const */
+
+  const baseRoute = $derived({
+    resource: "repo.home" as const,
+    rid: repo.rid,
+    peer,
+    revision,
+  });
 
   let currentPath = $state("");
   let codeElement: HTMLElement | undefined = $state();
@@ -46,12 +58,16 @@
   }
 
   async function fetchTree(path: string) {
-    return await invoke<Tree>("repo_tree", { rid: repo.rid, path });
+    return await invoke<Tree>("repo_tree", { rid: repo.rid, path, sha: oid });
   }
 
   async function fetchBlob(path: string) {
     try {
-      blob = await invoke<Blob>("repo_blob", { rid: repo.rid, path });
+      blob = await invoke<Blob>("repo_blob", {
+        rid: repo.rid,
+        path,
+        sha: oid,
+      });
       currentPath = path;
       error = undefined;
     } catch (err) {
@@ -124,7 +140,7 @@
     style:display="flex"
     style:flex-direction="column"
     style:height="100%">
-    <RepoHeader {repo} />
+    <RepoHeader {repo} {refs} {peer} {revision} {oid} {baseRoute} />
     <div
       style:display="grid"
       style:grid-template-columns="16.5rem 1fr"

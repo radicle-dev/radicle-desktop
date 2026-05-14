@@ -136,6 +136,10 @@ pub enum Error {
     #[error(transparent)]
     Storage(#[from] radicle::storage::Error),
 
+    /// Storage refs error.
+    #[error(transparent)]
+    StorageRefs(#[from] radicle::storage::refs::Error),
+
     /// Surf error.
     #[error(transparent)]
     Surf(#[from] radicle_surf::Error),

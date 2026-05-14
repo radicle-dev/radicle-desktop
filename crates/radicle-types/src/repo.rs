@@ -1,10 +1,11 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use radicle_surf as surf;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use radicle::{git, identity, issue, patch};
+use radicle::node::Alias;
+use radicle::{git, identity, issue, node, patch};
 
 use crate::cobs::Author;
 use crate::error;
@@ -167,6 +168,54 @@ pub struct Commit {
     pub summary: String,
     #[ts(as = "Vec<String>")]
     pub parents: Vec<git::Oid>,
+}
+
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub struct Tag {
+    #[ts(as = "String")]
+    pub oid: git::Oid,
+    /// Tagger time for annotated tags, otherwise the commit time of the
+    /// tagged commit. Seconds since epoch.
+    #[ts(type = "number")]
+    pub timestamp: i64,
+}
+
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub struct Remote {
+    #[ts(as = "String")]
+    pub id: node::NodeId,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(as = "Option<String>", optional)]
+    pub alias: Option<Alias>,
+    pub delegate: bool,
+    #[ts(as = "BTreeMap<String, String>")]
+    pub branches: BTreeMap<String, git::Oid>,
+    pub tags: BTreeMap<String, Tag>,
+}
+
+#[derive(Default, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub struct Canonical {
+    #[ts(as = "BTreeMap<String, String>")]
+    pub branches: BTreeMap<String, git::Oid>,
+    pub tags: BTreeMap<String, Tag>,
+}
+
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub struct RepoRefs {
+    pub canonical: Canonical,
+    pub remotes: Vec<Remote>,
 }
 
 impl From<surf::Commit> for Commit {
