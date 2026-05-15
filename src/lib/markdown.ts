@@ -1,6 +1,7 @@
 import type { MarkedExtension, Tokens } from "marked";
 
 import dompurify from "dompurify";
+import escape from "lodash/escape.js";
 import { Marked, Renderer as BaseRenderer } from "marked";
 import { markedEmoji } from "marked-emoji";
 import markedFootnote from "marked-footnote";
@@ -18,6 +19,7 @@ dompurify.setConfig({
     "href",
     "id",
     "name",
+    "rel",
     "target",
     "text",
     "title",
@@ -93,23 +95,25 @@ export class Renderer extends BaseRenderer {
   // trim eventual dashes on each side of the string.
   heading({ tokens, depth }: Tokens.Heading) {
     const text = this.parser.parseInline(tokens);
-    const escapedText = text
+    const id = text
       // By lowercasing we avoid casing mismatches, between headings and links.
       .toLowerCase()
       .replace(/[^\w]+/g, "-")
       .replace(/^-|-$/g, "");
 
-    return `<h${depth} id="${escapedText}">${text}</h${depth}>`;
+    return `<h${depth} id="${id}">${text}</h${depth}>`;
   }
 
   link({ href, title, tokens }: Tokens.Link): string {
     const text = this.parser.parseInline(tokens);
-    if (href.startsWith("#")) {
-      // By lowercasing we avoid casing mismatches, between headings and links.
-      return `<a ${title ? `title="${title}"` : ""} href="${href.toLowerCase()}">${text}</a>`;
+    const normalizedHref = href.startsWith("#") ? href.toLowerCase() : href;
+
+    const attrs = [`href="${escape(normalizedHref)}"`];
+    if (title) {
+      attrs.push(`title="${escape(title)}"`);
     }
 
-    return `<a ${title ? `title="${title}"` : ""} href="${href}">${text}</a>`;
+    return `<a ${attrs.join(" ")}>${text}</a>`;
   }
 }
 
