@@ -2,7 +2,7 @@ import type { ActionWithAuthor } from "@bindings/cob/inbox/ActionWithAuthor";
 import type { Action as IssueAction } from "@bindings/cob/issue/Action";
 import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 
-import { formatOid, pluralize } from "@app/lib/utils";
+import { emojiToTwemoji, formatOid, pluralize } from "@app/lib/utils";
 
 export type Action =
   | ActionWithAuthor<IssueAction>
@@ -73,7 +73,7 @@ export function createSummary(
   } else if (lastAction.type === "review.comment") {
     summary = `left ${count > 1 ? count : "a"} review ${pluralize("comment", count)}`;
   } else if (a.every(e => e.type === "comment.react")) {
-    const reactions = a.map(i => i.reaction).slice(0, 10);
+    const reactions = a.map(i => emojiToTwemoji(i.reaction)).slice(0, 10);
     summary = `reacted with ${[
       ...reactions,
       ...(a.length >= 11 ? ["%…%"] : []),
