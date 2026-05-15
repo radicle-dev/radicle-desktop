@@ -276,6 +276,18 @@ export function verdictIcon(verdict: Review["verdict"]) {
   }
 }
 
+export function safeHttpUrl(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return parsed.toString();
+    }
+  } catch {
+    // fall through
+  }
+  return undefined;
+}
+
 export function explorerUrl(
   path: string,
   seed = "iris.radicle.network",

@@ -6,7 +6,7 @@
   import { SvelteSet } from "svelte/reactivity";
 
   import { invoke } from "@app/lib/invoke";
-  import { authorForNodeId } from "@app/lib/utils";
+  import { authorForNodeId, safeHttpUrl } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -26,7 +26,7 @@
   type RunView = {
     run: Run;
     label: string;
-    linkable: boolean;
+    safeLog: string | undefined;
   };
 
   type HostGroup = {
@@ -55,13 +55,6 @@
     } catch {
       return undefined;
     }
-  }
-
-  function isLinkable(url: URL | undefined): boolean {
-    if (!url) return false;
-    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
-    if (url.host === "no.url.example.com") return false;
-    return true;
   }
 
   function runLabel(run: Run, url: URL | undefined): string {
@@ -106,10 +99,12 @@
       for (const run of job.runs) {
         const url = parseUrl(run.log);
         const host = url && url.host ? url.host : "(unknown host)";
+        const safeLog =
+          url?.host !== "no.url.example.com" ? safeHttpUrl(run.log) : undefined;
         const view: RunView = {
           run,
           label: runLabel(run, url),
-          linkable: isLinkable(url),
+          safeLog,
         };
         const key = run.node.did;
         let entry = byNode[key];
@@ -287,12 +282,12 @@
       </span>
     {/snippet}
     {#snippet runRow(view: RunView)}
-      {#if view.linkable}
+      {#if view.safeLog}
         <a
           class="row run-row"
-          href={view.run.log}
+          href={view.safeLog}
           target="_blank"
-          rel="noreferrer">
+          rel="noopener noreferrer">
           {@render statusChip(view.run.status)}
           <span class="run-label">
             run <span class="run-id">{view.label}</span>
