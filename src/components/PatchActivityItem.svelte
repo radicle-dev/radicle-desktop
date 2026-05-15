@@ -162,6 +162,14 @@
   .meta-hash :global(.txt-id:hover) {
     color: inherit;
   }
+  .timeline-item.verdict-accept,
+  .timeline-item.verdict-reject {
+    align-items: center;
+  }
+  .timeline-item.verdict-accept .icon,
+  .timeline-item.verdict-reject .icon {
+    padding-top: 0;
+  }
   .verdict-accept {
     background-color: var(--color-feedback-success-bg);
     color: var(--color-feedback-success-text);

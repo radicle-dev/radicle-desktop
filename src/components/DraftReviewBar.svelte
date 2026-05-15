@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Review } from "@bindings/cob/patch/Review";
+  import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
 
   import type { DraftReview } from "@app/lib/draftReviewStorage";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
@@ -62,9 +63,66 @@
     },
   ];
 
-  const pendingCommentCount = $derived(
-    draftReview.comments.filter(c => !c.replyTo).length,
+  const pendingComments = $derived(
+    draftReview.comments.filter(c => !c.replyTo),
   );
+  const pendingCommentCount = $derived(pendingComments.length);
+
+  let showCommentsTooltip = $state(false);
+  let hideTooltipTimer: ReturnType<typeof setTimeout> | undefined;
+  let editingCommentId: string | undefined = $state();
+  let editBody = $state("");
+
+  function openTooltip() {
+    if (hideTooltipTimer) {
+      clearTimeout(hideTooltipTimer);
+      hideTooltipTimer = undefined;
+    }
+    showCommentsTooltip = true;
+  }
+  function scheduleHideTooltip() {
+    if (editingCommentId) return;
+    if (hideTooltipTimer) clearTimeout(hideTooltipTimer);
+    hideTooltipTimer = setTimeout(() => {
+      showCommentsTooltip = false;
+    }, 150);
+  }
+
+  function startEdit(commentId: string, currentBody: string) {
+    editingCommentId = commentId;
+    editBody = currentBody;
+  }
+  function cancelEdit() {
+    editingCommentId = undefined;
+    editBody = "";
+  }
+  async function saveEdit(commentId: string) {
+    draftReviewStorage.updateComment(draftReview.id, commentId, {
+      body: editBody,
+    });
+    editingCommentId = undefined;
+    editBody = "";
+    await onChange();
+  }
+  async function deleteComment(commentId: string) {
+    draftReviewStorage.deleteComment(draftReview.id, commentId);
+    if (editingCommentId === commentId) cancelEdit();
+    await onChange();
+  }
+
+  function formatLocation(location: CodeLocation | undefined): string {
+    if (!location) return "";
+    const range = location.new ?? location.old;
+    if (!range) return location.path;
+    if (range.type === "lines") {
+      const start = range.range.start + 1;
+      const end = range.range.end;
+      return start === end
+        ? `${location.path}:${start}`
+        : `${location.path}:${start}-${end}`;
+    }
+    return `${location.path}:${range.line + 1}`;
+  }
 
   const verdictLabel = $derived(
     verdict === "accept"
@@ -168,8 +226,119 @@
     color: var(--color-text-primary);
   }
   .saved-count {
+    position: relative;
     display: inline-flex;
     align-items: center;
+    gap: 0.25rem;
+  }
+  .comments-tooltip {
+    position: absolute;
+    bottom: 100%;
+    right: 0;
+    left: auto;
+    z-index: 10;
+    width: min(28rem, calc(100vw - 2rem));
+    max-height: 24rem;
+    overflow-y: auto;
+    background-color: var(--color-surface-canvas);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--elevation-low);
+    padding: 0.5rem 0;
+    margin-bottom: 0.5rem;
+  }
+  .comments-tooltip::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    height: 0.5rem;
+  }
+  .comments-tooltip-header {
+    padding: 0.25rem 0.75rem 0.5rem;
+    color: var(--color-text-tertiary);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .comments-tooltip-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .comments-tooltip-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .comments-tooltip-item:last-child {
+    border-bottom: none;
+  }
+  .comments-tooltip-item-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 1.25rem;
+  }
+  .comments-tooltip-location {
+    color: var(--color-text-tertiary);
+    font-family: var(--font-family-monospace);
+    overflow-wrap: anywhere;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .comments-tooltip-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
+    opacity: 0;
+    transition: opacity 100ms ease;
+  }
+  .comments-tooltip-item:hover .comments-tooltip-actions,
+  .comments-tooltip-item:focus-within .comments-tooltip-actions {
+    opacity: 1;
+  }
+  .comments-tooltip-action {
+    background: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    color: var(--color-text-tertiary);
+    padding: 0.125rem;
+    border-radius: var(--border-radius-sm);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .comments-tooltip-action:hover,
+  .comments-tooltip-action:focus-visible {
+    color: var(--color-text-primary);
+    background-color: var(--color-surface-subtle);
+  }
+  .comments-tooltip-body {
+    color: var(--color-text-primary);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .comments-tooltip-edit {
+    width: 100%;
+    box-sizing: border-box;
+    background-color: var(--color-surface-subtle);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    outline: none;
+    color: var(--color-text-primary);
+    font: inherit;
+    padding: 0.25rem 0.5rem;
+    resize: vertical;
+  }
+  .comments-tooltip-edit:focus {
+    border-color: var(--color-border-default);
+  }
+  .comments-tooltip-edit-actions {
+    display: flex;
+    justify-content: flex-end;
     gap: 0.25rem;
   }
   .split-button {
@@ -287,9 +456,78 @@
   <div class="actions">
     <div class="status">
       <span class="chip">Draft saved</span>
-      <span class="saved-count">
+      <span
+        role="status"
+        class="saved-count"
+        onmouseenter={openTooltip}
+        onmouseleave={scheduleHideTooltip}>
         <Icon name="comment" />
         {pendingCommentCount}
+        {#if showCommentsTooltip && pendingCommentCount > 0}
+          <div
+            class="comments-tooltip"
+            onmouseenter={openTooltip}
+            onmouseleave={scheduleHideTooltip}
+            role="presentation">
+            <div class="comments-tooltip-header txt-body-s-medium">
+              {pendingCommentCount}
+              {pendingCommentCount === 1 ? "comment" : "comments"}
+            </div>
+            <ul class="comments-tooltip-list">
+              {#each pendingComments as comment (comment.id)}
+                {@const body =
+                  comment.edits[comment.edits.length - 1]?.body ?? ""}
+                <li class="comments-tooltip-item">
+                  <div class="comments-tooltip-item-header">
+                    {#if comment.location}
+                      <div class="comments-tooltip-location txt-body-s-regular">
+                        {formatLocation(comment.location)}
+                      </div>
+                    {/if}
+                    {#if editingCommentId !== comment.id}
+                      <div class="comments-tooltip-actions">
+                        <button
+                          type="button"
+                          class="comments-tooltip-action"
+                          title="Edit"
+                          onclick={() => startEdit(comment.id, body)}>
+                          <Icon name="edit" />
+                        </button>
+                        <button
+                          type="button"
+                          class="comments-tooltip-action"
+                          title="Delete"
+                          onclick={() => deleteComment(comment.id)}>
+                          <Icon name="trash" />
+                        </button>
+                      </div>
+                    {/if}
+                  </div>
+                  {#if editingCommentId === comment.id}
+                    <textarea
+                      class="comments-tooltip-edit txt-body-m-regular"
+                      bind:value={editBody}
+                      rows="3"></textarea>
+                    <div class="comments-tooltip-edit-actions">
+                      <Button variant="outline" onclick={cancelEdit}>
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onclick={() => saveEdit(comment.id)}>
+                        Save
+                      </Button>
+                    </div>
+                  {:else}
+                    <div class="comments-tooltip-body txt-body-m-regular">
+                      {body}
+                    </div>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
       </span>
     </div>
 
