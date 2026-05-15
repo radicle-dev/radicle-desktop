@@ -453,7 +453,8 @@
     </div>
   {/if}
 {:else if op.type === "review"}
-  {@const hasSummary = !!op.summary && op.summary.trim() !== ""}
+  {@const reviewSummary = splitDescription(op.summary ?? "")}
+  {@const hasBody = !!reviewSummary.body}
   {@const isToggleable = onToggle !== undefined}
   {#if op.verdict === "accept"}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -480,6 +481,10 @@
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           <span class="summary-secondary">accepted revision</span>
+          {#if reviewSummary.subject}
+            <span class="txt-body-m-medium summary-content"
+              >{reviewSummary.subject}</span>
+          {/if}
           {@render viewFullReviewButton()}
         </div>
         <div class="meta">
@@ -488,11 +493,11 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
-        {#if hasSummary && (expanded || !isToggleable)}
+        {#if hasBody && (expanded || !isToggleable)}
           <div
             class="verdict-summary txt-body-m-medium"
             transition:slide={{ duration: 180 }}>
-            {op.summary}
+            {reviewSummary.body}
           </div>
         {/if}
       </div>
@@ -522,6 +527,10 @@
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
           <span class="summary-secondary">rejected revision</span>
+          {#if reviewSummary.subject}
+            <span class="txt-body-m-medium summary-content"
+              >{reviewSummary.subject}</span>
+          {/if}
           {@render viewFullReviewButton()}
         </div>
         <div class="meta">
@@ -530,11 +539,11 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
-        {#if hasSummary && (expanded || !isToggleable)}
+        {#if hasBody && (expanded || !isToggleable)}
           <div
             class="verdict-summary txt-body-m-medium"
             transition:slide={{ duration: 180 }}>
-            {op.summary}
+            {reviewSummary.body}
           </div>
         {/if}
       </div>
@@ -563,7 +572,11 @@
       <div class="wrapper">
         {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
         <div class="summary-line">
-          <span class="txt-body-m-medium">reviewed revision</span>
+          <span class="summary-secondary">reviewed revision</span>
+          {#if reviewSummary.subject}
+            <span class="txt-body-m-medium summary-content"
+              >{reviewSummary.subject}</span>
+          {/if}
           {@render viewFullReviewButton()}
         </div>
         <div class="meta">
@@ -572,11 +585,11 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
-        {#if hasSummary && (expanded || !isToggleable)}
+        {#if hasBody && (expanded || !isToggleable)}
           <div
             class="verdict-summary txt-body-m-medium"
             transition:slide={{ duration: 180 }}>
-            {op.summary}
+            {reviewSummary.body}
           </div>
         {/if}
       </div>

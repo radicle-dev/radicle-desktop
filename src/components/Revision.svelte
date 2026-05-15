@@ -827,10 +827,12 @@
         {/if}
       {:else if data.op.type === "review"}
         {@const opId = data.op.id}
-        {@const hasSummary = !!data.op.summary && data.op.summary.trim() !== ""}
+        {@const reviewBody = data.op.summary
+          ? splitDescription(data.op.summary).body
+          : undefined}
         {@const threads = data.reviewThreads ?? []}
         {@const hasThreads = threads.length > 0}
-        {@const toggleable = hasSummary || hasThreads}
+        {@const toggleable = !!reviewBody || hasThreads}
         {@const expanded = toggleable ? isReviewExpanded(opId) : true}
         <PatchActivityItem
           op={data.op}
