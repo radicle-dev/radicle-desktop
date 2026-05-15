@@ -5,6 +5,7 @@ import type { Review } from "@bindings/cob/patch/Review";
 import type { ComponentProps } from "svelte";
 
 import bs58 from "bs58";
+import escape from "lodash/escape.js";
 import md5 from "md5";
 import twemojiModule from "twemoji";
 
@@ -150,7 +151,7 @@ export function emojiToTwemoji(emoji: string, exclude?: string[]) {
   if (!filename || exclude?.includes(filename)) {
     return "";
   }
-  return `<img alt="${emoji}" src="/twemoji/${filename}.svg" class="txt-emoji">`;
+  return `<img alt="${escape(emoji)}" src="/twemoji/${filename}.svg" class="txt-emoji">`;
 }
 
 export function scrollIntoView(id: string, options?: ScrollIntoViewOptions) {
