@@ -12,12 +12,21 @@
 
   interface Props {
     draftReview: DraftReview;
+    filesChecked?: number;
+    filesTotal?: number;
     onChange: () => Promise<void>;
     onPublish: () => Promise<void>;
     onCancel: () => void;
   }
 
-  const { draftReview, onChange, onPublish, onCancel }: Props = $props();
+  const {
+    draftReview,
+    filesChecked,
+    filesTotal,
+    onChange,
+    onPublish,
+    onCancel,
+  }: Props = $props();
 
   let summary = $state(draftReview.summary ?? "");
   let verdict: Review["verdict"] = $state(draftReview.verdict ?? "accept");
@@ -456,6 +465,14 @@
   <div class="actions">
     <div class="status">
       <span class="chip">Draft saved</span>
+      {#if filesTotal !== undefined && filesChecked !== undefined}
+        <span
+          class="saved-count"
+          title="Files reviewed in this revision">
+          <Icon name="document" />
+          {filesChecked}/{filesTotal}
+        </span>
+      {/if}
       <span
         role="status"
         class="saved-count"

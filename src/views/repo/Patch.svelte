@@ -182,7 +182,14 @@
     ) ?? false,
   );
 
-  let reviewProgress: { checked: number; total: number } | undefined = $state();
+  let reviewProgress:
+    | {
+        checked: number;
+        total: number;
+        filesChecked: number;
+        filesTotal: number;
+      }
+    | undefined = $state();
   $effect(() => {
     const draft = ownDraftReviewForPatch;
     const rev = selectedRevision;
@@ -216,6 +223,8 @@
       reviewProgress = {
         checked: checkedCommits + checkedFiles,
         total: commits.length + diff.files.length,
+        filesChecked: checkedFiles,
+        filesTotal: diff.files.length,
       };
     });
     return () => {
@@ -533,6 +542,8 @@
     {#if ownDraftReviewForPatch}
       <DraftReviewBar
         draftReview={ownDraftReviewForPatch}
+        filesChecked={reviewProgress?.filesChecked}
+        filesTotal={reviewProgress?.filesTotal}
         onChange={loadPatch}
         onPublish={async () => {
           await loadPatch();
