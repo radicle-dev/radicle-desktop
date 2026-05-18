@@ -9,10 +9,17 @@
   import type { Stats } from "@bindings/diff/Stats";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import debounce from "lodash/debounce";
+
   import type { DraftReview } from "@app/lib/draftReviewStorage";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
-  import { cachedGetDiff, cachedListCommits, invoke } from "@app/lib/invoke";
+  import {
+    cachedGetDiff,
+    cachedListCommits,
+    invoke,
+    writeToClipboard,
+  } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
   import {
@@ -231,6 +238,16 @@
       cancelled = true;
     };
   });
+
+  let copyIcon: "link" | "checkmark" = $state("link");
+  const restoreCopyIcon = debounce(() => {
+    copyIcon = "link";
+  }, 1000);
+  async function copyPatchLink() {
+    await writeToClipboard(explorerUrl(`${repo.rid}/patches/${patch.id}`));
+    copyIcon = "checkmark";
+    restoreCopyIcon();
+  }
 </script>
 
 <style>
@@ -385,6 +402,15 @@
               style:margin-left="auto"
               style:z-index="40"
               style:gap="1rem">
+              <Button
+                variant="naked"
+                title="Copy patch link"
+                onclick={copyPatchLink}>
+                <Icon name={copyIcon} />
+                <span class="global-hide-on-medium-desktop-down">
+                  Copy link
+                </span>
+              </Button>
               <CheckoutPatchButton
                 {tab}
                 selectedRevisionId={selectedRevision.id}
