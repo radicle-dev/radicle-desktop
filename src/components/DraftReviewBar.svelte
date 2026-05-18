@@ -15,7 +15,7 @@
     filesChecked?: number;
     filesTotal?: number;
     onChange: () => Promise<void>;
-    onPublish: () => Promise<void>;
+    onPublish: (revisionId: string) => Promise<void>;
     onCancel: () => void;
   }
 
@@ -166,8 +166,9 @@
         verdict,
         labels: draftReview.labels,
       });
+      const revisionId = draftReview.revisionId;
       await draftReviewStorage.publish(draftReview.id);
-      await onPublish();
+      await onPublish(revisionId);
     } finally {
       publishing = false;
     }

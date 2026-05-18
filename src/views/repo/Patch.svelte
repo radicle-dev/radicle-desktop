@@ -569,8 +569,22 @@
         filesChecked={fileProgress?.filesChecked}
         filesTotal={fileProgress?.filesTotal}
         onChange={loadPatch}
-        onPublish={async () => {
+        onPublish={async revisionId => {
           await loadPatch();
+          const myDid = didFromPublicKey(config.publicKey);
+          const updatedRev = revisions.find(r => r.id === revisionId);
+          const newReview = updatedRev?.reviews?.find(
+            r => r.author.did === myDid,
+          );
+          if (newReview) {
+            void router.push({
+              resource: "repo.patch",
+              rid: repo.rid,
+              patch: patch.id,
+              status: undefined,
+              reviewId: newReview.id,
+            });
+          }
         }}
         onCancel={() => {
           draftReviewStorage.delete(ownDraftReviewForPatch.id);
