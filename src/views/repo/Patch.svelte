@@ -297,6 +297,13 @@
     .meta-bar :global(.row) {
       flex-direction: column;
       align-items: flex-start;
+      gap: 1.25rem;
+    }
+    .meta-bar :global(.reviewers-compact) {
+      display: none;
+    }
+    .meta-bar :global(.reviewers-expanded) {
+      display: flex;
     }
   }
   .tabs {
