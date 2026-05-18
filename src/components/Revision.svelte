@@ -573,6 +573,9 @@
     position: relative;
     margin-bottom: 1rem;
   }
+  .patch-body:has(.edit-description) {
+    padding-right: 2rem;
+  }
   .edit-description {
     position: absolute;
     top: 0;
