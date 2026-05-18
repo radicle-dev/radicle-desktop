@@ -38,7 +38,6 @@
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
-  import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchMetadata from "@app/components/PatchMetadata.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
@@ -373,8 +372,42 @@
           {reviewProgress.checked}/{reviewProgress.total} reviewed
         </div>
       {/if}
-      <div style:margin-left="auto">
-        <NewPatchButton rid={repo.rid} ghost />
+      <div
+        class="global-flex"
+        style:margin-left="auto"
+        style:gap="0.5rem"
+        style:z-index="40">
+        <Button
+          variant="naked"
+          title="Copy patch link"
+          onclick={copyPatchLink}>
+          <Icon name={copyIcon} />
+          <span class="global-hide-on-medium-desktop-down">Copy link</span>
+        </Button>
+        <CheckoutPatchButton
+          {tab}
+          selectedRevisionId={selectedRevision.id}
+          patchId={patch.id} />
+        {#if !ownDraftReviewForPatch}
+          <Button
+            variant="secondary"
+            disabled={hasOwnPublishedReviewOnSelected}
+            onclick={() => {
+              draftReviewStorage.create(
+                repo.rid,
+                patch.id,
+                selectedRevision.id,
+              );
+            }}
+            title={hasOwnPublishedReviewOnSelected
+              ? "You already created a review for this revision"
+              : "Start a review of this revision"}>
+            <Icon name="comment" />
+            <span class="txt-body-m-regular global-hide-on-medium-desktop-down">
+              Review revision
+            </span>
+          </Button>
+        {/if}
       </div>
     </Topbar>
 
@@ -397,46 +430,6 @@
               allowedToEdit={true}
               title={patch.title}
               cobId={patch.id} />
-            <div
-              class="global-flex"
-              style:margin-left="auto"
-              style:z-index="40"
-              style:gap="1rem">
-              <Button
-                variant="naked"
-                title="Copy patch link"
-                onclick={copyPatchLink}>
-                <Icon name={copyIcon} />
-                <span class="global-hide-on-medium-desktop-down">
-                  Copy link
-                </span>
-              </Button>
-              <CheckoutPatchButton
-                {tab}
-                selectedRevisionId={selectedRevision.id}
-                patchId={patch.id} />
-              {#if !ownDraftReviewForPatch}
-                <Button
-                  variant="secondary"
-                  disabled={hasOwnPublishedReviewOnSelected}
-                  onclick={() => {
-                    draftReviewStorage.create(
-                      repo.rid,
-                      patch.id,
-                      selectedRevision.id,
-                    );
-                  }}
-                  title={hasOwnPublishedReviewOnSelected
-                    ? "You already created a review for this revision"
-                    : "Start a review of this revision"}>
-                  <Icon name="comment" />
-                  <span
-                    class="txt-body-m-regular global-hide-on-medium-desktop-down">
-                    Review revision
-                  </span>
-                </Button>
-              {/if}
-            </div>
           </div>
           <div class="meta-bar">
             <PatchMetadata
