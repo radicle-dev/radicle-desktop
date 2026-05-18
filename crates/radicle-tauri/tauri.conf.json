@@ -36,6 +36,8 @@
     }
   },
   "bundle": {
+    "category": "DeveloperTool",
+    "homepage": "https://radicle.dev/desktop",
     "linux": {
       "deb": {
         "depends": [
