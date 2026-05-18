@@ -1,10 +1,12 @@
 <script lang="ts">
   import type { PatchStatus } from "./router";
+  import type { Author } from "@bindings/cob/Author";
   import type { Operation } from "@bindings/cob/Operation";
   import type { Action } from "@bindings/cob/patch/Action";
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
@@ -12,6 +14,7 @@
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
+  import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
   import {
     didFromPublicKey,
@@ -19,16 +22,17 @@
     patchStatusBackgroundColor,
     patchStatusColor,
     patchStatusLabel,
+    publicKeyFromDid,
   } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Button from "@app/components/Button.svelte";
   import CheckoutPatchButton from "@app/components/CheckoutPatchButton.svelte";
+  import CommentComponent from "@app/components/Comment.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
-  import Markdown from "@app/components/Markdown.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchMetadata from "@app/components/PatchMetadata.svelte";
   import PatchTimeline from "@app/components/PatchTimeline.svelte";
@@ -97,6 +101,56 @@
       });
     } catch (error) {
       console.error("Changing state failed", error);
+    } finally {
+      await loadPatch();
+    }
+  }
+
+  async function editFirstRevision(description: string, embeds: Embed[]) {
+    const firstRevision = revisions[0];
+    if (!firstRevision) {
+      return;
+    }
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        action: {
+          type: "revision.edit",
+          revision: firstRevision.id,
+          description,
+          embeds,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing revision failed: ", error);
+    } finally {
+      await loadPatch();
+    }
+  }
+
+  async function reactOnFirstRevision(authors: Author[], reaction: string) {
+    const firstRevision = revisions[0];
+    if (!firstRevision) {
+      return;
+    }
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        action: {
+          type: "revision.react",
+          revision: firstRevision.id,
+          reaction,
+          active: !authors.find(
+            ({ did }) => publicKeyFromDid(did) === config.publicKey,
+          ),
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing reactions failed", error);
     } finally {
       await loadPatch();
     }
@@ -193,8 +247,15 @@
         !("draft" in value),
     ),
   );
-  const patchDescription = $derived(
-    revisions[0]?.description.slice(-1)[0]?.body ?? "",
+  const firstRevision = $derived(revisions[0]);
+  const canEditFirstRevision = $derived(
+    firstRevision
+      ? roles.isDelegateOrAuthor(
+          config.publicKey,
+          repo.delegates.map(delegate => delegate.did),
+          firstRevision.author.did,
+        )
+      : false,
   );
 </script>
 
@@ -240,11 +301,9 @@
     margin-bottom: 1rem;
   }
   .patch-description {
+    margin-bottom: 1rem;
     background-color: var(--color-surface-canvas);
     border-radius: var(--border-radius-sm);
-    font: var(--txt-body-m-regular);
-    margin-bottom: 1rem;
-    padding: 0.75rem;
   }
   .sidebar {
     display: flex;
@@ -370,15 +429,27 @@
                 </Button>
               </div>
             </div>
-            <div class="patch-description">
-              {#if patchDescription.trim()}
-                <Markdown rid={repo.rid} breaks content={patchDescription} />
-              {:else}
-                <span class="txt-missing txt-body-m-regular">
-                  No description.
-                </span>
-              {/if}
-            </div>
+            {#if firstRevision}
+              <div class="patch-description txt-body-m-regular">
+                <CommentComponent
+                  caption="opened patch"
+                  rid={repo.rid}
+                  currentUserNid={config.publicKey}
+                  id={firstRevision.id}
+                  lastEdit={firstRevision.description.length > 1
+                    ? firstRevision.description.at(-1)
+                    : undefined}
+                  author={firstRevision.author}
+                  reactions={firstRevision.reactions}
+                  timestamp={firstRevision.timestamp}
+                  body={firstRevision.description.slice(-1)[0]?.body ?? ""}
+                  reactOnComment={reactOnFirstRevision}
+                  editComment={canEditFirstRevision
+                    ? editFirstRevision
+                    : undefined}>
+                </CommentComponent>
+              </div>
+            {/if}
 
             <div class="sidebar-inline">
               <PatchMetadata
