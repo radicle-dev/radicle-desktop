@@ -16,7 +16,6 @@
   import { nodeRunning } from "@app/lib/events";
   import {
     cachedGetDiff,
-    cachedListCommits,
     invoke,
     writeToClipboard,
   } from "@app/lib/invoke";
@@ -188,48 +187,34 @@
     ) ?? false,
   );
 
-  let reviewProgress:
-    | {
-        checked: number;
-        total: number;
-        filesChecked: number;
-        filesTotal: number;
-      }
+  let fileProgress:
+    | { filesChecked: number; filesTotal: number }
     | undefined = $state();
   $effect(() => {
     const draft = ownDraftReviewForPatch;
     const rev = selectedRevision;
     if (!draft) {
-      reviewProgress = undefined;
+      fileProgress = undefined;
       return;
     }
     let cancelled = false;
-    void Promise.all([
-      cachedListCommits(repo.rid, rev.base, rev.head),
-      cachedGetDiff(repo.rid, {
-        base: rev.base,
-        head: rev.head,
-        unified: 3,
-        highlight: false,
-      }),
-    ]).then(([commits, diff]) => {
+    void cachedGetDiff(repo.rid, {
+      base: rev.base,
+      head: rev.head,
+      unified: 3,
+      highlight: false,
+    }).then(diff => {
       if (cancelled) return;
-      const commitIds = new Set(commits.map(c => c.id));
       const filePaths = new Set(
         diff.files.map(f =>
           f.status === "moved" || f.status === "copied" ? f.newPath : f.path,
         ),
       );
-      const checkedCommits = draft.checkedCommits.filter(id =>
-        commitIds.has(id),
-      ).length;
-      const checkedFiles = draft.checkedFiles.filter(p =>
+      const filesChecked = draft.checkedFiles.filter(p =>
         filePaths.has(p),
       ).length;
-      reviewProgress = {
-        checked: checkedCommits + checkedFiles,
-        total: commits.length + diff.files.length,
-        filesChecked: checkedFiles,
+      fileProgress = {
+        filesChecked,
         filesTotal: diff.files.length,
       };
     });
@@ -270,17 +255,6 @@
   }
   .breadcrumb-link:hover {
     color: var(--color-text-primary);
-  }
-  .review-progress {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    margin-left: 0.75rem;
-    padding: 0.125rem 0.5rem;
-    border: 1px solid var(--color-border-subtle);
-    border-radius: var(--border-radius-sm);
-    color: var(--color-text-secondary);
-    font: var(--txt-body-m-regular);
   }
   .main {
     padding: 1.5rem 6rem;
@@ -394,12 +368,6 @@
           href={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
           title="Open in radicle.network" />
       </div>
-      {#if reviewProgress}
-        <div class="review-progress" title="Items reviewed in this revision">
-          <Icon name="comment" />
-          {reviewProgress.checked}/{reviewProgress.total} reviewed
-        </div>
-      {/if}
       <div
         class="global-flex"
         style:margin-left="auto"
@@ -591,8 +559,8 @@
     {#if ownDraftReviewForPatch}
       <DraftReviewBar
         draftReview={ownDraftReviewForPatch}
-        filesChecked={reviewProgress?.filesChecked}
-        filesTotal={reviewProgress?.filesTotal}
+        filesChecked={fileProgress?.filesChecked}
+        filesTotal={fileProgress?.filesTotal}
         onChange={loadPatch}
         onPublish={async () => {
           await loadPatch();
