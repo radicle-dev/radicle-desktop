@@ -289,9 +289,13 @@
     background-color: var(--color-surface-canvas);
   }
   .verdict-chip.accept {
+    background-color: var(--color-feedback-success-bg);
+    border-color: transparent;
     color: var(--color-feedback-success-text);
   }
   .verdict-chip.reject {
+    background-color: var(--color-feedback-error-bg);
+    border-color: transparent;
     color: var(--color-feedback-error-text);
   }
   .draft-chip {
@@ -399,9 +403,15 @@
     cursor: pointer;
     font: inherit;
   }
-  .verdict-toggle:hover,
-  .verdict-toggle:focus-visible {
+  .verdict-toggle:not(.accept):not(.reject):hover,
+  .verdict-toggle:not(.accept):not(.reject):focus-visible {
     background-color: var(--color-surface-subtle);
+  }
+  .verdict-toggle.accept:hover,
+  .verdict-toggle.accept:focus-visible,
+  .verdict-toggle.reject:hover,
+  .verdict-toggle.reject:focus-visible {
+    filter: brightness(0.97);
   }
   .verdict-toggle:disabled {
     cursor: progress;
