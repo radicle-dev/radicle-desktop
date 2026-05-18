@@ -364,9 +364,21 @@
   const activityItems: ActivityItem<ActivityData>[] = $derived.by(() => {
     const tracker: Partial<Record<Action["type"], Action>> = {};
     const items: ActivityItem<ActivityData>[] = [];
+    const reviewOpsByReviewId = new Map<
+      string,
+      FlattenedPatchOperation & { type: "review" }
+    >();
     activity.forEach(operation => {
       operation.actions.forEach((action, actionIndex) => {
         if (skippedActivityTypes.has(action.type)) {
+          if (action.type === "review.edit") {
+            const reviewOp = reviewOpsByReviewId.get(action.review);
+            if (reviewOp) {
+              if ("verdict" in action) reviewOp.verdict = action.verdict;
+              if ("summary" in action) reviewOp.summary = action.summary;
+              if ("labels" in action) reviewOp.labels = action.labels;
+            }
+          }
           tracker[action.type] = action;
           return;
         }
@@ -403,6 +415,12 @@
           action.type === "review"
             ? threadsByReview.get(operation.id)
             : undefined;
+        if (action.type === "review") {
+          reviewOpsByReviewId.set(
+            operation.id,
+            op as FlattenedPatchOperation & { type: "review" },
+          );
+        }
         items.push({
           key: `${operation.id}:${actionIndex}`,
           timestamp: operation.timestamp,
