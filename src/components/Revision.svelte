@@ -741,7 +741,7 @@
   {:else if body.trim() !== "" || canEdit}
     <div class="patch-body txt-body-m-regular">
       {#if body.trim() !== ""}
-        <Markdown {rid} breaks content={body} />
+        <Markdown {rid} content={body} />
       {:else}
         <span style:color="var(--color-text-tertiary)">No description.</span>
       {/if}

@@ -287,15 +287,43 @@
     min-width: 0;
     max-width: 80rem;
     margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "meta"
+      "content";
+    column-gap: 2rem;
   }
   .title {
+    grid-area: title;
     display: flex;
     align-items: center;
     gap: 0.75rem;
     margin-bottom: 1rem;
   }
   .meta-bar {
+    grid-area: meta;
     margin-bottom: 0.5rem;
+  }
+  .content {
+    grid-area: content;
+    min-width: 0;
+  }
+  @media (min-width: 1200px) {
+    .main {
+      grid-template-columns: minmax(0, 1fr) 16rem;
+      grid-template-areas:
+        "title title"
+        "content meta";
+    }
+    .meta-bar {
+      margin-bottom: 0;
+    }
+    .meta-bar :global(.row) {
+      flex-direction: column;
+      align-items: flex-start;
+    }
   }
   .tabs {
     display: flex;
@@ -441,15 +469,16 @@
               stats={selectedRevisionStats} />
           </div>
 
-          <RevisionComponent
-            rid={repo.rid}
-            {repo}
-            repoDelegates={repo.delegates}
-            patchId={patch.id}
-            {loadPatch}
-            revision={revisions[0]}
-            {config}
-            view="description" />
+          <div class="content">
+            <RevisionComponent
+              rid={repo.rid}
+              {repo}
+              repoDelegates={repo.delegates}
+              patchId={patch.id}
+              {loadPatch}
+              revision={revisions[0]}
+              {config}
+              view="description" />
 
           {#if currentReview}
             <ReviewPage
@@ -554,6 +583,7 @@
               draftReviewId={ownDraftReviewForPatch?.id}
               bind:filesExpanded />
           {/if}
+          </div>
         </div>
       </div>
     </ScrollArea>
