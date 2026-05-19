@@ -473,8 +473,13 @@
           style:min-width="10rem">
           <DropdownList items={verdictOptions}>
             {#snippet item(option)}
+              {@const disabled = option.value === undefined && summary === ""}
               <DropdownListItem
                 selected={verdict === option.value}
+                {disabled}
+                title={disabled
+                  ? "Add a summary before switching to Comment"
+                  : undefined}
                 styleGap="0.5rem"
                 onclick={() => setVerdict(option.value)}>
                 <span
