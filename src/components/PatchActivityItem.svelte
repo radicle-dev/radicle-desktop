@@ -256,6 +256,11 @@
     background-color: var(--color-surface-canvas);
     color: var(--color-feedback-error-text);
   }
+  .verdict-comment .view-full-review:hover,
+  .verdict-comment .view-full-review:focus-visible {
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-primary);
+  }
 </style>
 
 {#snippet viewFullReviewButton()}
