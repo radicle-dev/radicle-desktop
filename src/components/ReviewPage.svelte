@@ -430,10 +430,9 @@
     type="button"
     class="back"
     onclick={backToPatch}
-    title="Back to patch">
+    title="Back to activity">
     <Icon name="arrow-left" />
-    Back to patch
-    <Id id={patch.id} clipboard={patch.id} />
+    Back to activity
   </button>
 </div>
 
