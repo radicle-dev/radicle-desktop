@@ -157,7 +157,7 @@ impl InboxStorage for Sqlite {
             Some(repos) if !repos.is_empty() => {
                 let placeholders: Vec<String> =
                     (1..=repos.len()).map(|i| format!("?{}", i)).collect();
-                format!("WHERE repo IN ({})", placeholders.join(","))
+                format!("AND repo IN ({})", placeholders.join(","))
             }
             _ => String::from(""),
         };
@@ -175,6 +175,9 @@ impl InboxStorage for Sqlite {
                 ) as value,
                 MAX(timestamp) AS latest_timestamp
             FROM 'repository-notifications'
+            WHERE new NOT NULL
+              AND (ref LIKE '%cobs/xyz.radicle.patch%'
+                   OR ref LIKE '%cobs/xyz.radicle.issue%')
             {}
             GROUP BY repo, ref_without_namespace
             ORDER BY latest_timestamp DESC",

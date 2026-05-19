@@ -69,13 +69,13 @@
   async function loadNotifications() {
     notificationsByRepo = await invoke<NotificationsByRepo[]>(
       "list_notifications",
-      { params: { take: 100 } },
+      { params: { take: 20 } },
     );
   }
 
   async function showAll(rid: string) {
     const all = await invoke<NotificationsByRepo[]>("list_notifications", {
-      params: { repos: [rid] },
+      params: { repos: [rid], all: true },
     });
     notificationsByRepo = [
       ...notificationsByRepo.filter(r => r.rid !== rid),
