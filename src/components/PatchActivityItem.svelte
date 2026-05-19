@@ -132,17 +132,23 @@
     cursor: pointer;
   }
   .summary-line {
+    display: flex;
+    align-items: center;
     flex: 1 1 0;
+    min-width: 0;
+    gap: 0.25rem;
+  }
+  .summary-secondary {
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .summary-content {
+    color: var(--color-text-primary);
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-  .summary-secondary {
-    color: var(--color-text-tertiary);
-  }
-  .summary-content {
-    color: var(--color-text-primary);
   }
   .timestamp {
     color: var(--color-text-quaternary);
@@ -224,6 +230,8 @@
     padding: 0.125rem 0.375rem;
     border-radius: var(--border-radius-sm);
     font: inherit;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .view-full-review:hover,
   .view-full-review:focus-visible {
