@@ -3,7 +3,7 @@ name = "test-http-api"
 description = "HTTP Test API"
 homepage = "https://radicle.dev"
 version = "0.1.0"
-edition = "2021"
+edition.workspace = true
 
 [lib]
 doctest = false

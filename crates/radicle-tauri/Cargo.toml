@@ -3,8 +3,7 @@ name = "radicle-tauri"
 version = "0.0.0"
 authors = ["Rudolfs Osins <rudolfs@osins.org>", "Sebastian Martinez <me@sebastinez.dev>"]
 license = "MIT OR Apache-2.0"
-edition = "2021"
-rust-version = "1.86"
+edition.workspace = true
 publish = false
 
 [lib]

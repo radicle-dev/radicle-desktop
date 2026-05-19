@@ -1,11 +1,9 @@
 [workspace]
-resolver = "1"
+members = ["crates/*"]
+resolver = "2"
 
-members = [
-    "crates/radicle-tauri",
-    "crates/radicle-types",
-    "crates/test-http-api",
-]
+[workspace.package]
+edition = "2024"
 
 # Same as `dev` but with debug_assertions disabled.
 [profile.dev-without-assertions]
