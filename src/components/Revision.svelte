@@ -368,6 +368,11 @@
       string,
       FlattenedPatchOperation & { type: "review" }
     >();
+    const revisionOpsByRevisionId = new Map<
+      string,
+      FlattenedPatchOperation & { type: "revision" }
+    >();
+    const redactedRevisionIds = new Set<string>();
     activity.forEach(operation => {
       operation.actions.forEach((action, actionIndex) => {
         if (skippedActivityTypes.has(action.type)) {
@@ -378,6 +383,13 @@
               if ("summary" in action) reviewOp.summary = action.summary;
               if ("labels" in action) reviewOp.labels = action.labels;
             }
+          } else if (action.type === "revision.edit") {
+            const revisionOp = revisionOpsByRevisionId.get(action.revision);
+            if (revisionOp) {
+              revisionOp.description = action.description;
+            }
+          } else if (action.type === "revision.redact") {
+            redactedRevisionIds.add(action.revision);
           }
           tracker[action.type] = action;
           return;
@@ -421,6 +433,12 @@
             op as FlattenedPatchOperation & { type: "review" },
           );
         }
+        if (action.type === "revision") {
+          revisionOpsByRevisionId.set(
+            operation.id,
+            op as FlattenedPatchOperation & { type: "revision" },
+          );
+        }
         items.push({
           key: `${operation.id}:${actionIndex}`,
           timestamp: operation.timestamp,
@@ -429,7 +447,17 @@
       });
     });
 
-    items.sort((a, b) => a.timestamp - b.timestamp);
+    const filtered = items.filter(
+      item =>
+        !(
+          item.data.kind === "op" &&
+          item.data.op.type === "revision" &&
+          redactedRevisionIds.has(item.data.op.id)
+        ),
+    );
+    filtered.sort((a, b) => a.timestamp - b.timestamp);
+    items.length = 0;
+    items.push(...filtered);
 
     if (olderRevisionsExpanded || olderRevisionIds.size < 2) {
       return items;
