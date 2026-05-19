@@ -185,6 +185,12 @@
   .timeline-rail :global(.merge-badge .icon) {
     background-color: transparent;
   }
+  .timeline-rail :global(.replies-wrapper) {
+    margin-left: 1.5rem;
+  }
+  .timeline-rail :global(.replies-wrapper)::before {
+    display: none;
+  }
   .connector {
     height: 1rem;
   }
