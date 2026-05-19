@@ -206,11 +206,6 @@
     margin-left: -0.5rem;
     border-radius: var(--border-radius-sm);
   }
-  .verdict-summary {
-    flex-basis: 100%;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
   .revision-body {
     flex-basis: 100%;
     color: var(--color-text-primary);
@@ -483,7 +478,6 @@
   {/if}
 {:else if op.type === "review"}
   {@const reviewSummary = splitDescription(op.summary ?? "")}
-  {@const hasBody = !!reviewSummary.body}
   {@const isToggleable = onToggle !== undefined}
   {#if op.verdict === "accept"}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -522,13 +516,6 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
-        {#if hasBody && (expanded || !isToggleable)}
-          <div
-            class="verdict-summary txt-body-m-medium"
-            transition:slide={{ duration: 180 }}>
-            {reviewSummary.body}
-          </div>
-        {/if}
       </div>
     </div>
   {:else if op.verdict === "reject"}
@@ -568,13 +555,6 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
-        {#if hasBody && (expanded || !isToggleable)}
-          <div
-            class="verdict-summary txt-body-m-medium"
-            transition:slide={{ duration: 180 }}>
-            {reviewSummary.body}
-          </div>
-        {/if}
       </div>
     </div>
   {:else if op.verdict === undefined}
@@ -614,13 +594,6 @@
             {formatTimestamp(op.timestamp)}
           </div>
         </div>
-        {#if hasBody && (expanded || !isToggleable)}
-          <div
-            class="verdict-summary txt-body-m-medium"
-            transition:slide={{ duration: 180 }}>
-            {reviewSummary.body}
-          </div>
-        {/if}
       </div>
     </div>
   {/if}
