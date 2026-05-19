@@ -3,6 +3,7 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-25.11";
     flake-utils.url = "github:numtide/flake-utils";
+    crane.url = "github:ipetkov/crane";
     rust-overlay = {
       url = "github:oxalica/rust-overlay";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -14,6 +15,7 @@
 
   outputs = {
     self,
+    crane,
     nixpkgs,
     flake-utils,
     rust-overlay,
@@ -26,12 +28,45 @@
         (import rust-overlay)
       ];
     };
+
+    lib = pkgs.lib;
+
+    rustup = rec {
+      toolchain = pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml;
+      craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
+      commonArgs = mkCommonArgs craneLib;
+    };
+
+    rustupDevShell = rec {
+      toolchain = rustup.toolchain.override (prev: {
+        extensions = prev.extensions ++ ["rust-analyzer"];
+      });
+      craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
+      commonArgs = mkCommonArgs craneLib;
+    };
+
+    basicArgs = {
+      src = pkgs;
+      pname = "Radicle Desktop";
+      strictDeps = true;
+    };
+
+    # Common arguments can be set here to avoid repeating them later
+    mkCommonArgs = craneLib:
+      basicArgs
+      // {
+        cargoArtifacts = craneLib.buildDepsOnly basicArgs;
+
+        buildInputs = lib.optionals pkgs.stdenv.buildPlatform.isDarwin (with pkgs; [
+          darwin.apple_sdk.frameworks.Security
+        ]);
+      };
   in {
     checks = {
       radicle-desktop = self.packages.${system}.radicle-desktop.overrideAttrs {doCheck = true;};
     };
 
-    devShells.default = pkgs.mkShell {
+    devShells.default = rustupDevShell.craneLib.devShell {
       name = "radicle-desktop-env";
       inputsFrom = [self.checks.${system}.radicle-desktop];
       nativeBuildInputs = with pkgs; [
