@@ -119,7 +119,7 @@
 </script>
 
 <style>
-  .row {
+  .meta-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -212,7 +212,7 @@
   }
 </style>
 
-<div class="row">
+<div class="meta-row">
   {#if stats}
     <div class="stats">
       <Icon name="diff" />

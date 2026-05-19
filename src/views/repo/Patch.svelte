@@ -294,7 +294,7 @@
     .meta-bar {
       margin-bottom: 0;
     }
-    .meta-bar :global(.row) {
+    .meta-bar :global(.meta-row) {
       flex-direction: column;
       align-items: flex-start;
       gap: 1.25rem;
