@@ -248,6 +248,35 @@
     }
   }
 
+  async function reactOnCodeComment(
+    commentId: string,
+    authors: Author[],
+    reaction: string,
+  ) {
+    const reviewId = commentToReviewId.get(commentId);
+    if (!reviewId) return;
+    try {
+      await invoke("edit_patch", {
+        rid,
+        cobId: patchId,
+        action: {
+          type: "review.comment.react",
+          review: reviewId,
+          comment: commentId,
+          reaction,
+          active: !authors.find(
+            ({ did }) => publicKeyFromDid(did) === config.publicKey,
+          ),
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing review comment reactions failed", error);
+    } finally {
+      await loadPatch();
+    }
+  }
+
   const publishedReviewThreads: Thread<CodeLocation>[] = $derived.by(() => {
     const list: Thread<CodeLocation>[] = [];
     for (const threads of threadsByReview.values()) {
@@ -917,7 +946,8 @@
                     {config}
                     {repoDelegates}
                     editComment={editCodeComment}
-                    deleteComment={deleteCodeComment} />
+                    deleteComment={deleteCodeComment}
+                    reactOnComment={reactOnCodeComment} />
                 {/each}
               </div>
             </div>

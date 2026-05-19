@@ -27,6 +27,11 @@
       embeds: Embed[],
     ) => Promise<void>;
     deleteComment?: (commentId: string) => Promise<void>;
+    reactOnComment?: (
+      commentId: string,
+      authors: Author[],
+      reaction: string,
+    ) => Promise<void>;
   }
 
   const {
@@ -38,6 +43,7 @@
     repoDelegates,
     editComment,
     deleteComment,
+    reactOnComment,
   }: Props = $props();
 
   let expanded = $state(false);
@@ -54,6 +60,7 @@
     createComment: noop,
     editComment: editComment ?? noop,
     deleteComment,
+    reactOnComment,
   };
 
   function findFileDiff(
