@@ -169,11 +169,13 @@
     color: inherit;
   }
   .timeline-item.verdict-accept,
-  .timeline-item.verdict-reject {
+  .timeline-item.verdict-reject,
+  .timeline-item.verdict-comment {
     align-items: center;
   }
   .timeline-item.verdict-accept .icon,
-  .timeline-item.verdict-reject .icon {
+  .timeline-item.verdict-reject .icon,
+  .timeline-item.verdict-comment .icon {
     padding-top: 0;
   }
   .verdict-accept {
@@ -197,6 +199,12 @@
   .verdict-reject,
   .verdict-reject :global(*) {
     color: var(--color-feedback-error-text);
+  }
+  .verdict-comment {
+    background-color: var(--color-surface-subtle);
+    padding: 0.375rem 0.5rem;
+    margin-left: -0.5rem;
+    border-radius: var(--border-radius-sm);
   }
   .verdict-summary {
     flex-basis: 100%;
@@ -568,8 +576,8 @@
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
-      class="timeline-item txt-body-m-regular"
-      class:toggleable={isToggleable}
+      class="timeline-item txt-body-m-regular verdict-comment"
+      class:verdict-toggleable={isToggleable}
       role={isToggleable ? "button" : undefined}
       tabindex={isToggleable ? 0 : undefined}
       onclick={isToggleable ? onToggle : undefined}>
