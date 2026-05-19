@@ -8,7 +8,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     heartwood = {
-      url = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5?ref=refs/tags/releases/1.7.1";
+      url = "git+https://seed.radicle.xyz/z3gqcJUoA1n9HaHKufZs5FCSGazv5?ref=refs/tags/releases/1.9.0";
     };
   };
 
