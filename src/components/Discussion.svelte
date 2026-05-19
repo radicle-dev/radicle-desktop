@@ -173,8 +173,15 @@
   .timeline-rail :global(.icon) {
     background-color: var(--color-surface-canvas);
   }
+  .timeline-rail :global(.timeline-item:hover .icon),
+  .timeline-rail :global(.timeline-item:focus-visible .icon),
+  .timeline-rail :global(.older-revisions:hover .icon),
+  .timeline-rail :global(.older-revisions:focus-visible .icon) {
+    background-color: var(--color-surface-subtle);
+  }
   .timeline-rail :global(.verdict-accept .icon),
   .timeline-rail :global(.verdict-reject .icon),
+  .timeline-rail :global(.verdict-comment .icon),
   .timeline-rail :global(.merge-badge .icon) {
     background-color: transparent;
   }
