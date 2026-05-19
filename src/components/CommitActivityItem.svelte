@@ -1,10 +1,8 @@
 <script lang="ts">
   import type { CodeComments } from "@app/components/Diff.svelte";
-  import type { Diff } from "@bindings/diff/Diff";
   import type { FileDiff as FileDiffType } from "@bindings/diff/FileDiff";
   import type { Commit } from "@bindings/repo/Commit";
 
-  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { cachedGetDiff } from "@app/lib/invoke";
   import {
     absoluteTimestamp,
@@ -31,7 +29,6 @@
   let expanded = $state(false);
   let hasEverExpanded = $state(false);
   let filesExpanded = $state(true);
-  let commitDiff: Diff | undefined = $state();
 
   $effect(() => {
     if (expanded) hasEverExpanded = true;
@@ -44,36 +41,6 @@
   );
   const authoredAt = $derived(commit.author.time * 1000);
 
-  function filePathOf(file: FileDiffType): string {
-    return file.status === "moved" || file.status === "copied"
-      ? file.newPath
-      : file.path;
-  }
-
-  $effect(() => {
-    if (!parent) return;
-    let cancelled = false;
-    void cachedGetDiff(rid, {
-      base: parent,
-      head: commit.id,
-      unified: 0,
-      highlight: false,
-    }).then(diff => {
-      if (cancelled) return;
-      commitDiff = diff;
-    });
-    return () => {
-      cancelled = true;
-    };
-  });
-
-  const totalFiles = $derived(commitDiff?.files.length ?? 0);
-  const reviewedFiles = $derived.by(() => {
-    if (!draftReviewId || !commitDiff) return 0;
-    return commitDiff.files.filter(f =>
-      draftReviewStorage.isFileChecked(draftReviewId, filePathOf(f)),
-    ).length;
-  });
   const commitCodeComments = $derived(
     codeComments
       ? {
@@ -201,13 +168,6 @@
   .meta-hash :global(.txt-id:hover) {
     color: inherit;
   }
-  .reviewed-count {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    color: var(--color-text-quaternary);
-    flex-shrink: 0;
-  }
   .diff-skeleton {
     margin: 1rem 0 0;
     display: flex;
@@ -310,17 +270,6 @@
           {formatTimestamp(authoredAt)}
         </div>
       </div>
-      {#if draftReviewId && totalFiles > 0}
-        <span
-          class="reviewed-count txt-body-s-regular"
-          title="{reviewedFiles} of {totalFiles} {pluralize(
-            'file',
-            totalFiles,
-          )} reviewed in this commit">
-          <Icon name="eye" />
-          {reviewedFiles}/{totalFiles}
-        </span>
-      {/if}
     </div>
   </div>
 
