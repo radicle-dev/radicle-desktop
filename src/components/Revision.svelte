@@ -373,6 +373,7 @@
       FlattenedPatchOperation & { type: "revision" }
     >();
     const redactedRevisionIds = new Set<string>();
+    const redactedReviewIds = new Set<string>();
     activity.forEach(operation => {
       operation.actions.forEach((action, actionIndex) => {
         if (skippedActivityTypes.has(action.type)) {
@@ -390,6 +391,8 @@
             }
           } else if (action.type === "revision.redact") {
             redactedRevisionIds.add(action.revision);
+          } else if (action.type === "review.redact") {
+            redactedReviewIds.add(action.review);
           }
           tracker[action.type] = action;
           return;
@@ -447,14 +450,22 @@
       });
     });
 
-    const filtered = items.filter(
-      item =>
-        !(
-          item.data.kind === "op" &&
-          item.data.op.type === "revision" &&
-          redactedRevisionIds.has(item.data.op.id)
-        ),
-    );
+    const filtered = items.filter(item => {
+      if (item.data.kind !== "op") return true;
+      if (
+        item.data.op.type === "revision" &&
+        redactedRevisionIds.has(item.data.op.id)
+      ) {
+        return false;
+      }
+      if (
+        item.data.op.type === "review" &&
+        redactedReviewIds.has(item.data.op.id)
+      ) {
+        return false;
+      }
+      return true;
+    });
     filtered.sort((a, b) => a.timestamp - b.timestamp);
     items.length = 0;
     items.push(...filtered);
