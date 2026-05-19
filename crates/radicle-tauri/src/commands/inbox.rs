@@ -4,12 +4,12 @@ use radicle::node;
 use radicle::patch::cache::Patches;
 use radicle::storage::{ReadRepository, ReadStorage};
 
+use radicle_types::AppState;
 use radicle_types::domain::inbox::models::notification::{self, RepoGroupByItem};
 use radicle_types::domain::inbox::service::Service;
 use radicle_types::domain::inbox::traits::InboxService;
 use radicle_types::error::Error;
 use radicle_types::outbound::sqlite::Sqlite;
-use radicle_types::AppState;
 
 #[tauri::command]
 pub fn list_notifications(
@@ -78,8 +78,7 @@ pub fn list_notifications(
             .into_iter()
             .take(take)
             .map(|(qualified, n)| {
-                let items = n
-                    .into_iter()
+                n.into_iter()
                     .filter_map(|s| {
                         let update: notification::RefUpdate =
                             (qualified.clone().into_refstring(), s.new, s.old).into();
@@ -163,9 +162,7 @@ pub fn list_notifications(
                             _ => None,
                         }
                     })
-                    .collect::<Vec<_>>();
-
-                items
+                    .collect::<Vec<_>>()
             })
             .filter(|v| !v.is_empty())
             .collect::<RepoGroupByItem>();

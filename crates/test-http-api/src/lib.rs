@@ -4,8 +4,8 @@ use std::sync::Arc;
 use axum::Router;
 use tokio::net::TcpListener;
 
-use radicle::cob::cache::COBS_DB_FILE;
 use radicle::Profile;
+use radicle::cob::cache::COBS_DB_FILE;
 
 use radicle_types::domain::patch::service::Service as PatchService;
 

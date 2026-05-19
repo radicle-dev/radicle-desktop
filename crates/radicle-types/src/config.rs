@@ -2,8 +2,8 @@ use radicle::crypto::PublicKey;
 use serde::Serialize;
 use ts_rs::TS;
 
-use radicle::node::config::DefaultSeedingPolicy;
 use radicle::node::Alias;
+use radicle::node::config::DefaultSeedingPolicy;
 
 /// Service configuration.
 #[derive(Debug, TS, Serialize, PartialEq)]

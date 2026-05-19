@@ -3,7 +3,7 @@ use radicle::git::Oid;
 use radicle_surf as surf;
 use serde::{Deserialize, Serialize};
 
-use radicle::identity::{doc, Doc, DocAt};
+use radicle::identity::{Doc, DocAt, doc};
 use radicle::issue::cache::Issues as _;
 use radicle::node::routing::Store;
 use radicle::patch::cache::Patches as _;
@@ -17,7 +17,7 @@ use crate::diff::Diff;
 use crate::error::Error;
 use crate::repo;
 use crate::source;
-use crate::syntax::{highlighter, ToPretty};
+use crate::syntax::{ToPretty, highlighter};
 use crate::traits::Profile;
 
 pub const MAX_BLOB_SIZE: usize = 10_485_760;

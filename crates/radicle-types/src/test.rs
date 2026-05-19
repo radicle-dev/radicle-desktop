@@ -1,11 +1,11 @@
 use std::path::Path;
 
+use radicle::Storage;
 use radicle::cob::migrate;
 use radicle::crypto::ssh::Keystore;
 use radicle::crypto::{KeyPair, Seed};
 use radicle::node::{Features, Timestamp, UserAgent};
 use radicle::profile::Home;
-use radicle::Storage;
 use radicle::{node, profile};
 
 pub const TIMESTAMP: u64 = 1671125284;

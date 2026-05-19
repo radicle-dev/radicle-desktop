@@ -15,8 +15,8 @@ use radicle::storage::git::Repository;
 use crate::cobs::Author;
 use crate::domain::inbox::models::notification::ActionWithAuthor;
 
-use super::error;
 use super::CobRange;
+use super::error;
 
 /// A `Walk` specifies a range to construct a [`WalkIter`].
 #[derive(Clone, Debug)]
@@ -159,7 +159,7 @@ impl<'a, A> ActionsIter<'a, A> {
                 return Err(error::Actions::ManifestPath {
                     oid: tree.id().into(),
                     err,
-                })
+                });
             }
         };
         let object = entry

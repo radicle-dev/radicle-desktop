@@ -4,7 +4,7 @@ use radicle::cob::Title;
 use radicle::node::Handle;
 use radicle::patch::cache::Patches as _;
 use radicle::storage::ReadStorage;
-use radicle::{cob, git, identity, Node};
+use radicle::{Node, cob, git, identity};
 
 use crate::cobs;
 use crate::domain::patch::models;
@@ -270,10 +270,10 @@ pub trait PatchesMut: Profile {
             }
         }
 
-        if opts.announce() {
-            if let Err(e) = node.announce_refs_for(rid, [profile.public_key]) {
-                log::error!("Not able to announce changes: {}", e)
-            }
+        if opts.announce()
+            && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
+        {
+            log::error!("Not able to announce changes: {}", e)
         }
 
         Ok::<_, Error>(models::patch::Patch::new(*patch.id(), &patch, &aliases))

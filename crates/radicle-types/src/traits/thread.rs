@@ -1,12 +1,12 @@
 use std::fs;
 
+use radicle::Node;
 use radicle::cob;
 use radicle::git;
 use radicle::identity;
 use radicle::node::Handle;
 use radicle::storage::ReadRepository;
 use radicle::storage::ReadStorage;
-use radicle::Node;
 
 use crate::cobs;
 use crate::error::Error;
@@ -115,10 +115,10 @@ pub trait Thread: Profile {
             n.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
         )?;
 
-        if opts.announce() {
-            if let Err(e) = node.announce_refs_for(rid, [profile.public_key]) {
-                log::error!("Not able to announce changes: {}", e)
-            }
+        if opts.announce()
+            && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
+        {
+            log::error!("Not able to announce changes: {}", e)
         }
 
         Ok(cobs::thread::Comment::<cobs::Never>::new(
@@ -157,10 +157,10 @@ pub trait Thread: Profile {
             n.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
         )?;
 
-        if opts.announce() {
-            if let Err(e) = node.announce_refs_for(rid, [profile.public_key]) {
-                log::error!("Not able to announce changes: {}", e)
-            }
+        if opts.announce()
+            && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
+        {
+            log::error!("Not able to announce changes: {}", e)
         }
 
         Ok(cobs::thread::Comment::<cobs::thread::CodeLocation>::new(

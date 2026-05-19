@@ -1,10 +1,10 @@
+use traits::Profile;
 use traits::cobs::Cobs;
 use traits::issue::{Issues, IssuesMut};
 use traits::job::Jobs;
 use traits::patch::{Patches, PatchesMut};
 use traits::repo::Repo;
 use traits::thread::Thread;
-use traits::Profile;
 
 pub mod cobs;
 pub mod config;

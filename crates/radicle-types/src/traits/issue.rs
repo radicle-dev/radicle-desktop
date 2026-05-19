@@ -4,7 +4,7 @@ use radicle::cob::Title;
 use radicle::issue::cache::Issues as _;
 use radicle::node::Handle;
 use radicle::storage::ReadStorage;
-use radicle::{git, identity, Node};
+use radicle::{Node, git, identity};
 
 use crate::cobs;
 use crate::error::Error;
@@ -116,10 +116,10 @@ pub trait IssuesMut: Profile {
             new.embeds.into_iter().map(Into::into).collect::<Vec<_>>(),
         )?;
 
-        if opts.announce() {
-            if let Err(e) = node.announce_refs_for(rid, [profile.public_key]) {
-                log::error!("Not able to announce changes: {}", e)
-            }
+        if opts.announce()
+            && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
+        {
+            log::error!("Not able to announce changes: {}", e)
         }
 
         Ok::<_, Error>(cobs::issue::Issue::new(issue.id(), &issue, &aliases))
@@ -183,10 +183,10 @@ pub trait IssuesMut: Profile {
             }
         }
 
-        if opts.announce() {
-            if let Err(e) = node.announce_refs_for(rid, [profile.public_key]) {
-                log::error!("Not able to announce changes: {}", e)
-            }
+        if opts.announce()
+            && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
+        {
+            log::error!("Not able to announce changes: {}", e)
         }
 
         Ok::<_, Error>(cobs::issue::Issue::new(issue.id(), &issue, &aliases))

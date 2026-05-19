@@ -186,11 +186,11 @@ impl InboxStorage for Sqlite {
 
         let mut stmt = self.db.prepare(&query)?;
 
-        if let Some(repos) = &params.repos {
-            if !repos.is_empty() {
-                for (i, repo) in repos.iter().enumerate() {
-                    stmt.bind((i + 1, repo))?;
-                }
+        if let Some(repos) = &params.repos
+            && !repos.is_empty()
+        {
+            for (i, repo) in repos.iter().enumerate() {
+                stmt.bind((i + 1, repo))?;
             }
         }
 
@@ -218,10 +218,10 @@ impl InboxStorage for Sqlite {
             current_group.push((reference.to_owned(), items));
         }
 
-        if let Some(repo) = current_repo {
-            if !current_group.is_empty() {
-                result.push((repo, current_group));
-            }
+        if let Some(repo) = current_repo
+            && !current_group.is_empty()
+        {
+            result.push((repo, current_group));
         }
 
         Ok(result)

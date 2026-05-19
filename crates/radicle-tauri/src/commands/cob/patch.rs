@@ -12,10 +12,10 @@ use radicle_types::domain::patch::service::Service;
 use radicle_types::domain::patch::traits::PatchService;
 use radicle_types::error::Error;
 use radicle_types::outbound::sqlite::Sqlite;
+use radicle_types::traits::Profile;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::patch::Patches;
 use radicle_types::traits::patch::PatchesMut;
-use radicle_types::traits::Profile;
 
 use crate::AppState;
 

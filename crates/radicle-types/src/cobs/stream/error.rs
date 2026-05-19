@@ -1,8 +1,8 @@
 use serde_json as json;
 use thiserror::Error;
 
-use radicle::git::raw as git2;
 use radicle::git::Oid;
+use radicle::git::raw as git2;
 
 #[derive(Debug, Error)]
 #[error("failed to construct stream: {err}")]

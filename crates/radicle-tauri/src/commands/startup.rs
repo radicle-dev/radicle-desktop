@@ -1,12 +1,12 @@
 use tauri::{AppHandle, Emitter, Manager};
 
 use radicle::cob::cache::COBS_DB_FILE;
-use radicle::node::{Handle, Node, NOTIFICATIONS_DB_FILE};
+use radicle::node::{Handle, NOTIFICATIONS_DB_FILE, Node};
 
 use radicle_types::config::{Config, Version};
 use radicle_types::error::Error;
 use radicle_types::traits::Profile;
-use radicle_types::{domain, AppState};
+use radicle_types::{AppState, domain};
 
 #[tauri::command]
 pub(crate) fn version(app: AppHandle) -> Result<Version, Error> {

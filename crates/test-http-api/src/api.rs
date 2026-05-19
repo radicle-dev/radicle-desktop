@@ -2,20 +2,20 @@ use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use axum::Router;
 use axum::extract::State;
 use axum::response::{IntoResponse, Json};
 use axum::routing::post;
-use axum::Router;
-use hyper::header::CONTENT_TYPE;
 use hyper::Method;
+use hyper::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
 use tower_http::cors::{self, CorsLayer};
 
 use radicle::{git, identity};
 use radicle_types as types;
+use radicle_types::cobs::CobOptions;
 use radicle_types::cobs::issue;
 use radicle_types::cobs::issue::NewIssue;
-use radicle_types::cobs::CobOptions;
 use radicle_types::cobs::{self, FromRadicleAction};
 use radicle_types::config::Version;
 use radicle_types::domain::patch::models;
@@ -23,13 +23,13 @@ use radicle_types::domain::patch::service::Service;
 use radicle_types::domain::patch::traits::PatchService;
 use radicle_types::error::Error;
 use radicle_types::outbound::sqlite::Sqlite;
+use radicle_types::traits::Profile;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::issue::{Issues, IssuesMut};
 use radicle_types::traits::job::Jobs;
 use radicle_types::traits::patch::{Patches, PatchesMut};
 use radicle_types::traits::repo::{Repo, Show};
 use radicle_types::traits::thread::Thread;
-use radicle_types::traits::Profile;
 
 #[derive(Clone)]
 pub struct Context {
@@ -526,20 +526,20 @@ async fn patches_handler(
             .collect::<Vec<_>>(),
     };
 
-    if let Some(t) = take {
-        if t < 0 {
-            // Return all patches
-            let content = patches
-                .into_iter()
-                .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
-                .collect::<Vec<_>>();
+    if let Some(t) = take
+        && t < 0
+    {
+        // Return all patches
+        let content = patches
+            .into_iter()
+            .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
+            .collect::<Vec<_>>();
 
-            return Ok::<_, Error>(Json(cobs::PaginatedQuery {
-                cursor: 0,
-                more: false,
-                content,
-            }));
-        }
+        return Ok::<_, Error>(Json(cobs::PaginatedQuery {
+            cursor: 0,
+            more: false,
+            content,
+        }));
     }
 
     let take = take.unwrap_or(20) as usize;

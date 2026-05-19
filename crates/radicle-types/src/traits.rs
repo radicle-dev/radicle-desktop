@@ -35,12 +35,12 @@ pub trait Profile {
 mod test {
     use std::str::FromStr;
 
-    use radicle::crypto::test::signer::MockSigner;
     use radicle::crypto::Signer;
-    use radicle::node::{config, Alias};
+    use radicle::crypto::test::signer::MockSigner;
+    use radicle::node::{Alias, config};
 
     use crate::config::Config;
-    use crate::{test, AppState, Profile};
+    use crate::{AppState, Profile, test};
 
     #[test]
     fn config() {
