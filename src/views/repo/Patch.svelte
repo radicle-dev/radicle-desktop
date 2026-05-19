@@ -74,7 +74,10 @@
     revisions.length > 1 ? "revisions" : "patch",
   );
   let patchView: "activity" | "changes" = $state("activity");
-  let selectedRevision: Revision = $state(revisions.slice(-1)[0]);
+  let selectedRevisionId: string = $state(revisions.slice(-1)[0].id);
+  const selectedRevision: Revision = $derived(
+    revisions.find(r => r.id === selectedRevisionId) ?? revisions.slice(-1)[0],
+  );
   let selectedRevisionStats: Stats | undefined = $state();
   let revisionPickerExpanded = $state(false);
   let filesExpanded = $state(true);
@@ -83,7 +86,7 @@
     [...revisions].sort((a, b) => a.timestamp - b.timestamp),
   );
   const selectedRevisionIndex = $derived(
-    sortedRevisions.findIndex(r => r.id === selectedRevision.id),
+    sortedRevisions.findIndex(r => r.id === selectedRevisionId),
   );
 
   function revisionTitle(rev: Revision): string | undefined {
@@ -115,7 +118,7 @@
     if (patch.id !== lastPatchId) {
       lastPatchId = patch.id;
       tab = revisions.length > 1 ? "revisions" : "patch";
-      selectedRevision = revisions.slice(-1)[0];
+      selectedRevisionId = revisions.slice(-1)[0].id;
       patchView = "activity";
     }
   });
@@ -523,7 +526,7 @@
                                 selected={rev.id === selectedRevision.id}
                                 styleGap="0.5rem"
                                 onclick={() => {
-                                  selectedRevision = rev;
+                                  selectedRevisionId = rev.id;
                                   closeFocused();
                                 }}>
                                 <Icon name="revision" />
