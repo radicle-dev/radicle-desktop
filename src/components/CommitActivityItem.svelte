@@ -234,7 +234,7 @@
 
 <div class="commit-entry">
   <div
-    class="timeline-item txt-body-m-regular"
+    class="timeline-item toggleable txt-body-m-regular"
     role="button"
     tabindex="0"
     onclick={toggle}

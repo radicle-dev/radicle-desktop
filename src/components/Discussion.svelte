@@ -173,8 +173,8 @@
   .timeline-rail :global(.icon) {
     background-color: var(--color-surface-canvas);
   }
-  .timeline-rail :global(.timeline-item:hover .icon),
-  .timeline-rail :global(.timeline-item:focus-visible .icon),
+  .timeline-rail :global(.timeline-item.toggleable:hover .icon),
+  .timeline-rail :global(.timeline-item.toggleable:focus-visible .icon),
   .timeline-rail :global(.older-revisions:hover .icon),
   .timeline-rail :global(.older-revisions:focus-visible .icon) {
     background-color: var(--color-surface-subtle);
