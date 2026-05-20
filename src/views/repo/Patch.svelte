@@ -243,18 +243,10 @@
       repo.delegates.map(d => d.did),
     ),
   );
+  const canShowMerge = $derived(patch.state.status === "open");
   const mergeDisabledReason = $derived.by(() => {
     if (!isRepoDelegate) {
       return "Only delegates can merge patches";
-    }
-    if (patch.state.status === "merged") {
-      return "This patch has already been merged";
-    }
-    if (patch.state.status === "draft") {
-      return "This patch is still a draft";
-    }
-    if (patch.state.status === "archived") {
-      return "This patch is archived";
     }
     return undefined;
   });
@@ -491,7 +483,7 @@
               onSelect={newState => {
                 void saveState(newState);
               }}
-              onMerge={mergePatch}
+              onMerge={canShowMerge ? mergePatch : undefined}
               {mergeDisabledReason}
               disabled={!roles.isDelegateOrAuthor(
                 config.publicKey,
@@ -640,7 +632,7 @@
               {activity}
               {revisions}
               draftReviewId={ownDraftReviewForPatch?.id}
-              onMerge={mergePatch}
+              onMerge={canShowMerge ? mergePatch : undefined}
               {mergeDisabledReason}
               bind:filesExpanded />
           {/if}
