@@ -15,16 +15,21 @@
 
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
-  import { cachedListCommits, invoke } from "@app/lib/invoke";
+  import { cachedGetDiff, cachedListCommits, invoke } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
-  import { didFromPublicKey, publicKeyFromDid } from "@app/lib/utils";
+  import {
+    didFromPublicKey,
+    pluralize,
+    publicKeyFromDid,
+  } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Changes from "@app/components/Changes.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import CommitActivityItem from "@app/components/CommitActivityItem.svelte";
+  import FileDiff from "@app/components/FileDiff.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Discussion, {
     type ActivityItem,
@@ -62,6 +67,7 @@
     filesExpanded?: boolean;
     onMerge?: () => Promise<void> | void;
     mergeDisabledReason?: string;
+    onViewChanges?: (revisionId: string) => void;
   }
 
   let {
@@ -79,6 +85,7 @@
     filesExpanded = $bindable(true),
     onMerge,
     mergeDisabledReason,
+    onViewChanges,
   }: Props = $props();
   const currentUserAuthor: Author = $derived({
     did: didFromPublicKey(config.publicKey),
@@ -120,7 +127,7 @@
     if (revId in revisionToggles) {
       return revisionToggles[revId];
     }
-    return revId === latestRevisionId || revId === firstRevisionId;
+    return revId === latestRevisionId;
   }
   function toggleRevision(revId: string) {
     revisionToggles = {
@@ -782,7 +789,7 @@
     gap: 0.5rem;
   }
   .commit-group-author {
-    padding-left: 2rem;
+    padding-left: 0.5rem;
     color: var(--color-text-tertiary);
   }
   .commit-group-children {
@@ -795,7 +802,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    padding-left: 1.25rem;
+    padding-left: 1.5rem;
   }
   .revision-commits.has-header {
     margin-top: 0.5rem;
@@ -828,7 +835,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    padding-left: 1.25rem;
+    padding-left: 1.5rem;
     margin-top: 0.5rem;
   }
   .review-threads::before {
@@ -887,6 +894,127 @@
   }
   .summary-secondary {
     color: var(--color-text-tertiary);
+  }
+  .revision-diff-tease {
+    margin-top: 1rem;
+    padding-left: 2rem;
+  }
+  .revision-diff-loading,
+  .revision-diff-error {
+    color: var(--color-text-tertiary);
+  }
+  .diff-tease-files {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .revision-diff-stats {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-secondary);
+  }
+  .file-fan {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .file-fan::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 6rem;
+    background: linear-gradient(
+      to left,
+      var(--color-surface-canvas),
+      transparent
+    );
+    pointer-events: none;
+    z-index: 6;
+  }
+  .file-fan-stack {
+    --fan-overlap: 20%;
+    display: flex;
+    align-items: flex-start;
+    overflow: hidden;
+    height: 16rem;
+    padding: 0.5rem 0 0;
+  }
+  .file-fan-card {
+    position: relative;
+    flex: 0 0
+      calc(
+        (100% + (var(--card-count, 5) - 1) * var(--fan-overlap, 20%)) /
+          var(--card-count, 5)
+      );
+    max-width: calc(
+      (100% + (var(--card-count, 5) - 1) * var(--fan-overlap, 20%)) /
+        var(--card-count, 5)
+    );
+    height: 100%;
+    margin-left: calc(var(--fan-overlap, 20%) * -1);
+    background-color: var(--color-surface-canvas);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+  }
+  .file-fan-card.first {
+    margin-left: 0;
+  }
+  .file-fan-card-inner {
+    height: 100%;
+    overflow: hidden;
+  }
+  .file-fan-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 0 0 2rem;
+    height: 7rem;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .file-fan-footer .diff-tease-button {
+    pointer-events: auto;
+  }
+  .file-fan-fade {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      var(--color-surface-canvas) 100%
+    );
+    pointer-events: none;
+  }
+  .diff-tease-button {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    box-shadow: var(--elevation-low);
+  }
+  .diff-tease-button:hover,
+  .diff-tease-button:focus-visible {
+    background-color: var(--color-surface-subtle);
   }
   .merge-card {
     display: grid;
@@ -1107,12 +1235,7 @@
                   </div>
                   <div class="commit-group-children">
                     {#each visibleCommits as commit (commit.id)}
-                      <CommitActivityItem
-                        {commit}
-                        {rid}
-                        {codeComments}
-                        {draftReviewId}
-                        hideAuthor />
+                      <CommitActivityItem {commit} hideAuthor />
                     {/each}
                     {#if collapsed}
                       <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -1139,14 +1262,75 @@
                   </div>
                 </div>
               {:else}
-                <CommitActivityItem
-                  commit={group[0]}
-                  {rid}
-                  {codeComments}
-                  {draftReviewId} />
+                <CommitActivityItem commit={group[0]} />
               {/if}
             {/each}
           </div>
+        {/if}
+        {#if expanded}
+          {@const targetRev = revisions.find(r => r.id === revId)}
+          {#if targetRev && targetRev.base !== targetRev.head}
+            <div class="revision-diff-tease" transition:slide={{ duration: 180 }}>
+              {#await cachedGetDiff(rid, { base: targetRev.base, head: targetRev.head, unified: 3, highlight: true })}
+                <div class="revision-diff-loading txt-body-m-regular">
+                  Loading diff…
+                </div>
+              {:then diff}
+                {@const previewFiles = diff.files.slice(0, 5)}
+                <div class="revision-diff-stats txt-body-m-regular">
+                  <Icon name="diff" />
+                  <span>
+                    {diff.stats.filesChanged}
+                    {pluralize("file", diff.stats.filesChanged)} modified with
+                  </span>
+                  <span style:color="var(--color-feedback-success-text)">
+                    {diff.stats.insertions}
+                    {pluralize("insertion", diff.stats.insertions)}
+                  </span>
+                  <span>and</span>
+                  <span style:color="var(--color-feedback-error-text)">
+                    {diff.stats.deletions}
+                    {pluralize("deletion", diff.stats.deletions)}
+                  </span>
+                </div>
+                <div class="file-fan">
+                  <div
+                    class="file-fan-stack"
+                    style:--card-count={previewFiles.length}>
+                    {#each previewFiles as file, i (i)}
+                      <div
+                        class="file-fan-card"
+                        style:z-index={i + 1}
+                        class:first={i === 0}>
+                        <div class="file-fan-card-inner">
+                          <FileDiff
+                            {file}
+                            head={targetRev.head}
+                            expanded
+                            expandable={false} />
+                        </div>
+                      </div>
+                    {/each}
+                  </div>
+                  <div class="file-fan-footer">
+                    <div class="file-fan-fade"></div>
+                    <button
+                      type="button"
+                      class="diff-tease-button txt-body-m-medium"
+                      disabled={!onViewChanges}
+                      onclick={() => onViewChanges?.(revId)}>
+                      View all revision changes
+                      <Icon name="arrow-right" />
+                    </button>
+                  </div>
+                </div>
+              {:catch error}
+                <div class="revision-diff-error txt-body-m-regular">
+                  Failed to load diff: {error?.message ?? error}
+                </div>
+              {/await}
+            </div>
+          {/if}
         {/if}
         {#if revId === latestRevisionId}
           {@render mergeCard()}

@@ -12,14 +12,21 @@
 
   interface Props {
     expanded: boolean;
+    expandable?: boolean;
     file: FileDiff;
     head: string;
     codeComments?: CodeComments;
     draftReviewId?: string;
   }
 
-  const { expanded, file, head, codeComments, draftReviewId }: Props =
-    $props();
+  const {
+    expanded,
+    expandable = true,
+    file,
+    head,
+    codeComments,
+    draftReviewId,
+  }: Props = $props();
 
   const filePathKey = $derived(
     file.status === "moved" || file.status === "copied"
@@ -97,7 +104,7 @@
   </div>
 {/snippet}
 
-<FileBlock {expanded}>
+<FileBlock {expanded} {expandable}>
   {#snippet leftHeader()}
     {#if file.status === "moved" || file.status === "copied"}
       <span style="display: flex; align-items: center; flex-wrap: wrap;">

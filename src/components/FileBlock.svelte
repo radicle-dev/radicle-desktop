@@ -162,16 +162,18 @@
     }
   }}>
   <div class="left">
-    {#if expandable}
-      <div class="toggle-icon" style:padding="0 0.5rem">
+    <div class="toggle-icon" style:padding="0 0.5rem">
+      {#if expandable}
         <span class="icon-stack">
           <span class="icon-default"><Icon name="document" /></span>
           <span class="icon-hover">
             <Icon name={expanded ? "collapse-vertical" : "expand-vertical"} />
           </span>
         </span>
-      </div>
-    {/if}
+      {:else}
+        <Icon name="document" />
+      {/if}
+    </div>
     {@render leftHeader?.()}
   </div>
   {#if rightHeader}

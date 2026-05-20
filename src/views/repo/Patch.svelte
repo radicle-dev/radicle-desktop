@@ -820,6 +820,10 @@
               draftReviewId={ownDraftReviewForPatch?.id}
               onMerge={canShowMerge ? mergePatch : undefined}
               {mergeDisabledReason}
+              onViewChanges={revisionId => {
+                selectedRevisionId = revisionId;
+                patchView = "changes";
+              }}
               bind:filesExpanded />
           {/if}
           </div>
