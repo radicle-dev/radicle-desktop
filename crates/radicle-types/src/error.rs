@@ -172,6 +172,10 @@ pub enum Error {
     #[error(transparent)]
     Node(#[from] radicle::node::Error),
 
+    /// Cob remove error.
+    #[error(transparent)]
+    CobRemove(#[from] radicle::cob::error::Remove),
+
     /// Serde JSON error.
     #[error(transparent)]
     SerdeJSON(#[from] serde_json::error::Error),

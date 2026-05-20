@@ -3,7 +3,8 @@ use std::collections::BTreeSet;
 use radicle::cob::Title;
 use radicle::node::Handle;
 use radicle::patch::cache::Patches as _;
-use radicle::storage::ReadStorage;
+use radicle::patch::TYPENAME;
+use radicle::storage::{ReadStorage, SignRepository};
 use radicle::{Node, cob, git, identity};
 
 use crate::cobs;
@@ -277,5 +278,29 @@ pub trait PatchesMut: Profile {
         }
 
         Ok::<_, Error>(models::patch::Patch::new(*patch.id(), &patch, &aliases))
+    }
+
+    fn delete_patch(
+        &self,
+        rid: identity::RepoId,
+        cob_id: git::Oid,
+        opts: cobs::CobOptions,
+    ) -> Result<(), Error> {
+        let profile = self.profile();
+        let mut node = Node::new(profile.home().socket_from_env());
+        let repo = profile.storage.repository(rid)?;
+        let signer = profile.signer()?;
+        let namespace = *signer.public_key();
+
+        cob::remove(&repo, &namespace, &TYPENAME, &cob_id.into())?;
+        repo.sign_refs(&signer)?;
+
+        if opts.announce() {
+            if let Err(e) = node.announce_refs_for(rid, [profile.public_key]) {
+                log::error!("Not able to announce changes: {}", e)
+            }
+        }
+
+        Ok(())
     }
 }

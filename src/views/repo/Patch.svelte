@@ -300,6 +300,29 @@
     copyIcon = "checkmark";
     restoreCopyIcon();
   }
+  let deleteMenuExpanded = $state(false);
+  let deleting = $state(false);
+  async function deletePatch() {
+    if (deleting) return;
+    deleting = true;
+    try {
+      await invoke("delete_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        opts: { announce: $nodeRunning && $announce },
+      });
+      void router.push({
+        resource: "repo.patches",
+        rid: repo.rid,
+        status: patch.state.status,
+      });
+    } catch (error) {
+      console.error("Deleting patch failed", error);
+    } finally {
+      deleting = false;
+      deleteMenuExpanded = false;
+    }
+  }
 </script>
 
 <style>
@@ -312,6 +335,45 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
+  }
+  .confirm-delete {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    min-width: 16rem;
+  }
+  .confirm-delete-text {
+    color: var(--color-text-primary);
+  }
+  .confirm-delete-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  .confirm-delete-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2rem;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-feedback-error-fill);
+    color: var(--color-text-on-brand);
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+  .confirm-delete-button:hover:not(:disabled),
+  .confirm-delete-button:focus-visible:not(:disabled) {
+    background-color: var(--color-feedback-error-fill-hover);
+  }
+  .confirm-delete-button:active:not(:disabled) {
+    background-color: var(--color-feedback-error-fill-active);
+  }
+  .confirm-delete-button:disabled {
+    cursor: default;
+    opacity: 0.6;
   }
   .breadcrumb-link {
     cursor: pointer;
@@ -444,6 +506,49 @@
         style:margin-left="auto"
         style:gap="0.5rem"
         style:z-index="40">
+        <Popover
+          popoverPadding="0"
+          placement="bottom-end"
+          bind:expanded={deleteMenuExpanded}>
+          {#snippet toggle(onclick)}
+            <Button
+              variant="naked"
+              {onclick}
+              active={deleteMenuExpanded}
+              title="Delete patch">
+              <Icon name="trash" />
+              <span class="global-hide-on-medium-desktop-down">Delete</span>
+            </Button>
+          {/snippet}
+          {#snippet popover()}
+            <div
+              style:border="1px solid var(--color-border-subtle)"
+              style:border-radius="var(--border-radius-sm)"
+              style:background-color="var(--color-surface-canvas)">
+              <div class="confirm-delete">
+                <div class="confirm-delete-text txt-body-m-regular">
+                  Delete this patch? This can't be undone.
+                </div>
+                <div class="confirm-delete-actions">
+                  <Button
+                    variant="outline"
+                    disabled={deleting}
+                    onclick={() => (deleteMenuExpanded = false)}>
+                    Cancel
+                  </Button>
+                  <button
+                    type="button"
+                    class="confirm-delete-button txt-body-m-medium"
+                    disabled={deleting}
+                    onclick={deletePatch}>
+                    <Icon name="trash" />
+                    {deleting ? "Deleting…" : "Delete"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          {/snippet}
+        </Popover>
         <Button
           variant="naked"
           title="Copy patch link"
@@ -471,7 +576,7 @@
               : "Start a review of this revision"}>
             <Icon name="comment" />
             <span class="txt-body-m-regular global-hide-on-medium-desktop-down">
-              Start review
+              Review
             </span>
           </Button>
         {/if}

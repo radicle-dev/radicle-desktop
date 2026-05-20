@@ -122,6 +122,16 @@ pub fn edit_patch(
 }
 
 #[tauri::command]
+pub fn delete_patch(
+    ctx: tauri::State<AppState>,
+    rid: identity::RepoId,
+    cob_id: git::Oid,
+    opts: cobs::CobOptions,
+) -> Result<(), Error> {
+    ctx.delete_patch(rid, cob_id, opts)
+}
+
+#[tauri::command]
 pub fn create_patch_review(
     ctx: tauri::State<AppState>,
     args: models::patch::CreateReviewArgs,
