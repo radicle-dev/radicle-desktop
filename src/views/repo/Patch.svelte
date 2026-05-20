@@ -9,6 +9,8 @@
   import type { Stats } from "@bindings/diff/Stats";
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { Issue } from "@bindings/cob/issue/Issue";
+  import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
 
   import debounce from "lodash/debounce";
 
@@ -21,6 +23,7 @@
     invoke,
     writeToClipboard,
   } from "@app/lib/invoke";
+  import { setPatchActivityResolver } from "@app/lib/patchActivityContext";
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
   import {
@@ -85,10 +88,74 @@
   let revisionPickerExpanded = $state(false);
   let filesExpanded = $state(true);
   let commitCountsByRevisionId: Record<string, number> = $state({});
+  let patchesAuthoredByDid: Record<string, number> = $state({});
+  let issuesAuthoredByDid: Record<string, number> = $state({});
 
   const sortedRevisions = $derived(
     [...revisions].sort((a, b) => a.timestamp - b.timestamp),
   );
+
+  $effect(() => {
+    const ridLocal = repo.rid;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [patches, issues] = await Promise.all([
+          invoke<PaginatedQuery<Patch[]>>("list_patches", {
+            rid: ridLocal,
+            skip: 0,
+            status: undefined,
+            take: undefined,
+          }),
+          invoke<Issue[]>("list_issues", {
+            rid: ridLocal,
+            status: undefined,
+          }),
+        ]);
+        if (cancelled) return;
+        const patchCounts: Record<string, number> = {};
+        for (const p of patches.content) {
+          patchCounts[p.author.did] = (patchCounts[p.author.did] ?? 0) + 1;
+        }
+        const issueCounts: Record<string, number> = {};
+        for (const i of issues) {
+          issueCounts[i.author.did] = (issueCounts[i.author.did] ?? 0) + 1;
+        }
+        patchesAuthoredByDid = patchCounts;
+        issuesAuthoredByDid = issueCounts;
+      } catch (error) {
+        console.error("Failed to load repo author activity", error);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  setPatchActivityResolver(publicKey => {
+    const did = didFromPublicKey(publicKey);
+    const isAuthor = patch.author.did === did;
+    const userRevisions = revisions.filter(r => r.author.did === did);
+    const revisionCount = userRevisions.length;
+    const commitCount = userRevisions.reduce(
+      (sum, r) => sum + (commitCountsByRevisionId[r.id] ?? 0),
+      0,
+    );
+    let reviewCount = 0;
+    for (const rev of revisions) {
+      for (const review of rev.reviews ?? []) {
+        if (review.author.did === did) reviewCount += 1;
+      }
+    }
+    return {
+      isAuthor,
+      revisionCount,
+      commitCount,
+      reviewCount,
+      patchesAuthored: patchesAuthoredByDid[did] ?? 0,
+      issuesAuthored: issuesAuthoredByDid[did] ?? 0,
+    };
+  });
 
   $effect(() => {
     const ridLocal = repo.rid;

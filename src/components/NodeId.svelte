@@ -1,7 +1,20 @@
 <script lang="ts">
-  import { truncateId } from "@app/lib/utils";
+  import type { ComponentProps } from "svelte";
 
+  import {
+    didFromPublicKey,
+    explorerUrl,
+    pluralize,
+    truncateId,
+  } from "@app/lib/utils";
+  import { writeToClipboard } from "@app/lib/invoke";
+  import { getPatchActivityResolver } from "@app/lib/patchActivityContext";
+
+  import Icon from "@app/components/Icon.svelte";
+  import Popover from "@app/components/Popover.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
+
+  type IconName = ComponentProps<typeof Icon>["name"];
 
   interface Props {
     publicKey: string;
@@ -16,6 +29,38 @@
     inline = false,
     styleFont = undefined,
   }: Props = $props();
+
+  let cardExpanded = $state(false);
+  let openTimer: ReturnType<typeof setTimeout> | undefined;
+  let closeTimer: ReturnType<typeof setTimeout> | undefined;
+  let copyIcon: "copy" | "checkmark" = $state("copy");
+  const did = $derived(didFromPublicKey(publicKey));
+  const activityResolver = getPatchActivityResolver();
+  const activity = $derived(activityResolver?.(publicKey));
+
+  function openCard() {
+    if (closeTimer) clearTimeout(closeTimer);
+    if (cardExpanded) return;
+    if (openTimer) clearTimeout(openTimer);
+    openTimer = setTimeout(() => {
+      cardExpanded = true;
+    }, 200);
+  }
+  function scheduleClose() {
+    if (openTimer) clearTimeout(openTimer);
+    if (closeTimer) clearTimeout(closeTimer);
+    closeTimer = setTimeout(() => {
+      cardExpanded = false;
+    }, 150);
+  }
+  function cancelClose() {
+    if (closeTimer) clearTimeout(closeTimer);
+  }
+  async function copyDid() {
+    await writeToClipboard(did);
+    copyIcon = "checkmark";
+    setTimeout(() => (copyIcon = "copy"), 1000);
+  }
 </script>
 
 <style>
@@ -24,6 +69,14 @@
     align-items: center;
     gap: 0.375rem;
     font: var(--txt-body-m-regular);
+  }
+  .node-id-trigger {
+    cursor: pointer;
+    border-radius: var(--border-radius-sm);
+  }
+  .node-id-trigger:focus-visible {
+    outline: 2px solid var(--color-border-default);
+    outline-offset: 2px;
   }
   .avatar-container {
     width: 1rem;
@@ -48,19 +101,291 @@
   .inline .alias {
     align-self: baseline;
   }
+  .node-id-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    padding: 0.875rem;
+    min-width: 16rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    box-shadow: var(--elevation-low);
+  }
+  .node-id-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+  }
+  .node-id-card-avatar {
+    width: 4rem;
+    height: 4rem;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .node-id-card-avatar :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .node-id-card-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+  .node-id-card-activity-divider {
+    height: 1px;
+    background-color: var(--color-border-subtle);
+    margin: 0.125rem 0;
+  }
+  .node-id-card-alias {
+    color: var(--color-text-primary);
+  }
+  .node-id-card-did-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .node-id-card-did {
+    color: var(--color-text-tertiary);
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New",
+      monospace;
+  }
+  .node-id-card-copy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background: none;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+  }
+  .node-id-card-copy:hover,
+  .node-id-card-copy:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
+  .node-id-card-activity {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-top: 0.875rem;
+    border-top: 1px solid var(--color-border-subtle);
+  }
+  .node-id-card-activity-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+  }
+  .node-id-card-activity-heading {
+    color: var(--color-text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .node-id-card-activity-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-text-secondary);
+  }
+  .node-id-card-author-chip {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-brand-subtle);
+    color: var(--color-text-brand);
+  }
+  .node-id-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  .node-id-card-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .node-id-card-action:hover,
+  .node-id-card-action:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
 </style>
 
-<div class="avatar-alias" class:inline style:font={styleFont}>
-  <div class="avatar-container">
-    <UserAvatar nodeId={publicKey} styleWidth="1rem" />
-  </div>
-  {#if alias}
-    <span class="txt-overflow alias">
-      {alias}
-    </span>
-  {:else}
-    <span class="no-alias">
-      {truncateId(publicKey)}
-    </span>
-  {/if}
-</div>
+<Popover
+  popoverPadding="0"
+  placement="bottom-start"
+  bind:expanded={cardExpanded}>
+  {#snippet toggle(onclick)}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="avatar-alias node-id-trigger"
+      class:inline
+      style:font={styleFont}
+      role="button"
+      tabindex="0"
+      {onclick}
+      onmouseenter={openCard}
+      onmouseleave={scheduleClose}>
+      <div class="avatar-container">
+        <UserAvatar nodeId={publicKey} styleWidth="1rem" />
+      </div>
+      {#if alias}
+        <span class="txt-overflow alias">
+          {alias}
+        </span>
+      {:else}
+        <span class="no-alias">
+          {truncateId(publicKey)}
+        </span>
+      {/if}
+    </div>
+  {/snippet}
+  {#snippet popover()}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="node-id-card"
+      onmouseenter={cancelClose}
+      onmouseleave={scheduleClose}>
+      <div class="node-id-card-header">
+        <div class="node-id-card-avatar">
+          <UserAvatar nodeId={publicKey} styleWidth="4rem" />
+        </div>
+        <div class="node-id-card-text">
+          {#if alias}
+            <div class="node-id-card-alias txt-body-m-medium">{alias}</div>
+          {:else}
+            <div class="node-id-card-alias txt-body-m-medium">
+              {truncateId(publicKey)}
+            </div>
+          {/if}
+          {#if activity?.isAuthor}
+            <div class="node-id-card-author-chip txt-body-s-medium">
+              <Icon name="patch" />
+              <span>Patch author</span>
+            </div>
+          {/if}
+          <div class="node-id-card-did-row">
+            <span class="node-id-card-did txt-body-s-regular">
+              {truncateId(publicKey)}
+            </span>
+            <button
+              type="button"
+              class="node-id-card-copy"
+              title="Copy DID"
+              onclick={event => {
+                event.stopPropagation();
+                void copyDid();
+              }}>
+              <Icon name={copyIcon} />
+            </button>
+          </div>
+        </div>
+      </div>
+      {#if activity}
+        {@const patchFacts = (
+          [
+            activity.revisionCount > 0
+              ? {
+                  icon: "revision" as IconName,
+                  label: `${activity.revisionCount} ${pluralize("revision", activity.revisionCount)}`,
+                }
+              : undefined,
+            activity.commitCount > 0
+              ? {
+                  icon: "commit" as IconName,
+                  label: `${activity.commitCount} ${pluralize("commit", activity.commitCount)}`,
+                }
+              : undefined,
+            activity.reviewCount > 0
+              ? {
+                  icon: "comment" as IconName,
+                  label: `${activity.reviewCount} ${pluralize("review", activity.reviewCount)}`,
+                }
+              : undefined,
+          ] as ({ icon: IconName; label: string } | undefined)[]
+        ).filter((x): x is { icon: IconName; label: string } => x !== undefined)}
+        {@const repoFacts = (
+          [
+            activity.patchesAuthored > 0
+              ? {
+                  icon: "patch" as IconName,
+                  label: `${activity.patchesAuthored} ${pluralize("patch", activity.patchesAuthored)}`,
+                }
+              : undefined,
+            activity.issuesAuthored > 0
+              ? {
+                  icon: "issue" as IconName,
+                  label: `${activity.issuesAuthored} ${pluralize("issue", activity.issuesAuthored)}`,
+                }
+              : undefined,
+          ] as ({ icon: IconName; label: string } | undefined)[]
+        ).filter((x): x is { icon: IconName; label: string } => x !== undefined)}
+        {#if patchFacts.length > 0 || repoFacts.length > 0}
+          <div class="node-id-card-activity">
+            {#if patchFacts.length > 0}
+              <div class="node-id-card-activity-group">
+                <div class="node-id-card-activity-heading txt-body-s-medium">
+                  On this patch
+                </div>
+                {#each patchFacts as item (item.label)}
+                  <div class="node-id-card-activity-row txt-body-m-regular">
+                    <Icon name={item.icon} />
+                    <span>{item.label}</span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+            {#if patchFacts.length > 0 && repoFacts.length > 0}
+              <div class="node-id-card-activity-divider"></div>
+            {/if}
+            {#if repoFacts.length > 0}
+              <div class="node-id-card-activity-group">
+                <div class="node-id-card-activity-heading txt-body-s-medium">
+                  In this repo
+                </div>
+                {#each repoFacts as item (item.label)}
+                  <div class="node-id-card-activity-row txt-body-m-regular">
+                    <Icon name={item.icon} />
+                    <span>{item.label}</span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        {/if}
+      {/if}
+      <div class="node-id-card-actions">
+        <a
+          class="node-id-card-action txt-body-s-medium"
+          href={explorerUrl(`users/${did}`)}
+          title="View profile on radicle.network"
+          target="_blank"
+          rel="noreferrer"
+          onclick={event => event.stopPropagation()}>
+          View profile
+          <Icon name="open-external" />
+        </a>
+      </div>
+    </div>
+  {/snippet}
+</Popover>

@@ -204,7 +204,11 @@ export function formatEditedCaption(author: Author, timestamp: number) {
 }
 
 export function pluralize(singular: string, count: number): string {
-  return count === 1 ? singular : `${singular}s`;
+  if (count === 1) return singular;
+  if (/(?:ch|sh|s|x|z)$/i.test(singular)) {
+    return `${singular}es`;
+  }
+  return `${singular}s`;
 }
 
 export function isMac() {
