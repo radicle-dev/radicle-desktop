@@ -14,10 +14,18 @@
   interface Props {
     selectedState: State;
     onSelect: (newState: State) => void;
+    onMerge?: () => Promise<void> | void;
+    mergeDisabledReason?: string;
     disabled?: boolean;
   }
 
-  const { selectedState, onSelect, disabled = false }: Props = $props();
+  const {
+    selectedState,
+    onSelect,
+    onMerge,
+    mergeDisabledReason,
+    disabled = false,
+  }: Props = $props();
 
   let popoverExpanded: boolean = $state(false);
   const isStatic = $derived(selectedState.status === "merged" || disabled);
@@ -50,6 +58,11 @@
     padding: 0 0.5rem;
     border-radius: var(--border-radius-sm);
     font: var(--txt-body-m-regular);
+  }
+  .merge-divider {
+    height: 1px;
+    background-color: var(--color-border-subtle);
+    margin: 0.25rem 0;
   }
 </style>
 
@@ -131,6 +144,27 @@
             </DropdownListItem>
           {/snippet}
         </DropdownList>
+        {#if onMerge}
+          <div class="merge-divider"></div>
+          <DropdownListItem
+            styleGap="0.5rem"
+            disabled={mergeDisabledReason !== undefined}
+            title={mergeDisabledReason ?? "Merge this revision"}
+            onclick={() => {
+              void onMerge?.();
+              closeFocused();
+            }}>
+            <span
+              class="global-chip"
+              style:padding="0"
+              style:margin-left="-0.5rem"
+              style:color={patchStatusColor.merged}
+              style:background-color={patchStatusBackgroundColor.merged}>
+              <Icon name="patch-merged" />
+            </span>
+            <span style:color="var(--color-text-secondary)">Merge</span>
+          </DropdownListItem>
+        {/if}
       </div>
     {/snippet}
   </Popover>

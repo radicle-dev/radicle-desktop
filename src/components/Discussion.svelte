@@ -46,6 +46,7 @@
     activityItems?: ActivityItem<A>[];
     renderActivity?: Snippet<[A, { hideAuthor: boolean }]>;
     authorOf?: (data: A) => Author | undefined;
+    afterActivity?: Snippet;
   }
 
   /* eslint-disable prefer-const */
@@ -61,6 +62,7 @@
     activityItems,
     renderActivity,
     authorOf,
+    afterActivity,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -238,6 +240,8 @@
         </div>
       {/if}
     {/each}
+
+    {@render afterActivity?.()}
 
     <div id={`reply-${cobId}`}>
       {#key commentFormKey}

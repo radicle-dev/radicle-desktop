@@ -141,6 +141,25 @@
     }
   }
 
+  async function mergePatch() {
+    try {
+      await invoke("edit_patch", {
+        rid: repo.rid,
+        cobId: patch.id,
+        action: {
+          type: "merge",
+          revision: selectedRevision.id,
+          commit: selectedRevision.head,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Merging patch failed", error);
+    } finally {
+      await loadPatch();
+    }
+  }
+
   async function updateTitle(newTitle: string) {
     try {
       await invoke("edit_patch", {
@@ -184,6 +203,27 @@
       alias: config.alias,
     }),
   );
+  const isRepoDelegate = $derived(
+    roles.isDelegate(
+      config.publicKey,
+      repo.delegates.map(d => d.did),
+    ),
+  );
+  const mergeDisabledReason = $derived.by(() => {
+    if (!isRepoDelegate) {
+      return "Only delegates can merge patches";
+    }
+    if (patch.state.status === "merged") {
+      return "This patch has already been merged";
+    }
+    if (patch.state.status === "draft") {
+      return "This patch is still a draft";
+    }
+    if (patch.state.status === "archived") {
+      return "This patch is archived";
+    }
+    return undefined;
+  });
   const hasOwnPublishedReviewOnSelected = $derived(
     selectedRevision.reviews?.some(
       r => r.author.did === didFromPublicKey(config.publicKey),
@@ -404,6 +444,8 @@
               onSelect={newState => {
                 void saveState(newState);
               }}
+              onMerge={mergePatch}
+              {mergeDisabledReason}
               disabled={!roles.isDelegateOrAuthor(
                 config.publicKey,
                 repo.delegates.map(d => d.did),
@@ -538,6 +580,8 @@
               {activity}
               {revisions}
               draftReviewId={ownDraftReviewForPatch?.id}
+              onMerge={mergePatch}
+              {mergeDisabledReason}
               bind:filesExpanded />
           {/if}
           </div>

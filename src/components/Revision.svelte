@@ -60,6 +60,8 @@
     revisions?: Revision[];
     draftReviewId?: string;
     filesExpanded?: boolean;
+    onMerge?: () => Promise<void> | void;
+    mergeDisabledReason?: string;
   }
 
   let {
@@ -75,6 +77,8 @@
     revisions = [],
     draftReviewId,
     filesExpanded = $bindable(true),
+    onMerge,
+    mergeDisabledReason,
   }: Props = $props();
   const currentUserAuthor: Author = $derived({
     did: didFromPublicKey(config.publicKey),
@@ -884,6 +888,103 @@
   .summary-secondary {
     color: var(--color-text-tertiary);
   }
+  .merge-card {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    align-items: stretch;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-canvas);
+    margin: 1rem 0;
+    overflow: hidden;
+  }
+  .merge-card::before {
+    content: "";
+    grid-column: 2;
+    background-color: var(--color-border-subtle);
+  }
+  .merge-card-left,
+  .merge-card-right {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem;
+    min-width: 0;
+  }
+  .merge-card-left {
+    grid-column: 1;
+    justify-content: space-between;
+  }
+  .merge-card-right {
+    grid-column: 3;
+    gap: 0.375rem;
+  }
+  .merge-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .merge-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-on-brand);
+    background-color: var(--color-surface-brand-secondary);
+    flex-shrink: 0;
+  }
+  .merge-card-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+  .merge-card-title {
+    color: var(--color-text-primary);
+  }
+  .merge-card-body {
+    color: var(--color-text-secondary);
+  }
+  .merge-card-cli-label {
+    color: var(--color-text-tertiary);
+  }
+  .merge-card-cli-code {
+    margin: 0;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+    font: var(--txt-body-s-regular);
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New",
+      monospace;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+  .merge-card-button {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1.25rem;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-feedback-success-fill);
+    color: var(--color-text-on-brand);
+    font: var(--txt-body-m-medium);
+    cursor: pointer;
+  }
+  .merge-card-button:hover:not(:disabled),
+  .merge-card-button:focus-visible:not(:disabled) {
+    background-color: var(--color-feedback-success-fill-hover);
+  }
+  .merge-card-button:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
 </style>
 
 {#if view === "description"}
@@ -1047,6 +1148,9 @@
             {/each}
           </div>
         {/if}
+        {#if revId === latestRevisionId}
+          {@render mergeCard()}
+        {/if}
       {:else if data.op.type === "review"}
         {@const opId = data.op.id}
         {@const threads = data.reviewThreads ?? []}
@@ -1118,6 +1222,51 @@
           created {data.count}
           {data.count === 1 ? "revision" : "revisions"}
         </span>
+      </div>
+    {/if}
+  {/snippet}
+
+  {#snippet mergeCard()}
+    {#if onMerge}
+      {@const branch =
+        repo.payloads["xyz.radicle.project"]?.data.defaultBranch ?? "main"}
+      <div class="merge-card" class:disabled={mergeDisabledReason !== undefined}>
+        <div class="merge-card-left">
+          <div class="merge-card-header">
+            <div class="merge-card-icon">
+              <Icon name="patch-merged" />
+            </div>
+            <div class="merge-card-text">
+              <div class="merge-card-title txt-body-m-medium">
+                Ready to merge
+              </div>
+              <div class="merge-card-body txt-body-m-regular">
+                Merge this revision into <b>{branch}</b>.
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="merge-card-button txt-body-m-medium"
+            disabled={mergeDisabledReason !== undefined}
+            onclick={() => void onMerge?.()}
+            title={mergeDisabledReason ?? "Record this revision as merged"}>
+            <Icon name="patch-merged" />
+            Merge revision
+          </button>
+        </div>
+        <div class="merge-card-right">
+          <div class="merge-card-cli-label txt-body-m-regular">
+            Or merge from the command line:
+          </div>
+          <pre class="merge-card-cli-code">$ rad patch checkout {patchId.slice(
+              0,
+              7,
+            )}
+$ git checkout {branch}
+$ git merge --no-ff patch/{patchId.slice(0, 7)}
+$ git push rad {branch}</pre>
+        </div>
       </div>
     {/if}
   {/snippet}
