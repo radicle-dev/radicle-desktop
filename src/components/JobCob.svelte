@@ -1,13 +1,17 @@
 <script lang="ts">
+  import type { Author } from "@bindings/cob/Author";
   import type { Job } from "@bindings/repo/Job";
+  import type { Run } from "@bindings/repo/Run";
+
+  import { SvelteSet } from "svelte/reactivity";
 
   import { invoke } from "@app/lib/invoke";
   import { authorForNodeId } from "@app/lib/utils";
 
-  import HoverPopover from "@app/components/HoverPopover.svelte";
+  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import Popover from "@app/components/Popover.svelte";
 
-  import DropdownListItem from "./DropdownListItem.svelte";
   import NodeId from "./NodeId.svelte";
 
   interface Props {
@@ -16,97 +20,370 @@
   }
 
   const { commit, rid }: Props = $props();
+
+  type Status = Run["status"];
+
+  type RunView = {
+    run: Run;
+    label: string;
+    linkable: boolean;
+  };
+
+  type HostGroup = {
+    host: string;
+    runs: RunView[];
+  };
+
+  type Counts = { succeeded: number; failed: number; started: number };
+
+  type NodeGroup = {
+    nodeKey: string;
+    author: Author;
+    hosts: HostGroup[];
+    flatRuns?: RunView[];
+    inlineHost?: string;
+    counts: Counts;
+    status: Status;
+  };
+
+  const collapsed = new SvelteSet<string>();
+  let popoverExpanded: boolean = $state(false);
+
+  function parseUrl(s: string): URL | undefined {
+    try {
+      return new URL(s);
+    } catch {
+      return undefined;
+    }
+  }
+
+  function isLinkable(url: URL | undefined): boolean {
+    if (!url) return false;
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    if (url.host === "no.url.example.com") return false;
+    return true;
+  }
+
+  function runLabel(run: Run, url: URL | undefined): string {
+    if (url && url.host === "github.com") {
+      const m = url.pathname.match(/\/actions\/runs\/(\d+)/);
+      if (m) return m[1];
+    }
+    return run.runId.slice(0, 8);
+  }
+
+  function aggregateStatus(c: Counts): Status {
+    if (c.failed) return "failed";
+    if (c.started) return "started";
+    return "succeeded";
+  }
+
+  function statusLabel(c: Counts): string {
+    const parts: string[] = [];
+    if (c.succeeded) parts.push(`${c.succeeded} passed`);
+    if (c.failed) parts.push(`${c.failed} failed`);
+    if (c.started) parts.push(`${c.started} running`);
+    return parts.join(" · ");
+  }
+
+  function totalCounts(groups: NodeGroup[]): Counts {
+    const total: Counts = { succeeded: 0, failed: 0, started: 0 };
+    for (const g of groups) {
+      total.succeeded += g.counts.succeeded;
+      total.failed += g.counts.failed;
+      total.started += g.counts.started;
+    }
+    return total;
+  }
+
+  function groupJobs(jobs: Job[]): NodeGroup[] {
+    const byNode: Record<
+      string,
+      { author: Author; byHost: Record<string, RunView[]> }
+    > = {};
+    const nodeOrder: string[] = [];
+    for (const job of jobs) {
+      for (const run of job.runs) {
+        const url = parseUrl(run.log);
+        const host = url && url.host ? url.host : "(unknown host)";
+        const view: RunView = {
+          run,
+          label: runLabel(run, url),
+          linkable: isLinkable(url),
+        };
+        const key = run.node.did;
+        let entry = byNode[key];
+        if (!entry) {
+          entry = { author: run.node, byHost: {} };
+          byNode[key] = entry;
+          nodeOrder.push(key);
+        }
+        const bucket = entry.byHost[host] ?? (entry.byHost[host] = []);
+        bucket.push(view);
+      }
+    }
+    return nodeOrder.map(nodeKey => {
+      const { author, byHost } = byNode[nodeKey];
+      const hosts: HostGroup[] = Object.entries(byHost).map(([host, runs]) => ({
+        host,
+        runs,
+      }));
+      const counts: Counts = { succeeded: 0, failed: 0, started: 0 };
+      for (const { runs } of hosts) {
+        for (const v of runs) counts[v.run.status]++;
+      }
+      const group: NodeGroup = {
+        nodeKey,
+        author,
+        hosts,
+        counts,
+        status: aggregateStatus(counts),
+      };
+      if (hosts.length === 1) {
+        group.flatRuns = hosts[0].runs;
+        if (!aliasMatchesHost(author.alias, hosts[0].host)) {
+          group.inlineHost = hosts[0].host;
+        }
+      }
+      return group;
+    });
+  }
+
+  function aliasMatchesHost(alias: string | undefined, host: string): boolean {
+    if (!alias) return false;
+    const a = alias.toLowerCase();
+    if (host === a) return true;
+    if (host.endsWith("." + a)) return true;
+    return host.split(".").includes(a);
+  }
+
+  function toggleNode(key: string) {
+    if (collapsed.has(key)) {
+      collapsed.delete(key);
+    } else {
+      collapsed.add(key);
+    }
+  }
 </script>
 
 <style>
-  .status {
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 1rem;
+    height: 1rem;
+  }
+  .chip.succeeded {
+    color: var(--color-feedback-success-text);
+    background-color: var(--color-feedback-success-bg);
+  }
+  .chip.failed {
+    color: var(--color-feedback-error-text);
+    background-color: var(--color-feedback-error-bg);
+  }
+  .chip.started {
+    color: var(--color-text-quaternary);
+    background-color: var(--color-surface-mid);
+  }
+  .popover-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 24rem;
+    font: var(--txt-body-m-regular);
+  }
+  .row {
+    display: flex;
+    align-items: center;
     gap: 0.5rem;
-    width: fit-content;
+    min-height: 2rem;
+    padding: 0 0.75rem;
+    border-radius: var(--border-radius-sm);
+  }
+  .node-header {
+    cursor: pointer;
+    user-select: none;
+  }
+  .node-header:hover,
+  a.run-row:hover {
+    background-color: var(--color-surface-subtle);
+  }
+  .chevron {
+    width: 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-quaternary);
+  }
+  .node-name {
+    min-width: 0;
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    overflow: hidden;
+  }
+  .inline-host {
+    color: var(--color-text-secondary);
+    font: var(--txt-body-s-regular);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .count {
+    color: var(--color-text-secondary);
+    font: var(--txt-body-s-regular);
+    white-space: nowrap;
+  }
+  .host-row {
+    padding-left: 2.25rem;
+    color: var(--color-text-secondary);
+    font: var(--txt-body-s-regular);
+  }
+  /*
+   * 3.75rem = row padding (0.75) + chevron (1) + gap (0.5) + header chip (1)
+   * + gap (0.5), so the run status chip sits under the node avatar.
+   */
+  .run-row {
+    padding-left: 3.75rem;
+    text-decoration: none;
+    color: var(--color-text-primary);
+  }
+  a.run-row {
+    cursor: pointer;
+  }
+  .run-label {
+    flex: 1;
+    white-space: nowrap;
+  }
+  .run-id {
+    font: var(--txt-code-regular);
+  }
+  .run-affordance {
+    color: var(--color-text-quaternary);
+    white-space: nowrap;
+  }
+  .run-affordance.muted {
+    font: var(--txt-body-s-regular);
   }
 </style>
 
 {#await invoke<Job[]>("list_jobs", { rid, sha: commit }) then jobs}
   {#if jobs.length > 0}
-    <HoverPopover stylePadding="0.25rem" placement="bottom-end">
-      {#snippet toggle()}
-        {#if jobs.every(j => {
-          return j.runs.every(r => {
-            return r.status === "succeeded";
-          });
-        })}
-          <div
-            class="global-chip"
-            style:padding="0"
-            style:color="var(--color-feedback-success-text)"
-            style:background-color="var(--color-feedback-success-bg)">
-            <Icon name="checkmark" />
-          </div>
-        {:else if jobs.every(j => {
-          return j.runs.every(r => {
-            return r.status === "failed";
-          });
-        })}
-          <div
-            class="global-chip"
-            style:color="var(--color-feedback-error-text)"
-            style:padding="0"
-            style:background-color="var(--color-feedback-error-bg)">
-            <Icon name="close" />
-          </div>
+    {@const groups = groupJobs(jobs)}
+    {@const overallCounts = totalCounts(groups)}
+    {@const overall = aggregateStatus(overallCounts)}
+    {#snippet statusChip(status: Status)}
+      <span class="chip {status}">
+        {#if status === "succeeded"}
+          <Icon name="checkmark" />
+        {:else if status === "failed"}
+          <Icon name="close" />
         {:else}
-          <div
-            class="global-chip"
-            style:padding="0"
-            style:color="var(--color-text-quaternary)"
-            style:background-color="var(--color-surface-subtle)">
-            <Icon name="help" />
-          </div>
+          <Icon name="hourglass" />
         {/if}
+      </span>
+    {/snippet}
+    {#snippet runRow(view: RunView)}
+      {#if view.linkable}
+        <a
+          class="row run-row"
+          href={view.run.log}
+          target="_blank"
+          rel="noreferrer">
+          {@render statusChip(view.run.status)}
+          <span class="run-label">
+            run <span class="run-id">{view.label}</span>
+          </span>
+          <span class="run-affordance">
+            <Icon name="open-external" />
+          </span>
+        </a>
+      {:else}
+        <div class="row run-row">
+          {@render statusChip(view.run.status)}
+          <span class="run-label">
+            run <span class="run-id">{view.label}</span>
+          </span>
+          <span class="run-affordance muted">(no log)</span>
+        </div>
+      {/if}
+    {/snippet}
+    <Popover placement="bottom-end" bind:expanded={popoverExpanded}>
+      {#snippet toggle(onclick)}
+        <Button
+          variant="naked"
+          onclick={e => {
+            e.stopPropagation();
+            onclick();
+          }}
+          active={popoverExpanded}>
+          {@render statusChip(overall)}
+          {statusLabel(overallCounts)}
+          <Icon name="chevron-down" />
+        </Button>
       {/snippet}
 
       {#snippet popover()}
-        {#each jobs as job}
-          {#each job.runs as run}
-            <a
-              style:text-decoration="none"
-              style:cursor="pointer"
-              style:width="100%"
-              href={run.log}
-              target="_blank">
-              <DropdownListItem styleGap="0.5rem" selected={true}>
-                {#if run.status === "started"}
-                  <div
-                    class="global-chip status"
-                    style:background-color="var(--color-surface-canvas)"
-                    style:color="var(--color-text-quaternary)">
-                    <Icon name="hourglass" /> Started
-                  </div>
-                {:else if run.status === "failed"}
-                  <div
-                    class="global-chip status"
-                    style:color="var(--color-feedback-error-text)"
-                    style:background-color="var(--color-feedback-error-bg)">
-                    <Icon name="close" /> Failed
-                  </div>
-                {:else if run.status === "succeeded"}
-                  <div
-                    class="global-chip status"
-                    style:color="var(--color-feedback-success-text)"
-                    style:background-color="var(--color-feedback-success-bg)">
-                    <Icon name="checkmark" /> Passed
-                  </div>
-                {/if}
-                <NodeId {...authorForNodeId(run.node)} />
+        <div
+          style:border="1px solid var(--color-border-subtle)"
+          style:border-radius="var(--border-radius-sm)"
+          style:background-color="var(--color-surface-canvas)"
+          style:padding="0.25rem">
+          <div class="popover-body">
+            {#each groups as group (group.nodeKey)}
+              {@const isCollapsed = collapsed.has(group.nodeKey)}
+              <div class="node-group">
                 <div
-                  style:margin-left="auto"
-                  style:color="var(--color-text-quaternary)">
-                  <Icon name="open-external" />
+                  class="row node-header"
+                  role="button"
+                  tabindex="0"
+                  onclick={() => toggleNode(group.nodeKey)}
+                  onkeydown={e => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleNode(group.nodeKey);
+                    }
+                  }}>
+                  <span class="chevron">
+                    <Icon
+                      name={isCollapsed ? "chevron-right" : "chevron-down"} />
+                  </span>
+                  {@render statusChip(group.status)}
+                  <span class="node-name">
+                    <NodeId {...authorForNodeId(group.author)} />
+                    {#if group.inlineHost}
+                      <span class="inline-host">· {group.inlineHost}</span>
+                    {/if}
+                  </span>
+                  <span class="count">
+                    {statusLabel(group.counts)}
+                  </span>
                 </div>
-              </DropdownListItem>
-            </a>
-          {/each}
-        {/each}
+
+                {#if !isCollapsed}
+                  {#if group.flatRuns}
+                    {#each group.flatRuns as view (view.run.runId)}
+                      {@render runRow(view)}
+                    {/each}
+                  {:else}
+                    {#each group.hosts as host}
+                      <div class="row host-row">
+                        <span>{host.host}</span>
+                      </div>
+                      {#each host.runs as view (view.run.runId)}
+                        {@render runRow(view)}
+                      {/each}
+                    {/each}
+                  {/if}
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </div>
       {/snippet}
-    </HoverPopover>
+    </Popover>
   {/if}
 {/await}
