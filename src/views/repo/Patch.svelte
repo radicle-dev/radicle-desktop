@@ -38,7 +38,6 @@
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
-  import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import PatchMetadata from "@app/components/PatchMetadata.svelte";
@@ -322,6 +321,14 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
   }
+  .breadcrumb-title {
+    color: var(--color-text-primary);
+    font: var(--txt-body-m-medium);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .breadcrumb-link:hover {
     color: var(--color-text-primary);
   }
@@ -412,7 +419,7 @@
         <Icon name="chevron-right" />
         {#if currentReview}
           <button
-            class="breadcrumb-link"
+            class="breadcrumb-link breadcrumb-title"
             onclick={() =>
               router.push({
                 resource: "repo.patch",
@@ -421,7 +428,7 @@
                 status,
                 reviewId: undefined,
               })}>
-            <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
+            {patch.title}
           </button>
           <Icon name="chevron-right" />
           <span style:color="var(--color-text-secondary)">
@@ -429,11 +436,8 @@
               currentReview.author.did.slice(0, 16)}
           </span>
         {:else}
-          <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
+          <span class="breadcrumb-title">{patch.title}</span>
         {/if}
-        <ExternalLink
-          href={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
-          title="Open in radicle.network" />
       </div>
       <div
         class="global-flex"

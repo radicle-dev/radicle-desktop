@@ -292,9 +292,11 @@
         {/if}
       </div>
       <div class="meta">
-        <div class="meta-hash">
-          <Id id={op.id} clipboard={op.id} />
-        </div>
+        {#if !firstRevision}
+          <div class="meta-hash">
+            <Id id={op.id} clipboard={op.id} />
+          </div>
+        {/if}
         <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
           {formatTimestamp(op.timestamp)}
         </div>

@@ -23,6 +23,7 @@
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import Id from "@app/components/Id.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
@@ -200,9 +201,23 @@
   .verdict-reject {
     color: var(--color-feedback-error-text);
   }
+  .patch-id-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
+  }
 </style>
 
 <div class="meta-row">
+  <div class="patch-id-chip">
+    <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
+  </div>
   {#if stats}
     {#if onShowChanges}
       <button
