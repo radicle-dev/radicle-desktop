@@ -18,6 +18,7 @@
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
+  import JobCob from "@app/components/JobCob.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
 
@@ -191,6 +192,7 @@
                   title={absoluteTimestamp(commit.committer.time * 1000)}>
                   {formatTimestamp(commit.committer.time * 1000)}
                 </span>
+                <JobCob rid={repo.rid} commit={commit.id} />
               </div>
               <div class="summary-parents">
                 <span class="summary-parents-label">
