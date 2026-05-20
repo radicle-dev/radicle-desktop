@@ -697,7 +697,7 @@
   .commit-group {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
   }
   .commit-group-author {
     color: var(--color-text-tertiary);
@@ -705,17 +705,17 @@
   .commit-group-children {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
   }
   .revision-commits {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
     padding-left: 1.25rem;
   }
   .revision-commits.has-header {
-    margin-top: 1rem;
+    margin-top: 0.5rem;
   }
   .revision-commits::before {
     content: "";
@@ -744,9 +744,9 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
     padding-left: 1.25rem;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
   }
   .review-threads::before {
     content: "";
@@ -762,9 +762,10 @@
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
-    padding: 0.125rem 0.25rem;
-    margin: 0 -0.25rem;
+    padding: 0.375rem 0.5rem;
+    margin: 0 -0.5rem;
     border-radius: var(--border-radius-sm);
+    min-height: 2.5rem;
   }
   .older-revisions:hover,
   .older-revisions:focus-visible {

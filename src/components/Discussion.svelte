@@ -192,14 +192,15 @@
     display: none;
   }
   .connector {
-    height: 1rem;
+    height: 0.5rem;
   }
   .run-header {
     display: flex;
     align-items: center;
     gap: 0.375rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     color: var(--color-text-tertiary);
+    min-height: 2.5rem;
   }
 </style>
 

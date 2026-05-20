@@ -74,15 +74,19 @@
 <style>
   .timeline-item {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.5rem;
     min-width: 0;
+    padding: 0.375rem 0.5rem;
+    margin: 0 -0.5rem;
+    border-radius: var(--border-radius-sm);
+    min-height: 2.5rem;
+  }
+  .timeline-item:has(.revision-body) {
+    align-items: flex-start;
   }
   .timeline-item.toggleable {
     cursor: pointer;
-    padding: 0.125rem 0.25rem;
-    margin: 0 -0.25rem;
-    border-radius: var(--border-radius-sm);
   }
   .timeline-item.toggleable:hover,
   .timeline-item.toggleable:focus-visible {
@@ -96,6 +100,9 @@
     flex: 1 1 0;
   }
   .icon {
+    padding-top: 0;
+  }
+  .timeline-item:has(.revision-body) .icon {
     padding-top: 0.1875rem;
   }
   .icon-stack {
@@ -168,22 +175,9 @@
   .meta-hash :global(.txt-id:hover) {
     color: inherit;
   }
-  .timeline-item.verdict-accept,
-  .timeline-item.verdict-reject,
-  .timeline-item.verdict-comment {
-    align-items: center;
-  }
-  .timeline-item.verdict-accept .icon,
-  .timeline-item.verdict-reject .icon,
-  .timeline-item.verdict-comment .icon {
-    padding-top: 0;
-  }
   .verdict-accept {
     background-color: var(--color-feedback-success-bg);
     color: var(--color-feedback-success-text);
-    padding: 0.375rem 0.5rem;
-    margin-left: -0.5rem;
-    border-radius: var(--border-radius-sm);
   }
   .verdict-accept,
   .verdict-accept :global(*) {
@@ -192,9 +186,6 @@
   .verdict-reject {
     background-color: var(--color-feedback-error-bg);
     color: var(--color-feedback-error-text);
-    padding: 0.375rem 0.5rem;
-    margin-left: -0.5rem;
-    border-radius: var(--border-radius-sm);
   }
   .verdict-reject,
   .verdict-reject :global(*) {
@@ -202,9 +193,6 @@
   }
   .verdict-comment {
     background-color: var(--color-surface-subtle);
-    padding: 0.375rem 0.5rem;
-    margin-left: -0.5rem;
-    border-radius: var(--border-radius-sm);
   }
   .revision-body {
     flex-basis: 100%;
@@ -214,9 +202,6 @@
   .merge-badge {
     background-color: var(--color-surface-brand-subtle);
     color: var(--color-text-brand);
-    padding: 0.375rem 0.5rem;
-    margin-left: -0.5rem;
-    border-radius: var(--border-radius-sm);
   }
   .merge-badge,
   .merge-badge :global(*) {

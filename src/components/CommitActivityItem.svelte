@@ -69,12 +69,13 @@
     display: grid;
     grid-template-columns: 1rem minmax(0, 1fr);
     column-gap: 0.5rem;
-    align-items: flex-start;
+    align-items: center;
     min-width: 0;
     cursor: pointer;
-    padding: 0.125rem 0.25rem;
-    margin: 0 -0.25rem;
+    padding: 0.375rem 0.5rem;
+    margin: 0 -0.5rem;
     border-radius: var(--border-radius-sm);
+    min-height: 2.5rem;
   }
   .timeline-item:hover,
   .timeline-item:focus-visible {
@@ -89,7 +90,6 @@
   }
   .icon {
     width: 1rem;
-    padding-top: 0.1875rem;
     color: var(--color-text-secondary);
   }
   .icon-stack {
