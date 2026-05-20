@@ -18,6 +18,7 @@ pub trait Jobs: Profile {
 
         Ok(found_jobs?
             .into_iter()
+            .filter(|(_, job)| !job.runs().is_empty())
             .map(|(id, job)| job::Job::new(id, &job, aliases))
             .collect())
     }
