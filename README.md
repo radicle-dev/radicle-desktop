@@ -1,7 +1,5 @@
 # Radicle Desktop
 
-[![lint](https://github.com/radicle-dev/radicle-desktop/actions/workflows/lint.yaml/badge.svg?branch=main)](https://github.com/radicle-dev/radicle-desktop/actions/workflows/lint.yaml) [![unit-test](https://github.com/radicle-dev/radicle-desktop/actions/workflows/unit-test.yaml/badge.svg?branch=main)](https://github.com/radicle-dev/radicle-desktop/actions/workflows/unit-test.yaml) [![e2e](https://github.com/radicle-dev/radicle-desktop/actions/workflows/e2e.yaml/badge.svg?branch=main)](https://github.com/radicle-dev/radicle-desktop/actions/workflows/e2e.yaml)
-
 This desktop application lets you interact with [Radicle][rad], a peer-to-peer code collaboration and publishing stack.
 
 ## Installation
