@@ -1051,6 +1051,11 @@
         {@const opId = data.op.id}
         {@const threads = data.reviewThreads ?? []}
         {@const hasThreads = threads.length > 0}
+        {@const reviewRecord = (revision.reviews ?? []).find(
+          r => r.id === opId,
+        )}
+        {@const hasReviewComments =
+          (reviewRecord?.comments?.length ?? 0) > 0}
         {@const toggleable = hasThreads}
         {@const expanded = toggleable ? isReviewExpanded(opId) : true}
         <PatchActivityItem
@@ -1058,14 +1063,16 @@
           expanded={toggleable ? expanded : undefined}
           onToggle={toggleable ? () => toggleReview(opId) : undefined}
           hideAuthor={opts.hideAuthor}
-          onViewFullReview={() =>
-            void push({
-              resource: "repo.patch",
-              rid,
-              patch: patchId,
-              status: undefined,
-              reviewId: opId,
-            })} />
+          onViewFullReview={hasReviewComments
+            ? () =>
+                void push({
+                  resource: "repo.patch",
+                  rid,
+                  patch: patchId,
+                  status: undefined,
+                  reviewId: opId,
+                })
+            : undefined} />
         {#if hasThreads}
           <div class="collapsible" class:open={expanded}>
             <div class="collapsible-inner">
