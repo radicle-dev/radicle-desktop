@@ -33,6 +33,9 @@
     type FlattenedPatchOperation,
     splitDescription,
   } from "@app/components/PatchActivityItem.svelte";
+  import { closeFocused } from "@app/components/Popover.svelte";
+  import Reactions from "@app/components/Reactions.svelte";
+  import ReactionSelector from "@app/components/ReactionSelector.svelte";
   import ReviewCodeThread from "@app/components/ReviewCodeThread.svelte";
 
   type ActivityData =
@@ -684,6 +687,28 @@
       await loadPatch();
     }
   }
+
+  async function reactOnRevision(authors: Author[], reaction: string) {
+    try {
+      await invoke("edit_patch", {
+        rid: rid,
+        cobId: patchId,
+        action: {
+          type: "revision.react",
+          revision: revision.id,
+          reaction,
+          active: !authors.find(
+            ({ did }) => publicKeyFromDid(did) === config.publicKey,
+          ),
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing revision reactions failed", error);
+    } finally {
+      await loadPatch();
+    }
+  }
 </script>
 
 <style>
@@ -691,13 +716,24 @@
     position: relative;
     margin-bottom: 1rem;
   }
-  .patch-body:has(.edit-description) {
-    padding-right: 2rem;
+  .patch-reactions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
   }
-  .edit-description {
+  .patch-body:has(.body-actions) {
+    padding-right: 4rem;
+  }
+  .body-actions {
     position: absolute;
     top: 0;
     right: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+  }
+  .body-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -710,13 +746,13 @@
     opacity: 0;
     transition: opacity 150ms ease;
   }
-  .patch-body:hover .edit-description,
-  .patch-body:focus-within .edit-description,
-  .edit-description:focus-visible {
+  .patch-body:hover .body-action,
+  .patch-body:focus-within .body-action,
+  .body-action:focus-visible {
     opacity: 1;
   }
-  .edit-description:hover,
-  .edit-description:focus-visible {
+  .body-action:hover,
+  .body-action:focus-visible {
     color: var(--color-text-primary);
     background-color: var(--color-surface-subtle);
   }
@@ -867,15 +903,37 @@
       {:else}
         <span style:color="var(--color-text-tertiary)">No description.</span>
       {/if}
-      {#if canEdit}
-        <button
-          type="button"
-          class="edit-description"
-          title="Edit description"
-          onclick={() => (editingDescription = true)}>
-          <Icon name="edit" />
-        </button>
-      {/if}
+      <div class="body-actions">
+        <div class="body-action">
+          <ReactionSelector
+            placement="bottom-end"
+            reactions={revision.reactions ?? []}
+            select={async ({ authors, emoji }) => {
+              try {
+                await reactOnRevision(authors, emoji);
+              } finally {
+                closeFocused();
+              }
+            }} />
+        </div>
+        {#if canEdit}
+          <button
+            type="button"
+            class="body-action edit-description"
+            title="Edit description"
+            onclick={() => (editingDescription = true)}>
+            <Icon name="edit" />
+          </button>
+        {/if}
+      </div>
+    </div>
+  {/if}
+  {#if revision.reactions && revision.reactions.length > 0}
+    <div class="patch-reactions">
+      <Reactions
+        handleReaction={reactOnRevision}
+        currentUserNid={config.publicKey}
+        reactions={revision.reactions} />
     </div>
   {/if}
 {:else if view === "activity"}
