@@ -102,6 +102,21 @@
       : submitVariant,
   );
 
+  const MARKDOWN_HINT_DISMISSED_KEY = "markdown-hint-dismissed";
+  let markdownHintDismissed = $state(
+    typeof localStorage !== "undefined" &&
+      localStorage.getItem(MARKDOWN_HINT_DISMISSED_KEY) === "true",
+  );
+
+  function dismissMarkdownHint() {
+    markdownHintDismissed = true;
+    try {
+      localStorage.setItem(MARKDOWN_HINT_DISMISSED_KEY, "true");
+    } catch (e) {
+      console.error("Failed to persist markdown hint dismissal", e);
+    }
+  }
+
   let selectionStart = $state(body.length);
   let selectionEnd = $state(body.length);
   let draggingOver = $state(false);
@@ -378,33 +393,83 @@
     padding: 0;
     background-color: transparent;
   }
+  .textarea-wrap {
+    position: relative;
+    display: flex;
+    width: 100%;
+    flex: 1;
+  }
+  .markdown-hint {
+    position: absolute;
+    bottom: 0.375rem;
+    right: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--color-text-quaternary);
+    opacity: 0.6;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .markdown-hint-dismiss {
+    background: none;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    color: inherit;
+    cursor: pointer;
+    font: var(--txt-body-s-regular);
+    padding: 0 0.375rem;
+    line-height: 1.25rem;
+  }
+  .markdown-hint-dismiss:hover {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-secondary);
+  }
 </style>
 
 <div class="comment-section" aria-label="extended-textarea" class:inline>
-  {#if preview}
-    <div class="preview" style:min-height={styleMinHeight}>
-      {#if body.trim().length === 0}
-        <span class="txt-missing">Nothing to preview.</span>
-      {:else}
-        <Markdown {rid} breaks content={body} />
+  <div class="textarea-wrap">
+    {#if preview}
+      <div class="preview" style:min-height={styleMinHeight}>
+        {#if body.trim().length === 0}
+          <span class="txt-missing">Nothing to preview.</span>
+        {:else}
+          <Markdown {rid} breaks content={body} />
+        {/if}
+      </div>
+    {:else}
+      <Textarea
+        size={textAreaSize}
+        styleAlignItems="flex-start"
+        {draggingOver}
+        {borderVariant}
+        {stylePadding}
+        {styleMinHeight}
+        bind:selectionEnd
+        bind:selectionStart
+        onpaste={handlePaste}
+        {focus}
+        submit={() => submit({ comment: body, embeds })}
+        bind:value={body}
+        {placeholder} />
+      {#if !markdownHintDismissed}
+        <div class="markdown-hint txt-body-s-regular">
+          <Icon
+            name="markdown"
+            styleDisplay="inline"
+            styleVerticalAlign="text-top" />
+          Markdown is supported
+          <button
+            type="button"
+            class="markdown-hint-dismiss"
+            title="Don't show again"
+            onclick={dismissMarkdownHint}>
+            OK
+          </button>
+        </div>
       {/if}
-    </div>
-  {:else}
-    <Textarea
-      size={textAreaSize}
-      styleAlignItems="flex-start"
-      {draggingOver}
-      {borderVariant}
-      {stylePadding}
-      {styleMinHeight}
-      bind:selectionEnd
-      bind:selectionStart
-      onpaste={handlePaste}
-      {focus}
-      submit={() => submit({ comment: body, embeds })}
-      bind:value={body}
-      {placeholder} />
-  {/if}
+    {/if}
+  </div>
   {@render belowTextarea?.()}
   {#if !hideDiscard || body.trim() !== ""}
     <div class="actions">
@@ -420,25 +485,15 @@
           <span class="global-hide-on-small-desktop-down">Discard</span>
         </Button>
       {/if}
-      {#if !preview}
-        <div
-          style:display=""
-          class="txt-overflow txt-body-m-regular txt-missing"
-          title="Markdown is supported.">
-          {#if embedUploadError}
-            <span style:color="var(--color-feedback-error-text)">
-              <Icon
-                styleDisplay="inline"
-                styleVerticalAlign="text-top"
-                name="warning" />
-              {embedUploadError}
-            </span>
-          {/if}
-          <Icon
-            name="markdown"
-            styleDisplay="inline"
-            styleVerticalAlign="text-top" />
-          Markdown is supported.
+      {#if !preview && embedUploadError}
+        <div class="txt-overflow txt-body-m-regular">
+          <span style:color="var(--color-feedback-error-text)">
+            <Icon
+              styleDisplay="inline"
+              styleVerticalAlign="text-top"
+              name="warning" />
+            {embedUploadError}
+          </span>
         </div>
       {/if}
       <div class="buttons">
