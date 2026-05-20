@@ -92,6 +92,7 @@
   );
   let revisionToggles: Record<string, boolean> = $state({});
   let reviewToggles: Record<string, boolean> = $state({});
+  let commitGroupToggles: Record<string, boolean> = $state({});
   let olderRevisionsExpanded = $state(false);
   let lastPatchIdSeen = patchId;
   $effect(() => {
@@ -99,9 +100,18 @@
       lastPatchIdSeen = patchId;
       revisionToggles = {};
       reviewToggles = {};
+      commitGroupToggles = {};
       olderRevisionsExpanded = false;
     }
   });
+  const MAX_COMMITS_VISIBLE = 3;
+  const COMMIT_COLLAPSE_THRESHOLD = 5;
+  function isCommitGroupExpanded(groupKey: string): boolean {
+    return commitGroupToggles[groupKey] ?? false;
+  }
+  function expandCommitGroup(groupKey: string) {
+    commitGroupToggles = { ...commitGroupToggles, [groupKey]: true };
+  }
   function isRevisionExpanded(revId: string): boolean {
     if (revId in revisionToggles) {
       return revisionToggles[revId];
@@ -979,13 +989,23 @@
             transition:slide={{ duration: 180 }}>
             {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
               {#if group.length > 1}
+                {@const groupKey = group[0].id}
+                {@const groupExpanded = isCommitGroupExpanded(groupKey)}
+                {@const collapsed =
+                  !groupExpanded && group.length > COMMIT_COLLAPSE_THRESHOLD}
+                {@const visibleCommits = collapsed
+                  ? group.slice(0, MAX_COMMITS_VISIBLE)
+                  : group}
+                {@const hiddenCount = collapsed
+                  ? group.length - MAX_COMMITS_VISIBLE
+                  : 0}
                 <div class="commit-group">
                   <div class="commit-group-author txt-body-m-regular">
                     {group[0].author.name} &lt;{group[0].author.email}&gt;
                     committed
                   </div>
                   <div class="commit-group-children">
-                    {#each group as commit (commit.id)}
+                    {#each visibleCommits as commit (commit.id)}
                       <CommitActivityItem
                         {commit}
                         {rid}
@@ -993,6 +1013,28 @@
                         {draftReviewId}
                         hideAuthor />
                     {/each}
+                    {#if collapsed}
+                      <!-- svelte-ignore a11y_click_events_have_key_events -->
+                      <div
+                        class="older-revisions txt-body-m-regular"
+                        role="button"
+                        tabindex="0"
+                        transition:slide={{ duration: 180 }}
+                        onclick={() => expandCommitGroup(groupKey)}>
+                        <div class="icon">
+                          <span class="icon-stack">
+                            <span class="icon-default"
+                              ><Icon name="commit" /></span>
+                            <span class="icon-hover"
+                              ><Icon name="expand-vertical" /></span>
+                          </span>
+                        </div>
+                        <span class="summary-secondary">
+                          {hiddenCount} more
+                          {hiddenCount === 1 ? "commit" : "commits"}
+                        </span>
+                      </div>
+                    {/if}
                   </div>
                 </div>
               {:else}
