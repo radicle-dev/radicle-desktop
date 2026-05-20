@@ -7,7 +7,14 @@
     rid: string;
     placeholder?: string;
     focus?: boolean;
+    submitCaption?: string;
+    submitDescription?: string;
     submit: (comment: string, embeds: Embed[]) => Promise<void>;
+    secondarySubmit?: {
+      caption: string;
+      description?: string;
+      submit: (comment: string, embeds: Embed[]) => Promise<void>;
+    };
     onclose?: () => void;
     onexpand?: () => void;
     disallowEmptyBody?: boolean;
@@ -20,7 +27,10 @@
     rid,
     placeholder,
     focus = false,
+    submitCaption,
+    submitDescription,
     submit,
+    secondarySubmit,
     onclose,
     onexpand,
     disallowEmptyBody = false,
@@ -52,6 +62,8 @@
     {disallowEmptyBody}
     {rid}
     {placeholder}
+    {submitCaption}
+    {submitDescription}
     borderVariant="ghost"
     submitActiveVariant="secondary"
     submitInProgress={state === "submit"}
@@ -72,7 +84,24 @@
       } finally {
         state = "collapsed";
       }
-    }} />
+    }}
+    secondarySubmit={secondarySubmit
+      ? {
+          caption: secondarySubmit.caption,
+          description: secondarySubmit.description,
+          submit: async ({ comment, embeds }) => {
+            try {
+              state = "submit";
+              await secondarySubmit.submit(
+                comment,
+                Array.from(embeds.values()),
+              );
+            } finally {
+              state = "collapsed";
+            }
+          },
+        }
+      : undefined} />
 {:else}
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div

@@ -174,6 +174,30 @@
     }
   }
 
+  async function createCodeCommentDirect(
+    body: string,
+    embeds: Embed[],
+    location: CodeLocation,
+  ) {
+    try {
+      await invoke("create_patch_comment", {
+        rid,
+        new: {
+          id: patchId,
+          body,
+          embeds,
+          location,
+          revision: revision.id,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Creating code comment failed", error);
+    } finally {
+      await loadPatch();
+    }
+  }
+
   const commentToReviewId = $derived.by(() => {
     const map = new Map<string, string>();
     for (const [reviewId, threads] of threadsByReview.entries()) {
@@ -304,6 +328,14 @@
     return {
       config,
       createComment: createCodeComment,
+      addCodeCommentDirect: createCodeCommentDirect,
+      newCommentCaption: draftReview ? "Add to review" : "Start review",
+      newCommentDescription: draftReview
+        ? "Save this in your draft review and publish later with a verdict."
+        : "Begin a draft review. You can add more comments before publishing.",
+      addCodeCommentDirectCaption: "Just comment",
+      addCodeCommentDirectDescription:
+        "Post this comment now, without starting or contributing to a review.",
       editComment: editCodeComment,
       deleteComment: deleteCodeComment,
       repoDelegates,

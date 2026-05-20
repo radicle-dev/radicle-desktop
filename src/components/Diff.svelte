@@ -11,6 +11,21 @@
       replyTo?: string,
       location?: CodeLocation,
     ) => Promise<void>;
+    // Caption for the primary submit button on the new-code-comment composer.
+    // Defaults to "Comment".
+    newCommentCaption?: string;
+    newCommentDescription?: string;
+    // When provided, the new-code-comment composer shows a second submit option
+    // in the split-button dropdown that posts a `revision.comment` directly
+    // (no review wrapping). The primary `createComment` continues to take
+    // whatever path the host wires (typically: stash into a draft review).
+    addCodeCommentDirect?: (
+      body: string,
+      embeds: Embed[],
+      location: CodeLocation,
+    ) => Promise<void>;
+    addCodeCommentDirectCaption?: string;
+    addCodeCommentDirectDescription?: string;
     editComment: (
       commentId: string,
       body: string,
@@ -487,6 +502,8 @@
         }}
         focus
         placeholder="Leave a comment"
+        submitCaption={codeComments.newCommentCaption}
+        submitDescription={codeComments.newCommentDescription}
         disableAttachments={codeComments.disableAttachments}
         submit={async (body, embeds) => {
           if (selection?.codeLocation) {
@@ -503,7 +520,31 @@
               selection = undefined;
             }
           }
-        }} />
+        }}
+        secondarySubmit={codeComments.addCodeCommentDirect
+          ? {
+              caption: codeComments.addCodeCommentDirectCaption ?? "Just comment",
+              description: codeComments.addCodeCommentDirectDescription,
+              submit: async (body, embeds) => {
+                if (
+                  selection?.codeLocation &&
+                  codeComments.addCodeCommentDirect
+                ) {
+                  try {
+                    await codeComments.addCodeCommentDirect(
+                      body,
+                      embeds,
+                      selection.codeLocation,
+                    );
+                  } catch (e) {
+                    console.error("Comment creation failed", e);
+                  } finally {
+                    selection = undefined;
+                  }
+                }
+              },
+            }
+          : undefined} />
     </div>
   {/if}
 {/snippet}

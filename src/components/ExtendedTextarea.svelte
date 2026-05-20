@@ -15,6 +15,7 @@
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Markdown from "@app/components/Markdown.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import Textarea from "@app/components/Textarea.svelte";
 
   interface Props {
@@ -41,6 +42,15 @@
       comment: string;
       embeds: Map<string, Embed>;
     }) => Promise<void>;
+    submitDescription?: string;
+    secondarySubmit?: {
+      caption: string;
+      description?: string;
+      submit: (opts: {
+        comment: string;
+        embeds: Map<string, Embed>;
+      }) => Promise<void>;
+    };
     close: () => void;
     // If true, adding attachments through drag-and-drop is disabled and there
     // is no "Attach" button. If a string is provided, the "Attach" button is
@@ -73,6 +83,8 @@
     stylePadding,
     borderVariant = "float",
     submit,
+    submitDescription,
+    secondarySubmit,
     close,
     disableAttachments: attachDisabled = false,
     hideDiscard = false,
@@ -251,8 +263,21 @@
     });
   }
 
+  let activeSubmitIndex: 0 | 1 = $state(0);
+  let dropdownExpanded = $state(false);
+
+  const activeSubmit = $derived(
+    activeSubmitIndex === 1 && secondarySubmit
+      ? {
+          caption: secondarySubmit.caption,
+          submit: secondarySubmit.submit,
+        }
+      : { caption: submitCaption, submit },
+  );
+
   function submitFn() {
-    void submit({ comment: body, embeds })
+    void activeSubmit
+      .submit({ comment: body, embeds })
       .then(() => (preview = false))
       .catch(e => {
         console.error(e);
@@ -288,6 +313,54 @@
   .shortcut {
     opacity: 0.6;
     margin-left: 0.25rem;
+  }
+  .split-submit {
+    display: flex;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+  .submit-menu {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    width: 22rem;
+    overflow: hidden;
+  }
+  .submit-option {
+    display: grid;
+    grid-template-columns: 1.5rem 1fr;
+    column-gap: 0.5rem;
+    align-items: start;
+    padding: 0.625rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .submit-option:last-child {
+    border-bottom: none;
+  }
+  .submit-option:hover {
+    background-color: var(--color-surface-subtle);
+  }
+  .submit-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.25rem;
+    color: var(--color-text-primary);
+  }
+  .submit-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  .submit-label {
+    font: var(--txt-body-m-medium);
+    color: var(--color-text-primary);
+  }
+  .submit-description {
+    font: var(--txt-body-s-regular);
+    color: var(--color-text-tertiary);
+    white-space: normal;
   }
 
   .preview {
@@ -383,21 +456,107 @@
           <Icon name={preview ? "edit" : "eye"} />
           {preview ? "Edit" : "Preview"}
         </Button>
-        <Button
-          variant={effectiveSubmitVariant}
-          title={emptyBodyTooltip}
-          disabled={!isValid() ||
-            submitInProgress ||
-            disableSubmit ||
-            (disallowEmptyBody && body.trim() === "")}
-          onclick={submitFn}>
-          {#if submitInProgress}
-            Saving…
-          {:else}
-            {submitCaption}
-            <span class="shortcut">{utils.modifierKey()}↵</span>
-          {/if}
-        </Button>
+        {#if secondarySubmit}
+          <div class="split-submit">
+            <Button
+              variant={effectiveSubmitVariant}
+              title={emptyBodyTooltip}
+              disabled={!isValid() ||
+                submitInProgress ||
+                disableSubmit ||
+                (disallowEmptyBody && body.trim() === "")}
+              onclick={submitFn}>
+              {#if submitInProgress}
+                Saving…
+              {:else}
+                {activeSubmit.caption}
+                <span class="shortcut">{utils.modifierKey()}↵</span>
+              {/if}
+            </Button>
+            <Popover
+              popoverPadding="0"
+              placement="top-end"
+              bind:expanded={dropdownExpanded}>
+              {#snippet toggle(onclick)}
+                <Button
+                  variant={effectiveSubmitVariant}
+                  disabled={submitInProgress}
+                  {onclick}>
+                  <Icon
+                    name={dropdownExpanded ? "chevron-up" : "chevron-down"} />
+                </Button>
+              {/snippet}
+              {#snippet popover()}
+                <div class="submit-menu">
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
+                  <div
+                    role="button"
+                    tabindex="0"
+                    class="submit-option"
+                    onclick={() => {
+                      activeSubmitIndex = 0;
+                      closeFocused();
+                    }}>
+                    <div class="submit-check">
+                      {#if activeSubmitIndex === 0}
+                        <Icon name="checkmark" />
+                      {/if}
+                    </div>
+                    <div class="submit-text">
+                      <span class="submit-label">{submitCaption}</span>
+                      {#if submitDescription}
+                        <span class="submit-description">
+                          {submitDescription}
+                        </span>
+                      {/if}
+                    </div>
+                  </div>
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
+                  <div
+                    role="button"
+                    tabindex="0"
+                    class="submit-option"
+                    onclick={() => {
+                      activeSubmitIndex = 1;
+                      closeFocused();
+                    }}>
+                    <div class="submit-check">
+                      {#if activeSubmitIndex === 1}
+                        <Icon name="checkmark" />
+                      {/if}
+                    </div>
+                    <div class="submit-text">
+                      <span class="submit-label">
+                        {secondarySubmit.caption}
+                      </span>
+                      {#if secondarySubmit.description}
+                        <span class="submit-description">
+                          {secondarySubmit.description}
+                        </span>
+                      {/if}
+                    </div>
+                  </div>
+                </div>
+              {/snippet}
+            </Popover>
+          </div>
+        {:else}
+          <Button
+            variant={effectiveSubmitVariant}
+            title={emptyBodyTooltip}
+            disabled={!isValid() ||
+              submitInProgress ||
+              disableSubmit ||
+              (disallowEmptyBody && body.trim() === "")}
+            onclick={submitFn}>
+            {#if submitInProgress}
+              Saving…
+            {:else}
+              {submitCaption}
+              <span class="shortcut">{utils.modifierKey()}↵</span>
+            {/if}
+          </Button>
+        {/if}
       </div>
     </div>
   {/if}
