@@ -287,28 +287,6 @@
     grid-area: content;
     min-width: 0;
   }
-  @media (min-width: 1200px) {
-    .main {
-      grid-template-columns: minmax(0, 1fr) 16rem;
-      grid-template-areas:
-        "title title"
-        "content meta";
-    }
-    .meta-bar {
-      margin-bottom: 0;
-    }
-    .meta-bar :global(.meta-row) {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1.25rem;
-    }
-    .meta-bar :global(.reviewers-compact) {
-      display: none;
-    }
-    .meta-bar :global(.reviewers-expanded) {
-      display: flex;
-    }
-  }
   .tabs {
     display: flex;
     align-items: center;

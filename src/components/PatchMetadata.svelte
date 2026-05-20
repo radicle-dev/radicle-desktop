@@ -182,34 +182,6 @@
   .verdict-reject {
     color: var(--color-feedback-error-text);
   }
-  .reviewers-expanded {
-    display: none;
-    flex-direction: column;
-    gap: 0.125rem;
-    width: 100%;
-  }
-  .reviewers-expanded-header {
-    color: var(--color-text-tertiary);
-    padding-bottom: 0.25rem;
-  }
-  .reviewer-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.25rem 0.375rem;
-    margin: 0 -0.375rem;
-    border-radius: var(--border-radius-sm);
-    cursor: pointer;
-    background: none;
-    border: 1px solid transparent;
-    text-align: left;
-    font: inherit;
-    color: inherit;
-  }
-  .reviewer-row:hover,
-  .reviewer-row:focus-visible {
-    background-color: var(--color-surface-subtle);
-  }
 </style>
 
 <div class="meta-row">
@@ -297,25 +269,6 @@
           </div>
         {/snippet}
       </Popover>
-    </div>
-    <div class="reviewers-expanded">
-      <div class="reviewers-expanded-header">
-        {reviewers.length}
-        {pluralize("review", reviewers.length)}
-      </div>
-      {#each reviewers as reviewer (reviewer.author.did)}
-        <button
-          type="button"
-          class="reviewer-row"
-          onclick={() => openReview(reviewer.reviewId)}>
-          <span
-            class:verdict-accept={reviewer.verdict === "accept"}
-            class:verdict-reject={reviewer.verdict === "reject"}>
-            <Icon name={verdictIcon(reviewer.verdict)} />
-          </span>
-          <NodeId {...authorForNodeId(reviewer.author)} />
-        </button>
-      {/each}
     </div>
   {/if}
   <LabelInput
