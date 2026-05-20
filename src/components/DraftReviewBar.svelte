@@ -5,6 +5,9 @@
   import type { DraftReview } from "@app/lib/draftReviewStorage";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
 
+  import { backOut, cubicIn } from "svelte/easing";
+  import { fly } from "svelte/transition";
+
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
@@ -182,8 +185,11 @@
 <style>
   .bar {
     flex-shrink: 0;
+    margin: 0 1rem 1rem;
     background-color: var(--color-surface-canvas);
-    border-top: 1px solid var(--color-border-subtle);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--elevation-low);
     padding: 1rem;
     display: flex;
     flex-direction: row;
@@ -452,7 +458,11 @@
   }
 </style>
 
-<div class="bar" class:expanded>
+<div
+  class="bar"
+  class:expanded
+  in:fly={{ y: 120, duration: 260, easing: backOut }}
+  out:fly={{ y: 120, duration: 180, easing: cubicIn }}>
   <textarea
     bind:this={summaryEl}
     class="summary"

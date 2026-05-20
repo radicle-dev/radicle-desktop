@@ -388,7 +388,7 @@
               : "Start a review of this revision"}>
             <Icon name="comment" />
             <span class="txt-body-m-regular global-hide-on-medium-desktop-down">
-              Review revision
+              Start review
             </span>
           </Button>
         {/if}
