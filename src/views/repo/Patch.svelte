@@ -7,6 +7,7 @@
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Config } from "@bindings/config/Config";
   import type { Stats } from "@bindings/diff/Stats";
+  import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import debounce from "lodash/debounce";
@@ -16,14 +17,17 @@
   import { nodeRunning } from "@app/lib/events";
   import {
     cachedGetDiff,
+    cachedListCommits,
     invoke,
     writeToClipboard,
   } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
   import {
+    absoluteTimestamp,
     didFromPublicKey,
     explorerUrl,
+    formatTimestamp,
     patchStatusLabel,
   } from "@app/lib/utils";
 
@@ -81,10 +85,40 @@
   let selectedRevisionStats: Stats | undefined = $state();
   let revisionPickerExpanded = $state(false);
   let filesExpanded = $state(true);
+  let commitCountsByRevisionId: Record<string, number> = $state({});
 
   const sortedRevisions = $derived(
     [...revisions].sort((a, b) => a.timestamp - b.timestamp),
   );
+
+  $effect(() => {
+    const ridLocal = repo.rid;
+    const sorted = [...revisions].sort((a, b) => a.timestamp - b.timestamp);
+    void Promise.all(
+      sorted.map(async (rev): Promise<[string, Commit[]]> => {
+        try {
+          const commits = await cachedListCommits(
+            ridLocal,
+            rev.base,
+            rev.head,
+          );
+          return [rev.id, commits];
+        } catch {
+          return [rev.id, []];
+        }
+      }),
+    ).then(entries => {
+      const next: Record<string, number> = {};
+      const seen = new Set<string>();
+      sorted.forEach((rev, i) => {
+        const [, commits] = entries[i];
+        const novel = commits.filter(c => !seen.has(c.id));
+        novel.forEach(c => seen.add(c.id));
+        next[rev.id] = novel.length;
+      });
+      commitCountsByRevisionId = next;
+    });
+  });
   const selectedRevisionIndex = $derived(
     sortedRevisions.findIndex(r => r.id === selectedRevisionId),
   );
@@ -350,6 +384,19 @@
     min-width: 0;
     max-width: 24rem;
   }
+  .revision-date {
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+  }
+  .revision-commits-meta {
+    margin-left: auto;
+    padding-left: 1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+  }
 </style>
 
 <Layout>
@@ -543,6 +590,8 @@
                           <DropdownList items={sortedRevisions}>
                             {#snippet item(rev)}
                               {@const title = revisionTitle(rev)}
+                              {@const commitCount =
+                                commitCountsByRevisionId[rev.id]}
                               <DropdownListItem
                                 selected={rev.id === selectedRevision.id}
                                 styleGap="0.5rem"
@@ -554,8 +603,19 @@
                                 <span class="txt-id">
                                   {rev.id.substring(0, 7)}
                                 </span>
+                                <span
+                                  class="revision-date"
+                                  title={absoluteTimestamp(rev.timestamp)}>
+                                  {formatTimestamp(rev.timestamp)}
+                                </span>
                                 {#if title}
                                   <span class="revision-title">{title}</span>
+                                {/if}
+                                {#if commitCount !== undefined}
+                                  <span class="revision-commits-meta">
+                                    <Icon name="commit" />
+                                    {commitCount}
+                                  </span>
                                 {/if}
                               </DropdownListItem>
                             {/snippet}

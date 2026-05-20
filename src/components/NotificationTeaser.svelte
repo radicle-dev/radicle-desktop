@@ -11,6 +11,7 @@
   import { compressActions } from "@app/lib/notification";
   import { push } from "@app/lib/router";
   import {
+    absoluteTimestamp,
     authorForNodeId,
     formatTimestamp,
     issueStatusBackgroundColor,
@@ -219,7 +220,8 @@
             <span>{@html action.summary}</span>
             <span
               style:margin-left="auto"
-              style:color="var(--color-text-tertiary)">
+              style:color="var(--color-text-tertiary)"
+              title={absoluteTimestamp(action.items[0].timestamp)}>
               {formatTimestamp(action.items[0].timestamp)}
             </span>
           </div>

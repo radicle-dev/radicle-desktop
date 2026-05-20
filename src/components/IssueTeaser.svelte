@@ -4,6 +4,7 @@
 
   import { push } from "@app/lib/router";
   import {
+    absoluteTimestamp,
     authorForNodeId,
     formatTimestamp,
     issueStatusBackgroundColor,
@@ -89,7 +90,9 @@
           <NodeId {...authorForNodeId(issue.author)} />
           opened
           <Id id={issue.id} clipboard={issue.id} />
-          {formatTimestamp(issue.timestamp)}
+          <span title={absoluteTimestamp(issue.timestamp)}>
+            {formatTimestamp(issue.timestamp)}
+          </span>
         </div>
       </div>
     </div>

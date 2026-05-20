@@ -6,6 +6,7 @@
   import { cachedDiffStats } from "@app/lib/invoke";
   import { push } from "@app/lib/router";
   import {
+    absoluteTimestamp,
     authorForNodeId,
     formatTimestamp,
     patchStatusBackgroundColor,
@@ -135,7 +136,9 @@
           <NodeId {...authorForNodeId(patch.author)} />
           opened
           <Id id={patch.id} clipboard={patch.id} />
-          {formatTimestamp(patch.timestamp)}
+          <span title={absoluteTimestamp(patch.timestamp)}>
+            {formatTimestamp(patch.timestamp)}
+          </span>
         </div>
       </div>
     </div>
