@@ -35,9 +35,18 @@
     repo: RepoInfo;
     revisions: Revision[];
     stats?: Stats;
+    onShowChanges?: () => void;
   }
 
-  const { config, loadPatch, patch, repo, revisions, stats }: Props = $props();
+  const {
+    config,
+    loadPatch,
+    patch,
+    repo,
+    revisions,
+    stats,
+    onShowChanges,
+  }: Props = $props();
 
   type ReviewerSummary = {
     author: Author;
@@ -136,6 +145,15 @@
     border-radius: var(--border-radius-sm);
     background-color: var(--color-surface-canvas);
     color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
+  }
+  .stats.stats-button {
+    cursor: pointer;
+  }
+  .stats.stats-button:hover,
+  .stats.stats-button:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
   }
   .stats .insertions {
     color: var(--color-feedback-success-text);
@@ -186,15 +204,31 @@
 
 <div class="meta-row">
   {#if stats}
-    <div class="stats">
-      <Icon name="diff" />
-      <span>
-        {stats.filesChanged}
-        {pluralize("file", stats.filesChanged)}
-      </span>
-      <span class="insertions">+{stats.insertions}</span>
-      <span class="deletions">-{stats.deletions}</span>
-    </div>
+    {#if onShowChanges}
+      <button
+        type="button"
+        class="stats stats-button"
+        onclick={onShowChanges}
+        title="View changed files">
+        <Icon name="diff" />
+        <span>
+          {stats.filesChanged}
+          {pluralize("file", stats.filesChanged)}
+        </span>
+        <span class="insertions">+{stats.insertions}</span>
+        <span class="deletions">-{stats.deletions}</span>
+      </button>
+    {:else}
+      <div class="stats">
+        <Icon name="diff" />
+        <span>
+          {stats.filesChanged}
+          {pluralize("file", stats.filesChanged)}
+        </span>
+        <span class="insertions">+{stats.insertions}</span>
+        <span class="deletions">-{stats.deletions}</span>
+      </div>
+    {/if}
   {/if}
   {#if reviewers.length > 0}
     {@const verdicts = reviewers.map(r => r.verdict)}

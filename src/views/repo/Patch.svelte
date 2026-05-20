@@ -422,7 +422,8 @@
               {patch}
               {repo}
               {revisions}
-              stats={selectedRevisionStats} />
+              stats={selectedRevisionStats}
+              onShowChanges={() => (patchView = "changes")} />
           </div>
 
           <div class="content">
