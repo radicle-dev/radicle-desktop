@@ -782,6 +782,7 @@
     gap: 0.5rem;
   }
   .commit-group-author {
+    padding-left: 2rem;
     color: var(--color-text-tertiary);
   }
   .commit-group-children {
@@ -804,7 +805,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    left: 0.5rem;
+    left: 1rem;
     width: 1px;
     background-color: var(--color-border-subtle);
   }
@@ -835,7 +836,7 @@
     position: absolute;
     top: 0;
     bottom: 0;
-    left: 0.5rem;
+    left: 1rem;
     width: 1px;
     background-color: var(--color-border-subtle);
   }
@@ -845,7 +846,6 @@
     gap: 0.5rem;
     cursor: pointer;
     padding: 0.375rem 0.5rem;
-    margin: 0 -0.5rem;
     border-radius: var(--border-radius-sm);
     min-height: 2.5rem;
   }

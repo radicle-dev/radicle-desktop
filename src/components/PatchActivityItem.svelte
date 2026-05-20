@@ -78,7 +78,6 @@
     gap: 0.5rem;
     min-width: 0;
     padding: 0.375rem 0.5rem;
-    margin: 0 -0.5rem;
     border-radius: var(--border-radius-sm);
     min-height: 2.5rem;
   }

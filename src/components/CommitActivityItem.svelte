@@ -73,7 +73,6 @@
     min-width: 0;
     cursor: pointer;
     padding: 0.375rem 0.5rem;
-    margin: 0 -0.5rem;
     border-radius: var(--border-radius-sm);
     min-height: 2.5rem;
   }
@@ -229,6 +228,7 @@
   .collapsible-inner {
     overflow: hidden;
     min-height: 0;
+    padding-left: 2rem;
   }
 </style>
 

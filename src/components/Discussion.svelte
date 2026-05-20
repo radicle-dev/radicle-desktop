@@ -161,12 +161,15 @@
   .timeline-rail {
     position: relative;
   }
-  .timeline-rail::before {
+  .activity-stream {
+    position: relative;
+  }
+  .activity-stream::before {
     content: "";
     position: absolute;
     top: 0.5rem;
-    bottom: 0.5rem;
-    left: 0.5rem;
+    bottom: -1rem;
+    left: 1rem;
     width: 1px;
     background-color: var(--color-border-subtle);
     pointer-events: none;
@@ -201,13 +204,18 @@
     align-items: center;
     gap: 0.375rem;
     margin-bottom: 0.5rem;
+    padding-left: 0.5rem;
     color: var(--color-text-tertiary);
     min-height: 2.5rem;
+  }
+  .reply-wrapper {
+    margin-top: 1rem;
   }
 </style>
 
 <div style:margin="1.5rem 0 2.5rem 0">
   <div class="timeline-rail">
+    <div class="activity-stream">
     {#each runs as run, runIndex (runIndex)}
       {#if run.kind === "thread"}
         <ThreadComponent
@@ -242,8 +250,9 @@
     {/each}
 
     {@render afterActivity?.()}
+    </div>
 
-    <div id={`reply-${cobId}`}>
+    <div id={`reply-${cobId}`} class="reply-wrapper">
       {#key commentFormKey}
         <ExtendedTextarea
           disallowEmptyBody
