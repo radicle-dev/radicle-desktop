@@ -728,7 +728,7 @@
 <style>
   .patch-body {
     position: relative;
-    margin-bottom: 1rem;
+    margin-bottom: 2.5rem;
   }
   .patch-reactions {
     display: flex;

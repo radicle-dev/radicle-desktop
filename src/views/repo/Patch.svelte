@@ -412,6 +412,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    margin-top: 1.5rem;
     margin-bottom: 1rem;
   }
   .meta-bar {
@@ -426,6 +427,9 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--color-border-subtle);
+    border-bottom: 1px solid var(--color-border-subtle);
     margin-bottom: 1rem;
   }
   .tabs-left,
