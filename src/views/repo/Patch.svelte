@@ -601,7 +601,13 @@
               )} />
             <EditableTitle
               {updateTitle}
-              allowedToEdit={true}
+              allowedToEdit={roles.isDelegateOrAuthor(
+                config.publicKey,
+                repo.delegates.map(d => d.did),
+                patch.author.did,
+              )
+                ? true
+                : undefined}
               title={patch.title}
               cobId={patch.id} />
           </div>
