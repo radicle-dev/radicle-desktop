@@ -556,10 +556,6 @@
           <Icon name={copyIcon} />
           <span class="global-hide-on-medium-desktop-down">Copy link</span>
         </Button>
-        <CheckoutPatchButton
-          {tab}
-          selectedRevisionId={selectedRevision.id}
-          patchId={patch.id} />
         {#if !ownDraftReviewForPatch}
           <Button
             variant="secondary"
@@ -657,6 +653,10 @@
               </div>
               {#if patchView === "changes"}
                 <div class="tabs-right">
+                  <CheckoutPatchButton
+                    {tab}
+                    selectedRevisionId={selectedRevision.id}
+                    patchId={patch.id} />
                   {#if sortedRevisions.length > 1}
                     <Popover
                       popoverPadding="0"
