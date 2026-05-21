@@ -88,7 +88,7 @@ export async function loadInbox(): Promise<LoadedInboxRoute> {
   const [sidebarData, notificationsByRepo] = await Promise.all([
     loadSidebarData(),
     invoke<NotificationsByRepo[]>("list_notifications", {
-      params: { take: 20 },
+      params: { take: 100 },
     }),
   ]);
   return {

@@ -69,7 +69,7 @@
   async function loadNotifications() {
     notificationsByRepo = await invoke<NotificationsByRepo[]>(
       "list_notifications",
-      { params: { take: 20 } },
+      { params: { take: 100 } },
     );
   }
 
