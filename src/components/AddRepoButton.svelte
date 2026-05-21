@@ -22,13 +22,12 @@
   import TextInput from "@app/components/TextInput.svelte";
 
   interface Props {
-    onOpen: () => void;
     reload: () => Promise<void>;
     repos: RepoSummary[];
     seededNotReplicated: string[];
   }
 
-  const { onOpen, reload, repos, seededNotReplicated }: Props = $props();
+  const { reload, repos, seededNotReplicated }: Props = $props();
 
   let popoverExpanded: boolean = $state(false);
   let rid = $state("");
@@ -111,7 +110,6 @@
       variant="naked"
       id={addRepoPopoverToggleId}
       onclick={() => {
-        onOpen();
         onclick();
       }}
       active={popoverExpanded}>

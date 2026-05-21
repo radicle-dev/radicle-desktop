@@ -627,11 +627,7 @@
   {/if}
   <span class="section-header-actions">
     <span onclick={e => e.stopPropagation()} role="none">
-      <AddRepoButton
-        onOpen={() => (reposExpanded.value = true)}
-        reload={reloadRepos}
-        {repos}
-        {seededNotReplicated} />
+      <AddRepoButton reload={reloadRepos} {repos} {seededNotReplicated} />
     </span>
   </span>
 </div>
