@@ -50,8 +50,11 @@
       return;
     }
     if (autofocus) {
-      // We set preventScroll to true for Svelte animations to work.
-      inputElement.focus({ preventScroll: true });
+      // Defer focus past the next frame so it survives parent
+      // actions (like portal moves) that detach the node on mount.
+      requestAnimationFrame(() => {
+        inputElement?.focus({ preventScroll: true });
+      });
     }
     if (autoselect) {
       inputElement.select();
