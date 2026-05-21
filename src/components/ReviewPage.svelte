@@ -251,9 +251,9 @@
     margin-bottom: 0.75rem;
   }
   .back {
-    background: none;
-    border: 1px solid transparent;
-    padding: 0.25rem 0.5rem;
+    background-color: var(--color-surface-canvas);
+    border: 1px solid var(--color-border-subtle);
+    padding: 0.375rem 0.625rem;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
     color: var(--color-text-secondary);

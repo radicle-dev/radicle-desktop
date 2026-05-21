@@ -71,12 +71,7 @@
     font: var(--txt-body-m-regular);
   }
   .node-id-trigger {
-    cursor: pointer;
     border-radius: var(--border-radius-sm);
-  }
-  .node-id-trigger:focus-visible {
-    outline: 2px solid var(--color-border-default);
-    outline-offset: 2px;
   }
   .avatar-container {
     width: 1rem;
@@ -234,18 +229,16 @@
   popoverPadding="0"
   placement="bottom-start"
   bind:expanded={cardExpanded}>
-  {#snippet toggle(onclick)}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
+  {#snippet toggle(_onclick)}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="avatar-alias node-id-trigger"
       class:inline
       style:font={styleFont}
-      role="button"
-      tabindex="0"
-      {onclick}
       onmouseenter={openCard}
-      onmouseleave={scheduleClose}>
+      onmouseleave={scheduleClose}
+      onfocusin={openCard}
+      onfocusout={scheduleClose}>
       <div class="avatar-container">
         <UserAvatar nodeId={publicKey} styleWidth="1rem" />
       </div>
