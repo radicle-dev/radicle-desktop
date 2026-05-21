@@ -132,6 +132,18 @@ pub fn delete_patch(
 }
 
 #[tauri::command]
+pub fn merge_patch(
+    ctx: tauri::State<AppState>,
+    rid: identity::RepoId,
+    cob_id: git::Oid,
+    revision: cob::patch::RevisionId,
+    commit: git::Oid,
+    opts: cobs::CobOptions,
+) -> Result<models::patch::Patch, Error> {
+    ctx.merge_patch(rid, cob_id, revision, commit, opts)
+}
+
+#[tauri::command]
 pub fn create_patch_review(
     ctx: tauri::State<AppState>,
     args: models::patch::CreateReviewArgs,

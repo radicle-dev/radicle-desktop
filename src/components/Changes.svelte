@@ -22,6 +22,7 @@
     filesExpanded?: boolean;
   }
 
+  /* eslint-disable prefer-const */
   let {
     patchId,
     revision,
@@ -30,6 +31,7 @@
     draftReviewId,
     filesExpanded = $bindable(true),
   }: Props = $props();
+  /* eslint-enable prefer-const */
 
   let selectedCommit = $state<string>();
   // Parent reuses this component across patch revisions; a sibling $effect

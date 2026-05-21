@@ -147,6 +147,7 @@
         {#if onMerge}
           <div class="merge-divider"></div>
           <DropdownListItem
+            selected={false}
             styleGap="0.5rem"
             disabled={mergeDisabledReason !== undefined}
             title={mergeDisabledReason ?? "Merge this revision"}

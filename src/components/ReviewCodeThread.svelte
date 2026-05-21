@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Author } from "@bindings/cob/Author";
-  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
+  import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Config } from "@bindings/config/Config";
   import type { Diff as DiffType } from "@bindings/diff/Diff";

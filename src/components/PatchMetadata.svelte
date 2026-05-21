@@ -262,7 +262,10 @@
             {onclick}
             aria-haspopup="menu"
             aria-expanded={reviewersPopoverExpanded}
-            title="{reviewers.length} {pluralize('reviewer', reviewers.length)}">
+            title="{reviewers.length} {pluralize(
+              'reviewer',
+              reviewers.length,
+            )}">
             <span
               class:verdict-accept={allAccept}
               class:verdict-reject={hasReject}>

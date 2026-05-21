@@ -26,14 +26,14 @@
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Changes from "@app/components/Changes.svelte";
-  import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
-  import Markdown from "@app/components/Markdown.svelte";
   import CommitActivityItem from "@app/components/CommitActivityItem.svelte";
-  import FileDiff from "@app/components/FileDiff.svelte";
-  import Icon from "@app/components/Icon.svelte";
   import Discussion, {
     type ActivityItem,
   } from "@app/components/Discussion.svelte";
+  import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
+  import FileDiff from "@app/components/FileDiff.svelte";
+  import Icon from "@app/components/Icon.svelte";
+  import Markdown from "@app/components/Markdown.svelte";
   import PatchActivityItem, {
     type FlattenedPatchOperation,
     splitDescription,
@@ -70,6 +70,7 @@
     onViewChanges?: (revisionId: string) => void;
   }
 
+  /* eslint-disable prefer-const */
   let {
     rid,
     repo,
@@ -87,6 +88,7 @@
     mergeDisabledReason,
     onViewChanges,
   }: Props = $props();
+  /* eslint-enable prefer-const */
   const currentUserAuthor: Author = $derived({
     did: didFromPublicKey(config.publicKey),
     alias: config.alias ?? undefined,
@@ -180,7 +182,7 @@
 
   async function createCodeComment(
     body: string,
-    embeds: Embed[],
+    _embeds: Embed[],
     _replyTo?: string,
     location?: CodeLocation,
   ) {
@@ -190,7 +192,7 @@
       if (!draftId) {
         draftId = draftReviewStorage.create(rid, patchId, revision.id);
       }
-      draftReviewStorage.addComment(draftId, { body, embeds, location });
+      draftReviewStorage.addComment(draftId, { body, location });
     } catch (error) {
       console.error("Creating code comment failed", error);
     } finally {
@@ -241,10 +243,7 @@
     embeds: Embed[],
   ) {
     if (draftReview?.comments.find(c => c.id === commentId)) {
-      draftReviewStorage.updateComment(draftReview.id, commentId, {
-        body,
-        embeds,
-      });
+      draftReviewStorage.updateComment(draftReview.id, commentId, { body });
       await loadPatch();
       return;
     }
@@ -333,6 +332,7 @@
     return list;
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   const noopAsync = async () => {};
 
   const codeComments: CodeComments | undefined = $derived.by(() => {
@@ -903,11 +903,6 @@
   .revision-diff-error {
     color: var(--color-text-tertiary);
   }
-  .diff-tease-files {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
   .revision-diff-stats {
     display: flex;
     flex-wrap: wrap;
@@ -1197,9 +1192,7 @@
               {expanded}
               hideAuthor={opts.hideAuthor}
               firstRevision={isFirst}
-              onToggle={toggleable
-                ? () => toggleRevision(revId)
-                : undefined} />
+              onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
           </div>
         {:else}
           <PatchActivityItem
@@ -1208,9 +1201,7 @@
             {expanded}
             hideAuthor={opts.hideAuthor}
             firstRevision={isFirst}
-            onToggle={toggleable
-              ? () => toggleRevision(revId)
-              : undefined} />
+            onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
         {/if}
         {#if expanded && data.commits && data.commits.length > 0}
           <div
@@ -1247,10 +1238,12 @@
                         onclick={() => expandCommitGroup(groupKey)}>
                         <div class="icon">
                           <span class="icon-stack">
-                            <span class="icon-default"
-                              ><Icon name="commit" /></span>
-                            <span class="icon-hover"
-                              ><Icon name="expand-vertical" /></span>
+                            <span class="icon-default">
+                              <Icon name="commit" />
+                            </span>
+                            <span class="icon-hover">
+                              <Icon name="expand-vertical" />
+                            </span>
                           </span>
                         </div>
                         <span class="summary-secondary">
@@ -1270,8 +1263,10 @@
         {#if expanded}
           {@const targetRev = revisions.find(r => r.id === revId)}
           {#if targetRev && targetRev.base !== targetRev.head}
-            <div class="revision-diff-tease" transition:slide={{ duration: 180 }}>
-              {#await cachedGetDiff(rid, { base: targetRev.base, head: targetRev.head, unified: 3, highlight: true })}
+            <div
+              class="revision-diff-tease"
+              transition:slide={{ duration: 180 }}>
+              {#await cachedGetDiff( rid, { base: targetRev.base, head: targetRev.head, unified: 3, highlight: true }, )}
                 <div class="revision-diff-loading txt-body-m-regular">
                   Loading diff…
                 </div>
@@ -1342,8 +1337,7 @@
         {@const reviewRecord = (revision.reviews ?? []).find(
           r => r.id === opId,
         )}
-        {@const hasReviewComments =
-          (reviewRecord?.comments?.length ?? 0) > 0}
+        {@const hasReviewComments = (reviewRecord?.comments?.length ?? 0) > 0}
         {@const toggleable = hasThreads}
         {@const expanded = toggleable ? isReviewExpanded(opId) : true}
         <PatchActivityItem
@@ -1389,7 +1383,6 @@
       {/if}
     {:else if data.kind === "olderRevisions"}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <div
         class="older-revisions txt-body-m-regular"
         role="button"
@@ -1414,7 +1407,9 @@
     {#if onMerge}
       {@const branch =
         repo.payloads["xyz.radicle.project"]?.data.defaultBranch ?? "main"}
-      <div class="merge-card" class:disabled={mergeDisabledReason !== undefined}>
+      <div
+        class="merge-card"
+        class:disabled={mergeDisabledReason !== undefined}>
         <div class="merge-card-left">
           <div class="merge-card-header">
             <div class="merge-card-icon">
@@ -1425,7 +1420,8 @@
                 Ready to merge
               </div>
               <div class="merge-card-body txt-body-m-regular">
-                Merge this revision into <b>{branch}</b>.
+                Merge this revision into <b>{branch}</b>
+                .
               </div>
             </div>
           </div>

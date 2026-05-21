@@ -139,6 +139,14 @@ export const cachedListJobs = cached(
   { max: 200, ttl: 30_000 },
 );
 
+async function alias(nid: string): Promise<string | null> {
+  return withTestBackend(tauri.invoke, "alias", { nid });
+}
+
+export const cachedAlias = cached(alias, (...[nid]) => `alias:${nid}`, {
+  max: 5_000,
+});
+
 async function diffStats(
   rid: string,
   base: string,

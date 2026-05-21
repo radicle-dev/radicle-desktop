@@ -2,11 +2,11 @@
   import type { Review } from "@bindings/cob/patch/Review";
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
 
-  import type { DraftReview } from "@app/lib/draftReviewStorage";
-  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
-
   import { backOut, cubicIn } from "svelte/easing";
   import { fly } from "svelte/transition";
+
+  import type { DraftReview } from "@app/lib/draftReviewStorage";
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -477,9 +477,7 @@
     <div class="status">
       <span class="chip">Draft saved</span>
       {#if filesTotal !== undefined && filesChecked !== undefined}
-        <span
-          class="saved-count"
-          title="Files reviewed in this revision">
+        <span class="saved-count" title="Files reviewed in this revision">
           <Icon name="document" />
           {filesChecked}/{filesTotal}
         </span>
@@ -535,7 +533,8 @@
                     <textarea
                       class="comments-tooltip-edit txt-body-m-regular"
                       bind:value={editBody}
-                      rows="3"></textarea>
+                      rows="3">
+                    </textarea>
                     <div class="comments-tooltip-edit-actions">
                       <Button variant="outline" onclick={cancelEdit}>
                         Cancel

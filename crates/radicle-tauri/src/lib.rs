@@ -46,6 +46,7 @@ pub fn run() {
             cob::patch::delete_patch,
             cob::patch::edit_patch,
             cob::patch::list_patches,
+            cob::patch::merge_patch,
             cob::patch::patch_by_id,
             cob::patch::create_patch_review,
             cob::patch::rebuild_patch_cache,

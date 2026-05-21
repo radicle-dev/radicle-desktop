@@ -280,6 +280,43 @@ pub trait PatchesMut: Profile {
         Ok::<_, Error>(models::patch::Patch::new(*patch.id(), &patch, &aliases))
     }
 
+    fn merge_patch(
+        &self,
+        rid: identity::RepoId,
+        cob_id: git::Oid,
+        revision: cob::patch::RevisionId,
+        commit: git::Oid,
+        opts: cobs::CobOptions,
+    ) -> Result<models::patch::Patch, Error> {
+        let profile = self.profile();
+        let mut node = Node::new(profile.home().socket_from_env());
+        let repo = profile.storage.repository(rid)?;
+        let signer = profile.signer()?;
+        let aliases = profile.aliases();
+        let mut patches = profile.patches_mut(&repo, &signer)?;
+        let mut patch = patches.get_mut(&cob_id.into())?;
+
+        // `Merged::cleanup` needs the working-copy `git::raw::Repository`,
+        // which Tauri commands don't have access to. The user is expected to
+        // update their default branch via git separately; emitting this COB
+        // action only records the merge intent.
+        let _merged = patch.merge(revision, commit)?;
+
+        if opts.announce() {
+            if let Err(e) = node.announce_refs_for(rid, [profile.public_key]) {
+                log::error!("Not able to announce changes: {}", e)
+            }
+        }
+
+        Ok::<_, Error>(models::patch::Patch::new(*patch.id(), &patch, &aliases))
+    }
+
+    /// Remove a patch COB. Equivalent to `rad patch delete`.
+    ///
+    /// Goes through `cob::remove` directly because the `radicle::patch::Patches`
+    /// wrapper doesn't expose a delete method (its inner `Store` does, but it
+    /// isn't accessible through the public API). This mirrors what
+    /// `cob::store::Store::remove` does internally.
     fn delete_patch(
         &self,
         rid: identity::RepoId,

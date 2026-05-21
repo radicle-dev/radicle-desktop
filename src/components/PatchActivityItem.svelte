@@ -27,6 +27,8 @@
 </script>
 
 <script lang="ts">
+  import { slide } from "svelte/transition";
+
   import {
     absoluteTimestamp,
     authorForNodeId,
@@ -34,8 +36,6 @@
     patchStatusColor,
     pluralize,
   } from "@app/lib/utils";
-
-  import { slide } from "svelte/transition";
 
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
@@ -259,7 +259,6 @@
 
 {#if op.type === "revision"}
   {@const desc = splitDescription(op.description)}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <div
     class="timeline-item txt-body-m-regular"
@@ -466,7 +465,6 @@
   {@const reviewSummary = splitDescription(op.summary ?? "")}
   {@const isToggleable = onToggle !== undefined}
   {#if op.verdict === "accept"}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
       class="timeline-item txt-body-m-regular verdict-accept"
@@ -491,8 +489,9 @@
         <div class="summary-line">
           <span class="summary-secondary">accepted revision</span>
           {#if reviewSummary.subject}
-            <span class="txt-body-m-medium summary-content"
-              >{reviewSummary.subject}</span>
+            <span class="txt-body-m-medium summary-content">
+              {reviewSummary.subject}
+            </span>
           {/if}
           {@render viewFullReviewButton()}
         </div>
@@ -505,7 +504,6 @@
       </div>
     </div>
   {:else if op.verdict === "reject"}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
       class="timeline-item txt-body-m-regular verdict-reject"
@@ -530,8 +528,9 @@
         <div class="summary-line">
           <span class="summary-secondary">rejected revision</span>
           {#if reviewSummary.subject}
-            <span class="txt-body-m-medium summary-content"
-              >{reviewSummary.subject}</span>
+            <span class="txt-body-m-medium summary-content">
+              {reviewSummary.subject}
+            </span>
           {/if}
           {@render viewFullReviewButton()}
         </div>
@@ -544,7 +543,6 @@
       </div>
     </div>
   {:else if op.verdict === undefined}
-    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
       class="timeline-item txt-body-m-regular verdict-comment"
@@ -569,8 +567,9 @@
         <div class="summary-line">
           <span class="summary-secondary">reviewed revision</span>
           {#if reviewSummary.subject}
-            <span class="txt-body-m-medium summary-content"
-              >{reviewSummary.subject}</span>
+            <span class="txt-body-m-medium summary-content">
+              {reviewSummary.subject}
+            </span>
           {/if}
           {@render viewFullReviewButton()}
         </div>

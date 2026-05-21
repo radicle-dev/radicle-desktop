@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { PatchStatus } from "./router";
+  import type { Issue } from "@bindings/cob/issue/Issue";
   import type { Operation } from "@bindings/cob/Operation";
+  import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Action } from "@bindings/cob/patch/Action";
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { Review } from "@bindings/cob/patch/Review";
@@ -9,8 +11,6 @@
   import type { Stats } from "@bindings/diff/Stats";
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
-  import type { Issue } from "@bindings/cob/issue/Issue";
-  import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
 
   import debounce from "lodash/debounce";
 
@@ -42,7 +42,6 @@
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Id from "@app/components/Id.svelte";
   import PatchMetadata from "@app/components/PatchMetadata.svelte";
   import PatchStateButton from "@app/components/PatchStateButton.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
@@ -95,44 +94,57 @@
     [...revisions].sort((a, b) => a.timestamp - b.timestamp),
   );
 
-  $effect(() => {
-    const ridLocal = repo.rid;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const [patches, issues] = await Promise.all([
-          invoke<PaginatedQuery<Patch[]>>("list_patches", {
-            rid: ridLocal,
-            skip: 0,
-            status: undefined,
-            take: undefined,
-          }),
-          invoke<Issue[]>("list_issues", {
-            rid: ridLocal,
-            status: undefined,
-          }),
-        ]);
-        if (cancelled) return;
-        const patchCounts: Record<string, number> = {};
-        for (const p of patches.content) {
-          patchCounts[p.author.did] = (patchCounts[p.author.did] ?? 0) + 1;
-        }
-        const issueCounts: Record<string, number> = {};
-        for (const i of issues) {
-          issueCounts[i.author.did] = (issueCounts[i.author.did] ?? 0) + 1;
-        }
-        patchesAuthoredByDid = patchCounts;
-        issuesAuthoredByDid = issueCounts;
-      } catch (error) {
-        console.error("Failed to load repo author activity", error);
+  let activityLoaded = $state(false);
+  let activityLoading = false;
+  let lastActivityRid: string | undefined;
+
+  async function ensureRepoActivity(targetRid: string) {
+    if (activityLoading || (activityLoaded && lastActivityRid === targetRid)) {
+      return;
+    }
+    activityLoading = true;
+    try {
+      const [patches, issues] = await Promise.all([
+        invoke<PaginatedQuery<Patch[]>>("list_patches", {
+          rid: targetRid,
+          skip: 0,
+          status: undefined,
+          take: undefined,
+        }),
+        invoke<Issue[]>("list_issues", {
+          rid: targetRid,
+          status: undefined,
+        }),
+      ]);
+      const patchCounts: Record<string, number> = {};
+      for (const p of patches.content) {
+        patchCounts[p.author.did] = (patchCounts[p.author.did] ?? 0) + 1;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      const issueCounts: Record<string, number> = {};
+      for (const i of issues) {
+        issueCounts[i.author.did] = (issueCounts[i.author.did] ?? 0) + 1;
+      }
+      patchesAuthoredByDid = patchCounts;
+      issuesAuthoredByDid = issueCounts;
+      lastActivityRid = targetRid;
+      activityLoaded = true;
+    } catch (error) {
+      console.error("Failed to load repo author activity", error);
+    } finally {
+      activityLoading = false;
+    }
+  }
+
+  $effect(() => {
+    if (lastActivityRid && lastActivityRid !== repo.rid) {
+      activityLoaded = false;
+      patchesAuthoredByDid = {};
+      issuesAuthoredByDid = {};
+    }
   });
 
   setPatchActivityResolver(publicKey => {
+    void ensureRepoActivity(repo.rid);
     const did = didFromPublicKey(publicKey);
     const isAuthor = patch.author.did === did;
     const userRevisions = revisions.filter(r => r.author.did === did);
@@ -163,11 +175,7 @@
     void Promise.all(
       sorted.map(async (rev): Promise<[string, Commit[]]> => {
         try {
-          const commits = await cachedListCommits(
-            ridLocal,
-            rev.base,
-            rev.head,
-          );
+          const commits = await cachedListCommits(ridLocal, rev.base, rev.head);
           return [rev.id, commits];
         } catch {
           return [rev.id, []];
@@ -243,14 +251,11 @@
 
   async function mergePatch() {
     try {
-      await invoke("edit_patch", {
+      await invoke("merge_patch", {
         rid: repo.rid,
         cobId: patch.id,
-        action: {
-          type: "merge",
-          revision: selectedRevision.id,
-          commit: selectedRevision.head,
-        },
+        revision: selectedRevision.id,
+        commit: selectedRevision.head,
         opts: { announce: $nodeRunning && $announce },
       });
     } catch (error) {
@@ -322,9 +327,8 @@
     ) ?? false,
   );
 
-  let fileProgress:
-    | { filesChecked: number; filesTotal: number }
-    | undefined = $state();
+  let fileProgress: { filesChecked: number; filesTotal: number } | undefined =
+    $state();
   $effect(() => {
     const draft = ownDraftReviewForPatch;
     const rev = selectedRevision;
@@ -620,10 +624,7 @@
             </div>
           {/snippet}
         </Popover>
-        <Button
-          variant="naked"
-          title="Copy patch link"
-          onclick={copyPatchLink}>
+        <Button variant="naked" title="Copy patch link" onclick={copyPatchLink}>
           <Icon name={copyIcon} />
           <span class="global-hide-on-medium-desktop-down">Copy link</span>
         </Button>
@@ -700,132 +701,132 @@
               {config}
               view="description" />
 
-          {#if currentReview}
-            <ReviewPage
-              {config}
-              {loadPatch}
-              {patch}
-              repoDelegates={repo.delegates}
-              review={currentReview}
-              {revisions}
-              rid={repo.rid}
-              {status} />
-          {:else}
-            <div class="tabs">
-              <div class="tabs-left">
-                <Button
-                  variant={patchView === "activity" ? "ghost" : "naked"}
-                  active={patchView === "activity"}
-                  onclick={() => (patchView = "activity")}>
-                  <Icon name="activity" />
-                  Activity
-                </Button>
-                <Button
-                  variant={patchView === "changes" ? "ghost" : "naked"}
-                  active={patchView === "changes"}
-                  onclick={() => (patchView = "changes")}>
-                  <Icon name="diff" />
-                  Changes
-                </Button>
-              </div>
-              {#if patchView === "changes"}
-                <div class="tabs-right">
-                  <CheckoutPatchButton
-                    {tab}
-                    selectedRevisionId={selectedRevision.id}
-                    patchId={patch.id} />
-                  {#if sortedRevisions.length > 1}
-                    <Popover
-                      popoverPadding="0"
-                      placement="bottom-start"
-                      bind:expanded={revisionPickerExpanded}>
-                      {#snippet toggle(onclick)}
-                        <Button
-                          variant="outline"
-                          {onclick}
-                          active={revisionPickerExpanded}>
-                          <Icon name="revision" />
-                          <span style:color="var(--color-text-secondary)">
-                            Revision {selectedRevisionIndex >= 0
-                              ? selectedRevisionIndex + 1
-                              : "?"} of
-                            {sortedRevisions.length}
-                          </span>
-                          <span class="txt-id">
-                            {selectedRevision.id.substring(0, 7)}
-                          </span>
-                          <Icon
-                            name={revisionPickerExpanded
-                              ? "chevron-up"
-                              : "chevron-down"} />
-                        </Button>
-                      {/snippet}
-                      {#snippet popover()}
-                        <div
-                          style:border="1px solid var(--color-border-subtle)"
-                          style:border-radius="var(--border-radius-sm)"
-                          style:background-color="var(--color-surface-canvas)">
-                          <DropdownList items={sortedRevisions}>
-                            {#snippet item(rev)}
-                              {@const title = revisionTitle(rev)}
-                              {@const commitCount =
-                                commitCountsByRevisionId[rev.id]}
-                              <DropdownListItem
-                                selected={rev.id === selectedRevision.id}
-                                styleGap="0.5rem"
-                                onclick={() => {
-                                  selectedRevisionId = rev.id;
-                                  closeFocused();
-                                }}>
-                                <Icon name="revision" />
-                                <span class="txt-id">
-                                  {rev.id.substring(0, 7)}
-                                </span>
-                                <span
-                                  class="revision-date"
-                                  title={absoluteTimestamp(rev.timestamp)}>
-                                  {formatTimestamp(rev.timestamp)}
-                                </span>
-                                {#if title}
-                                  <span class="revision-title">{title}</span>
-                                {/if}
-                                {#if commitCount !== undefined}
-                                  <span class="revision-commits-meta">
-                                    <Icon name="commit" />
-                                    {commitCount}
-                                  </span>
-                                {/if}
-                              </DropdownListItem>
-                            {/snippet}
-                          </DropdownList>
-                        </div>
-                      {/snippet}
-                    </Popover>
-                  {/if}
+            {#if currentReview}
+              <ReviewPage
+                {config}
+                {loadPatch}
+                {patch}
+                repoDelegates={repo.delegates}
+                review={currentReview}
+                {revisions}
+                rid={repo.rid}
+                {status} />
+            {:else}
+              <div class="tabs">
+                <div class="tabs-left">
+                  <Button
+                    variant={patchView === "activity" ? "ghost" : "naked"}
+                    active={patchView === "activity"}
+                    onclick={() => (patchView = "activity")}>
+                    <Icon name="activity" />
+                    Activity
+                  </Button>
+                  <Button
+                    variant={patchView === "changes" ? "ghost" : "naked"}
+                    active={patchView === "changes"}
+                    onclick={() => (patchView = "changes")}>
+                    <Icon name="diff" />
+                    Changes
+                  </Button>
                 </div>
-              {/if}
-            </div>
+                {#if patchView === "changes"}
+                  <div class="tabs-right">
+                    <CheckoutPatchButton
+                      {tab}
+                      selectedRevisionId={selectedRevision.id}
+                      patchId={patch.id} />
+                    {#if sortedRevisions.length > 1}
+                      <Popover
+                        popoverPadding="0"
+                        placement="bottom-start"
+                        bind:expanded={revisionPickerExpanded}>
+                        {#snippet toggle(onclick)}
+                          <Button
+                            variant="outline"
+                            {onclick}
+                            active={revisionPickerExpanded}>
+                            <Icon name="revision" />
+                            <span style:color="var(--color-text-secondary)">
+                              Revision {selectedRevisionIndex >= 0
+                                ? selectedRevisionIndex + 1
+                                : "?"} of
+                              {sortedRevisions.length}
+                            </span>
+                            <span class="txt-id">
+                              {selectedRevision.id.substring(0, 7)}
+                            </span>
+                            <Icon
+                              name={revisionPickerExpanded
+                                ? "chevron-up"
+                                : "chevron-down"} />
+                          </Button>
+                        {/snippet}
+                        {#snippet popover()}
+                          <div
+                            style:border="1px solid var(--color-border-subtle)"
+                            style:border-radius="var(--border-radius-sm)"
+                            style:background-color="var(--color-surface-canvas)">
+                            <DropdownList items={sortedRevisions}>
+                              {#snippet item(rev)}
+                                {@const title = revisionTitle(rev)}
+                                {@const commitCount =
+                                  commitCountsByRevisionId[rev.id]}
+                                <DropdownListItem
+                                  selected={rev.id === selectedRevision.id}
+                                  styleGap="0.5rem"
+                                  onclick={() => {
+                                    selectedRevisionId = rev.id;
+                                    closeFocused();
+                                  }}>
+                                  <Icon name="revision" />
+                                  <span class="txt-id">
+                                    {rev.id.substring(0, 7)}
+                                  </span>
+                                  <span
+                                    class="revision-date"
+                                    title={absoluteTimestamp(rev.timestamp)}>
+                                    {formatTimestamp(rev.timestamp)}
+                                  </span>
+                                  {#if title}
+                                    <span class="revision-title">{title}</span>
+                                  {/if}
+                                  {#if commitCount !== undefined}
+                                    <span class="revision-commits-meta">
+                                      <Icon name="commit" />
+                                      {commitCount}
+                                    </span>
+                                  {/if}
+                                </DropdownListItem>
+                              {/snippet}
+                            </DropdownList>
+                          </div>
+                        {/snippet}
+                      </Popover>
+                    {/if}
+                  </div>
+                {/if}
+              </div>
 
-            <RevisionComponent
-              rid={repo.rid}
-              {repo}
-              repoDelegates={repo.delegates}
-              patchId={patch.id}
-              {loadPatch}
-              revision={selectedRevision}
-              {config}
-              view={patchView}
-              {activity}
-              {revisions}
-              draftReviewId={ownDraftReviewForPatch?.id}
-              onMerge={canShowMerge ? mergePatch : undefined}
-              {mergeDisabledReason}
-              onViewChanges={revisionId => {
-                selectedRevisionId = revisionId;
-                patchView = "changes";
-              }}
-              bind:filesExpanded />
-          {/if}
+              <RevisionComponent
+                rid={repo.rid}
+                {repo}
+                repoDelegates={repo.delegates}
+                patchId={patch.id}
+                {loadPatch}
+                revision={selectedRevision}
+                {config}
+                view={patchView}
+                {activity}
+                {revisions}
+                draftReviewId={ownDraftReviewForPatch?.id}
+                onMerge={canShowMerge ? mergePatch : undefined}
+                {mergeDisabledReason}
+                onViewChanges={revisionId => {
+                  selectedRevisionId = revisionId;
+                  patchView = "changes";
+                }}
+                bind:filesExpanded />
+            {/if}
           </div>
         </div>
       </div>

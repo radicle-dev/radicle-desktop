@@ -523,7 +523,8 @@
         }}
         secondarySubmit={codeComments.addCodeCommentDirect
           ? {
-              caption: codeComments.addCodeCommentDirectCaption ?? "Just comment",
+              caption:
+                codeComments.addCodeCommentDirectCaption ?? "Just comment",
               description: codeComments.addCodeCommentDirectDescription,
               submit: async (body, embeds) => {
                 if (

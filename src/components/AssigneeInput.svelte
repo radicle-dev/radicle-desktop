@@ -171,9 +171,7 @@
       <Button
         variant="outline"
         disabled={!allowedToEdit}
-        title={allowedToEdit
-          ? undefined
-          : "Only delegates can add assignees"}
+        title={allowedToEdit ? undefined : "Only delegates can add assignees"}
         onclick={() => {
           inputValue = "";
           showInput = true;

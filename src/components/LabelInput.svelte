@@ -153,9 +153,7 @@
       <Button
         variant="outline"
         disabled={!allowedToEdit}
-        title={allowedToEdit
-          ? undefined
-          : "Only delegates can add labels"}
+        title={allowedToEdit ? undefined : "Only delegates can add labels"}
         onclick={() => {
           inputValue = "";
           showInput = true;

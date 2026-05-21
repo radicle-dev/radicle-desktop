@@ -278,7 +278,7 @@
     });
   }
 
-  let activeSubmitIndex: 0 | 1 = $state(0);
+  let activeSubmitIndex = $state<0 | 1>(0);
   let dropdownExpanded = $state(false);
 
   const activeSubmit = $derived(

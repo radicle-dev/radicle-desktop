@@ -216,40 +216,40 @@
 <div style:margin="1.5rem 0 2.5rem 0">
   <div class="timeline-rail">
     <div class="activity-stream">
-    {#each runs as run, runIndex (runIndex)}
-      {#if run.kind === "thread"}
-        <ThreadComponent
-          thread={run.entry.thread}
-          {rid}
-          currentUserNid={config.publicKey}
-          canEditComment={partial(
-            roles.isDelegateOrAuthor,
-            config.publicKey,
-            repoDelegates.map(delegate => delegate.did),
-          )}
-          {editComment}
-          createReply={createComment}
-          {reactOnComment} />
-        <div class="connector"></div>
-      {:else if run.kind === "single" && renderActivity}
-        {@render renderActivity(run.entry.data, { hideAuthor: false })}
-        <div class="connector"></div>
-      {:else if run.kind === "group" && renderActivity}
-        <div class="run-header">
-          <NodeId
-            {...authorForNodeId(run.author)}
-            styleFont="var(--txt-body-m-medium)" />
-        </div>
-        <div class="run-children">
-          {#each run.entries as entry (entry.key)}
-            {@render renderActivity(entry.data, { hideAuthor: true })}
-            <div class="connector"></div>
-          {/each}
-        </div>
-      {/if}
-    {/each}
+      {#each runs as run, runIndex (runIndex)}
+        {#if run.kind === "thread"}
+          <ThreadComponent
+            thread={run.entry.thread}
+            {rid}
+            currentUserNid={config.publicKey}
+            canEditComment={partial(
+              roles.isDelegateOrAuthor,
+              config.publicKey,
+              repoDelegates.map(delegate => delegate.did),
+            )}
+            {editComment}
+            createReply={createComment}
+            {reactOnComment} />
+          <div class="connector"></div>
+        {:else if run.kind === "single" && renderActivity}
+          {@render renderActivity(run.entry.data, { hideAuthor: false })}
+          <div class="connector"></div>
+        {:else if run.kind === "group" && renderActivity}
+          <div class="run-header">
+            <NodeId
+              {...authorForNodeId(run.author)}
+              styleFont="var(--txt-body-m-medium)" />
+          </div>
+          <div class="run-children">
+            {#each run.entries as entry (entry.key)}
+              {@render renderActivity(entry.data, { hideAuthor: true })}
+              <div class="connector"></div>
+            {/each}
+          </div>
+        {/if}
+      {/each}
 
-    {@render afterActivity?.()}
+      {@render afterActivity?.()}
     </div>
 
     <div id={`reply-${cobId}`} class="reply-wrapper">

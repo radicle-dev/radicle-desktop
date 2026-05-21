@@ -1,14 +1,14 @@
 <script lang="ts">
   import type { ComponentProps } from "svelte";
 
+  import { cachedAlias, writeToClipboard } from "@app/lib/invoke";
+  import { getPatchActivityResolver } from "@app/lib/patchActivityContext";
   import {
     didFromPublicKey,
     explorerUrl,
     pluralize,
     truncateId,
   } from "@app/lib/utils";
-  import { writeToClipboard } from "@app/lib/invoke";
-  import { getPatchActivityResolver } from "@app/lib/patchActivityContext";
 
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
@@ -34,9 +34,26 @@
   let openTimer: ReturnType<typeof setTimeout> | undefined;
   let closeTimer: ReturnType<typeof setTimeout> | undefined;
   let copyIcon: "copy" | "checkmark" = $state("copy");
+  let fetchedAlias: string | undefined = $state(undefined);
   const did = $derived(didFromPublicKey(publicKey));
+  const effectiveAlias = $derived(alias ?? fetchedAlias);
   const activityResolver = getPatchActivityResolver();
   const activity = $derived(activityResolver?.(publicKey));
+
+  $effect(() => {
+    if (alias) return;
+    let cancelled = false;
+    void cachedAlias(publicKey)
+      .then(result => {
+        if (cancelled) return;
+        if (result) fetchedAlias = result;
+      })
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  });
 
   function openCard() {
     if (closeTimer) clearTimeout(closeTimer);
@@ -242,9 +259,9 @@
       <div class="avatar-container">
         <UserAvatar nodeId={publicKey} styleWidth="1rem" />
       </div>
-      {#if alias}
+      {#if effectiveAlias}
         <span class="txt-overflow alias">
-          {alias}
+          {effectiveAlias}
         </span>
       {:else}
         <span class="no-alias">
@@ -264,8 +281,10 @@
           <UserAvatar nodeId={publicKey} styleWidth="4rem" />
         </div>
         <div class="node-id-card-text">
-          {#if alias}
-            <div class="node-id-card-alias txt-body-m-medium">{alias}</div>
+          {#if effectiveAlias}
+            <div class="node-id-card-alias txt-body-m-medium">
+              {effectiveAlias}
+            </div>
           {:else}
             <div class="node-id-card-alias txt-body-m-medium">
               {truncateId(publicKey)}
@@ -316,7 +335,9 @@
                 }
               : undefined,
           ] as ({ icon: IconName; label: string } | undefined)[]
-        ).filter((x): x is { icon: IconName; label: string } => x !== undefined)}
+        ).filter(
+          (x): x is { icon: IconName; label: string } => x !== undefined,
+        )}
         {@const repoFacts = (
           [
             activity.patchesAuthored > 0
@@ -332,7 +353,9 @@
                 }
               : undefined,
           ] as ({ icon: IconName; label: string } | undefined)[]
-        ).filter((x): x is { icon: IconName; label: string } => x !== undefined)}
+        ).filter(
+          (x): x is { icon: IconName; label: string } => x !== undefined,
+        )}
         {#if patchFacts.length > 0 || repoFacts.length > 0}
           <div class="node-id-card-activity">
             {#if patchFacts.length > 0}
