@@ -1,3 +1,57 @@
+### v0.11.0
+
+**Features**
+
+- Added a commit history list and single-commit view for repositories
+- Added repo pinning to keep favorite repos at the top of the sidebar
+- Added a fuzzy filter to the notification inbox
+- Added a reload button to the sidebar
+- Added a custom in-app context menu for sidebar items and disabled the native browser menu app-wide
+- Redesigned the CI job status popover and added it to the single-commit view
+- Reviews can now be started directly from a code comment on a revision diff
+- Issue and patch breadcrumbs now show status-specific labels and link back to the matching filter
+- The first revision description is now shown on the patch view
+- Replies are now indented into individual boxes for clearer threading
+- Reactions have been restyled and your own reactions are highlighted
+- Comment actions now appear only on hover for a calmer reading experience
+- Polished comment form footer
+- Save actions across the app now use brand styling
+- The discussion comment form is now always visible
+- Repo header text is now truncated to avoid layout overflow
+- Navigating to a repo now expands the All Repos section in the sidebar
+
+**Bug fixes**
+
+- Patch authors can now change the state of their own patches
+- Hardened rendered markdown links and restricted job log links to http(s) URLs
+- Fixed the update checker not detecting new versions
+- Fixed CSP rules so local assets load reliably in release builds
+- Fixed a regression where the first patch revision wasn't editable
+- Fixed inbox "Show all" behavior and aligned group filter styling
+- Fixed emoji substitution in notification teasers and twemoji alt attributes
+- Fixed markdown tables rendering text vertically
+- Fixed ordered list clipping in rendered README and markdown content
+- Fixed text-input autofocus after portal moves
+- Fixed the contributor filter in the repo list
+- Fixed the add-repo button incorrectly expanding the All Repos section
+- Excluded job COBs without runs from the jobs list
+- Registered the dialog plugin in release builds so file pickers work
+- Worked around alias lookups failing in some cases
+- Improved Windows compatibility (CLI detection and npm script hints)
+
+
+**Shout-out to our contributors 🙏✨**
+
+- [2color](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MktwkohCx8aHZ1QCjVZUiLmX92oPZFxRiFZkbq32Tk5Tkm)
+- [brandonhaslegs](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkpwnLQxFBQXyMK3Es91s8A7Ew7G11BFFyng1dqZR8QhG3)
+- [fintohaps](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkireRatUThvd3qzfKht1S44wpm4FEWSSa4PRMTSQZ3voM)
+- [julien](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkgvaRdahQZfnf7ccMHByeHtTYrMrM3MuSGYawF6ZL6DNj)
+- [justarandomgeek](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkwfrBy9mKTfcVELcV4wc6zfN379FPMnAqsxnwt4j2TdQ2)
+- [killerdevildog](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6Mkgi3EW1eVVb4REBZspeU9cHrJev8GEZae7uACZJkxCKMz)
+- [lorenz](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkkPvBfjP4bQmco5Dm7UGsX2ruDBieEHi8n9DVJWX5sTEz)
+- [yarikoptic](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkfCGiLM9j7AstSVNGhqtz9zkAhfb863etsbkRnXsipuRr)
+
+
 ### v0.10.0
 
 - Fixed app loading indicator
