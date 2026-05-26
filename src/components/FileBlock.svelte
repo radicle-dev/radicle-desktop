@@ -19,7 +19,7 @@
   /* eslint-disable prefer-const */
   let {
     children,
-    expanded = true,
+    expanded = $bindable(true),
     leftHeader,
     rightHeader,
     sticky = true,

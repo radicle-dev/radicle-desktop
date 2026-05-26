@@ -28,6 +28,11 @@
     draftReviewId,
   }: Props = $props();
 
+  let expandedState = $state(expanded);
+  $effect(() => {
+    expandedState = expanded;
+  });
+
   const filePathKey = $derived(
     file.status === "moved" || file.status === "copied"
       ? file.newPath
@@ -104,7 +109,7 @@
   </div>
 {/snippet}
 
-<FileBlock {expanded} {expandable}>
+<FileBlock bind:expanded={expandedState} {expandable}>
   {#snippet leftHeader()}
     {#if file.status === "moved" || file.status === "copied"}
       <span style="display: flex; align-items: center; flex-wrap: wrap;">
@@ -161,11 +166,13 @@
         stylePadding="0 0.375rem"
         onclick={e => {
           e.stopPropagation();
+          const wasChecked = checked;
           draftReviewStorage.toggleCheckedFile(draftReviewId, filePathKey);
+          if (!wasChecked) expandedState = false;
         }}
         title={checked ? "Mark file as not reviewed" : "Mark file as reviewed"}>
         <Icon name={checked ? "checkmark" : "eye"} />
-        Reviewed
+        {checked ? "Reviewed" : "Review"}
       </Button>
     {/if}
   {/snippet}

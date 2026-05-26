@@ -35,6 +35,7 @@
   let verdict: Review["verdict"] = $state(draftReview.verdict ?? "accept");
   let publishing = $state(false);
   let dropdownExpanded = $state(false);
+  let discardMenuExpanded = $state(false);
   let summaryEl: HTMLTextAreaElement | undefined = $state();
 
   const expanded = $derived(summary.includes("\n") || summary.length > 80);
@@ -456,6 +457,45 @@
     color: var(--color-text-tertiary);
     white-space: normal;
   }
+  .confirm-discard {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    min-width: 16rem;
+  }
+  .confirm-discard-text {
+    color: var(--color-text-primary);
+  }
+  .confirm-discard-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  .confirm-discard-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2rem;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-feedback-error-fill);
+    color: var(--color-text-on-brand);
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+  .confirm-discard-button:hover:not(:disabled),
+  .confirm-discard-button:focus-visible:not(:disabled) {
+    background-color: var(--color-feedback-error-fill-hover);
+  }
+  .confirm-discard-button:active:not(:disabled) {
+    background-color: var(--color-feedback-error-fill-active);
+  }
+  .confirm-discard-button:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
 </style>
 
 <div
@@ -559,9 +599,52 @@
     </div>
 
     <div style:margin-left="auto" style:display="flex" style:gap="0.5rem">
-      <Button variant="outline" disabled={publishing} onclick={onCancel}>
-        Discard
-      </Button>
+      <Popover
+        popoverPadding="0"
+        placement="top-start"
+        bind:expanded={discardMenuExpanded}>
+        {#snippet toggle(onclick)}
+          <Button
+            variant="outline"
+            disabled={publishing}
+            active={discardMenuExpanded}
+            {onclick}>
+            Discard
+          </Button>
+        {/snippet}
+        {#snippet popover()}
+          <div
+            style:border="1px solid var(--color-border-subtle)"
+            style:border-radius="var(--border-radius-sm)"
+            style:background-color="var(--color-surface-canvas)">
+            <div class="confirm-discard">
+              <div class="confirm-discard-text txt-body-m-regular">
+                Discard this draft review? Your comments and verdict will be
+                lost.
+              </div>
+              <div class="confirm-discard-actions">
+                <Button
+                  variant="outline"
+                  disabled={publishing}
+                  onclick={() => (discardMenuExpanded = false)}>
+                  Cancel
+                </Button>
+                <button
+                  type="button"
+                  class="confirm-discard-button txt-body-m-medium"
+                  disabled={publishing}
+                  onclick={() => {
+                    discardMenuExpanded = false;
+                    onCancel();
+                  }}>
+                  <Icon name="trash" />
+                  Discard
+                </button>
+              </div>
+            </div>
+          </div>
+        {/snippet}
+      </Popover>
 
       <div class="split-button">
         <button
