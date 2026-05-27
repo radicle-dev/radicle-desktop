@@ -52,6 +52,7 @@
     onViewFullReview?: () => void;
     rid?: string;
     bodyExternal?: boolean;
+    openedAsDraft?: boolean;
   }
 
   const {
@@ -64,6 +65,7 @@
     onViewFullReview,
     rid,
     bodyExternal = false,
+    openedAsDraft = false,
   }: Props = $props();
 
   function itemDiff<A>(previousState: A[], newState: A[]) {
@@ -291,7 +293,11 @@
       {#if !hideAuthor}<NodeId {...authorForNodeId(op.author)} />{/if}
       <div class="summary-line">
         <span class="summary-secondary">
-          {firstRevision ? "opened patch" : "created revision"}
+          {firstRevision
+            ? openedAsDraft
+              ? "opened a draft patch"
+              : "opened patch"
+            : "created revision"}
         </span>
         {#if !firstRevision && desc.subject}
           <span class="txt-body-m-medium summary-content">{desc.subject}</span>
@@ -331,7 +337,11 @@
           {:else if op.state.status === "archived"}
             archived patch
           {:else if op.state.status === "open"}
-            reopened patch
+            {#if op.previous?.type === "lifecycle" && op.previous.state.status === "draft"}
+              marked patch ready to review
+            {:else}
+              reopened patch
+            {/if}
           {/if}
         </span>
       </div>

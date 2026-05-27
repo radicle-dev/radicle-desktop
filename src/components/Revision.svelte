@@ -101,6 +101,21 @@
   const firstRevisionId = $derived(
     [...revisions].sort((a, b) => a.timestamp - b.timestamp)[0]?.id,
   );
+  // The patch was opened as a draft when its first lifecycle change is a draft
+  // happening right at creation (the first or second operation), as opposed to
+  // being converted to draft later in its life.
+  const openingDraftOpId = $derived.by(() => {
+    const ops = [...activity].sort((a, b) => a.timestamp - b.timestamp);
+    const firstLifecycleIdx = ops.findIndex(op =>
+      op.actions.some(a => a.type === "lifecycle"),
+    );
+    if (firstLifecycleIdx === -1 || firstLifecycleIdx > 1) return undefined;
+    const op = ops[firstLifecycleIdx];
+    const lifecycle = op.actions.find(a => a.type === "lifecycle");
+    return lifecycle?.type === "lifecycle" && lifecycle.state.status === "draft"
+      ? op.id
+      : undefined;
+  });
   const targetBranch = $derived(
     repo.payloads["xyz.radicle.project"]?.data.defaultBranch,
   );
@@ -555,6 +570,15 @@
       if (
         item.data.op.type === "review" &&
         redactedReviewIds.has(item.data.op.id)
+      ) {
+        return false;
+      }
+      // The opening-draft lifecycle is folded into the "opened a draft patch"
+      // label on the first revision, so drop the standalone item.
+      if (
+        item.data.op.type === "lifecycle" &&
+        item.data.op.state.status === "draft" &&
+        item.data.op.id === openingDraftOpId
       ) {
         return false;
       }
@@ -1220,6 +1244,7 @@
               {expanded}
               hideAuthor={opts.hideAuthor}
               firstRevision={isFirst}
+              openedAsDraft={isFirst && openingDraftOpId !== undefined}
               bodyExternal
               onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
             <div class="revision-card-body">
@@ -1375,6 +1400,7 @@
             {expanded}
             hideAuthor={opts.hideAuthor}
             firstRevision={isFirst}
+            openedAsDraft={isFirst && openingDraftOpId !== undefined}
             onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
         {/if}
         {#if revId === latestRevisionId}
