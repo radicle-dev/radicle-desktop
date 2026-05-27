@@ -13,6 +13,7 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import debounce from "lodash/debounce";
+  import { tick } from "svelte";
 
   import type { DraftReview } from "@app/lib/draftReviewStorage";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
@@ -80,6 +81,13 @@
     revisions.length > 1 ? "revisions" : "patch",
   );
   let patchView: "activity" | "changes" = $state("activity");
+  let changesSection = $state<HTMLElement>();
+  function showChanges() {
+    patchView = "changes";
+    void tick().then(() => {
+      changesSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
   // svelte-ignore state_referenced_locally
   let selectedRevisionId: string = $state(revisions.slice(-1)[0].id);
   const selectedRevision: Revision = $derived(
@@ -691,7 +699,7 @@
               {repo}
               {revisions}
               stats={selectedRevisionStats}
-              onShowChanges={() => (patchView = "changes")} />
+              onShowChanges={showChanges} />
           </div>
 
           <div class="content">
@@ -716,7 +724,7 @@
                 rid={repo.rid}
                 {status} />
             {:else}
-              <div class="tabs">
+              <div class="tabs" bind:this={changesSection}>
                 <div class="tabs-left">
                   <Button
                     variant={patchView === "activity" ? "ghost" : "naked"}
