@@ -15,6 +15,7 @@
 
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
+  import { isIgnoredFile } from "@app/lib/ignoredFiles";
   import { cachedGetDiff, cachedListCommits, invoke } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
@@ -836,7 +837,8 @@
     padding: 0.5rem;
     background-color: var(--color-surface-base);
   }
-  .revision-commits :global(.timeline-item .icon) {
+  .revision-commits :global(.timeline-item .icon),
+  .revision-commits :global(.older-revisions .icon) {
     background-color: var(--color-surface-base);
   }
   .revision-diff-tease .revision-diff-stats :global(.icon) {
@@ -1296,7 +1298,9 @@
                       Loading diff…
                     </div>
                   {:then diff}
-                    {@const previewFiles = diff.files.slice(0, 5)}
+                    {@const previewFiles = diff.files
+                      .filter(f => !isIgnoredFile(f))
+                      .slice(0, 5)}
                     <div class="revision-diff-stats txt-body-m-regular">
                       <Icon name="diff" />
                       <span>
