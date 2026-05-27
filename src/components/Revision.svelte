@@ -51,6 +51,11 @@
         commits?: Commit[];
         reviewThreads?: Thread<CodeLocation>[];
       }
+    | {
+        kind: "opened";
+        op: FlattenedPatchOperation & { type: "revision" };
+        openedAsDraft: boolean;
+      }
     | { kind: "olderRevisions"; count: number; author?: Author };
 
   interface Props {
@@ -439,11 +444,7 @@
   ]);
 
   const olderRevisionIds = $derived(
-    new Set(
-      revisions
-        .filter(r => r.id !== firstRevisionId && r.id !== latestRevisionId)
-        .map(r => r.id),
-    ),
+    new Set(revisions.filter(r => r.id !== latestRevisionId).map(r => r.id)),
   );
 
   const threadsByReview = $derived.by(() => {
@@ -588,8 +589,26 @@
     items.length = 0;
     items.push(...filtered);
 
+    // The patch creation is shown as a standalone "opened patch" marker; the
+    // first revision itself stays in the timeline below (and folds with other
+    // revisions). Synthesize the marker from the first revision operation.
+    const firstRevisionOp = revisionOpsByRevisionId.get(firstRevisionId);
+    const opened: ActivityItem<ActivityData>[] = firstRevisionOp
+      ? [
+          {
+            key: `opened:${firstRevisionId}`,
+            timestamp: firstRevisionOp.timestamp,
+            data: {
+              kind: "opened",
+              op: firstRevisionOp,
+              openedAsDraft: openingDraftOpId !== undefined,
+            },
+          },
+        ]
+      : [];
+
     if (olderRevisionsExpanded || olderRevisionIds.size < 2) {
-      return items;
+      return [...opened, ...items];
     }
 
     const folded: ActivityItem<ActivityData>[] = [];
@@ -619,7 +638,7 @@
         placeholderInserted = true;
       }
     }
-    return folded;
+    return [...opened, ...folded];
   });
   const reviewSummaryFingerprints = $derived(
     new Set(
@@ -1243,8 +1262,6 @@
               {rid}
               {expanded}
               hideAuthor={opts.hideAuthor}
-              firstRevision={isFirst}
-              openedAsDraft={isFirst && openingDraftOpId !== undefined}
               bodyExternal
               onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
             <div class="revision-card-body">
@@ -1390,7 +1407,6 @@
               {rid}
               {expanded}
               hideAuthor={opts.hideAuthor}
-              firstRevision={isFirst}
               onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
           </div>
         {:else}
@@ -1399,8 +1415,6 @@
             {rid}
             {expanded}
             hideAuthor={opts.hideAuthor}
-            firstRevision={isFirst}
-            openedAsDraft={isFirst && openingDraftOpId !== undefined}
             onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
         {/if}
         {#if revId === latestRevisionId}
@@ -1457,6 +1471,12 @@
           hideAuthor={opts.hideAuthor}
           targetBranch={data.op.type === "merge" ? targetBranch : undefined} />
       {/if}
+    {:else if data.kind === "opened"}
+      <PatchActivityItem
+        op={data.op}
+        firstRevision
+        openedAsDraft={data.openedAsDraft}
+        hideAuthor={opts.hideAuthor} />
     {:else if data.kind === "olderRevisions"}
       <!-- svelte-ignore a11y_click_events_have_key_events -->
       <div
@@ -1538,7 +1558,10 @@ $ git push rad {branch}</pre>
     {rid}
     {activityItems}
     {renderActivity}
-    authorOf={data => (data.kind === "op" ? data.op.author : data.author)} />
+    authorOf={data =>
+      data.kind === "op" || data.kind === "opened"
+        ? data.op.author
+        : data.author} />
 {:else}
   <Changes
     {rid}
