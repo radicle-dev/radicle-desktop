@@ -889,7 +889,6 @@
     background-color: var(--color-surface-subtle);
   }
   .older-revisions .icon {
-    padding-top: 0.1875rem;
     width: 1rem;
     display: grid;
     place-items: center;
