@@ -51,6 +51,7 @@
     firstRevision?: boolean;
     onViewFullReview?: () => void;
     rid?: string;
+    bodyExternal?: boolean;
   }
 
   const {
@@ -62,6 +63,7 @@
     firstRevision = false,
     onViewFullReview,
     rid,
+    bodyExternal = false,
   }: Props = $props();
 
   function itemDiff<A>(previousState: A[], newState: A[]) {
@@ -90,6 +92,10 @@
   .timeline-item.toggleable:hover,
   .timeline-item.toggleable:focus-visible {
     background-color: var(--color-surface-subtle);
+  }
+  .timeline-item.card-header {
+    border-radius: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
   }
   .wrapper {
     display: flex;
@@ -263,6 +269,7 @@
   <div
     class="timeline-item txt-body-m-regular"
     class:toggleable={onToggle !== undefined}
+    class:card-header={bodyExternal}
     role={onToggle ? "button" : undefined}
     tabindex={onToggle ? 0 : undefined}
     onclick={onToggle}>
@@ -300,7 +307,7 @@
           {formatTimestamp(op.timestamp)}
         </div>
       </div>
-      {#if !firstRevision && desc.body && expanded}
+      {#if !firstRevision && desc.body && expanded && !bodyExternal}
         <div class="revision-body" transition:slide={{ duration: 180 }}>
           <Markdown {rid} breaks content={desc.body} />
         </div>

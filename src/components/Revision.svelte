@@ -805,24 +805,42 @@
     flex-direction: column;
     gap: 0.5rem;
   }
+  .revision-card {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-canvas);
+    margin: 0.5rem 0;
+    overflow: hidden;
+  }
+  .revision-card-body {
+    display: flex;
+    flex-direction: column;
+  }
+  .revision-card-description {
+    padding: 1rem;
+  }
+  .revision-card-description :global(:first-child) {
+    margin-top: 0;
+  }
+  .revision-card-description :global(:last-child) {
+    margin-bottom: 0;
+  }
+  .revision-card-divider {
+    height: 1px;
+    background-color: var(--color-border-subtle);
+  }
   .revision-commits {
-    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    padding-left: 1.5rem;
+    padding: 0.5rem;
+    background-color: var(--color-surface-base);
   }
-  .revision-commits.has-header {
-    margin-top: 0.5rem;
+  .revision-commits :global(.timeline-item .icon) {
+    background-color: var(--color-surface-base);
   }
-  .revision-commits::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 1rem;
-    width: 1px;
-    background-color: var(--color-border-subtle);
+  .revision-diff-tease .revision-diff-stats :global(.icon) {
+    background-color: var(--color-surface-base);
   }
   .collapsible {
     display: grid;
@@ -904,8 +922,8 @@
     color: var(--color-text-tertiary);
   }
   .revision-diff-tease {
-    margin-top: 1rem;
-    padding-left: 2rem;
+    padding: 1rem;
+    background-color: var(--color-surface-base);
   }
   .revision-diff-loading,
   .revision-diff-error {
@@ -934,7 +952,7 @@
     width: 6rem;
     background: linear-gradient(
       to left,
-      var(--color-surface-canvas),
+      var(--color-surface-base),
       transparent
     );
     pointer-events: none;
@@ -997,7 +1015,7 @@
     background: linear-gradient(
       to bottom,
       transparent 0%,
-      var(--color-surface-canvas) 100%
+      var(--color-surface-base) 100%
     );
     pointer-events: none;
   }
@@ -1186,11 +1204,156 @@
         {@const isFirst = revId === firstRevisionId}
         {@const isOlder = olderRevisionIds.has(revId)}
         {@const hasCommits = !!data.commits && data.commits.length > 0}
-        {@const hasBody =
-          !isFirst && !!splitDescription(data.op.description).body}
+        {@const revBody = isFirst
+          ? undefined
+          : splitDescription(data.op.description).body}
+        {@const hasBody = !!revBody}
         {@const toggleable = hasCommits || hasBody}
         {@const expanded = toggleable && isRevisionExpanded(revId)}
-        {#if isOlder}
+        {@const targetRev = revisions.find(r => r.id === revId)}
+        {#if expanded}
+          <div class="revision-card" transition:slide={{ duration: 180 }}>
+            <PatchActivityItem
+              op={data.op}
+              {rid}
+              {expanded}
+              hideAuthor={opts.hideAuthor}
+              firstRevision={isFirst}
+              bodyExternal
+              onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
+            <div class="revision-card-body">
+              {#if hasBody}
+                <div class="revision-card-description txt-body-m-regular">
+                  <Markdown {rid} breaks content={revBody} />
+                </div>
+              {/if}
+              {#if hasBody && hasCommits}
+                <div class="revision-card-divider"></div>
+              {/if}
+              {#if hasCommits && data.commits && data.commits.length > 0}
+                <div class="revision-commits">
+                  {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
+                    {#if group.length > 1}
+                      {@const groupKey = group[0].id}
+                      {@const groupExpanded = isCommitGroupExpanded(groupKey)}
+                      {@const collapsed =
+                        !groupExpanded &&
+                        group.length > COMMIT_COLLAPSE_THRESHOLD}
+                      {@const visibleCommits = collapsed
+                        ? group.slice(0, MAX_COMMITS_VISIBLE)
+                        : group}
+                      {@const hiddenCount = collapsed
+                        ? group.length - MAX_COMMITS_VISIBLE
+                        : 0}
+                      <div class="commit-group">
+                        <div class="commit-group-author txt-body-m-regular">
+                          {group[0].author.name} &lt;{group[0].author.email}&gt;
+                          committed
+                        </div>
+                        <div class="commit-group-children">
+                          {#each visibleCommits as commit (commit.id)}
+                            <CommitActivityItem {commit} hideAuthor />
+                          {/each}
+                          {#if collapsed}
+                            <!-- svelte-ignore a11y_click_events_have_key_events -->
+                            <div
+                              class="older-revisions txt-body-m-regular"
+                              role="button"
+                              tabindex="0"
+                              transition:slide={{ duration: 180 }}
+                              onclick={() => expandCommitGroup(groupKey)}>
+                              <div class="icon">
+                                <span class="icon-stack">
+                                  <span class="icon-default">
+                                    <Icon name="commit" />
+                                  </span>
+                                  <span class="icon-hover">
+                                    <Icon name="expand-vertical" />
+                                  </span>
+                                </span>
+                              </div>
+                              <span class="summary-secondary">
+                                {hiddenCount} more
+                                {hiddenCount === 1 ? "commit" : "commits"}
+                              </span>
+                            </div>
+                          {/if}
+                        </div>
+                      </div>
+                    {:else}
+                      <CommitActivityItem commit={group[0]} />
+                    {/if}
+                  {/each}
+                </div>
+              {/if}
+              {#if targetRev && targetRev.base !== targetRev.head}
+                {#if hasBody || hasCommits}
+                  <div class="revision-card-divider"></div>
+                {/if}
+                <div class="revision-diff-tease">
+                  {#await cachedGetDiff( rid, { base: targetRev.base, head: targetRev.head, unified: 3, highlight: true }, )}
+                    <div class="revision-diff-loading txt-body-m-regular">
+                      Loading diff…
+                    </div>
+                  {:then diff}
+                    {@const previewFiles = diff.files.slice(0, 5)}
+                    <div class="revision-diff-stats txt-body-m-regular">
+                      <Icon name="diff" />
+                      <span>
+                        {diff.stats.filesChanged}
+                        {pluralize("file", diff.stats.filesChanged)} modified with
+                      </span>
+                      <span style:color="var(--color-feedback-success-text)">
+                        {diff.stats.insertions}
+                        {pluralize("insertion", diff.stats.insertions)}
+                      </span>
+                      <span>and</span>
+                      <span style:color="var(--color-feedback-error-text)">
+                        {diff.stats.deletions}
+                        {pluralize("deletion", diff.stats.deletions)}
+                      </span>
+                    </div>
+                    <div class="file-fan">
+                      <div
+                        class="file-fan-stack"
+                        style:--card-count={previewFiles.length}>
+                        {#each previewFiles as file, i (i)}
+                          <div
+                            class="file-fan-card"
+                            style:z-index={i + 1}
+                            class:first={i === 0}>
+                            <div class="file-fan-card-inner">
+                              <FileDiff
+                                {file}
+                                head={targetRev.head}
+                                expanded
+                                expandable={false} />
+                            </div>
+                          </div>
+                        {/each}
+                      </div>
+                      <div class="file-fan-footer">
+                        <div class="file-fan-fade"></div>
+                        <button
+                          type="button"
+                          class="diff-tease-button txt-body-m-medium"
+                          disabled={!onViewChanges}
+                          onclick={() => onViewChanges?.(revId)}>
+                          View all revision changes
+                          <Icon name="arrow-right" />
+                        </button>
+                      </div>
+                    </div>
+                  {:catch error}
+                    <div class="revision-diff-error txt-body-m-regular">
+                      Failed to load diff: {error?.message ?? error}
+                    </div>
+                  {/await}
+                </div>
+              {/if}
+            </div>
+          </div>
+        {:else if isOlder}
           <div
             class="older-revision-entry"
             transition:slide={{ duration: 180 }}>
@@ -1210,130 +1373,6 @@
             hideAuthor={opts.hideAuthor}
             firstRevision={isFirst}
             onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
-        {/if}
-        {#if expanded && data.commits && data.commits.length > 0}
-          <div
-            class="revision-commits has-header"
-            transition:slide={{ duration: 180 }}>
-            {#each groupCommitsByAuthor(data.commits) as group (group[0].id)}
-              {#if group.length > 1}
-                {@const groupKey = group[0].id}
-                {@const groupExpanded = isCommitGroupExpanded(groupKey)}
-                {@const collapsed =
-                  !groupExpanded && group.length > COMMIT_COLLAPSE_THRESHOLD}
-                {@const visibleCommits = collapsed
-                  ? group.slice(0, MAX_COMMITS_VISIBLE)
-                  : group}
-                {@const hiddenCount = collapsed
-                  ? group.length - MAX_COMMITS_VISIBLE
-                  : 0}
-                <div class="commit-group">
-                  <div class="commit-group-author txt-body-m-regular">
-                    {group[0].author.name} &lt;{group[0].author.email}&gt;
-                    committed
-                  </div>
-                  <div class="commit-group-children">
-                    {#each visibleCommits as commit (commit.id)}
-                      <CommitActivityItem {commit} hideAuthor />
-                    {/each}
-                    {#if collapsed}
-                      <!-- svelte-ignore a11y_click_events_have_key_events -->
-                      <div
-                        class="older-revisions txt-body-m-regular"
-                        role="button"
-                        tabindex="0"
-                        transition:slide={{ duration: 180 }}
-                        onclick={() => expandCommitGroup(groupKey)}>
-                        <div class="icon">
-                          <span class="icon-stack">
-                            <span class="icon-default">
-                              <Icon name="commit" />
-                            </span>
-                            <span class="icon-hover">
-                              <Icon name="expand-vertical" />
-                            </span>
-                          </span>
-                        </div>
-                        <span class="summary-secondary">
-                          {hiddenCount} more
-                          {hiddenCount === 1 ? "commit" : "commits"}
-                        </span>
-                      </div>
-                    {/if}
-                  </div>
-                </div>
-              {:else}
-                <CommitActivityItem commit={group[0]} />
-              {/if}
-            {/each}
-          </div>
-        {/if}
-        {#if expanded}
-          {@const targetRev = revisions.find(r => r.id === revId)}
-          {#if targetRev && targetRev.base !== targetRev.head}
-            <div
-              class="revision-diff-tease"
-              transition:slide={{ duration: 180 }}>
-              {#await cachedGetDiff( rid, { base: targetRev.base, head: targetRev.head, unified: 3, highlight: true }, )}
-                <div class="revision-diff-loading txt-body-m-regular">
-                  Loading diff…
-                </div>
-              {:then diff}
-                {@const previewFiles = diff.files.slice(0, 5)}
-                <div class="revision-diff-stats txt-body-m-regular">
-                  <Icon name="diff" />
-                  <span>
-                    {diff.stats.filesChanged}
-                    {pluralize("file", diff.stats.filesChanged)} modified with
-                  </span>
-                  <span style:color="var(--color-feedback-success-text)">
-                    {diff.stats.insertions}
-                    {pluralize("insertion", diff.stats.insertions)}
-                  </span>
-                  <span>and</span>
-                  <span style:color="var(--color-feedback-error-text)">
-                    {diff.stats.deletions}
-                    {pluralize("deletion", diff.stats.deletions)}
-                  </span>
-                </div>
-                <div class="file-fan">
-                  <div
-                    class="file-fan-stack"
-                    style:--card-count={previewFiles.length}>
-                    {#each previewFiles as file, i (i)}
-                      <div
-                        class="file-fan-card"
-                        style:z-index={i + 1}
-                        class:first={i === 0}>
-                        <div class="file-fan-card-inner">
-                          <FileDiff
-                            {file}
-                            head={targetRev.head}
-                            expanded
-                            expandable={false} />
-                        </div>
-                      </div>
-                    {/each}
-                  </div>
-                  <div class="file-fan-footer">
-                    <div class="file-fan-fade"></div>
-                    <button
-                      type="button"
-                      class="diff-tease-button txt-body-m-medium"
-                      disabled={!onViewChanges}
-                      onclick={() => onViewChanges?.(revId)}>
-                      View all revision changes
-                      <Icon name="arrow-right" />
-                    </button>
-                  </div>
-                </div>
-              {:catch error}
-                <div class="revision-diff-error txt-body-m-regular">
-                  Failed to load diff: {error?.message ?? error}
-                </div>
-              {/await}
-            </div>
-          {/if}
         {/if}
         {#if revId === latestRevisionId}
           {@render mergeCard()}
