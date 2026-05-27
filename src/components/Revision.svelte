@@ -56,7 +56,12 @@
         op: FlattenedPatchOperation & { type: "revision" };
         openedAsDraft: boolean;
       }
-    | { kind: "olderRevisions"; count: number; author?: Author };
+    | {
+        kind: "olderRevisions";
+        count: number;
+        author?: Author;
+        expanded: boolean;
+      };
 
   interface Props {
     rid: string;
@@ -607,13 +612,15 @@
         ]
       : [];
 
-    if (olderRevisionsExpanded || olderRevisionIds.size < 2) {
+    if (olderRevisionIds.size < 2) {
       return [...opened, ...items];
     }
 
+    // Replace the run of older revisions with a single toggle control. When
+    // collapsed it stands in for them ("created N revisions"); when expanded it
+    // sits above them and offers to collapse them back.
     const folded: ActivityItem<ActivityData>[] = [];
-    let placeholderInserted = false;
-    let placeholderAuthor: Author | undefined;
+    let controlInserted = false;
     for (const item of items) {
       const isOlderRevisionOp =
         item.data.kind === "op" &&
@@ -623,19 +630,21 @@
         folded.push(item);
         continue;
       }
-      if (!placeholderInserted) {
-        placeholderAuthor =
-          item.data.kind === "op" ? item.data.op.author : undefined;
+      if (!controlInserted) {
         folded.push({
           key: "older-revisions",
           timestamp: item.timestamp,
           data: {
             kind: "olderRevisions",
             count: olderRevisionIds.size,
-            author: placeholderAuthor,
+            author: item.data.kind === "op" ? item.data.op.author : undefined,
+            expanded: olderRevisionsExpanded,
           },
         });
-        placeholderInserted = true;
+        controlInserted = true;
+      }
+      if (olderRevisionsExpanded) {
+        folded.push(item);
       }
     }
     return [...opened, ...folded];
@@ -1484,16 +1493,28 @@
         role="button"
         tabindex="0"
         transition:slide={{ duration: 180 }}
-        onclick={() => (olderRevisionsExpanded = true)}>
+        onclick={() => (olderRevisionsExpanded = !olderRevisionsExpanded)}>
         <div class="icon">
           <span class="icon-stack">
-            <span class="icon-default"><Icon name="revision" /></span>
-            <span class="icon-hover"><Icon name="expand-vertical" /></span>
+            <span class="icon-default">
+              <Icon name={data.expanded ? "collapse-vertical" : "revision"} />
+            </span>
+            <span class="icon-hover">
+              <Icon
+                name={data.expanded
+                  ? "collapse-vertical"
+                  : "expand-vertical"} />
+            </span>
           </span>
         </div>
         <span class="summary-secondary">
-          created {data.count}
-          {data.count === 1 ? "revision" : "revisions"}
+          {#if data.expanded}
+            collapse {data.count}
+            {data.count === 1 ? "revision" : "revisions"}
+          {:else}
+            created {data.count}
+            {data.count === 1 ? "revision" : "revisions"}
+          {/if}
         </span>
       </div>
     {/if}
