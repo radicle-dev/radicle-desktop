@@ -57,6 +57,7 @@
 
   const reviewers: ReviewerSummary[] = $derived.by(() => {
     const sorted = [...revisions].sort((a, b) => a.timestamp - b.timestamp);
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const map = new Map<string, ReviewerSummary>();
     for (const rev of sorted) {
       for (const review of rev.reviews ?? []) {

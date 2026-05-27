@@ -31,7 +31,9 @@
     onCancel,
   }: Props = $props();
 
+  // svelte-ignore state_referenced_locally
   let summary = $state(draftReview.summary ?? "");
+  // svelte-ignore state_referenced_locally
   let verdict: Review["verdict"] = $state(draftReview.verdict ?? "accept");
   let publishing = $state(false);
   let dropdownExpanded = $state(false);

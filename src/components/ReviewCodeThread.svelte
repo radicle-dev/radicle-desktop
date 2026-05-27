@@ -50,7 +50,7 @@
 
   const noop = () => Promise.resolve();
 
-  const codeComments: CodeComments = {
+  const codeComments: CodeComments = $derived({
     config,
     repoDelegates,
     rid,
@@ -61,7 +61,7 @@
     editComment: editComment ?? noop,
     deleteComment,
     reactOnComment,
-  };
+  });
 
   function findFileDiff(
     diff: DiffType,

@@ -207,6 +207,7 @@
   });
 
   const fileGroups: FileGroup[] = $derived.by(() => {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const groups = new Map<string, Thread<CodeLocation>[]>();
     const comments = review.comments as Comment<CodeLocation>[];
     const roots = comments.filter(

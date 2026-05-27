@@ -75,10 +75,12 @@
       .find(r => r.id === review.id);
   });
 
+  // svelte-ignore state_referenced_locally
   let tab: "patch" | "revisions" | "timeline" = $state(
     revisions.length > 1 ? "revisions" : "patch",
   );
   let patchView: "activity" | "changes" = $state("activity");
+  // svelte-ignore state_referenced_locally
   let selectedRevisionId: string = $state(revisions.slice(-1)[0].id);
   const selectedRevision: Revision = $derived(
     revisions.find(r => r.id === selectedRevisionId) ?? revisions.slice(-1)[0],
@@ -183,6 +185,7 @@
       }),
     ).then(entries => {
       const next: Record<string, number> = {};
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity
       const seen = new Set<string>();
       sorted.forEach((rev, i) => {
         const [, commits] = entries[i];
@@ -221,6 +224,7 @@
     };
   });
 
+  // svelte-ignore state_referenced_locally
   let lastPatchId = $state(patch.id);
   $effect(() => {
     if (patch.id !== lastPatchId) {

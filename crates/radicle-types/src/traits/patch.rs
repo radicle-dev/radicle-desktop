@@ -2,8 +2,8 @@ use std::collections::BTreeSet;
 
 use radicle::cob::Title;
 use radicle::node::Handle;
-use radicle::patch::cache::Patches as _;
 use radicle::patch::TYPENAME;
+use radicle::patch::cache::Patches as _;
 use radicle::storage::{ReadStorage, SignRepository};
 use radicle::{Node, cob, git, identity};
 
@@ -302,10 +302,10 @@ pub trait PatchesMut: Profile {
         // action only records the merge intent.
         let _merged = patch.merge(revision, commit)?;
 
-        if opts.announce() {
-            if let Err(e) = node.announce_refs_for(rid, [profile.public_key]) {
-                log::error!("Not able to announce changes: {}", e)
-            }
+        if opts.announce()
+            && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
+        {
+            log::error!("Not able to announce changes: {}", e)
         }
 
         Ok::<_, Error>(models::patch::Patch::new(*patch.id(), &patch, &aliases))
@@ -332,10 +332,10 @@ pub trait PatchesMut: Profile {
         cob::remove(&repo, &namespace, &TYPENAME, &cob_id.into())?;
         repo.sign_refs(&signer)?;
 
-        if opts.announce() {
-            if let Err(e) = node.announce_refs_for(rid, [profile.public_key]) {
-                log::error!("Not able to announce changes: {}", e)
-            }
+        if opts.announce()
+            && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
+        {
+            log::error!("Not able to announce changes: {}", e)
         }
 
         Ok(())

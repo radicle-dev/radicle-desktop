@@ -28,10 +28,7 @@
     draftReviewId,
   }: Props = $props();
 
-  let expandedState = $state(expanded);
-  $effect(() => {
-    expandedState = expanded;
-  });
+  let expandedState = $derived(expanded);
 
   const filePathKey = $derived(
     file.status === "moved" || file.status === "copied"

@@ -66,6 +66,7 @@
   }: Props = $props();
   /* eslint-enable prefer-const */
 
+  // svelte-ignore state_referenced_locally
   let previousCobId = cobId;
   let focusReply: boolean = $state(false);
   let commentFormKey = $state(0);

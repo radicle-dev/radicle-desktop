@@ -107,6 +107,7 @@
   let reviewToggles: Record<string, boolean> = $state({});
   let commitGroupToggles: Record<string, boolean> = $state({});
   let olderRevisionsExpanded = $state(false);
+  // svelte-ignore state_referenced_locally
   let lastPatchIdSeen = patchId;
   $effect(() => {
     if (patchId !== lastPatchIdSeen) {
@@ -225,6 +226,7 @@
   }
 
   const commentToReviewId = $derived.by(() => {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const map = new Map<string, string>();
     for (const [reviewId, threads] of threadsByReview.entries()) {
       for (const thread of threads) {
@@ -390,6 +392,7 @@
       }),
     ).then(entries => {
       const next: Record<string, Commit[]> = {};
+      // eslint-disable-next-line svelte/prefer-svelte-reactivity
       const seen = new Set<string>();
       sorted.forEach((rev, i) => {
         const [, commits] = entries[i];
@@ -428,6 +431,7 @@
   );
 
   const threadsByReview = $derived.by(() => {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const map = new Map<string, Thread<CodeLocation>[]>();
     (revision.reviews ?? []).forEach(review => {
       const reviewComments = review.comments ?? [];
@@ -449,15 +453,19 @@
   const activityItems: ActivityItem<ActivityData>[] = $derived.by(() => {
     const tracker: Partial<Record<Action["type"], Action>> = {};
     const items: ActivityItem<ActivityData>[] = [];
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const reviewOpsByReviewId = new Map<
       string,
       FlattenedPatchOperation & { type: "review" }
     >();
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const revisionOpsByRevisionId = new Map<
       string,
       FlattenedPatchOperation & { type: "revision" }
     >();
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const redactedRevisionIds = new Set<string>();
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
     const redactedReviewIds = new Set<string>();
     activity.forEach(operation => {
       operation.actions.forEach((action, actionIndex) => {
