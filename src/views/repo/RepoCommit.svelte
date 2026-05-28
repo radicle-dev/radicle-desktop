@@ -176,7 +176,13 @@
         <section class="meta">
           <div class="meta-header">
             <div class="meta-title">
-              <div class="summary txt-selectable">{commit.summary}</div>
+              <div class="summary txt-selectable">
+                {#if !commit.summary}
+                  <span class="txt-missing">No commit message</span>
+                {:else}
+                  {commit.summary}
+                {/if}
+              </div>
               <div class="summary-meta">
                 <span class="summary-author">
                   <img

@@ -86,7 +86,11 @@
   <div class="left" style:padding={flush ? "0" : undefined}>
     <div class="message">
       <div style:cursor={hoverable ? "pointer" : "default"} use:twemoji>
-        <InlineTitle fontSize="small" content={commit.summary} />
+        {#if !commit.summary}
+          <span class="txt-missing">No commit message</span>
+        {:else}
+          <InlineTitle fontSize="small" content={commit.summary} />
+        {/if}
       </div>
       {#if commit.message.trim() !== commit.summary.trim()}
         <div class="commit-expand-button">
