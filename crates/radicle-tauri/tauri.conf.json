@@ -43,6 +43,11 @@
         "depends": [
           "radicle"
         ]
+      },
+      "appimage": {
+        "files": {
+          "/usr/lib/libjpeg.so.8": "/usr/lib/x86_64-linux-gnu/libjpeg.so.8"
+        }
       }
     },
     "active": true,

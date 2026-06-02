@@ -13,8 +13,11 @@ RUN dpkg --add-architecture amd64 && \
         > /etc/apt/sources.list.d/archive-amd64.sources && \
     apt-get update
 
-# Native ARM64 build essentials + cross-compilation toolchain
-RUN apt-get install -y --no-install-recommends \
+# Native ARM64 build essentials + cross-compilation toolchain.
+# Each install runs apt-get update so a cache-invalidated layer can't resolve
+# against the stale index from the standalone update above (404s on packages
+# the mirror has since superseded).
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     crossbuild-essential-amd64 \
@@ -24,7 +27,8 @@ RUN apt-get install -y --no-install-recommends \
     wget \
     file \
     jq \
-    zstd
+    zstd \
+    squashfs-tools
 
 # Tauri system library headers for the amd64 target.
 # The :amd64 suffix installs the x86_64 variant via multiarch.
@@ -46,7 +50,8 @@ RUN for pkg in gobject-introspection-bin gobject-introspection-bin-linux; do \
              /tmp/gobject-introspection-bin-linux_1.80.1-1_amd64.deb && \
     rm -f /tmp/gobject-introspection-bin*.deb
 
-RUN apt-get install -y --no-install-recommends \
+# Refreshes the index in-layer; see the note on the build-essentials install.
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libxdo-dev:amd64 \
     libssl-dev:amd64 \
     libayatana-appindicator3-dev:amd64 \
@@ -54,7 +59,8 @@ RUN apt-get install -y --no-install-recommends \
     libwebkit2gtk-4.1-0:amd64 \
     libjavascriptcoregtk-4.1-0:amd64 \
     libwebkit2gtk-4.1-dev:amd64 \
-    libjavascriptcoregtk-4.1-dev:amd64
+    libjavascriptcoregtk-4.1-dev:amd64 \
+    libjpeg-turbo8:amd64
 
 # Rust: native ARM64 toolchain so the Tauri CLI runs without emulation,
 # plus the x86_64 target for the actual compiled output.

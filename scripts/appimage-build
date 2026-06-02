@@ -52,4 +52,41 @@ npm exec -- tauri build \
   --config '{"build":{"beforeBuildCommand":""}}' \
   --target x86_64-unknown-linux-gnu \
   --bundles appimage
-cp target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage /output/
+
+appimage=(target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage)
+src="${appimage[0]}"
+
+# A type-2 AppImage is an ELF runtime followed by a squashfs image. Reuse the
+# runtime (bytes before --appimage-offset) and rebuild only the squashfs.
+offset=$("$src" --appimage-offset)
+head -c "$offset" "$src" > AppImage.runtime
+rm -rf squashfs-root
+# -no-xattrs: the build container's filesystem can't restore them.
+unsquashfs -no-xattrs -o "$offset" -d squashfs-root "$src" >/dev/null
+
+# linuxdeploy bundles libgobject/libgio but not libglib/libgmodule. On hosts
+# with a newer glib (e.g. Fedora) the mismatched bundled libs crash GTK at
+# startup. Drop them so the whole glib stack resolves from the host.
+rm -f squashfs-root/usr/lib/libgobject-2.0.so* \
+      squashfs-root/usr/lib/libgio-2.0.so*
+
+# Fail the build here, not at a user's launch, if the bundle is wrong.
+if [ ! -f squashfs-root/usr/lib/libjpeg.so.8 ]; then
+  echo "error: libjpeg.so.8 is not bundled in the AppImage" >&2
+  exit 1
+fi
+for lib in libgobject-2.0.so libgio-2.0.so; do
+  if compgen -G "squashfs-root/usr/lib/$lib*" >/dev/null; then
+    echo "error: $lib is still bundled; it must resolve from the host" >&2
+    exit 1
+  fi
+done
+
+# Reassemble: runtime + new squashfs, matching the runtime's zstd/128K.
+mksquashfs squashfs-root AppImage.squashfs \
+  -comp zstd -b 131072 -root-owned -noappend -no-progress -no-xattrs
+cat AppImage.runtime AppImage.squashfs > "$src"
+chmod +x "$src"
+rm -rf squashfs-root AppImage.runtime AppImage.squashfs
+
+cp "$src" /output/
