@@ -1177,10 +1177,10 @@
     background-color: var(--color-feedback-success-fill-hover);
   }
   .merge-card-button:disabled {
-    cursor: not-allowed;
+    cursor: default;
     opacity: 1;
-    background-color: var(--color-surface-strong);
-    color: var(--color-text-tertiary);
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-disabled);
   }
 </style>
 
