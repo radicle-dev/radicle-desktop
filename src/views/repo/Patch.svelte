@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { PatchStatus } from "./router";
+  import type { PatchStatus, PatchView } from "./router";
   import type { Issue } from "@bindings/cob/issue/Issue";
   import type { Operation } from "@bindings/cob/Operation";
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
@@ -13,7 +13,6 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import debounce from "lodash/debounce";
-  import { tick } from "svelte";
 
   import type { DraftReview } from "@app/lib/draftReviewStorage";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
@@ -60,12 +59,21 @@
     config: Config;
     activity: Operation<Action>[];
     status: PatchStatus | undefined;
+    view?: PatchView;
     review?: Review | DraftReview;
   }
 
   /* eslint-disable prefer-const */
-  let { repo, patch, revisions, config, activity, status, review }: Props =
-    $props();
+  let {
+    repo,
+    patch,
+    revisions,
+    config,
+    activity,
+    status,
+    view,
+    review,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 
   const currentReview = $derived.by(() => {
@@ -80,12 +88,15 @@
   let tab: "patch" | "revisions" | "timeline" = $state(
     revisions.length > 1 ? "revisions" : "patch",
   );
-  let patchView: "activity" | "changes" = $state("activity");
-  let changesSection = $state<HTMLElement>();
-  function showChanges() {
-    patchView = "changes";
-    void tick().then(() => {
-      changesSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const patchView: PatchView = $derived(view ?? "activity");
+  function setView(next: PatchView) {
+    void router.push({
+      resource: "repo.patch",
+      rid: repo.rid,
+      patch: patch.id,
+      status,
+      reviewId: undefined,
+      view: next === "activity" ? undefined : next,
     });
   }
   // svelte-ignore state_referenced_locally
@@ -93,7 +104,10 @@
   const selectedRevision: Revision = $derived(
     revisions.find(r => r.id === selectedRevisionId) ?? revisions.slice(-1)[0],
   );
-  let selectedRevisionStats: Stats | undefined = $state();
+  // The metadata stats pill always reflects the latest revision, regardless of
+  // what the Changes tab's revision picker is showing.
+  const latestRevision: Revision = $derived(revisions.slice(-1)[0]);
+  let latestRevisionStats: Stats | undefined = $state();
   let revisionPickerExpanded = $state(false);
   let filesExpanded = $state(true);
   let commitCountsByRevisionId: Record<string, number> = $state({});
@@ -216,7 +230,7 @@
   }
 
   $effect(() => {
-    const rev = selectedRevision;
+    const rev = latestRevision;
     let cancelled = false;
     void cachedGetDiff(repo.rid, {
       base: rev.base,
@@ -225,7 +239,7 @@
       highlight: false,
     }).then(diff => {
       if (cancelled) return;
-      selectedRevisionStats = diff.stats;
+      latestRevisionStats = diff.stats;
     });
     return () => {
       cancelled = true;
@@ -239,7 +253,17 @@
       lastPatchId = patch.id;
       tab = revisions.length > 1 ? "revisions" : "patch";
       selectedRevisionId = revisions.slice(-1)[0].id;
-      patchView = "activity";
+    }
+  });
+
+  // Switching between Activity and Changes resets the revision selector to the
+  // latest revision; the meta bar stats already track the latest independently.
+  // svelte-ignore state_referenced_locally
+  let lastPatchView = $state(patchView);
+  $effect(() => {
+    if (patchView !== lastPatchView) {
+      lastPatchView = patchView;
+      selectedRevisionId = revisions.slice(-1)[0].id;
     }
   });
 
@@ -650,6 +674,7 @@
                 patch.id,
                 selectedRevision.id,
               );
+              setView("changes");
             }}
             title={hasOwnPublishedReviewOnSelected
               ? "You already created a review for this revision"
@@ -698,20 +723,22 @@
               {patch}
               {repo}
               {revisions}
-              stats={selectedRevisionStats}
-              onShowChanges={showChanges} />
+              stats={latestRevisionStats}
+              onShowChanges={() => setView("changes")} />
           </div>
 
           <div class="content">
-            <RevisionComponent
-              rid={repo.rid}
-              {repo}
-              repoDelegates={repo.delegates}
-              patchId={patch.id}
-              {loadPatch}
-              revision={revisions[0]}
-              {config}
-              view="description" />
+            {#if patchView !== "changes"}
+              <RevisionComponent
+                rid={repo.rid}
+                {repo}
+                repoDelegates={repo.delegates}
+                patchId={patch.id}
+                {loadPatch}
+                revision={revisions[0]}
+                {config}
+                view="description" />
+            {/if}
 
             {#if currentReview}
               <ReviewPage
@@ -724,19 +751,19 @@
                 rid={repo.rid}
                 {status} />
             {:else}
-              <div class="tabs" bind:this={changesSection}>
+              <div class="tabs">
                 <div class="tabs-left">
                   <Button
                     variant={patchView === "activity" ? "ghost" : "naked"}
                     active={patchView === "activity"}
-                    onclick={() => (patchView = "activity")}>
+                    onclick={() => setView("activity")}>
                     <Icon name="activity" />
                     Activity
                   </Button>
                   <Button
                     variant={patchView === "changes" ? "ghost" : "naked"}
                     active={patchView === "changes"}
-                    onclick={() => (patchView = "changes")}>
+                    onclick={() => setView("changes")}>
                     <Icon name="diff" />
                     Changes
                   </Button>
@@ -835,7 +862,7 @@
                 {mergeDisabledReason}
                 onViewChanges={revisionId => {
                   selectedRevisionId = revisionId;
-                  patchView = "changes";
+                  setView("changes");
                 }}
                 bind:filesExpanded />
             {/if}
