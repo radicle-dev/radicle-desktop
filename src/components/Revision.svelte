@@ -1507,7 +1507,7 @@
             onclick={() => void onMerge?.()}
             title={mergeDisabledReason ?? "Record this revision as merged"}>
             <Icon name="patch-merged" />
-            Merge revision
+            Merge patch
           </button>
         </div>
         <div class="merge-card-right">
