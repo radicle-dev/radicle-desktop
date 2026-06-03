@@ -2,7 +2,7 @@
   import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Diff } from "@bindings/diff/Diff";
 
-  import { isIgnoredFile } from "@app/lib/ignoredFiles";
+  import { isIgnoredFile, isLargeFile } from "@app/lib/ignoredFiles";
 
   import FileDiffComponent from "@app/components/FileDiff.svelte";
 
@@ -39,7 +39,7 @@
     <div class="diff">
       <FileDiffComponent
         {codeComments}
-        expanded={expanded && !isIgnoredFile(file)}
+        expanded={expanded && !isIgnoredFile(file) && !isLargeFile(file)}
         {file}
         {head}
         {draftReviewId} />

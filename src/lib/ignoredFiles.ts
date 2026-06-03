@@ -32,3 +32,15 @@ export function isIgnoredFile(file: FileDiff): boolean {
   const filename = path.slice(path.lastIndexOf("/") + 1);
   return IGNORED_FILENAMES.has(filename);
 }
+
+// Diffs above this many changed lines are auto-collapsed in the Changes tab to
+// keep large files from drowning the rest of the diff.
+export const LARGE_DIFF_LINE_THRESHOLD = 200;
+
+export function isLargeFile(file: FileDiff): boolean {
+  if (file.diff.type !== "plain") return false;
+  return (
+    file.diff.stats.additions + file.diff.stats.deletions >
+    LARGE_DIFF_LINE_THRESHOLD
+  );
+}
