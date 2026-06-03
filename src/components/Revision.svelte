@@ -167,6 +167,23 @@
   function expandCommitGroup(groupKey: string) {
     commitGroupToggles = { ...commitGroupToggles, [groupKey]: true };
   }
+  // A revision's description is "auto-generated" when it's exactly the list of
+  // its commit summaries (the default Radicle produces when you don't write
+  // your own). In that case the description is noise alongside the commits, so
+  // we drop it from the timeline entirely.
+  function isCommitListDescription(
+    description: string,
+    commits: Commit[] | undefined,
+  ): boolean {
+    if (!commits || commits.length === 0) return false;
+    const chunks = description
+      .split("\n")
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+    if (chunks.length !== commits.length) return false;
+    const summaries = new Set(commits.map(c => c.summary.trim()));
+    return chunks.every(line => summaries.has(line));
+  }
   function isReviewExpanded(opId: string): boolean {
     return opId in reviewToggles ? reviewToggles[opId] : true;
   }
@@ -1269,6 +1286,9 @@
         {@const toggleable = hasCommits || hasBody}
         {@const expanded = toggleable && isRevisionExpanded(revId)}
         {@const targetRev = revisions.find(r => r.id === revId)}
+        {@const descriptionVisible =
+          hasBody &&
+          !isCommitListDescription(data.op.description, data.commits)}
         {#if expanded}
           <div class="revision-card" transition:slide={{ duration: 180 }}>
             <PatchActivityItem
@@ -1279,12 +1299,12 @@
               bodyExternal
               onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
             <div class="revision-card-body">
-              {#if hasBody}
+              {#if descriptionVisible}
                 <div class="revision-card-description txt-body-m-regular">
                   <Markdown {rid} breaks content={revBody} />
                 </div>
               {/if}
-              {#if hasBody && hasCommits}
+              {#if descriptionVisible && hasCommits}
                 <div class="revision-card-divider"></div>
               {/if}
               {#if hasCommits && data.commits && data.commits.length > 0}
