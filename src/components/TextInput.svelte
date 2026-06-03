@@ -20,6 +20,7 @@
     type?: string;
     valid?: boolean;
     value?: string;
+    styleHeight?: string;
   }
 
   /* eslint-disable prefer-const */
@@ -39,6 +40,7 @@
     type = "text",
     valid = true,
     value = $bindable(undefined),
+    styleHeight = "2rem",
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -83,9 +85,9 @@
     outline: none;
     text-overflow: ellipsis;
     width: 100%;
-    height: 100%;
     margin: 0;
-    height: 30px; /* + 2px border = 2rem */
+    /* The 1px border on each side of the wrapper adds 2px to the total. */
+    height: calc(var(--input-height) - 2px);
     border: 0;
   }
   input::placeholder {
@@ -104,7 +106,8 @@
   style:gap="0.5rem"
   style:align-items="center"
   style:background-color="var(--color-surface-base)"
-  style:width="100%">
+  style:width="100%"
+  style:--input-height={styleHeight}>
   {@render left?.()}
   <input
     style:padding={left ? "0.25rem 0.75rem 0.25rem 0" : "0.25rem 0.75rem"}

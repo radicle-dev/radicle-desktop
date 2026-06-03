@@ -13,7 +13,7 @@
     flatLeft?: boolean;
     flatRight?: boolean;
     title?: string;
-    styleHeight?: "2rem" | "2.5rem";
+    styleHeight?: "1.75rem" | "2rem" | "2.5rem";
     styleWidth?: string;
     styleJustifyContent?: string;
     stylePadding?: string;
@@ -119,12 +119,16 @@
   }
 
   .button.outline {
-    border: 1px solid var(--color-fill);
+    border: 1px solid var(--color-border-subtle);
+  }
+
+  .button.outline:hover:not(.disabled) {
+    border-color: var(--color-border-mid);
   }
 
   .button.outline.active:not(.disabled),
   .button.outline:active:not(.disabled) {
-    border-color: var(--color-fill-active);
+    border-color: var(--color-border-mid);
   }
 
   .button.outline.disabled {

@@ -17,9 +17,10 @@
   interface Props {
     commit: string;
     rid: string;
+    styleHeight?: "1.75rem" | "2rem" | "2.5rem";
   }
 
-  const { commit, rid }: Props = $props();
+  const { commit, rid, styleHeight = "2rem" }: Props = $props();
 
   type Status = Run["status"];
 
@@ -333,6 +334,7 @@
       {#snippet toggle(onclick)}
         <Button
           variant="naked"
+          {styleHeight}
           onclick={e => {
             e.stopPropagation();
             onclick();

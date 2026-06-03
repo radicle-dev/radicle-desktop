@@ -13,6 +13,7 @@
     value: string;
     onFocus?: () => void;
     onSubmit?: () => void;
+    styleHeight?: "1.75rem" | "2rem" | "2.5rem";
   }
 
   /* eslint-disable prefer-const */
@@ -24,6 +25,7 @@
     value = $bindable(),
     onFocus,
     onSubmit,
+    styleHeight = "2rem",
   }: Props = $props();
   /* eslint-enable prefer-const */
 </script>
@@ -44,6 +46,7 @@
         show = false;
       }}
       {placeholder}
+      {styleHeight}
       keyShortcuts="ctrl+f"
       bind:value>
       {#snippet left()}
@@ -58,6 +61,7 @@
     <div style:display="flex" style:padding="0 1px">
       <Button
         variant="naked"
+        {styleHeight}
         keyShortcuts="ctrl+f"
         onclick={() => (show = true)}>
         <Icon name="filter" />

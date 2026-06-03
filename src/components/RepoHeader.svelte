@@ -10,8 +10,6 @@
   import CheckoutRepoButton from "@app/components/CheckoutRepoButton.svelte";
   import HoverPopover from "@app/components/HoverPopover.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Id from "@app/components/Id.svelte";
-  import JobCob from "@app/components/JobCob.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
 
@@ -42,7 +40,6 @@
     flex-direction: row;
     gap: 1rem;
     padding: 0.625rem 1rem;
-    border-bottom: 1px solid var(--color-border-subtle);
     flex-shrink: 0;
   }
   .project {
@@ -116,16 +113,6 @@
 
   <div class="meta">
     <VisibilityBadge type={repo.visibility.type} />
-
-    <div class="meta-item">
-      <span class="meta-label">{project.data.defaultBranch}</span>
-      <Icon name="arrow-right" />
-      <Id
-        id={project.meta.head}
-        clipboard={project.meta.head}
-        placement="bottom-start" />
-      <JobCob rid={repo.rid} commit={project.meta.head} />
-    </div>
 
     <div class="meta-item">
       <span class="meta-label">Delegates</span>

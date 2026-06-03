@@ -11,6 +11,7 @@ use hyper::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
 use tower_http::cors::{self, CorsLayer};
 
+use radicle::node::NodeId;
 use radicle::{git, identity};
 use radicle_types as types;
 use radicle_types::cobs::CobOptions;
@@ -69,6 +70,7 @@ pub fn router(ctx: Context) -> Router {
             post(seeded_not_replicated_handler),
         )
         .route("/repo_by_id", post(repo_handler))
+        .route("/list_repo_refs", post(list_repo_refs_handler))
         .route("/version", post(version_handler))
         .route("/diff_stats", post(diff_stats_handler))
         .route(
@@ -181,6 +183,15 @@ async fn repo_handler(
     Ok::<_, Error>(Json(info))
 }
 
+async fn list_repo_refs_handler(
+    State(ctx): State<Context>,
+    Json(RepoBody { rid }): Json<RepoBody>,
+) -> impl IntoResponse {
+    let refs = ctx.list_repo_refs(rid)?;
+
+    Ok::<_, Error>(Json(refs))
+}
+
 async fn version_handler() -> impl IntoResponse {
     let version = Version {
         version: String::from("0.6.1"),
@@ -215,13 +226,24 @@ struct DiffBody {
 #[derive(Serialize, Deserialize)]
 struct ReadmeBody {
     pub rid: identity::RepoId,
+    #[serde(default)]
+    pub sha: Option<git::Oid>,
+    #[serde(default)]
+    pub peer: Option<NodeId>,
+    #[serde(default)]
+    pub revision: Option<String>,
 }
 
 async fn readme_handler(
     State(ctx): State<Context>,
-    Json(ReadmeBody { rid }): Json<ReadmeBody>,
+    Json(ReadmeBody {
+        rid,
+        sha,
+        peer,
+        revision,
+    }): Json<ReadmeBody>,
 ) -> impl IntoResponse {
-    let readme = ctx.repo_readme(rid, None)?;
+    let readme = ctx.repo_readme(rid, sha, peer, revision)?;
 
     Ok::<_, Error>(Json(readme))
 }
@@ -230,13 +252,25 @@ async fn readme_handler(
 struct TreeBody {
     pub rid: identity::RepoId,
     pub path: PathBuf,
+    #[serde(default)]
+    pub sha: Option<git::Oid>,
+    #[serde(default)]
+    pub peer: Option<NodeId>,
+    #[serde(default)]
+    pub revision: Option<String>,
 }
 
 async fn tree_handler(
     State(ctx): State<Context>,
-    Json(TreeBody { rid, path }): Json<TreeBody>,
+    Json(TreeBody {
+        rid,
+        path,
+        sha,
+        peer,
+        revision,
+    }): Json<TreeBody>,
 ) -> impl IntoResponse {
-    let info = ctx.repo_tree(rid, path)?;
+    let info = ctx.repo_tree(rid, path, sha, peer, revision)?;
 
     Ok::<_, Error>(Json(info))
 }
@@ -245,13 +279,15 @@ async fn tree_handler(
 struct BlobBody {
     pub rid: identity::RepoId,
     pub path: PathBuf,
+    #[serde(default)]
+    pub sha: Option<git::Oid>,
 }
 
 async fn blob_handler(
     State(ctx): State<Context>,
-    Json(BlobBody { rid, path }): Json<BlobBody>,
+    Json(BlobBody { rid, path, sha }): Json<BlobBody>,
 ) -> impl IntoResponse {
-    let info = ctx.repo_blob(rid, path)?;
+    let info = ctx.repo_blob(rid, path, sha)?;
 
     Ok::<_, Error>(Json(info))
 }
@@ -291,6 +327,10 @@ async fn commit_diff_handler(
 struct ListRepoCommitsBody {
     pub rid: identity::RepoId,
     pub head: Option<git::Oid>,
+    #[serde(default)]
+    pub peer: Option<NodeId>,
+    #[serde(default)]
+    pub revision: Option<String>,
     pub skip: Option<usize>,
     pub take: Option<usize>,
 }
@@ -300,11 +340,13 @@ async fn list_repo_commits_handler(
     Json(ListRepoCommitsBody {
         rid,
         head,
+        peer,
+        revision,
         skip,
         take,
     }): Json<ListRepoCommitsBody>,
 ) -> impl IntoResponse {
-    let commits = ctx.list_repo_commits(rid, head, skip, take)?;
+    let commits = ctx.list_repo_commits(rid, head, peer, revision, skip, take)?;
 
     Ok::<_, Error>(Json(commits))
 }
@@ -327,14 +369,24 @@ async fn repo_commit_count_handler(
 #[derive(Serialize, Deserialize)]
 struct RepoCommitBody {
     pub rid: identity::RepoId,
-    pub sha: git::Oid,
+    #[serde(default)]
+    pub sha: Option<git::Oid>,
+    #[serde(default)]
+    pub peer: Option<NodeId>,
+    #[serde(default)]
+    pub revision: Option<String>,
 }
 
 async fn repo_commit_handler(
     State(ctx): State<Context>,
-    Json(RepoCommitBody { rid, sha }): Json<RepoCommitBody>,
+    Json(RepoCommitBody {
+        rid,
+        sha,
+        peer,
+        revision,
+    }): Json<RepoCommitBody>,
 ) -> impl IntoResponse {
-    let commit = ctx.repo_commit(rid, sha)?;
+    let commit = ctx.repo_commit(rid, sha, peer, revision)?;
 
     Ok::<_, Error>(Json(commit))
 }

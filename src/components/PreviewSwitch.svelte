@@ -1,5 +1,4 @@
 <script lang="ts">
-  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
 
   let { preview = $bindable(true) }: { preview?: boolean } = $props();
@@ -9,27 +8,47 @@
   .container {
     display: flex;
     align-items: center;
+    gap: 0.25rem;
+  }
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+    padding: 0.25rem 0.5rem;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background-color: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .toggle:hover {
+    background-color: var(--color-surface-strong);
+    color: var(--color-text-primary);
+  }
+  .toggle.active {
+    background-color: var(--color-surface-strong);
+    color: var(--color-text-primary);
   }
 </style>
 
 <div class="container">
-  <Button
-    variant="ghost"
-    flatRight
-    active={!preview}
+  <button
+    class="toggle"
+    class:active={!preview}
     onclick={() => {
-      preview = !preview;
+      preview = false;
     }}>
     <Icon name="code" />Code
-  </Button>
+  </button>
 
-  <Button
-    variant="ghost"
-    flatLeft
-    active={preview}
+  <button
+    class="toggle"
+    class:active={preview}
     onclick={() => {
-      preview = !preview;
+      preview = true;
     }}>
     <Icon name="eye" />Preview
-  </Button>
+  </button>
 </div>

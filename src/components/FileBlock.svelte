@@ -14,6 +14,7 @@
     rightHeader?: Snippet;
     sticky?: boolean;
     border?: boolean;
+    headerBackground?: string;
   }
 
   /* eslint-disable prefer-const */
@@ -25,6 +26,7 @@
     sticky = true,
     expandable = true,
     border = true,
+    headerBackground = "var(--color-surface-canvas)",
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -40,7 +42,7 @@
     z-index: 2;
     font: var(--txt-body-m-regular);
     position: relative;
-    background-color: var(--color-surface-canvas);
+    background-color: var(--header-background);
     border-top-left-radius: var(--border-radius-md);
     border-top-right-radius: var(--border-radius-md);
   }
@@ -59,6 +61,8 @@
     gap: 0.5rem;
     margin-right: 1rem;
     align-items: center;
+    flex: 1;
+    min-width: 0;
   }
 
   .container {
@@ -76,6 +80,7 @@
   class:sticky
   class:collapsed={!expanded}
   bind:this={header}
+  style:--header-background={headerBackground}
   style:border={border ? "1px solid var(--color-border-subtle)" : undefined}
   style:border-bottom={border
     ? "undefined"

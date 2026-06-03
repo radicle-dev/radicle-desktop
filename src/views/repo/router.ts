@@ -28,14 +28,19 @@ export const COMMITS_PAGE_SIZE = 300;
 
 export interface RepoHomeRoute {
   resource: "repo.home";
-  sha?: string;
   rid: string;
+  peer?: string;
+  revision?: string;
 }
 
 export interface RepoCommitsRoute {
   resource: "repo.commits";
   rid: string;
+  peer?: string;
+  revision?: string;
 }
+
+export type SourceBaseRoute = RepoHomeRoute | RepoCommitsRoute;
 
 export interface RepoCommitRoute {
   resource: "repo.commit";
@@ -54,7 +59,10 @@ export interface LoadedRepoHomeRoute {
   resource: "repo.home";
   params: {
     repo: RepoInfo;
-    sha?: string;
+    peer?: string;
+    revision?: string;
+    oid: string;
+    commit: Commit;
     tree: Tree;
     readme: Readme | null;
     sidebarData: SidebarData;
@@ -65,6 +73,10 @@ export interface LoadedRepoCommitsRoute {
   resource: "repo.commits";
   params: {
     repo: RepoInfo;
+    peer?: string;
+    revision?: string;
+    oid: string;
+    commit: Commit;
     commits: PaginatedQuery<Commit[]>;
     sidebarData: SidebarData;
   };
@@ -248,40 +260,84 @@ export async function loadPatches(
   };
 }
 
-export async function loadRepoHome(
-  route: RepoHomeRoute,
-): Promise<LoadedRepoHomeRoute> {
-  const [sidebarData, repo, readme, tree] = await Promise.all([
+interface SourceContext {
+  sidebarData: SidebarData;
+  repo: RepoInfo;
+  peer?: string;
+  revision?: string;
+  oid: string;
+  commit: Commit;
+}
+
+// Revision resolution happens in the backend: content commands accept
+// (peer, revision) directly, so everything loads in parallel. The resolved
+// OID is read off the commit response. Repo refs for the peer selector are
+// expensive to enumerate and are fetched lazily by the SourceHeader after
+// render instead of blocking navigation here.
+async function loadSourceContext(route: {
+  rid: string;
+  peer?: string;
+  revision?: string;
+}): Promise<SourceContext> {
+  const [sidebarData, repo, commit] = await Promise.all([
     loadSidebarData(),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
     }),
+    invoke<Commit>("repo_commit", {
+      rid: route.rid,
+      peer: route.peer,
+      revision: route.revision,
+    }),
+  ]);
+
+  return {
+    sidebarData,
+    repo,
+    peer: route.peer,
+    revision: route.revision,
+    oid: commit.id,
+    commit,
+  };
+}
+
+export async function loadRepoHome(
+  route: RepoHomeRoute,
+): Promise<LoadedRepoHomeRoute> {
+  const [context, readme, tree] = await Promise.all([
+    loadSourceContext(route),
     invoke<Readme | null>("repo_readme", {
       rid: route.rid,
+      peer: route.peer,
+      revision: route.revision,
     }),
     invoke<Tree>("repo_tree", {
       rid: route.rid,
       path: "",
-      sha: route.sha,
+      peer: route.peer,
+      revision: route.revision,
     }),
   ]);
 
   return {
     resource: "repo.home",
-    params: { sidebarData, repo, sha: route.sha, readme, tree },
+    params: {
+      ...context,
+      readme,
+      tree,
+    },
   };
 }
 
 export async function loadRepoCommits(
   route: RepoCommitsRoute,
 ): Promise<LoadedRepoCommitsRoute> {
-  const [sidebarData, repo, commits] = await Promise.all([
-    loadSidebarData(),
-    invoke<RepoInfo>("repo_by_id", {
-      rid: route.rid,
-    }),
+  const [context, commits] = await Promise.all([
+    loadSourceContext(route),
     invoke<PaginatedQuery<Commit[]>>("list_repo_commits", {
       rid: route.rid,
+      peer: route.peer,
+      revision: route.revision,
       skip: 0,
       take: COMMITS_PAGE_SIZE,
     }),
@@ -289,7 +345,10 @@ export async function loadRepoCommits(
 
   return {
     resource: "repo.commits",
-    params: { sidebarData, repo, commits },
+    params: {
+      ...context,
+      commits,
+    },
   };
 }
 
@@ -381,10 +440,23 @@ export function repoRouteToPath(route: RepoRoute): string {
   const searchParams = new URLSearchParams();
 
   if (route.resource === "repo.home") {
-    const url = [...pathSegments, "home"].join("/");
-    return url;
+    const segments = [...pathSegments, "home"];
+    if (route.peer !== undefined) {
+      segments.push("remotes", route.peer);
+    }
+    if (route.revision !== undefined) {
+      segments.push(route.revision);
+    }
+    return segments.join("/");
   } else if (route.resource === "repo.commits") {
-    return [...pathSegments, "commits"].join("/");
+    const segments = [...pathSegments, "commits"];
+    if (route.peer !== undefined) {
+      segments.push("remotes", route.peer);
+    }
+    if (route.revision !== undefined) {
+      segments.push(route.revision);
+    }
+    return segments.join("/");
   } else if (route.resource === "repo.commit") {
     return [...pathSegments, "commits", route.commit].join("/");
   } else if (route.resource === "repo.issue") {
@@ -430,15 +502,35 @@ export function repoUrlToRoute(
 
   if (rid) {
     if (resource === "home") {
-      return { resource: "repo.home", rid, sha: segments.shift() };
-    } else if (resource === "commits") {
-      const sha = segments.shift();
-
-      if (sha) {
-        return { resource: "repo.commit", rid, commit: sha };
+      let peer: string | undefined;
+      if (segments[0] === "remotes") {
+        segments.shift();
+        peer = segments.shift();
       }
-
-      return { resource: "repo.commits", rid };
+      const revision = segments.length > 0 ? segments.join("/") : undefined;
+      return { resource: "repo.home", rid, peer, revision };
+    } else if (resource === "commits") {
+      let peer: string | undefined;
+      if (segments[0] === "remotes") {
+        segments.shift();
+        peer = segments.shift();
+      }
+      if (segments.length === 0) {
+        return { resource: "repo.commits", rid, peer };
+      }
+      if (
+        peer === undefined &&
+        segments.length === 1 &&
+        /^[0-9a-f]{40}$/.test(segments[0])
+      ) {
+        return { resource: "repo.commit", rid, commit: segments[0] };
+      }
+      return {
+        resource: "repo.commits",
+        rid,
+        peer,
+        revision: segments.join("/"),
+      };
     } else if (resource === "issues") {
       const idOrAction = segments.shift();
       if (idOrAction) {

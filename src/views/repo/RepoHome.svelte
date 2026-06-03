@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Commit } from "@bindings/repo/Commit";
   import type { Readme } from "@bindings/repo/Readme";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Blob } from "@bindings/source/Blob";
@@ -19,18 +20,30 @@
   import PreviewSwitch from "@app/components/PreviewSwitch.svelte";
   import RepoHeader from "@app/components/RepoHeader.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
+  import SourceHeader from "@app/components/SourceHeader.svelte";
   import TreeComponent from "@app/components/Tree.svelte";
   import Layout from "@app/views/repo/Layout.svelte";
 
   interface Props {
     tree: Tree;
     repo: RepoInfo;
+    peer?: string;
+    revision?: string;
+    oid: string;
+    commit: Commit;
     readme: Readme | null;
   }
 
   /* eslint-disable prefer-const */
-  let { tree, readme, repo }: Props = $props();
+  let { tree, readme, repo, peer, revision, oid, commit }: Props = $props();
   /* eslint-enable prefer-const */
+
+  const baseRoute = $derived({
+    resource: "repo.home" as const,
+    rid: repo.rid,
+    peer,
+    revision,
+  });
 
   let currentPath = $state("");
   let codeElement: HTMLElement | undefined = $state();
@@ -46,12 +59,16 @@
   }
 
   async function fetchTree(path: string) {
-    return await invoke<Tree>("repo_tree", { rid: repo.rid, path });
+    return await invoke<Tree>("repo_tree", { rid: repo.rid, path, sha: oid });
   }
 
   async function fetchBlob(path: string) {
     try {
-      blob = await invoke<Blob>("repo_blob", { rid: repo.rid, path });
+      blob = await invoke<Blob>("repo_blob", {
+        rid: repo.rid,
+        path,
+        sha: oid,
+      });
       currentPath = path;
       error = undefined;
     } catch (err) {
@@ -125,6 +142,14 @@
     style:flex-direction="column"
     style:height="100%">
     <RepoHeader {repo} />
+    <SourceHeader
+      {repo}
+      {peer}
+      {revision}
+      {oid}
+      {commit}
+      {baseRoute}
+      active="files" />
     <div
       style:display="grid"
       style:grid-template-columns="16.5rem 1fr"
@@ -163,33 +188,37 @@
                 </div>
               </div>
             {:else}
-              <FileBlock expandable={false} sticky={false} border={false}>
+              <FileBlock
+                expandable={false}
+                sticky={false}
+                border={false}
+                headerBackground="var(--color-surface-subtle)">
                 {#snippet leftHeader()}
-                  <div style:margin-left="0.5rem">
+                  <div style:margin-left="0.5rem" style:flex-shrink="0">
                     <Path fullPath={currentPath} />
                   </div>
-                {/snippet}
-
-                {#snippet rightHeader()}
                   {#if blob}
                     <div
                       style:display="flex"
                       style:gap="0.5rem"
                       style:align-items="center"
-                      style:justify-content="center"
-                      style:max-width="fit-content">
+                      style:min-width="0"
+                      style:margin-right="1rem"
+                      style:background-color="var(--color-surface-mid)"
+                      style:padding="2px 4px"
+                      style:border-radius="var(--border-radius-sm)">
                       <Id
                         id={blob.commit.id}
                         clipboard={blob.commit.id}
                         placement="bottom-start" />
-                      <span
-                        class="commit-msg txt-overflow"
-                        style:max-width="20rem">
+                      <span class="commit-msg txt-overflow" style:min-width="0">
                         {blob.commit.message}
                       </span>
                     </div>
                   {/if}
+                {/snippet}
 
+                {#snippet rightHeader()}
                   {#if isMarkdownPath(currentPath)}
                     <PreviewSwitch bind:preview />
                   {/if}

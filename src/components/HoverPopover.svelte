@@ -33,6 +33,11 @@
   let anchorEl: HTMLDivElement | undefined = $state();
   let floatingEl: HTMLDivElement | undefined = $state();
 
+  // Whether the pointer is currently over the anchor or popover.
+  let hovering = false;
+  // Whether a text-selection drag started inside the popover is ongoing.
+  let selecting = false;
+
   const show = debounce(() => {
     visible = true;
   }, 100);
@@ -40,6 +45,39 @@
   const hide = debounce(() => {
     visible = false;
   }, 200);
+
+  function enter() {
+    hovering = true;
+    hide.cancel();
+    show();
+  }
+
+  function leave() {
+    hovering = false;
+    show.cancel();
+    // A selection drag may move the pointer out of the popover; keep it open
+    // until the drag ends (see endSelection).
+    if (!selecting) {
+      hide();
+    }
+  }
+
+  // A text-selection drag can move the pointer outside the popover and release
+  // anywhere, so we follow it for the duration of the drag with a listener that
+  // removes itself on release, rather than closing on pointer-leave.
+  function endSelection() {
+    selecting = false;
+    document.removeEventListener("pointerup", endSelection);
+    if (!hovering) {
+      hide();
+    }
+  }
+
+  function startSelection() {
+    selecting = true;
+    hide.cancel();
+    document.addEventListener("pointerup", endSelection);
+  }
 
   $effect(() => {
     if (floatingEl && anchorEl) {
@@ -82,14 +120,8 @@
 <div
   class="container"
   bind:this={anchorEl}
-  onmouseenter={() => {
-    hide.cancel();
-    show();
-  }}
-  onmouseleave={() => {
-    show.cancel();
-    hide();
-  }}>
+  onmouseenter={enter}
+  onmouseleave={leave}>
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
     role="button"
@@ -102,19 +134,16 @@
 
   {#if visible}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
       use:portal
       bind:this={floatingEl}
       class="popover"
       style:padding={stylePadding}
-      onmouseenter={() => {
-        hide.cancel();
-        show();
-      }}
-      onmouseleave={() => {
-        show.cancel();
-        hide();
-      }}>
+      onmouseenter={enter}
+      onmouseleave={leave}
+      onpointerdown={startSelection}
+      onclick={e => e.stopPropagation()}>
       {@render popover()}
     </div>
   {/if}

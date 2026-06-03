@@ -1,10 +1,12 @@
+use std::collections::BTreeMap;
+
 use base64::Engine;
-use radicle::git::Oid;
 use radicle_surf as surf;
 use serde::{Deserialize, Serialize};
 
 use radicle::identity::{Doc, DocAt, doc};
 use radicle::issue::cache::Issues as _;
+use radicle::node::AliasStore;
 use radicle::node::routing::Store;
 use radicle::patch::cache::Patches as _;
 use radicle::storage;
@@ -40,6 +42,175 @@ fn is_contributor(refs: &storage::SignedRefsInfo) -> bool {
         refs,
         storage::SignedRefsInfo::Some(_) | storage::SignedRefsInfo::NeedsMigration,
     )
+}
+
+/// Resolve a `(peer, revision)` pair to a commit OID. A named revision is
+/// looked up under the peer's namespaced `refs/heads` and `refs/tags` when a
+/// peer is given, otherwise under the canonical top-level refs. With no
+/// revision, a peer resolves to its head of the project's default branch, and
+/// no peer resolves to the canonical head. Raw commit OIDs are passed through
+/// the handlers' `sha`/`head` argument instead of this function.
+fn resolve_revision(
+    repo: &storage::git::Repository,
+    peer: Option<node::NodeId>,
+    revision: Option<String>,
+) -> Result<git::Oid, Error> {
+    let lookup = |refname: String| -> Option<git::Oid> {
+        let r = repo.backend.find_reference(&refname).ok()?;
+        let commit = r.peel_to_commit().ok()?;
+        Some(commit.id().into())
+    };
+
+    match peer {
+        Some(peer) => {
+            let name = match revision {
+                Some(rev) => rev,
+                None => {
+                    let DocAt { doc, .. } = repo.identity_doc()?;
+                    doc.project()
+                        .map_err(|e| Error::RevisionNotFound(e.to_string()))?
+                        .default_branch()
+                        .to_string()
+                }
+            };
+            ["refs/heads", "refs/tags"]
+                .iter()
+                .find_map(|prefix| lookup(format!("refs/namespaces/{peer}/{prefix}/{name}")))
+                .ok_or_else(|| Error::RevisionNotFound(format!("{name} under peer {peer}")))
+        }
+        None => match revision {
+            Some(name) => ["refs/heads", "refs/tags"]
+                .iter()
+                .find_map(|prefix| lookup(format!("{prefix}/{name}")))
+                .ok_or(Error::RevisionNotFound(name)),
+            None => {
+                let (_, head) = repo.head()?;
+                Ok(head)
+            }
+        },
+    }
+}
+
+/// Collect canonical branches and tags as declared by the repository's
+/// identity document. The canonical-refs rules (the `xyz.radicle.crefs`
+/// payload, or a synthesized default covering the project's default branch)
+/// define which ref patterns are canonical; each pattern is globbed against
+/// the storage repo's resolved top-level refs (per-peer refs live under
+/// `refs/namespaces/`). Only refs under `refs/heads` and `refs/tags` are
+/// kept, and refs that cannot be peeled to a commit are skipped.
+fn canonical_refs(repo: &storage::git::Repository) -> Result<repo::Canonical, Error> {
+    let mut canonical = repo::Canonical::default();
+
+    let DocAt { doc, .. } = repo.identity_doc()?;
+    let crefs = doc
+        .canonical_refs()
+        .map_err(storage::RepositoryError::from)?;
+    let rules = git::canonical::rules::RawRules::from(crefs.rules().clone());
+
+    for (pattern, _) in rules.iter() {
+        for r in repo.backend.references_glob(pattern.as_str())? {
+            let r = r?;
+            let Some(name) = r.name() else { continue };
+            let Some(oid) = r.target() else { continue };
+
+            if let Some(short) = name.strip_prefix("refs/tags/") {
+                let Some(tag) = resolve_tag(repo, oid) else {
+                    continue;
+                };
+                canonical.tags.insert(short.to_owned(), tag);
+            } else if let Some(short) = name.strip_prefix("refs/heads/") {
+                let Ok(commit) = repo
+                    .backend
+                    .find_object(oid, None)
+                    .and_then(|obj| obj.peel_to_commit())
+                else {
+                    continue;
+                };
+                canonical
+                    .branches
+                    .insert(short.to_owned(), commit.id().into());
+            }
+        }
+    }
+
+    Ok(canonical)
+}
+
+/// Resolve a ref OID to a [`repo::Tag`]. For annotated tags uses tagger time;
+/// for lightweight tags uses the target commit's time. Returns `None` if the
+/// OID cannot be peeled to a commit.
+fn resolve_tag(repo: &storage::git::Repository, oid: git::raw::Oid) -> Option<repo::Tag> {
+    if let Ok(tag) = repo.backend.find_tag(oid) {
+        let target_oid = tag.target_id();
+        let commit = repo.backend.find_commit(target_oid).ok()?;
+        let tagger = tag.tagger().map(|t| repo::Tagger {
+            name: t.name().unwrap_or_default().to_owned(),
+            email: t.email().unwrap_or_default().to_owned(),
+            timestamp: t.when().seconds(),
+        });
+        let timestamp = tagger
+            .as_ref()
+            .map(|t| t.timestamp)
+            .unwrap_or_else(|| commit.time().seconds());
+        return Some(repo::Tag {
+            oid: commit.id().into(),
+            timestamp,
+            tagger,
+            message: tag.message().map(str::to_owned),
+        });
+    }
+    let commit = repo.backend.find_commit(oid).ok()?;
+    Some(repo::Tag {
+        oid: commit.id().into(),
+        timestamp: commit.time().seconds(),
+        tagger: None,
+        message: None,
+    })
+}
+
+/// Partition a remote's refs into short-name branch and tag maps. Refs that
+/// cannot be peeled to a commit, are not qualified, or are not under
+/// `refs/heads` or `refs/tags` are skipped.
+fn partition_refs(
+    refs: &storage::refs::Refs,
+    repo: &storage::git::Repository,
+) -> (BTreeMap<String, git::Oid>, BTreeMap<String, repo::Tag>) {
+    let mut branches = BTreeMap::new();
+    let mut tags = BTreeMap::new();
+
+    for (refname, oid) in refs.iter() {
+        let Some(qualified) = refname.qualified() else {
+            continue;
+        };
+
+        let (_, category, first, rest) = qualified.non_empty_components();
+        let name = std::iter::once(first)
+            .chain(rest)
+            .collect::<git::fmt::RefString>()
+            .to_string();
+
+        match category.as_str() {
+            "heads" => {
+                let Ok(commit) = repo
+                    .backend
+                    .find_object((*oid).into(), None)
+                    .and_then(|obj| obj.peel_to_commit())
+                else {
+                    continue;
+                };
+                branches.insert(name, commit.id().into());
+            }
+            "tags" => {
+                let Some(tag) = resolve_tag(repo, (*oid).into()) else {
+                    continue;
+                };
+                tags.insert(name, tag);
+            }
+            _ => {}
+        }
+    }
+
+    (branches, tags)
 }
 
 pub trait Repo: Profile {
@@ -152,8 +323,11 @@ pub trait Repo: Profile {
         &self,
         rid: identity::RepoId,
         sha: Option<git::Oid>,
+        peer: Option<node::NodeId>,
+        revision: Option<String>,
     ) -> Result<Option<repo::Readme>, Error> {
         let profile = self.profile();
+        let storage_repo = profile.storage.repository(rid)?;
         let repo = radicle_surf::Repository::open(storage::git::paths::repository(
             &profile.storage,
             &rid,
@@ -169,7 +343,10 @@ pub trait Repo: Profile {
             "Readme.md",
         ];
 
-        let oid = sha.map_or_else(|| repo.head().map(|oid| Oid::from(*oid)), Ok)?;
+        let oid = match sha {
+            Some(sha) => sha,
+            None => resolve_revision(&storage_repo, peer, revision)?,
+        };
 
         for path in paths
             .iter()
@@ -203,14 +380,21 @@ pub trait Repo: Profile {
         &self,
         rid: identity::RepoId,
         path: std::path::PathBuf,
+        sha: Option<git::Oid>,
+        peer: Option<node::NodeId>,
+        revision: Option<String>,
     ) -> Result<source::tree::Tree, Error> {
         let profile = self.profile();
+        let storage_repo = profile.storage.repository(rid)?;
         let repo = radicle_surf::Repository::open(radicle::storage::git::paths::repository(
             &profile.storage,
             &rid,
         ))?;
-        let head = repo.head()?;
-        let tree = repo.tree(head, &path)?;
+        let oid = match sha {
+            Some(sha) => sha,
+            None => resolve_revision(&storage_repo, peer, revision)?,
+        };
+        let tree = repo.tree(crate::oid::into_surf(oid), &path)?;
         Ok(source::tree::Tree::from_surf(tree, &path))
     }
 
@@ -218,15 +402,41 @@ pub trait Repo: Profile {
         &self,
         rid: identity::RepoId,
         path: std::path::PathBuf,
+        sha: Option<git::Oid>,
     ) -> Result<source::blob::Blob, Error> {
         let profile = self.profile();
         let repo = radicle_surf::Repository::open(radicle::storage::git::paths::repository(
             &profile.storage,
             &rid,
         ))?;
-        let head = repo.head()?;
+        let oid = sha.map_or_else(|| repo.head(), |sha| Ok(crate::oid::into_surf(sha)))?;
 
-        repo.blob(head, &path).map(Into::into).map_err(Error::from)
+        repo.blob(oid, &path).map(Into::into).map_err(Error::from)
+    }
+
+    fn list_repo_refs(&self, rid: identity::RepoId) -> Result<repo::RepoRefs, Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+        let DocAt { doc, .. } = repo.identity_doc()?;
+        let delegates = doc.delegates();
+        let aliases = profile.aliases();
+
+        let mut remotes = Vec::new();
+        for entry in repo.remotes()? {
+            let (id, remote) = entry?;
+            let (branches, tags) = partition_refs(&remote.refs, &repo);
+            remotes.push(repo::Remote {
+                id,
+                alias: aliases.alias(&id),
+                delegate: delegates.contains(&id.into()),
+                branches,
+                tags,
+            });
+        }
+
+        let canonical = canonical_refs(&repo).unwrap_or_default();
+
+        Ok(repo::RepoRefs { canonical, remotes })
     }
 
     fn repo_by_id(&self, rid: identity::RepoId) -> Result<repo::RepoInfo, Error> {
@@ -413,17 +623,21 @@ pub trait Repo: Profile {
         &self,
         rid: identity::RepoId,
         head: Option<git::Oid>,
+        peer: Option<node::NodeId>,
+        revision: Option<String>,
         skip: Option<usize>,
         take: Option<usize>,
     ) -> Result<crate::cobs::PaginatedQuery<Vec<repo::Commit>>, Error> {
         let profile = self.profile();
-        let repo = profile.storage.repository(rid)?;
+        let storage_repo = profile.storage.repository(rid)?;
 
-        let repo = surf::Repository::open(repo.path())?;
-        let head = match head {
-            Some(head) => crate::oid::into_surf(head),
-            None => repo.head()?,
+        let oid = match head {
+            Some(head) => head,
+            None => resolve_revision(&storage_repo, peer, revision)?,
         };
+
+        let repo = surf::Repository::open(storage_repo.path())?;
+        let head = crate::oid::into_surf(oid);
         let commits = repo.history(head)?;
         let cursor = skip.unwrap_or(0);
 
@@ -470,12 +684,23 @@ pub trait Repo: Profile {
         Ok(count)
     }
 
-    fn repo_commit(&self, rid: identity::RepoId, sha: git::Oid) -> Result<repo::Commit, Error> {
+    fn repo_commit(
+        &self,
+        rid: identity::RepoId,
+        sha: Option<git::Oid>,
+        peer: Option<node::NodeId>,
+        revision: Option<String>,
+    ) -> Result<repo::Commit, Error> {
         let profile = self.profile();
-        let repo = profile.storage.repository(rid)?;
+        let storage_repo = profile.storage.repository(rid)?;
 
-        let repo = surf::Repository::open(repo.path())?;
-        let commit = repo.commit(crate::oid::into_surf(sha))?;
+        let oid = match sha {
+            Some(sha) => sha,
+            None => resolve_revision(&storage_repo, peer, revision)?,
+        };
+
+        let repo = surf::Repository::open(storage_repo.path())?;
+        let commit = repo.commit(crate::oid::into_surf(oid))?;
 
         Ok(commit.into())
     }

@@ -57,6 +57,7 @@ pub fn run() {
             repo::diff_stats,
             repo::list_commits,
             repo::list_repo_commits,
+            repo::list_repo_refs,
             repo::list_repos,
             repo::list_repos_summary,
             repo::repo_by_id,

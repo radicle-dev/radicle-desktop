@@ -46,11 +46,7 @@
 
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval, resetDynamicInterval } from "@app/lib/interval";
-  import {
-    cachedRepoCommitCount,
-    invoke,
-    writeToClipboard,
-  } from "@app/lib/invoke";
+  import { invoke, writeToClipboard } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import { explorerUrl, formatRepositoryId } from "@app/lib/utils";
 
@@ -78,7 +74,6 @@
 
   let repos: RepoSummary[] = $derived(initialRepos);
   let seededNotReplicated: string[] = $derived(initialSeededNotReplicated);
-  let activeCommitCount = $state<number | undefined>(undefined);
   let filterInputElement: HTMLInputElement | undefined = $state(undefined);
 
   let contextMenu = $state<
@@ -99,25 +94,6 @@
   function closeContextMenu() {
     contextMenu = undefined;
   }
-
-  $effect(() => {
-    const rid = activeRepo?.rid;
-    const head = activeRepo?.payloads["xyz.radicle.project"]?.meta.head;
-
-    activeCommitCount = undefined;
-
-    if (!rid || !head) return;
-
-    void cachedRepoCommitCount(rid, head)
-      .then(count => {
-        if (activeRepo?.rid === rid) {
-          activeCommitCount = count;
-        }
-      })
-      .catch(error => {
-        console.error("Failed to load commit count", error);
-      });
-  });
 
   $effect(() => {
     if (filterOpen && filterInputElement) {
@@ -233,14 +209,6 @@
     return (
       ($activeRoute.resource === "repo.issues" ||
         $activeRoute.resource === "repo.issue") &&
-      activeRid() === rid
-    );
-  }
-
-  function isCommits(rid: string): boolean {
-    return (
-      ($activeRoute.resource === "repo.commits" ||
-        $activeRoute.resource === "repo.commit") &&
       activeRid() === rid
     );
   }
@@ -668,13 +636,6 @@
   </a>
   {#if activeRid() === repo.rid}
     {@const activeProject = activeRepo?.payloads["xyz.radicle.project"]}
-    {@render subItem(
-      router.routeToPath({ resource: "repo.commits", rid: repo.rid }),
-      "branch",
-      "Commits",
-      isCommits(repo.rid),
-      activeCommitCount,
-    )}
     {@render subItem(
       router.routeToPath({
         resource: "repo.issues",

@@ -6,7 +6,6 @@
   import { COMMITS_PAGE_SIZE } from "@app/views/repo/router";
   import fuzzysort from "fuzzysort";
 
-  import { cachedRepoCommitCount } from "@app/lib/invoke";
   import { invoke } from "@app/lib/invoke";
   import * as mutexExecutor from "@app/lib/mutexExecutor";
   import * as router from "@app/lib/router";
@@ -14,34 +13,29 @@
 
   import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
   import FuzzySearch from "@app/components/FuzzySearch.svelte";
-  import Icon from "@app/components/Icon.svelte";
   import InfiniteScrollSentinel from "@app/components/InfiniteScrollSentinel.svelte";
-  import Topbar from "@app/components/Topbar.svelte";
+  import RepoHeader from "@app/components/RepoHeader.svelte";
+  import ScrollArea from "@app/components/ScrollArea.svelte";
+  import SourceHeader from "@app/components/SourceHeader.svelte";
 
   import Layout from "./Layout.svelte";
 
   interface Props {
     repo: RepoInfo;
+    peer?: string;
+    revision?: string;
+    oid: string;
+    commit: Commit;
     commits: PaginatedQuery<Commit[]>;
   }
 
-  const { repo, commits }: Props = $props();
+  const { repo, peer, revision, oid, commit, commits }: Props = $props();
 
-  const project = $derived(repo.payloads["xyz.radicle.project"]!);
-  let commitCount: number | undefined = $state();
-
-  $effect(() => {
-    const rid = repo.rid;
-    commitCount = undefined;
-    void cachedRepoCommitCount(rid, project.meta.head)
-      .then(count => {
-        if (repo.rid === rid) {
-          commitCount = count;
-        }
-      })
-      .catch(error => {
-        console.error("Failed to load commit count", error);
-      });
+  const baseRoute = $derived({
+    resource: "repo.commits" as const,
+    rid: repo.rid,
+    peer,
+    revision,
   });
 
   type CommitGroup = {
@@ -88,7 +82,7 @@
       const page = await loader.run(async () => {
         return await invoke<PaginatedQuery<Commit[]>>("list_repo_commits", {
           rid: repo.rid,
-          head: project.meta.head,
+          head: oid,
           skip: all ? 0 : items.length,
           take: all ? undefined : COMMITS_PAGE_SIZE,
         });
@@ -187,35 +181,6 @@
     height: 100%;
     min-height: 0;
   }
-  .topbar-title {
-    font: var(--txt-body-m-semibold);
-    color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-  }
-  .branch-group {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    margin-left: 1.5rem;
-  }
-  .branch {
-    color: var(--color-text-secondary);
-    font: var(--txt-body-m-regular);
-  }
-  .canonical-badge {
-    display: inline-flex;
-    align-items: center;
-    height: 1.25rem;
-    padding: 0 0.375rem;
-    border-radius: var(--border-radius-sm);
-    background-color: var(--color-surface-strong);
-    color: var(--color-text-secondary);
-    font: var(--txt-body-s-regular);
-    text-transform: lowercase;
-    flex-shrink: 0;
-  }
   .content {
     display: flex;
     flex-direction: column;
@@ -250,24 +215,22 @@
   }
 </style>
 
-<Layout>
+<Layout selfScroll>
   <div class="page">
-    <Topbar>
-      <span class="topbar-title">
-        Commits
-        <span class="branch-group">
-          <Icon name="branch" />
-          <span class="branch">{project.data.defaultBranch}</span>
-          <span class="canonical-badge">canonical</span>
-        </span>
-        {#if commitCount !== undefined}
-          <span class="global-counter-badge">{commitCount}</span>
-        {/if}
-      </span>
-      <div class="global-flex" style:margin-left="auto" style:gap="0.5rem">
+    <RepoHeader {repo} />
+    <SourceHeader
+      {repo}
+      {peer}
+      {revision}
+      {oid}
+      {commit}
+      {baseRoute}
+      active="commits">
+      {#snippet extra()}
         <FuzzySearch
           hasItems={items.length > 0}
           placeholder={`Fuzzy filter commits ${modifierKey()} + f`}
+          styleHeight="1.75rem"
           icon={loading ? "clock" : "filter"}
           onFocus={async () => {
             try {
@@ -290,63 +253,65 @@
           }}
           bind:show={showSearch}
           bind:value={searchInput} />
-      </div>
-    </Topbar>
-    <div class="content">
-      {#each groupedCommits as group (group.key)}
-        <section class="group">
-          <div class="group-title">{group.label}</div>
-          <div class="commit-list">
-            {#each group.commits as commit (commit.id)}
-              <div
-                class="commit-item"
-                role="button"
-                tabindex="0"
-                onclick={() => {
-                  void router.push({
-                    resource: "repo.commit",
-                    rid: repo.rid,
-                    commit: commit.id,
-                  });
-                }}
-                onkeydown={e => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
+      {/snippet}
+    </SourceHeader>
+    <ScrollArea style="flex: 1; min-height: 0;">
+      <div class="content">
+        {#each groupedCommits as group (group.key)}
+          <section class="group">
+            <div class="group-title">{group.label}</div>
+            <div class="commit-list">
+              {#each group.commits as commit (commit.id)}
+                <div
+                  class="commit-item"
+                  role="button"
+                  tabindex="0"
+                  onclick={() => {
                     void router.push({
                       resource: "repo.commit",
                       rid: repo.rid,
                       commit: commit.id,
                     });
-                  }
-                }}>
-                <CobCommitTeaser {commit} disabled={false} flush hoverable />
-              </div>
-            {/each}
-          </div>
-        </section>
-      {/each}
+                  }}
+                  onkeydown={e => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      void router.push({
+                        resource: "repo.commit",
+                        rid: repo.rid,
+                        commit: commit.id,
+                      });
+                    }
+                  }}>
+                  <CobCommitTeaser {commit} disabled={false} flush hoverable />
+                </div>
+              {/each}
+            </div>
+          </section>
+        {/each}
 
-      {#if filteredCommits.length === 0}
-        <div
-          class="global-flex"
-          style:flex="1"
-          style:justify-content="center"
-          style:align-items="center">
+        {#if filteredCommits.length === 0}
           <div
-            class="txt-missing txt-body-m-regular global-flex"
-            style:gap="0.25rem">
-            {#if items.length > 0}
-              No matching commits
-            {:else}
-              No commits
-            {/if}
+            class="global-flex"
+            style:flex="1"
+            style:justify-content="center"
+            style:align-items="center">
+            <div
+              class="txt-missing txt-body-m-regular global-flex"
+              style:gap="0.25rem">
+              {#if items.length > 0}
+                No matching commits
+              {:else}
+                No commits
+              {/if}
+            </div>
           </div>
-        </div>
-      {/if}
+        {/if}
 
-      <InfiniteScrollSentinel
-        onIntersect={loadMoreContent}
-        disabled={!more || loadingMore} />
-    </div>
+        <InfiniteScrollSentinel
+          onIntersect={loadMoreContent}
+          disabled={!more || loadingMore} />
+      </div>
+    </ScrollArea>
   </div>
 </Layout>
