@@ -2,6 +2,7 @@ import type { DiffOptions } from "@bindings/cob/DiffOptions";
 import type { Diff } from "@bindings/diff/Diff";
 import type { Stats } from "@bindings/diff/Stats";
 import type { Commit } from "@bindings/repo/Commit";
+import type { RepoSummary } from "@bindings/repo/RepoSummary";
 
 import * as tauri from "@tauri-apps/api/core";
 
@@ -153,6 +154,22 @@ export const cachedGetCommitDiff = cached(
     `get_commit_diff:${rid}:${sha}:${unified}:${highlight}`,
   { max: 100 },
 );
+
+/**
+ * Enumerating repos loads and verifies the identity doc of every repo in
+ * storage, which takes ~100ms with many repos. The list rarely changes, so it
+ * is cached with a short TTL; mutations that change it (adding, seeding,
+ * unseeding) go through invalidateReposSummary().
+ */
+export const cachedListReposSummary = cached(
+  () => invoke<RepoSummary[]>("list_repos_summary"),
+  () => "list_repos_summary",
+  { max: 1, ttl: 30_000 },
+);
+
+export function invalidateReposSummary(): void {
+  cachedListReposSummary.clear();
+}
 
 export async function writeToClipboard(
   text: string,

@@ -13,7 +13,7 @@ import {
   loadRepoHome,
 } from "@app/views/repo/router";
 
-import { invoke } from "@app/lib/invoke";
+import { cachedListReposSummary, invoke } from "@app/lib/invoke";
 
 interface BootingRoute {
   resource: "booting";
@@ -72,7 +72,7 @@ export async function loadSidebarData(): Promise<SidebarData> {
   const [config, repos, notificationCount, seededNotReplicated] =
     await Promise.all([
       invoke<Config>("config"),
-      invoke<RepoSummary[]>("list_repos_summary"),
+      cachedListReposSummary(),
       invoke<number>("notification_count"),
       invoke<string[]>("seeded_not_replicated"),
     ]);

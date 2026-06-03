@@ -1,12 +1,18 @@
 import { LRUCache } from "lru-cache";
 
+export interface Cached<Args extends unknown[], V> {
+  (...args: Args): Promise<V>;
+  /** Drop all cached entries, forcing the next call to re-fetch. */
+  clear(): void;
+}
+
 export function cached<Args extends unknown[], V>(
   f: (...args: Args) => Promise<V>,
   makeKey: (...args: Args) => string,
   options?: LRUCache.Options<string, { promise: Promise<V> }, unknown>,
-): (...args: Args) => Promise<V> {
+): Cached<Args, V> {
   const cache = new LRUCache(options || { max: 500 });
-  return function (...args: Args): Promise<V> {
+  const fn = function (...args: Args): Promise<V> {
     const key = makeKey(...args);
     const hit = cache.get(key);
     if (hit !== undefined) return hit.promise;
@@ -18,5 +24,7 @@ export function cached<Args extends unknown[], V>(
     });
     cache.set(key, { promise });
     return promise;
-  };
+  } as Cached<Args, V>;
+  fn.clear = () => cache.clear();
+  return fn;
 }

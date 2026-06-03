@@ -46,7 +46,12 @@
 
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval, resetDynamicInterval } from "@app/lib/interval";
-  import { invoke, writeToClipboard } from "@app/lib/invoke";
+  import {
+    cachedListReposSummary,
+    invalidateReposSummary,
+    invoke,
+    writeToClipboard,
+  } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import { explorerUrl, formatRepositoryId } from "@app/lib/utils";
 
@@ -180,8 +185,9 @@
   });
 
   async function reloadRepos() {
+    invalidateReposSummary();
     [repos, seededNotReplicated] = await Promise.all([
-      invoke<RepoSummary[]>("list_repos_summary"),
+      cachedListReposSummary(),
       invoke<string[]>("seeded_not_replicated"),
     ]);
   }
