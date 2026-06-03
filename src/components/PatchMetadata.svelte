@@ -251,77 +251,77 @@
     {@const hasReject = verdicts.includes("reject")}
     {@const allAccept =
       verdicts.length > 0 && verdicts.every(v => v === "accept")}
+    {#snippet reviewsButton(onclick: (() => void) | undefined)}
+      <button
+        type="button"
+        class="reviews"
+        {onclick}
+        aria-haspopup={reviewers.length > 1 ? "menu" : undefined}
+        aria-expanded={reviewers.length > 1
+          ? reviewersPopoverExpanded
+          : undefined}
+        title="{reviewers.length} {pluralize('reviewer', reviewers.length)}">
+        <span class:verdict-accept={allAccept} class:verdict-reject={hasReject}>
+          <Icon
+            name={hasReject ? "stop" : allAccept ? "thumbs-up" : "comment"} />
+        </span>
+        <span>
+          {reviewers.length}
+          {pluralize("review", reviewers.length)}
+        </span>
+        <span class="reviewer-stack">
+          {#each reviewers.slice(0, 3) as reviewer (reviewer.author.did)}
+            <UserAvatar
+              nodeId={publicKeyFromDid(reviewer.author.did)}
+              styleWidth="1.125rem" />
+          {/each}
+          {#if reviewers.length > 3}
+            <span class="reviewer-overflow">+{reviewers.length - 3}</span>
+          {/if}
+        </span>
+      </button>
+    {/snippet}
     <div class="reviewers-compact">
-      <Popover
-        popoverPadding="0"
-        placement="bottom-start"
-        bind:expanded={reviewersPopoverExpanded}>
-        {#snippet toggle(onclick)}
-          <button
-            type="button"
-            class="reviews"
-            {onclick}
-            aria-haspopup="menu"
-            aria-expanded={reviewersPopoverExpanded}
-            title="{reviewers.length} {pluralize(
-              'reviewer',
-              reviewers.length,
-            )}">
-            <span
-              class:verdict-accept={allAccept}
-              class:verdict-reject={hasReject}>
-              <Icon
-                name={hasReject
-                  ? "stop"
-                  : allAccept
-                    ? "thumbs-up"
-                    : "comment"} />
-            </span>
-            <span>
-              {reviewers.length}
-              {pluralize("review", reviewers.length)}
-            </span>
-            <span class="reviewer-stack">
-              {#each reviewers.slice(0, 3) as reviewer (reviewer.author.did)}
-                <UserAvatar
-                  nodeId={publicKeyFromDid(reviewer.author.did)}
-                  styleWidth="1.125rem" />
-              {/each}
-              {#if reviewers.length > 3}
-                <span class="reviewer-overflow">+{reviewers.length - 3}</span>
-              {/if}
-            </span>
-          </button>
-        {/snippet}
-        {#snippet popover()}
-          <div
-            style:border="1px solid var(--color-border-subtle)"
-            style:border-radius="var(--border-radius-sm)"
-            style:background-color="var(--color-surface-canvas)"
-            style:min-width="14rem">
-            <DropdownList items={reviewers}>
-              {#snippet item(reviewer)}
-                <DropdownListItem
-                  selected={false}
-                  styleGap="0.5rem"
-                  onclick={() => openReview(reviewer.reviewId)}>
-                  <span
-                    class:verdict-accept={reviewer.verdict === "accept"}
-                    class:verdict-reject={reviewer.verdict === "reject"}>
-                    <Icon name={verdictIcon(reviewer.verdict)} />
-                  </span>
-                  <NodeId {...authorForNodeId(reviewer.author)} />
-                  <span
-                    style:margin-left="auto"
-                    style:color="var(--color-text-quaternary)">
-                    View
-                  </span>
-                </DropdownListItem>
-              {/snippet}
-            </DropdownList>
-          </div>
-        {/snippet}
-      </Popover>
+      {#if reviewers.length === 1}
+        {@render reviewsButton(() => openReview(reviewers[0].reviewId))}
+      {:else}
+        <Popover
+          popoverPadding="0"
+          placement="bottom-start"
+          bind:expanded={reviewersPopoverExpanded}>
+          {#snippet toggle(onclick)}
+            {@render reviewsButton(onclick)}
+          {/snippet}
+          {#snippet popover()}
+            <div
+              style:border="1px solid var(--color-border-subtle)"
+              style:border-radius="var(--border-radius-sm)"
+              style:background-color="var(--color-surface-canvas)"
+              style:min-width="14rem">
+              <DropdownList items={reviewers}>
+                {#snippet item(reviewer)}
+                  <DropdownListItem
+                    selected={false}
+                    styleGap="0.5rem"
+                    onclick={() => openReview(reviewer.reviewId)}>
+                    <span
+                      class:verdict-accept={reviewer.verdict === "accept"}
+                      class:verdict-reject={reviewer.verdict === "reject"}>
+                      <Icon name={verdictIcon(reviewer.verdict)} />
+                    </span>
+                    <NodeId {...authorForNodeId(reviewer.author)} />
+                    <span
+                      style:margin-left="auto"
+                      style:color="var(--color-text-quaternary)">
+                      View
+                    </span>
+                  </DropdownListItem>
+                {/snippet}
+              </DropdownList>
+            </div>
+          {/snippet}
+        </Popover>
+      {/if}
     </div>
   {/if}
   <LabelInput
