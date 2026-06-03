@@ -1384,9 +1384,6 @@
             hideAuthor={opts.hideAuthor}
             onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
         {/if}
-        {#if revId === latestRevisionId}
-          {@render mergeCard()}
-        {/if}
       {:else if data.op.type === "review"}
         {@const opId = data.op.id}
         {@const threads = data.reviewThreads ?? []}
@@ -1537,6 +1534,7 @@ $ git push rad {branch}</pre>
     {rid}
     {activityItems}
     {renderActivity}
+    afterActivity={mergeCard}
     authorOf={data =>
       data.kind === "op" || data.kind === "opened"
         ? data.op.author
