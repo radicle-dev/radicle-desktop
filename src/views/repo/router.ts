@@ -124,12 +124,15 @@ export interface LoadedRepoIssuesRoute {
 
 export type PatchStatus = Patch["state"]["status"];
 
+export type PatchView = "activity" | "changes";
+
 export interface RepoPatchRoute {
   resource: "repo.patch";
   rid: string;
   patch: string;
   status: PatchStatus | undefined;
   reviewId: string | undefined;
+  view?: PatchView;
 }
 
 export interface LoadedRepoPatchRoute {
@@ -140,6 +143,7 @@ export interface LoadedRepoPatchRoute {
     patch: Patch;
     patches: PaginatedQuery<Patch[]>;
     status: PatchStatus | undefined;
+    view?: PatchView;
     review: Review | DraftReview | undefined;
     revisions: Revision[];
     activity: Operation<PatchAction>[];
@@ -232,6 +236,7 @@ export async function loadPatch(
       patches,
       revisions,
       status: route.status,
+      view: route.view,
       review,
       activity,
       sidebarData,
@@ -477,6 +482,9 @@ export function repoRouteToPath(route: RepoRoute): string {
     if (route.reviewId) {
       searchParams.set("review", route.reviewId);
     }
+    if (route.view) {
+      searchParams.set("view", route.view);
+    }
     if (searchParams.size > 0) {
       url += `?${searchParams}`;
     }
@@ -558,6 +566,11 @@ export function repoUrlToRoute(
         | PatchStatus
         | undefined;
       const reviewId = searchParams.get("review") ?? undefined;
+      const viewParam = searchParams.get("view");
+      const view: PatchView | undefined =
+        viewParam === "activity" || viewParam === "changes"
+          ? viewParam
+          : undefined;
       if (id) {
         return {
           resource: "repo.patch",
@@ -565,6 +578,7 @@ export function repoUrlToRoute(
           patch: id,
           status,
           reviewId,
+          view,
         };
       } else {
         return { resource: "repo.patches", rid, status };
