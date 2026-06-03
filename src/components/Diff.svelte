@@ -489,11 +489,6 @@
       onpointerdown={e => {
         e.stopPropagation();
       }}>
-      <div style:margin-bottom="1rem">
-        {@render commentHeader(selection.file, {
-          start: selection.start,
-        })}
-      </div>
       <CommentToggleInput
         disallowEmptyBody
         rid={codeComments.rid}
