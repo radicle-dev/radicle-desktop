@@ -782,7 +782,7 @@
                         onclick={() =>
                           (selectedRevisionId = latestRevision.id)}>
                         <Icon name="revision" />
-                        Back to latest
+                        Back to latest revision
                       </Button>
                     {/if}
                     {#if sortedRevisions.length > 1}
@@ -804,9 +804,6 @@
                                 ? selectedRevisionIndex + 1
                                 : "?"} of
                               {sortedRevisions.length}
-                              {#if !onLatestRevision}
-                                · not latest
-                              {/if}
                             </span>
                             <span class="txt-id">
                               {selectedRevision.id.substring(0, 7)}
