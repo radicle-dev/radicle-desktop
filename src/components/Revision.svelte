@@ -1179,7 +1179,7 @@
   .merge-card-button:disabled {
     cursor: not-allowed;
     opacity: 1;
-    background-color: var(--color-fill-ghost);
+    background-color: var(--color-fill);
     color: var(--color-text-tertiary);
   }
 </style>
