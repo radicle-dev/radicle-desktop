@@ -427,7 +427,19 @@
   }
 </style>
 
-<div class="comment-section" aria-label="extended-textarea" class:inline>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class="comment-section"
+  aria-label="extended-textarea"
+  class:inline
+  onkeydown={event => {
+    if (!preview) return;
+    const auxiliarKey = utils.isMac() ? event.metaKey : event.ctrlKey;
+    if (auxiliarKey && event.key === "Enter") {
+      event.preventDefault();
+      void submit({ comment: body, embeds });
+    }
+  }}>
   <div class="textarea-wrap">
     {#if preview}
       <div class="preview" style:min-height={styleMinHeight}>
