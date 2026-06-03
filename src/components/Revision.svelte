@@ -1405,6 +1405,7 @@
                               <FileDiff
                                 {file}
                                 head={targetRev.head}
+                                {rid}
                                 expanded
                                 expandable={false} />
                             </div>

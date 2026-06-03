@@ -236,7 +236,7 @@
           </div>
         </section>
 
-        <Changeset {diff} head={commit.id} />
+        <Changeset {diff} head={commit.id} rid={repo.rid} />
       </div>
     </ScrollArea>
   </div>

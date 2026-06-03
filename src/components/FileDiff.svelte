@@ -1,8 +1,12 @@
 <script lang="ts">
   import type { CodeComments } from "@app/components/Diff.svelte";
+  import type { Embed } from "@bindings/cob/Embed";
   import type { FileDiff } from "@bindings/diff/FileDiff";
 
+  import { Buffer } from "buffer";
+
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
+  import { invoke } from "@app/lib/invoke";
 
   import Button from "@app/components/Button.svelte";
   import Diff from "@app/components/Diff.svelte";
@@ -15,6 +19,7 @@
     expandable?: boolean;
     file: FileDiff;
     head: string;
+    rid: string;
     codeComments?: CodeComments;
     draftReviewId?: string;
   }
@@ -24,9 +29,27 @@
     expandable = true,
     file,
     head,
+    rid,
     codeComments,
     draftReviewId,
   }: Props = $props();
+
+  function binaryBlobOid(f: FileDiff): string {
+    return f.status === "deleted" ? f.old.oid : f.new.oid;
+  }
+  function displayPath(f: FileDiff): string {
+    return f.status === "moved" || f.status === "copied" ? f.newPath : f.path;
+  }
+  async function loadBinaryEmbed(f: FileDiff): Promise<Embed> {
+    return invoke<Embed>("get_embed", {
+      rid,
+      name: displayPath(f),
+      oid: binaryBlobOid(f),
+    });
+  }
+  function blobUrl(content: Array<number>): string {
+    return URL.createObjectURL(new Blob([Buffer.from(content)]));
+  }
 
   let expandedState = $derived(expanded);
 
@@ -97,6 +120,12 @@
   }
   .stats {
     font: var(--txt-code-regular);
+  }
+  .binary-image {
+    max-width: 100%;
+    max-height: 32rem;
+    object-fit: contain;
+    display: block;
   }
 </style>
 
@@ -181,12 +210,41 @@
       {@render emptyPlaceholder()}
     {/if}
   {:else if file.diff.type === "binary"}
-    <div
-      class="global-flex"
-      style:margin="1rem 0"
-      style:justify-content="center">
-      <Icon name="binary" />Binary file
-    </div>
+    {#await loadBinaryEmbed(file)}
+      <div
+        class="global-flex"
+        style:margin="1rem 0"
+        style:justify-content="center"
+        style:color="var(--color-text-tertiary)">
+        Loading binary…
+      </div>
+    {:then embed}
+      {#if embed.mimeType?.startsWith("image/")}
+        <div
+          class="global-flex"
+          style:margin="0.5rem"
+          style:justify-content="center">
+          <img
+            class="binary-image"
+            src={blobUrl(embed.content)}
+            alt={displayPath(file)} />
+        </div>
+      {:else}
+        <div
+          class="global-flex"
+          style:margin="1rem 0"
+          style:justify-content="center">
+          <Icon name="binary" />Binary file
+        </div>
+      {/if}
+    {:catch}
+      <div
+        class="global-flex"
+        style:margin="1rem 0"
+        style:justify-content="center">
+        <Icon name="binary" />Binary file
+      </div>
+    {/await}
   {:else}
     {@render emptyPlaceholder()}
   {/if}

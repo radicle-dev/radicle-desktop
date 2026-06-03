@@ -268,6 +268,7 @@
       expanded={filesExpanded}
       {head}
       {diff}
+      {rid}
       {codeComments}
       {draftReviewId} />
   {/await}

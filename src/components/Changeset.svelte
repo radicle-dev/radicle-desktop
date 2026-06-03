@@ -11,6 +11,7 @@
     diff: Diff;
     expanded?: boolean;
     head: string;
+    rid: string;
     draftReviewId?: string;
   }
 
@@ -19,6 +20,7 @@
     diff,
     expanded = true,
     head,
+    rid,
     draftReviewId,
   }: Props = $props();
 </script>
@@ -42,6 +44,7 @@
         expanded={expanded && !isIgnoredFile(file) && !isLargeFile(file)}
         {file}
         {head}
+        {rid}
         {draftReviewId} />
     </div>
   {/each}
