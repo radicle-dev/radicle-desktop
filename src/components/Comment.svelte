@@ -187,7 +187,7 @@
             <Icon name="edit" onclick={toggleEdit} />
           </div>
         {/if}
-        {#if deleteComment}
+        {#if deleteComment && currentUserNid && utils.publicKeyFromDid(author.did) === currentUserNid}
           <div class="icon-button">
             <Icon name="trash" onclick={deleteComment} />
           </div>
