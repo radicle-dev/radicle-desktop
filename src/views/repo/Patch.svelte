@@ -769,11 +769,22 @@
                   </Button>
                 </div>
                 {#if patchView === "changes"}
+                  {@const onLatestRevision =
+                    selectedRevision.id === latestRevision.id}
                   <div class="tabs-right">
                     <CheckoutPatchButton
                       {tab}
                       selectedRevisionId={selectedRevision.id}
                       patchId={patch.id} />
+                    {#if !onLatestRevision}
+                      <Button
+                        variant="outline"
+                        onclick={() =>
+                          (selectedRevisionId = latestRevision.id)}>
+                        <Icon name="revision" />
+                        Back to latest
+                      </Button>
+                    {/if}
                     {#if sortedRevisions.length > 1}
                       <Popover
                         popoverPadding="0"
@@ -785,11 +796,17 @@
                             {onclick}
                             active={revisionPickerExpanded}>
                             <Icon name="revision" />
-                            <span style:color="var(--color-text-secondary)">
+                            <span
+                              style:color={onLatestRevision
+                                ? "var(--color-text-secondary)"
+                                : "var(--color-feedback-warning-text)"}>
                               Revision {selectedRevisionIndex >= 0
                                 ? selectedRevisionIndex + 1
                                 : "?"} of
                               {sortedRevisions.length}
+                              {#if !onLatestRevision}
+                                · not latest
+                              {/if}
                             </span>
                             <span class="txt-id">
                               {selectedRevision.id.substring(0, 7)}
