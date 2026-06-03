@@ -1009,7 +1009,7 @@
     display: flex;
     align-items: flex-start;
     overflow: hidden;
-    height: 16rem;
+    height: 10rem;
     padding: 0.5rem 0 0;
   }
   .file-fan-card {
