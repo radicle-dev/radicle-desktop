@@ -1177,8 +1177,10 @@
     background-color: var(--color-feedback-success-fill-hover);
   }
   .merge-card-button:disabled {
-    cursor: default;
-    opacity: 0.6;
+    cursor: not-allowed;
+    opacity: 1;
+    background-color: var(--color-fill-ghost);
+    color: var(--color-text-tertiary);
   }
 </style>
 
@@ -1503,7 +1505,6 @@
             disabled={mergeDisabledReason !== undefined}
             onclick={() => void onMerge?.()}
             title={mergeDisabledReason ?? "Record this revision as merged"}>
-            <Icon name="patch-merged" />
             Merge patch
           </button>
         </div>
