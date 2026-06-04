@@ -13,6 +13,16 @@ export async function invoke<T = null>(
   args?: tauri.InvokeArgs,
   options?: tauri.InvokeOptions,
 ): Promise<T> {
+  if (import.meta.env.DEV) {
+    const start = performance.now();
+    try {
+      return await withTestBackend<T>(tauri.invoke, cmd, args, options);
+    } finally {
+      const ms = Math.round(performance.now() - start);
+
+      console.debug(`[invoke] ${cmd} ${ms}ms`);
+    }
+  }
   return withTestBackend<T>(tauri.invoke, cmd, args, options);
 }
 
