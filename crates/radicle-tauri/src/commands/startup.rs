@@ -3,10 +3,12 @@ use tauri::{AppHandle, Emitter, Manager};
 use radicle::cob::cache::COBS_DB_FILE;
 use radicle::node::{Handle, NOTIFICATIONS_DB_FILE, Node};
 
+use radicle_artifact_client::tokio::Client;
+
 use radicle_types::config::{Config, Version};
 use radicle_types::error::Error;
 use radicle_types::traits::Profile;
-use radicle_types::{AppState, domain};
+use radicle_types::{AppState, ArtifactClient, domain};
 
 #[tauri::command]
 pub(crate) fn version(app: AppHandle) -> Result<Version, Error> {
@@ -67,7 +69,7 @@ pub(crate) fn check_radicle_cli(ctx: tauri::State<AppState>) -> Result<(), Error
 }
 
 #[tauri::command]
-pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
+pub(crate) async fn startup(app: AppHandle) -> Result<Config, Error> {
     let profile = radicle::Profile::load()?;
     let home = profile.home();
 
@@ -83,8 +85,12 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     let inbox_service = domain::inbox::service::Service::new(inbox_db);
     let patch_service = domain::patch::service::Service::new(cob_db);
 
-    let node_handle = app.app_handle().clone();
+    // Client for the external rad-artifact node. Only wraps a socket path,
+    // so this never blocks startup — seeding/download calls fail with
+    // `ArtifactNodeNotRunning` if the node isn't up.
+    let artifact_client = Client::new(Client::default_socket(home.path()));
 
+    let node_handle = app.app_handle().clone();
     let node = Node::new(profile.home().socket_from_env());
 
     app.manage(inbox_service);
@@ -97,8 +103,23 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
         }
     });
 
+    // Mirror the radicle-node liveness loop for the artifact node so the UI
+    // can disable seeding/download and show an indicator when it's down.
+    let artifact_node_handle = app.app_handle().clone();
+    let artifact_probe = artifact_client.clone();
+    tauri::async_runtime::spawn(async move {
+        loop {
+            let _ = artifact_node_handle
+                .emit("artifact_node_running", artifact_probe.is_running().await);
+            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+        }
+    });
+
     let state = AppState { profile };
     app.manage(state.clone());
+    app.manage(ArtifactClient {
+        client: artifact_client,
+    });
 
     Ok(state.config())
 }

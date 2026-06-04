@@ -15,7 +15,9 @@ log = { version = "0.4.22" }
 infer = { version = "0.19.0" }
 mime-infer = { version = "3.0.0" }
 radicle = { version = "0.24", features = ["tor", "i2p"] }
-radicle-artifact = { path = "../../../radicle-artifact", features = ["share"] }
+radicle-artifact = { path = "../../../../radicle-artifact/crates/radicle-artifact" }
+radicle-artifact-core = { path = "../../../../radicle-artifact/crates/radicle-artifact-core" }
+radicle-artifact-client = { path = "../../../../radicle-artifact/crates/radicle-artifact-client", features = ["tokio"] }
 radicle-job = { version = "0.6" }
 radicle-localtime = { version = "0.1.0", features = ["serde"] }
 radicle-surf = { version = "0.27.1", features = ["serde"] }

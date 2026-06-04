@@ -2,8 +2,8 @@ use std::collections::BTreeMap;
 
 use radicle::identity::Did;
 use radicle::node::AliasStore;
-use radicle_artifact::share::cid_utils;
-use radicle_artifact::share::keys::EndpointId;
+use radicle_artifact_core::cid as cid_utils;
+use radicle_artifact_core::keys::EndpointId;
 use serde::Serialize;
 use ts_rs::TS;
 use url::Url;
@@ -57,12 +57,12 @@ pub struct Artifact {
     /// True when this device's iroh endpoint id appears as the host of
     /// one of the location URLs we (the local DID) wrote — i.e. we are
     /// actively advertising the artifact from the running process.
-    pub shared_from_here: bool,
+    pub seeded_from_here: bool,
     /// True when our DID has at least one `iroh://` URL on the COB whose
     /// host is *not* this device's iroh endpoint. Usually means we (or a
     /// past install on a different machine, e.g. the CLI) advertised this
     /// artifact from somewhere else. The bytes are not necessarily local.
-    pub shared_from_other: bool,
+    pub seeded_from_other: bool,
     /// Free-form key/value annotations contributed by the artifact author
     /// or repo delegates. Authorization is enforced upstream.
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
@@ -173,15 +173,15 @@ impl Artifact {
             locations,
             attestations,
             redactions,
-            shared_from_here: false,
-            shared_from_other: false,
+            seeded_from_here: false,
+            seeded_from_other: false,
             metadata: artifact.metadata().clone(),
         }
     }
 }
 
-/// Classify the `radiroh://` URLs under our DID into `shared_from_here`
-/// (endpoint matches `our_endpoint`) and `shared_from_other` (any other
+/// Classify the `radiroh://` URLs under our DID into `seeded_from_here`
+/// (endpoint matches `our_endpoint`) and `seeded_from_other` (any other
 /// endpoint). A bare `radiroh://` under our DID derives to our own
 /// endpoint, so it counts as "here". Drivers call this on every release
 /// they hand to the UI so the flags reflect *this* identity, not just
@@ -212,8 +212,8 @@ pub fn set_endpoint_flags(release: &mut Release, our_did: &Did, our_endpoint: &E
                 }
             }
         }
-        artifact.shared_from_here = here;
-        artifact.shared_from_other = other;
+        artifact.seeded_from_here = here;
+        artifact.seeded_from_other = other;
     }
 }
 
@@ -233,7 +233,7 @@ mod test {
     use radicle::identity::Did;
     use radicle::node::{Alias, NodeId};
     use radicle_artifact::ReleaseId;
-    use radicle_artifact::share::keys::EndpointId;
+    use radicle_artifact_core::keys::EndpointId;
 
     use super::{Artifact, ArtifactKind, Location, Release, set_endpoint_flags};
     use crate::cobs;
@@ -277,8 +277,8 @@ mod test {
                 locations,
                 attestations: vec![],
                 redactions: vec![],
-                shared_from_here: false,
-                shared_from_other: false,
+                seeded_from_here: false,
+                seeded_from_other: false,
                 metadata: BTreeMap::new(),
             }],
         }
@@ -293,8 +293,8 @@ mod test {
         let mut release = release_with_locations(vec![location(&our_did, &[&url])]);
         set_endpoint_flags(&mut release, &our_did, &our_endpoint);
 
-        assert!(release.artifacts[0].shared_from_here);
-        assert!(!release.artifacts[0].shared_from_other);
+        assert!(release.artifacts[0].seeded_from_here);
+        assert!(!release.artifacts[0].seeded_from_other);
     }
 
     #[test]
@@ -308,8 +308,8 @@ mod test {
         let mut release = release_with_locations(vec![location(&our_did, &[&url])]);
         set_endpoint_flags(&mut release, &our_did, &our_endpoint);
 
-        assert!(!release.artifacts[0].shared_from_here);
-        assert!(release.artifacts[0].shared_from_other);
+        assert!(!release.artifacts[0].seeded_from_here);
+        assert!(release.artifacts[0].seeded_from_other);
     }
 
     #[test]
@@ -321,8 +321,8 @@ mod test {
         let mut release = release_with_locations(vec![location(&our_did, &["radiroh://"])]);
         set_endpoint_flags(&mut release, &our_did, &our_endpoint);
 
-        assert!(release.artifacts[0].shared_from_here);
-        assert!(!release.artifacts[0].shared_from_other);
+        assert!(release.artifacts[0].seeded_from_here);
+        assert!(!release.artifacts[0].seeded_from_other);
     }
 
     #[test]
@@ -336,8 +336,8 @@ mod test {
         )]);
         set_endpoint_flags(&mut release, &our_did, &our_endpoint);
 
-        assert!(!release.artifacts[0].shared_from_here);
-        assert!(!release.artifacts[0].shared_from_other);
+        assert!(!release.artifacts[0].seeded_from_here);
+        assert!(!release.artifacts[0].seeded_from_other);
     }
 
     #[test]
@@ -351,8 +351,8 @@ mod test {
         let mut release = release_with_locations(vec![location(&did(2), &[&url])]);
         set_endpoint_flags(&mut release, &our_did, &our_endpoint);
 
-        assert!(!release.artifacts[0].shared_from_here);
-        assert!(!release.artifacts[0].shared_from_other);
+        assert!(!release.artifacts[0].seeded_from_here);
+        assert!(!release.artifacts[0].seeded_from_other);
     }
 
     #[test]
@@ -365,8 +365,8 @@ mod test {
         let mut release = release_with_locations(vec![location(&our_did, &[&our_url, &other_url])]);
         set_endpoint_flags(&mut release, &our_did, &our_endpoint);
 
-        assert!(release.artifacts[0].shared_from_here);
-        assert!(release.artifacts[0].shared_from_other);
+        assert!(release.artifacts[0].seeded_from_here);
+        assert!(release.artifacts[0].seeded_from_other);
     }
 
     #[test]
@@ -377,7 +377,7 @@ mod test {
         let mut release = release_with_locations(vec![]);
         set_endpoint_flags(&mut release, &our_did, &our_endpoint);
 
-        assert!(!release.artifacts[0].shared_from_here);
-        assert!(!release.artifacts[0].shared_from_other);
+        assert!(!release.artifacts[0].seeded_from_here);
+        assert!(!release.artifacts[0].seeded_from_other);
     }
 }

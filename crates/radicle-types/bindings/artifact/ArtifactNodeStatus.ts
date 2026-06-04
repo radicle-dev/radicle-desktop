@@ -23,10 +23,6 @@ export type ArtifactNodeStatus = {
    */
   seededBytesLogical: number;
   /**
-   * Total bytes on disk under the node's store (includes db and scratch).
-   */
-  storeBytes: number;
-  /**
    * Currently open connections.
    */
   connectionsActive: number;

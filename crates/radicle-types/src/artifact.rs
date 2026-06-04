@@ -1,4 +1,4 @@
-use radicle_artifact::protocol::Status;
+use radicle_artifact_core::protocol::Status;
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -21,9 +21,6 @@ pub struct ArtifactNodeStatus {
     /// Sum of logical artifact sizes across all seeded tags, in bytes.
     #[ts(type = "number")]
     pub seeded_bytes_logical: u64,
-    /// Total bytes on disk under the node's store (includes db and scratch).
-    #[ts(type = "number")]
-    pub store_bytes: u64,
     /// Currently open connections.
     #[ts(type = "number")]
     pub connections_active: u32,
@@ -60,7 +57,6 @@ impl From<Status> for ArtifactNodeStatus {
             started_at_unix: s.started_at_unix,
             seeded_count: s.seeded.count as u64,
             seeded_bytes_logical: s.seeded.bytes_logical,
-            store_bytes: s.disk.store_bytes,
             connections_active: s.connections.active,
             connections_opened_total: s.connections.opened_total,
             connections_closed_total: s.connections.closed_total,

@@ -151,6 +151,15 @@ pub async fn repo_commit(
 }
 
 #[tauri::command]
+pub async fn list_tags(
+    ctx: tauri::State<'_, AppState>,
+    rid: RepoId,
+) -> Result<Vec<types::repo::TagRef>, Error> {
+    let ctx = ctx.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || ctx.list_tags(rid)).await?
+}
+
+#[tauri::command]
 pub fn seed(ctx: tauri::State<'_, AppState>, rid: RepoId) -> Result<(), Error> {
     ctx.seed(rid)
 }

@@ -712,6 +712,48 @@ pub trait Repo: Profile {
         Ok(commit.into())
     }
 
+    /// List the repo's tags. Used by the New Release form so users can
+    /// pick an annotated tag (which records its OID alongside the commit
+    /// on the artifact COB) instead of typing a raw commit OID.
+    fn list_tags(&self, rid: identity::RepoId) -> Result<Vec<repo::TagRef>, Error> {
+        use radicle_surf::{Glob, Tag};
+
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+        let surf_repo = surf::Repository::open(repo.path())?;
+
+        let mut tags = Vec::new();
+        for tag in surf_repo.tags(&Glob::all_tags())? {
+            let Ok(tag) = tag else { continue };
+            let entry = match tag {
+                Tag::Light { id, name } => repo::TagRef {
+                    name: name.to_string(),
+                    oid: id.to_string(),
+                    commit: id.to_string(),
+                    annotated: false,
+                    message: None,
+                },
+                Tag::Annotated {
+                    id,
+                    target,
+                    name,
+                    message,
+                    ..
+                } => repo::TagRef {
+                    name: name.to_string(),
+                    oid: id.to_string(),
+                    commit: target.to_string(),
+                    annotated: true,
+                    message,
+                },
+            };
+            tags.push(entry);
+        }
+        // Newest tag first by name (semver-ish sort) — surf already returns
+        // them sorted; keep the natural order as-is.
+        Ok(tags)
+    }
+
     fn unseed(&self, rid: identity::RepoId) -> Result<(), Error> {
         let profile = self.profile();
         let mut node = radicle::Node::new(profile.home().socket_from_env());

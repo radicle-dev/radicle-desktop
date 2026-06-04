@@ -53,6 +53,28 @@ pub fn run() {
             cob::patch::revisions_by_patch,
             cob::patch::revision_by_patch_and_id,
             cob::patch::revisions_by_patch,
+            cob::release::list_releases,
+            cob::release::release_by_id,
+            cob::release::releases_by_commit,
+            cob::release::compute_artifact_cid,
+            cob::release::create_or_open_release,
+            cob::release::register_artifact,
+            cob::release::add_location,
+            cob::release::remove_location,
+            cob::release::attest_artifact,
+            cob::release::set_metadata,
+            cob::release::remove_metadata,
+            cob::release::redact_artifact,
+            cob::release::seed_artifact,
+            cob::release::unseed_artifact,
+            cob::release::is_seeding,
+            cob::release::artifact_node_status,
+            cob::release::download_artifact,
+            cob::release::pick_artifact_files,
+            cob::release::pick_artifact_directory,
+            cob::release::pick_artifact_save_path,
+            cob::release::get_auto_seed_artifacts,
+            cob::release::set_auto_seed_artifacts,
             cob::save_embed_by_bytes,
             cob::save_embed_by_clipboard,
             cob::save_embed_by_path,
@@ -68,6 +90,7 @@ pub fn run() {
             repo::list_commits,
             repo::list_repo_commits,
             repo::list_repo_refs,
+            repo::list_tags,
             repo::list_repos,
             repo::list_repos_summary,
             repo::repo_by_id,
@@ -86,6 +109,7 @@ pub fn run() {
             thread::create_issue_comment,
             thread::create_patch_comment,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app, _event| {});
 }

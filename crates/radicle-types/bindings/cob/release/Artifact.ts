@@ -17,14 +17,14 @@ export type Artifact = {
    * one of the location URLs we (the local DID) wrote — i.e. we are
    * actively advertising the artifact from the running process.
    */
-  sharedFromHere: boolean;
+  seededFromHere: boolean;
   /**
    * True when our DID has at least one `iroh://` URL on the COB whose
    * host is *not* this device's iroh endpoint. Usually means we (or a
    * past install on a different machine, e.g. the CLI) advertised this
    * artifact from somewhere else. The bytes are not necessarily local.
    */
-  sharedFromOther: boolean;
+  seededFromOther: boolean;
   /**
    * Free-form key/value annotations contributed by the artifact author
    * or repo delegates. Authorization is enforced upstream.

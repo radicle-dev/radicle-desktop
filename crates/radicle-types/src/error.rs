@@ -175,6 +175,99 @@ pub enum Error {
     /// Serde JSON error.
     #[error(transparent)]
     SerdeJSON(#[from] serde_json::error::Error),
+
+    /// Iroh / iroh-blobs error.
+    #[error("iroh: {0}")]
+    Iroh(String),
+
+    /// Release creation error.
+    #[error(transparent)]
+    ReleaseCreate(#[from] radicle_artifact::error::Create),
+
+    /// Release redaction error.
+    #[error(transparent)]
+    ReleaseRedact(#[from] radicle_artifact::error::Redact),
+
+    /// Release metadata validation error.
+    #[error(transparent)]
+    ReleaseMetadata(#[from] radicle_artifact::error::Metadata),
+
+    /// Artifact share error (CID parsing, hashing, content addressing).
+    #[error(transparent)]
+    ArtifactShare(#[from] radicle_artifact_core::Error),
+
+    /// CID parse error.
+    #[error(transparent)]
+    Cid(#[from] cid::Error),
+
+    /// URL parse error.
+    #[error(transparent)]
+    Url(#[from] url::ParseError),
+
+    /// COB object id parse error.
+    #[error(transparent)]
+    ParseObjectId(#[from] radicle::cob::object::ParseObjectId),
+
+    /// File picker / dialog closed before returning a result.
+    #[error("dialog was closed before returning a result")]
+    DialogClosed,
+
+    /// No iroh locations reachable for the requested CID.
+    #[error("no reachable iroh location for {cid}")]
+    NoReachableLocations { cid: String },
+
+    /// The artifact has no usable locations of any supported scheme.
+    #[error("no locations available for {cid}")]
+    NoLocations { cid: String },
+
+    /// All transport attempts (iroh + HTTP) failed for the requested CID.
+    /// The aggregated messages from each attempt are joined into one string
+    /// for surfacing in the UI.
+    #[error("all transports failed for {cid}: {reasons}")]
+    AllTransportsFailed { cid: String, reasons: String },
+
+    /// Release with the given id was not found in the COB store.
+    #[error("release {release_id} not found")]
+    ReleaseNotFound { release_id: String },
+
+    /// Artifact CID is not registered against the given release.
+    #[error("artifact {cid} not in release {release_id}")]
+    ArtifactNotInRelease { cid: String, release_id: String },
+
+    /// Persisted iroh secret key file does not contain 32 bytes.
+    #[error("malformed iroh key at {path}")]
+    MalformedIrohKey { path: std::path::PathBuf },
+
+    /// CID computed from imported content does not match the expected CID.
+    #[error("cid mismatch: expected {expected}, got {actual}")]
+    CidMismatch { expected: String, actual: String },
+
+    /// The external `rad-artifact` node is not reachable on its control
+    /// socket. Seeding and downloading need it; the rest of the app does
+    /// not, so this is surfaced as a recoverable, action-specific error.
+    #[error("rad-artifact node is not running")]
+    ArtifactNodeNotRunning,
+
+    /// Error talking to the `rad-artifact` node over its control socket.
+    #[error(transparent)]
+    ArtifactClient(radicle_artifact_client::ClientError),
+}
+
+impl From<radicle_artifact_client::ClientError> for Error {
+    fn from(e: radicle_artifact_client::ClientError) -> Self {
+        use radicle_artifact_client::ClientError;
+        // A missing or refused socket means the node isn't up; map it to
+        // a dedicated variant the frontend can detect to prompt setup.
+        if let ClientError::Io(io) = &e
+            && matches!(
+                io.kind(),
+                std::io::ErrorKind::ConnectionRefused | std::io::ErrorKind::NotFound
+            )
+        {
+            return Error::ArtifactNodeNotRunning;
+        }
+        Error::ArtifactClient(e)
+    }
 }
 
 impl Error {
@@ -202,6 +295,30 @@ impl Error {
                 "AliasError.InvalidAlias"
             }
             Error::FileTooLarge(_) => "PayloadError.TooLarge",
+            Error::DialogClosed => "DialogError.Closed",
+            Error::NoReachableLocations { .. } => "ArtifactError.NoReachableLocations",
+            Error::NoLocations { .. } => "ArtifactError.NoLocations",
+            Error::AllTransportsFailed { .. } => "ArtifactError.AllTransportsFailed",
+            Error::ReleaseNotFound { .. } => "ReleaseError.NotFound",
+            Error::ArtifactNotInRelease { .. } => "ReleaseError.ArtifactNotFound",
+            Error::CidMismatch { .. } => "ArtifactError.CidMismatch",
+            Error::ArtifactNodeNotRunning => "ArtifactError.NodeNotRunning",
+            Error::MalformedIrohKey { .. } => "IrohError.MalformedKey",
+            Error::ReleaseRedact(radicle_artifact::error::Redact::NotFound { .. }) => {
+                "ReleaseError.ArtifactNotFound"
+            }
+            Error::ReleaseRedact(radicle_artifact::error::Redact::ReasonTooLong { .. }) => {
+                "ReleaseError.RedactionReasonTooLong"
+            }
+            Error::ReleaseCreate(radicle_artifact::error::Create::MissingTag { .. }) => {
+                "ReleaseError.MissingTag"
+            }
+            Error::ReleaseCreate(radicle_artifact::error::Create::TagMismatch { .. }) => {
+                "ReleaseError.TagMismatch"
+            }
+            Error::ReleaseCreate(radicle_artifact::error::Create::PeelFailed { .. }) => {
+                "ReleaseError.TagPeelFailed"
+            }
             _ => "UnknownError",
         }
     }
