@@ -678,10 +678,17 @@ pub trait Repo: Profile {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
 
-        let repo = surf::Repository::open(repo.path())?;
-        let count = repo.history(crate::oid::into_surf(head))?.count();
+        // Walk the commit graph directly instead of through radicle-surf's
+        // History iterator, which materializes and parses a full Commit for
+        // every node just to discard it. Counting only needs the reachable
+        // OIDs, and no ordering, so the walk is unsorted. The walk itself is
+        // not a verification step: trust comes from the signed `head` tip, and
+        // git's content-addressed DAG keeps its ancestry tamper-evident.
+        let mut revwalk = repo.backend.revwalk()?;
+        revwalk.set_sorting(git2::Sort::NONE)?;
+        revwalk.push(head.into())?;
 
-        Ok(count)
+        Ok(revwalk.count())
     }
 
     fn repo_commit(
