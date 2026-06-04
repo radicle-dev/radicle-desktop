@@ -52,6 +52,27 @@ pub struct RepoInfo {
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "repo/")]
+pub struct TagRef {
+    /// Short tag refname, e.g. `v1.0.0`.
+    pub name: String,
+    /// Tag OID for annotated tags, commit OID for lightweight tags.
+    /// This is the OID stored on the artifact COB's `tag` field for
+    /// annotated tags.
+    pub oid: String,
+    /// The commit this tag points at. For lightweight tags this equals
+    /// `oid`; for annotated tags it's the commit reachable via the tag
+    /// object's target.
+    pub commit: String,
+    pub annotated: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub message: Option<String>,
+}
+
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
 pub struct Readme {
     #[ts(as = "String")]
     pub id: surf::Oid,
