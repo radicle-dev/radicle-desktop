@@ -2,6 +2,7 @@ import type { DiffOptions } from "@bindings/cob/DiffOptions";
 import type { Diff } from "@bindings/diff/Diff";
 import type { Stats } from "@bindings/diff/Stats";
 import type { Commit } from "@bindings/repo/Commit";
+import type { Job } from "@bindings/repo/Job";
 import type { RepoSummary } from "@bindings/repo/RepoSummary";
 
 import * as tauri from "@tauri-apps/api/core";
@@ -122,6 +123,20 @@ export const cachedRepoCommitCount = cached(
   repoCommitCount,
   (...[rid, head]) => `repo_commit_count:${rid}:${head}`,
   { max: 5_000 },
+);
+
+async function listJobs(rid: string, sha: string): Promise<Job[]> {
+  return withTestBackend(tauri.invoke, "list_jobs", { rid, sha });
+}
+
+// Listing jobs scans every job COB in the repo, so it is slow (hundreds of ms
+// to seconds). It is re-requested on every JobCob mount; caching by (rid, sha)
+// collapses concurrent identical calls into one in-flight request and reuses
+// the result across navigations. A short TTL keeps CI status reasonably fresh.
+export const cachedListJobs = cached(
+  listJobs,
+  (...[rid, sha]) => `list_jobs:${rid}:${sha}`,
+  { max: 200, ttl: 30_000 },
 );
 
 async function diffStats(

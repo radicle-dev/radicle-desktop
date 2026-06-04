@@ -5,7 +5,7 @@
 
   import { SvelteSet } from "svelte/reactivity";
 
-  import { invoke } from "@app/lib/invoke";
+  import { cachedListJobs } from "@app/lib/invoke";
   import { authorForNodeId, safeHttpUrl } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
@@ -289,7 +289,7 @@
   }
 </style>
 
-{#await invoke<Job[]>("list_jobs", { rid, sha: commit }) then jobs}
+{#await cachedListJobs(rid, commit) then jobs}
   {#if jobs.length > 0}
     {@const groups = groupJobs(jobs)}
     {@const overallCounts = totalCounts(groups)}
