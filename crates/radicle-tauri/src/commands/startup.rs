@@ -8,7 +8,7 @@ use radicle_artifact_client::tokio::Client;
 use radicle_types::config::{Config, Version};
 use radicle_types::error::Error;
 use radicle_types::traits::Profile;
-use radicle_types::{AppState, ArtifactClient, domain};
+use radicle_types::{AppState, domain};
 
 #[tauri::command]
 pub(crate) fn version(app: AppHandle) -> Result<Version, Error> {
@@ -115,11 +115,11 @@ pub(crate) async fn startup(app: AppHandle) -> Result<Config, Error> {
         }
     });
 
-    let state = AppState { profile };
-    app.manage(state.clone());
-    app.manage(ArtifactClient {
+    let state = AppState {
+        profile,
         client: artifact_client,
-    });
+    };
+    app.manage(state.clone());
 
     Ok(state.config())
 }

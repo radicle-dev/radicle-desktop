@@ -128,14 +128,6 @@ pub fn router(ctx: Context) -> Router {
         .route("/set_metadata", post(set_metadata_handler))
         .route("/remove_metadata", post(remove_metadata_handler))
         .route("/redact_artifact", post(redact_artifact_handler))
-        .route(
-            "/get_auto_seed_artifacts",
-            post(get_auto_seed_artifacts_handler),
-        )
-        .route(
-            "/set_auto_seed_artifacts",
-            post(set_auto_seed_artifacts_handler),
-        )
         .route("/list_notifications", post(list_notifications_handler))
         .route("/notification_count", post(notification_count_handler))
         .route("/clear_notifications", post(clear_notifications_handler))
@@ -776,11 +768,6 @@ struct RemoveMetadataBody {
 }
 
 #[derive(Serialize, Deserialize)]
-struct AutoSeedBody {
-    pub enabled: bool,
-}
-
-#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct SeedArtifactBody {
     pub rid: identity::RepoId,
@@ -929,20 +916,5 @@ async fn redact_artifact_handler(
     }): Json<RedactBody>,
 ) -> impl IntoResponse {
     ctx.redact_artifact(rid, release_id, cid, reason)?;
-    Ok::<_, Error>(Json(()))
-}
-
-async fn get_auto_seed_artifacts_handler(State(ctx): State<Context>) -> impl IntoResponse {
-    let settings = radicle_types::settings::load(ctx.profile().home().path());
-    Ok::<_, Error>(Json(settings.auto_seed_artifacts))
-}
-
-async fn set_auto_seed_artifacts_handler(
-    State(ctx): State<Context>,
-    Json(AutoSeedBody { enabled }): Json<AutoSeedBody>,
-) -> impl IntoResponse {
-    let mut settings = radicle_types::settings::load(ctx.profile().home().path());
-    settings.auto_seed_artifacts = enabled;
-    radicle_types::settings::save(ctx.profile().home().path(), &settings)?;
     Ok::<_, Error>(Json(()))
 }

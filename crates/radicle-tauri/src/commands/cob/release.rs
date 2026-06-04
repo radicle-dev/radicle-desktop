@@ -12,7 +12,6 @@ use radicle_artifact_core::keys::EndpointId;
 use radicle_artifact_core::protocol::{FetchLocation, FetchProgress, ImportMode};
 use url::Url;
 
-use radicle_types::ArtifactClient;
 use radicle_types::artifact::ArtifactNodeStatus;
 use radicle_types::cobs::release;
 use radicle_types::error::Error;
@@ -176,7 +175,6 @@ pub async fn redact_artifact(
 #[tauri::command]
 pub async fn seed_artifact(
     ctx: tauri::State<'_, AppState>,
-    artifact: tauri::State<'_, ArtifactClient>,
     rid: RepoId,
     release_id: String,
     cid: String,
@@ -187,7 +185,7 @@ pub async fn seed_artifact(
 
     // Ask the node to import the bytes (ImportMode::Copy so the source can
     // be moved or deleted later) and tag the (rid, cid) as seeded.
-    let receipt = artifact
+    let receipt = ctx
         .client
         .seed(rid, parsed_cid, &source_path, kind, ImportMode::Copy)
         .await?;
@@ -205,7 +203,6 @@ pub async fn seed_artifact(
 #[tauri::command]
 pub async fn unseed_artifact(
     ctx: tauri::State<'_, AppState>,
-    artifact: tauri::State<'_, ArtifactClient>,
     rid: RepoId,
     release_id: String,
     cid: String,
@@ -223,18 +220,18 @@ pub async fn unseed_artifact(
     })
     .await??;
 
-    artifact.client.unseed(rid, parsed_cid).await?;
+    ctx.client.unseed(rid, parsed_cid).await?;
     Ok(())
 }
 
 #[tauri::command]
 pub async fn is_seeding(
-    artifact: tauri::State<'_, ArtifactClient>,
+    ctx: tauri::State<'_, AppState>,
     rid: RepoId,
     cid: String,
 ) -> Result<bool, Error> {
     let parsed_cid = Cid::from_str(&cid)?;
-    Ok(artifact.client.is_seeding(rid, parsed_cid).await?)
+    Ok(ctx.client.is_seeding(rid, parsed_cid).await?)
 }
 
 /// Current status of the rad-artifact node — endpoint, uptime, seeding
@@ -243,9 +240,9 @@ pub async fn is_seeding(
 /// guidance instead of stats.
 #[tauri::command]
 pub async fn artifact_node_status(
-    artifact: tauri::State<'_, ArtifactClient>,
+    ctx: tauri::State<'_, AppState>,
 ) -> Result<ArtifactNodeStatus, Error> {
-    let status = artifact.client.status().await?;
+    let status = ctx.client.status().await?;
     Ok(ArtifactNodeStatus::from(status))
 }
 
@@ -294,11 +291,11 @@ fn resolve_fetch_locations(locations: &BTreeMap<Did, BTreeSet<Url>>) -> Vec<Fetc
 pub async fn download_artifact(
     app: tauri::AppHandle,
     ctx: tauri::State<'_, AppState>,
-    artifact: tauri::State<'_, ArtifactClient>,
     rid: RepoId,
     release_id: String,
     cid: String,
     dest: PathBuf,
+    seed: bool,
 ) -> Result<(), Error> {
     let parsed_cid = Cid::from_str(&cid)?;
 
@@ -312,8 +309,6 @@ pub async fn download_artifact(
     })
     .await??;
     let fetch_locations = resolve_fetch_locations(&locations);
-
-    let auto_seed = radicle_types::settings::load(ctx.profile.home().path()).auto_seed_artifacts;
 
     // Bridge the node's streamed progress frames to the per-CID UI event.
     let cid_for_progress = cid.clone();
@@ -339,7 +334,7 @@ pub async fn download_artifact(
         let _ = app_for_progress.emit("artifact_progress", payload);
     };
 
-    let receipt = artifact
+    let receipt = ctx
         .client
         .download(
             DownloadArgs {
@@ -347,7 +342,7 @@ pub async fn download_artifact(
                 cid: parsed_cid,
                 locations: fetch_locations,
                 dest,
-                seed: auto_seed,
+                seed,
             },
             FETCH_IDLE,
             on_progress,
@@ -427,19 +422,4 @@ pub async fn pick_artifact_save_path(
     Ok(path
         .and_then(|p| p.into_path().ok())
         .map(|p| p.to_string_lossy().into_owned()))
-}
-
-// Settings ------------------------------------------------------------------
-
-#[tauri::command]
-pub fn get_auto_seed_artifacts(ctx: tauri::State<AppState>) -> Result<bool, Error> {
-    let settings = radicle_types::settings::load(ctx.profile.home().path());
-    Ok(settings.auto_seed_artifacts)
-}
-
-#[tauri::command]
-pub fn set_auto_seed_artifacts(ctx: tauri::State<AppState>, enabled: bool) -> Result<(), Error> {
-    let mut settings = radicle_types::settings::load(ctx.profile.home().path());
-    settings.auto_seed_artifacts = enabled;
-    radicle_types::settings::save(ctx.profile.home().path(), &settings)
 }

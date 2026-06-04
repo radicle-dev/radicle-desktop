@@ -73,8 +73,6 @@ pub fn run() {
             cob::release::pick_artifact_files,
             cob::release::pick_artifact_directory,
             cob::release::pick_artifact_save_path,
-            cob::release::get_auto_seed_artifacts,
-            cob::release::set_auto_seed_artifacts,
             cob::save_embed_by_bytes,
             cob::save_embed_by_clipboard,
             cob::save_embed_by_path,

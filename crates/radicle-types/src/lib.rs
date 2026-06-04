@@ -17,7 +17,6 @@ pub mod error;
 pub mod oid;
 pub mod outbound;
 pub mod repo;
-pub mod settings;
 pub mod source;
 pub mod syntax;
 pub mod test;
@@ -26,13 +25,9 @@ pub mod traits;
 #[derive(Clone)]
 pub struct AppState {
     pub profile: radicle::Profile,
-}
-
-/// Client for the external `rad-artifact` node. Held separately from
-/// `AppState` so command handlers and tests that don't touch artifact
-/// seeding don't need to construct it.
-#[derive(Clone)]
-pub struct ArtifactClient {
+    /// Client for the external `rad-artifact` node. Cheap to construct (it
+    /// only wraps a socket path); seeding/download calls fail with
+    /// `ArtifactNodeNotRunning` when the node is down.
     pub client: radicle_artifact_client::tokio::Client,
 }
 

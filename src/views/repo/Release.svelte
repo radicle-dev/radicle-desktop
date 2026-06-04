@@ -7,8 +7,10 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { listen } from "@tauri-apps/api/event";
+  import { get } from "svelte/store";
   import { onDestroy, onMount } from "svelte";
 
+  import { autoSeedArtifacts } from "@app/lib/autoSeed";
   import { artifactNodeRunning } from "@app/lib/events";
   import { invoke, InvokeError } from "@app/lib/invoke";
   import { isDelegateOrAuthor } from "@app/lib/roles";
@@ -286,9 +288,10 @@
         releaseId: release.id,
         cid: artifact.cid,
         dest,
+        seed: get(autoSeedArtifacts),
       });
-      // The backend auto-seeds when the user has that setting enabled, so
-      // refresh to pick up the new `iroh://` location and pill state.
+      // The node seeds during the fetch when the user opted in, so refresh
+      // to pick up the new `iroh://` location and pill state.
       await refresh();
       void refreshAvailability(artifact.cid);
     } catch (err) {

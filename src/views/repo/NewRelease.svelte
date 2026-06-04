@@ -13,8 +13,10 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Tag } from "@bindings/repo/Tag";
 
+  import { get } from "svelte/store";
   import { onMount } from "svelte";
 
+  import { autoSeedArtifacts } from "@app/lib/autoSeed";
   import { invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
 
@@ -42,7 +44,9 @@
   let selectedTagName = $state("");
   const files = $state<StagedFile[]>([]);
   let submitting = $state(false);
-  let autoSeed = $state(true);
+  // Seed over iroh after publishing; defaults to the persisted preference
+  // but can be toggled per release via the checkbox below.
+  let autoSeed = $state(get(autoSeedArtifacts));
   let submitError: string | undefined = $state();
   // Recent commits offered as autocomplete suggestions for the OID input.
   let commits = $state<Commit[]>([]);
@@ -54,10 +58,6 @@
   // only and don't contribute a separate tag OID.
   const selectedTag = $derived(tags.find(t => t.name === selectedTagName));
   const tagOid = $derived(selectedTag?.annotated ? selectedTag.oid : undefined);
-
-  void invoke<boolean>("get_auto_seed_artifacts").then(v => {
-    autoSeed = v;
-  });
 
   onMount(async () => {
     try {

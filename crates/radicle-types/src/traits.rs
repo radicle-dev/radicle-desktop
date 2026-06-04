@@ -49,7 +49,10 @@ mod test {
         let tmp = tempfile::tempdir().unwrap();
         let profile = test::profile(tmp.path(), [0xff; 32]);
         let signer = MockSigner::from_seed([0xff; 32]);
-        let state = AppState { profile };
+        let client = radicle_artifact_client::tokio::Client::new(
+            radicle_artifact_client::tokio::Client::default_socket(profile.home().path()),
+        );
+        let state = AppState { profile, client };
 
         assert_eq!(
             Profile::config(&state),
