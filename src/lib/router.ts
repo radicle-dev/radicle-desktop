@@ -169,7 +169,9 @@ export function routeToPath(route: Route): string {
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||
     route.resource === "repo.patch" ||
-    route.resource === "repo.patches"
+    route.resource === "repo.patches" ||
+    route.resource === "repo.releases" ||
+    route.resource === "repo.release"
   ) {
     return repoRouteToPath(route);
   } else if (route.resource === "booting") {

@@ -15,7 +15,7 @@
     resetFontSize,
   } from "@app/lib/appearance.svelte";
   import { checkAuth, startup } from "@app/lib/auth.svelte";
-  import { nodeRunning } from "@app/lib/events";
+  import { artifactNodeRunning, nodeRunning } from "@app/lib/events";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
   import { hide } from "@app/lib/modal";
@@ -42,6 +42,8 @@
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
+  import Release from "@app/views/repo/Release.svelte";
+  import Releases from "@app/views/repo/Releases.svelte";
   import RepoCommit from "@app/views/repo/RepoCommit.svelte";
   import RepoCommits from "@app/views/repo/RepoCommits.svelte";
   import RepoHome from "@app/views/repo/RepoHome.svelte";
@@ -108,11 +110,19 @@
     }
 
     if (window.__TAURI_INTERNALS__) {
-      setUnlistenNodeEvents(
-        await listen<boolean>("node_running", event => {
-          nodeRunning.set(event.payload);
-        }),
+      const unlistenNode = await listen<boolean>("node_running", event => {
+        nodeRunning.set(event.payload);
+      });
+      const unlistenArtifactNode = await listen<boolean>(
+        "artifact_node_running",
+        event => {
+          artifactNodeRunning.set(event.payload);
+        },
       );
+      setUnlistenNodeEvents(() => {
+        unlistenNode();
+        unlistenArtifactNode();
+      });
     }
 
     try {
@@ -227,6 +237,10 @@
       <Patch {...$activeRouteStore.params} />
     {:else if $activeRouteStore.resource === "repo.patches"}
       <Patches {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "repo.releases"}
+      <Releases {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "repo.release"}
+      <Release {...$activeRouteStore.params} />
     {:else}
       {unreachable($activeRouteStore)}
     {/if}

@@ -6,6 +6,7 @@ import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { Review } from "@bindings/cob/patch/Review";
 import type { Revision } from "@bindings/cob/patch/Revision";
+import type { Release } from "@bindings/cob/release/Release";
 import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Config } from "@bindings/config/Config";
 import type { Diff } from "@bindings/diff/Diff";
@@ -163,6 +164,46 @@ export interface LoadedRepoPatchesRoute {
   };
 }
 
+// Releases list filter. `delegate` is the default; threaded through to
+// the release detail route so the breadcrumb can navigate back to the
+// same filtered list.
+export type ReleaseFilter = "delegate" | "all";
+
+export interface RepoReleasesRoute {
+  resource: "repo.releases";
+  rid: string;
+  filter?: ReleaseFilter;
+}
+
+export interface LoadedRepoReleasesRoute {
+  resource: "repo.releases";
+  params: {
+    repo: RepoInfo;
+    releases: Release[];
+    filter: ReleaseFilter;
+    sidebarData: SidebarData;
+  };
+}
+
+export interface RepoReleaseRoute {
+  resource: "repo.release";
+  rid: string;
+  release: string;
+  filter?: ReleaseFilter;
+}
+
+export interface LoadedRepoReleaseRoute {
+  resource: "repo.release";
+  params: {
+    repo: RepoInfo;
+    config: Config;
+    releases: Release[];
+    release: Release;
+    filter: ReleaseFilter;
+    sidebarData: SidebarData;
+  };
+}
+
 export type RepoRoute =
   | RepoHomeRoute
   | RepoCommitsRoute
@@ -170,7 +211,9 @@ export type RepoRoute =
   | RepoIssueRoute
   | RepoIssuesRoute
   | RepoPatchRoute
-  | RepoPatchesRoute;
+  | RepoPatchesRoute
+  | RepoReleasesRoute
+  | RepoReleaseRoute;
 export type LoadedRepoRoute =
   | LoadedRepoHomeRoute
   | LoadedRepoCommitsRoute
@@ -178,7 +221,9 @@ export type LoadedRepoRoute =
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
   | LoadedRepoPatchRoute
-  | LoadedRepoPatchesRoute;
+  | LoadedRepoPatchesRoute
+  | LoadedRepoReleasesRoute
+  | LoadedRepoReleaseRoute;
 
 export async function loadPatch(
   route: RepoPatchRoute,
@@ -415,6 +460,51 @@ export async function loadIssue(
   };
 }
 
+export async function loadReleases(
+  route: RepoReleasesRoute,
+): Promise<LoadedRepoReleasesRoute> {
+  const [sidebarData, repo, releases] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", { rid: route.rid }),
+    invoke<Release[]>("list_releases", { rid: route.rid }),
+  ]);
+
+  return {
+    resource: "repo.releases",
+    params: { sidebarData, repo, releases, filter: route.filter ?? "delegate" },
+  };
+}
+
+export async function loadRelease(
+  route: RepoReleaseRoute,
+): Promise<LoadedRepoReleaseRoute | null> {
+  const [sidebarData, repo, release, releases] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", { rid: route.rid }),
+    invoke<Release | null>("release_by_id", {
+      rid: route.rid,
+      releaseId: route.release,
+    }),
+    invoke<Release[]>("list_releases", { rid: route.rid }),
+  ]);
+
+  if (!release) {
+    return null;
+  }
+
+  return {
+    resource: "repo.release",
+    params: {
+      sidebarData,
+      repo,
+      config: sidebarData.config,
+      release,
+      releases,
+      filter: route.filter ?? "delegate",
+    },
+  };
+}
+
 export async function loadIssues(
   route: RepoIssuesRoute,
 ): Promise<LoadedRepoIssuesRoute> {
@@ -485,6 +575,21 @@ export function repoRouteToPath(route: RepoRoute): string {
     let url = [...pathSegments, "patches"].join("/");
     if (route.status) {
       searchParams.set("status", route.status);
+      url += `?${searchParams}`;
+    }
+    return url;
+  } else if (route.resource === "repo.releases") {
+    let url = [...pathSegments, "releases"].join("/");
+    // Only serialize a non-default filter so the canonical URL stays clean.
+    if (route.filter && route.filter !== "delegate") {
+      searchParams.set("filter", route.filter);
+      url += `?${searchParams}`;
+    }
+    return url;
+  } else if (route.resource === "repo.release") {
+    let url = [...pathSegments, "releases", route.release].join("/");
+    if (route.filter && route.filter !== "delegate") {
+      searchParams.set("filter", route.filter);
       url += `?${searchParams}`;
     }
     return url;
@@ -569,6 +674,17 @@ export function repoUrlToRoute(
       } else {
         return { resource: "repo.patches", rid, status };
       }
+    } else if (resource === "releases") {
+      const id = segments.shift();
+      const filterParam = searchParams.get("filter");
+      const filter: ReleaseFilter | undefined =
+        filterParam === "all" || filterParam === "delegate"
+          ? filterParam
+          : undefined;
+      if (id) {
+        return { resource: "repo.release", rid, release: id, filter };
+      }
+      return { resource: "repo.releases", rid, filter };
     } else {
       return null;
     }

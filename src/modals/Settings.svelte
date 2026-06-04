@@ -1,8 +1,9 @@
 <script lang="ts">
-  import { hide } from "@app/lib/modal";
+  import { hide, show } from "@app/lib/modal";
   import { updateChecker } from "@app/lib/updateChecker.svelte";
 
   import AnnounceSwitch from "@app/components/AnnounceSwitch.svelte";
+  import AutoSeedSwitch from "@app/components/AutoSeedSwitch.svelte";
   import BadgeCounterSwitch from "@app/components/BadgeCounterSwitch.svelte";
   import Button from "@app/components/Button.svelte";
   import CodeFontSwitch from "@app/components/CodeFontSwitch.svelte";
@@ -11,6 +12,7 @@
   import Icon from "@app/components/Icon.svelte";
   import ThemeSwitch from "@app/components/ThemeSwitch.svelte";
   import UpdateSwitch from "@app/components/UpdateSwitch.svelte";
+  import NodeStatus from "@app/modals/NodeStatus.svelte";
 </script>
 
 <style>
@@ -110,6 +112,28 @@
         </span>
       </div>
       <AnnounceSwitch />
+    </div>
+    <div class="row">
+      <div class="row-label">
+        <span class="row-title">Auto-seed artifacts</span>
+        <span class="row-description">
+          Serve artifacts you publish over iroh automatically
+        </span>
+      </div>
+      <AutoSeedSwitch />
+    </div>
+    <div class="row">
+      <div class="row-label">
+        <span class="row-title">Artifact node status</span>
+        <span class="row-description">
+          Inspect the rad-artifact node serving your artifacts
+        </span>
+      </div>
+      <Button
+        variant="outline"
+        onclick={() => show({ component: NodeStatus, props: {} })}>
+        View
+      </Button>
     </div>
     <div class="row">
       <div class="row-label">

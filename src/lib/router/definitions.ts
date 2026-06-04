@@ -8,6 +8,8 @@ import {
   loadIssues,
   loadPatch,
   loadPatches,
+  loadRelease,
+  loadReleases,
   loadRepoCommit,
   loadRepoCommits,
   loadRepoHome,
@@ -64,7 +66,9 @@ export function isLoadedRepoRoute(
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||
     route.resource === "repo.patch" ||
-    route.resource === "repo.patches"
+    route.resource === "repo.patches" ||
+    route.resource === "repo.releases" ||
+    route.resource === "repo.release"
   );
 }
 
@@ -119,6 +123,19 @@ export async function loadRoute(
     return loadPatch(route);
   } else if (route.resource === "repo.patches") {
     return loadPatches(route);
+  } else if (route.resource === "repo.releases") {
+    return loadReleases(route);
+  } else if (route.resource === "repo.release") {
+    const loaded = await loadRelease(route);
+    if (loaded) {
+      return loaded;
+    }
+    // Fall back to the list when a release id no longer exists.
+    return loadReleases({
+      resource: "repo.releases",
+      rid: route.rid,
+      filter: route.filter,
+    });
   }
   return route;
 }
