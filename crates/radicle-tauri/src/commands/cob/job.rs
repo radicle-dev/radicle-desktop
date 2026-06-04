@@ -5,12 +5,13 @@ use radicle_types::error::Error;
 use radicle_types::traits::job::Jobs;
 
 use crate::AppState;
+use crate::commands::blocking;
 
 #[tauri::command]
-pub fn list_jobs(
-    ctx: tauri::State<AppState>,
+pub async fn list_jobs(
+    ctx: tauri::State<'_, AppState>,
     rid: RepoId,
     sha: git::Oid,
 ) -> Result<Vec<job::Job>, Error> {
-    ctx.list_jobs(rid, sha)
+    blocking(ctx, move |ctx| ctx.list_jobs(rid, sha)).await
 }
