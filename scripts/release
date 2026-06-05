@@ -1,173 +1,378 @@
 #!/usr/bin/env bash
 #
-# Build release artifacts for all platforms.
+# Interactive, phased release orchestrator for radicle-desktop.
 #
-# Usage: scripts/release [OPTIONS]
+# Automates the mechanical steps of the release process and pauses at the human
+# gates (CI/patch approval, DMG smoke-test, the cross-repo apt signing, delegate
+# tag approval, Zulip announce). Each phase prints what to do next and the exact
+# flag to resume with. State is not persisted: the version comes from --version
+# (prep) or tauri.conf.json (later phases), and commit SHAs are derived from git.
 #
-# Options:
-#   --only-dmg        Build macOS aarch64 DMG only
-#   --only-deb        Build Linux amd64 deb only
-#   --only-appimage   Build Linux amd64 AppImage only
-#   --rebuild-image   Force rebuild of podman container images
-#   --clean           Wipe target-release/, node_modules/ and Linux build volumes
-#   --help            Show this help
+# Usage:
+#   scripts/release --phase prep --version X.Y.Z
+#   scripts/release --phase build
+#   scripts/release --phase apt
+#   scripts/release --phase publish
+#   scripts/release --phase arch
+#   scripts/release --phase tag
+#
+#   scripts/release --list      List the phases in order
+#   scripts/release --help      Show this help
+#
+# Add --dry-run (-n) to a phase to print the commands it would run without
+# executing them (read-only lookups still run, so the preview is realistic).
+#
+# Config is auto-detected and overridable via environment variables:
+#   FULL_NAME    (default: git config user.name)
+#   EMAIL        (default: git config user.email)
+#   USERNAME     (default: $USER)
+#   SSH_KEY      (default: $HOME/.ssh/id_ed25519)
+#   SIGNING_KEY  (default: $HOME/.ssh/rudolfs-apt-signing-key)
+#   FILES_HOST   (default: files.radicle.dev)
 
 set -euo pipefail
+
+DRY_RUN=false
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# ---- Flags ----
+TAURI_CONF="$PROJECT_DIR/crates/radicle-tauri/tauri.conf.json"
+PKGBUILD="$PROJECT_DIR/arch/radicle-desktop/PKGBUILD"
+CHANGELOG="$PROJECT_DIR/CHANGELOG.md"
+APT_REPO_DIR="$(cd "$PROJECT_DIR/../radicle-apt-repo" 2>/dev/null && pwd || true)"
 
-BUILD_DMG=true
-BUILD_DEB=true
-BUILD_APPIMAGE=true
-REBUILD_IMAGE=false
-CLEAN=false
+PHASES=(prep build apt publish arch tag)
 
-for arg in "$@"; do
-  case "$arg" in
-    --only-dmg)      BUILD_DMG=true;  BUILD_DEB=false; BUILD_APPIMAGE=false ;;
-    --only-deb)      BUILD_DMG=false; BUILD_DEB=true;  BUILD_APPIMAGE=false ;;
-    --only-appimage) BUILD_DMG=false; BUILD_DEB=false; BUILD_APPIMAGE=true  ;;
-    --rebuild-image) REBUILD_IMAGE=true ;;
-    --clean)         CLEAN=true; BUILD_DMG=false; BUILD_DEB=false; BUILD_APPIMAGE=false ;;
-    --help|-h)
-      head -20 "$0" | grep '^#' | sed 's/^# \?//'
-      exit 0
-      ;;
-    *) echo "Unknown option: $arg" >&2; exit 1 ;;
-  esac
-done
+# ---- Output helpers ----
 
-# ---- Helpers ----
+bold() { printf '\033[1m%s\033[0m\n' "$*"; }
+step() { echo; bold "==> $*"; }
+info() { echo "    $*"; }
+warn() { echo "    WARNING: $*" >&2; }
+die()  { echo "Error: $*" >&2; exit 1; }
 
-step() { echo; echo "==> $*"; }
+confirm() {
+  local prompt="$1" reply
+  if [[ "$DRY_RUN" == true ]]; then
+    info "$prompt [dry-run: assuming yes]"
+    return 0
+  fi
+  read -r -p "    $prompt [y/N] " reply
+  [[ "$reply" =~ ^[Yy]$ ]]
+}
 
-# Builds a container image if it does not already exist (or --rebuild-image).
-# $1: image name, $2: dockerfile path (relative to PROJECT_DIR), $3: platform
-ensure_image() {
-  local name="$1"
-  local dockerfile="$2"
-  local platform="$3"
-  if [[ "$REBUILD_IMAGE" == true ]] || ! podman image exists "$name" 2>/dev/null; then
-    echo "    Building container image: $name"
-    podman build \
-      --platform "$platform" \
-      -t "$name" \
-      -f "$PROJECT_DIR/$dockerfile" \
-      "$PROJECT_DIR"
+# Run a mutating command, or just print it under --dry-run.
+run() {
+  if [[ "$DRY_RUN" == true ]]; then
+    printf '    [dry-run] %s\n' "$*"
+  else
+    "$@"
   fi
 }
 
-# ---- Version and output directory ----
+# Like run(), but for a command that must run in directory $1.
+run_sh() {
+  if [[ "$DRY_RUN" == true ]]; then
+    printf '    [dry-run] (cd %s && %s)\n' "$1" "${*:2}"
+  else
+    ( cd "$1" && "${@:2}" )
+  fi
+}
 
-VERSION="$(jq -r '.version' "$PROJECT_DIR/crates/radicle-tauri/tauri.conf.json")"
-RELEASE_SHA="$(git -C "$PROJECT_DIR" rev-parse HEAD)"
-SHORT_SHA="$(git -C "$PROJECT_DIR" rev-parse --short=8 HEAD)"
-RELEASE_DIR="$PROJECT_DIR/releases/v$VERSION"
+# Abort on a missing prerequisite — but only warn under --dry-run, so later
+# phases can still be previewed without their inputs present.
+fail() {
+  if [[ "$DRY_RUN" == true ]]; then warn "$*"; else die "$*"; fi
+}
 
-step "Building release v$VERSION (${SHORT_SHA})"
-echo "    Output: $RELEASE_DIR"
-mkdir -p "$RELEASE_DIR"
+# Print the command(s) the user should run next to resume the flow.
+# Under --dry-run the hint carries the flag through, so previewing one phase
+# suggests previewing the next.
+next() {
+  echo
+  bold "Next:"
+  local cmd
+  for cmd in "$@"; do
+    [[ "$DRY_RUN" == true ]] && cmd+=" --dry-run"
+    printf '    %s\n' "$cmd"
+  done
+}
 
-# ---- Clean ----
+# ---- Config (auto-detect, env-overridable) ----
 
-if [[ "$CLEAN" == true ]]; then
-  step "Cleaning build artifacts"
-  rm -rf "$PROJECT_DIR/target-release"
-  rm -rf "$PROJECT_DIR/node_modules"
-  podman volume rm radicle-desktop-linux-target radicle-desktop-linux-nm radicle-desktop-linux-cargo 2>/dev/null || true
-  podman image rm radicle-desktop-release-builder 2>/dev/null || true
-  echo "    Cleaned"
-fi
+FULL_NAME="${FULL_NAME:-$(git -C "$PROJECT_DIR" config user.name)}"
+EMAIL="${EMAIL:-$(git -C "$PROJECT_DIR" config user.email)}"
+USERNAME="${USERNAME:-${USER:-}}"
+SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
+SIGNING_KEY="${SIGNING_KEY:-$HOME/.ssh/rudolfs-apt-signing-key}"
+FILES_HOST="${FILES_HOST:-files.radicle.dev}"
 
-# ---- macOS aarch64 DMG ----
+# ---- Version helpers ----
 
-if [[ "$BUILD_DMG" == true ]]; then
-  step "Building macOS aarch64 DMG"
-  cd "$PROJECT_DIR"
-  npm install
-  CARGO_TARGET_DIR="$PROJECT_DIR/target-release" \
-    npm exec -- tauri build --bundles dmg
-  cp "target-release/release/bundle/dmg/Radicle_${VERSION}_aarch64.dmg" \
-    "$RELEASE_DIR/radicle-desktop-aarch64.dmg"
-  echo "    radicle-desktop-aarch64.dmg"
-fi
+# Reads the current version from tauri.conf.json.
+conf_version() {
+  jq -r '.version' "$TAURI_CONF"
+}
 
-# ---- Linux amd64 deb ----
-#
-# Runs in the native ARM64 Ubuntu container, which cross-compiles Rust to
-# x86_64. Build artifacts are cached in named podman volumes so subsequent
-# runs only recompile what changed.
-#
-# When to clear volumes:
-#   After a Rust toolchain bump or dependency change that confuses incremental
-#   compilation: podman volume rm radicle-desktop-linux-target radicle-desktop-linux-cargo
-#   After a major npm dependency change: podman volume rm radicle-desktop-linux-nm
+# The SHA of the arch-package commit for $1, looked up by its commit subject.
+# This is the second commit of the release patch (its tip) and the one we tag.
+arch_commit_sha() {
+  git -C "$PROJECT_DIR" log --grep="^Update arch package to v$1\$" -1 --format=%H
+}
 
-if [[ "$BUILD_DEB" == true ]]; then
-  step "Building Linux amd64 deb"
-  ensure_image "radicle-desktop-release-builder" "Dockerfile.release" "linux/arm64"
+# ---- Phases ----
 
-  podman run --rm \
-    -v "$PROJECT_DIR:/workspace:z" \
-    -v radicle-desktop-linux-target:/workspace/target:z \
-    -v radicle-desktop-linux-nm:/workspace/node_modules:z \
-    -v radicle-desktop-linux-cargo:/root/.cargo/registry:z \
-    -v "$RELEASE_DIR:/output:z" \
-    -w /workspace \
-    -e CI=true \
-    radicle-desktop-release-builder \
-    bash -c "
-      set -euo pipefail
-      npm ci
-      npm exec -- tauri build --target x86_64-unknown-linux-gnu --bundles deb
-      cp target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb /output/
-    "
+phase_prep() {
+  local version="$1"
+  [[ -n "$version" ]] || die "prep requires --version X.Y.Z"
 
-  echo "    radicle-desktop_${VERSION}_amd64.deb"
-fi
+  step "Preparing release v$version"
+  git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD | grep -qx main \
+    || warn "not on main"
 
-# ---- Linux amd64 AppImage ----
-#
-# See scripts/appimage-build for the full setup. Key points:
-# - --privileged to mount binfmt_misc for x86_64 emulation via QEMU
-# - APPIMAGE_EXTRACT_AND_RUN=1 so linuxdeploy-x86_64.AppImage runs without FUSE
-# - PKG_CONFIG_PATH for the GTK plugin to find amd64 packages
-# - PATH includes libgtk-3-0t64 dir where gtk-query-immodules-3.0 lives
-# The script is mounted from the workspace (heredocs pipe to host, not container)
+  info "Syncing and fetching"
+  run rad sync
+  run git -C "$PROJECT_DIR" fetch
 
-if [[ "$BUILD_APPIMAGE" == true ]]; then
-  step "Building Linux amd64 AppImage"
-  ensure_image "radicle-desktop-release-builder" "Dockerfile.release" "linux/arm64"
+  info "Creating branch release/v$version"
+  run git -C "$PROJECT_DIR" checkout -b "release/v$version"
 
-  podman run --rm \
-    --privileged \
-    -v "$PROJECT_DIR:/workspace:z" \
-    -v radicle-desktop-linux-target:/workspace/target:z \
-    -v radicle-desktop-linux-nm:/workspace/node_modules:z \
-    -v radicle-desktop-linux-cargo:/root/.cargo/registry:z \
-    -v "$RELEASE_DIR:/output:z" \
-    -w /workspace \
-    -e CI=true \
-    radicle-desktop-release-builder \
-    bash /workspace/scripts/appimage-build
+  step "Changelog material (for the v$version entry)"
+  local prev
+  prev="$(git -C "$PROJECT_DIR" log --grep='^Release v' -1 --format=%H || true)"
+  if [[ -n "$prev" ]]; then
+    info "Commits since $(git -C "$PROJECT_DIR" log -1 --format='%s' "$prev"):"
+    echo
+    git -C "$PROJECT_DIR" log "$prev"..HEAD --format='- %s (%an <%ae>)'
+    echo
+    bold "    External contributors (map these to DID links for the shout-out):"
+    echo
+    git -C "$PROJECT_DIR" log "$prev"..HEAD --format='%an <%ae>' \
+      | sort -u | grep -v -F "$EMAIL" || true
+    echo
+    info "Format the list into the user-facing changes for the CHANGELOG entry."
+  else
+    warn "no previous 'Release v*' commit found; writing the entry from scratch"
+  fi
 
-  echo "    radicle-desktop_${VERSION}_amd64.AppImage"
-fi
+  if ! confirm "Continue and open CHANGELOG.md in \$EDITOR?"; then
+    die "Aborted before editing CHANGELOG."
+  fi
 
-if [[ "$CLEAN" == false ]]; then
-  # ---- latest.json ----
+  step "Bumping version to $version"
+  run sed -i '' -E "s/^(  \"version\": \")[^\"]+(\",)$/\1$version\2/" "$TAURI_CONF"
+  [[ "$DRY_RUN" == true ]] || info "tauri.conf.json -> $(conf_version)"
 
-  step "Generating latest.json"
-  printf '{"sha": "%s", "version": "%s"}' "$RELEASE_SHA" "$VERSION" \
-    > "$RELEASE_DIR/latest.json"
-  echo "    latest.json"
+  step "Editing CHANGELOG.md"
+  info "Add the v$version entry (Features, Bug fixes, Shout-out block)."
+  run "${EDITOR:-vi}" "$CHANGELOG"
 
-  # ---- Summary ----
+  step "Creating Release Commit"
+  run git -C "$PROJECT_DIR" commit -a -m "Release v$version"
+  local sha
+  sha="$(git -C "$PROJECT_DIR" rev-parse HEAD)"
+  info "Release commit: $sha"
+
+  step "Updating Arch package to v$version"
+  run sed -i '' -E "s/^_commit=.*/_commit=$sha/" "$PKGBUILD"
+  run sed -i '' -E "s/^pkgver=.*/pkgver='$version'/" "$PKGBUILD"
+  run_sh "$PROJECT_DIR/arch" ./generate-srcinfo.sh
+  run git -C "$PROJECT_DIR" add arch/radicle-desktop/.SRCINFO arch/radicle-desktop/PKGBUILD
+  run git -C "$PROJECT_DIR" commit -m "Update arch package to v$version"
+
+  step "Pushing Release Patch"
+  if confirm "Push the Release Patch now (git push rad HEAD:refs/patches)?"; then
+    run git -C "$PROJECT_DIR" push rad HEAD:refs/patches
+    info "Wait for CI to pass, get the patch approved, and merge it into main."
+  else
+    info "Skipped. Push it yourself when ready: git push rad HEAD:refs/patches"
+  fi
+  next "scripts/release --phase build"
+}
+
+phase_build() {
+  local version
+  version="$(conf_version)"
+  step "Building release artifacts for v$version"
+  run "$SCRIPT_DIR/build-artifacts"
+
+  step "Build complete"
+  info "Install releases/v$version/radicle-desktop-aarch64.dmg and verify it runs."
+  next "scripts/release --phase apt"
+}
+
+phase_apt() {
+  local version
+  version="$(conf_version)"
+  local deb="radicle-desktop_${version}_amd64.deb"
+  local src="$PROJECT_DIR/releases/v$version/$deb"
+
+  step "Staging the Debian package for signing"
+  [[ -f "$src" ]] || fail "$src not found — run --phase build first"
+  [[ -n "$APT_REPO_DIR" ]] || fail "../radicle-apt-repo not found"
+  run cp "$src" "${APT_REPO_DIR:-../radicle-apt-repo}/"
+  info "Copied $deb -> ${APT_REPO_DIR:-../radicle-apt-repo}/"
+
+  step "Sign and publish the package from radicle-apt-repo"
+  info "Run these in $APT_REPO_DIR:"
+  echo
+  cat <<EOF
+    rad sync && git fetch
+
+    docker build -t radicle-apt scripts
+    docker run --rm -it \\
+      -v "\$(pwd):/src/apt" \\
+      -v "$SIGNING_KEY:/src/keys/signing-key" \\
+      -e SIGNING_KEY=/src/keys/signing-key \\
+      -e DEBEMAIL="$EMAIL" \\
+      -e DEBFULLNAME="$FULL_NAME" \\
+      -e SSH_USER="$USERNAME" \\
+      -v "$SSH_KEY:/root/.ssh/id_ed25519:ro" \\
+      radicle-apt
+
+    # Inside the container:
+    RADICLE_APT_SIGNING_KEY=/src/keys/signing-key ./import-deb $deb
+
+    # Back on the host:
+    git checkout -b release-v$version
+    git add db/ dists/ pool/
+    git commit -m "Update radicle-desktop to $version"
+    git push rad HEAD:refs/patches
+    # After peer approval:
+    git checkout main && git merge --ff-only release-v$version && git push
+    make publish
+EOF
+  next "scripts/release --phase publish"
+}
+
+phase_publish() {
+  local version
+  version="$(conf_version)"
+  local release_dir="$PROJECT_DIR/releases/v$version"
+  local remote="/var/www/$FILES_HOST/releases/radicle-desktop"
+  local key target
+  key="$(rad path)/keys/radicle"
+  target="$USERNAME@$FILES_HOST"
+
+  step "Publishing release files to $FILES_HOST"
+  [[ -d "$release_dir" ]] || fail "$release_dir not found — run --phase build first"
+
+  if [[ "$DRY_RUN" == true ]]; then
+    info "Would check whether $remote/$version exists and prompt before overwrite."
+  elif ssh -i "$key" "$target" "test -d '$remote/$version'"; then
+    warn "$remote/$version already exists on $FILES_HOST"
+    confirm "Overwrite it and re-point latest?" || die "Aborted."
+  fi
+
+  info "Uploading to $remote/$version/"
+  run ssh -i "$key" "$target" "mkdir -p '$remote/$version'"
+  run scp -i "$key" "$release_dir"/* "$target:$remote/$version/"
+
+  info "Pointing latest -> $version"
+  run ssh -i "$key" "$target" "ln -sfn '$version' '$remote/latest'"
+
+  step "Published"
+  info "https://$FILES_HOST/releases/radicle-desktop/$version/"
+  info "latest now resolves to $version (update checker reads latest/latest.json)."
+  next "scripts/release --phase arch"
+}
+
+phase_arch() {
+  local version
+  version="$(conf_version)"
+  step "Publishing the Arch package to the AUR"
+  run_sh "$PROJECT_DIR/arch" ./publish.sh "Release v$version"
+
+  step "AUR package pushed"
+  info "Verify the version at https://aur.archlinux.org/packages/radicle-desktop"
+  next "scripts/release --phase tag"
+}
+
+phase_tag() {
+  local version
+  version="$(conf_version)"
+  step "Tagging canonical release v$version"
+
+  local sha
+  sha="$(arch_commit_sha "$version")"
+  [[ -n "$sha" ]] || fail "could not find the 'Update arch package to v$version' commit (is the patch merged into main?)"
+  info "Tagging commit: ${sha:-<arch-commit-sha>}"
+
+  run git -C "$PROJECT_DIR" tag "releases/$version" "${sha:-<arch-commit-sha>}" -m "Release $version"
+  run git -C "$PROJECT_DIR" push rad --tags
+  run rad sync
+
+  step "Canonical tag pushed — needs delegate approval"
+  info "Ask another delegate to approve the tag by running:"
+  echo
+  printf '    %s\n' \
+    "git push -f self $USERNAME/tags/releases/$version:refs/tags/releases/$version" \
+    "rad sync -a"
+
+  step "Announce on Zulip (once the tag is approved)"
+  local entry
+  entry="$(awk -v v="### v$version" '
+    $0 == v {grab=1}
+    grab && NR>1 && /^### v/ && $0 != v {exit}
+    grab {print}
+  ' "$CHANGELOG")"
+  [[ -n "$entry" ]] || fail "no '### v$version' section found in CHANGELOG.md"
 
   echo
-  echo "Done. Artifacts in $RELEASE_DIR:"
-  ls -lh "$RELEASE_DIR"
-fi
+  bold "    Copy the message below into the announcements channel:"
+  echo "    --------------------------------------------------------------------"
+  echo
+  echo "@**all** A new Radicle Desktop release is out :point_right: [give it a try](https://radicle.dev/desktop)!"
+  echo
+  echo "$entry"
+  echo "    --------------------------------------------------------------------"
+  echo
+  info "Post it under a topic named: radicle-desktop v$version"
+  info "Then resolve the previous release topic."
+  echo
+  bold "Release v$version complete."
+}
+
+# ---- Dispatch ----
+
+usage() {
+  awk 'NR==1 {next} /^#/ {sub(/^# ?/, ""); print; next} {exit}' "$0"
+}
+
+list_phases() {
+  echo "Phases (run in order):"
+  printf '  %s\n' "${PHASES[@]}"
+}
+
+main() {
+  local phase="" version=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --phase)   [[ $# -ge 2 ]] || die "--phase needs a value (try --list)"
+                 phase="$2"; shift 2 ;;
+      --version) [[ $# -ge 2 ]] || die "--version needs a value, e.g. X.Y.Z"
+                 version="$2"; shift 2 ;;
+      --dry-run|-n) DRY_RUN=true; shift ;;
+      --list)    list_phases; exit 0 ;;
+      --help|-h) usage; exit 0 ;;
+      *) die "Unknown option: $1 (try --help)" ;;
+    esac
+  done
+
+  [[ -n "$phase" ]] || { usage; exit 1; }
+
+  [[ "$DRY_RUN" == true ]] && bold "DRY RUN — no commands will be executed"
+
+  case "$phase" in
+    prep)     phase_prep "$version" ;;
+    build)    phase_build ;;
+    apt)      phase_apt ;;
+    publish)  phase_publish ;;
+    arch)     phase_arch ;;
+    tag)      phase_tag ;;
+    *) die "Unknown phase: $phase (try --list)" ;;
+  esac
+}
+
+main "$@"

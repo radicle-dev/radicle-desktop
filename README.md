@@ -40,6 +40,18 @@ To start the app in development mode with hot reload:
 npm run dev
 ```
 
+## Releasing
+
+Releases are driven by an interactive, phased script. Start one with:
+
+```
+scripts/release --phase prep --version X.Y.Z
+```
+
+Each phase does its mechanical work, then prints the manual tasks for its gate
+and the exact flag to resume with. List the phases and see the configuration
+with `scripts/release --list` and `scripts/release --help`.
+
 ## Getting in touch
 
 To get in touch with the maintainers, sign up to our [official chat on Zulip][zul].
