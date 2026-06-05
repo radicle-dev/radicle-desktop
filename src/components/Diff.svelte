@@ -249,8 +249,7 @@
     position: relative;
     white-space: pre-wrap;
   }
-  .line.commentable:has(> .left:hover),
-  .line.commentable:has(> .right:hover) {
+  .line.commentable:hover {
     box-shadow: inset 0 0 0 9999px var(--hover-bg, transparent);
   }
   .line.commentable.context {
@@ -314,10 +313,37 @@
     min-width: 3rem;
     text-align: center;
     position: relative;
-    cursor: cell;
-  }
-  .selection-disabled {
     cursor: default;
+  }
+  .comment-add {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    width: 1rem;
+    height: 1rem;
+    border: 0;
+    border-radius: 999px;
+    padding: 0;
+    background-color: var(--color-surface-brand-secondary);
+    color: var(--color-text-on-brand);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transform: translateY(-50%) scale(0);
+    transform-origin: center;
+    transition: transform 120ms ease-out;
+    pointer-events: none;
+  }
+  .line.commentable:hover .comment-add {
+    transform: translateY(-50%) scale(1);
+    pointer-events: auto;
+  }
+  .comment-add:hover,
+  .comment-add:focus-visible {
+    background-color: var(--color-brand-hover);
+    color: var(--color-text-on-brand);
   }
   .sign {
     min-width: 1.5rem;
@@ -359,6 +385,7 @@
 
 {#snippet lineDiff(line: Modification, lineIdx: number, hunkIdx: number)}
   {@const thread = findLineThread(line)}
+  {@const commentSide = line.type === "deletion" ? "left" : "right"}
   <div
     class="line"
     class:commentable={Boolean(codeComments?.createComment && !thread)}
@@ -367,31 +394,26 @@
     class:context={line.type === "context"}
     class:selected={!thread &&
       isSelected(filePath(file, "left"), hunkIdx, lineIdx)}>
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    {#if codeComments?.createComment && !thread}
+      <button
+        type="button"
+        class="comment-add"
+        title="Add a comment on this line"
+        onclick={e => selectLine(e, file, commentSide, line, hunkIdx, lineIdx)}>
+        <Icon name="plus" />
+      </button>
+    {/if}
     <div
       class="left"
-      class:selection-disabled={!codeComments || thread}
       class:marker={selection?.start.side === "left" &&
-        selection.start.lineNumber === lineNumber(line, "left")}
-      onpointerdown={e => {
-        if (codeComments?.createComment && !thread) {
-          selectLine(e, file, "left", line, hunkIdx, lineIdx);
-        }
-      }}>
+        selection.start.lineNumber === lineNumber(line, "left")}>
       {lineNumber(line, "left")}
     </div>
 
-    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
       class="right"
-      class:selection-disabled={!codeComments || thread}
       class:marker={selection?.start.side === "right" &&
-        selection.start.lineNumber === lineNumber(line, "right")}
-      onpointerdown={e => {
-        if (codeComments?.createComment && !thread) {
-          selectLine(e, file, "right", line, hunkIdx, lineIdx);
-        }
-      }}>
+        selection.start.lineNumber === lineNumber(line, "right")}>
       {lineNumber(line, "right")}
     </div>
 
