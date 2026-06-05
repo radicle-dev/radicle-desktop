@@ -6,6 +6,16 @@ use commands::{auth, cob, diff, inbox, profile, repo, startup, thread};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Raise the open-file limit, matching heartwood's binaries (which all
+    // default to 4096). Listing a repo's refs for the peer selector resolves
+    // every remote's signed refs through libgit2, opening a descriptor per
+    // packfile it reads. Radicle storage can hold thousands of packfiles, so
+    // under the low default limit (e.g. a Finder-launched bundle) these reads
+    // exhaust descriptors and objects in the unopened packs spuriously fail.
+    if let Err(e) = radicle::io::set_file_limit(4096) {
+        log::warn!("Unable to set open file limit: {e}");
+    }
+
     #[cfg(debug_assertions)]
     let builder = tauri::Builder::default().plugin(
         tauri_plugin_log::Builder::new()
