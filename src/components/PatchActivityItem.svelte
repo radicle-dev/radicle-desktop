@@ -102,6 +102,7 @@
   .wrapper {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.25rem;
     min-width: 0;
     flex: 1 1 0;
