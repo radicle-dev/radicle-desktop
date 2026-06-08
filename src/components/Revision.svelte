@@ -1295,6 +1295,7 @@
               op={data.op}
               {rid}
               {patchId}
+              latest={revId === latestRevisionId}
               {expanded}
               hideAuthor={opts.hideAuthor}
               bodyExternal

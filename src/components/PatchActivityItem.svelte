@@ -54,6 +54,7 @@
     onViewFullReview?: () => void;
     rid?: string;
     patchId?: string;
+    latest?: boolean;
     bodyExternal?: boolean;
     openedAsDraft?: boolean;
   }
@@ -68,6 +69,7 @@
     onViewFullReview,
     rid,
     patchId,
+    latest = false,
     bodyExternal = false,
     openedAsDraft = false,
   }: Props = $props();
@@ -174,6 +176,13 @@
     color: var(--color-text-tertiary);
     white-space: nowrap;
     flex-shrink: 0;
+  }
+  .latest-chip {
+    flex-shrink: 0;
+    padding: 0 0.375rem;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-brand-subtle);
+    color: var(--color-text-brand);
   }
   .summary-content {
     color: var(--color-text-primary);
@@ -352,6 +361,9 @@
         </span>
         {#if !firstRevision && desc.subject}
           <span class="txt-body-m-medium summary-content">{desc.subject}</span>
+        {/if}
+        {#if latest}
+          <span class="latest-chip txt-body-s-medium">latest</span>
         {/if}
       </div>
       <div class="meta">
