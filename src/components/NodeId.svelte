@@ -159,6 +159,23 @@
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+    padding: 0.125rem 0.25rem;
+    margin-left: -0.25rem;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background: none;
+    cursor: pointer;
+    width: fit-content;
+  }
+  .node-id-card-did-row:hover,
+  .node-id-card-did-row:focus-visible {
+    background-color: var(--color-surface-subtle);
+  }
+  .node-id-card-did-row:hover .node-id-card-did,
+  .node-id-card-did-row:focus-visible .node-id-card-did,
+  .node-id-card-did-row:hover .node-id-card-copy,
+  .node-id-card-did-row:focus-visible .node-id-card-copy {
+    color: var(--color-text-primary);
   }
   .node-id-card-did {
     color: var(--color-text-tertiary);
@@ -170,19 +187,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.25rem;
-    height: 1.25rem;
-    padding: 0;
-    border: 0;
-    border-radius: var(--border-radius-sm);
-    background: none;
     color: var(--color-text-tertiary);
-    cursor: pointer;
-  }
-  .node-id-card-copy:hover,
-  .node-id-card-copy:focus-visible {
-    background-color: var(--color-surface-subtle);
-    color: var(--color-text-primary);
   }
   .node-id-card-activity {
     display: flex;
@@ -296,21 +301,21 @@
               <span>Patch author</span>
             </div>
           {/if}
-          <div class="node-id-card-did-row">
+          <button
+            type="button"
+            class="node-id-card-did-row"
+            title="Copy DID"
+            onclick={event => {
+              event.stopPropagation();
+              void copyDid();
+            }}>
             <span class="node-id-card-did txt-body-s-regular">
               {truncateId(publicKey)}
             </span>
-            <button
-              type="button"
-              class="node-id-card-copy"
-              title="Copy DID"
-              onclick={event => {
-                event.stopPropagation();
-                void copyDid();
-              }}>
+            <span class="node-id-card-copy">
               <Icon name={copyIcon} />
-            </button>
-          </div>
+            </span>
+          </button>
         </div>
       </div>
       {#if activity}
