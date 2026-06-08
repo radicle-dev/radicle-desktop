@@ -632,7 +632,17 @@
         ]
       : [];
 
-    if (olderRevisionIds.size < 2) {
+    // Count only the older-revision items actually present in the timeline.
+    // olderRevisionIds covers every non-latest revision, but some never appear
+    // as their own op item (e.g. deduped), so it overcounts what folds away.
+    const foldableOlderRevisionCount = items.filter(
+      item =>
+        item.data.kind === "op" &&
+        item.data.op.type === "revision" &&
+        olderRevisionIds.has(item.data.op.id),
+    ).length;
+
+    if (foldableOlderRevisionCount < 2) {
       return [...opened, ...items];
     }
 
@@ -656,7 +666,7 @@
           timestamp: item.timestamp,
           data: {
             kind: "olderRevisions",
-            count: olderRevisionIds.size,
+            count: foldableOlderRevisionCount,
             author: item.data.kind === "op" ? item.data.op.author : undefined,
             expanded: olderRevisionsExpanded,
           },
