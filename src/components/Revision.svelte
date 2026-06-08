@@ -1325,7 +1325,7 @@
                       <div class="commit-group">
                         <div class="commit-group-author txt-body-m-regular">
                           {group[0].author.name} &lt;{group[0].author.email}&gt;
-                          committed
+                          added {group.length} commits
                         </div>
                         <div class="commit-group-children">
                           {#each visibleCommits as commit (commit.id)}
