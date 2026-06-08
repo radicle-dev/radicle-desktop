@@ -1231,12 +1231,12 @@
         }}
         close={() => (editingDescription = false)} />
     </div>
-  {:else if body.trim() !== "" || canEdit}
+  {:else}
     <div class="patch-body txt-body-m-regular">
       {#if body.trim() !== ""}
         <Markdown {rid} content={body} />
       {:else}
-        <span style:color="var(--color-text-tertiary)">No description.</span>
+        <span style:color="var(--color-text-tertiary)">No description</span>
       {/if}
       <div class="body-actions">
         <div class="body-action">
