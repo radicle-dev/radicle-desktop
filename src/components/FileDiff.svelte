@@ -194,7 +194,8 @@
           e.stopPropagation();
           const wasChecked = checked;
           draftReviewStorage.toggleCheckedFile(draftReviewId, filePathKey);
-          if (!wasChecked) expandedState = false;
+          // Collapse when marking reviewed, re-expand when un-marking.
+          expandedState = wasChecked;
         }}
         title={checked ? "Mark file as not reviewed" : "Mark file as reviewed"}>
         <Icon name={checked ? "checkmark" : "eye"} />
