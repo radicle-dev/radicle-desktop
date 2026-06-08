@@ -362,6 +362,24 @@
     margin-top: 3px;
     align-self: flex-start;
   }
+  .resolve-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    padding: 0.125rem 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font: var(--txt-body-s-medium);
+  }
+  .resolve-toggle:hover,
+  .resolve-toggle:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
   .thread {
     background-color: var(--color-surface-base);
     font: var(--txt-body-m-regular);
@@ -459,29 +477,21 @@
           )}
         {/if}
         {#if codeComments.changeCommentStatus && roles.isDelegateOrAuthor( codeComments.config.publicKey, codeComments.repoDelegates.map(delegate => delegate.did), thread.root.author.did, )}
-          <div style:margin-left="auto">
-            {#if thread.root.resolved}
-              <div title="Unresolve comment thread">
-                <Icon
-                  name="close"
-                  onclick={partial(
-                    codeComments.changeCommentStatus,
-                    thread.root.id,
-                    false,
-                  )} />
-              </div>
-            {:else}
-              <div title="Resolve comment thread">
-                <Icon
-                  name="checkmark"
-                  onclick={partial(
-                    codeComments.changeCommentStatus,
-                    thread.root.id,
-                    true,
-                  )} />
-              </div>
-            {/if}
-          </div>
+          <button
+            type="button"
+            class="resolve-toggle"
+            style:margin-left="auto"
+            title={thread.root.resolved
+              ? "Mark this thread as unresolved"
+              : "Mark this thread as resolved"}
+            onclick={partial(
+              codeComments.changeCommentStatus,
+              thread.root.id,
+              !thread.root.resolved,
+            )}>
+            <Icon name={thread.root.resolved ? "close" : "checkmark"} />
+            {thread.root.resolved ? "Mark as unresolved" : "Mark as resolved"}
+          </button>
         {/if}
       </div>
       <ThreadComponent
