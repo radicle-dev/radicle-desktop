@@ -301,6 +301,12 @@
               <span>Patch author</span>
             </div>
           {/if}
+          {#if activity?.isDelegate}
+            <div class="node-id-card-author-chip txt-body-s-medium">
+              <Icon name="badge" />
+              <span>Delegate</span>
+            </div>
+          {/if}
           <button
             type="button"
             class="node-id-card-did-row"

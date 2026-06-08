@@ -2,6 +2,7 @@ import { getContext, setContext } from "svelte";
 
 export interface PatchUserActivity {
   isAuthor: boolean;
+  isDelegate: boolean;
   revisionCount: number;
   commitCount: number;
   reviewCount: number;

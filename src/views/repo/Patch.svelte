@@ -171,6 +171,7 @@
     void ensureRepoActivity(repo.rid);
     const did = didFromPublicKey(publicKey);
     const isAuthor = patch.author.did === did;
+    const isDelegate = repo.delegates.some(d => d.did === did);
     const userRevisions = revisions.filter(r => r.author.did === did);
     const revisionCount = userRevisions.length;
     const commitCount = userRevisions.reduce(
@@ -185,6 +186,7 @@
     }
     return {
       isAuthor,
+      isDelegate,
       revisionCount,
       commitCount,
       reviewCount,
