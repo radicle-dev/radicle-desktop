@@ -69,12 +69,12 @@
     {
       value: "reject",
       label: "Reject revision",
-      description: "Request changes before merging.",
+      description: "Reject the revision and block merging.",
     },
     {
       value: undefined,
       label: "Needs changes",
-      description: "Leave feedback without approving or rejecting.",
+      description: "Request changes without approving or rejecting.",
     },
   ];
 
