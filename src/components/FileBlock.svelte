@@ -182,7 +182,7 @@
       class="global-flex"
       style:gap="1rem"
       style:margin-left="auto"
-      style:margin-right="1rem">
+      style:margin-right="0.5rem">
       {@render rightHeader()}
     </div>
   {/if}
