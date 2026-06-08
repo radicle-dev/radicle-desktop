@@ -885,7 +885,7 @@
       </div>
     </ScrollArea>
 
-    {#if ownDraftReviewForPatch}
+    {#if ownDraftReviewForPatch && patchView !== "activity"}
       <DraftReviewBar
         draftReview={ownDraftReviewForPatch}
         filesChecked={fileProgress?.filesChecked}
