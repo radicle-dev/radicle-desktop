@@ -736,7 +736,9 @@
               repoDelegates={repo.delegates}
               patchId={patch.id}
               {loadPatch}
-              revision={patchView === "changes" ? selectedRevision : revisions[0]}
+              revision={patchView === "changes"
+                ? selectedRevision
+                : revisions[0]}
               {config}
               view="description" />
 

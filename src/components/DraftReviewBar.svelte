@@ -135,7 +135,10 @@
     } else {
       confirmDeleteId = commentId;
       if (confirmDeleteTimer) clearTimeout(confirmDeleteTimer);
-      confirmDeleteTimer = setTimeout(() => (confirmDeleteId = undefined), 3000);
+      confirmDeleteTimer = setTimeout(
+        () => (confirmDeleteId = undefined),
+        3000,
+      );
     }
   }
 
