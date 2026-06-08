@@ -877,6 +877,9 @@
                 onMerge={canShowMerge ? mergePatch : undefined}
                 {mergeDisabledReason}
                 onViewChanges={revisionId => {
+                  // Mark the view switch as already seen so the reset effect
+                  // doesn't snap the picker back to the latest revision.
+                  lastPatchView = "changes";
                   selectedRevisionId = revisionId;
                   setView("changes");
                 }}
