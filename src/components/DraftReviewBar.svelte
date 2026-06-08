@@ -73,8 +73,8 @@
     },
     {
       value: undefined,
-      label: "Leave a comment",
-      description: "Comment without approving or rejecting.",
+      label: "Needs changes",
+      description: "Leave feedback without approving or rejecting.",
     },
   ];
 
@@ -144,7 +144,7 @@
       ? "Accept revision"
       : verdict === "reject"
         ? "Reject revision"
-        : "Leave a comment",
+        : "Needs changes",
   );
 
   const verdictColorClass = $derived(
