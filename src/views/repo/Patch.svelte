@@ -730,17 +730,15 @@
           </div>
 
           <div class="content">
-            {#if patchView !== "changes"}
-              <RevisionComponent
-                rid={repo.rid}
-                {repo}
-                repoDelegates={repo.delegates}
-                patchId={patch.id}
-                {loadPatch}
-                revision={revisions[0]}
-                {config}
-                view="description" />
-            {/if}
+            <RevisionComponent
+              rid={repo.rid}
+              {repo}
+              repoDelegates={repo.delegates}
+              patchId={patch.id}
+              {loadPatch}
+              revision={patchView === "changes" ? selectedRevision : revisions[0]}
+              {config}
+              view="description" />
 
             {#if currentReview}
               <ReviewPage
