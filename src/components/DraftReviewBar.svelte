@@ -125,6 +125,20 @@
     await onChange();
   }
 
+  let confirmDeleteId: string | undefined = $state();
+  let confirmDeleteTimer: ReturnType<typeof setTimeout> | undefined;
+  function requestDeleteComment(commentId: string) {
+    if (confirmDeleteId === commentId) {
+      if (confirmDeleteTimer) clearTimeout(confirmDeleteTimer);
+      confirmDeleteId = undefined;
+      void deleteComment(commentId);
+    } else {
+      confirmDeleteId = commentId;
+      if (confirmDeleteTimer) clearTimeout(confirmDeleteTimer);
+      confirmDeleteTimer = setTimeout(() => (confirmDeleteId = undefined), 3000);
+    }
+  }
+
   function formatLocation(location: CodeLocation | undefined): string {
     if (!location) return "";
     const range = location.new ?? location.old;
@@ -334,6 +348,10 @@
   .comments-tooltip-action:focus-visible {
     color: var(--color-text-primary);
     background-color: var(--color-surface-subtle);
+  }
+  .comments-tooltip-action.confirming {
+    color: var(--color-feedback-error-text);
+    background-color: var(--color-feedback-error-bg);
   }
   .comments-tooltip-body {
     color: var(--color-text-primary);
@@ -564,9 +582,15 @@
                         <button
                           type="button"
                           class="comments-tooltip-action"
-                          title="Delete"
-                          onclick={() => deleteComment(comment.id)}>
-                          <Icon name="trash" />
+                          class:confirming={confirmDeleteId === comment.id}
+                          title={confirmDeleteId === comment.id
+                            ? "Click again to confirm"
+                            : "Delete"}
+                          onclick={() => requestDeleteComment(comment.id)}>
+                          <Icon
+                            name={confirmDeleteId === comment.id
+                              ? "checkmark"
+                              : "trash"} />
                         </button>
                       </div>
                     {/if}
