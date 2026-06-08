@@ -177,6 +177,10 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
+  .no-description {
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+  }
   .latest-chip {
     flex-shrink: 0;
     padding: 0 0.375rem;
@@ -359,8 +363,14 @@
               : "opened patch"
             : "created revision"}
         </span>
-        {#if !firstRevision && desc.subject}
-          <span class="txt-body-m-medium summary-content">{desc.subject}</span>
+        {#if !firstRevision}
+          {#if desc.subject}
+            <span class="txt-body-m-medium summary-content">
+              {desc.subject}
+            </span>
+          {:else}
+            <span class="no-description">No description</span>
+          {/if}
         {/if}
         {#if latest}
           <span class="latest-chip txt-body-s-medium">latest</span>
