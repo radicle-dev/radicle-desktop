@@ -75,6 +75,7 @@
     activity?: Operation<Action>[];
     revisions?: Revision[];
     draftReviewId?: string;
+    reviewInProgressRevisionId?: string;
     filesExpanded?: boolean;
     onMerge?: () => Promise<void> | void;
     mergeDisabledReason?: string;
@@ -94,6 +95,7 @@
     activity = [],
     revisions = [],
     draftReviewId,
+    reviewInProgressRevisionId,
     filesExpanded = $bindable(true),
     onMerge,
     mergeDisabledReason,
@@ -1306,6 +1308,7 @@
               {rid}
               {patchId}
               latest={revId === latestRevisionId}
+              reviewInProgress={revId === reviewInProgressRevisionId}
               {expanded}
               hideAuthor={opts.hideAuthor}
               bodyExternal

@@ -55,6 +55,7 @@
     rid?: string;
     patchId?: string;
     latest?: boolean;
+    reviewInProgress?: boolean;
     bodyExternal?: boolean;
     openedAsDraft?: boolean;
   }
@@ -70,6 +71,7 @@
     rid,
     patchId,
     latest = false,
+    reviewInProgress = false,
     bodyExternal = false,
     openedAsDraft = false,
   }: Props = $props();
@@ -187,6 +189,14 @@
     border-radius: var(--border-radius-sm);
     background-color: var(--color-surface-brand-subtle);
     color: var(--color-text-brand);
+  }
+  .review-progress-chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0 0.375rem;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-feedback-warning-bg);
+    color: var(--color-feedback-warning-text);
   }
   .summary-content {
     color: var(--color-text-primary);
@@ -374,6 +384,11 @@
         {/if}
         {#if latest}
           <span class="latest-chip txt-body-s-medium">latest</span>
+        {/if}
+        {#if reviewInProgress}
+          <span class="review-progress-chip txt-body-s-medium">
+            Review in progress
+          </span>
         {/if}
       </div>
       <div class="meta">

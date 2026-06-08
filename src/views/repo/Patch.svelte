@@ -872,6 +872,7 @@
                 {activity}
                 {revisions}
                 draftReviewId={ownDraftReviewForPatch?.id}
+                reviewInProgressRevisionId={ownDraftReviewForPatch?.revisionId}
                 onMerge={canShowMerge ? mergePatch : undefined}
                 {mergeDisabledReason}
                 onViewChanges={revisionId => {
