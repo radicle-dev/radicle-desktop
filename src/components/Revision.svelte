@@ -1294,6 +1294,7 @@
             <PatchActivityItem
               op={data.op}
               {rid}
+              {patchId}
               {expanded}
               hideAuthor={opts.hideAuthor}
               bodyExternal

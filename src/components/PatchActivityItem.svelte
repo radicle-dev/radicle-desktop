@@ -29,9 +29,11 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
 
+  import { writeToClipboard } from "@app/lib/invoke";
   import {
     absoluteTimestamp,
     authorForNodeId,
+    explorerUrl,
     formatTimestamp,
     patchStatusColor,
     pluralize,
@@ -51,6 +53,7 @@
     firstRevision?: boolean;
     onViewFullReview?: () => void;
     rid?: string;
+    patchId?: string;
     bodyExternal?: boolean;
     openedAsDraft?: boolean;
   }
@@ -64,6 +67,7 @@
     firstRevision = false,
     onViewFullReview,
     rid,
+    patchId,
     bodyExternal = false,
     openedAsDraft = false,
   }: Props = $props();
@@ -72,6 +76,19 @@
     const removed = previousState.filter(x => !newState.includes(x));
     const added = newState.filter(x => !previousState.includes(x));
     return { removed, added };
+  }
+
+  let copyLinkIcon: "link" | "checkmark" = $state("link");
+  async function copyRevisionLink() {
+    if (!rid || !patchId) return;
+    // The `?revision=` parameter only deep-links correctly once the explorer
+    // supports navigating to a specific revision. Until then this falls back
+    // to opening the patch at its latest revision.
+    await writeToClipboard(
+      explorerUrl(`${rid}/patches/${patchId}?revision=${op.id}`),
+    );
+    copyLinkIcon = "checkmark";
+    setTimeout(() => (copyLinkIcon = "link"), 1000);
   }
 </script>
 
@@ -215,6 +232,24 @@
   .merge-badge :global(*) {
     color: inherit;
   }
+  .copy-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background: none;
+    color: var(--color-text-quaternary);
+    cursor: pointer;
+  }
+  .copy-link:hover,
+  .copy-link:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
   .view-full-review {
     display: inline-flex;
     align-items: center;
@@ -266,6 +301,21 @@
   {/if}
 {/snippet}
 
+{#snippet copyLinkButton()}
+  {#if rid && patchId}
+    <button
+      type="button"
+      class="copy-link"
+      title="Copy revision link"
+      onclick={e => {
+        e.stopPropagation();
+        void copyRevisionLink();
+      }}>
+      <Icon name={copyLinkIcon} />
+    </button>
+  {/if}
+{/snippet}
+
 {#if op.type === "revision"}
   {@const desc = splitDescription(op.description)}
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -313,6 +363,7 @@
         <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
           {formatTimestamp(op.timestamp)}
         </div>
+        {@render copyLinkButton()}
       </div>
       {#if !firstRevision && desc.body && expanded && !bodyExternal}
         <div class="revision-body" transition:slide={{ duration: 180 }}>
