@@ -52,6 +52,7 @@
     targetBranch?: string;
     firstRevision?: boolean;
     onViewFullReview?: () => void;
+    onOpenReview?: () => void;
     rid?: string;
     patchId?: string;
     latest?: boolean;
@@ -68,6 +69,7 @@
     targetBranch,
     firstRevision = false,
     onViewFullReview,
+    onOpenReview,
     rid,
     patchId,
     latest = false,
@@ -193,10 +195,17 @@
   .review-progress-chip {
     flex-shrink: 0;
     white-space: nowrap;
-    padding: 0 0.375rem;
+    padding: 0.125rem 0.375rem;
+    border: 0;
     border-radius: var(--border-radius-sm);
     background-color: var(--color-feedback-warning-bg);
     color: var(--color-feedback-warning-text);
+    cursor: pointer;
+  }
+  .review-progress-chip:hover,
+  .review-progress-chip:focus-visible {
+    background-color: var(--color-feedback-warning-text);
+    color: var(--color-feedback-warning-bg);
   }
   .summary-content {
     color: var(--color-text-primary);
@@ -386,9 +395,16 @@
           <span class="latest-chip txt-body-s-medium">latest</span>
         {/if}
         {#if reviewInProgress}
-          <span class="review-progress-chip txt-body-s-medium">
+          <button
+            type="button"
+            class="review-progress-chip txt-body-s-medium"
+            title="Go to your review in progress"
+            onclick={e => {
+              e.stopPropagation();
+              onOpenReview?.();
+            }}>
             Review in progress
-          </span>
+          </button>
         {/if}
       </div>
       <div class="meta">

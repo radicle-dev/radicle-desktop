@@ -1328,6 +1328,7 @@
               {patchId}
               latest={revId === latestRevisionId}
               reviewInProgress={revId === reviewInProgressRevisionId}
+              onOpenReview={() => onViewChanges?.(revId)}
               {expanded}
               hideAuthor={opts.hideAuthor}
               bodyExternal
