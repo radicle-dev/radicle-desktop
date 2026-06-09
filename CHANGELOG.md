@@ -1,3 +1,20 @@
+### v0.12.0
+
+**Features**
+
+- Added a branch/tag selector to browse repository source from different users
+- A placeholder is now shown when a commit has no message
+
+**Performance**
+
+- Improved overall performance for repository browsing
+
+**Bug fixes**
+
+- Fixed the Linux AppImage failing to launch on non-Debian distributions
+- Fixed duplicate CI job runs by deduplicating them by run ID
+
+
 ### v0.11.0
 
 **Features**
