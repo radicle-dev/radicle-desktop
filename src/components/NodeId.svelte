@@ -222,7 +222,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.125rem 0.5rem;
+    padding: 0.125rem 0.375rem 0.125rem 0.125rem;
     border-radius: var(--border-radius-sm);
     background-color: var(--color-surface-brand-subtle);
     color: var(--color-text-brand);
