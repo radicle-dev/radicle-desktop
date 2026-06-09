@@ -59,6 +59,7 @@
     | {
         kind: "olderRevisions";
         groupKey: string;
+        revisionIds: string[];
         count: number;
         author?: Author;
         expanded: boolean;
@@ -170,11 +171,18 @@
   function expandCommitGroup(groupKey: string) {
     commitGroupToggles = { ...commitGroupToggles, [groupKey]: true };
   }
-  function toggleRevisionRun(groupKey: string) {
-    expandedRevisionRuns = {
-      ...expandedRevisionRuns,
-      [groupKey]: !(expandedRevisionRuns[groupKey] ?? false),
-    };
+  function toggleRevisionRun(groupKey: string, revisionIds: string[]) {
+    const nowExpanded = !(expandedRevisionRuns[groupKey] ?? false);
+    expandedRevisionRuns = { ...expandedRevisionRuns, [groupKey]: nowExpanded };
+    // Collapsing the run also collapses any revisions expanded inside it, so
+    // re-expanding the run shows them folded again rather than as they were.
+    if (!nowExpanded) {
+      const next = { ...revisionToggles };
+      for (const revId of revisionIds) {
+        delete next[revId];
+      }
+      revisionToggles = next;
+    }
   }
   // A revision's description is "auto-generated" when it's exactly the list of
   // its commit summaries (the default Radicle produces when you don't write
@@ -669,12 +677,16 @@
         const head = run[0];
         const groupKey = `older:${head.data.kind === "op" ? head.data.op.id : head.key}`;
         const runExpanded = expandedRevisionRuns[groupKey] ?? false;
+        const revisionIds = run
+          .map(item => (item.data.kind === "op" ? item.data.op.id : undefined))
+          .filter((id): id is string => id !== undefined);
         folded.push({
           key: groupKey,
           timestamp: head.timestamp,
           data: {
             kind: "olderRevisions",
             groupKey,
+            revisionIds,
             count: run.length,
             author: head.data.kind === "op" ? head.data.op.author : undefined,
             expanded: runExpanded,
@@ -1538,7 +1550,7 @@
         role="button"
         tabindex="0"
         transition:slide={{ duration: 180 }}
-        onclick={() => toggleRevisionRun(data.groupKey)}>
+        onclick={() => toggleRevisionRun(data.groupKey, data.revisionIds)}>
         <div class="icon">
           <span class="icon-stack">
             <span class="icon-default">
