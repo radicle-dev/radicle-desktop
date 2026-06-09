@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Install git
-        run: pacman -Sy --noconfirm git
+        run: pacman -Sy --noconfirm git radicle
 
       - uses: actions/checkout@v6
 
@@ -35,13 +35,6 @@ jobs:
           path: /home/builder/.cargo/registry
           key: arch-cargo-${{ hashFiles('arch/radicle-desktop/PKGBUILD') }}
           restore-keys: arch-cargo-
-
-      - name: Install radicle-bin AUR dependency
-        run: |
-          cd /home/builder
-          git clone https://aur.archlinux.org/radicle-bin.git --depth=1
-          chown -R builder:builder radicle-bin
-          sudo -u builder makepkg --dir radicle-bin --install --syncdeps --noconfirm
 
       - name: Check .SRCINFO is up-to-date
         run: |
