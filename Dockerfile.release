@@ -69,8 +69,8 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
 ENV PATH="/root/.cargo/bin:${PATH}"
 RUN rustup target add x86_64-unknown-linux-gnu
 
-# Node.js 22 (ARM64, runs natively)
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+# Node.js 24 (ARM64, runs natively); matches the engines requirement in package.json
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
     apt-get install -y nodejs
 
 # Cross-compilation environment for Cargo and cc-rs.
