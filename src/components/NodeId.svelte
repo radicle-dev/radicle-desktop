@@ -212,6 +212,11 @@
     gap: 0.5rem;
     color: var(--color-text-secondary);
   }
+  .node-id-card-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+  }
   .node-id-card-author-chip {
     align-self: flex-start;
     display: inline-flex;
@@ -295,16 +300,20 @@
               {truncateId(publicKey)}
             </div>
           {/if}
-          {#if activity?.isAuthor}
-            <div class="node-id-card-author-chip txt-body-s-medium">
-              <Icon name="patch" />
-              <span>Patch author</span>
-            </div>
-          {/if}
-          {#if activity?.isDelegate}
-            <div class="node-id-card-author-chip txt-body-s-medium">
-              <Icon name="badge" />
-              <span>Delegate</span>
+          {#if activity?.isAuthor || activity?.isDelegate}
+            <div class="node-id-card-chips">
+              {#if activity?.isAuthor}
+                <div class="node-id-card-author-chip txt-body-s-medium">
+                  <Icon name="patch" />
+                  <span>Patch author</span>
+                </div>
+              {/if}
+              {#if activity?.isDelegate}
+                <div class="node-id-card-author-chip txt-body-s-medium">
+                  <Icon name="badge" />
+                  <span>Delegate</span>
+                </div>
+              {/if}
             </div>
           {/if}
           <button
