@@ -58,6 +58,7 @@
       }
     | {
         kind: "olderRevisions";
+        groupKey: string;
         count: number;
         author?: Author;
         expanded: boolean;
@@ -134,7 +135,7 @@
   let revisionToggles: Record<string, boolean> = $state({});
   let reviewToggles: Record<string, boolean> = $state({});
   let commitGroupToggles: Record<string, boolean> = $state({});
-  let olderRevisionsExpanded = $state(false);
+  let expandedRevisionRuns: Record<string, boolean> = $state({});
   // svelte-ignore state_referenced_locally
   let lastPatchIdSeen = patchId;
   // svelte-ignore state_referenced_locally
@@ -146,7 +147,7 @@
       revisionToggles = {};
       reviewToggles = {};
       commitGroupToggles = {};
-      olderRevisionsExpanded = false;
+      expandedRevisionRuns = {};
     }
   });
   const MAX_COMMITS_VISIBLE = 3;
@@ -168,6 +169,12 @@
   }
   function expandCommitGroup(groupKey: string) {
     commitGroupToggles = { ...commitGroupToggles, [groupKey]: true };
+  }
+  function toggleRevisionRun(groupKey: string) {
+    expandedRevisionRuns = {
+      ...expandedRevisionRuns,
+      [groupKey]: !(expandedRevisionRuns[groupKey] ?? false),
+    };
   }
   // A revision's description is "auto-generated" when it's exactly the list of
   // its commit summaries (the default Radicle produces when you don't write
@@ -634,50 +641,50 @@
         ]
       : [];
 
-    // Count only the older-revision items actually present in the timeline.
-    // olderRevisionIds covers every non-latest revision, but some never appear
-    // as their own op item (e.g. deduped), so it overcounts what folds away.
-    const foldableOlderRevisionCount = items.filter(
-      item =>
-        item.data.kind === "op" &&
-        item.data.op.type === "revision" &&
-        olderRevisionIds.has(item.data.op.id),
-    ).length;
+    const isOlderRevisionItem = (item: ActivityItem<ActivityData>) =>
+      item.data.kind === "op" &&
+      item.data.op.type === "revision" &&
+      olderRevisionIds.has(item.data.op.id);
 
-    if (foldableOlderRevisionCount < 2) {
-      return [...opened, ...items];
-    }
-
-    // Replace the run of older revisions with a single toggle control. When
-    // collapsed it stands in for them ("created N revisions"); when expanded it
-    // sits above them and offers to collapse them back.
+    // Fold each maximal run of *consecutive* older revisions into its own
+    // toggle. Any non-revision event (a review, a lifecycle change) breaks the
+    // run, so revisions separated by other activity are never lumped together.
     const folded: ActivityItem<ActivityData>[] = [];
-    let controlInserted = false;
-    for (const item of items) {
-      const isOlderRevisionOp =
-        item.data.kind === "op" &&
-        item.data.op.type === "revision" &&
-        olderRevisionIds.has(item.data.op.id);
-      if (!isOlderRevisionOp) {
-        folded.push(item);
+    let i = 0;
+    while (i < items.length) {
+      if (!isOlderRevisionItem(items[i])) {
+        folded.push(items[i]);
+        i += 1;
         continue;
       }
-      if (!controlInserted) {
+      let j = i;
+      while (j < items.length && isOlderRevisionItem(items[j])) {
+        j += 1;
+      }
+      const run = items.slice(i, j);
+      if (run.length < 2) {
+        // A lone older revision isn't worth folding; show it inline.
+        folded.push(...run);
+      } else {
+        const head = run[0];
+        const groupKey = `older:${head.data.kind === "op" ? head.data.op.id : head.key}`;
+        const runExpanded = expandedRevisionRuns[groupKey] ?? false;
         folded.push({
-          key: "older-revisions",
-          timestamp: item.timestamp,
+          key: groupKey,
+          timestamp: head.timestamp,
           data: {
             kind: "olderRevisions",
-            count: foldableOlderRevisionCount,
-            author: item.data.kind === "op" ? item.data.op.author : undefined,
-            expanded: olderRevisionsExpanded,
+            groupKey,
+            count: run.length,
+            author: head.data.kind === "op" ? head.data.op.author : undefined,
+            expanded: runExpanded,
           },
         });
-        controlInserted = true;
+        if (runExpanded) {
+          folded.push(...run);
+        }
       }
-      if (olderRevisionsExpanded) {
-        folded.push(item);
-      }
+      i = j;
     }
     return [...opened, ...folded];
   });
@@ -1531,7 +1538,7 @@
         role="button"
         tabindex="0"
         transition:slide={{ duration: 180 }}
-        onclick={() => (olderRevisionsExpanded = !olderRevisionsExpanded)}>
+        onclick={() => toggleRevisionRun(data.groupKey)}>
         <div class="icon">
           <span class="icon-stack">
             <span class="icon-default">
