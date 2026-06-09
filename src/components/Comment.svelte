@@ -104,6 +104,7 @@
   }
   .header-right {
     display: flex;
+    align-items: center;
     margin-left: auto;
     gap: 0.5rem;
     opacity: 0;
@@ -146,9 +147,6 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-quaternary);
   }
-  .icon-button {
-    cursor: pointer;
-  }
 </style>
 
 <div
@@ -180,17 +178,17 @@
       {/if}
       <div class="header-right">
         {#if id}
-          <Id {id} clipboard={id} />
+          <Id {id} clipboard={id} label="comment ID" />
         {/if}
         {#if editComment}
-          <div class="icon-button">
+          <span class="global-icon-button" title="Edit comment">
             <Icon name="edit" onclick={toggleEdit} />
-          </div>
+          </span>
         {/if}
         {#if deleteComment && currentUserNid && utils.publicKeyFromDid(author.did) === currentUserNid}
-          <div class="icon-button">
+          <span class="global-icon-button" title="Delete comment">
             <Icon name="trash" onclick={deleteComment} />
-          </div>
+          </span>
         {/if}
         {#if reactions && reactOnComment}
           <ReactionSelector

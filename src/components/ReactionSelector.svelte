@@ -45,7 +45,9 @@
 
 <Popover {placement} popoverPadding="0">
   {#snippet toggle(onclick)}
-    <Icon name="emoji" {onclick} />
+    <span class="global-icon-button" title="React">
+      <Icon name="emoji" {onclick} />
+    </span>
   {/snippet}
   {#snippet popover()}
     <div
