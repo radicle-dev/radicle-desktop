@@ -71,6 +71,20 @@ step "Building release v$VERSION (${SHORT_SHA})"
 echo "    Output: $RELEASE_DIR"
 mkdir -p "$RELEASE_DIR"
 
+# ---- Preflight ----
+#
+# The Linux deb/AppImage builds run in Podman; the macOS DMG does not. Fail
+# fast here (before the slow native DMG build) if a Linux build is requested
+# but Podman is unavailable.
+
+if [[ "$BUILD_DEB" == true || "$BUILD_APPIMAGE" == true ]]; then
+  command -v podman >/dev/null 2>&1 || { echo "Error: podman not found" >&2; exit 1; }
+  podman info >/dev/null 2>&1 || {
+    echo "Error: Podman is not running — start it (e.g. 'podman machine start')" >&2
+    exit 1
+  }
+fi
+
 # ---- Clean ----
 
 if [[ "$CLEAN" == true ]]; then

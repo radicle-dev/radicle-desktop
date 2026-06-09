@@ -30,9 +30,10 @@
 #   SIGNING_KEY  (default: $HOME/.ssh/apt_signing_key)
 #   FILES_HOST   (default: files.radicle.dev)
 
-set -euo pipefail
+set -Eeuo pipefail
 
 DRY_RUN=false
+CURRENT_PHASE=""
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -50,7 +51,21 @@ bold() { printf '\033[1m%s\033[0m\n' "$*"; }
 step() { echo; bold "==> $*"; }
 info() { echo "    $*"; }
 warn() { echo "    WARNING: $*" >&2; }
-die()  { echo "Error: $*" >&2; exit 1; }
+die()  { echo "Error: $*" >&2; trap - ERR; exit 1; }
+
+# Fires on any uncaught command failure inside a phase. Points at --dry-run,
+# which prints the phase's full command sequence (with real values) so the
+# remaining steps can be finished by hand.
+on_error() {
+  local code=$?
+  trap - ERR
+  echo >&2
+  echo "Error: phase '$CURRENT_PHASE' did not finish (exit $code)." >&2
+  echo "Fix the problem above, then review the phase's commands to continue" >&2
+  echo "manually from where it stopped:" >&2
+  echo >&2
+  echo "    scripts/release --phase $CURRENT_PHASE --dry-run" >&2
+}
 
 confirm() {
   local prompt="$1" reply
@@ -86,6 +101,43 @@ fail() {
   if [[ "$DRY_RUN" == true ]]; then warn "$*"; else die "$*"; fi
 }
 
+# generate-srcinfo.sh needs a running Docker daemon. Check it before prep
+# mutates anything, so a docker-down situation fails cleanly. Skipped under
+# --dry-run, where the Docker step only prints.
+docker_available() { command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; }
+podman_available() { command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; }
+
+require_docker() {
+  if [[ "$DRY_RUN" == true ]]; then
+    docker_available || warn "Docker is not available (a real run needs it to regenerate .SRCINFO)"
+    return 0
+  fi
+  command -v docker >/dev/null 2>&1 || die "docker not found (needed to regenerate .SRCINFO)"
+  docker info >/dev/null 2>&1 || die "Docker daemon is not running — start Docker and re-run"
+}
+
+# build-artifacts enforces a running Podman itself on a real build. This mirror
+# only surfaces it under --dry-run (build-artifacts isn't executed then), so the
+# preview reports a down/absent Podman too.
+require_podman() {
+  [[ "$DRY_RUN" == true ]] || return 0
+  podman_available || warn "Podman is not available (a real build needs it for the Linux artifacts)"
+}
+
+# Every phase runs on the default branch (prep branches off it; later phases run
+# after the patch is merged back). Bail with a clear message if we're elsewhere,
+# so the user can switch and re-run. Only a warning under --dry-run.
+require_branch() {
+  local current
+  current="$(git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD)"
+  [[ "$current" == "$EXPECTED_BRANCH" ]] && return 0
+  if [[ "$DRY_RUN" == true ]]; then
+    warn "on branch '$current', expected '$EXPECTED_BRANCH'"
+  else
+    die "on branch '$current', expected '$EXPECTED_BRANCH' — run 'git checkout $EXPECTED_BRANCH', then re-run"
+  fi
+}
+
 # Print the command(s) the user should run next to resume the flow.
 # Under --dry-run the hint carries the flag through, so previewing one phase
 # suggests previewing the next.
@@ -107,6 +159,7 @@ USERNAME="${USERNAME:-${USER:-}}"
 SSH_KEY="${SSH_KEY:-$HOME/.ssh/id_ed25519}"
 SIGNING_KEY="${SIGNING_KEY:-$HOME/.ssh/apt_signing_key}"
 FILES_HOST="${FILES_HOST:-files.radicle.dev}"
+EXPECTED_BRANCH="${EXPECTED_BRANCH:-main}"
 
 # ---- Version helpers ----
 
@@ -126,10 +179,9 @@ arch_commit_sha() {
 phase_prep() {
   local version="$1"
   [[ -n "$version" ]] || die "prep requires --version X.Y.Z"
+  require_docker
 
   step "Preparing release v$version"
-  git -C "$PROJECT_DIR" rev-parse --abbrev-ref HEAD | grep -qx main \
-    || warn "not on main"
 
   info "Syncing and fetching"
   run rad sync
@@ -194,6 +246,7 @@ phase_prep() {
 phase_build() {
   local version
   version="$(conf_version)"
+  require_podman
   step "Building release artifacts for v$version"
   run "$SCRIPT_DIR/build-artifacts"
 
@@ -363,6 +416,11 @@ main() {
   [[ -n "$phase" ]] || { usage; exit 1; }
 
   [[ "$DRY_RUN" == true ]] && bold "DRY RUN — no commands will be executed"
+
+  require_branch
+
+  CURRENT_PHASE="$phase"
+  trap on_error ERR
 
   case "$phase" in
     prep)     phase_prep "$version" ;;
