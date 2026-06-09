@@ -246,10 +246,49 @@
 
   async function createCodeComment(
     body: string,
-    _embeds: Embed[],
-    _replyTo?: string,
+    embeds: Embed[],
+    replyTo?: string,
     location?: CodeLocation,
   ) {
+    // Replies post immediately to the network. They can't be stashed into a
+    // draft review because publishing carries no per-comment replyTo, so a
+    // reply to your own still-unpublished draft comment isn't supported yet.
+    if (replyTo) {
+      if (draftReview?.comments.some(c => c.id === replyTo)) {
+        console.warn(
+          "Publish your review before replying to your own draft comment",
+        );
+        return;
+      }
+      const reviewId = commentToReviewId.get(replyTo);
+      try {
+        await invoke("edit_patch", {
+          rid,
+          cobId: patchId,
+          action: reviewId
+            ? {
+                type: "review.comment",
+                review: reviewId,
+                body,
+                replyTo,
+                embeds,
+              }
+            : {
+                type: "revision.comment",
+                revision: revision.id,
+                body,
+                replyTo,
+                embeds,
+              },
+          opts: { announce: $nodeRunning && $announce },
+        });
+      } catch (error) {
+        console.error("Replying to comment failed", error);
+      } finally {
+        await loadPatch();
+      }
+      return;
+    }
     if (!location) return;
     try {
       let draftId = draftReview?.id;
@@ -259,6 +298,31 @@
       draftReviewStorage.addComment(draftId, { body, location });
     } catch (error) {
       console.error("Creating code comment failed", error);
+    } finally {
+      await loadPatch();
+    }
+  }
+
+  async function changeCommentStatus(commentId: string, resolved: boolean) {
+    // Only published review comments can be resolved; drafts and plain
+    // revision comments have no review to attach the status change to.
+    const reviewId = commentToReviewId.get(commentId);
+    if (!reviewId) return;
+    try {
+      await invoke("edit_patch", {
+        rid,
+        cobId: patchId,
+        action: {
+          type: resolved
+            ? "review.comment.resolve"
+            : "review.comment.unresolve",
+          review: reviewId,
+          comment: commentId,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Changing comment status failed", error);
     } finally {
       await loadPatch();
     }
@@ -397,21 +461,21 @@
     return list;
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  const noopAsync = async () => {};
-
   const codeComments: CodeComments | undefined = $derived.by(() => {
     const combinedThreads = [...codeCommentThreads, ...publishedReviewThreads];
     if (hasPublishedReview) {
       if (combinedThreads.length === 0) return undefined;
       return {
         config,
-        createComment: noopAsync,
-        editComment: noopAsync,
+        createComment: createCodeComment,
+        editComment: editCodeComment,
+        deleteComment: deleteCodeComment,
+        changeCommentStatus,
         repoDelegates,
         rid,
         threads: combinedThreads,
-        canReply: false,
+        canReply: true,
+        hideThreadFileHeader: true,
       };
     }
     return {
@@ -427,10 +491,12 @@
         "Post this comment now, without starting or contributing to a review.",
       editComment: editCodeComment,
       deleteComment: deleteCodeComment,
+      changeCommentStatus,
       repoDelegates,
       rid,
       threads: combinedThreads,
-      canReply: false,
+      canReply: true,
+      hideThreadFileHeader: true,
       disableAttachments: "Publish your review to attach files",
     };
   });

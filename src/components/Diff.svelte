@@ -220,21 +220,6 @@
       };
     }
   }
-
-  // eslint-disable-next-line svelte/prefer-writable-derived -- needs a $state proxy so toggleCommentExpand's property mutation triggers reactivity
-  let threadExpandedStates: Record<string, boolean> = $state({});
-
-  $effect(() => {
-    threadExpandedStates = codeComments
-      ? Object.fromEntries(
-          codeComments.threads.map(t => [t.root.id, t.root.resolved]),
-        )
-      : {};
-  });
-
-  function toggleCommentExpand(commentId: string) {
-    threadExpandedStates[commentId] = !threadExpandedStates[commentId];
-  }
 </script>
 
 <style>
@@ -356,30 +341,6 @@
     word-break: break-word;
     cursor: text;
   }
-  .comment-icon {
-    margin-left: auto;
-    margin-right: 1rem;
-    margin-top: 3px;
-    align-self: flex-start;
-  }
-  .resolve-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    flex-shrink: 0;
-    padding: 0.125rem 0.5rem;
-    border: 1px solid var(--color-border-subtle);
-    border-radius: var(--border-radius-sm);
-    background: none;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    font: var(--txt-body-s-medium);
-  }
-  .resolve-toggle:hover,
-  .resolve-toggle:focus-visible {
-    background-color: var(--color-surface-subtle);
-    color: var(--color-text-primary);
-  }
   .thread {
     background-color: var(--color-surface-base);
     font: var(--txt-body-m-regular);
@@ -406,13 +367,12 @@
   {@const commentSide = line.type === "deletion" ? "left" : "right"}
   <div
     class="line"
-    class:commentable={Boolean(codeComments?.createComment && !thread)}
+    class:commentable={Boolean(codeComments?.createComment)}
     class:addition={line.type === "addition"}
     class:deletion={line.type === "deletion"}
     class:context={line.type === "context"}
-    class:selected={!thread &&
-      isSelected(filePath(file, "left"), hunkIdx, lineIdx)}>
-    {#if codeComments?.createComment && !thread}
+    class:selected={isSelected(filePath(file, "left"), hunkIdx, lineIdx)}>
+    {#if codeComments?.createComment}
       <button
         type="button"
         class="comment-add"
@@ -457,43 +417,18 @@
     {:else}
       <div class="code"><br /></div>
     {/if}
-
-    <div class="global-flex comment-icon">
-      {#if thread}
-        <Icon
-          name={thread.root.resolved ? "comment-checkmark" : "comment"}
-          onclick={() => toggleCommentExpand(thread.root.id)} />
-      {/if}
-    </div>
   </div>
 
-  {#if codeComments && thread && !threadExpandedStates[thread.root.id]}
+  {#if codeComments && thread}
     <div class="thread">
-      <div class="global-flex" style:padding="0.5rem">
-        {#if !codeComments.hideThreadFileHeader}
+      {#if !codeComments.hideThreadFileHeader}
+        <div class="global-flex" style:padding="0.5rem">
           {@render commentHeader(
             thread.root.location?.path,
             rangeAnchorsFromCodeLocation(thread.root.location),
           )}
-        {/if}
-        {#if codeComments.changeCommentStatus && roles.isDelegateOrAuthor( codeComments.config.publicKey, codeComments.repoDelegates.map(delegate => delegate.did), thread.root.author.did, )}
-          <button
-            type="button"
-            class="resolve-toggle"
-            style:margin-left="auto"
-            title={thread.root.resolved
-              ? "Mark this thread as unresolved"
-              : "Mark this thread as resolved"}
-            onclick={partial(
-              codeComments.changeCommentStatus,
-              thread.root.id,
-              !thread.root.resolved,
-            )}>
-            <Icon name={thread.root.resolved ? "close" : "checkmark"} />
-            {thread.root.resolved ? "Mark as unresolved" : "Mark as resolved"}
-          </button>
-        {/if}
-      </div>
+        </div>
+      {/if}
       <ThreadComponent
         rid={codeComments.rid}
         currentUserNid={codeComments.config.publicKey}
@@ -510,7 +445,16 @@
           codeComments.config.publicKey,
           codeComments.repoDelegates.map(delegate => delegate.did),
         )}
-        deleteComment={codeComments.deleteComment} />
+        deleteComment={codeComments.deleteComment}
+        changeCommentStatus={codeComments.changeCommentStatus}
+        canResolve={Boolean(
+          codeComments.changeCommentStatus &&
+          roles.isDelegateOrAuthor(
+            codeComments.config.publicKey,
+            codeComments.repoDelegates.map(delegate => delegate.did),
+            thread.root.author.did,
+          ),
+        )} />
     </div>
   {/if}
 

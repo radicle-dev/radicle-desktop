@@ -33,6 +33,11 @@
       reaction: string,
     ) => Promise<void>;
     deleteComment?: (commentId: string) => Promise<void>;
+    changeCommentStatus?: (
+      commentId: string,
+      resolved: boolean,
+    ) => Promise<void>;
+    canResolve?: boolean;
     inline?: boolean;
   }
 
@@ -45,6 +50,8 @@
     createReply,
     reactOnComment,
     deleteComment,
+    changeCommentStatus,
+    canResolve = false,
     inline = false,
   }: Props = $props();
 
@@ -186,8 +193,19 @@
       reactOnComment={reactOnComment?.bind(null, root.id)}
       deleteComment={deleteComment?.bind(null, root.id)}>
       {#snippet actions()}
+        {#if changeCommentStatus && canResolve}
+          <span
+            class="global-icon-button"
+            title={root.resolved ? "Mark as unresolved" : "Mark as resolved"}>
+            <Icon
+              name={root.resolved ? "comment-checkmark" : "checkmark"}
+              onclick={() => changeCommentStatus(root.id, !root.resolved)} />
+          </span>
+        {/if}
         {#if createReply}
-          <Icon name="reply" onclick={toggleReply} />
+          <span class="global-icon-button" title="Reply">
+            <Icon name="reply" onclick={toggleReply} />
+          </span>
         {/if}
       {/snippet}
     </CommentComponent>
