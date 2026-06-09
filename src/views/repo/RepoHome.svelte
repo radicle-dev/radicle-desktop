@@ -210,8 +210,11 @@
                       <Id
                         id={blob.commit.id}
                         clipboard={blob.commit.id}
-                        placement="bottom-start" />
-                      <span class="commit-msg txt-overflow" style:min-width="0">
+                        label="commit hash" />
+                      <span
+                        class="commit-msg txt-overflow"
+                        style:min-width="0"
+                        style:max-width="20rem">
                         {blob.commit.message}
                       </span>
                     </div>

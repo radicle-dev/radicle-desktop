@@ -115,7 +115,7 @@
   <div class="right">
     {@render children?.()}
     <CompactCommitAuthorship {commit}>
-      <Id id={commit.id} clipboard={commit.id} />
+      <Id id={commit.id} clipboard={commit.id} label="commit hash" />
     </CompactCommitAuthorship>
   </div>
 </div>

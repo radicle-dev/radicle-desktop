@@ -509,7 +509,10 @@
   {/if}
   {#if reviewedRevision}
     <span>revision</span>
-    <Id id={reviewedRevision.id} clipboard={reviewedRevision.id} />
+    <Id
+      id={reviewedRevision.id}
+      clipboard={reviewedRevision.id}
+      label="revision ID" />
   {/if}
   {#if "draft" in review}
     <span

@@ -388,7 +388,7 @@
           {issueStatusLabel[issue.state.status]}
         </button>
         <Icon name="chevron-right" />
-        <Id id={issue.id} clipboard={issue.id} placement="bottom-start" />
+        <Id id={issue.id} clipboard={issue.id} label="issue ID" />
         <ExternalLink
           href={explorerUrl(`${repo.rid}/issues/${issue.id}`)}
           title="Open in radicle.network" />

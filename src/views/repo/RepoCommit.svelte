@@ -165,7 +165,7 @@
           All commits
         </button>
         <Icon name="chevron-right" />
-        <Id id={commit.id} clipboard={commit.id} placement="bottom-start" />
+        <Id id={commit.id} clipboard={commit.id} label="commit hash" />
         <ExternalLink
           href={explorerUrl(`${repo.rid}/commits/${commit.id}`)}
           title="Open in app.radicle.xyz" />
@@ -192,7 +192,7 @@
                   <span class="txt-selectable">{commit.author.name}</span>
                 </span>
                 committed
-                <Id id={commit.id} clipboard={commit.id} />
+                <Id id={commit.id} clipboard={commit.id} label="commit hash" />
                 <span
                   class="summary-timestamp"
                   title={absoluteTimestamp(commit.committer.time * 1000)}>

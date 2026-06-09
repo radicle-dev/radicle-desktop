@@ -135,7 +135,7 @@
         <div class="global-flex txt-body-m-regular" style:flex-wrap="wrap">
           <NodeId {...authorForNodeId(patch.author)} />
           opened
-          <Id id={patch.id} clipboard={patch.id} />
+          <Id id={patch.id} clipboard={patch.id} label="patch ID" />
           <span title={absoluteTimestamp(patch.timestamp)}>
             {formatTimestamp(patch.timestamp)}
           </span>

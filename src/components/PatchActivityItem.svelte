@@ -410,7 +410,7 @@
       <div class="meta">
         {#if !firstRevision}
           <div class="meta-hash">
-            <Id id={op.id} clipboard={op.id} />
+            <Id id={op.id} clipboard={op.id} label="revision ID" />
           </div>
         {/if}
         <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
@@ -554,7 +554,7 @@
         {/if}
       </div>
       <div class="meta">
-        <Id id={op.revision} clipboard={op.revision} />
+        <Id id={op.revision} clipboard={op.revision} label="revision ID" />
         <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
           {formatTimestamp(op.timestamp)}
         </div>
@@ -618,7 +618,7 @@
           {@render viewFullReviewButton()}
         </div>
         <div class="meta">
-          <Id id={op.revision} clipboard={op.revision} />
+          <Id id={op.revision} clipboard={op.revision} label="revision ID" />
           <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
             {formatTimestamp(op.timestamp)}
           </div>
@@ -657,7 +657,7 @@
           {@render viewFullReviewButton()}
         </div>
         <div class="meta">
-          <Id id={op.revision} clipboard={op.revision} />
+          <Id id={op.revision} clipboard={op.revision} label="revision ID" />
           <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
             {formatTimestamp(op.timestamp)}
           </div>
@@ -696,7 +696,7 @@
           {@render viewFullReviewButton()}
         </div>
         <div class="meta">
-          <Id id={op.revision} clipboard={op.revision} />
+          <Id id={op.revision} clipboard={op.revision} label="revision ID" />
           <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
             {formatTimestamp(op.timestamp)}
           </div>

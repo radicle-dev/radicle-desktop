@@ -172,7 +172,10 @@
           <div class="global-flex txt-body-m-regular summary">
             {commits.length}
             {pluralize("commit", commits.length)} on base
-            <Id id={revision.base} clipboard={revision.base} />
+            <Id
+              id={revision.base}
+              clipboard={revision.base}
+              label="base commit" />
             <div class="global-chip">Base</div>
           </div>
         {/snippet}

@@ -214,7 +214,7 @@
           <div class="wrapper">
             <NodeId {...authorForNodeId(op.author)} />
             <div>
-              opened issue <Id id={op.id} clipboard={op.id} />
+              opened issue <Id id={op.id} clipboard={op.id} label="issue ID" />
             </div>
             <div title={absoluteTimestamp(op.timestamp)}>
               {formatTimestamp(op.timestamp)}

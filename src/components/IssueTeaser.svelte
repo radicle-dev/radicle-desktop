@@ -89,7 +89,7 @@
         <div class="global-flex txt-body-m-regular" style:flex-wrap="wrap">
           <NodeId {...authorForNodeId(issue.author)} />
           opened
-          <Id id={issue.id} clipboard={issue.id} />
+          <Id id={issue.id} clipboard={issue.id} label="issue ID" />
           <span title={absoluteTimestamp(issue.timestamp)}>
             {formatTimestamp(issue.timestamp)}
           </span>

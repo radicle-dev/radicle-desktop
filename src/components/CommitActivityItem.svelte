@@ -90,7 +90,7 @@
     </div>
     <div class="meta">
       <div class="meta-hash">
-        <Id id={commit.id} clipboard={commit.id} />
+        <Id id={commit.id} clipboard={commit.id} label="commit hash" />
       </div>
       <div class="timestamp" title={absoluteTimestamp(authoredAt)}>
         {formatTimestamp(authoredAt)}

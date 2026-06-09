@@ -217,7 +217,7 @@
 
 <div class="meta-row">
   <div class="patch-id-chip">
-    <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
+    <Id id={patch.id} clipboard={patch.id} label="patch ID" />
   </div>
   {#if stats}
     {#if onShowChanges}
