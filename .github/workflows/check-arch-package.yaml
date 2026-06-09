@@ -1,10 +1,6 @@
 on:
   pull_request:
-    paths:
-      - "arch/**"
   push:
-    paths:
-      - "arch/**"
   workflow_dispatch:
 
 env:
