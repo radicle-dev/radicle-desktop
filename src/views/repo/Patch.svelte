@@ -12,6 +12,7 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import { ask } from "@tauri-apps/plugin-dialog";
   import debounce from "lodash/debounce";
 
   import type { DraftReview } from "@app/lib/draftReviewStorage";
@@ -346,6 +347,54 @@
       alias: config.alias,
     }),
   );
+  const reviewInProgress = $derived(
+    Boolean(
+      ownDraftReviewForPatch && ownDraftReviewForPatch.comments.length > 0,
+    ),
+  );
+
+  // While a review is in progress, warn before navigating away from the patch.
+  // Staying on the Changes view (where the review bar lives) is fine; the
+  // Activity tab or another page prompts. The draft is saved either way.
+  async function confirmLeaveReview(question: string): Promise<boolean> {
+    const message =
+      "Your comments are saved as a draft and you can publish them later. " +
+      question;
+    if (window.__TAURI_INTERNALS__) {
+      return ask(message, {
+        title: "Review in progress",
+        kind: "warning",
+        okLabel: "Continue",
+        cancelLabel: "Stay",
+      });
+    }
+    return window.confirm(message);
+  }
+
+  $effect(() => {
+    if (!reviewInProgress) return;
+    return router.setNavigationGuard(async to => {
+      if (
+        to.resource === "repo.patch" &&
+        to.rid === repo.rid &&
+        to.patch === patch.id &&
+        to.view === "changes"
+      ) {
+        return true;
+      }
+      return confirmLeaveReview("Leave this page?");
+    });
+  });
+
+  // Switching revisions during a review changes which diff you're reviewing,
+  // so confirm first (the draft is kept either way).
+  async function selectRevision(revId: string) {
+    if (revId === selectedRevisionId) return;
+    if (reviewInProgress) {
+      if (!(await confirmLeaveReview("Switch to another revision?"))) return;
+    }
+    selectedRevisionId = revId;
+  }
   const isRepoDelegate = $derived(
     roles.isDelegate(
       config.publicKey,
@@ -781,8 +830,7 @@
                     {#if !onLatestRevision}
                       <Button
                         variant="outline"
-                        onclick={() =>
-                          (selectedRevisionId = latestRevision.id)}>
+                        onclick={() => void selectRevision(latestRevision.id)}>
                         <Icon name="revision" />
                         Back to latest revision
                       </Button>
@@ -830,7 +878,7 @@
                                   selected={rev.id === selectedRevision.id}
                                   styleGap="0.5rem"
                                   onclick={() => {
-                                    selectedRevisionId = rev.id;
+                                    void selectRevision(rev.id);
                                     closeFocused();
                                   }}>
                                   <Icon name="revision" />

@@ -75,10 +75,32 @@ if (import.meta.hot) {
 
 const loadExecutor = mutexExecutor.create();
 
+// A guard may block forward navigation (e.g. to confirm leaving an in-progress
+// review). It returns false to cancel the navigation. Only one guard is active
+// at a time; registering returns an unregister function.
+let navigationGuard: ((to: Route) => boolean | Promise<boolean>) | undefined;
+export function setNavigationGuard(
+  guard: (to: Route) => boolean | Promise<boolean>,
+): () => void {
+  navigationGuard = guard;
+  return () => {
+    if (navigationGuard === guard) {
+      navigationGuard = undefined;
+    }
+  };
+}
+
 async function navigate(
   action: "push" | "replace",
   newRoute: Route,
 ): Promise<void> {
+  if (
+    action === "push" &&
+    navigationGuard &&
+    !(await navigationGuard(newRoute))
+  ) {
+    return;
+  }
   isLoading.set(true);
   const path = routeToPath(newRoute);
 
