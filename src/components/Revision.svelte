@@ -768,18 +768,24 @@
   });
   const reviewSummaryFingerprints = $derived(
     new Set(
-      (revision.reviews ?? [])
+      revisions
+        .flatMap(r => r.reviews ?? [])
         .filter(r => r.summary && r.summary.trim() !== "")
         .map(r => `${r.author.did} ${r.summary}`),
     ),
   );
+  // Gather discussion comments from every revision, not just the selected one,
+  // so comments left on a revision stay in the timeline after a newer revision
+  // is pushed. Discussion.svelte orders the merged timeline by timestamp.
   const commentThreads = $derived(
-    ((revision.discussion &&
-      revision.discussion
+    revisions.flatMap(rev => {
+      const discussion = rev.discussion;
+      if (!discussion) return [];
+      return discussion
         .filter(
           comment =>
-            (comment.id !== revision.id && !comment.replyTo) ||
-            comment.replyTo === revision.id,
+            (comment.id !== rev.id && !comment.replyTo) ||
+            comment.replyTo === rev.id,
         )
         .filter(comment => {
           const body = comment.edits[comment.edits.length - 1]?.body ?? "";
@@ -787,16 +793,13 @@
             `${comment.author.did} ${body}`,
           );
         })
-        .map(thread => {
-          return {
-            root: thread,
-            replies:
-              revision.discussion &&
-              revision.discussion
-                .filter(comment => comment.replyTo === thread.id)
-                .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
-          };
-        }, [])) as Thread[]) || [],
+        .map(thread => ({
+          root: thread,
+          replies: discussion
+            .filter(comment => comment.replyTo === thread.id)
+            .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
+        }));
+    }) as Thread[],
   );
 
   let editingDescription = $state(false);
