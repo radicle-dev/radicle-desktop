@@ -18,7 +18,7 @@ jobs:
       options: --user root
 
     steps:
-      - name: Install git
+      - name: Install pre-requisites
         run: pacman -Sy --noconfirm git radicle
 
       - uses: actions/checkout@v6
