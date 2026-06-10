@@ -41,6 +41,24 @@ class UpdateChecker {
     }
   });
 
+  // True only when a version check has succeeded and found no newer
+  // version. Stays false when the checker is disabled or the check failed,
+  // so the UI doesn't claim "up to date" without evidence.
+  public upToDate = $derived.by(() => {
+    if (
+      this.isEnabled &&
+      this.latestVersionInfo &&
+      this.sanitizedCurrentVersion
+    ) {
+      return !semver.gt(
+        this.latestVersionInfo.version,
+        this.sanitizedCurrentVersion,
+      );
+    } else {
+      return false;
+    }
+  });
+
   // A state that holds the `LatestVersionInfo` if this feature has
   // been enabled and if there is a newer version available.
   public newVersion = $derived.by(() => {

@@ -140,7 +140,7 @@
         · <ExternalLink href="https://radicle.dev/desktop">
           Update to {updateChecker.newVersion}
         </ExternalLink>
-      {:else}
+      {:else if updateChecker.upToDate}
         · Up to date
       {/if}
     {/if}
