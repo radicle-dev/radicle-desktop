@@ -11,6 +11,7 @@ interface LatestVersionInfo {
 const fetchLatestVersion = async (): Promise<LatestVersionInfo> => {
   const response = await fetch(
     "https://files.radicle.dev/releases/radicle-desktop/latest/latest.json",
+    { cache: "no-store" },
   );
   const body: LatestVersionInfo = await response.json();
   return body;
