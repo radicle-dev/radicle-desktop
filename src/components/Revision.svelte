@@ -802,6 +802,20 @@
     }) as Thread[],
   );
 
+  // Maps each discussion comment to the revision it belongs to, so edits,
+  // replies, and reactions target the right revision even when the comment is
+  // on an older one than the currently selected revision.
+  const commentToRevisionId = $derived.by(() => {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const map = new Map<string, string>();
+    for (const rev of revisions) {
+      for (const comment of rev.discussion ?? []) {
+        map.set(comment.id, rev.id);
+      }
+    }
+    return map;
+  });
+
   let editingDescription = $state(false);
 
   async function editRevision(description: string, embeds: Embed[]) {
@@ -830,9 +844,12 @@
     replyTo?: string,
   ) {
     try {
+      const targetRevision = replyTo
+        ? (commentToRevisionId.get(replyTo) ?? revision.id)
+        : revision.id;
       await invoke("create_patch_comment", {
         rid: rid,
-        new: { id: patchId, body, embeds, replyTo, revision: revision.id },
+        new: { id: patchId, body, embeds, replyTo, revision: targetRevision },
         opts: { announce: $nodeRunning && $announce },
       });
     } catch (error) {
@@ -851,7 +868,7 @@
           type: "revision.comment.edit",
           comment: commentId,
           body,
-          revision: revision.id,
+          revision: commentToRevisionId.get(commentId) ?? revision.id,
           embeds,
         },
         opts: { announce: $nodeRunning && $announce },
@@ -876,7 +893,7 @@
           type: "revision.comment.react",
           comment: commentId,
           reaction,
-          revision: revision.id,
+          revision: commentToRevisionId.get(commentId) ?? revision.id,
           active: !authors.find(
             ({ did }) => publicKeyFromDid(did) === config.publicKey,
           ),
