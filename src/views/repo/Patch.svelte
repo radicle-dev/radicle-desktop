@@ -106,6 +106,9 @@
   const selectedRevision: Revision = $derived(
     revisions.find(r => r.id === selectedRevisionId) ?? revisions.slice(-1)[0],
   );
+  // When opening a specific revision's changes from the timeline, the target
+  // survives the view switch (the reset effect below honours it once).
+  let pendingRevisionId: string | undefined;
 
   // Warm the Changes-tab data for the selected revision in the background, so
   // opening the tab is instant instead of showing a fetch + highlight delay.
@@ -302,7 +305,8 @@
   $effect(() => {
     if (patchView !== lastPatchView) {
       lastPatchView = patchView;
-      selectedRevisionId = revisions.slice(-1)[0].id;
+      selectedRevisionId = pendingRevisionId ?? revisions.slice(-1)[0].id;
+      pendingRevisionId = undefined;
     }
   });
 
@@ -1044,9 +1048,7 @@
                 onMerge={canShowMerge ? mergePatch : undefined}
                 {mergeDisabledReason}
                 onViewChanges={revisionId => {
-                  // Mark the view switch as already seen so the reset effect
-                  // doesn't snap the picker back to the latest revision.
-                  lastPatchView = "changes";
+                  pendingRevisionId = revisionId;
                   selectedRevisionId = revisionId;
                   setView("changes");
                 }}
