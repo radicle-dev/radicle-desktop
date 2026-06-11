@@ -1332,14 +1332,14 @@
     padding: 0.5rem 1.25rem;
     border: 0;
     border-radius: var(--border-radius-sm);
-    background-color: var(--color-feedback-success-fill);
+    background-color: var(--color-surface-brand-secondary);
     color: var(--color-text-on-brand);
     font: var(--txt-body-m-medium);
     cursor: pointer;
   }
   .merge-card-button:hover:not(:disabled),
   .merge-card-button:focus-visible:not(:disabled) {
-    background-color: var(--color-feedback-success-fill-hover);
+    background-color: var(--color-surface-brand-primary);
   }
   .merge-card-button:disabled {
     cursor: default;

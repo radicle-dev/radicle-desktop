@@ -25,6 +25,7 @@
     invoke,
     writeToClipboard,
   } from "@app/lib/invoke";
+  import { show } from "@app/lib/modal";
   import { setPatchActivityResolver } from "@app/lib/patchActivityContext";
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
@@ -51,6 +52,7 @@
   import RevisionComponent from "@app/components/Revision.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
+  import MergeConfirm from "@app/modals/MergeConfirm.svelte";
 
   import Layout from "./Layout.svelte";
 
@@ -328,7 +330,10 @@
     }
   }
 
+  let merging = $state(false);
   async function mergePatch() {
+    if (merging) return;
+    merging = true;
     try {
       await invoke("merge_patch", {
         rid: repo.rid,
@@ -340,8 +345,23 @@
     } catch (error) {
       console.error("Merging patch failed", error);
     } finally {
+      merging = false;
       await loadPatch();
     }
+  }
+
+  // Merging advances the canonical branch, so confirm (and explain) first.
+  function confirmMerge() {
+    show({
+      component: MergeConfirm,
+      props: {
+        source: `patch/${patch.id.slice(0, 7)}`,
+        branch:
+          repo.payloads["xyz.radicle.project"]?.data.defaultBranch ?? "main",
+        commit: selectedRevision.head,
+        onConfirm: () => void mergePatch(),
+      },
+    });
   }
 
   async function updateTitle(newTitle: string) {
@@ -868,7 +888,7 @@
               onSelect={newState => {
                 void saveState(newState);
               }}
-              onMerge={canShowMerge ? mergePatch : undefined}
+              onMerge={canShowMerge ? confirmMerge : undefined}
               {mergeDisabledReason}
               disabled={!roles.isDelegateOrAuthor(
                 config.publicKey,
@@ -1064,7 +1084,7 @@
                 {revisions}
                 draftReviewId={ownDraftReviewForPatch?.id}
                 reviewInProgressRevisionId={ownDraftReviewForPatch?.revisionId}
-                onMerge={canShowMerge ? mergePatch : undefined}
+                onMerge={canShowMerge ? confirmMerge : undefined}
                 {mergeDisabledReason}
                 onViewChanges={revisionId => {
                   pendingRevisionId = revisionId;
