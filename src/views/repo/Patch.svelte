@@ -804,15 +804,17 @@
           </div>
 
           <div class="content">
-            <RevisionComponent
-              rid={repo.rid}
-              {repo}
-              repoDelegates={repo.delegates}
-              patchId={patch.id}
-              {loadPatch}
-              revision={revisions[0]}
-              {config}
-              view="description" />
+            {#if patchView !== "changes"}
+              <RevisionComponent
+                rid={repo.rid}
+                {repo}
+                repoDelegates={repo.delegates}
+                patchId={patch.id}
+                {loadPatch}
+                revision={revisions[0]}
+                {config}
+                view="description" />
+            {/if}
 
             {#if currentReview}
               <ReviewPage
