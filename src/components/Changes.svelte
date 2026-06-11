@@ -227,20 +227,34 @@
     background-color: var(--color-surface-canvas);
   }
   .diff-column {
+    display: flex;
+    flex-direction: column;
     min-width: 0;
     min-height: 0;
+  }
+  /* The diffs scroll inside their own box, so they stay below the fixed
+     header instead of sliding up under it. File headers stick to the top of
+     this box (right beneath the header). */
+  .diff-scroll {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
+    border-radius: var(--border-radius-md);
   }
   @media (max-width: 60rem) {
     .review-layout {
       grid-template-columns: 1fr;
     }
     .commits-column,
-    .diff-column {
+    .diff-scroll {
       overflow-y: visible;
+    }
+    .diff-column {
+      display: block;
     }
   }
   .stats-row {
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -425,29 +439,31 @@
           {/if}
         </div>
       {/await}
-      {#if selectedCommitData}
-        <div class="selected-commit-message">
-          <div class="selected-commit-summary txt-body-m-medium">
-            {selectedCommitData.summary}
+      <div class="diff-scroll">
+        {#if selectedCommitData}
+          <div class="selected-commit-message">
+            <div class="selected-commit-summary txt-body-m-medium">
+              {selectedCommitData.summary}
+            </div>
+            {#if selectedCommitData.message.trim() !== selectedCommitData.summary.trim()}
+              <pre class="selected-commit-body">{selectedCommitData.message
+                  .replace(selectedCommitData.summary, "")
+                  .trim()}</pre>
+            {/if}
           </div>
-          {#if selectedCommitData.message.trim() !== selectedCommitData.summary.trim()}
-            <pre class="selected-commit-body">{selectedCommitData.message
-                .replace(selectedCommitData.summary, "")
-                .trim()}</pre>
-          {/if}
-        </div>
-      {/if}
-      {#await cachedGetDiff(rid, { base, head, unified: 3, highlight: true })}
-        <span class="txt-body-m-regular">Loading…</span>
-      {:then diff}
-        <Changeset
-          expanded={filesExpanded}
-          {head}
-          {diff}
-          {rid}
-          {codeComments}
-          {draftReviewId} />
-      {/await}
+        {/if}
+        {#await cachedGetDiff(rid, { base, head, unified: 3, highlight: true })}
+          <span class="txt-body-m-regular">Loading…</span>
+        {:then diff}
+          <Changeset
+            expanded={filesExpanded}
+            {head}
+            {diff}
+            {rid}
+            {codeComments}
+            {draftReviewId} />
+        {/await}
+      </div>
     </div>
   </div>
 </div>
