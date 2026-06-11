@@ -694,8 +694,46 @@
       return true;
     });
     filtered.sort((a, b) => a.timestamp - b.timestamp);
+
+    // Place each review immediately after the revision it belongs to, so it
+    // reads as the next timeline item under that revision rather than floating
+    // wherever its own timestamp lands.
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const reviewsByRevision = new Map<string, ActivityItem<ActivityData>[]>();
+    for (const item of filtered) {
+      if (item.data.kind === "op" && item.data.op.type === "review") {
+        const revId = item.data.op.revision;
+        const list = reviewsByRevision.get(revId) ?? [];
+        list.push(item);
+        reviewsByRevision.set(revId, list);
+      }
+    }
+    const reordered: ActivityItem<ActivityData>[] = [];
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const placedReviews = new Set<string>();
+    for (const item of filtered) {
+      if (item.data.kind === "op" && item.data.op.type === "review") continue;
+      reordered.push(item);
+      if (item.data.kind === "op" && item.data.op.type === "revision") {
+        const reviews = reviewsByRevision.get(item.data.op.id);
+        if (reviews) {
+          reordered.push(...reviews);
+          reviews.forEach(r => placedReviews.add(r.key));
+        }
+      }
+    }
+    // Reviews whose revision is gone (e.g. redacted) keep their original order.
+    for (const item of filtered) {
+      if (
+        item.data.kind === "op" &&
+        item.data.op.type === "review" &&
+        !placedReviews.has(item.key)
+      ) {
+        reordered.push(item);
+      }
+    }
     items.length = 0;
-    items.push(...filtered);
+    items.push(...reordered);
 
     // The patch creation is shown as a standalone "opened patch" marker; the
     // first revision itself stays in the timeline below (and folds with other
@@ -719,31 +757,39 @@
       item.data.kind === "op" &&
       item.data.op.type === "revision" &&
       olderRevisionIds.has(item.data.op.id);
+    // A review belonging to an older revision folds together with that revision.
+    const isFoldableReview = (item: ActivityItem<ActivityData>) =>
+      item.data.kind === "op" &&
+      item.data.op.type === "review" &&
+      olderRevisionIds.has(item.data.op.revision);
+    const isFoldable = (item: ActivityItem<ActivityData>) =>
+      isOlderRevisionItem(item) || isFoldableReview(item);
 
-    // Fold each maximal run of *consecutive* older revisions into its own
-    // toggle. Any non-revision event (a review, a lifecycle change) breaks the
-    // run, so revisions separated by other activity are never lumped together.
+    // Fold each maximal run of *consecutive* older revisions (and the reviews
+    // nested under them) into its own toggle. A lifecycle change or comment
+    // breaks the run, so revisions separated by other activity stay distinct.
     const folded: ActivityItem<ActivityData>[] = [];
     let i = 0;
     while (i < items.length) {
-      if (!isOlderRevisionItem(items[i])) {
+      if (!isFoldable(items[i])) {
         folded.push(items[i]);
         i += 1;
         continue;
       }
       let j = i;
-      while (j < items.length && isOlderRevisionItem(items[j])) {
+      while (j < items.length && isFoldable(items[j])) {
         j += 1;
       }
       const run = items.slice(i, j);
-      if (run.length < 2) {
-        // A lone older revision isn't worth folding; show it inline.
+      const revisionItems = run.filter(isOlderRevisionItem);
+      if (revisionItems.length < 2) {
+        // A lone older revision (with its reviews) isn't worth folding.
         folded.push(...run);
       } else {
         const head = run[0];
         const groupKey = `older:${head.data.kind === "op" ? head.data.op.id : head.key}`;
         const runExpanded = expandedRevisionRuns[groupKey] ?? false;
-        const revisionIds = run
+        const revisionIds = revisionItems
           .map(item => (item.data.kind === "op" ? item.data.op.id : undefined))
           .filter((id): id is string => id !== undefined);
         folded.push({
@@ -753,7 +799,7 @@
             kind: "olderRevisions",
             groupKey,
             revisionIds,
-            count: run.length,
+            count: revisionItems.length,
             author: head.data.kind === "op" ? head.data.op.author : undefined,
             expanded: runExpanded,
           },
@@ -1415,6 +1461,9 @@
               latest={revId === latestRevisionId}
               reviewInProgress={revId === reviewInProgressRevisionId}
               onOpenReview={() => onViewChanges?.(revId)}
+              onOpenChanges={onViewChanges
+                ? () => onViewChanges?.(revId)
+                : undefined}
               {expanded}
               hideAuthor={opts.hideAuthor}
               bodyExternal
@@ -1561,17 +1610,25 @@
             <PatchActivityItem
               op={data.op}
               {rid}
+              {patchId}
               {expanded}
               hideAuthor={opts.hideAuthor}
-              onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
+              onToggle={toggleable ? () => toggleRevision(revId) : undefined}
+              onOpenChanges={onViewChanges
+                ? () => onViewChanges?.(revId)
+                : undefined} />
           </div>
         {:else}
           <PatchActivityItem
             op={data.op}
             {rid}
+            {patchId}
             {expanded}
             hideAuthor={opts.hideAuthor}
-            onToggle={toggleable ? () => toggleRevision(revId) : undefined} />
+            onToggle={toggleable ? () => toggleRevision(revId) : undefined}
+            onOpenChanges={onViewChanges
+              ? () => onViewChanges?.(revId)
+              : undefined} />
         {/if}
       {:else if data.op.type === "review"}
         {@const opId = data.op.id}

@@ -53,6 +53,7 @@
     firstRevision?: boolean;
     onViewFullReview?: () => void;
     onOpenReview?: () => void;
+    onOpenChanges?: () => void;
     rid?: string;
     patchId?: string;
     latest?: boolean;
@@ -70,6 +71,7 @@
     firstRevision = false,
     onViewFullReview,
     onOpenReview,
+    onOpenChanges,
     rid,
     patchId,
     latest = false,
@@ -282,6 +284,30 @@
     background-color: var(--color-surface-subtle);
     color: var(--color-text-primary);
   }
+  .open-changes {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background: none;
+    color: var(--color-text-quaternary);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .timeline-item:hover .open-changes,
+  .open-changes:focus-visible {
+    opacity: 1;
+  }
+  .open-changes:hover,
+  .open-changes:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
   .view-full-review {
     display: inline-flex;
     align-items: center;
@@ -406,6 +432,18 @@
             Review in progress
           </button>
         {/if}
+        {#if onOpenChanges}
+          <button
+            type="button"
+            class="open-changes"
+            title="Open revision changes"
+            onclick={e => {
+              e.stopPropagation();
+              onOpenChanges();
+            }}>
+            <Icon name="arrow-right" />
+          </button>
+        {/if}
       </div>
       <div class="meta">
         {#if !firstRevision}
@@ -416,7 +454,9 @@
         <div class="timestamp" title={absoluteTimestamp(op.timestamp)}>
           {formatTimestamp(op.timestamp)}
         </div>
-        {@render copyLinkButton()}
+        {#if expanded}
+          {@render copyLinkButton()}
+        {/if}
       </div>
       {#if !firstRevision && desc.body && expanded && !bodyExternal}
         <div class="revision-body" transition:slide={{ duration: 180 }}>
