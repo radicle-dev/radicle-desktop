@@ -19,6 +19,7 @@
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import {
+    cachedDiffStats,
     cachedGetDiff,
     cachedListCommits,
     invoke,
@@ -105,6 +106,21 @@
   const selectedRevision: Revision = $derived(
     revisions.find(r => r.id === selectedRevisionId) ?? revisions.slice(-1)[0],
   );
+
+  // Warm the Changes-tab data for the selected revision in the background, so
+  // opening the tab is instant instead of showing a fetch + highlight delay.
+  $effect(() => {
+    const rev = selectedRevision;
+    const diffOptions = {
+      base: rev.base,
+      head: rev.head,
+      unified: 3,
+      highlight: true,
+    };
+    void cachedGetDiff(repo.rid, diffOptions).catch(() => undefined);
+    void cachedListCommits(repo.rid, rev.base, rev.head).catch(() => undefined);
+    void cachedDiffStats(repo.rid, rev.base, rev.head).catch(() => undefined);
+  });
   // The metadata stats pill always reflects the latest revision, regardless of
   // what the Changes tab's revision picker is showing.
   const latestRevision: Revision = $derived(revisions.slice(-1)[0]);
@@ -564,6 +580,15 @@
       "meta"
       "content";
     column-gap: 2rem;
+    transition:
+      max-width 200ms ease,
+      padding 200ms ease;
+  }
+  /* On the Changes view, drop the centered max-width and wide side margins so
+     the review uses the full width. Animated on enter/leave. */
+  .main.wide {
+    max-width: 100%;
+    padding: 1.5rem 2rem;
   }
   .title {
     grid-area: title;
@@ -741,7 +766,7 @@
 
     <ScrollArea style="flex: 1; min-height: 0;">
       <div>
-        <div class="main">
+        <div class="main" class:wide={patchView === "changes"}>
           <div class="title">
             <PatchStateButton
               selectedState={patch.state}

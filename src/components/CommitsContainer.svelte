@@ -10,22 +10,24 @@
 
   const { leftHeader, children }: Props = $props();
 
-  let expanded = $state(false);
+  let expanded = $state(true);
 </script>
 
 <style>
   .header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     display: flex;
     align-items: center;
     height: 2.5rem;
     padding: 0 0.5rem;
     font: var(--txt-body-m-regular);
     cursor: pointer;
-    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-canvas);
   }
   .header.expanded {
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
   }
   .header:hover,
   .header:focus-visible {
@@ -73,7 +75,6 @@
   }
   .collapsible.open {
     grid-template-rows: 1fr;
-    border-top: 1px solid var(--color-border-subtle);
   }
   .collapsible-inner {
     overflow: hidden;
@@ -82,12 +83,10 @@
 </style>
 
 <div
-  style:border="1px solid var(--color-border-subtle)"
-  style:border-radius="var(--border-radius-md)"
   style:display="flex"
   style:align-items="flex-start"
-  style:background-color="var(--color-surface-canvas)"
-  style:flex-direction="column">
+  style:flex-direction="column"
+  style:width="100%">
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
     class="header"

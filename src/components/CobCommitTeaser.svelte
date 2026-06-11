@@ -2,7 +2,12 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { Snippet } from "svelte";
 
-  import { twemoji } from "@app/lib/utils";
+  import {
+    absoluteTimestamp,
+    formatTimestamp,
+    gravatarURL,
+    twemoji,
+  } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import CompactCommitAuthorship from "@app/components/CompactCommitAuthorship.svelte";
@@ -17,6 +22,8 @@
     hoverable?: boolean;
     onclick?: () => void;
     flush?: boolean;
+    // Stack the summary above the author/hash/date row, for narrow columns.
+    stacked?: boolean;
   }
 
   const {
@@ -26,6 +33,7 @@
     flush = false,
     hoverable = false,
     onclick = undefined,
+    stacked = false,
   }: Props = $props();
 
   let commitMessageVisible = $state(false);
@@ -37,6 +45,9 @@
     font: var(--txt-body-m-regular);
     align-items: start;
     padding: 0.125rem 0;
+  }
+  .disabled {
+    color: var(--color-text-disabled) !important;
   }
   .message {
     align-items: center;
@@ -71,51 +82,135 @@
     display: flex;
     align-items: center;
   }
-  .disabled {
-    color: var(--color-text-disabled) !important;
-  }
   pre {
     white-space: pre-wrap;
     word-wrap: break-word;
+  }
+
+  /* Stacked layout for the narrow commits column. */
+  .teaser.stacked {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.375rem;
+    padding: 0;
+  }
+  .stacked-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .commit-avatar {
+    width: 1rem;
+    height: 1rem;
+    border-radius: var(--border-radius-sm);
+    flex-shrink: 0;
+    object-fit: cover;
+  }
+  .stacked-header .summary-title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .stacked-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font: var(--txt-body-s-regular);
+    color: var(--color-text-secondary);
+  }
+  .stacked-meta .meta-hash {
+    margin-left: auto;
+  }
+  .stacked-meta .meta-hash :global(.txt-id) {
+    color: var(--color-text-quaternary);
+    /* Keep the monospace family, but match the meta-row font size. */
+    font: var(--txt-code-regular);
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+  .stacked-meta .meta-time {
+    white-space: nowrap;
   }
 </style>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_click_events_have_key_events -->
-<div class="teaser" class:disabled {onclick} aria-label="commit-teaser">
-  <div class="left" style:padding={flush ? "0" : undefined}>
-    <div class="message">
-      <div style:cursor={hoverable ? "pointer" : "default"} use:twemoji>
+<div
+  class="teaser"
+  class:disabled
+  class:stacked
+  {onclick}
+  aria-label="commit-teaser">
+  {#if stacked}
+    <div class="stacked-header">
+      <img
+        class="commit-avatar"
+        alt=""
+        src={gravatarURL(commit.author.email)}
+        title={commit.author.name} />
+      <div
+        class="summary-title"
+        style:cursor={hoverable ? "pointer" : "default"}
+        use:twemoji>
         {#if !commit.summary}
           <span class="txt-missing">No commit message</span>
         {:else}
           <InlineTitle fontSize="small" content={commit.summary} />
         {/if}
       </div>
-      {#if commit.message.trim() !== commit.summary.trim()}
-        <div class="commit-expand-button">
-          <Button
-            variant="naked"
-            stylePadding="0 0.25rem"
-            onclick={e => {
-              e.stopPropagation();
-              commitMessageVisible = !commitMessageVisible;
-            }}>
-            <Icon name="ellipsis" />
-          </Button>
+    </div>
+    <div class="stacked-meta">
+      {@render children?.()}
+      <span class="meta-hash">
+        <Id id={commit.id} clipboard={commit.id} label="commit hash" />
+      </span>
+      <span
+        class="meta-time"
+        title={absoluteTimestamp(commit.committer.time * 1000)}>
+        {formatTimestamp(commit.committer.time * 1000)}
+      </span>
+    </div>
+  {:else}
+    <div class="left" style:padding={flush ? "0" : undefined}>
+      <div class="message">
+        <div
+          class="summary-title"
+          style:cursor={hoverable ? "pointer" : "default"}
+          use:twemoji>
+          {#if !commit.summary}
+            <span class="txt-missing">No commit message</span>
+          {:else}
+            <InlineTitle fontSize="small" content={commit.summary} />
+          {/if}
+        </div>
+        {#if commit.message.trim() !== commit.summary.trim()}
+          <div class="commit-expand-button">
+            <Button
+              variant="naked"
+              stylePadding="0 0.25rem"
+              onclick={e => {
+                e.stopPropagation();
+                commitMessageVisible = !commitMessageVisible;
+              }}>
+              <Icon name="ellipsis" />
+            </Button>
+          </div>
+        {/if}
+      </div>
+      {#if commitMessageVisible}
+        <div class="commit-message">
+          <pre>{commit.message.replace(commit.summary, "").trim()}</pre>
         </div>
       {/if}
     </div>
-    {#if commitMessageVisible}
-      <div class="commit-message">
-        <pre>{commit.message.replace(commit.summary, "").trim()}</pre>
-      </div>
-    {/if}
-  </div>
-  <div class="right">
-    {@render children?.()}
-    <CompactCommitAuthorship {commit}>
-      <Id id={commit.id} clipboard={commit.id} label="commit hash" />
-    </CompactCommitAuthorship>
-  </div>
+    <div class="right">
+      {@render children?.()}
+      <CompactCommitAuthorship {commit}>
+        <Id id={commit.id} clipboard={commit.id} label="commit hash" />
+      </CompactCommitAuthorship>
+    </div>
+  {/if}
 </div>
