@@ -3,6 +3,8 @@
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Commit } from "@bindings/repo/Commit";
 
+  import { tick } from "svelte";
+
   import {
     cachedDiffStats,
     cachedGetDiff,
@@ -116,6 +118,71 @@
       clearTimeout(settle);
     };
   });
+
+  // Load the commit list into state so keyboard navigation can step through it.
+  let commitList = $state<Commit[]>([]);
+  $effect(() => {
+    const ridLocal = rid;
+    const baseRev = revision.base;
+    const headRev = revision.head;
+    let cancelled = false;
+    void cachedListCommits(ridLocal, baseRev, headRev).then(c => {
+      if (!cancelled) commitList = c;
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  function selectCommitAt(index: number) {
+    if (commitList.length <= 1) return;
+    const clamped = Math.max(0, Math.min(index, commitList.length - 1));
+    const commit = commitList[clamped];
+    selectRevision({
+      headId: commit.id,
+      baseId: commit.parents[0],
+      commitId: commit.id,
+      commit,
+    });
+    void tick().then(() => {
+      reviewLayout
+        ?.querySelector(".commit.active")
+        ?.scrollIntoView({ block: "nearest" });
+    });
+  }
+
+  // Up/Down step through commits; Escape deselects. Ignored while typing.
+  $effect(() => {
+    const onKeydown = (e: KeyboardEvent) => {
+      const el = document.activeElement;
+      if (
+        el instanceof HTMLElement &&
+        (el.tagName === "INPUT" ||
+          el.tagName === "TEXTAREA" ||
+          el.isContentEditable)
+      ) {
+        return;
+      }
+      if (e.key === "Escape") {
+        if (selectedCommit) {
+          e.preventDefault();
+          selectRevision({ headId: revision.head, baseId: revision.base });
+        }
+        return;
+      }
+      if (commitList.length <= 1) return;
+      const current = commitList.findIndex(c => c.id === selectedCommit);
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        selectCommitAt(current === -1 ? 0 : current + 1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        selectCommitAt(current === -1 ? commitList.length - 1 : current - 1);
+      }
+    };
+    window.addEventListener("keydown", onKeydown);
+    return () => window.removeEventListener("keydown", onKeydown);
+  });
 </script>
 
 <style>
@@ -228,12 +295,12 @@
 <div>
   <div class="review-layout" bind:this={reviewLayout}>
     <div class="commits-column">
-      {#await cachedListCommits(rid, revision.base, revision.head) then commits}
+      {#if commitList.length > 0}
         <CommitsContainer>
           {#snippet leftHeader()}
             <div class="global-flex txt-body-m-regular summary">
-              {commits.length}
-              {pluralize("commit", commits.length)} on base
+              {commitList.length}
+              {pluralize("commit", commitList.length)} on base
               <Id
                 id={revision.base}
                 clipboard={revision.base}
@@ -242,10 +309,10 @@
             </div>
           {/snippet}
           <div class="commits">
-            {#each commits as commit}
+            {#each commitList as commit}
               {@const active = isActiveCommit(commit.id)}
               {@const toggle = () => {
-                if (commits.length === 1) return;
+                if (commitList.length === 1) return;
                 if (active) {
                   selectRevision({
                     headId: revision.head,
@@ -264,12 +331,12 @@
               <!-- svelte-ignore a11y_no_static_element_interactions -->
               <div
                 class="commit"
-                class:single-commit={commits.length === 1}
+                class:single-commit={commitList.length === 1}
                 class:active
                 onclick={toggle}>
                 <CobCommitTeaser
                   stacked
-                  hoverable={commits.length > 1}
+                  hoverable={commitList.length > 1}
                   disabled={isTeaserDisabled(commit.id)}
                   {commit}>
                   {#if commit.parents.length > 0}
@@ -295,7 +362,7 @@
             {/each}
           </div>
         </CommitsContainer>
-      {/await}
+      {/if}
     </div>
     <div class="diff-column">
       {#await cachedDiffStats(rid, base, head) then stats}
