@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use radicle::cob::Title;
 use radicle::node::Handle;
 use radicle::patch::cache::Patches as _;
-use radicle::storage::ReadStorage;
+use radicle::storage::{ReadRepository, ReadStorage, SignRepository, WriteRepository};
 use radicle::{Node, cob, git, identity};
 
 use crate::cobs;
@@ -291,15 +291,47 @@ pub trait PatchesMut: Profile {
         let mut node = Node::new(profile.home().socket_from_env());
         let repo = profile.storage.repository(rid)?;
         let signer = profile.signer()?;
+        let nid = *signer.public_key();
         let aliases = profile.aliases();
-        let mut patches = profile.patches_mut(&repo, &signer)?;
-        let mut patch = patches.get_mut(&cob_id.into())?;
 
-        // `Merged::cleanup` needs the working-copy `git::raw::Repository`,
-        // which Tauri commands don't have access to. The user is expected to
-        // update their default branch via git separately; emitting this COB
-        // action only records the merge intent.
-        let _merged = patch.merge(revision, commit)?;
+        // A `Merge` COB action only flips the patch to "merged" once its commit
+        // is in the delegate's default branch. The Tauri command has no working
+        // copy, so fast-forward that branch ref in storage directly; otherwise
+        // the merge never takes effect and the button appears to do nothing.
+        let proj = repo.project()?;
+        let current = repo
+            .reference_oid(&nid, &git::refs::branch(proj.default_branch()))
+            .ok();
+        match current {
+            // Already merged into the default branch; nothing to move.
+            Some(head) if head == commit => {}
+            // Diverged: a fast-forward would drop commits, so refuse and let the
+            // user merge from the command line instead.
+            Some(head) if !repo.is_ancestor_of(head, commit)? => {
+                return Err(Error::MergeNotFastForward);
+            }
+            _ => {
+                let branch = git::refs::storage::branch_of(&nid, proj.default_branch());
+                repo.raw().reference(
+                    branch.to_string().as_str(),
+                    commit.into(),
+                    true,
+                    "Merge patch",
+                )?;
+            }
+        }
+
+        let patch = {
+            let mut patches = profile.patches_mut(&repo, &signer)?;
+            let mut patch = patches.get_mut(&cob_id.into())?;
+            let _merged = patch.merge(revision, commit)?;
+            models::patch::Patch::new(*patch.id(), &patch, &aliases)
+        };
+
+        repo.sign_refs(&signer)?;
+        // Point the canonical default branch (what the code view reads) at the
+        // new head, recomputed from the delegate refs we just moved.
+        repo.set_default_branch_to_canonical_head()?;
 
         if opts.announce()
             && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
@@ -307,7 +339,7 @@ pub trait PatchesMut: Profile {
             log::error!("Not able to announce changes: {}", e)
         }
 
-        Ok::<_, Error>(models::patch::Patch::new(*patch.id(), &patch, &aliases))
+        Ok(patch)
     }
 
     /// Remove a patch COB. Equivalent to `rad patch delete`.

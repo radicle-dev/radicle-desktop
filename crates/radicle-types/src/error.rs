@@ -23,6 +23,10 @@ pub enum Error {
     #[error("ssh agent not running")]
     AgentNotRunning,
 
+    /// Patch can't be fast-forward merged from the app.
+    #[error("This patch can't be fast-forwarded. Merge it from the command line.")]
+    MergeNotFastForward,
+
     /// File size too big
     #[error("file size too large: {0}")]
     FileTooLarge(usize),
