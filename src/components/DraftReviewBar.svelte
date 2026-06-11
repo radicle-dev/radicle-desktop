@@ -197,9 +197,12 @@
     }
   }
 
+  // The protocol rejects a verdict-less review with no summary (EmptyReview),
+  // so a "Needs changes" review requires summary text; accept/reject don't.
   const publishDisabled = $derived(
     publishing || (verdict === undefined && summary.trim() === ""),
   );
+  const summaryRequired = $derived(verdict === undefined);
 </script>
 
 <style>
@@ -386,6 +389,9 @@
     align-items: stretch;
     gap: 0.25rem;
   }
+  .publish-wrap {
+    display: inline-flex;
+  }
   .verdict-btn {
     display: inline-flex;
     align-items: center;
@@ -530,7 +536,9 @@
     bind:this={summaryEl}
     class="summary"
     rows="1"
-    placeholder="Add optional review comment"
+    placeholder={summaryRequired
+      ? "Add a review summary"
+      : "Add an optional review summary"}
     bind:value={summary}
     oninput={autoResizeSummary}
     onblur={persistSummary}>
@@ -676,12 +684,19 @@
       </Popover>
 
       <div class="split-button">
-        <button
-          class="verdict-btn txt-body-m-medium {verdictColorClass}"
-          disabled={publishDisabled}
-          onclick={publish}>
-          {verdictLabel}
-        </button>
+        <!-- Wrapper carries the title: a disabled <button> won't show one. -->
+        <span
+          class="publish-wrap"
+          title={summaryRequired && summary.trim() === ""
+            ? "Review summary required"
+            : undefined}>
+          <button
+            class="verdict-btn txt-body-m-medium {verdictColorClass}"
+            disabled={publishDisabled}
+            onclick={publish}>
+            {verdictLabel}
+          </button>
+        </span>
         <Popover
           popoverPadding="0"
           placement="top-end"
