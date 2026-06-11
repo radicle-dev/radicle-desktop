@@ -816,7 +816,26 @@
           <Icon name={copyIcon} />
           <span class="global-hide-on-medium-desktop-down">Copy link</span>
         </Button>
-        {#if !ownDraftReviewForPatch}
+        {#if ownDraftReviewForPatch}
+          {#if patchView !== "changes"}
+            <Button
+              variant="secondary"
+              onclick={() => {
+                pendingRevisionId = ownDraftReviewForPatch?.revisionId;
+                if (ownDraftReviewForPatch) {
+                  selectedRevisionId = ownDraftReviewForPatch.revisionId;
+                }
+                setView("changes");
+              }}
+              title="Continue your review in progress">
+              <Icon name="comment" />
+              <span
+                class="txt-body-m-regular global-hide-on-medium-desktop-down">
+                Continue review
+              </span>
+            </Button>
+          {/if}
+        {:else}
           <Button
             variant="secondary"
             disabled={hasOwnPublishedReviewOnSelected}
