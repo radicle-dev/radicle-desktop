@@ -1433,7 +1433,7 @@
               op={data.op}
               {rid}
               {patchId}
-              latest={revId === latestRevisionId}
+              latest={revisions.length > 1 && revId === latestRevisionId}
               reviewInProgress={revId === reviewInProgressRevisionId}
               onOpenReview={() => onViewChanges?.(revId)}
               onOpenChanges={onViewChanges
