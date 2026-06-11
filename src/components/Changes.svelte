@@ -153,15 +153,21 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-canvas);
   }
   .stats {
     min-width: 0;
   }
   .selected-commit-message {
     margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--color-border-subtle);
+    padding: 0.75rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-canvas);
   }
   .selected-commit-body {
     margin: 0.5rem 0 0;
@@ -220,36 +226,6 @@
 </style>
 
 <div>
-  {#await cachedDiffStats(rid, revision.base, revision.head) then stats}
-    <div class="stats-row txt-body-m-regular">
-      <div class="stats" style:color="var(--color-text-secondary)">
-        {stats.filesChanged}
-        {pluralize("file", stats.filesChanged)} modified with
-        <span style:color="var(--color-feedback-success-text)">
-          {stats.insertions}
-          {pluralize("insertion", stats.insertions)}
-        </span>
-        and
-        <span style:color="var(--color-feedback-error-text)">
-          {stats.deletions}
-          {pluralize("deletion", stats.deletions)}
-        </span>
-      </div>
-      {#if stats.filesChanged > 0}
-        <Button
-          variant="naked"
-          onclick={() => (filesExpanded = !filesExpanded)}>
-          {#if filesExpanded}
-            <Icon name="collapse-vertical" />
-            Collapse all
-          {:else}
-            <Icon name="expand-vertical" />
-            Expand all
-          {/if}
-        </Button>
-      {/if}
-    </div>
-  {/await}
   <div class="review-layout" bind:this={reviewLayout}>
     <div class="commits-column">
       {#await cachedListCommits(rid, revision.base, revision.head) then commits}
@@ -322,6 +298,36 @@
       {/await}
     </div>
     <div class="diff-column">
+      {#await cachedDiffStats(rid, base, head) then stats}
+        <div class="stats-row txt-body-m-regular">
+          <div class="stats" style:color="var(--color-text-secondary)">
+            {stats.filesChanged}
+            {pluralize("file", stats.filesChanged)} modified with
+            <span style:color="var(--color-feedback-success-text)">
+              {stats.insertions}
+              {pluralize("insertion", stats.insertions)}
+            </span>
+            and
+            <span style:color="var(--color-feedback-error-text)">
+              {stats.deletions}
+              {pluralize("deletion", stats.deletions)}
+            </span>
+          </div>
+          {#if stats.filesChanged > 0}
+            <Button
+              variant="naked"
+              onclick={() => (filesExpanded = !filesExpanded)}>
+              {#if filesExpanded}
+                <Icon name="collapse-vertical" />
+                Collapse all
+              {:else}
+                <Icon name="expand-vertical" />
+                Expand all
+              {/if}
+            </Button>
+          {/if}
+        </div>
+      {/await}
       {#if selectedCommitData}
         <div class="selected-commit-message">
           <div class="selected-commit-summary txt-body-m-medium">
