@@ -187,7 +187,7 @@ export type LoadedRepoRoute =
 export async function loadPatch(
   route: RepoPatchRoute,
   previousLoaded?: LoadedRoute,
-): Promise<LoadedRepoPatchRoute> {
+): Promise<LoadedRepoPatchRoute | LoadedRepoPatchesRoute> {
   // Switching tab (view) or review on the same patch shouldn't refetch all the
   // patch data; reuse what's already loaded so the change is instant.
   const reuse =
@@ -217,7 +217,7 @@ export async function loadPatch(
           status: route.status,
           take: DEFAULT_TAKE,
         }),
-        invoke<Patch>("patch_by_id", {
+        invoke<Patch | null>("patch_by_id", {
           rid: route.rid,
           id: route.patch,
         }),
@@ -230,6 +230,16 @@ export async function loadPatch(
           id: route.patch,
         }),
       ]);
+
+  // The patch may have been deleted (removed here, on another device, or a
+  // stale link); fall back to the patch list instead of crashing.
+  if (!patch) {
+    return loadPatches({
+      resource: "repo.patches",
+      rid: route.rid,
+      status: route.status,
+    });
+  }
 
   const config = sidebarData.config;
 

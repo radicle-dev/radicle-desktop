@@ -2,9 +2,8 @@ use std::collections::BTreeSet;
 
 use radicle::cob::Title;
 use radicle::node::Handle;
-use radicle::patch::TYPENAME;
 use radicle::patch::cache::Patches as _;
-use radicle::storage::{ReadStorage, SignRepository};
+use radicle::storage::ReadStorage;
 use radicle::{Node, cob, git, identity};
 
 use crate::cobs;
@@ -327,10 +326,13 @@ pub trait PatchesMut: Profile {
         let mut node = Node::new(profile.home().socket_from_env());
         let repo = profile.storage.repository(rid)?;
         let signer = profile.signer()?;
-        let namespace = *signer.public_key();
 
-        cob::remove(&repo, &namespace, &TYPENAME, &cob_id.into())?;
-        repo.sign_refs(&signer)?;
+        // Remove via the cache-backed store so the patch is dropped from both
+        // the git refs and the COB cache that listings read from; otherwise the
+        // deleted patch keeps showing up in the patch list.
+        let mut patches = profile.patches_mut(&repo, &signer)?;
+        patches.remove(&cob_id.into())?;
+        drop(patches);
 
         if opts.announce()
             && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
