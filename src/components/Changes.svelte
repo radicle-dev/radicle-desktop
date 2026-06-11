@@ -19,6 +19,7 @@
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import JobCob from "@app/components/JobCob.svelte";
+  import Markdown from "@app/components/Markdown.svelte";
   import { getScrollViewport } from "@app/components/ScrollArea.svelte";
 
   interface Props {
@@ -85,6 +86,41 @@
   const isTeaserDisabled = (commitId: string) =>
     selectedCommit ? selectedCommit !== commitId : false;
 
+  // Load the commit list into state so keyboard navigation can step through it.
+  let commitList = $state<Commit[]>([]);
+  $effect(() => {
+    const ridLocal = rid;
+    const baseRev = revision.base;
+    const headRev = revision.head;
+    let cancelled = false;
+    void cachedListCommits(ridLocal, baseRev, headRev).then(c => {
+      if (!cancelled) commitList = c;
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  // The revision's own description, shown above the lists — unless it's empty
+  // or just the auto-generated list of commit summaries.
+  function isCommitListDescription(description: string, commits: Commit[]) {
+    if (commits.length === 0) return false;
+    const chunks = description
+      .split("\n")
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+    if (chunks.length !== commits.length) return false;
+    const summaries = new Set(commits.map(c => c.summary.trim()));
+    return chunks.every(line => summaries.has(line));
+  }
+  const revisionDescription = $derived(
+    revision.description.slice(-1)[0]?.body?.trim() ?? "",
+  );
+  const showRevisionDescription = $derived(
+    revisionDescription !== "" &&
+      !isCommitListDescription(revisionDescription, commitList),
+  );
+
   // Make the Changes tab a fixed-height workspace: the two-column area fills
   // the remaining viewport height and each column scrolls on its own, so the
   // page doesn't scroll here and nothing resizes mid-scroll. Height is measured
@@ -116,21 +152,6 @@
       observer.disconnect();
       window.removeEventListener("resize", update);
       clearTimeout(settle);
-    };
-  });
-
-  // Load the commit list into state so keyboard navigation can step through it.
-  let commitList = $state<Commit[]>([]);
-  $effect(() => {
-    const ridLocal = rid;
-    const baseRev = revision.base;
-    const headRev = revision.head;
-    let cancelled = false;
-    void cachedListCommits(ridLocal, baseRev, headRev).then(c => {
-      if (!cancelled) commitList = c;
-    });
-    return () => {
-      cancelled = true;
     };
   });
 
@@ -186,6 +207,10 @@
 </script>
 
 <style>
+  .revision-description {
+    margin-bottom: 1rem;
+    color: var(--color-text-primary);
+  }
   .review-layout {
     display: grid;
     grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
@@ -293,6 +318,11 @@
 </style>
 
 <div>
+  {#if showRevisionDescription}
+    <div class="revision-description txt-body-m-regular">
+      <Markdown {rid} breaks content={revisionDescription} />
+    </div>
+  {/if}
   <div class="review-layout" bind:this={reviewLayout}>
     <div class="commits-column">
       {#if commitList.length > 0}
