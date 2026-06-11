@@ -135,6 +135,26 @@
     [...revisions].sort((a, b) => a.timestamp - b.timestamp),
   );
 
+  // Collapse a long patch description behind a Show more/less toggle.
+  const DESCRIPTION_MAX_HEIGHT = 300;
+  let descriptionExpanded = $state(false);
+  let descriptionEl = $state<HTMLElement>();
+  let descriptionOverflows = $state(false);
+  const descriptionCollapsed = $derived(
+    descriptionOverflows && !descriptionExpanded,
+  );
+  $effect(() => {
+    const el = descriptionEl;
+    if (!el) return;
+    const measure = () => {
+      descriptionOverflows = el.scrollHeight > DESCRIPTION_MAX_HEIGHT;
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
+
   let activityLoaded = $state(false);
   let activityLoading = false;
   let lastActivityRid: string | undefined;
@@ -606,6 +626,58 @@
     grid-area: content;
     min-width: 0;
   }
+  .patch-description {
+    position: relative;
+  }
+  .patch-description.collapsed .patch-description-body {
+    max-height: 300px;
+    overflow: hidden;
+  }
+  .patch-description-toggle {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .patch-description.collapsed {
+    margin-bottom: 1.5rem;
+  }
+  .patch-description.collapsed .patch-description-toggle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: flex-end;
+    height: 6rem;
+    margin: 0;
+    padding-bottom: 0.25rem;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--color-surface-canvas)
+    );
+    pointer-events: none;
+  }
+  /* Identical to the "View all revision changes" button (.diff-tease-button). */
+  .patch-description-button {
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    box-shadow: var(--elevation-low);
+  }
+  .patch-description-button:hover,
+  .patch-description-button:focus-visible {
+    background-color: var(--color-surface-subtle);
+  }
   .tabs {
     display: flex;
     align-items: center;
@@ -805,15 +877,36 @@
 
           <div class="content">
             {#if patchView !== "changes"}
-              <RevisionComponent
-                rid={repo.rid}
-                {repo}
-                repoDelegates={repo.delegates}
-                patchId={patch.id}
-                {loadPatch}
-                revision={revisions[0]}
-                {config}
-                view="description" />
+              <div
+                class="patch-description"
+                class:collapsed={descriptionCollapsed}>
+                <div class="patch-description-body" bind:this={descriptionEl}>
+                  <RevisionComponent
+                    rid={repo.rid}
+                    {repo}
+                    repoDelegates={repo.delegates}
+                    patchId={patch.id}
+                    {loadPatch}
+                    revision={revisions[0]}
+                    {config}
+                    view="description" />
+                </div>
+                {#if descriptionOverflows}
+                  <div class="patch-description-toggle">
+                    <button
+                      type="button"
+                      class="patch-description-button txt-body-m-medium"
+                      onclick={() =>
+                        (descriptionExpanded = !descriptionExpanded)}>
+                      {descriptionExpanded ? "Show less" : "Show more"}
+                      <Icon
+                        name={descriptionExpanded
+                          ? "collapse-vertical"
+                          : "expand-vertical"} />
+                    </button>
+                  </div>
+                {/if}
+              </div>
             {/if}
 
             {#if currentReview}
