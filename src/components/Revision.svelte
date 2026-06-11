@@ -43,6 +43,7 @@
   import Reactions from "@app/components/Reactions.svelte";
   import ReactionSelector from "@app/components/ReactionSelector.svelte";
   import ReviewCodeThread from "@app/components/ReviewCodeThread.svelte";
+  import ReviewItem from "@app/components/ReviewItem.svelte";
 
   type ActivityData =
     | {
@@ -134,7 +135,6 @@
     repo.payloads["xyz.radicle.project"]?.data.defaultBranch,
   );
   let revisionToggles: Record<string, boolean> = $state({});
-  let reviewToggles: Record<string, boolean> = $state({});
   let commitGroupToggles: Record<string, boolean> = $state({});
   let expandedRevisionRuns: Record<string, boolean> = $state({});
   // svelte-ignore state_referenced_locally
@@ -146,7 +146,6 @@
       lastPatchIdSeen = patchId;
       lastViewSeen = view;
       revisionToggles = {};
-      reviewToggles = {};
       commitGroupToggles = {};
       expandedRevisionRuns = {};
     }
@@ -201,16 +200,6 @@
     const summaries = new Set(commits.map(c => c.summary.trim()));
     return chunks.every(line => summaries.has(line));
   }
-  function isReviewExpanded(opId: string): boolean {
-    return opId in reviewToggles ? reviewToggles[opId] : true;
-  }
-  function toggleReview(opId: string) {
-    reviewToggles = {
-      ...reviewToggles,
-      [opId]: !isReviewExpanded(opId),
-    };
-  }
-
   function groupCommitsByAuthor(commits: Commit[]): Commit[][] {
     const groups: Commit[][] = [];
     for (const commit of commits) {
@@ -1079,20 +1068,6 @@
   .revision-diff-tease .revision-diff-stats :global(.icon) {
     background-color: var(--color-surface-base);
   }
-  .collapsible {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 180ms ease-out;
-    overflow: hidden;
-    min-height: 0;
-  }
-  .collapsible.open {
-    grid-template-rows: 1fr;
-  }
-  .collapsible-inner {
-    overflow: hidden;
-    min-height: 0;
-  }
   .review-threads {
     position: relative;
     display: flex;
@@ -1638,13 +1613,12 @@
           r => r.id === opId,
         )}
         {@const hasReviewComments = (reviewRecord?.comments?.length ?? 0) > 0}
-        {@const toggleable = hasThreads}
-        {@const expanded = toggleable ? isReviewExpanded(opId) : true}
-        <PatchActivityItem
-          op={data.op}
-          expanded={toggleable ? expanded : undefined}
-          onToggle={toggleable ? () => toggleReview(opId) : undefined}
-          hideAuthor={opts.hideAuthor}
+        <ReviewItem
+          {rid}
+          author={data.op.author}
+          verdict={data.op.verdict}
+          summary={data.op.summary ?? ""}
+          timestamp={data.op.timestamp}
           onViewFullReview={hasReviewComments
             ? () =>
                 void push({
@@ -1656,23 +1630,19 @@
                 })
             : undefined} />
         {#if hasThreads}
-          <div class="collapsible" class:open={expanded}>
-            <div class="collapsible-inner">
-              <div class="review-threads">
-                {#each threads as thread (thread.root.id)}
-                  <ReviewCodeThread
-                    {rid}
-                    base={revision.base}
-                    head={revision.head}
-                    {thread}
-                    {config}
-                    {repoDelegates}
-                    editComment={editCodeComment}
-                    deleteComment={deleteCodeComment}
-                    reactOnComment={reactOnCodeComment} />
-                {/each}
-              </div>
-            </div>
+          <div class="review-threads">
+            {#each threads as thread (thread.root.id)}
+              <ReviewCodeThread
+                {rid}
+                base={revision.base}
+                head={revision.head}
+                {thread}
+                {config}
+                {repoDelegates}
+                editComment={editCodeComment}
+                deleteComment={deleteCodeComment}
+                reactOnComment={reactOnCodeComment} />
+            {/each}
           </div>
         {/if}
       {:else}
