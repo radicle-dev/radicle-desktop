@@ -180,6 +180,7 @@
   }
   .commit-stats .insertions {
     color: var(--color-feedback-success-text);
+    margin-left: 0.5rem;
   }
   .commit-stats .deletions {
     color: var(--color-feedback-error-text);
@@ -309,6 +310,11 @@
                     <JobCob {rid} commit={commit.id} />
                   {/if}
                 </CobCommitTeaser>
+                {#if active}
+                  <span class="global-icon-button" title="Show all changes">
+                    <Icon name="close" />
+                  </span>
+                {/if}
               </div>
             {/each}
           </div>

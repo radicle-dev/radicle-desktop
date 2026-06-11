@@ -46,7 +46,8 @@
     align-items: start;
     padding: 0.125rem 0;
   }
-  .disabled {
+  .disabled,
+  .disabled :global(*) {
     color: var(--color-text-disabled) !important;
   }
   .message {
