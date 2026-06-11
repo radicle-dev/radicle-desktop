@@ -121,6 +121,26 @@
       !isCommitListDescription(revisionDescription, commitList),
   );
 
+  // Collapse a long revision description behind a Show more/less toggle.
+  const DESCRIPTION_MAX_HEIGHT = 300;
+  let descriptionExpanded = $state(false);
+  let descriptionEl = $state<HTMLElement>();
+  let descriptionOverflows = $state(false);
+  const descriptionCollapsed = $derived(
+    descriptionOverflows && !descriptionExpanded,
+  );
+  $effect(() => {
+    const el = descriptionEl;
+    if (!el) return;
+    const measure = () => {
+      descriptionOverflows = el.scrollHeight > DESCRIPTION_MAX_HEIGHT;
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  });
+
   // Make the Changes tab a fixed-height workspace: the two-column area fills
   // the remaining viewport height and each column scrolls on its own, so the
   // page doesn't scroll here and nothing resizes mid-scroll. Height is measured
@@ -208,8 +228,54 @@
 
 <style>
   .revision-description {
+    position: relative;
     margin-bottom: 1rem;
     color: var(--color-text-primary);
+  }
+  .revision-description.collapsed .revision-description-body {
+    max-height: 300px;
+    overflow: hidden;
+  }
+  .revision-description-toggle {
+    display: flex;
+    justify-content: center;
+    margin-top: 0.5rem;
+  }
+  .revision-description.collapsed .revision-description-toggle {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: flex-end;
+    height: 6rem;
+    margin: 0;
+    padding-bottom: 0.25rem;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--color-surface-canvas)
+    );
+    pointer-events: none;
+  }
+  /* Identical to the "View all revision changes" button (.diff-tease-button). */
+  .revision-description-button {
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    box-shadow: var(--elevation-low);
+  }
+  .revision-description-button:hover,
+  .revision-description-button:focus-visible {
+    background-color: var(--color-surface-subtle);
   }
   .review-layout {
     display: grid;
@@ -333,8 +399,26 @@
 
 <div>
   {#if showRevisionDescription}
-    <div class="revision-description txt-body-m-regular">
-      <Markdown {rid} breaks content={revisionDescription} />
+    <div class="revision-description" class:collapsed={descriptionCollapsed}>
+      <div
+        class="revision-description-body txt-body-m-regular"
+        bind:this={descriptionEl}>
+        <Markdown {rid} breaks content={revisionDescription} />
+      </div>
+      {#if descriptionOverflows}
+        <div class="revision-description-toggle">
+          <button
+            type="button"
+            class="revision-description-button txt-body-m-medium"
+            onclick={() => (descriptionExpanded = !descriptionExpanded)}>
+            {descriptionExpanded ? "Show less" : "Show more"}
+            <Icon
+              name={descriptionExpanded
+                ? "collapse-vertical"
+                : "expand-vertical"} />
+          </button>
+        </div>
+      {/if}
     </div>
   {/if}
   <div class="review-layout" bind:this={reviewLayout}>
