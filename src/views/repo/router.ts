@@ -17,7 +17,7 @@ import type { Tree } from "@bindings/source/Tree";
 import type { DraftReview } from "@app/lib/draftReviewStorage";
 import { draftReviewStorage } from "@app/lib/draftReviewStorage";
 import { cachedGetCommitDiff, invoke } from "@app/lib/invoke";
-import type { SidebarData } from "@app/lib/router/definitions";
+import type { LoadedRoute, SidebarData } from "@app/lib/router/definitions";
 import { loadSidebarData } from "@app/lib/router/definitions";
 import { didFromPublicKey, unreachable } from "@app/lib/utils";
 
@@ -186,31 +186,50 @@ export type LoadedRepoRoute =
 
 export async function loadPatch(
   route: RepoPatchRoute,
+  previousLoaded?: LoadedRoute,
 ): Promise<LoadedRepoPatchRoute> {
-  const [sidebarData, repo, patches, patch, revisions, activity] =
-    await Promise.all([
-      loadSidebarData(),
-      invoke<RepoInfo>("repo_by_id", {
-        rid: route.rid,
-      }),
-      invoke<PaginatedQuery<Patch[]>>("list_patches", {
-        rid: route.rid,
-        status: route.status,
-        take: DEFAULT_TAKE,
-      }),
-      invoke<Patch>("patch_by_id", {
-        rid: route.rid,
-        id: route.patch,
-      }),
-      invoke<Revision[]>("revisions_by_patch", {
-        rid: route.rid,
-        id: route.patch,
-      }),
-      invoke<Operation<PatchAction>[]>("activity_by_patch", {
-        rid: route.rid,
-        id: route.patch,
-      }),
-    ]);
+  // Switching tab (view) or review on the same patch shouldn't refetch all the
+  // patch data; reuse what's already loaded so the change is instant.
+  const reuse =
+    previousLoaded?.resource === "repo.patch" &&
+    previousLoaded.params.repo.rid === route.rid &&
+    previousLoaded.params.patch.id === route.patch &&
+    previousLoaded.params.status === route.status
+      ? previousLoaded.params
+      : undefined;
+
+  const [sidebarData, repo, patches, patch, revisions, activity] = reuse
+    ? [
+        reuse.sidebarData,
+        reuse.repo,
+        reuse.patches,
+        reuse.patch,
+        reuse.revisions,
+        reuse.activity,
+      ]
+    : await Promise.all([
+        loadSidebarData(),
+        invoke<RepoInfo>("repo_by_id", {
+          rid: route.rid,
+        }),
+        invoke<PaginatedQuery<Patch[]>>("list_patches", {
+          rid: route.rid,
+          status: route.status,
+          take: DEFAULT_TAKE,
+        }),
+        invoke<Patch>("patch_by_id", {
+          rid: route.rid,
+          id: route.patch,
+        }),
+        invoke<Revision[]>("revisions_by_patch", {
+          rid: route.rid,
+          id: route.patch,
+        }),
+        invoke<Operation<PatchAction>[]>("activity_by_patch", {
+          rid: route.rid,
+          id: route.patch,
+        }),
+      ]);
 
   const config = sidebarData.config;
 

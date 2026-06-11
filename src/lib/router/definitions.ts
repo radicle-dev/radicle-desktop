@@ -99,7 +99,7 @@ export async function loadInbox(): Promise<LoadedInboxRoute> {
 
 export async function loadRoute(
   route: Route,
-  _previousLoaded: LoadedRoute,
+  previousLoaded: LoadedRoute,
 ): Promise<LoadedRoute> {
   if (route.resource === "inbox") {
     return loadInbox();
@@ -116,7 +116,7 @@ export async function loadRoute(
   } else if (route.resource === "repo.issues") {
     return loadIssues(route);
   } else if (route.resource === "repo.patch") {
-    return loadPatch(route);
+    return loadPatch(route, previousLoaded);
   } else if (route.resource === "repo.patches") {
     return loadPatches(route);
   }
