@@ -1,32 +1,30 @@
 <script lang="ts">
-  import { labelColor } from "@app/lib/labelColor";
+  import type { Author } from "@bindings/cob/Author";
+
+  import { authorForNodeId } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
 
   interface Props {
-    label: string;
+    assignee: Author;
     onRemove?: () => void;
-    styleHeight?: "1.5rem" | "2rem";
   }
 
-  const {
-    label,
-    onRemove = undefined,
-    styleHeight = "1.5rem",
-  }: Props = $props();
-  const color = $derived(labelColor(label));
+  const { assignee, onRemove = undefined }: Props = $props();
 </script>
 
 <style>
-  .label {
+  .assignee {
     display: inline-flex;
     align-items: center;
     gap: 0.125rem;
-    border-radius: var(--border-radius-sm);
+    height: 2rem;
     padding: 0 0.5rem;
-    max-width: 12rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
   }
-  .label:has(.remove) {
+  .assignee:has(.remove) {
     padding-right: 0.125rem;
   }
   .remove {
@@ -39,7 +37,7 @@
     border: 0;
     border-radius: var(--border-radius-sm);
     background: none;
-    color: inherit;
+    color: var(--color-text-secondary);
     cursor: pointer;
     opacity: 0.7;
   }
@@ -49,12 +47,8 @@
   }
 </style>
 
-<div
-  class="label txt-body-m-regular"
-  style:height={styleHeight}
-  style:background-color={color.background}
-  style:color={color.text}>
-  <div class="txt-overflow" title={label}>{label}</div>
+<div class="assignee">
+  <NodeId {...authorForNodeId(assignee)} />
   {#if onRemove}
     <button
       type="button"

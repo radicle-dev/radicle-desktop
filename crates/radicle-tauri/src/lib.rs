@@ -74,6 +74,8 @@ pub fn run() {
             repo::repo_commit_count,
             repo::repo_commit,
             repo::repo_count,
+            repo::list_known_users,
+            repo::list_repo_labels,
             repo::repo_readme,
             repo::repo_tree,
             repo::repo_blob,

@@ -25,7 +25,7 @@
   } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
-  import AssigneeInput from "@app/components/AssigneeInput.svelte";
+  import AssigneeChip from "@app/components/AssigneeChip.svelte";
   import Button from "@app/components/Button.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import Discussion from "@app/components/Discussion.svelte";
@@ -35,10 +35,12 @@
   import Id from "@app/components/Id.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimeline from "@app/components/IssueTimeline.svelte";
-  import LabelInput from "@app/components/LabelInput.svelte";
+  import Label from "@app/components/Label.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
+  import AssigneeModal from "@app/modals/AssigneeModal.svelte";
   import CreateIssueModal from "@app/modals/CreateIssue.svelte";
+  import LabelModal from "@app/modals/LabelModal.svelte";
 
   import Layout from "./Layout.svelte";
 
@@ -72,9 +74,14 @@
   // navigating between sibling issues.
   // svelte-ignore state_referenced_locally
   const status = initialStatus;
-  let labelSaveInProgress: boolean = $state(false);
-  let assigneesSaveInProgress: boolean = $state(false);
   let hideTimeline = $state(true);
+
+  const canEdit = $derived(
+    !!roles.isDelegate(
+      config.publicKey,
+      repo.delegates.map(delegate => delegate.did),
+    ),
+  );
 
   $effect(() => {
     // The component doesn't get destroyed when we switch between different
@@ -90,7 +97,6 @@
 
   async function saveLabels(labels: string[]) {
     try {
-      labelSaveInProgress = true;
       await invoke("edit_issue", {
         rid: repo.rid,
         cobId: issue.id,
@@ -103,14 +109,12 @@
     } catch (error) {
       console.error("Editing labels failed", error);
     } finally {
-      labelSaveInProgress = false;
       await reload();
     }
   }
 
   async function saveAssignees(assignees: Author[]) {
     try {
-      assigneesSaveInProgress = true;
       await invoke("edit_issue", {
         rid: repo.rid,
         cobId: issue.id,
@@ -123,9 +127,28 @@
     } catch (error) {
       console.error("Editing assignees failed", error);
     } finally {
-      assigneesSaveInProgress = false;
       await reload();
     }
+  }
+
+  function removeLabel(label: string) {
+    void saveLabels(issue.labels.filter(l => l !== label));
+  }
+  function removeAssignee(did: string) {
+    void saveAssignees(issue.assignees.filter(a => a.did !== did));
+  }
+
+  function openLabels() {
+    show({
+      component: LabelModal,
+      props: { labels: issue.labels, rid: repo.rid, save: saveLabels },
+    });
+  }
+  function openAssignees() {
+    show({
+      component: AssigneeModal,
+      props: { assignees: issue.assignees, save: saveAssignees },
+    });
   }
 
   async function reload() {
@@ -328,6 +351,12 @@
     flex-direction: column;
     align-items: flex-start;
   }
+  .meta-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
   @media (max-width: 1349.98px) {
     .content {
       grid-template-columns: 1fr;
@@ -464,24 +493,41 @@
               )} />
           </div>
           <div class="sidebar-section">
-            <LabelInput
-              allowedToEdit={!!roles.isDelegate(
-                config.publicKey,
-                repo.delegates.map(delegate => delegate.did),
-              )}
-              labels={issue.labels}
-              submitInProgress={labelSaveInProgress}
-              save={saveLabels} />
+            <div class="meta-group">
+              {#each issue.labels as label (label)}
+                <Label
+                  {label}
+                  styleHeight="2rem"
+                  onRemove={canEdit ? () => removeLabel(label) : undefined} />
+              {/each}
+              <Button
+                variant="outline"
+                disabled={!canEdit}
+                title={canEdit ? undefined : "Only delegates can add labels"}
+                onclick={openLabels}>
+                <Icon name="label" />
+                Add labels
+              </Button>
+            </div>
           </div>
           <div class="sidebar-section">
-            <AssigneeInput
-              allowedToEdit={!!roles.isDelegate(
-                config.publicKey,
-                repo.delegates.map(delegate => delegate.did),
-              )}
-              assignees={issue.assignees}
-              submitInProgress={assigneesSaveInProgress}
-              save={saveAssignees} />
+            <div class="meta-group">
+              {#each issue.assignees as assignee (assignee.did)}
+                <AssigneeChip
+                  {assignee}
+                  onRemove={canEdit
+                    ? () => removeAssignee(assignee.did)
+                    : undefined} />
+              {/each}
+              <Button
+                variant="outline"
+                disabled={!canEdit}
+                title={canEdit ? undefined : "Only delegates can add assignees"}
+                onclick={openAssignees}>
+                <Icon name="avatar-incognito" />
+                Add assignees
+              </Button>
+            </div>
           </div>
         </div>
       </div>

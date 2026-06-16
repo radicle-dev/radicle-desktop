@@ -1,5 +1,18 @@
 <script lang="ts">
+  import { cubicOut } from "svelte/easing";
+  import { fade } from "svelte/transition";
+
   import { hide, modalStore } from "@app/lib/modal";
+
+  // Rise up and scale in on enter; fall back down on exit.
+  function riseFall(_node: Element, { duration = 200 } = {}) {
+    return {
+      duration,
+      easing: cubicOut,
+      css: (t: number, u: number) =>
+        `opacity: ${t}; transform: translateY(${u * 16}px) scale(${0.96 + 0.04 * t});`,
+    };
+  }
 </script>
 
 <style>
@@ -33,10 +46,11 @@
       role="button"
       tabindex="0"
       class="overlay"
+      transition:fade={{ duration: 150 }}
       onclick={$modalStore.disableScrimClose ? undefined : hide}
       style:cursor={$modalStore.disableHide ? "not-allowed" : "default"}>
     </div>
-    <div class="content">
+    <div class="content" transition:riseFall>
       <svelte:component this={$modalStore.component} {...$modalStore.props} />
     </div>
   </div>
