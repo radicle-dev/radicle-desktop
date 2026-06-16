@@ -98,8 +98,6 @@ export interface LoadedRepoIssueRoute {
     repo: RepoInfo;
     config: Config;
     issue: Issue;
-    issues: Issue[];
-    status: IssueStatus;
     activity: Operation<IssueAction>[];
     threads: Thread[];
     sidebarData: SidebarData;
@@ -138,7 +136,6 @@ export interface LoadedRepoPatchRoute {
     repo: RepoInfo;
     config: Config;
     patch: Patch;
-    patches: PaginatedQuery<Patch[]>;
     status: PatchStatus | undefined;
     review: Review | DraftReview | undefined;
     revisions: Revision[];
@@ -183,30 +180,24 @@ export type LoadedRepoRoute =
 export async function loadPatch(
   route: RepoPatchRoute,
 ): Promise<LoadedRepoPatchRoute> {
-  const [sidebarData, repo, patches, patch, revisions, activity] =
-    await Promise.all([
-      loadSidebarData(),
-      invoke<RepoInfo>("repo_by_id", {
-        rid: route.rid,
-      }),
-      invoke<PaginatedQuery<Patch[]>>("list_patches", {
-        rid: route.rid,
-        status: route.status,
-        take: DEFAULT_TAKE,
-      }),
-      invoke<Patch>("patch_by_id", {
-        rid: route.rid,
-        id: route.patch,
-      }),
-      invoke<Revision[]>("revisions_by_patch", {
-        rid: route.rid,
-        id: route.patch,
-      }),
-      invoke<Operation<PatchAction>[]>("activity_by_patch", {
-        rid: route.rid,
-        id: route.patch,
-      }),
-    ]);
+  const [sidebarData, repo, patch, revisions, activity] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Patch>("patch_by_id", {
+      rid: route.rid,
+      id: route.patch,
+    }),
+    invoke<Revision[]>("revisions_by_patch", {
+      rid: route.rid,
+      id: route.patch,
+    }),
+    invoke<Operation<PatchAction>[]>("activity_by_patch", {
+      rid: route.rid,
+      id: route.patch,
+    }),
+  ]);
 
   const config = sidebarData.config;
 
@@ -229,7 +220,6 @@ export async function loadPatch(
       repo,
       config,
       patch,
-      patches,
       revisions,
       status: route.status,
       review,
@@ -376,29 +366,24 @@ export async function loadRepoCommit(
 export async function loadIssue(
   route: RepoIssueRoute,
 ): Promise<LoadedRepoIssueRoute> {
-  const [sidebarData, repo, issue, activity, issues, threads] =
-    await Promise.all([
-      loadSidebarData(),
-      invoke<RepoInfo>("repo_by_id", {
-        rid: route.rid,
-      }),
-      invoke<Issue>("issue_by_id", {
-        rid: route.rid,
-        id: route.issue,
-      }),
-      invoke<Operation<IssueAction>[]>("activity_by_issue", {
-        rid: route.rid,
-        id: route.issue,
-      }),
-      invoke<Issue[]>("list_issues", {
-        rid: route.rid,
-        status: route.status,
-      }),
-      invoke<Thread[]>("comment_threads_by_issue_id", {
-        rid: route.rid,
-        id: route.issue,
-      }),
-    ]);
+  const [sidebarData, repo, issue, activity, threads] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Issue>("issue_by_id", {
+      rid: route.rid,
+      id: route.issue,
+    }),
+    invoke<Operation<IssueAction>[]>("activity_by_issue", {
+      rid: route.rid,
+      id: route.issue,
+    }),
+    invoke<Thread[]>("comment_threads_by_issue_id", {
+      rid: route.rid,
+      id: route.issue,
+    }),
+  ]);
 
   return {
     resource: "repo.issue",
@@ -408,9 +393,7 @@ export async function loadIssue(
       config: sidebarData.config,
       issue,
       activity,
-      issues,
       threads,
-      status: route.status,
     },
   };
 }

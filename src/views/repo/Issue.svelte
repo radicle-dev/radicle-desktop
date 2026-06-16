@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { IssueStatus } from "./router";
   import type { Author } from "@bindings/cob/Author";
   import type { Action } from "@bindings/cob/issue/Action";
   import type { Issue } from "@bindings/cob/issue/Issue";
@@ -45,33 +44,15 @@
   interface Props {
     repo: RepoInfo;
     issue: Issue;
-    issues: Issue[];
     activity: Operation<Action>[];
     config: Config;
     threads: Thread[];
-    status: IssueStatus;
   }
 
   /* eslint-disable prefer-const */
-  let {
-    repo,
-    issue,
-    issues: initialIssues,
-    activity,
-    config,
-    threads,
-    status: initialStatus,
-  }: Props = $props();
+  let { repo, issue, activity, config, threads }: Props = $props();
   /* eslint-enable prefer-const */
 
-  // Parent reuses this component across issue navigations; a sibling $effect
-  // resets local state when issue.id changes.
-  // svelte-ignore state_referenced_locally
-  let issues = $state(initialIssues);
-  // The initial status filter is captured at mount so it stays fixed while
-  // navigating between sibling issues.
-  // svelte-ignore state_referenced_locally
-  const status = initialStatus;
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let hideTimeline = $state(true);
@@ -129,7 +110,7 @@
   }
 
   async function reload() {
-    [issue, activity, threads, issues] = await Promise.all([
+    [issue, activity, threads] = await Promise.all([
       invoke<Issue>("issue_by_id", {
         rid: repo.rid,
         id: issue.id,
@@ -141,10 +122,6 @@
       invoke<Thread[]>("comment_threads_by_issue_id", {
         rid: repo.rid,
         id: issue.id,
-      }),
-      invoke<Issue[]>("list_issues", {
-        rid: repo.rid,
-        status,
       }),
     ]);
   }
@@ -160,12 +137,6 @@
         new: { id: issue.id, body, embeds, replyTo },
         opts: { announce: $nodeRunning && $announce },
       });
-      // Update second column issue comment count without reloading the whole
-      // issue list.
-      const issueIndex = issues.findIndex(i => i.id === issue.id);
-      if (issueIndex !== -1) {
-        issues[issueIndex].commentCount += 1;
-      }
     } catch (error) {
       console.error("Comment creation failed: ", error);
     } finally {
@@ -205,11 +176,6 @@
         },
         opts: { announce: $nodeRunning && $announce },
       });
-      // Update second column issue title without reloading the whole issue list.
-      const issueIndex = issues.findIndex(i => i.id === issue.id);
-      if (issueIndex !== -1) {
-        issues[issueIndex].title = newTitle;
-      }
     } catch (error) {
       console.error("Issue title editing failed: ", error);
     } finally {
@@ -254,11 +220,6 @@
         },
         opts: { announce: $nodeRunning && $announce },
       });
-      // Update second column issue icon without reloading the whole issue list.
-      const issueIndex = issues.findIndex(i => i.id === issue.id);
-      if (issueIndex !== -1) {
-        issues[issueIndex].state = state;
-      }
     } catch (error) {
       console.error("Changing issue state failed", error);
     } finally {
