@@ -20,36 +20,12 @@
   interface Props {
     children: Snippet;
     style?: string;
-    onScrollHalf?: () => void;
   }
 
-  const {
-    children,
-    style = "height: 100%;",
-    onScrollHalf = undefined,
-  }: Props = $props();
+  const { children, style = "height: 100%;" }: Props = $props();
 
   let viewport: HTMLElement | undefined = $state(undefined);
   setContext(SCROLL_VIEWPORT_CONTEXT, () => viewport);
-
-  function shouldLoadMore(instance: {
-    elements(): { target: HTMLElement };
-  }): boolean {
-    const el = instance.elements().target;
-    const threshold = 200;
-
-    return el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
-  }
-
-  const scrollHalfHandler = $derived(
-    onScrollHalf
-      ? (instance: Parameters<typeof shouldLoadMore>[0]) => {
-          if (shouldLoadMore(instance)) {
-            onScrollHalf();
-          }
-        }
-      : undefined,
-  );
 </script>
 
 <OverlayScrollbarsComponent
@@ -61,10 +37,7 @@
   events={{
     initialized: instance => {
       viewport = instance.elements().viewport;
-      scrollHalfHandler?.(instance);
     },
-    scroll: scrollHalfHandler,
-    updated: scrollHalfHandler,
   }}
   defer>
   {@render children()}

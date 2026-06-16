@@ -5,17 +5,10 @@
 
   interface Props {
     children: Snippet;
-    loadMoreContent?: () => Promise<void>;
     selfScroll?: boolean;
   }
 
-  const {
-    children,
-    loadMoreContent = undefined,
-    selfScroll = false,
-  }: Props = $props();
-
-  let loadingContent = false;
+  const { children, selfScroll = false }: Props = $props();
 </script>
 
 {#if selfScroll}
@@ -25,15 +18,7 @@
   </div>
 {:else}
   <ScrollArea
-    style="height: 100%; width: 100%; background-color: var(--color-surface-canvas);"
-    onScrollHalf={loadMoreContent
-      ? () => {
-          if (!loadingContent) {
-            loadingContent = true;
-            void loadMoreContent().finally(() => (loadingContent = false));
-          }
-        }
-      : undefined}>
+    style="height: 100%; width: 100%; background-color: var(--color-surface-canvas);">
     {@render children()}
   </ScrollArea>
 {/if}

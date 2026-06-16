@@ -11,6 +11,7 @@
   import delay from "lodash/delay";
 
   import { invoke } from "@app/lib/invoke";
+  import * as mutexExecutor from "@app/lib/mutexExecutor";
   import {
     patchCountMismatch,
     resetPatchCounts,
@@ -22,6 +23,7 @@
   import CobCacheWarning from "@app/components/CobCacheWarning.svelte";
   import FuzzySearch from "@app/components/FuzzySearch.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import InfiniteScrollSentinel from "@app/components/InfiniteScrollSentinel.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
   import PatchTeaser from "@app/components/PatchTeaser.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
@@ -42,22 +44,25 @@
   // svelte-ignore state_referenced_locally
   let items = $state(patches.content);
   // svelte-ignore state_referenced_locally
-  let cursor = patches.cursor;
-  // svelte-ignore state_referenced_locally
-  let more = patches.more;
+  let more = $state(patches.more);
+  let loadingMore = $state(false);
+  let loading = $state(false);
+  let searchInput = $state("");
+  let debouncedSearch = $state("");
+  let showSearch = $state(false);
+  let cacheState: CacheEvent | undefined = $state();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
-  let cacheState: CacheEvent | undefined = $state();
+  const loader = mutexExecutor.create();
+  const abort = async (): Promise<undefined> => undefined;
 
   $effect(() => {
     items = patches.content;
-    cursor = patches.cursor;
-    if (patches.more === true && patches.content.length < DEFAULT_TAKE) {
-      more = false;
-    } else {
-      more = patches.more;
-    }
+    more = patches.more;
+    // Abort any in-flight loadMoreContent so it cannot append a page
+    // from the previous filter onto the just-reset items.
+    void loader.run(abort);
   });
 
   $effect(() => {
@@ -74,6 +79,14 @@
     showSearch = false;
   });
 
+  $effect(() => {
+    const value = searchInput;
+    const timer = setTimeout(() => {
+      debouncedSearch = value;
+    }, 150);
+    return () => clearTimeout(timer);
+  });
+
   async function rebuildPatchCache() {
     try {
       await invoke("rebuild_patch_cache", {
@@ -85,16 +98,19 @@
     } catch (error) {
       console.error(error);
     } finally {
-      const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
-        rid: repo.rid,
-        skip: 0,
-        status,
-        take: DEFAULT_TAKE,
+      const page = await loader.run(async () => {
+        return await invoke<PaginatedQuery<Patch[]>>("list_patches", {
+          rid: repo.rid,
+          skip: 0,
+          status,
+          take: DEFAULT_TAKE,
+        });
       });
 
-      items = p.content;
-      cursor = p.cursor;
-      more = p.more;
+      if (page !== undefined) {
+        items = page.content;
+        more = page.more;
+      }
 
       resetPatchCounts();
 
@@ -104,38 +120,38 @@
     }
   }
 
-  async function loadMoreContent(all: boolean = false) {
-    if (more) {
-      const p = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
-        rid: repo.rid,
-        skip: cursor + DEFAULT_TAKE,
-        status,
-        take: all ? undefined : DEFAULT_TAKE,
+  async function loadMoreContent(all: boolean = false): Promise<void> {
+    if (!more) return;
+    loadingMore = true;
+    let superseded = false;
+    try {
+      const page = await loader.run(async () => {
+        return await invoke<PaginatedQuery<Patch[]>>("list_patches", {
+          rid: repo.rid,
+          status,
+          skip: all ? 0 : items.length,
+          take: all ? undefined : DEFAULT_TAKE,
+        });
       });
 
-      cursor = p.cursor;
-      more = p.more;
-
-      if (all) {
-        items = p.content;
-      } else {
-        items = [...items, ...p.content];
+      // Superseded by a newer load (e.g. fuzzy-focus triggered a load-all).
+      // Leave items/more alone for the new call. The flag stays set too: the
+      // newer call owns it now, and clearing it here would let the
+      // virtualizer's auto load-more re-fire and abort that call in turn.
+      if (page === undefined) {
+        superseded = true;
+        return;
       }
 
-      if (p.content.length === 0) {
-        more = false;
-      }
-
-      if (more === false) {
-        updatePatchCounts(items.length, project.meta.patches, status);
+      more = page.more;
+      items = all ? page.content : [...items, ...page.content];
+      if (page.content.length === 0) more = false;
+    } finally {
+      if (!superseded) {
+        loadingMore = false;
       }
     }
   }
-
-  let loadingMore: boolean = $state(false);
-  let loading: boolean = $state(false);
-  let searchInput = $state("");
-  let showSearch = $state(false);
 
   const searchablePatches = $derived(
     items
@@ -155,7 +171,7 @@
   );
 
   const searchResults = $derived(
-    fuzzysort.go(searchInput, searchablePatches, {
+    fuzzysort.go(debouncedSearch, searchablePatches, {
       keys: ["patch.title", "labels", "assignees", "author", "patch.id"],
       threshold: 0.5,
       all: true,
@@ -327,14 +343,7 @@
       </div>
     </Topbar>
 
-    <ScrollArea
-      style="height: 100%; min-width: 0;"
-      onScrollHalf={() => {
-        if (!loadingMore) {
-          loadingMore = true;
-          void loadMoreContent().finally(() => (loadingMore = false));
-        }
-      }}>
+    <ScrollArea style="height: 100%; min-width: 0;">
       {#if patchCountMismatch(status)}
         <CobCacheWarning
           noun="patches"
@@ -369,6 +378,10 @@
           </div>
         {/if}
       </div>
+
+      <InfiniteScrollSentinel
+        onIntersect={loadMoreContent}
+        disabled={!more || loadingMore} />
     </ScrollArea>
   </div>
 </Layout>
