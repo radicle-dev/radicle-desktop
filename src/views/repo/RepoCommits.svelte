@@ -13,10 +13,10 @@
 
   import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
   import FuzzySearch from "@app/components/FuzzySearch.svelte";
-  import InfiniteScrollSentinel from "@app/components/InfiniteScrollSentinel.svelte";
   import RepoHeader from "@app/components/RepoHeader.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import SourceHeader from "@app/components/SourceHeader.svelte";
+  import VirtualList from "@app/components/VirtualList.svelte";
 
   import Layout from "./Layout.svelte";
 
@@ -172,6 +172,29 @@
 
     return Object.values(groups);
   });
+
+  type CommitRow =
+    | { type: "header"; key: string; label: string }
+    | { type: "commit"; commit: Commit; first: boolean; last: boolean };
+
+  // Flatten the day groups into a single row stream so the list can be
+  // virtualized; the row snippet renders headers and commits differently.
+  // `first`/`last` mark a group's boundaries so its commits form a bordered card.
+  const commitRows = $derived.by<CommitRow[]>(() => {
+    const rows: CommitRow[] = [];
+    for (const group of groupedCommits) {
+      rows.push({ type: "header", key: group.key, label: group.label });
+      group.commits.forEach((commit, i) => {
+        rows.push({
+          type: "commit",
+          commit,
+          first: i === 0,
+          last: i === group.commits.length - 1,
+        });
+      });
+    }
+    return rows;
+  });
 </script>
 
 <style>
@@ -181,34 +204,27 @@
     height: 100%;
     min-height: 0;
   }
-  .content {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    padding: 1rem;
-  }
-  .group + .group {
-    margin-top: 1.5rem;
-  }
   .group-title {
     color: var(--color-text-secondary);
     font: var(--txt-body-m-regular);
-    margin-bottom: 0.75rem;
-  }
-  .commit-list {
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--color-border-subtle);
-    border-radius: var(--border-radius-md);
-    overflow: hidden;
-    background: var(--color-surface-canvas);
+    padding: 1rem 1rem 0.75rem;
   }
   .commit-item {
+    margin: 0 1rem;
     padding: 0.625rem 1rem;
     cursor: pointer;
+    background: var(--color-surface-canvas);
+    border: 1px solid var(--color-border-subtle);
+    border-bottom: none;
   }
-  .commit-item + .commit-item {
-    border-top: 1px solid var(--color-border-subtle);
+  .commit-item.first {
+    border-top-left-radius: var(--border-radius-md);
+    border-top-right-radius: var(--border-radius-md);
+  }
+  .commit-item.last {
+    border-bottom: 1px solid var(--color-border-subtle);
+    border-bottom-left-radius: var(--border-radius-md);
+    border-bottom-right-radius: var(--border-radius-md);
   }
   .commit-item:hover {
     background: var(--color-surface-subtle);
@@ -256,62 +272,67 @@
       {/snippet}
     </SourceHeader>
     <ScrollArea style="flex: 1; min-height: 0;">
-      <div class="content">
-        {#each groupedCommits as group (group.key)}
-          <section class="group">
-            <div class="group-title">{group.label}</div>
-            <div class="commit-list">
-              {#each group.commits as commit (commit.id)}
-                <div
-                  class="commit-item"
-                  role="button"
-                  tabindex="0"
-                  onclick={() => {
+      {#if filteredCommits.length === 0}
+        <div
+          class="global-flex"
+          style:flex="1"
+          style:justify-content="center"
+          style:align-items="center">
+          <div
+            class="txt-missing txt-body-m-regular global-flex"
+            style:gap="0.25rem">
+            {#if items.length > 0}
+              No matching commits
+            {:else}
+              No commits
+            {/if}
+          </div>
+        </div>
+      {:else}
+        <VirtualList
+          items={commitRows}
+          hasMore={more}
+          {loadingMore}
+          onLoadMore={() => loadMoreContent()}
+          getKey={r =>
+            r.type === "header" ? `h:${r.key}` : `c:${r.commit.id}`}>
+          {#snippet row(item)}
+            {#if item.type === "header"}
+              <div class="group-title">{item.label}</div>
+            {:else}
+              <div
+                class="commit-item"
+                class:first={item.first}
+                class:last={item.last}
+                role="button"
+                tabindex="0"
+                onclick={() => {
+                  void router.push({
+                    resource: "repo.commit",
+                    rid: repo.rid,
+                    commit: item.commit.id,
+                  });
+                }}
+                onkeydown={e => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
                     void router.push({
                       resource: "repo.commit",
                       rid: repo.rid,
-                      commit: commit.id,
+                      commit: item.commit.id,
                     });
-                  }}
-                  onkeydown={e => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      void router.push({
-                        resource: "repo.commit",
-                        rid: repo.rid,
-                        commit: commit.id,
-                      });
-                    }
-                  }}>
-                  <CobCommitTeaser {commit} disabled={false} flush hoverable />
-                </div>
-              {/each}
-            </div>
-          </section>
-        {/each}
-
-        {#if filteredCommits.length === 0}
-          <div
-            class="global-flex"
-            style:flex="1"
-            style:justify-content="center"
-            style:align-items="center">
-            <div
-              class="txt-missing txt-body-m-regular global-flex"
-              style:gap="0.25rem">
-              {#if items.length > 0}
-                No matching commits
-              {:else}
-                No commits
-              {/if}
-            </div>
-          </div>
-        {/if}
-
-        <InfiniteScrollSentinel
-          onIntersect={loadMoreContent}
-          disabled={!more || loadingMore} />
-      </div>
+                  }
+                }}>
+                <CobCommitTeaser
+                  commit={item.commit}
+                  disabled={false}
+                  flush
+                  hoverable />
+              </div>
+            {/if}
+          {/snippet}
+        </VirtualList>
+      {/if}
     </ScrollArea>
   </div>
 </Layout>

@@ -25,10 +25,10 @@
   import CobCacheWarning from "@app/components/CobCacheWarning.svelte";
   import FuzzySearch from "@app/components/FuzzySearch.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import InfiniteScrollSentinel from "@app/components/InfiniteScrollSentinel.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
+  import VirtualList from "@app/components/VirtualList.svelte";
   import CreateIssueModal from "@app/modals/CreateIssue.svelte";
 
   import Layout from "./Layout.svelte";
@@ -53,6 +53,9 @@
   let debouncedSearch = $state("");
   let showSearch = $state(false);
   let cacheState: CacheEvent | undefined = $state();
+  // Height of the cache-warning banner above the list; fed to the virtualizer
+  // as a start offset since it shares the same scroll viewport.
+  let chromeHeight = $state(0);
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
@@ -226,11 +229,8 @@
   .filter .global-counter-badge {
     margin-left: 0.25rem;
   }
-  .list {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    min-height: 100%;
+  .row {
+    border-bottom: 1px solid var(--color-border-subtle);
   }
 </style>
 
@@ -316,44 +316,51 @@
     </Topbar>
 
     <ScrollArea style="height: 100%; min-width: 0;">
-      {#if issueCountMismatch(status)}
-        <CobCacheWarning
-          noun="issues"
-          {cacheState}
-          onRebuild={rebuildIssueCache} />
-      {/if}
-
-      <div class="list">
-        {#each searchResults as result}
-          <IssueTeaser
-            focussed={searchResults.length === 1 && searchInput !== ""}
-            issue={result.obj.issue}
-            rid={repo.rid}
-            {status} />
-        {/each}
-
-        {#if searchResults.length === 0}
-          <div
-            class="global-flex"
-            style:flex="1"
-            style:justify-content="center"
-            style:align-items="center">
-            <div
-              class="txt-missing txt-body-m-regular global-flex"
-              style:gap="0.25rem">
-              {#if items.length > 0 && searchResults.length === 0}
-                No matching issues
-              {:else}
-                No {status === "all" ? "" : status} issues
-              {/if}
-            </div>
-          </div>
+      <div bind:clientHeight={chromeHeight}>
+        {#if issueCountMismatch(status)}
+          <CobCacheWarning
+            noun="issues"
+            {cacheState}
+            onRebuild={rebuildIssueCache} />
         {/if}
       </div>
 
-      <InfiniteScrollSentinel
-        onIntersect={loadMoreContent}
-        disabled={!more || loadingMore} />
+      {#if searchResults.length === 0}
+        <div
+          class="global-flex"
+          style:flex="1"
+          style:justify-content="center"
+          style:align-items="center">
+          <div
+            class="txt-missing txt-body-m-regular global-flex"
+            style:gap="0.25rem">
+            {#if items.length > 0}
+              No matching issues
+            {:else}
+              No {status === "all" ? "" : status} issues
+            {/if}
+          </div>
+        </div>
+      {:else}
+        <VirtualList
+          items={searchResults}
+          hasMore={more}
+          {loadingMore}
+          onLoadMore={() => loadMoreContent()}
+          startMargin={chromeHeight}
+          estimatedItemSize={80}
+          getKey={result => result.obj.issue.id}>
+          {#snippet row(result)}
+            <div class="row">
+              <IssueTeaser
+                focussed={searchResults.length === 1 && searchInput !== ""}
+                issue={result.obj.issue}
+                rid={repo.rid}
+                {status} />
+            </div>
+          {/snippet}
+        </VirtualList>
+      {/if}
     </ScrollArea>
   </div>
 </Layout>
