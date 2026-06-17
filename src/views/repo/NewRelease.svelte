@@ -142,6 +142,14 @@
       submitError = "Add at least one artifact.";
       return;
     }
+    // Every file must have a computed CID before publishing, otherwise it
+    // would be silently dropped from the release below.
+    if (files.some(f => !f.cid)) {
+      submitError = files.some(f => f.computing)
+        ? "Wait for all files to finish processing."
+        : "Some files failed to process; remove them before publishing.";
+      return;
+    }
     submitError = undefined;
     submitting = true;
     try {
@@ -151,7 +159,6 @@
         tag: tagOid,
       });
       for (const f of files) {
-        if (!f.cid) continue;
         await invoke("register_artifact", {
           rid: repo.rid,
           releaseId,
