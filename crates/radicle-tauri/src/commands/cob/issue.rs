@@ -39,8 +39,11 @@ pub(crate) fn list_issues(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,
     status: Option<types::cobs::query::IssueStatus>,
-) -> Result<Vec<types::cobs::issue::Issue>, Error> {
-    ctx.list_issues(rid, status)
+    skip: Option<usize>,
+    // None: return all issues, `skip` is ignored.
+    take: Option<usize>,
+) -> Result<types::cobs::PaginatedQuery<Vec<types::cobs::issue::Issue>>, Error> {
+    ctx.list_issues(rid, status, skip, take)
 }
 
 #[tauri::command]

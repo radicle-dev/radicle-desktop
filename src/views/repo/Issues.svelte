@@ -2,8 +2,10 @@
   import type { IssueStatus } from "@app/views/repo/router";
   import type { CacheEvent } from "@bindings/cob/CacheEvent";
   import type { Issue } from "@bindings/cob/issue/Issue";
+  import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import { DEFAULT_TAKE } from "@app/views/repo/router";
   import { Channel } from "@tauri-apps/api/core";
   import fuzzysort from "fuzzysort";
   import delay from "lodash/delay";
@@ -12,8 +14,10 @@
   import {
     issueCountMismatch,
     resetIssueCounts,
+    updateIssueCounts,
   } from "@app/lib/issueCounts.svelte";
   import { show } from "@app/lib/modal";
+  import * as mutexExecutor from "@app/lib/mutexExecutor";
   import * as router from "@app/lib/router";
   import { modifierKey } from "@app/lib/utils";
 
@@ -21,6 +25,7 @@
   import CobCacheWarning from "@app/components/CobCacheWarning.svelte";
   import FuzzySearch from "@app/components/FuzzySearch.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import InfiniteScrollSentinel from "@app/components/InfiniteScrollSentinel.svelte";
   import IssueTeaser from "@app/components/IssueTeaser.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
@@ -30,18 +35,66 @@
 
   interface Props {
     repo: RepoInfo;
-    issues: Issue[];
+    issues: PaginatedQuery<Issue[]>;
     status: IssueStatus;
   }
 
-  /* eslint-disable prefer-const */
-  let { repo, issues, status }: Props = $props();
-  /* eslint-enable prefer-const */
+  const { repo, issues, status }: Props = $props();
 
+  // Parent reuses this component across status filter changes; a sibling
+  // $effect resets pagination state when the issues prop changes.
+  // svelte-ignore state_referenced_locally
+  let items = $state(issues.content);
+  // svelte-ignore state_referenced_locally
+  let more = $state(issues.more);
+  let loadingMore = $state(false);
+  let loading = $state(false);
+  let searchInput = $state("");
+  let debouncedSearch = $state("");
+  let showSearch = $state(false);
   let cacheState: CacheEvent | undefined = $state();
 
-  let searchInput = $state("");
-  let showSearch = $state(false);
+  const project = $derived(repo.payloads["xyz.radicle.project"]!);
+
+  const loader = mutexExecutor.create();
+  const abort = async (): Promise<undefined> => undefined;
+
+  $effect(() => {
+    items = issues.content;
+    more = issues.more;
+    // Abort any in-flight loadMoreContent so it cannot append a page
+    // from the previous filter onto the just-reset items.
+    void loader.run(abort);
+  });
+
+  $effect(() => {
+    if (more === false) {
+      updateIssueCounts(
+        items.length,
+        {
+          ...project.meta.issues,
+          all: project.meta.issues.open + project.meta.issues.closed,
+        },
+        status,
+      );
+    }
+  });
+
+  $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    status;
+
+    searchInput = "";
+    showSearch = false;
+  });
+
+  $effect(() => {
+    const value = searchInput;
+    const timer = setTimeout(() => {
+      debouncedSearch = value;
+    }, 150);
+    return () => clearTimeout(timer);
+  });
 
   async function rebuildIssueCache() {
     try {
@@ -54,7 +107,19 @@
     } catch (error) {
       console.error(error);
     } finally {
-      issues = await invoke<Issue[]>("list_issues", { rid: repo.rid, status });
+      const page = await loader.run(async () => {
+        return await invoke<PaginatedQuery<Issue[]>>("list_issues", {
+          rid: repo.rid,
+          skip: 0,
+          status,
+          take: DEFAULT_TAKE,
+        });
+      });
+
+      if (page !== undefined) {
+        items = page.content;
+        more = page.more;
+      }
 
       resetIssueCounts();
 
@@ -64,16 +129,41 @@
     }
   }
 
-  $effect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    status;
+  async function loadMoreContent(all: boolean = false): Promise<void> {
+    if (!more) return;
+    loadingMore = true;
+    let superseded = false;
+    try {
+      const page = await loader.run(async () => {
+        return await invoke<PaginatedQuery<Issue[]>>("list_issues", {
+          rid: repo.rid,
+          status,
+          skip: all ? 0 : items.length,
+          take: all ? undefined : DEFAULT_TAKE,
+        });
+      });
 
-    searchInput = "";
-    showSearch = false;
-  });
+      // Superseded by a newer load (e.g. fuzzy-focus triggered a load-all).
+      // Leave items/more alone for the new call. The flag stays set too: the
+      // newer call owns it now, and clearing it here would let the
+      // virtualizer's auto load-more re-fire and abort that call in turn.
+      if (page === undefined) {
+        superseded = true;
+        return;
+      }
+
+      more = page.more;
+      items = all ? page.content : [...items, ...page.content];
+      if (page.content.length === 0) more = false;
+    } finally {
+      if (!superseded) {
+        loadingMore = false;
+      }
+    }
+  }
 
   const searchableIssues = $derived(
-    issues
+    items
       .flatMap(i => {
         return {
           issue: i,
@@ -90,14 +180,12 @@
   );
 
   const searchResults = $derived(
-    fuzzysort.go(searchInput, searchableIssues, {
+    fuzzysort.go(debouncedSearch, searchableIssues, {
       keys: ["issue.title", "labels", "assignees", "author", "issue.id"],
       threshold: 0.5,
       all: true,
     }),
   );
-
-  const project = $derived(repo.payloads["xyz.radicle.project"]!);
 </script>
 
 <style>
@@ -189,8 +277,19 @@
       </div>
       <div class="global-flex" style:margin-left="auto" style:gap="0.5rem">
         <FuzzySearch
-          hasItems={issues.length > 0}
+          hasItems={items.length > 0}
           placeholder={`Fuzzy filter issues ${modifierKey()} + f`}
+          icon={loading ? "clock" : "filter"}
+          onFocus={async () => {
+            try {
+              loading = true;
+              await loadMoreContent(true);
+            } catch (e) {
+              console.error("Loading all issues failed: ", e);
+            } finally {
+              loading = false;
+            }
+          }}
           onSubmit={async () => {
             if (searchResults.length === 1) {
               await router.push({
@@ -242,7 +341,7 @@
             <div
               class="txt-missing txt-body-m-regular global-flex"
               style:gap="0.25rem">
-              {#if issues.length > 0 && searchResults.length === 0}
+              {#if items.length > 0 && searchResults.length === 0}
                 No matching issues
               {:else}
                 No {status === "all" ? "" : status} issues
@@ -251,6 +350,10 @@
           </div>
         {/if}
       </div>
+
+      <InfiniteScrollSentinel
+        onIntersect={loadMoreContent}
+        disabled={!more || loadingMore} />
     </ScrollArea>
   </div>
 </Layout>

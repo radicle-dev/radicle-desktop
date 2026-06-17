@@ -114,7 +114,7 @@ export interface LoadedRepoIssuesRoute {
   resource: "repo.issues";
   params: {
     repo: RepoInfo;
-    issues: Issue[];
+    issues: PaginatedQuery<Issue[]>;
     status: IssueStatus;
     sidebarData: SidebarData;
   };
@@ -406,9 +406,10 @@ export async function loadIssues(
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
     }),
-    invoke<Issue[]>("list_issues", {
+    invoke<PaginatedQuery<Issue[]>>("list_issues", {
       rid: route.rid,
       status: route.status,
+      take: DEFAULT_TAKE,
     }),
   ]);
 

@@ -57,9 +57,9 @@ pub async fn list_patches(
             let more = cursor + take < total;
 
             let content = patches
-                .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
                 .skip(cursor)
                 .take(take)
+                .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
                 .collect::<Vec<_>>();
 
             Ok::<_, Error>(cobs::PaginatedQuery {

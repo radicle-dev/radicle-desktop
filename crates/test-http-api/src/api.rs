@@ -396,13 +396,20 @@ async fn repo_commit_handler(
 struct IssuesBody {
     pub rid: identity::RepoId,
     pub status: Option<types::cobs::query::IssueStatus>,
+    pub skip: Option<usize>,
+    pub take: Option<usize>,
 }
 
 async fn issues_handler(
     State(ctx): State<Context>,
-    Json(IssuesBody { rid, status }): Json<IssuesBody>,
+    Json(IssuesBody {
+        rid,
+        status,
+        skip,
+        take,
+    }): Json<IssuesBody>,
 ) -> impl IntoResponse {
-    let issues = ctx.list_issues(rid, status)?;
+    let issues = ctx.list_issues(rid, status, skip, take)?;
 
     Ok::<_, Error>(Json(issues))
 }
@@ -600,9 +607,9 @@ async fn patches_handler(
 
     let patches = patches
         .into_iter()
-        .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
         .skip(cursor)
         .take(take)
+        .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
         .collect::<Vec<_>>();
 
     Ok::<_, Error>(Json(cobs::PaginatedQuery {
