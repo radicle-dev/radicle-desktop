@@ -7,6 +7,8 @@
   import fuzzysort from "fuzzysort";
 
   import { invoke } from "@app/lib/invoke";
+  import type { ListCacheSnapshot } from "@app/lib/listState";
+  import { readListState, saveListState } from "@app/lib/listState";
   import * as mutexExecutor from "@app/lib/mutexExecutor";
   import * as router from "@app/lib/router";
   import { modifierKey } from "@app/lib/utils";
@@ -44,12 +46,25 @@
     commits: Commit[];
   };
 
+  function listKey(): string {
+    return `repo.commits:${repo.rid}:${peer ?? ""}:${revision ?? ""}`;
+  }
+
+  // Restore the prior list and scroll position only when arriving via
+  // back/forward; a fresh navigation (sidebar, links) starts from the top.
+  const restored = router.isHistoryNavigation()
+    ? readListState<Commit>(listKey())
+    : undefined;
+
   // Parent reuses this component across navigations; a sibling $effect resets
-  // pagination state when the commits prop changes.
+  // pagination state when the peer/revision changes.
   // svelte-ignore state_referenced_locally
-  let items = $state(commits.content);
+  let items = $state(restored?.items ?? commits.content);
   // svelte-ignore state_referenced_locally
-  let more = $state(commits.more);
+  let more = $state(restored?.more ?? commits.more);
+  const initialScrollOffset = restored?.scrollOffset;
+  const initialCache = restored?.cache;
+  let activeKey = listKey();
   let loadingMore = $state(false);
   let loading = $state(false);
   let searchInput = $state("");
@@ -60,12 +75,34 @@
   const abort = async (): Promise<undefined> => undefined;
 
   $effect(() => {
-    items = commits.content;
-    more = commits.more;
+    const key = listKey();
+    const fresh = commits;
+    // Skip the initial mount (state is seeded above, possibly restored); only
+    // reset when the peer/revision changes.
+    if (key === activeKey) return;
+    activeKey = key;
+    items = fresh.content;
+    more = fresh.more;
     // Abort any in-flight loadMoreContent so it cannot append a page
     // from the previous navigation onto the just-reset items.
     void loader.run(abort);
   });
+
+  // Persist the loaded list + scroll position so back/forward can restore it.
+  // Only the unfiltered list is cached, so its length matches virtua's size
+  // snapshot.
+  function persistScroll(state: {
+    scrollOffset: number;
+    cache: ListCacheSnapshot;
+  }) {
+    if (searchInput !== "") return;
+    saveListState(listKey(), {
+      items: [...items],
+      more,
+      scrollOffset: state.scrollOffset,
+      cache: state.cache,
+    });
+  }
 
   $effect(() => {
     const value = searchInput;
@@ -295,7 +332,10 @@
           {loadingMore}
           onLoadMore={() => loadMoreContent()}
           getKey={r =>
-            r.type === "header" ? `h:${r.key}` : `c:${r.commit.id}`}>
+            r.type === "header" ? `h:${r.key}` : `c:${r.commit.id}`}
+          {initialCache}
+          {initialScrollOffset}
+          onState={persistScroll}>
           {#snippet row(item)}
             {#if item.type === "header"}
               <div class="group-title">{item.label}</div>

@@ -17,6 +17,16 @@ export const activeUnloadedRouteStore = writable<Route>(InitialStore);
 
 let currentUrl: URL | undefined;
 
+// Set while a back/forward (popstate) navigation is in flight, then frozen onto
+// `historyNavigation` for the route that becomes active, so views can choose to
+// restore prior scroll state only for history navigations.
+let pendingHistoryNavigation = false;
+let historyNavigation = false;
+
+export function isHistoryNavigation(): boolean {
+  return historyNavigation;
+}
+
 export async function loadFromLocation(): Promise<void> {
   await navigateToUrl("replace", new URL(window.location.href));
 }
@@ -36,6 +46,10 @@ async function navigateToUrl(
     currentUrl.pathname === pathname &&
     currentUrl.search === url.search
   ) {
+    // The navigation this flag was set for ends here; without the reset a
+    // same-URL popstate would leak it onto the next unrelated navigation,
+    // which would then wrongly restore cached list state.
+    pendingHistoryNavigation = false;
     return;
   }
 
@@ -51,7 +65,10 @@ async function navigateToUrl(
   }
 }
 
-const offPopstate = on(window, "popstate", () => loadFromLocation());
+const offPopstate = on(window, "popstate", () => {
+  pendingHistoryNavigation = true;
+  return loadFromLocation();
+});
 
 const offNavigateAnchor = on(document, "click", e => {
   const [anchor] = e
@@ -79,10 +96,17 @@ async function navigate(
   action: "push" | "replace",
   newRoute: Route,
 ): Promise<void> {
+  const historyNav = pendingHistoryNavigation;
+  pendingHistoryNavigation = false;
   isLoading.set(true);
   const path = routeToPath(newRoute);
 
-  if (action === "push") {
+  if (
+    action === "push" &&
+    path !== window.location.pathname + window.location.search
+  ) {
+    // Pushing the route that is already active would mint a duplicate
+    // history entry, making Back appear to do nothing.
     window.history.pushState(newRoute, "", path);
   } else if (action === "replace") {
     window.history.replaceState(newRoute, "");
@@ -99,6 +123,7 @@ async function navigate(
     return;
   }
 
+  historyNavigation = historyNav;
   activeRouteStore.set(loadedRoute);
   activeUnloadedRouteStore.set(newRoute);
   isLoading.set(false);

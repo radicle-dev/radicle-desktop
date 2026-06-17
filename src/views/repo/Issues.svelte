@@ -16,6 +16,8 @@
     resetIssueCounts,
     updateIssueCounts,
   } from "@app/lib/issueCounts.svelte";
+  import type { ListCacheSnapshot } from "@app/lib/listState";
+  import { readListState, saveListState } from "@app/lib/listState";
   import { show } from "@app/lib/modal";
   import * as mutexExecutor from "@app/lib/mutexExecutor";
   import * as router from "@app/lib/router";
@@ -41,12 +43,32 @@
 
   const { repo, issues, status }: Props = $props();
 
+  function listKey(filter: IssueStatus): string {
+    return `repo.issues:${repo.rid}:${filter}`;
+  }
+
+  // Restore the prior list and scroll position only when arriving via
+  // back/forward; a fresh navigation (sidebar, links) starts from the top.
+  // svelte-ignore state_referenced_locally
+  const restored = router.isHistoryNavigation()
+    ? readListState<Issue>(listKey(status))
+    : undefined;
+
   // Parent reuses this component across status filter changes; a sibling
-  // $effect resets pagination state when the issues prop changes.
+  // $effect resets pagination state when the filter changes.
   // svelte-ignore state_referenced_locally
-  let items = $state(issues.content);
+  let items = $state(restored?.items ?? issues.content);
+  // Rows fetched so far — used as the pagination offset. Tracked separately
+  // from items.length because appends are deduped (overlapping pages, e.g. when
+  // the list grows underneath us, must still advance the offset).
   // svelte-ignore state_referenced_locally
-  let more = $state(issues.more);
+  let cursor = $state((restored?.items ?? issues.content).length);
+  // svelte-ignore state_referenced_locally
+  let more = $state(restored?.more ?? issues.more);
+  const initialScrollOffset = restored?.scrollOffset;
+  const initialCache = restored?.cache;
+  // svelte-ignore state_referenced_locally
+  let activeKey = listKey(status);
   let loadingMore = $state(false);
   let loading = $state(false);
   let searchInput = $state("");
@@ -63,12 +85,35 @@
   const abort = async (): Promise<undefined> => undefined;
 
   $effect(() => {
-    items = issues.content;
-    more = issues.more;
+    const key = listKey(status);
+    const fresh = issues;
+    // Skip the initial mount (state is seeded above, possibly restored); only
+    // reset when the filter actually changes.
+    if (key === activeKey) return;
+    activeKey = key;
+    items = fresh.content;
+    cursor = fresh.content.length;
+    more = fresh.more;
     // Abort any in-flight loadMoreContent so it cannot append a page
     // from the previous filter onto the just-reset items.
     void loader.run(abort);
   });
+
+  // Persist the loaded list + scroll position so back/forward can restore it.
+  // Only the unfiltered list is cached, so its length matches virtua's size
+  // snapshot.
+  function persistScroll(state: {
+    scrollOffset: number;
+    cache: ListCacheSnapshot;
+  }) {
+    if (searchInput !== "") return;
+    saveListState(listKey(status), {
+      items: [...items],
+      more,
+      scrollOffset: state.scrollOffset,
+      cache: state.cache,
+    });
+  }
 
   $effect(() => {
     if (more === false) {
@@ -121,6 +166,7 @@
 
       if (page !== undefined) {
         items = page.content;
+        cursor = page.content.length;
         more = page.more;
       }
 
@@ -141,7 +187,7 @@
         return await invoke<PaginatedQuery<Issue[]>>("list_issues", {
           rid: repo.rid,
           status,
-          skip: all ? 0 : items.length,
+          skip: all ? 0 : cursor,
           take: all ? undefined : DEFAULT_TAKE,
         });
       });
@@ -156,7 +202,17 @@
       }
 
       more = page.more;
-      items = all ? page.content : [...items, ...page.content];
+      if (all) {
+        items = page.content;
+        cursor = page.content.length;
+      } else {
+        // Drop ids already shown so duplicate keys never reach the virtual
+        // list (which would leave blank, persistent gaps); still advance the
+        // offset by the rows fetched so paging keeps moving forward.
+        const seen = new Set(items.map(i => i.id));
+        items = [...items, ...page.content.filter(i => !seen.has(i.id))];
+        cursor += page.content.length;
+      }
       if (page.content.length === 0) more = false;
     } finally {
       if (!superseded) {
@@ -315,33 +371,38 @@
       </div>
     </Topbar>
 
-    <ScrollArea style="height: 100%; min-width: 0;">
-      <div bind:clientHeight={chromeHeight}>
-        {#if issueCountMismatch(status)}
-          <CobCacheWarning
-            noun="issues"
-            {cacheState}
-            onRebuild={rebuildIssueCache} />
-        {/if}
-      </div>
-
-      {#if searchResults.length === 0}
+    {#if searchResults.length === 0}
+      {#if issueCountMismatch(status)}
+        <CobCacheWarning
+          noun="issues"
+          {cacheState}
+          onRebuild={rebuildIssueCache} />
+      {/if}
+      <div
+        class="global-flex"
+        style:flex="1"
+        style:justify-content="center"
+        style:align-items="center">
         <div
-          class="global-flex"
-          style:flex="1"
-          style:justify-content="center"
-          style:align-items="center">
-          <div
-            class="txt-missing txt-body-m-regular global-flex"
-            style:gap="0.25rem">
-            {#if items.length > 0}
-              No matching issues
-            {:else}
-              No {status === "all" ? "" : status} issues
-            {/if}
-          </div>
+          class="txt-missing txt-body-m-regular global-flex"
+          style:gap="0.25rem">
+          {#if items.length > 0}
+            No matching issues
+          {:else}
+            No {status === "all" ? "" : status} issues
+          {/if}
         </div>
-      {:else}
+      </div>
+    {:else}
+      <ScrollArea style="height: 100%; min-width: 0;">
+        <div bind:clientHeight={chromeHeight}>
+          {#if issueCountMismatch(status)}
+            <CobCacheWarning
+              noun="issues"
+              {cacheState}
+              onRebuild={rebuildIssueCache} />
+          {/if}
+        </div>
         <VirtualList
           items={searchResults}
           hasMore={more}
@@ -349,7 +410,10 @@
           onLoadMore={() => loadMoreContent()}
           startMargin={chromeHeight}
           estimatedItemSize={80}
-          getKey={result => result.obj.issue.id}>
+          getKey={result => result.obj.issue.id}
+          {initialCache}
+          {initialScrollOffset}
+          onState={persistScroll}>
           {#snippet row(result)}
             <div class="row">
               <IssueTeaser
@@ -360,7 +424,7 @@
             </div>
           {/snippet}
         </VirtualList>
-      {/if}
-    </ScrollArea>
+      </ScrollArea>
+    {/if}
   </div>
 </Layout>

@@ -74,7 +74,7 @@ impl PatchStorage for Sqlite {
              ) AS last_revision_timestamp
              FROM patches AS p
              WHERE repo = ?1
-             ORDER BY last_revision_timestamp DESC;
+             ORDER BY last_revision_timestamp DESC, id DESC;
              ",
         )?;
         stmt.bind((1, &rid))?;
@@ -99,7 +99,7 @@ impl PatchStorage for Sqlite {
              FROM patches AS p
              WHERE repo = ?1
              AND patch->>'$.state.status' = ?2
-             ORDER BY last_revision_timestamp DESC;
+             ORDER BY last_revision_timestamp DESC, id DESC;
              ",
         )?;
         stmt.bind((1, &rid))?;
@@ -125,7 +125,7 @@ impl IssueStorage for Sqlite {
              ) AS created_timestamp
              FROM issues AS i
              WHERE repo = ?1
-             ORDER BY created_timestamp DESC;
+             ORDER BY created_timestamp DESC, id DESC;
              ",
         )?;
         stmt.bind((1, &rid))?;
@@ -150,7 +150,7 @@ impl IssueStorage for Sqlite {
              FROM issues AS i
              WHERE repo = ?1
              AND issue->>'$.state.status' = ?2
-             ORDER BY created_timestamp DESC;
+             ORDER BY created_timestamp DESC, id DESC;
              ",
         )?;
         stmt.bind((1, &rid))?;
