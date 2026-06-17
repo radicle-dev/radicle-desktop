@@ -3,12 +3,15 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time;
 
+use radicle::issue::{Issue, IssueId};
 use radicle::patch::{Patch, PatchId, Status};
 use radicle::{git, identity};
 use sqlite as sql;
 
 use crate::domain::inbox::models::notification;
 use crate::domain::inbox::traits::InboxStorage;
+use crate::domain::issue::models::issue::ListIssuesError;
+use crate::domain::issue::traits::IssueStorage;
 use crate::domain::patch::models::patch::{CountsError, ListPatchesError, PatchCounts, State};
 use crate::domain::patch::traits::PatchStorage;
 use crate::error::Error;
@@ -106,6 +109,57 @@ impl PatchStorage for Sqlite {
             let id = PatchId::from_str(row.read::<&str, _>("id")).ok()?;
             let patch = serde_json::from_str::<Patch>(row.read::<&str, _>("patch")).ok()?;
             Some((id, patch))
+        }))
+    }
+}
+
+impl IssueStorage for Sqlite {
+    fn list(
+        &self,
+        rid: identity::RepoId,
+    ) -> Result<impl Iterator<Item = (IssueId, Issue)>, ListIssuesError> {
+        let mut stmt = self.db.prepare(
+            "SELECT id, issue, (
+                 SELECT MIN(JSON_EXTRACT(comment.value, '$.edits[0].timestamp'))
+                 FROM JSON_EACH(JSON_EXTRACT(i.issue, '$.thread.comments')) AS comment
+             ) AS created_timestamp
+             FROM issues AS i
+             WHERE repo = ?1
+             ORDER BY created_timestamp DESC;
+             ",
+        )?;
+        stmt.bind((1, &rid))?;
+        Ok(stmt.into_iter().filter_map(|row| {
+            let row = row.ok()?;
+            let id = IssueId::from_str(row.read::<&str, _>("id")).ok()?;
+            let issue = serde_json::from_str::<Issue>(row.read::<&str, _>("issue")).ok()?;
+            Some((id, issue))
+        }))
+    }
+
+    fn list_by_status(
+        &self,
+        rid: identity::RepoId,
+        status: &'static str,
+    ) -> Result<impl Iterator<Item = (IssueId, Issue)>, ListIssuesError> {
+        let mut stmt = self.db.prepare(
+            "SELECT id, issue, (
+                 SELECT MIN(JSON_EXTRACT(comment.value, '$.edits[0].timestamp'))
+                 FROM JSON_EACH(JSON_EXTRACT(i.issue, '$.thread.comments')) AS comment
+             ) AS created_timestamp
+             FROM issues AS i
+             WHERE repo = ?1
+             AND issue->>'$.state.status' = ?2
+             ORDER BY created_timestamp DESC;
+             ",
+        )?;
+        stmt.bind((1, &rid))?;
+        stmt.bind((2, status))?;
+        Ok(stmt.into_iter().filter_map(|row| {
+            let row = row.ok()?;
+            let id = IssueId::from_str(row.read::<&str, _>("id")).ok()?;
+            let issue = serde_json::from_str::<Issue>(row.read::<&str, _>("issue")).ok()?;
+            Some((id, issue))
         }))
     }
 }

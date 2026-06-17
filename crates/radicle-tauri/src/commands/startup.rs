@@ -77,11 +77,14 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     let inbox_db = radicle_types::outbound::sqlite::Sqlite::reader(
         profile.node().join(NOTIFICATIONS_DB_FILE),
     )?;
-    let cob_db =
+    let patch_db =
+        radicle_types::outbound::sqlite::Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
+    let issue_db =
         radicle_types::outbound::sqlite::Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
 
     let inbox_service = domain::inbox::service::Service::new(inbox_db);
-    let patch_service = domain::patch::service::Service::new(cob_db);
+    let patch_service = domain::patch::service::Service::new(patch_db);
+    let issue_service = domain::issue::service::Service::new(issue_db);
 
     let node_handle = app.app_handle().clone();
 
@@ -89,6 +92,7 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
 
     app.manage(inbox_service);
     app.manage(patch_service);
+    app.manage(issue_service);
 
     tauri::async_runtime::spawn(async move {
         loop {

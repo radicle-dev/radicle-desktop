@@ -19,6 +19,8 @@ use radicle_types::cobs::issue;
 use radicle_types::cobs::issue::NewIssue;
 use radicle_types::cobs::{self, FromRadicleAction};
 use radicle_types::config::Version;
+use radicle_types::domain::issue::service::Service as IssueService;
+use radicle_types::domain::issue::traits::IssueService as _;
 use radicle_types::domain::patch::models;
 use radicle_types::domain::patch::service::Service;
 use radicle_types::domain::patch::traits::PatchService;
@@ -36,6 +38,7 @@ use radicle_types::traits::thread::Thread;
 pub struct Context {
     profile: Arc<radicle::Profile>,
     patches: Arc<Service<Sqlite>>,
+    issues: Arc<IssueService<Sqlite>>,
 }
 
 impl Repo for Context {}
@@ -53,8 +56,16 @@ impl Profile for Context {
 }
 
 impl Context {
-    pub fn new(profile: Arc<radicle::Profile>, patches: Arc<Service<Sqlite>>) -> Self {
-        Self { profile, patches }
+    pub fn new(
+        profile: Arc<radicle::Profile>,
+        patches: Arc<Service<Sqlite>>,
+        issues: Arc<IssueService<Sqlite>>,
+    ) -> Self {
+        Self {
+            profile,
+            patches,
+            issues,
+        }
     }
 }
 
@@ -409,9 +420,50 @@ async fn issues_handler(
         take,
     }): Json<IssuesBody>,
 ) -> impl IntoResponse {
-    let issues = ctx.list_issues(rid, status, skip, take)?;
+    use types::cobs::query::IssueStatus;
 
-    Ok::<_, Error>(Json(issues))
+    let aliases = ctx.profile.aliases();
+    let cursor = skip.unwrap_or(0);
+
+    let issues = match status.unwrap_or_default() {
+        IssueStatus::All => ctx.issues.list(rid)?.collect::<Vec<_>>(),
+        IssueStatus::Open => ctx.issues.list_by_status(rid, "open")?.collect::<Vec<_>>(),
+        IssueStatus::Closed => ctx
+            .issues
+            .list_by_status(rid, "closed")?
+            .collect::<Vec<_>>(),
+    };
+
+    match take {
+        None => {
+            let content = issues
+                .into_iter()
+                .map(|(id, issue)| issue::Issue::summary(&id, &issue, &aliases))
+                .collect::<Vec<_>>();
+
+            Ok::<_, Error>(Json(cobs::PaginatedQuery {
+                cursor: 0,
+                more: false,
+                content,
+            }))
+        }
+        Some(take) => {
+            let mut content = issues
+                .into_iter()
+                .skip(cursor)
+                .take(take + 1)
+                .map(|(id, issue)| issue::Issue::summary(&id, &issue, &aliases))
+                .collect::<Vec<_>>();
+            let more = content.len() > take;
+            content.truncate(take);
+
+            Ok::<_, Error>(Json(cobs::PaginatedQuery {
+                cursor,
+                more,
+                content,
+            }))
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]

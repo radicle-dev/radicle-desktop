@@ -6,12 +6,18 @@ use radicle::storage::ReadStorage;
 
 use radicle::issue::TYPENAME;
 use radicle_types as types;
+use radicle_types::domain::issue::service::Service;
+use radicle_types::domain::issue::traits::IssueService;
 use radicle_types::error::Error;
+use radicle_types::outbound::sqlite::Sqlite;
+use radicle_types::traits::Profile;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::issue::Issues;
 use radicle_types::traits::issue::IssuesMut;
 
 use crate::AppState;
+
+use either::Either;
 
 #[tauri::command]
 pub fn create_issue(
@@ -35,15 +41,55 @@ pub fn edit_issue(
 }
 
 #[tauri::command]
-pub(crate) fn list_issues(
-    ctx: tauri::State<AppState>,
+pub(crate) async fn list_issues(
+    ctx: tauri::State<'_, AppState>,
+    issue_service: tauri::State<'_, Service<Sqlite>>,
     rid: identity::RepoId,
     status: Option<types::cobs::query::IssueStatus>,
     skip: Option<usize>,
     // None: return all issues, `skip` is ignored.
     take: Option<usize>,
 ) -> Result<types::cobs::PaginatedQuery<Vec<types::cobs::issue::Issue>>, Error> {
-    ctx.list_issues(rid, status, skip, take)
+    use types::cobs::query::IssueStatus;
+
+    let profile = ctx.profile();
+    let aliases = profile.aliases();
+    let cursor = skip.unwrap_or(0);
+
+    let issues = match status.unwrap_or_default() {
+        IssueStatus::All => Either::Left(issue_service.list(rid)?),
+        IssueStatus::Open => Either::Right(issue_service.list_by_status(rid, "open")?),
+        IssueStatus::Closed => Either::Right(issue_service.list_by_status(rid, "closed")?),
+    };
+
+    match take {
+        None => {
+            let content = issues
+                .map(|(id, issue)| types::cobs::issue::Issue::summary(&id, &issue, &aliases))
+                .collect::<Vec<_>>();
+
+            Ok::<_, Error>(types::cobs::PaginatedQuery {
+                cursor: 0,
+                more: false,
+                content,
+            })
+        }
+        Some(take) => {
+            let mut content = issues
+                .skip(cursor)
+                .take(take + 1)
+                .map(|(id, issue)| types::cobs::issue::Issue::summary(&id, &issue, &aliases))
+                .collect::<Vec<_>>();
+            let more = content.len() > take;
+            content.truncate(take);
+
+            Ok::<_, Error>(types::cobs::PaginatedQuery {
+                cursor,
+                more,
+                content,
+            })
+        }
+    }
 }
 
 #[tauri::command]

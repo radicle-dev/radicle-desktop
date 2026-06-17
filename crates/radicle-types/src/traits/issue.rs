@@ -11,61 +11,6 @@ use crate::error::Error;
 use crate::traits::Profile;
 
 pub trait Issues: Profile {
-    fn list_issues(
-        &self,
-        rid: identity::RepoId,
-        status: Option<cobs::query::IssueStatus>,
-        skip: Option<usize>,
-        // None: return all issues, `skip` is ignored.
-        take: Option<usize>,
-    ) -> Result<cobs::PaginatedQuery<Vec<cobs::issue::Issue>>, Error> {
-        let profile = self.profile();
-        let repo = profile.storage.repository(rid)?;
-        let status = status.unwrap_or_default();
-        let cursor = skip.unwrap_or(0);
-        let issues = profile.issues(&repo)?;
-        let mut issues: Vec<_> = issues
-            .list()?
-            .filter_map(|r| {
-                let (id, issue) = r.ok()?;
-                (status.matches(issue.state())).then_some((id, issue))
-            })
-            .collect::<Vec<_>>();
-
-        issues.sort_by(|(_, a), (_, b)| b.timestamp().cmp(&a.timestamp()));
-        let aliases = &profile.aliases();
-
-        match take {
-            None => {
-                let content = issues
-                    .into_iter()
-                    .map(|(id, issue)| cobs::issue::Issue::summary(&id, &issue, aliases))
-                    .collect::<Vec<_>>();
-
-                Ok::<_, Error>(cobs::PaginatedQuery {
-                    cursor: 0,
-                    more: false,
-                    content,
-                })
-            }
-            Some(take) => {
-                let more = cursor + take < issues.len();
-                let content = issues
-                    .into_iter()
-                    .skip(cursor)
-                    .take(take)
-                    .map(|(id, issue)| cobs::issue::Issue::summary(&id, &issue, aliases))
-                    .collect::<Vec<_>>();
-
-                Ok::<_, Error>(cobs::PaginatedQuery {
-                    cursor,
-                    more,
-                    content,
-                })
-            }
-        }
-    }
-
     fn issue_by_id(
         &self,
         rid: identity::RepoId,
