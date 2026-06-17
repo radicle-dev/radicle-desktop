@@ -11,7 +11,7 @@
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
-  import type { Tag } from "@bindings/repo/Tag";
+  import type { TagRef } from "@bindings/repo/TagRef";
 
   import { get } from "svelte/store";
   import { onMount } from "svelte";
@@ -51,7 +51,7 @@
   // Recent commits offered as autocomplete suggestions for the OID input.
   let commits = $state<Commit[]>([]);
   // Tags listed for the repo, surfaced as the primary picker.
-  let tags = $state<Tag[]>([]);
+  let tags = $state<TagRef[]>([]);
 
   // The annotated-tag OID we'll record alongside the commit, if a tag is
   // selected and it's annotated. Lightweight tags resolve to a commit OID
@@ -67,7 +67,7 @@
           skip: 0,
           take: 50,
         }),
-        invoke<Tag[]>("list_tags", { rid: repo.rid }),
+        invoke<TagRef[]>("list_tags", { rid: repo.rid }),
       ]);
       commits = commitsResult.content;
       tags = tagsResult;
