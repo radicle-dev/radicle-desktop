@@ -67,7 +67,7 @@ pub trait Releases: Profile {
         let surf_repo = surf::Repository::open(repo.path())?;
         let tag_name = release
             .tag()
-            .and_then(|oid| build_tag_index(&surf_repo).get(&oid.to_string()).cloned());
+            .and_then(|oid| tag_name_for_oid(&surf_repo, &oid.to_string()));
         let commit_summary = commit_summary(&surf_repo, *release.oid());
 
         let mut out = release::Release::new(id, &release, &aliases, tag_name, commit_summary);
@@ -168,6 +168,25 @@ fn build_tag_index(repo: &surf::Repository) -> HashMap<String, String> {
         out.insert(id.to_string(), name.to_string());
     }
     out
+}
+
+/// Resolve the name of the tag pointing at `oid`, short-circuiting on the
+/// first match. Cheaper than `build_tag_index` when only a single release's
+/// tag is needed, since it allocates no map and stops early.
+fn tag_name_for_oid(repo: &surf::Repository, oid: &str) -> Option<String> {
+    use surf::{Glob, Tag};
+
+    let tags = repo.tags(&Glob::all_tags()).ok()?;
+    for tag in tags.flatten() {
+        let (id, name) = match tag {
+            Tag::Light { id, name } => (id, name),
+            Tag::Annotated { id, name, .. } => (id, name),
+        };
+        if id.to_string() == oid {
+            return Some(name.to_string());
+        }
+    }
+    None
 }
 
 /// Refine each release's per-artifact `seeded_from_here` / `seeded_from_other`
