@@ -118,10 +118,23 @@ pub fn router(ctx: Context) -> Router {
             post(create_or_open_release_handler),
         )
         .route("/register_artifact", post(register_artifact_handler))
-        // Stubs for the Tauri-only native picker and iroh seeding, so the
-        // create-release flow is drivable without a dialog or running node.
+        // Stubs for the Tauri-only native pickers and iroh seeding, so the
+        // create- and view-release flows are drivable without a dialog or
+        // running node.
         .route("/pick_artifact_files", post(pick_artifact_files_handler))
+        .route(
+            "/pick_artifact_directory",
+            post(pick_artifact_directory_handler),
+        )
+        .route(
+            "/pick_artifact_save_path",
+            post(pick_artifact_save_path_handler),
+        )
         .route("/seed_artifact", post(seed_artifact_handler))
+        .route("/unseed_artifact", post(unseed_artifact_handler))
+        .route("/is_seeding", post(is_seeding_handler))
+        .route("/artifact_node_status", post(artifact_node_status_handler))
+        .route("/download_artifact", post(download_artifact_handler))
         .route("/add_location", post(add_location_handler))
         .route("/remove_location", post(remove_location_handler))
         .route("/attest_artifact", post(attest_artifact_handler))
@@ -776,6 +789,28 @@ struct SeedArtifactBody {
     pub source_path: PathBuf,
 }
 
+#[derive(Serialize, Deserialize)]
+struct IsSeedingBody {
+    pub rid: identity::RepoId,
+    pub cid: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DownloadArtifactBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub dest: PathBuf,
+    pub seed: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SavePathBody {
+    pub suggested_name: String,
+}
+
 async fn list_releases_handler(
     State(ctx): State<Context>,
     Json(RidBody { rid }): Json<RidBody>,
@@ -839,6 +874,54 @@ async fn pick_artifact_files_handler() -> impl IntoResponse {
 /// `register_artifact`; we just skip announcing an iroh location.
 async fn seed_artifact_handler(Json(_): Json<SeedArtifactBody>) -> impl IntoResponse {
     Ok::<_, Error>(Json(String::new()))
+}
+
+/// Stub of `unseed_artifact`: mirrors `seed_artifact`. The seed stub never
+/// announced an iroh location, so there is nothing to remove and the node
+/// untag is skipped.
+async fn unseed_artifact_handler(Json(_): Json<AttestBody>) -> impl IntoResponse {
+    Ok::<_, Error>(Json(()))
+}
+
+/// Stub of `is_seeding`: nothing is seeded without a running node.
+async fn is_seeding_handler(Json(_): Json<IsSeedingBody>) -> impl IntoResponse {
+    Ok::<_, Error>(Json(false))
+}
+
+/// Stub of `artifact_node_status`: the node is never running under the HTTP
+/// driver, so report it as down — matching what the real command returns so
+/// the UI shows its setup guidance.
+async fn artifact_node_status_handler() -> impl IntoResponse {
+    Err::<Json<()>, Error>(Error::ArtifactNodeNotRunning)
+}
+
+/// Stub of `download_artifact`: fetching bytes needs a running node, so this
+/// is a no-op.
+async fn download_artifact_handler(Json(_): Json<DownloadArtifactBody>) -> impl IntoResponse {
+    Ok::<_, Error>(Json(()))
+}
+
+/// Stub of the native directory picker: create a small deterministic fixture
+/// directory and return its path. The frontend feeds it into
+/// `compute_artifact_cid`, which produces a Collection CID.
+async fn pick_artifact_directory_handler() -> impl IntoResponse {
+    let dir = std::env::temp_dir().join("radicle-desktop-e2e-artifact-dir");
+    std::fs::create_dir_all(&dir)?;
+    std::fs::write(
+        dir.join("fixture.txt"),
+        b"radicle-desktop release e2e fixture\n",
+    )?;
+    Ok::<_, Error>(Json(Some(dir.to_string_lossy().into_owned())))
+}
+
+/// Stub of the native "Save as" dialog: return a temp path built from the
+/// suggested name. The frontend feeds it into `download_artifact` as the
+/// destination.
+async fn pick_artifact_save_path_handler(
+    Json(SavePathBody { suggested_name }): Json<SavePathBody>,
+) -> impl IntoResponse {
+    let path = std::env::temp_dir().join(suggested_name);
+    Ok::<_, Error>(Json(Some(path.to_string_lossy().into_owned())))
 }
 
 async fn add_location_handler(
