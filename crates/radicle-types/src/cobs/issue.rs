@@ -23,7 +23,11 @@ pub struct Issue {
     title: String,
     state: cobs::issue::State,
     assignees: Vec<cobs::Author>,
-    body: cobs::thread::Comment,
+    // Omitted from list responses, which only need teaser data; populated
+    // when fetching a single issue.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    body: Option<cobs::thread::Comment>,
     #[ts(type = "number")]
     comment_count: usize,
     #[ts(as = "Vec<String>")]
@@ -37,6 +41,18 @@ impl Issue {
         let (root_oid, root_comment) = issue.root();
 
         Self {
+            body: Some(cobs::thread::Comment::<cobs::Never>::new(
+                *root_oid,
+                root_comment.clone(),
+                aliases,
+            )),
+            ..Self::summary(id, issue, aliases)
+        }
+    }
+
+    /// Teaser variant for list responses; omits the issue body.
+    pub fn summary(id: &issue::IssueId, issue: &issue::Issue, aliases: &impl AliasStore) -> Self {
+        Self {
             id: id.to_string(),
             author: cobs::Author::new(issue.author().id(), aliases),
             title: issue.title().to_string(),
@@ -45,11 +61,7 @@ impl Issue {
                 .assignees()
                 .map(|did| cobs::Author::new(did, aliases))
                 .collect::<Vec<_>>(),
-            body: cobs::thread::Comment::<cobs::Never>::new(
-                *root_oid,
-                root_comment.clone(),
-                aliases,
-            ),
+            body: None,
             comment_count: issue.replies().count(),
             labels: issue.labels().cloned().collect::<Vec<_>>(),
             timestamp: issue.timestamp(),

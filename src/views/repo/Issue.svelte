@@ -361,33 +361,35 @@
               allowedToEdit={roles.isDelegateOrAuthor(
                 config.publicKey,
                 repo.delegates.map(delegate => delegate.did),
-                issue.body.author.did,
+                issue.author.did,
               )}
               title={issue.title}
               cobId={issue.id} />
           </div>
 
-          <div class="issue-body">
-            <CommentComponent
-              rid={repo.rid}
-              currentUserNid={config.publicKey}
-              id={issue.id}
-              lastEdit={issue.body.edits.length > 1
-                ? issue.body.edits.at(-1)
-                : undefined}
-              author={issue.body.author}
-              caption="opened"
-              reactions={issue.body.reactions}
-              timestamp={issue.body.edits.slice(-1)[0].timestamp}
-              body={issue.body.edits.slice(-1)[0].body}
-              editComment={roles.isDelegateOrAuthor(
-                config.publicKey,
-                repo.delegates.map(delegate => delegate.did),
-                issue.body.author.did,
-              ) && partial(editComment, issue.body.id)}
-              reactOnComment={partial(reactOnComment, issue.body.id)}>
-            </CommentComponent>
-          </div>
+          {#if issue.body}
+            <div class="issue-body">
+              <CommentComponent
+                rid={repo.rid}
+                currentUserNid={config.publicKey}
+                id={issue.id}
+                lastEdit={issue.body.edits.length > 1
+                  ? issue.body.edits.at(-1)
+                  : undefined}
+                author={issue.body.author}
+                caption="opened"
+                reactions={issue.body.reactions}
+                timestamp={issue.body.edits.slice(-1)[0].timestamp}
+                body={issue.body.edits.slice(-1)[0].body}
+                editComment={roles.isDelegateOrAuthor(
+                  config.publicKey,
+                  repo.delegates.map(delegate => delegate.did),
+                  issue.body.author.did,
+                ) && partial(editComment, issue.body.id)}
+                reactOnComment={partial(reactOnComment, issue.body.id)}>
+              </CommentComponent>
+            </div>
+          {/if}
 
           <Discussion
             cobId={issue.id}

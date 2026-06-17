@@ -39,7 +39,7 @@ pub trait Issues: Profile {
             None => {
                 let content = issues
                     .into_iter()
-                    .map(|(id, issue)| cobs::issue::Issue::new(&id, &issue, aliases))
+                    .map(|(id, issue)| cobs::issue::Issue::summary(&id, &issue, aliases))
                     .collect::<Vec<_>>();
 
                 Ok::<_, Error>(cobs::PaginatedQuery {
@@ -54,7 +54,7 @@ pub trait Issues: Profile {
                     .into_iter()
                     .skip(cursor)
                     .take(take)
-                    .map(|(id, issue)| cobs::issue::Issue::new(&id, &issue, aliases))
+                    .map(|(id, issue)| cobs::issue::Issue::summary(&id, &issue, aliases))
                     .collect::<Vec<_>>();
 
                 Ok::<_, Error>(cobs::PaginatedQuery {
