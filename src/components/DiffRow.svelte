@@ -11,11 +11,11 @@
     rangeAnchorsFromCodeLocation,
   } from "@app/lib/diffComments";
   import type { DiffRow } from "@app/lib/diffRows";
-  import { fileDiffToText } from "@app/lib/diffText";
+  import { fileDiffName, fileDiffToText } from "@app/lib/diffText";
   import * as roles from "@app/lib/roles";
 
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
-  import CopyButton from "@app/components/CopyButton.svelte";
+  import DiffActions from "@app/components/DiffActions.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Path from "@app/components/Path.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
@@ -479,7 +479,10 @@
         </div>
       {/if}
     {/if}
-    <CopyButton text={() => fileDiffToText(row.file)} title="Copy file diff" />
+    <DiffActions
+      text={() => fileDiffToText(row.file)}
+      fileName={fileDiffName(row.file)}
+      title="File diff actions" />
   </div>
 {:else if row.type === "hunk-header"}
   <div class="line hunk-header">

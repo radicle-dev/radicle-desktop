@@ -212,4 +212,19 @@ export async function writeToClipboard(
   }
 }
 
+export async function saveToDisk(fileName: string, text: string) {
+  if (window.__TAURI_INTERNALS__) {
+    // The backend opens the native save dialog and writes the file.
+    await tauri.invoke("save_diff_to_disk", { name: fileName, content: text });
+  } else {
+    // No native dialog outside Tauri (test/http mode): trigger a download.
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+}
+
 export { InvokeError };

@@ -2,6 +2,7 @@ use radicle::identity;
 use radicle_types as types;
 use radicle_types::error::Error;
 use radicle_types::traits::repo::Repo;
+use tauri_plugin_dialog::DialogExt;
 
 use crate::AppState;
 
@@ -12,4 +13,25 @@ pub async fn get_diff(
     options: radicle_types::cobs::diff::DiffOptions,
 ) -> Result<types::diff::Diff, Error> {
     ctx.get_diff(rid, options)
+}
+
+#[tauri::command]
+pub async fn save_diff_to_disk(
+    app_handle: tauri::AppHandle,
+    name: String,
+    content: String,
+) -> Result<(), Error> {
+    let Some(path) = app_handle
+        .dialog()
+        .file()
+        .set_file_name(name)
+        .blocking_save_file()
+    else {
+        // User cancelled the save dialog.
+        return Ok(());
+    };
+    let path = path.into_path()?;
+    std::fs::write(path, content)?;
+
+    Ok(())
 }

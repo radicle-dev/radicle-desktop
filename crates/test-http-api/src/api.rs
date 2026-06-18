@@ -96,6 +96,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/repo_tree", post(tree_handler))
         .route("/repo_blob", post(blob_handler))
         .route("/get_diff", post(diff_handler))
+        .route("/save_diff_to_disk", post(save_diff_handler))
         .route("/get_commit_diff", post(commit_diff_handler))
         .route("/list_repo_commits", post(list_repo_commits_handler))
         .route("/repo_commit_count", post(repo_commit_count_handler))
@@ -310,6 +311,33 @@ async fn diff_handler(
     let info = ctx.get_diff(rid, options)?;
 
     Ok::<_, Error>(Json(info))
+}
+
+#[derive(Serialize, Deserialize)]
+struct SaveDiffBody {
+    pub name: String,
+    pub content: String,
+}
+
+/// Mirrors the Tauri `save_diff_to_disk` command. There is no native save
+/// dialog on this driver, so the file lands in the OS temp directory under
+/// the suggested name (reduced to its basename — the server is reachable
+/// over the network, so `name` must not traverse paths). The web frontend
+/// normally falls back to a browser download instead of calling this; the
+/// route exists to keep the command surface mirrored and testable.
+async fn save_diff_handler(
+    Json(SaveDiffBody { name, content }): Json<SaveDiffBody>,
+) -> impl IntoResponse {
+    let name = PathBuf::from(name);
+    let Some(file_name) = name.file_name() else {
+        return Err(Error::Io(std::io::Error::new(
+            std::io::ErrorKind::InvalidInput,
+            "suggested file name has no basename component",
+        )));
+    };
+    std::fs::write(std::env::temp_dir().join(file_name), content)?;
+
+    Ok::<_, Error>(Json(()))
 }
 
 #[derive(Serialize, Deserialize)]
