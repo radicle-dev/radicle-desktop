@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Revision } from "@bindings/cob/patch/Revision";
 
+  import type { CodeComments } from "@app/lib/diffComments";
   import { cachedGetDiff, cachedListCommits } from "@app/lib/invoke";
   import { pluralize } from "@app/lib/utils";
 
@@ -209,6 +209,10 @@
   {#await cachedGetDiff(rid, { base, head, unified: 3, highlight: true })}
     <span class="txt-body-m-regular">Loading…</span>
   {:then diff}
-    <Changeset expanded={filesExpanded} {head} {diff} {codeComments} />
+    <!-- The patch layout already pads its content, so the diff cards don't add
+         their own side inset and align with the rest of the patch. -->
+    <div style:--diff-inset="0">
+      <Changeset expanded={filesExpanded} {head} {diff} {codeComments} />
+    </div>
   {/await}
 </div>

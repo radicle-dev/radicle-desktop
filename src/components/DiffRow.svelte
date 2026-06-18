@@ -2,32 +2,36 @@
   import type { Modification } from "@bindings/diff/Modification";
 
   import escape from "lodash/escape";
+  import partial from "lodash/partial";
 
+  import type { CommentContext, SelectionRange } from "@app/lib/diffComments";
+  import {
+    findLineThread,
+    lineNumber,
+    rangeAnchorsFromCodeLocation,
+  } from "@app/lib/diffComments";
   import type { DiffRow } from "@app/lib/diffRows";
   import { fileDiffToText } from "@app/lib/diffText";
+  import * as roles from "@app/lib/roles";
 
+  import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
   import CopyButton from "@app/components/CopyButton.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Path from "@app/components/Path.svelte";
+  import ThreadComponent from "@app/components/Thread.svelte";
 
   interface Props {
     row: DiffRow;
     // Whether the row's file is expanded (only meaningful for file-header rows).
     expanded?: boolean;
     onToggleFile?: (fileIndex: number) => void;
+    // Present only on the patch-review path; enables inline comments/selection.
+    comments?: CommentContext;
   }
 
-  const { row, expanded = true, onToggleFile }: Props = $props();
+  const { row, expanded = true, onToggleFile, comments }: Props = $props();
 
-  function lineNumber(line: Modification, side: "left" | "right") {
-    if (side === "left") {
-      if (line.type === "context") return line.lineNoOld;
-      if (line.type === "deletion") return line.lineNo;
-    } else {
-      if (line.type === "context") return line.lineNoNew;
-      if (line.type === "addition") return line.lineNo;
-    }
-  }
+  type LineRow = Extract<DiffRow, { type: "line" }>;
 </script>
 
 <style>
@@ -39,7 +43,10 @@
     align-items: center;
     gap: 0.5rem;
     height: 2.5rem;
-    margin: 0 1rem;
+    /* Horizontal inset of the diff cards. The container sets `--diff-inset`
+       (e.g. 0 when it already provides its own side padding); falls back to 1rem
+       when the diff is the full-width scroll content (commit view). */
+    margin: 0 var(--diff-inset, 1rem);
     padding: 0 0.5rem;
     background-color: var(--color-surface-canvas);
     /* Bottom border present in both states: it's the separator above the lines
@@ -103,7 +110,7 @@
     display: flex;
     position: relative;
     white-space: pre-wrap;
-    margin: 0 1rem;
+    margin: 0 var(--diff-inset, 1rem);
     font: var(--txt-code-regular);
     border-left: 1px solid var(--color-border-subtle);
     border-right: 1px solid var(--color-border-subtle);
@@ -113,6 +120,10 @@
     border-bottom: 1px solid var(--color-border-subtle);
     border-bottom-left-radius: var(--border-radius-md);
     border-bottom-right-radius: var(--border-radius-md);
+  }
+  .line.selected {
+    box-shadow: 0 0 0 1px var(--color-border-brand);
+    z-index: 1;
   }
   .hunk-header {
     color: var(--color-text-secondary);
@@ -147,6 +158,15 @@
     text-align: center;
     flex-shrink: 0;
   }
+  .num.gutter:not(.selection-disabled) {
+    cursor: cell;
+  }
+  .num.gutter:not(.selection-disabled):hover {
+    color: var(--color-text-primary);
+  }
+  .marker {
+    color: var(--color-text-primary) !important;
+  }
   .sign {
     min-width: 1.5rem;
     flex-shrink: 0;
@@ -158,7 +178,258 @@
     word-break: break-word;
     padding-right: 1rem;
   }
+  .comment-icon {
+    margin-left: auto;
+    margin-right: 1rem;
+    margin-top: 3px;
+    align-self: flex-start;
+  }
+  .thread,
+  .comment-form {
+    margin: 0 var(--diff-inset, 1rem);
+    border-left: 1px solid var(--color-border-subtle);
+    border-right: 1px solid var(--color-border-subtle);
+    background-color: var(--color-surface-base);
+    font: var(--txt-body-m-regular);
+  }
+  .thread {
+    padding: 0.5rem;
+  }
+  .comment-form {
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+  }
+  .thread.last,
+  .comment-form.last {
+    border-bottom: 1px solid var(--color-border-subtle);
+    border-bottom-left-radius: var(--border-radius-md);
+    border-bottom-right-radius: var(--border-radius-md);
+  }
+  .comment-header {
+    display: flex;
+    background-color: var(--color-surface-subtle);
+    border-radius: var(--border-radius-sm);
+    padding: 0 0.5rem;
+    width: fit-content;
+  }
 </style>
+
+{#snippet code(line: Modification)}
+  {#if line.highlight && line.highlight.items.length > 0}
+    <div class="code">
+      {@html line.highlight.items
+        .map(
+          paint =>
+            `<span class="global-syntax ${paint.style}">${escape(paint.item)}</span>`,
+        )
+        .join("")}
+    </div>
+  {:else if line.line !== ""}
+    <div class="code">{line.line}</div>
+  {:else}
+    <div class="code"><br /></div>
+  {/if}
+{/snippet}
+
+{#snippet commentHeader(filePath?: string, selectionRange?: SelectionRange)}
+  {#if filePath && selectionRange}
+    <div class="comment-header">
+      {filePath.split("/").length > 1 ? "…/" : ""}{filePath
+        .split("/")
+        .slice(-1)}:{selectionRange.start.side === "left"
+        ? "L"
+        : "R"}{selectionRange.start.lineNumber}
+      {#if selectionRange.end}
+        ->
+        {selectionRange.end.side === "left" ? "L" : "R"}{selectionRange.end
+          .lineNumber}
+      {/if}
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet readonlyLine(r: LineRow)}
+  {@const line = r.modification}
+  <div
+    class="line"
+    class:addition={line.type === "addition"}
+    class:deletion={line.type === "deletion"}
+    class:context={line.type === "context"}
+    class:last={r.last}>
+    <div class="num">{lineNumber(line, "left") ?? ""}</div>
+    <div class="num">{lineNumber(line, "right") ?? ""}</div>
+    <div class="sign">
+      {#if line.type === "addition"}+{:else if line.type === "deletion"}-{/if}
+    </div>
+    {@render code(line)}
+  </div>
+{/snippet}
+
+{#snippet interactiveLine(r: LineRow, ctx: CommentContext)}
+  {@const line = r.modification}
+  {@const cc = ctx.codeComments}
+  {@const thread = findLineThread(ctx.threadByLine, r.file, line)}
+  {@const showThread =
+    thread !== undefined && !ctx.expandedStates[thread.root.id]}
+  {@const sel = ctx.selection}
+  {@const inFile = sel !== undefined && sel.fileIdx === r.fileIndex}
+  {@const isSel =
+    inFile && sel.hunkIdx === r.hunkIndex && sel.lineIdx === r.lineIndex}
+  {@const closeOnLine = r.last && !showThread && !isSel}
+  {@const closeOnThread = r.last && showThread && !isSel}
+  {@const closeOnForm = r.last && isSel}
+  {@const selectable = cc.createComment !== undefined && thread === undefined}
+  <div
+    class="line"
+    class:addition={line.type === "addition"}
+    class:deletion={line.type === "deletion"}
+    class:context={line.type === "context"}
+    class:selected={thread === undefined && isSel}
+    class:last={closeOnLine}>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="num gutter"
+      class:selection-disabled={!selectable}
+      class:marker={inFile &&
+        sel.start.side === "left" &&
+        sel.start.lineNumber === lineNumber(line, "left")}
+      onpointerdown={e => {
+        if (selectable) {
+          e.preventDefault();
+          e.stopPropagation();
+          ctx.onSelectLine(
+            r.fileIndex,
+            "left",
+            line,
+            r.hunkIndex,
+            r.lineIndex,
+            r.file,
+          );
+        }
+      }}>
+      {lineNumber(line, "left") ?? ""}
+    </div>
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="num gutter"
+      class:selection-disabled={!selectable}
+      class:marker={inFile &&
+        sel.start.side === "right" &&
+        sel.start.lineNumber === lineNumber(line, "right")}
+      onpointerdown={e => {
+        if (selectable) {
+          e.preventDefault();
+          e.stopPropagation();
+          ctx.onSelectLine(
+            r.fileIndex,
+            "right",
+            line,
+            r.hunkIndex,
+            r.lineIndex,
+            r.file,
+          );
+        }
+      }}>
+      {lineNumber(line, "right") ?? ""}
+    </div>
+    <div class="sign">
+      {#if line.type === "addition"}+{:else if line.type === "deletion"}-{/if}
+    </div>
+    {@render code(line)}
+    {#if thread}
+      <div class="global-flex comment-icon">
+        <Icon
+          name={thread.root.resolved ? "comment-checkmark" : "comment-cross"}
+          onclick={() => ctx.onToggleThread(thread.root.id)} />
+      </div>
+    {/if}
+  </div>
+
+  {#if showThread && thread}
+    <div class="thread" class:last={closeOnThread}>
+      <div class="global-flex" style:padding="0.5rem">
+        {@render commentHeader(
+          thread.root.location?.path,
+          rangeAnchorsFromCodeLocation(thread.root.location),
+        )}
+        {#if cc.changeCommentStatus && roles.isDelegateOrAuthor( cc.config.publicKey, cc.repoDelegates.map(delegate => delegate.did), thread.root.author.did, )}
+          <div style:margin-left="auto">
+            {#if thread.root.resolved}
+              <div title="Unresolve comment thread">
+                <Icon
+                  name="close"
+                  onclick={partial(
+                    cc.changeCommentStatus,
+                    thread.root.id,
+                    false,
+                  )} />
+              </div>
+            {:else}
+              <div title="Resolve comment thread">
+                <Icon
+                  name="checkmark"
+                  onclick={partial(
+                    cc.changeCommentStatus,
+                    thread.root.id,
+                    true,
+                  )} />
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+      <ThreadComponent
+        inline
+        rid={cc.rid}
+        currentUserNid={cc.config.publicKey}
+        {thread}
+        reactOnComment={cc.reactOnComment}
+        createReply={(cc.canReply ?? true)
+          ? async (body, embeds) => {
+              await cc.createComment(body, embeds, thread.root.id);
+            }
+          : undefined}
+        editComment={cc.editComment}
+        canEditComment={partial(
+          roles.isDelegateOrAuthor,
+          cc.config.publicKey,
+          cc.repoDelegates.map(delegate => delegate.did),
+        )}
+        deleteComment={cc.deleteComment} />
+    </div>
+  {/if}
+
+  {#if isSel && sel}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="comment-form"
+      class:last={closeOnForm}
+      onpointerdown={e => {
+        e.stopPropagation();
+      }}>
+      <div style:margin-bottom="1rem">
+        {@render commentHeader(sel.file, { start: sel.start })}
+      </div>
+      <CommentToggleInput
+        disallowEmptyBody
+        rid={cc.rid}
+        onclose={() => ctx.onClearSelection()}
+        focus
+        placeholder="Leave a comment"
+        disableAttachments={cc.disableAttachments}
+        submit={async (body, embeds) => {
+          try {
+            await cc.createComment(body, embeds, undefined, sel.codeLocation);
+          } catch (e) {
+            console.error("Comment creation failed", e);
+          } finally {
+            ctx.onClearSelection();
+          }
+        }} />
+    </div>
+  {/if}
+{/snippet}
 
 {#if row.type === "file-gap"}
   <div class="file-gap"></div>
@@ -193,6 +464,21 @@
         <span class="del">-{row.file.diff.stats.deletions}</span>
       {/if}
     </span>
+    {#if comments && (row.file.status === "added" || row.file.status === "deleted" || row.file.status === "modified")}
+      {@const counts = comments.threadCountsByFile.get(row.file.path)}
+      {#if counts !== undefined && counts.unresolved > 0}
+        <div class="global-flex">
+          <Icon name="comment-cross" />
+          {counts.unresolved}
+        </div>
+      {/if}
+      {#if counts !== undefined && counts.resolved > 0}
+        <div class="global-flex">
+          <Icon name="comment-checkmark" />
+          {counts.resolved}
+        </div>
+      {/if}
+    {/if}
     <CopyButton text={() => fileDiffToText(row.file)} title="Copy file diff" />
   </div>
 {:else if row.type === "hunk-header"}
@@ -211,32 +497,8 @@
       Empty file
     {/if}
   </div>
+{:else if comments}
+  {@render interactiveLine(row, comments)}
 {:else}
-  {@const line = row.modification}
-  <div
-    class="line"
-    class:addition={line.type === "addition"}
-    class:deletion={line.type === "deletion"}
-    class:context={line.type === "context"}
-    class:last={row.last}>
-    <div class="num">{lineNumber(line, "left") ?? ""}</div>
-    <div class="num">{lineNumber(line, "right") ?? ""}</div>
-    <div class="sign">
-      {#if line.type === "addition"}+{:else if line.type === "deletion"}-{/if}
-    </div>
-    {#if line.highlight && line.highlight.items.length > 0}
-      <div class="code">
-        {@html line.highlight.items
-          .map(
-            paint =>
-              `<span class="global-syntax ${paint.style}">${escape(paint.item)}</span>`,
-          )
-          .join("")}
-      </div>
-    {:else if line.line !== ""}
-      <div class="code">{line.line}</div>
-    {:else}
-      <div class="code"><br /></div>
-    {/if}
-  </div>
+  {@render readonlyLine(row)}
 {/if}

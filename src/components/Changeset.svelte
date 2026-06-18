@@ -1,15 +1,26 @@
 <script lang="ts">
-  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Diff } from "@bindings/diff/Diff";
+  import type { FileDiff } from "@bindings/diff/FileDiff";
+  import type { Modification } from "@bindings/diff/Modification";
   import type { Snippet } from "svelte";
 
   import { SvelteSet } from "svelte/reactivity";
 
+  import type {
+    CodeComments,
+    CommentContext,
+    Selection,
+    Side,
+  } from "@app/lib/diffComments";
+  import {
+    buildSelection,
+    buildThreadByLine,
+    buildThreadCountsByFile,
+  } from "@app/lib/diffComments";
   import type { DiffRow } from "@app/lib/diffRows";
   import { diffRowKey, flattenDiff } from "@app/lib/diffRows";
 
   import DiffRowView from "@app/components/DiffRow.svelte";
-  import FileDiffComponent from "@app/components/FileDiff.svelte";
   import VirtualList from "@app/components/VirtualList.svelte";
 
   interface Props {
@@ -24,10 +35,21 @@
 
   const { codeComments, diff, expanded = true, head, header }: Props = $props();
 
-  // Files the user collapsed (virtualized read-only path only).
+  // Per-file collapse state. The `expanded` prop is the "expand all"/"collapse
+  // all" command: when it flips, re-seed every file; individual chevrons then
+  // deviate from that until the next flip.
   const collapsed = new SvelteSet<number>();
+  $effect(() => {
+    if (expanded) {
+      collapsed.clear();
+    } else {
+      for (let i = 0; i < diff.files.length; i++) {
+        collapsed.add(i);
+      }
+    }
+  });
   function isFileExpanded(fileIndex: number): boolean {
-    return expanded && !collapsed.has(fileIndex);
+    return !collapsed.has(fileIndex);
   }
   function toggleFile(fileIndex: number) {
     if (collapsed.has(fileIndex)) {
@@ -36,6 +58,64 @@
       collapsed.add(fileIndex);
     }
   }
+
+  // Patch-review comment state (lifted from the old per-file Diff.svelte so a
+  // single virtualizer can own the whole changeset).
+  let selection = $state<Selection | undefined>(undefined);
+
+  const threadByLine = $derived(buildThreadByLine(codeComments?.threads ?? []));
+  const threadCountsByFile = $derived(
+    buildThreadCountsByFile(codeComments?.threads ?? []),
+  );
+
+  // eslint-disable-next-line svelte/prefer-writable-derived -- needs a $state proxy so toggleCommentExpand's property mutation triggers reactivity
+  let threadExpandedStates: Record<string, boolean> = $state({});
+  $effect(() => {
+    threadExpandedStates = codeComments
+      ? Object.fromEntries(
+          codeComments.threads.map(t => [t.root.id, t.root.resolved]),
+        )
+      : {};
+  });
+  function toggleCommentExpand(commentId: string) {
+    threadExpandedStates[commentId] = !threadExpandedStates[commentId];
+  }
+
+  function selectLine(
+    fileIdx: number,
+    side: Side,
+    line: Modification,
+    hunkIdx: number,
+    lineIdx: number,
+    file: FileDiff,
+  ) {
+    selection = buildSelection(
+      head,
+      file,
+      fileIdx,
+      side,
+      line,
+      hunkIdx,
+      lineIdx,
+    );
+  }
+
+  const comments = $derived<CommentContext | undefined>(
+    codeComments
+      ? {
+          codeComments,
+          threadByLine,
+          threadCountsByFile,
+          selection,
+          expandedStates: threadExpandedStates,
+          onSelectLine: selectLine,
+          onClearSelection: () => {
+            selection = undefined;
+          },
+          onToggleThread: toggleCommentExpand,
+        }
+      : undefined,
+  );
 
   type Row = { type: "header" } | DiffRow;
 
@@ -73,6 +153,7 @@
     if (
       r.type === "file-header" ||
       r.type === "hunk-header" ||
+      r.type === "file-note" ||
       r.type === "line"
     ) {
       return r.fileIndex;
@@ -103,13 +184,6 @@
 </script>
 
 <style>
-  .diff-list {
-    display: flex;
-    flex-direction: column;
-  }
-  .diff:not(:last-of-type) {
-    margin-bottom: 1rem;
-  }
   /* Zero-height sticky anchor pinned to the viewport top; the bar overflows
      from it (absolute) so it overlays the rows without taking flow space. */
   .sticky-anchor {
@@ -126,44 +200,35 @@
   }
 </style>
 
-{#if codeComments}
-  <!-- Patch review keeps the comment-capable path until it is virtualized. -->
-  <div class="diff-list">
-    {#each diff.files as file}
-      <div class="diff">
-        <FileDiffComponent {codeComments} {expanded} {file} {head} />
-      </div>
-    {/each}
-  </div>
-{:else}
-  <div class="sticky-anchor">
-    {#if stickyFileIndex !== undefined}
-      <div
-        class="sticky-bar"
-        bind:clientHeight={stickyBarHeight}
-        style:transform="translateY({-pushOffset}px)">
-        <DiffRowView
-          row={{
-            type: "file-header",
-            fileIndex: stickyFileIndex,
-            file: diff.files[stickyFileIndex],
-            standalone: false,
-          }}
-          expanded={isFileExpanded(stickyFileIndex)}
-          onToggleFile={toggleFile} />
-      </div>
+<div class="sticky-anchor">
+  {#if stickyFileIndex !== undefined}
+    <div
+      class="sticky-bar"
+      bind:clientHeight={stickyBarHeight}
+      style:transform="translateY({-pushOffset}px)">
+      <DiffRowView
+        row={{
+          type: "file-header",
+          fileIndex: stickyFileIndex,
+          file: diff.files[stickyFileIndex],
+          standalone: false,
+        }}
+        expanded={isFileExpanded(stickyFileIndex)}
+        onToggleFile={toggleFile}
+        {comments} />
+    </div>
+  {/if}
+</div>
+<VirtualList items={rows} getKey={rowKey} autoStartMargin {onScrollState}>
+  {#snippet row(r)}
+    {#if r.type === "header"}
+      {@render header?.()}
+    {:else}
+      <DiffRowView
+        row={r}
+        expanded={isFileExpanded(r.fileIndex)}
+        onToggleFile={toggleFile}
+        {comments} />
     {/if}
-  </div>
-  <VirtualList items={rows} getKey={rowKey} {onScrollState}>
-    {#snippet row(r)}
-      {#if r.type === "header"}
-        {@render header?.()}
-      {:else}
-        <DiffRowView
-          row={r}
-          expanded={isFileExpanded(r.fileIndex)}
-          onToggleFile={toggleFile} />
-      {/if}
-    {/snippet}
-  </VirtualList>
-{/if}
+  {/snippet}
+</VirtualList>

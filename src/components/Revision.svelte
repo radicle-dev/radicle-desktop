@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Author } from "@bindings/cob/Author";
   import type { Revision } from "@bindings/cob/patch/Revision";
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
@@ -7,6 +6,7 @@
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Config } from "@bindings/config/Config";
 
+  import type { CodeComments } from "@app/lib/diffComments";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
