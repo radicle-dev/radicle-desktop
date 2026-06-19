@@ -20,26 +20,44 @@ pub struct Blob {
     content: String,
 }
 
-impl<T: AsRef<[u8]>> From<surf::blob::Blob<T>> for Blob {
-    fn from(blob: surf::blob::Blob<T>) -> Self {
-        let content = match blob.size() {
-            s if s > MAX_BLOB_SIZE && blob.is_binary() => {
+impl Blob {
+    /// Build a blob from its raw bytes and the commit that last touched it.
+    ///
+    /// Resolving the last commit is the caller's responsibility so it can pick
+    /// a fast strategy (e.g. the commit-graph) instead of an expensive history
+    /// walk on large repositories.
+    pub fn new(id: Oid, is_binary: bool, commit: Commit, content: &[u8]) -> Self {
+        let mime_type = infer::get(content)
+            .map(|i| i.mime_type().to_string())
+            .unwrap_or_else(|| "application/octet-stream".to_string());
+
+        let content = match content.len() {
+            s if s > MAX_BLOB_SIZE && is_binary => {
                 String::from("Payload too large, content has been truncated")
             }
-            _ => match std::str::from_utf8(blob.content()) {
+            _ => match std::str::from_utf8(content) {
                 Ok(s) => s.to_owned(),
-                Err(_) => BASE64_STANDARD.encode(blob.content()),
+                Err(_) => BASE64_STANDARD.encode(content),
             },
         };
 
-        let mime_type = infer::get(blob.content()).map(|i| i.mime_type().to_string());
-
         Blob {
-            id: crate::oid::from_surf(blob.object_id()),
-            binary: blob.is_binary(),
-            commit: blob.commit().clone().into(),
+            id,
+            binary: is_binary,
+            commit,
             content,
-            mime_type: mime_type.unwrap_or_else(|| "application/octet-stream".to_string()),
+            mime_type,
         }
+    }
+}
+
+impl<T: AsRef<[u8]>> From<surf::blob::Blob<T>> for Blob {
+    fn from(blob: surf::blob::Blob<T>) -> Self {
+        Blob::new(
+            crate::oid::from_surf(blob.object_id()),
+            blob.is_binary(),
+            blob.commit().clone().into(),
+            blob.content(),
+        )
     }
 }

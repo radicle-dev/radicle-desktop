@@ -91,6 +91,51 @@ fn resolve_revision(
     }
 }
 
+/// Resolve the most recent commit that modified `path`, reachable from `head`.
+///
+/// Fast path: `git rev-list` walks the history using the commit-graph (when
+/// present), skipping the per-commit tree diff that libgit2 performs for a
+/// pathspec walk. On large histories (e.g. the Linux kernel) the libgit2 walk
+/// is seconds-to-minutes for a file last touched long ago, while this is
+/// near-instant. Not a verification step: trust comes from the signed tip and
+/// git's content-addressed DAG; the commit-graph is a local derived index over
+/// those same objects. Falls back to the libgit2 walk if git is unavailable.
+fn last_path_commit(
+    surf_repo: &surf::Repository,
+    repo_path: &std::path::Path,
+    head: git::Oid,
+    path: &std::path::Path,
+) -> Result<repo::Commit, Error> {
+    let fast = std::process::Command::new("git")
+        .current_dir(repo_path)
+        .arg("rev-list")
+        .arg("-1")
+        .arg(head.to_string())
+        .arg("--")
+        // `:(literal)` disables pathspec glob matching so file names
+        // containing `[`, `*` or `?` (e.g. `src/pages/[id].ts`) are looked
+        // up verbatim instead of being treated as wildcard patterns.
+        .arg(format!(":(literal){}", path.display()))
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .and_then(|output| {
+            String::from_utf8_lossy(&output.stdout)
+                .trim()
+                .parse::<git::Oid>()
+                .ok()
+        });
+
+    let commit = match fast {
+        Some(oid) => surf_repo.commit(crate::oid::into_surf(oid))?,
+        None => surf_repo
+            .last_commit(&path, crate::oid::into_surf(head))?
+            .ok_or_else(|| git2::Error::from_str("no commit found for path"))?,
+    };
+
+    Ok(commit.into())
+}
+
 /// Collect canonical branches and tags as declared by the repository's
 /// identity document. The canonical-refs rules (the `xyz.radicle.crefs`
 /// payload, or a synthesized default covering the project's default branch)
@@ -328,10 +373,8 @@ pub trait Repo: Profile {
     ) -> Result<Option<repo::Readme>, Error> {
         let profile = self.profile();
         let storage_repo = profile.storage.repository(rid)?;
-        let repo = radicle_surf::Repository::open(storage::git::paths::repository(
-            &profile.storage,
-            &rid,
-        ))?;
+        let repo_path = storage::git::paths::repository(&profile.storage, &rid);
+        let surf_repo = radicle_surf::Repository::open(&repo_path)?;
 
         let paths = [
             "README",
@@ -347,31 +390,48 @@ pub trait Repo: Profile {
             Some(sha) => sha,
             None => resolve_revision(&storage_repo, peer, revision)?,
         };
+        let tree = storage_repo.backend.find_commit(oid.into())?.tree()?;
 
         for path in paths
             .iter()
             .map(ToString::to_string)
             .chain(paths.iter().map(|p| p.to_lowercase()))
         {
-            if let Ok(blob) = repo.blob(crate::oid::into_surf(oid), &path) {
-                if blob.size() > MAX_BLOB_SIZE {
-                    return Err(Error::FileTooLarge(blob.size()));
-                }
+            let Ok(entry) = tree.get_path(std::path::Path::new(&path)) else {
+                continue;
+            };
+            let Ok(blob) = entry
+                .to_object(&storage_repo.backend)
+                .and_then(|object| object.peel_to_blob())
+            else {
+                continue;
+            };
 
-                let content = match std::str::from_utf8(blob.content()) {
-                    Ok(s) => s.to_owned(),
-                    Err(_) => base64::engine::general_purpose::STANDARD.encode(blob.content()),
-                };
-
-                return Ok(Some(repo::Readme {
-                    id: blob.object_id(),
-                    commit: blob.commit().clone().into(),
-                    mime_type: "text/plain".to_owned(),
-                    path,
-                    content,
-                    binary: blob.is_binary(),
-                }));
+            if blob.size() > MAX_BLOB_SIZE {
+                return Err(Error::FileTooLarge(blob.size()));
             }
+
+            let content = match std::str::from_utf8(blob.content()) {
+                Ok(s) => s.to_owned(),
+                Err(_) => base64::engine::general_purpose::STANDARD.encode(blob.content()),
+            };
+            // A failed last-commit lookup skips this candidate instead of
+            // failing the whole call, so the repo home still renders (at
+            // worst without a README), matching the pre-rewrite behaviour.
+            let Ok(last_commit) =
+                last_path_commit(&surf_repo, &repo_path, oid, std::path::Path::new(&path))
+            else {
+                continue;
+            };
+
+            return Ok(Some(repo::Readme {
+                id: radicle_surf::Oid::from(blob.id()),
+                commit: last_commit,
+                mime_type: "text/plain".to_owned(),
+                path,
+                content,
+                binary: blob.is_binary(),
+            }));
         }
         Ok(None)
     }
@@ -405,13 +465,33 @@ pub trait Repo: Profile {
         sha: Option<git::Oid>,
     ) -> Result<source::blob::Blob, Error> {
         let profile = self.profile();
-        let repo = radicle_surf::Repository::open(radicle::storage::git::paths::repository(
-            &profile.storage,
-            &rid,
-        ))?;
-        let oid = sha.map_or_else(|| repo.head(), |sha| Ok(crate::oid::into_surf(sha)))?;
+        let storage_repo = profile.storage.repository(rid)?;
+        let repo_path = storage::git::paths::repository(&profile.storage, &rid);
+        let surf_repo = radicle_surf::Repository::open(&repo_path)?;
 
-        repo.blob(oid, &path).map(Into::into).map_err(Error::from)
+        let oid = match sha {
+            Some(sha) => sha,
+            None => crate::oid::from_surf(surf_repo.head()?),
+        };
+
+        // Resolve the blob via a direct tree lookup. `surf::Repository::blob`
+        // additionally walks history to find the last commit that touched the
+        // path, which we do separately (and cheaply) below.
+        let commit = storage_repo.backend.find_commit(oid.into())?;
+        let entry = commit.tree()?.get_path(&path)?;
+        let blob = entry
+            .to_object(&storage_repo.backend)?
+            .into_blob()
+            .map_err(|_| git2::Error::from_str("path does not point to a blob"))?;
+
+        let last_commit = last_path_commit(&surf_repo, &repo_path, oid, &path)?;
+
+        Ok(source::blob::Blob::new(
+            blob.id().into(),
+            blob.is_binary(),
+            last_commit,
+            blob.content(),
+        ))
     }
 
     fn list_repo_refs(&self, rid: identity::RepoId) -> Result<repo::RepoRefs, Error> {
