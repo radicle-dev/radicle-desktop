@@ -91,6 +91,47 @@ fn resolve_revision(
     }
 }
 
+/// Tally `git diff --numstat` between two commits into diff stats. Returns
+/// `None` if git is unavailable or its output can't be parsed, so the caller
+/// can fall back to the (slower) radicle-surf diff.
+fn numstat(repo_dir: &std::path::Path, base: git::Oid, head: git::Oid) -> Option<diff::Stats> {
+    let output = std::process::Command::new("git")
+        .current_dir(repo_dir)
+        // Porcelain `git diff` honours user configuration (diff.renames,
+        // diff.algorithm, external diff drivers, …), which would make the
+        // reported stats machine-dependent and diverge from the surf
+        // fallback. Pointing both config scopes at /dev/null pins the
+        // output to git's defaults.
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .env("GIT_CONFIG_SYSTEM", "/dev/null")
+        .arg("diff")
+        .arg("--numstat")
+        .arg(base.to_string())
+        .arg(head.to_string())
+        .output()
+        .ok()
+        .filter(|output| output.status.success())?;
+
+    let mut stats = diff::Stats {
+        files_changed: 0,
+        insertions: 0,
+        deletions: 0,
+    };
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        // Each line is "<added>\t<deleted>\t<path>"; binary files report "-".
+        let mut cols = line.split('\t');
+        let added = cols.next()?;
+        let deleted = cols.next()?;
+        if cols.next().is_none() {
+            continue;
+        }
+        stats.files_changed += 1;
+        stats.insertions += added.parse::<usize>().unwrap_or(0);
+        stats.deletions += deleted.parse::<usize>().unwrap_or(0);
+    }
+    Some(stats)
+}
+
 /// Resolve the most recent commit that modified `path`, reachable from `head`.
 ///
 /// Fast path: `git rev-list` walks the history using the commit-graph (when
@@ -536,10 +577,18 @@ pub trait Repo: Profile {
         head: git::Oid,
     ) -> Result<diff::Stats, Error> {
         let profile = self.profile();
-        let repo = radicle_surf::Repository::open(storage::git::paths::repository(
-            &profile.storage,
-            &rid,
-        ))?;
+
+        // Fast path: `git diff --numstat` opens the repo and tallies per-file
+        // line counts far faster than radicle-surf's full-content diff. List
+        // views request stats for every patch row, and each surf diff re-opens
+        // the whole repo (seconds in aggregate on a large repo). Falls back to
+        // the surf diff if the git binary is unavailable or output can't parse.
+        let repo_path = storage::git::paths::repository(&profile.storage, &rid);
+        if let Some(stats) = numstat(&repo_path, base, head) {
+            return Ok(stats);
+        }
+
+        let repo = radicle_surf::Repository::open(&repo_path)?;
         let base = repo.commit(crate::oid::into_surf(base))?;
         let commit = repo.commit(crate::oid::into_surf(head))?;
         let diff = repo.diff(base.id, commit.id)?;
