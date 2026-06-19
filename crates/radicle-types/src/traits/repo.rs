@@ -678,12 +678,37 @@ pub trait Repo: Profile {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
 
-        // Walk the commit graph directly instead of through radicle-surf's
-        // History iterator, which materializes and parses a full Commit for
-        // every node just to discard it. Counting only needs the reachable
-        // OIDs, and no ordering, so the walk is unsorted. The walk itself is
-        // not a verification step: trust comes from the signed `head` tip, and
-        // git's content-addressed DAG keeps its ancestry tamper-evident.
+        // Fast path: `git rev-list --count` uses the pack bitmap / commit-graph
+        // (when present) for a near-instant count, whereas libgit2's revwalk
+        // ignores those indexes and walks every commit (seconds on large
+        // histories). Not a verification step: trust comes from the signed
+        // `head` tip and git's content-addressed DAG keeps ancestry
+        // tamper-evident; the bitmap/commit-graph are local derived indexes
+        // over those same objects, not a new trust input. Falls back to the
+        // walk below if the git binary is unavailable or errors.
+        let count = std::process::Command::new("git")
+            .current_dir(repo.backend.path())
+            .args([
+                "rev-list",
+                "--count",
+                "--use-bitmap-index",
+                &head.to_string(),
+            ])
+            .output()
+            .ok()
+            .filter(|output| output.status.success())
+            .and_then(|output| {
+                String::from_utf8_lossy(&output.stdout)
+                    .trim()
+                    .parse::<usize>()
+                    .ok()
+            });
+        if let Some(count) = count {
+            return Ok(count);
+        }
+
+        // Fallback: unsorted libgit2 walk (no Commit materialization, no
+        // ordering — counting only needs the reachable OIDs).
         let mut revwalk = repo.backend.revwalk()?;
         revwalk.set_sorting(git2::Sort::NONE)?;
         revwalk.push(head.into())?;
