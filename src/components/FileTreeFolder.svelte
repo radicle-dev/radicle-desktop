@@ -11,6 +11,10 @@
     currentPath: string;
     name: string;
     prefix: string;
+    // Expansion state lives in Tree.svelte so it survives the virtualizer
+    // unmounting off-screen rows.
+    isExpanded: (prefix: string) => boolean;
+    toggleExpanded: (prefix: string) => void;
     indent?: number;
   }
 
@@ -19,10 +23,12 @@
     fetchBlob,
     currentPath,
     prefix,
+    isExpanded,
+    toggleExpanded,
     fetchTree,
     indent = 0.5,
   }: Props = $props();
-  let expanded = $derived(currentPath.indexOf(prefix) === 0);
+  const expanded = $derived(isExpanded(prefix));
 
   const treePromise = $derived(
     expanded ? fetchTree(prefix) : Promise.resolve(undefined),
@@ -46,7 +52,7 @@
   class="folder"
   style:padding-left="{indent}rem"
   style:padding-right="0.5rem"
-  onclick={() => (expanded = !expanded)}>
+  onclick={() => toggleExpanded(prefix)}>
   <div class="global-flex txt-body-m-regular" style:padding="0.25rem 0">
     <div class:txt-missing={!expanded}>
       <Icon name={expanded ? "folder-open" : "folder"} />
@@ -68,6 +74,8 @@
               {fetchBlob}
               name={entry.name}
               {currentPath}
+              {isExpanded}
+              {toggleExpanded}
               prefix={`${entry.path}/`}
               indent={indent + 1.5} />
           {:else if entry.kind === "blob"}
