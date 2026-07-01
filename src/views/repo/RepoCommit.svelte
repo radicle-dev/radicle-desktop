@@ -3,6 +3,7 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import { diffToText } from "@app/lib/diffText";
   import * as router from "@app/lib/router";
   import {
     absoluteTimestamp,
@@ -14,6 +15,7 @@
   } from "@app/lib/utils";
 
   import Changeset from "@app/components/Changeset.svelte";
+  import CopyButton from "@app/components/CopyButton.svelte";
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -227,6 +229,7 @@
                   {pluralize("file", diff.stats.filesChanged)} changed
                 </div>
                 <DiffStatBadge stats={diff.stats} />
+                <CopyButton text={() => diffToText(diff)} title="Copy diff" />
               </div>
             </div>
           </section>

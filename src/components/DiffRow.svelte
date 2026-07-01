@@ -4,7 +4,9 @@
   import escape from "lodash/escape";
 
   import type { DiffRow } from "@app/lib/diffRows";
+  import { fileDiffToText } from "@app/lib/diffText";
 
+  import CopyButton from "@app/components/CopyButton.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Path from "@app/components/Path.svelte";
 
@@ -191,6 +193,7 @@
         <span class="del">-{row.file.diff.stats.deletions}</span>
       {/if}
     </span>
+    <CopyButton text={() => fileDiffToText(row.file)} title="Copy file diff" />
   </div>
 {:else if row.type === "hunk-header"}
   <div class="line hunk-header">
