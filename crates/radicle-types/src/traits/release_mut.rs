@@ -60,7 +60,7 @@ pub trait ReleasesMut: Releases {
         let repo = profile.storage.repository(rid)?;
 
         let id = radicle_artifact::ReleaseId::from_str(&release_id)?;
-        let cid = cid::Cid::from_str(&cid)?;
+        let cid = radicle_artifact::Cid::from_str(&cid)?;
 
         let mut releases = ReleasesStore::open(&repo)?;
         let mut release = releases.get_mut(&id)?;
@@ -81,7 +81,7 @@ pub trait ReleasesMut: Releases {
         let repo = profile.storage.repository(rid)?;
 
         let id = radicle_artifact::ReleaseId::from_str(&release_id)?;
-        let cid = cid::Cid::from_str(&cid)?;
+        let cid = radicle_artifact::Cid::from_str(&cid)?;
         let url = Url::parse(&url)?;
 
         let mut releases = ReleasesStore::open(&repo)?;
@@ -102,7 +102,7 @@ pub trait ReleasesMut: Releases {
         let repo = profile.storage.repository(rid)?;
 
         let id = radicle_artifact::ReleaseId::from_str(&release_id)?;
-        let cid = cid::Cid::from_str(&cid)?;
+        let cid = radicle_artifact::Cid::from_str(&cid)?;
         let url = Url::parse(&url)?;
 
         let mut releases = ReleasesStore::open(&repo)?;
@@ -122,7 +122,7 @@ pub trait ReleasesMut: Releases {
         let repo = profile.storage.repository(rid)?;
 
         let id = radicle_artifact::ReleaseId::from_str(&release_id)?;
-        let cid = cid::Cid::from_str(&cid)?;
+        let cid = radicle_artifact::Cid::from_str(&cid)?;
 
         let mut releases = ReleasesStore::open(&repo)?;
         let mut release = releases.get_mut(&id)?;
@@ -143,7 +143,7 @@ pub trait ReleasesMut: Releases {
         let repo = profile.storage.repository(rid)?;
 
         let id = radicle_artifact::ReleaseId::from_str(&release_id)?;
-        let cid = cid::Cid::from_str(&cid)?;
+        let cid = radicle_artifact::Cid::from_str(&cid)?;
 
         let mut releases = ReleasesStore::open(&repo)?;
         let mut release = releases.get_mut(&id)?;
@@ -163,7 +163,7 @@ pub trait ReleasesMut: Releases {
         let repo = profile.storage.repository(rid)?;
 
         let id = radicle_artifact::ReleaseId::from_str(&release_id)?;
-        let cid = cid::Cid::from_str(&cid)?;
+        let cid = radicle_artifact::Cid::from_str(&cid)?;
 
         let mut releases = ReleasesStore::open(&repo)?;
         let mut release = releases.get_mut(&id)?;
@@ -183,7 +183,7 @@ pub trait ReleasesMut: Releases {
         let repo = profile.storage.repository(rid)?;
 
         let id = radicle_artifact::ReleaseId::from_str(&release_id)?;
-        let cid = cid::Cid::from_str(&cid)?;
+        let cid = radicle_artifact::Cid::from_str(&cid)?;
 
         let mut releases = ReleasesStore::open(&repo)?;
         let mut release = releases.get_mut(&id)?;

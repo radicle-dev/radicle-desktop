@@ -3,11 +3,11 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
-use cid::Cid;
 use radicle::git;
 use radicle::identity::{Did, RepoId};
 use radicle_artifact_client::DownloadArgs;
 use radicle_artifact_core::cid as cid_utils;
+use radicle_artifact_core::cid::Cid;
 use radicle_artifact_core::keys::EndpointId;
 use radicle_artifact_core::protocol::{FetchLocation, FetchProgress, ImportMode};
 use url::Url;
@@ -182,12 +182,21 @@ pub async fn seed_artifact(
 ) -> Result<String, Error> {
     let parsed_cid = Cid::from_str(&cid)?;
     let kind = cid_utils::artifact_kind(&parsed_cid)?;
+    let release = *radicle::cob::ObjectId::from_str(&release_id)?;
 
     // Ask the node to import the bytes (ImportMode::Copy so the source can
-    // be moved or deleted later) and tag the (rid, cid) as seeded.
+    // be moved or deleted later) and tag the (rid, cid) as seeded under the
+    // release.
     let receipt = ctx
         .client
-        .seed(rid, parsed_cid, &source_path, kind, ImportMode::Copy)
+        .seed(
+            rid,
+            release,
+            parsed_cid,
+            &source_path,
+            kind,
+            ImportMode::Copy,
+        )
         .await?;
 
     // Announce the node's endpoint on the COB so peers can discover us.
@@ -208,6 +217,7 @@ pub async fn unseed_artifact(
     cid: String,
 ) -> Result<(), Error> {
     let parsed_cid = Cid::from_str(&cid)?;
+    let release = *radicle::cob::ObjectId::from_str(&release_id)?;
 
     // Drop the COB location first so peers stop trying to reach us before
     // we untag the blob. The URL we announced is our DID-derived endpoint.
@@ -220,7 +230,8 @@ pub async fn unseed_artifact(
     })
     .await??;
 
-    ctx.client.unseed(rid, parsed_cid).await?;
+    // Untag only this release's seed; other releases sharing the CID keep theirs.
+    ctx.client.unseed(rid, Some(release), parsed_cid).await?;
     Ok(())
 }
 
@@ -298,6 +309,12 @@ pub async fn download_artifact(
     seed: bool,
 ) -> Result<(), Error> {
     let parsed_cid = Cid::from_str(&cid)?;
+    // When seeding after download, the node tags the blob under this release.
+    let seed = if seed {
+        Some(*radicle::cob::ObjectId::from_str(&release_id)?)
+    } else {
+        None
+    };
 
     // Snapshot the (did, urls) locations synchronously so we hold no COB
     // lock during the fetch.

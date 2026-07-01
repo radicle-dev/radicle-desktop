@@ -127,7 +127,7 @@ impl Release {
 
 impl Artifact {
     pub fn new(
-        cid: &cid::Cid,
+        cid: &radicle_artifact::Cid,
         artifact: &radicle_artifact::Artifact,
         aliases: &impl AliasStore,
     ) -> Self {

@@ -132,7 +132,7 @@ pub trait Releases: Profile {
         let repo = profile.storage.repository(rid)?;
 
         let id = radicle_artifact::ReleaseId::from_str(&release_id)?;
-        let parsed_cid = cid::Cid::from_str(&cid)?;
+        let parsed_cid = radicle_artifact::Cid::from_str(&cid)?;
 
         let releases = ReleasesStore::open(&repo)?;
         let release = releases.get(&id)?.ok_or_else(|| Error::ReleaseNotFound {

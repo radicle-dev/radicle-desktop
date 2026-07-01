@@ -25,7 +25,6 @@ radicle-artifact-core = { path = "../../../../radicle-artifact/crates/radicle-ar
 radicle-artifact-client = { path = "../../../../radicle-artifact/crates/radicle-artifact-client", features = ["tokio"] }
 radicle-types = { version = "0.1.0", path = "../radicle-types" }
 radicle-surf = { version = "0.27.1", features = ["serde"] }
-cid = { version = "0.11" }
 url = { version = "2.5.4" }
 serde = { version = "1.0.0", features = ["derive"] }
 serde_json = { version = "1.0.0" }
