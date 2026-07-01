@@ -31,6 +31,13 @@
       scrollOffset: number;
       cache: ListCacheSnapshot;
     }) => void;
+    // Reports scroll state for sticky headers: the topmost visible item index,
+    // the current scroll offset, and a way to get any item's offset from start.
+    onScrollState?: (state: {
+      topIndex: number;
+      scrollOffset: number;
+      itemOffset: (index: number) => number;
+    }) => void;
   }
 
   const {
@@ -47,6 +54,7 @@
     initialCache = undefined,
     initialScrollOffset = undefined,
     onState = undefined,
+    onScrollState = undefined,
   }: Props = $props();
 
   const getViewport = getScrollViewport();
@@ -75,6 +83,22 @@
     });
   }
 
+  function reportScrollState() {
+    const h = handle;
+    if (!h || !onScrollState) return;
+    const scrollOffset = h.getScrollOffset();
+    onScrollState({
+      topIndex: h.findItemIndex(scrollOffset),
+      scrollOffset,
+      itemOffset: index => h.getItemOffset(index),
+    });
+  }
+
+  function onScroll() {
+    maybeLoadMore();
+    reportScrollState();
+  }
+
   function maybeLoadMore() {
     if (!onLoadMore || !hasMore || loadingMore) return;
     const el = viewport;
@@ -90,7 +114,10 @@
     // frame, once Virtualizer has sized the scroll container.
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     (items.length, hasMore, loadingMore, viewport);
-    const id = requestAnimationFrame(() => maybeLoadMore());
+    const id = requestAnimationFrame(() => {
+      maybeLoadMore();
+      reportScrollState();
+    });
     return () => cancelAnimationFrame(id);
   });
 </script>
@@ -105,7 +132,7 @@
     {bufferSize}
     {startMargin}
     cache={initialCache}
-    onscroll={maybeLoadMore}
+    onscroll={onScroll}
     onscrollend={reportState}>
     {#snippet children(item: T, index: number)}
       {@render row(item, index)}

@@ -56,14 +56,8 @@
   .breadcrumb-link:hover {
     color: var(--color-text-primary);
   }
-  .content {
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
   .meta {
-    padding: 0.25rem 0 0.5rem;
+    padding: 1rem 1rem 0.5rem;
   }
   .meta-header {
     display: flex;
@@ -172,72 +166,72 @@
       </div>
     </Topbar>
     <ScrollArea style="height: 100%; min-width: 0;">
-      <div class="content">
-        <section class="meta">
-          <div class="meta-header">
-            <div class="meta-title">
-              <div class="summary txt-selectable">
-                {#if !commit.summary}
-                  <span class="txt-missing">No commit message</span>
-                {:else}
-                  {commit.summary}
-                {/if}
+      <Changeset {diff} head={commit.id}>
+        {#snippet header()}
+          <section class="meta">
+            <div class="meta-header">
+              <div class="meta-title">
+                <div class="summary txt-selectable">
+                  {#if !commit.summary}
+                    <span class="txt-missing">No commit message</span>
+                  {:else}
+                    {commit.summary}
+                  {/if}
+                </div>
+                <div class="summary-meta">
+                  <span class="summary-author">
+                    <img
+                      class="summary-avatar"
+                      alt=""
+                      src={gravatarURL(commit.author.email)} />
+                    <span class="txt-selectable">{commit.author.name}</span>
+                  </span>
+                  committed
+                  <Id id={commit.id} clipboard={commit.id} />
+                  <span
+                    class="summary-timestamp"
+                    title={absoluteTimestamp(commit.committer.time * 1000)}>
+                    {formatTimestamp(commit.committer.time * 1000)}
+                  </span>
+                  <JobCob rid={repo.rid} commit={commit.id} />
+                </div>
+                <div class="summary-parents">
+                  <span class="summary-parents-label">
+                    {commit.parents.length === 1 ? "parent" : "parents"}
+                  </span>
+                  {#if commit.parents.length === 0}
+                    <span>Initial commit</span>
+                  {:else}
+                    {#each commit.parents as parent}
+                      <button
+                        class="parent-link txt-id"
+                        onclick={() => {
+                          void router.push({
+                            resource: "repo.commit",
+                            rid: repo.rid,
+                            commit: parent,
+                          });
+                        }}>
+                        {formatOid(parent)}
+                      </button>
+                    {/each}
+                  {/if}
+                </div>
+                <pre class="summary-message txt-selectable">{commit.message
+                    .replace(commit.summary, "")
+                    .trim()}</pre>
               </div>
-              <div class="summary-meta">
-                <span class="summary-author">
-                  <img
-                    class="summary-avatar"
-                    alt=""
-                    src={gravatarURL(commit.author.email)} />
-                  <span class="txt-selectable">{commit.author.name}</span>
-                </span>
-                committed
-                <Id id={commit.id} clipboard={commit.id} />
-                <span
-                  class="summary-timestamp"
-                  title={absoluteTimestamp(commit.committer.time * 1000)}>
-                  {formatTimestamp(commit.committer.time * 1000)}
-                </span>
-                <JobCob rid={repo.rid} commit={commit.id} />
+              <div class="chips">
+                <div class="files-chip">
+                  {diff.stats.filesChanged}
+                  {pluralize("file", diff.stats.filesChanged)} changed
+                </div>
+                <DiffStatBadge stats={diff.stats} />
               </div>
-              <div class="summary-parents">
-                <span class="summary-parents-label">
-                  {commit.parents.length === 1 ? "parent" : "parents"}
-                </span>
-                {#if commit.parents.length === 0}
-                  <span>Initial commit</span>
-                {:else}
-                  {#each commit.parents as parent}
-                    <button
-                      class="parent-link txt-id"
-                      onclick={() => {
-                        void router.push({
-                          resource: "repo.commit",
-                          rid: repo.rid,
-                          commit: parent,
-                        });
-                      }}>
-                      {formatOid(parent)}
-                    </button>
-                  {/each}
-                {/if}
-              </div>
-              <pre class="summary-message txt-selectable">{commit.message
-                  .replace(commit.summary, "")
-                  .trim()}</pre>
             </div>
-            <div class="chips">
-              <div class="files-chip">
-                {diff.stats.filesChanged}
-                {pluralize("file", diff.stats.filesChanged)} changed
-              </div>
-              <DiffStatBadge stats={diff.stats} />
-            </div>
-          </div>
-        </section>
-
-        <Changeset {diff} head={commit.id} />
-      </div>
+          </section>
+        {/snippet}
+      </Changeset>
     </ScrollArea>
   </div>
 </Layout>
