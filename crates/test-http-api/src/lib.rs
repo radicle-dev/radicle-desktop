@@ -30,12 +30,10 @@ pub async fn run(options: Options) -> anyhow::Result<()> {
 fn router(profile: Profile) -> anyhow::Result<Router> {
     let profile = Arc::new(profile);
 
-    let patch_db =
+    let cobs_db =
         radicle_types::outbound::sqlite::Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
-    let patch_service = PatchService::new(patch_db);
-    let issue_db =
-        radicle_types::outbound::sqlite::Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
-    let issue_service = IssueService::new(issue_db);
+    let patch_service = PatchService::new(cobs_db.clone());
+    let issue_service = IssueService::new(cobs_db);
 
     let ctx = api::Context::new(profile, Arc::new(patch_service), Arc::new(issue_service));
 
