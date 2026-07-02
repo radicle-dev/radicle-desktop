@@ -34,12 +34,31 @@ export function createPaginatedList<T>(opts: PaginatedListOptions<T>) {
     ? readListState<T>(opts.key())
     : undefined;
 
-  let items = $state(restored?.items ?? opts.page().content);
+  // The snapshot is trusted as a scroll anchor, never as data — its contents
+  // are as old as the moment the user left. The route loader re-fetches the
+  // first page on every navigation (including history), so a snapshot no
+  // deeper than one page is replaced by that fresh page outright, at no
+  // extra cost. A deeper snapshot seeds the list for instant paint and the
+  // whole restored window is refetched in the background (see the
+  // revalidate call below).
+  let seedItems: T[];
+  let seedMore: boolean;
+  let staleWindow: number | undefined;
+  if (restored !== undefined && restored.items.length > opts.pageSize) {
+    seedItems = restored.items;
+    seedMore = restored.more;
+    staleWindow = restored.items.length;
+  } else {
+    seedItems = opts.page().content;
+    seedMore = opts.page().more;
+  }
+
+  let items = $state(seedItems);
   // Rows fetched so far — used as the pagination offset. Tracked separately
   // from items.length because appends are deduped (overlapping pages, e.g.
   // when the list grows underneath us, must still advance the offset).
-  let cursor = (restored?.items ?? opts.page().content).length;
-  let more = $state(restored?.more ?? opts.page().more);
+  let cursor = seedItems.length;
+  let more = $state(seedMore);
   let loadingMore = $state(false);
   let activeKey = opts.key();
 
@@ -111,17 +130,39 @@ export function createPaginatedList<T>(opts: PaginatedListOptions<T>) {
     }
   }
 
-  // Refetch the first page and replace the list (e.g. after a cache rebuild),
-  // aborting any in-flight page load.
-  async function reload(): Promise<void> {
-    const page = await loader.run(async () =>
-      opts.fetchPage(0, opts.pageSize),
-    );
-    if (page !== undefined) {
+  // Refetch the first `window` rows in one request and replace the list
+  // wholesale: stale-while-revalidate after a history restore, first page
+  // after a cache rebuild. `loadingMore` stays set for the duration, which
+  // both surfaces the refresh and keeps the virtualizer's auto load-more
+  // from racing it and appending a page onto items about to be replaced.
+  // A newer load (e.g. fuzzy-focus load-all) superseding the refetch is
+  // fine: every competitor fetches a fresher, same-or-larger window.
+  async function revalidate(window: number = opts.pageSize): Promise<void> {
+    loadingMore = true;
+    let superseded = false;
+    try {
+      const page = await loader.run(async () => opts.fetchPage(0, window));
+      if (page === undefined) {
+        superseded = true;
+        return;
+      }
       items = page.content;
       cursor = page.content.length;
       more = page.more;
+    } catch (error) {
+      // The history-restore call site is fire-and-forget; a failed refresh
+      // logs and leaves the snapshot on screen rather than rejecting
+      // unhandled.
+      console.error("Revalidating the list failed: ", error);
+    } finally {
+      if (!superseded) {
+        loadingMore = false;
+      }
     }
+  }
+
+  if (staleWindow !== undefined) {
+    void revalidate(staleWindow);
   }
 
   // Persist the loaded list + scroll position so back/forward can restore it.
@@ -153,7 +194,7 @@ export function createPaginatedList<T>(opts: PaginatedListOptions<T>) {
     initialScrollOffset: restored?.scrollOffset,
     initialCache: restored?.cache,
     loadMore,
-    reload,
+    revalidate,
     persistScroll,
   };
 }

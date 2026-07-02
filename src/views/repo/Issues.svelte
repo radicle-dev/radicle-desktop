@@ -72,7 +72,10 @@
   });
 
   $effect(() => {
-    if (list.more === false) {
+    // Only record counts from settled, fresh data: while a history-restore
+    // revalidation is in flight (loadingMore), the snapshot's length/more are
+    // stale and would flag a cache mismatch that isn't there.
+    if (list.more === false && !list.loadingMore) {
       updateIssueCounts(
         list.items.length,
         {
@@ -111,7 +114,7 @@
     } catch (error) {
       console.error(error);
     } finally {
-      await list.reload();
+      await list.revalidate();
       resetIssueCounts();
 
       delay(() => {
