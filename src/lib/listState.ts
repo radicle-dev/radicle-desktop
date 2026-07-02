@@ -35,7 +35,3 @@ export function saveListState(key: string, state: ListState): void {
 export function readListState<T>(key: string): ListState<T> | undefined {
   return states.get(key) as ListState<T> | undefined;
 }
-
-export function clearListState(key: string): void {
-  states.delete(key);
-}

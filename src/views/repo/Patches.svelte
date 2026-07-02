@@ -11,9 +11,7 @@
   import delay from "lodash/delay";
 
   import { invoke } from "@app/lib/invoke";
-  import type { ListCacheSnapshot } from "@app/lib/listState";
-  import { readListState, saveListState } from "@app/lib/listState";
-  import * as mutexExecutor from "@app/lib/mutexExecutor";
+  import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import {
     patchCountMismatch,
     resetPatchCounts,
@@ -45,29 +43,6 @@
     return `repo.patches:${repo.rid}:${filter ?? "all"}`;
   }
 
-  // Restore the prior list and scroll position only when arriving via
-  // back/forward; a fresh navigation (sidebar, links) starts from the top.
-  // svelte-ignore state_referenced_locally
-  const restored = router.isHistoryNavigation()
-    ? readListState<Patch>(listKey(status))
-    : undefined;
-
-  // Parent reuses this component across status filter changes; a sibling
-  // $effect resets pagination state when the filter changes.
-  // svelte-ignore state_referenced_locally
-  let items = $state(restored?.items ?? patches.content);
-  // Rows fetched so far — used as the pagination offset. Tracked separately
-  // from items.length because appends are deduped (overlapping pages, e.g. when
-  // the list grows underneath us, must still advance the offset).
-  // svelte-ignore state_referenced_locally
-  let cursor = $state((restored?.items ?? patches.content).length);
-  // svelte-ignore state_referenced_locally
-  let more = $state(restored?.more ?? patches.more);
-  const initialScrollOffset = restored?.scrollOffset;
-  const initialCache = restored?.cache;
-  // svelte-ignore state_referenced_locally
-  let activeKey = listKey(status);
-  let loadingMore = $state(false);
   let loading = $state(false);
   let searchInput = $state("");
   let debouncedSearch = $state("");
@@ -79,43 +54,24 @@
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
-  const loader = mutexExecutor.create();
-  const abort = async (): Promise<undefined> => undefined;
-
-  $effect(() => {
-    const key = listKey(status);
-    const fresh = patches;
-    // Skip the initial mount (state is seeded above, possibly restored); only
-    // reset when the filter actually changes.
-    if (key === activeKey) return;
-    activeKey = key;
-    items = fresh.content;
-    cursor = fresh.content.length;
-    more = fresh.more;
-    // Abort any in-flight loadMoreContent so it cannot append a page
-    // from the previous filter onto the just-reset items.
-    void loader.run(abort);
+  const list = createPaginatedList<Patch>({
+    key: () => listKey(status),
+    page: () => patches,
+    fetchPage: (skip, take) =>
+      invoke<PaginatedQuery<Patch[]>>("list_patches", {
+        rid: repo.rid,
+        status,
+        skip,
+        take,
+      }),
+    pageSize: DEFAULT_TAKE,
+    id: patch => patch.id,
+    skipPersist: () => searchInput !== "",
   });
 
-  // Persist the loaded list + scroll position so back/forward can restore it.
-  // Only the unfiltered list is cached, so its length matches virtua's size
-  // snapshot.
-  function persistScroll(state: {
-    scrollOffset: number;
-    cache: ListCacheSnapshot;
-  }) {
-    if (searchInput !== "") return;
-    saveListState(listKey(status), {
-      items: [...items],
-      more,
-      scrollOffset: state.scrollOffset,
-      cache: state.cache,
-    });
-  }
-
   $effect(() => {
-    if (more === false) {
-      updatePatchCounts(items.length, project.meta.patches, status);
+    if (list.more === false) {
+      updatePatchCounts(list.items.length, project.meta.patches, status);
     }
   });
 
@@ -146,21 +102,7 @@
     } catch (error) {
       console.error(error);
     } finally {
-      const page = await loader.run(async () => {
-        return await invoke<PaginatedQuery<Patch[]>>("list_patches", {
-          rid: repo.rid,
-          skip: 0,
-          status,
-          take: DEFAULT_TAKE,
-        });
-      });
-
-      if (page !== undefined) {
-        items = page.content;
-        cursor = page.content.length;
-        more = page.more;
-      }
-
+      await list.reload();
       resetPatchCounts();
 
       delay(() => {
@@ -169,51 +111,8 @@
     }
   }
 
-  async function loadMoreContent(all: boolean = false): Promise<void> {
-    if (!more) return;
-    loadingMore = true;
-    let superseded = false;
-    try {
-      const page = await loader.run(async () => {
-        return await invoke<PaginatedQuery<Patch[]>>("list_patches", {
-          rid: repo.rid,
-          status,
-          skip: all ? 0 : cursor,
-          take: all ? undefined : DEFAULT_TAKE,
-        });
-      });
-
-      // Superseded by a newer load (e.g. fuzzy-focus triggered a load-all).
-      // Leave items/more alone for the new call. The flag stays set too: the
-      // newer call owns it now, and clearing it here would let the
-      // virtualizer's auto load-more re-fire and abort that call in turn.
-      if (page === undefined) {
-        superseded = true;
-        return;
-      }
-
-      more = page.more;
-      if (all) {
-        items = page.content;
-        cursor = page.content.length;
-      } else {
-        // Drop ids already shown so duplicate keys never reach the virtual
-        // list (which would leave blank, persistent gaps); still advance the
-        // offset by the rows fetched so paging keeps moving forward.
-        const seen = new Set(items.map(i => i.id));
-        items = [...items, ...page.content.filter(i => !seen.has(i.id))];
-        cursor += page.content.length;
-      }
-      if (page.content.length === 0) more = false;
-    } finally {
-      if (!superseded) {
-        loadingMore = false;
-      }
-    }
-  }
-
   const searchablePatches = $derived(
-    items
+    list.items
       .flatMap(i => {
         return {
           patch: i,
@@ -369,13 +268,13 @@
       </div>
       <div class="global-flex" style:margin-left="auto" style:gap="0.5rem">
         <FuzzySearch
-          hasItems={items.length > 0}
+          hasItems={list.items.length > 0}
           placeholder={`Fuzzy filter patches ${modifierKey()} + f`}
           icon={loading ? "clock" : "filter"}
           onFocus={async () => {
             try {
               loading = true;
-              await loadMoreContent(true);
+              await list.loadMore(true);
             } catch (e) {
               console.error("Loading all patches failed: ", e);
             } finally {
@@ -414,7 +313,7 @@
         <div
           class="txt-missing txt-body-m-regular global-flex"
           style:gap="0.25rem">
-          {#if items.length > 0}
+          {#if list.items.length > 0}
             No matching patches
           {:else}
             No {status === undefined ? "" : status} patches
@@ -433,15 +332,15 @@
         </div>
         <VirtualList
           items={searchResults}
-          hasMore={more}
-          {loadingMore}
-          onLoadMore={() => loadMoreContent()}
+          hasMore={list.more}
+          loadingMore={list.loadingMore}
+          onLoadMore={() => list.loadMore()}
           startMargin={chromeHeight}
           estimatedItemSize={80}
           getKey={result => result.obj.patch.id}
-          {initialCache}
-          {initialScrollOffset}
-          onState={persistScroll}>
+          initialCache={list.initialCache}
+          initialScrollOffset={list.initialScrollOffset}
+          onState={list.persistScroll}>
           {#snippet row(result)}
             <div class="row">
               <PatchTeaser

@@ -7,9 +7,7 @@
   import fuzzysort from "fuzzysort";
 
   import { invoke } from "@app/lib/invoke";
-  import type { ListCacheSnapshot } from "@app/lib/listState";
-  import { readListState, saveListState } from "@app/lib/listState";
-  import * as mutexExecutor from "@app/lib/mutexExecutor";
+  import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import * as router from "@app/lib/router";
   import { modifierKey } from "@app/lib/utils";
 
@@ -50,59 +48,25 @@
     return `repo.commits:${repo.rid}:${peer ?? ""}:${revision ?? ""}`;
   }
 
-  // Restore the prior list and scroll position only when arriving via
-  // back/forward; a fresh navigation (sidebar, links) starts from the top.
-  const restored = router.isHistoryNavigation()
-    ? readListState<Commit>(listKey())
-    : undefined;
-
-  // Parent reuses this component across navigations; a sibling $effect resets
-  // pagination state when the peer/revision changes.
-  // svelte-ignore state_referenced_locally
-  let items = $state(restored?.items ?? commits.content);
-  // svelte-ignore state_referenced_locally
-  let more = $state(restored?.more ?? commits.more);
-  const initialScrollOffset = restored?.scrollOffset;
-  const initialCache = restored?.cache;
-  let activeKey = listKey();
-  let loadingMore = $state(false);
   let loading = $state(false);
   let searchInput = $state("");
   let debouncedSearch = $state("");
   let showSearch = $state(false);
 
-  const loader = mutexExecutor.create();
-  const abort = async (): Promise<undefined> => undefined;
-
-  $effect(() => {
-    const key = listKey();
-    const fresh = commits;
-    // Skip the initial mount (state is seeded above, possibly restored); only
-    // reset when the peer/revision changes.
-    if (key === activeKey) return;
-    activeKey = key;
-    items = fresh.content;
-    more = fresh.more;
-    // Abort any in-flight loadMoreContent so it cannot append a page
-    // from the previous navigation onto the just-reset items.
-    void loader.run(abort);
+  const list = createPaginatedList<Commit>({
+    key: () => listKey(),
+    page: () => commits,
+    fetchPage: (skip, take) =>
+      invoke<PaginatedQuery<Commit[]>>("list_repo_commits", {
+        rid: repo.rid,
+        head: oid,
+        skip,
+        take,
+      }),
+    pageSize: COMMITS_PAGE_SIZE,
+    id: commit => commit.id,
+    skipPersist: () => searchInput !== "",
   });
-
-  // Persist the loaded list + scroll position so back/forward can restore it.
-  // Only the unfiltered list is cached, so its length matches virtua's size
-  // snapshot.
-  function persistScroll(state: {
-    scrollOffset: number;
-    cache: ListCacheSnapshot;
-  }) {
-    if (searchInput !== "") return;
-    saveListState(listKey(), {
-      items: [...items],
-      more,
-      scrollOffset: state.scrollOffset,
-      cache: state.cache,
-    });
-  }
 
   $effect(() => {
     const value = searchInput;
@@ -111,39 +75,6 @@
     }, 150);
     return () => clearTimeout(timer);
   });
-
-  async function loadMoreContent(all: boolean = false): Promise<void> {
-    if (!more) return;
-    loadingMore = true;
-    let superseded = false;
-    try {
-      const page = await loader.run(async () => {
-        return await invoke<PaginatedQuery<Commit[]>>("list_repo_commits", {
-          rid: repo.rid,
-          head: oid,
-          skip: all ? 0 : items.length,
-          take: all ? undefined : COMMITS_PAGE_SIZE,
-        });
-      });
-
-      // Superseded by a newer load (e.g. fuzzy-focus triggered a load-all).
-      // Leave items/more alone for the new call. The flag stays set too: the
-      // newer call owns it now, and clearing it here would let the
-      // virtualizer's auto load-more re-fire and abort that call in turn.
-      if (page === undefined) {
-        superseded = true;
-        return;
-      }
-
-      more = page.more;
-      items = all ? page.content : [...items, ...page.content];
-      if (page.content.length === 0) more = false;
-    } finally {
-      if (!superseded) {
-        loadingMore = false;
-      }
-    }
-  }
 
   function dayKey(timestamp: number) {
     const date = new Date(timestamp);
@@ -178,7 +109,7 @@
   }
 
   const searchableCommits = $derived(
-    items.map(c => ({
+    list.items.map(c => ({
       commit: c,
       id: c.id,
       summary: c.summary,
@@ -289,14 +220,14 @@
       active="commits">
       {#snippet extra()}
         <FuzzySearch
-          hasItems={items.length > 0}
+          hasItems={list.items.length > 0}
           placeholder={`Fuzzy filter commits ${modifierKey()} + f`}
           styleHeight="1.75rem"
           icon={loading ? "clock" : "filter"}
           onFocus={async () => {
             try {
               loading = true;
-              await loadMoreContent(true);
+              await list.loadMore(true);
             } catch (e) {
               console.error("Loading all commits failed: ", e);
             } finally {
@@ -326,7 +257,7 @@
           <div
             class="txt-missing txt-body-m-regular global-flex"
             style:gap="0.25rem">
-            {#if items.length > 0}
+            {#if list.items.length > 0}
               No matching commits
             {:else}
               No commits
@@ -336,14 +267,14 @@
       {:else}
         <VirtualList
           items={commitRows}
-          hasMore={more}
-          {loadingMore}
-          onLoadMore={() => loadMoreContent()}
+          hasMore={list.more}
+          loadingMore={list.loadingMore}
+          onLoadMore={() => list.loadMore()}
           getKey={r =>
             r.type === "header" ? `h:${r.key}` : `c:${r.commit.id}`}
-          {initialCache}
-          {initialScrollOffset}
-          onState={persistScroll}>
+          initialCache={list.initialCache}
+          initialScrollOffset={list.initialScrollOffset}
+          onState={list.persistScroll}>
           {#snippet row(item)}
             {#if item.type === "header"}
               <div class="group-title">{item.label}</div>
