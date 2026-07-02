@@ -115,6 +115,7 @@
   async function loadMoreContent(all: boolean = false): Promise<void> {
     if (!more) return;
     loadingMore = true;
+    let superseded = false;
     try {
       const page = await loader.run(async () => {
         return await invoke<PaginatedQuery<Commit[]>>("list_repo_commits", {
@@ -126,14 +127,21 @@
       });
 
       // Superseded by a newer load (e.g. fuzzy-focus triggered a load-all).
-      // Leave items/more alone for the new call.
-      if (page === undefined) return;
+      // Leave items/more alone for the new call. The flag stays set too: the
+      // newer call owns it now, and clearing it here would let the
+      // virtualizer's auto load-more re-fire and abort that call in turn.
+      if (page === undefined) {
+        superseded = true;
+        return;
+      }
 
       more = page.more;
       items = all ? page.content : [...items, ...page.content];
       if (page.content.length === 0) more = false;
     } finally {
-      loadingMore = false;
+      if (!superseded) {
+        loadingMore = false;
+      }
     }
   }
 
