@@ -473,50 +473,12 @@ async fn issues_handler(
         take,
     }): Json<IssuesBody>,
 ) -> impl IntoResponse {
-    use types::cobs::query::IssueStatus;
-
     let aliases = ctx.profile.aliases();
-    let cursor = skip.unwrap_or(0);
+    let page = ctx
+        .issues
+        .list_paginated(rid, status.unwrap_or_default(), skip, take, &aliases)?;
 
-    let issues = match status.unwrap_or_default() {
-        IssueStatus::All => ctx.issues.list(rid)?.collect::<Vec<_>>(),
-        IssueStatus::Open => ctx.issues.list_by_status(rid, "open")?.collect::<Vec<_>>(),
-        IssueStatus::Closed => ctx
-            .issues
-            .list_by_status(rid, "closed")?
-            .collect::<Vec<_>>(),
-    };
-
-    match take {
-        None => {
-            let content = issues
-                .into_iter()
-                .map(|(id, issue)| issue::Issue::summary(&id, &issue, &aliases))
-                .collect::<Vec<_>>();
-
-            Ok::<_, Error>(Json(cobs::PaginatedQuery {
-                cursor: 0,
-                more: false,
-                content,
-            }))
-        }
-        Some(take) => {
-            let mut content = issues
-                .into_iter()
-                .skip(cursor)
-                .take(take + 1)
-                .map(|(id, issue)| issue::Issue::summary(&id, &issue, &aliases))
-                .collect::<Vec<_>>();
-            let more = content.len() > take;
-            content.truncate(take);
-
-            Ok::<_, Error>(Json(cobs::PaginatedQuery {
-                cursor,
-                more,
-                content,
-            }))
-        }
-    }
+    Ok::<_, Error>(Json(page))
 }
 
 #[derive(Serialize, Deserialize)]

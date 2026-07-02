@@ -10,12 +10,13 @@ use sqlite as sql;
 
 use crate::domain::inbox::models::notification;
 use crate::domain::inbox::traits::InboxStorage;
-use crate::domain::issue::models::issue::ListIssuesError;
+use crate::domain::issue::models::issue::{ListIssuesError, Status as IssueStatus};
 use crate::domain::issue::traits::IssueStorage;
 use crate::domain::patch::models::patch::{CountsError, ListPatchesError, PatchCounts, State};
 use crate::domain::patch::traits::PatchStorage;
 use crate::error::Error;
 
+#[derive(Clone)]
 pub struct Sqlite {
     pub db: Arc<sql::ConnectionThreadSafe>,
 }
@@ -113,22 +114,39 @@ impl PatchStorage for Sqlite {
     }
 }
 
-impl IssueStorage for Sqlite {
-    fn list(
+impl Sqlite {
+    /// Issues for `rid`, newest first, optionally filtered by state. Single
+    /// home of the issue-listing SQL; `list`/`list_by_status` differ only in
+    /// the status predicate. The sort key is the root comment's timestamp
+    /// (the comment without a `replyTo`) — the issue's creation time — not
+    /// the minimum across replies, whose author-supplied clocks could
+    /// otherwise sink an issue below its real position.
+    fn issues_by(
         &self,
         rid: identity::RepoId,
+        status: Option<IssueStatus>,
     ) -> Result<impl Iterator<Item = (IssueId, Issue)>, ListIssuesError> {
-        let mut stmt = self.db.prepare(
+        let filter = if status.is_some() {
+            "AND issue->>'$.state.status' = ?2"
+        } else {
+            ""
+        };
+        let mut stmt = self.db.prepare(format!(
             "SELECT id, issue, (
                  SELECT MIN(JSON_EXTRACT(comment.value, '$.edits[0].timestamp'))
                  FROM JSON_EACH(JSON_EXTRACT(i.issue, '$.thread.comments')) AS comment
+                 WHERE JSON_EXTRACT(comment.value, '$.replyTo') IS NULL
              ) AS created_timestamp
              FROM issues AS i
              WHERE repo = ?1
+             {filter}
              ORDER BY created_timestamp DESC, id DESC;
-             ",
-        )?;
+             "
+        ))?;
         stmt.bind((1, &rid))?;
+        if let Some(status) = status {
+            stmt.bind((2, status.as_str()))?;
+        }
         Ok(stmt.into_iter().filter_map(|row| {
             let row = row.ok()?;
             let id = IssueId::from_str(row.read::<&str, _>("id")).ok()?;
@@ -136,31 +154,22 @@ impl IssueStorage for Sqlite {
             Some((id, issue))
         }))
     }
+}
+
+impl IssueStorage for Sqlite {
+    fn list(
+        &self,
+        rid: identity::RepoId,
+    ) -> Result<impl Iterator<Item = (IssueId, Issue)>, ListIssuesError> {
+        self.issues_by(rid, None)
+    }
 
     fn list_by_status(
         &self,
         rid: identity::RepoId,
-        status: &'static str,
+        status: IssueStatus,
     ) -> Result<impl Iterator<Item = (IssueId, Issue)>, ListIssuesError> {
-        let mut stmt = self.db.prepare(
-            "SELECT id, issue, (
-                 SELECT MIN(JSON_EXTRACT(comment.value, '$.edits[0].timestamp'))
-                 FROM JSON_EACH(JSON_EXTRACT(i.issue, '$.thread.comments')) AS comment
-             ) AS created_timestamp
-             FROM issues AS i
-             WHERE repo = ?1
-             AND issue->>'$.state.status' = ?2
-             ORDER BY created_timestamp DESC, id DESC;
-             ",
-        )?;
-        stmt.bind((1, &rid))?;
-        stmt.bind((2, status))?;
-        Ok(stmt.into_iter().filter_map(|row| {
-            let row = row.ok()?;
-            let id = IssueId::from_str(row.read::<&str, _>("id")).ok()?;
-            let issue = serde_json::from_str::<Issue>(row.read::<&str, _>("issue")).ok()?;
-            Some((id, issue))
-        }))
+        self.issues_by(rid, Some(status))
     }
 }
 

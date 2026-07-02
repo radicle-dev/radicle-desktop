@@ -1,5 +1,21 @@
 use thiserror::Error;
 
+/// Issue state filter understood by the COB cache queries.
+#[derive(Debug, Clone, Copy)]
+pub enum Status {
+    Open,
+    Closed,
+}
+
+impl Status {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Open => "open",
+            Self::Closed => "closed",
+        }
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum ListIssuesError {
     #[error(transparent)]

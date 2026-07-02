@@ -35,7 +35,7 @@ where
     fn list_by_status(
         &self,
         rid: identity::RepoId,
-        status: &'static str,
+        status: models::issue::Status,
     ) -> Result<impl Iterator<Item = (IssueId, Issue)>, models::issue::ListIssuesError> {
         self.issues.list_by_status(rid, status)
     }

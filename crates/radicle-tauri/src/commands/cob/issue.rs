@@ -17,8 +17,6 @@ use radicle_types::traits::issue::IssuesMut;
 
 use crate::AppState;
 
-use either::Either;
-
 #[tauri::command]
 pub fn create_issue(
     ctx: tauri::State<AppState>,
@@ -50,46 +48,10 @@ pub(crate) async fn list_issues(
     // None: return all issues, `skip` is ignored.
     take: Option<usize>,
 ) -> Result<types::cobs::PaginatedQuery<Vec<types::cobs::issue::Issue>>, Error> {
-    use types::cobs::query::IssueStatus;
-
     let profile = ctx.profile();
     let aliases = profile.aliases();
-    let cursor = skip.unwrap_or(0);
 
-    let issues = match status.unwrap_or_default() {
-        IssueStatus::All => Either::Left(issue_service.list(rid)?),
-        IssueStatus::Open => Either::Right(issue_service.list_by_status(rid, "open")?),
-        IssueStatus::Closed => Either::Right(issue_service.list_by_status(rid, "closed")?),
-    };
-
-    match take {
-        None => {
-            let content = issues
-                .map(|(id, issue)| types::cobs::issue::Issue::summary(&id, &issue, &aliases))
-                .collect::<Vec<_>>();
-
-            Ok::<_, Error>(types::cobs::PaginatedQuery {
-                cursor: 0,
-                more: false,
-                content,
-            })
-        }
-        Some(take) => {
-            let mut content = issues
-                .skip(cursor)
-                .take(take + 1)
-                .map(|(id, issue)| types::cobs::issue::Issue::summary(&id, &issue, &aliases))
-                .collect::<Vec<_>>();
-            let more = content.len() > take;
-            content.truncate(take);
-
-            Ok::<_, Error>(types::cobs::PaginatedQuery {
-                cursor,
-                more,
-                content,
-            })
-        }
-    }
+    Ok(issue_service.list_paginated(rid, status.unwrap_or_default(), skip, take, &aliases)?)
 }
 
 #[tauri::command]
