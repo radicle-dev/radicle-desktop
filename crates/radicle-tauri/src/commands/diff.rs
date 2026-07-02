@@ -1,3 +1,4 @@
+use radicle::git;
 use radicle::identity;
 use radicle_types as types;
 use radicle_types::error::Error;
@@ -13,6 +14,18 @@ pub async fn get_diff(
     options: radicle_types::cobs::diff::DiffOptions,
 ) -> Result<types::diff::Diff, Error> {
     ctx.get_diff(rid, options)
+}
+
+#[tauri::command]
+pub async fn get_diff_text(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    base: Option<git::Oid>,
+    head: git::Oid,
+    unified: Option<u32>,
+    path: Option<String>,
+) -> Result<String, Error> {
+    ctx.get_diff_text(rid, base, head, unified, path)
 }
 
 #[tauri::command]

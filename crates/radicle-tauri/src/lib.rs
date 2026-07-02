@@ -58,6 +58,7 @@ pub fn run() {
             cob::save_embed_by_path,
             cob::save_embed_to_disk,
             diff::get_diff,
+            diff::get_diff_text,
             diff::save_diff_to_disk,
             repo::get_commit_diff,
             inbox::clear_notifications,

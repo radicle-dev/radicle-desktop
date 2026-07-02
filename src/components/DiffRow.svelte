@@ -11,7 +11,8 @@
     rangeAnchorsFromCodeLocation,
   } from "@app/lib/diffComments";
   import type { DiffRow } from "@app/lib/diffRows";
-  import { fileDiffName, fileDiffToText } from "@app/lib/diffText";
+  import { fileDiffName, fileDiffPath } from "@app/lib/diffText";
+  import { getDiffText } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
 
   import CommentToggleInput from "@app/components/CommentToggleInput.svelte";
@@ -27,9 +28,18 @@
     onToggleFile?: (fileIndex: number) => void;
     // Present only on the patch-review path; enables inline comments/selection.
     comments?: CommentContext;
+    // Identifies the commit range this row's diff belongs to, so file-level
+    // actions can ask the backend for patch text.
+    diffContext: { rid: string; base?: string; head: string; unified: number };
   }
 
-  const { row, expanded = true, onToggleFile, comments }: Props = $props();
+  const {
+    row,
+    expanded = true,
+    onToggleFile,
+    comments,
+    diffContext,
+  }: Props = $props();
 
   type LineRow = Extract<DiffRow, { type: "line" }>;
 </script>
@@ -480,7 +490,14 @@
       {/if}
     {/if}
     <DiffActions
-      text={() => fileDiffToText(row.file)}
+      text={() =>
+        getDiffText(
+          diffContext.rid,
+          diffContext.base,
+          diffContext.head,
+          diffContext.unified,
+          fileDiffPath(row.file),
+        )}
       fileName={fileDiffName(row.file)}
       title="File diff actions" />
   </div>

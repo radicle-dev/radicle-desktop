@@ -3,7 +3,7 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import { diffToText } from "@app/lib/diffText";
+  import { getDiffText } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import {
     absoluteTimestamp,
@@ -168,7 +168,7 @@
       </div>
     </Topbar>
     <ScrollArea style="height: 100%; min-width: 0;">
-      <Changeset {diff} head={commit.id}>
+      <Changeset {diff} rid={repo.rid} head={commit.id}>
         {#snippet header()}
           <section class="meta">
             <div class="meta-header">
@@ -230,7 +230,7 @@
                 </div>
                 <DiffStatBadge stats={diff.stats} />
                 <DiffActions
-                  text={() => diffToText(diff)}
+                  text={() => getDiffText(repo.rid, undefined, commit.id, 3)}
                   fileName={`${formatOid(commit.id)}.diff`}
                   title="Diff actions" />
               </div>

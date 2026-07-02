@@ -96,6 +96,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/repo_tree", post(tree_handler))
         .route("/repo_blob", post(blob_handler))
         .route("/get_diff", post(diff_handler))
+        .route("/get_diff_text", post(diff_text_handler))
         .route("/save_diff_to_disk", post(save_diff_handler))
         .route("/get_commit_diff", post(commit_diff_handler))
         .route("/list_repo_commits", post(list_repo_commits_handler))
@@ -311,6 +312,30 @@ async fn diff_handler(
     let info = ctx.get_diff(rid, options)?;
 
     Ok::<_, Error>(Json(info))
+}
+
+#[derive(Serialize, Deserialize)]
+struct DiffTextBody {
+    pub rid: identity::RepoId,
+    pub base: Option<git::Oid>,
+    pub head: git::Oid,
+    pub unified: Option<u32>,
+    pub path: Option<String>,
+}
+
+async fn diff_text_handler(
+    State(ctx): State<Context>,
+    Json(DiffTextBody {
+        rid,
+        base,
+        head,
+        unified,
+        path,
+    }): Json<DiffTextBody>,
+) -> impl IntoResponse {
+    let text = ctx.get_diff_text(rid, base, head, unified, path)?;
+
+    Ok::<_, Error>(Json(text))
 }
 
 #[derive(Serialize, Deserialize)]

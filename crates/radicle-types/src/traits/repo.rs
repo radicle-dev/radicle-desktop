@@ -177,6 +177,45 @@ fn last_path_commit(
     Ok(commit.into())
 }
 
+/// The `git2::Diff` between `base` and `head` with the app's canonical
+/// options (patience, minimal, exact-match rename detection). With `base`
+/// unset the diff is taken against `head`'s first parent, or the empty tree
+/// for a root commit. `show_binary` additionally embeds full binary deltas
+/// so serialized patch text stays `git apply`-able.
+fn tree_diff<'a>(
+    repo: &'a git2::Repository,
+    base: Option<git::Oid>,
+    head: git::Oid,
+    unified: u32,
+    show_binary: bool,
+) -> Result<git2::Diff<'a>, Error> {
+    let head = repo.find_commit(head.into())?;
+    let left = match base {
+        Some(base) => Some(repo.find_commit(base.into())?.tree()?),
+        None => head
+            .parents()
+            .next()
+            .map(|parent| parent.tree())
+            .transpose()?,
+    };
+    let right = head.tree()?;
+
+    let mut opts = git::raw::DiffOptions::new();
+    opts.patience(true)
+        .minimal(true)
+        .context_lines(unified)
+        .show_binary(show_binary);
+
+    let mut find_opts = git::raw::DiffFindOptions::new();
+    find_opts.exact_match_only(true);
+    find_opts.all(true);
+
+    let mut diff = repo.diff_tree_to_tree(left.as_ref(), Some(&right), Some(&mut opts))?;
+    diff.find_similar(Some(&mut find_opts))?;
+
+    Ok(diff)
+}
+
 /// Collect canonical branches and tags as declared by the repository's
 /// identity document. The canonical-refs rules (the `xyz.radicle.crefs`
 /// payload, or a synthesized default covering the project's default branch)
@@ -660,21 +699,7 @@ pub trait Repo: Profile {
         let highlight = options.highlight.unwrap_or(true);
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?.backend;
-        let base = repo.find_commit(options.base.into())?;
-        let head = repo.find_commit(options.head.into())?;
-
-        let mut opts = git::raw::DiffOptions::new();
-        opts.patience(true).minimal(true).context_lines(unified);
-
-        let mut find_opts = git::raw::DiffFindOptions::new();
-        find_opts.exact_match_only(true);
-        find_opts.all(true);
-
-        let left = base.tree()?;
-        let right = head.tree()?;
-
-        let mut diff = repo.diff_tree_to_tree(Some(&left), Some(&right), Some(&mut opts))?;
-        diff.find_similar(Some(&mut find_opts))?;
+        let diff = tree_diff(&repo, Some(options.base), options.head, unified, false)?;
         let diff = surf::diff::Diff::try_from(diff)?;
 
         if highlight {
@@ -695,24 +720,7 @@ pub trait Repo: Profile {
         let highlight = highlight.unwrap_or(true);
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?.backend;
-        let head = repo.find_commit(sha.into())?;
-
-        let mut opts = git::raw::DiffOptions::new();
-        opts.patience(true).minimal(true).context_lines(unified);
-
-        let mut find_opts = git::raw::DiffFindOptions::new();
-        find_opts.exact_match_only(true);
-        find_opts.all(true);
-
-        let left = head
-            .parents()
-            .next()
-            .map(|parent| parent.tree())
-            .transpose()?;
-        let right = head.tree()?;
-
-        let mut diff = repo.diff_tree_to_tree(left.as_ref(), Some(&right), Some(&mut opts))?;
-        diff.find_similar(Some(&mut find_opts))?;
+        let diff = tree_diff(&repo, None, sha, unified, false)?;
         let diff = surf::diff::Diff::try_from(diff)?;
 
         if highlight {
@@ -720,6 +728,48 @@ pub trait Repo: Profile {
         }
 
         Ok::<_, Error>(diff.into())
+    }
+
+    /// Serialize a diff as `git diff`-format patch text via libgit2, built
+    /// with the same options as `get_diff`/`get_commit_diff` so the text
+    /// matches the rendered diff. When `base` is unset the diff is taken
+    /// against `head`'s first parent (or the empty tree for a root commit),
+    /// mirroring `get_commit_diff`. When `path` is set, output is limited to
+    /// that file's delta (matching either side of a rename).
+    fn get_diff_text(
+        &self,
+        rid: identity::RepoId,
+        base: Option<git::Oid>,
+        head: git::Oid,
+        unified: Option<u32>,
+        path: Option<String>,
+    ) -> Result<String, Error> {
+        let unified = unified.unwrap_or(5);
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?.backend;
+        let diff = tree_diff(&repo, base, head, unified, true)?;
+
+        let path = path.map(std::path::PathBuf::from);
+        let mut buf = Vec::new();
+        diff.print(git2::DiffFormat::Patch, |delta, _hunk, line| {
+            if let Some(path) = path.as_deref()
+                && delta.new_file().path() != Some(path)
+                && delta.old_file().path() != Some(path)
+            {
+                return true;
+            }
+            // Content lines carry their origin marker ('+', '-', ' ')
+            // separately from the text; header and EOF-marker lines already
+            // include their full text.
+            match line.origin() {
+                '+' | '-' | ' ' => buf.push(line.origin() as u8),
+                _ => {}
+            }
+            buf.extend_from_slice(line.content());
+            true
+        })?;
+
+        Ok(String::from_utf8_lossy(&buf).into_owned())
     }
 
     fn list_commits(

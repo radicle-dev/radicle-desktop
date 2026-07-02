@@ -212,7 +212,13 @@
     <!-- The patch layout already pads its content, so the diff cards don't add
          their own side inset and align with the rest of the patch. -->
     <div style:--diff-inset="0">
-      <Changeset expanded={filesExpanded} {head} {diff} {codeComments} />
+      <Changeset
+        expanded={filesExpanded}
+        {rid}
+        {base}
+        {head}
+        {diff}
+        {codeComments} />
     </div>
   {/await}
 </div>

@@ -27,13 +27,31 @@
     codeComments?: CodeComments;
     diff: Diff;
     expanded?: boolean;
+    rid: string;
+    // Base of the commit range `diff` was built from; unset means `head`'s
+    // first parent (a single-commit diff).
+    base?: string;
     head: string;
+    // Context lines `diff` was built with, so patch text fetched by diff
+    // actions matches the rendered diff.
+    unified?: number;
     // Rendered as the first virtualized row (e.g. commit/patch metadata), so
     // the virtualizer owns the whole scroll content and starts at offset 0.
     header?: Snippet;
   }
 
-  const { codeComments, diff, expanded = true, head, header }: Props = $props();
+  const {
+    codeComments,
+    diff,
+    expanded = true,
+    rid,
+    base,
+    head,
+    unified = 3,
+    header,
+  }: Props = $props();
+
+  const diffContext = $derived({ rid, base, head, unified });
 
   // Per-file collapse state. The `expanded` prop is the "expand all"/"collapse
   // all" command: when it flips, re-seed every file; individual chevrons then
@@ -215,7 +233,8 @@
         }}
         expanded={isFileExpanded(stickyFileIndex)}
         onToggleFile={toggleFile}
-        {comments} />
+        {comments}
+        {diffContext} />
     </div>
   {/if}
 </div>
@@ -228,7 +247,8 @@
         row={r}
         expanded={isFileExpanded(r.fileIndex)}
         onToggleFile={toggleFile}
-        {comments} />
+        {comments}
+        {diffContext} />
     {/if}
   {/snippet}
 </VirtualList>

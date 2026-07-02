@@ -9,8 +9,8 @@
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
 
   interface Props {
-    // Built lazily so large diff text isn't materialized until an action runs.
-    text: () => string;
+    // Fetched lazily so diff text isn't generated until an action runs.
+    text: () => Promise<string>;
     // Default filename offered when saving to disk.
     fileName: string;
     title?: string;
@@ -30,12 +30,12 @@
     {
       label: "Copy to clipboard",
       icon: "copy",
-      run: () => writeToClipboard(text()),
+      run: async () => writeToClipboard(await text()),
     },
     {
       label: "Save to disk",
       icon: "download",
-      run: () => saveToDisk(fileName, text()),
+      run: async () => saveToDisk(fileName, await text()),
     },
   ];
 
