@@ -1,3 +1,24 @@
+### v0.13.0
+
+**Features**
+
+- Added a diff actions menu with copy-to-clipboard and save-to-disk options
+
+**Performance**
+
+- Virtualized the file tree, commit diff, and patch-review diff views for smoother scrolling on large repositories and diffs
+- Sped up opening files and computing diff stats in large repositories
+- Sped up commit counting using git's bitmap index
+- Improved issues list loading performance
+
+**Bug fixes**
+
+- Fixed patches list pagination loading everything at once instead of paging
+- Fixed the update checker reading a stale cached version file
+- Fixed the Linux launcher showing the wrong app name
+- List scroll position is now restored when navigating back and forth through history
+
+
 ### v0.12.0
 
 **Features**
