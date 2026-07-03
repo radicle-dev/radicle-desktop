@@ -19,8 +19,6 @@ use radicle_types::traits::patch::PatchesMut;
 
 use crate::AppState;
 
-use either::Either;
-
 #[tauri::command]
 pub async fn list_patches(
     ctx: tauri::State<'_, AppState>,
@@ -32,43 +30,9 @@ pub async fn list_patches(
     take: Option<usize>,
 ) -> Result<types::cobs::PaginatedQuery<Vec<models::patch::Patch>>, Error> {
     let profile = ctx.profile();
-    let cursor = skip.unwrap_or(0);
     let aliases = profile.aliases();
-    let counts = sqlite_service.counts(rid)?;
-    let patches = match status.clone() {
-        None => Either::Left(sqlite_service.list(rid)?),
-        Some(s) => Either::Right(sqlite_service.list_by_status(rid, s.into())?),
-    };
 
-    match take {
-        None => {
-            let content = patches
-                .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
-                .collect::<Vec<_>>();
-
-            Ok::<_, Error>(cobs::PaginatedQuery {
-                cursor: 0,
-                more: false,
-                content,
-            })
-        }
-        Some(take) => {
-            let total = status.map_or_else(|| counts.total(), |status| counts[status.into()]);
-            let more = cursor + take < total;
-
-            let content = patches
-                .skip(cursor)
-                .take(take)
-                .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
-                .collect::<Vec<_>>();
-
-            Ok::<_, Error>(cobs::PaginatedQuery {
-                cursor,
-                more,
-                content,
-            })
-        }
-    }
+    Ok(sqlite_service.list_paginated(rid, status, skip, take, &aliases)?)
 }
 
 #[tauri::command]

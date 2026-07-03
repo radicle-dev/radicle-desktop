@@ -15,9 +15,9 @@ use radicle::node::NodeId;
 use radicle::{git, identity};
 use radicle_types as types;
 use radicle_types::cobs::CobOptions;
+use radicle_types::cobs::FromRadicleAction;
 use radicle_types::cobs::issue;
 use radicle_types::cobs::issue::NewIssue;
-use radicle_types::cobs::{self, FromRadicleAction};
 use radicle_types::config::Version;
 use radicle_types::domain::issue::service::Service as IssueService;
 use radicle_types::domain::issue::traits::IssueService as _;
@@ -627,7 +627,7 @@ async fn issue_threads_handler(
 struct PatchesBody {
     pub rid: identity::RepoId,
     pub skip: Option<usize>,
-    pub take: Option<isize>,
+    pub take: Option<usize>,
     pub status: Option<types::cobs::query::PatchStatus>,
 }
 
@@ -640,50 +640,12 @@ async fn patches_handler(
         status,
     }): Json<PatchesBody>,
 ) -> impl IntoResponse {
-    let profile = ctx.profile;
-    let cursor = skip.unwrap_or(0);
-    let aliases = profile.aliases();
+    let aliases = ctx.profile.aliases();
+    let page = ctx
+        .patches
+        .list_paginated(rid, status, skip, take, &aliases)?;
 
-    let patches = match status {
-        None => ctx.patches.list(rid)?.collect::<Vec<_>>(),
-        Some(s) => ctx
-            .patches
-            .list_by_status(rid, s.into())?
-            .collect::<Vec<_>>(),
-    };
-
-    if let Some(t) = take
-        && t < 0
-    {
-        // Return all patches
-        let content = patches
-            .into_iter()
-            .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
-            .collect::<Vec<_>>();
-
-        return Ok::<_, Error>(Json(cobs::PaginatedQuery {
-            cursor: 0,
-            more: false,
-            content,
-        }));
-    }
-
-    let take = take.unwrap_or(20) as usize;
-
-    let more = cursor + take < patches.len();
-
-    let patches = patches
-        .into_iter()
-        .skip(cursor)
-        .take(take)
-        .map(|(id, patch)| models::patch::Patch::new(id, &patch, &aliases))
-        .collect::<Vec<_>>();
-
-    Ok::<_, Error>(Json(cobs::PaginatedQuery {
-        cursor,
-        more,
-        content: patches,
-    }))
+    Ok::<_, Error>(Json(page))
 }
 
 #[derive(Serialize, Deserialize)]
