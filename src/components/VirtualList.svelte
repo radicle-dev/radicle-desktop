@@ -31,6 +31,9 @@
     // Restore a previously-captured scroll position (used on history nav).
     initialCache?: ListCacheSnapshot;
     initialScrollOffset?: number;
+    // Called once the restore has been applied, so the provider can stop
+    // handing out the (now stale) values to later remounts of this list.
+    onRestored?: () => void;
     // Reports the current scroll position so callers can persist it.
     onState?: (state: {
       scrollOffset: number;
@@ -59,6 +62,7 @@
     prefetchPx = 800,
     initialCache = undefined,
     initialScrollOffset = undefined,
+    onRestored = undefined,
     onState = undefined,
     onScrollState = undefined,
   }: Props = $props();
@@ -134,6 +138,7 @@
     if (initialScrollOffset) {
       handle.scrollTo(initialScrollOffset);
     }
+    onRestored?.();
   });
 
   function reportState() {

@@ -315,6 +315,7 @@
           getKey={result => result.obj.issue.id}
           initialCache={list.initialCache}
           initialScrollOffset={list.initialScrollOffset}
+          onRestored={list.consumeRestoredScroll}
           onState={list.persistScroll}>
           {#snippet row(result)}
             <div class="row">

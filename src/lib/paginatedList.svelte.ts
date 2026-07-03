@@ -181,6 +181,15 @@ export function createPaginatedList<T>(opts: PaginatedListOptions<T>) {
     });
   }
 
+  // The restore values are handed out once: VirtualList applies them on its
+  // first mount and reports back via consumeRestoredScroll. A later remount
+  // of the same list (e.g. the empty-fuzzy-filter branch swapping it out and
+  // back) must start fresh instead of re-applying a stale offset against
+  // items that may have changed since.
+  let restoredScroll = restored
+    ? { scrollOffset: restored.scrollOffset, cache: restored.cache }
+    : undefined;
+
   return {
     get items() {
       return items;
@@ -191,8 +200,15 @@ export function createPaginatedList<T>(opts: PaginatedListOptions<T>) {
     get loadingMore() {
       return loadingMore;
     },
-    initialScrollOffset: restored?.scrollOffset,
-    initialCache: restored?.cache,
+    get initialScrollOffset() {
+      return restoredScroll?.scrollOffset;
+    },
+    get initialCache() {
+      return restoredScroll?.cache;
+    },
+    consumeRestoredScroll() {
+      restoredScroll = undefined;
+    },
     loadMore,
     revalidate,
     persistScroll,
