@@ -247,24 +247,24 @@
           bind:value={searchInput} />
       {/snippet}
     </SourceHeader>
-    <ScrollArea style="flex: 1; min-height: 0;">
-      {#if filteredCommits.length === 0}
+    {#if filteredCommits.length === 0}
+      <div
+        class="global-flex"
+        style:flex="1"
+        style:justify-content="center"
+        style:align-items="center">
         <div
-          class="global-flex"
-          style:flex="1"
-          style:justify-content="center"
-          style:align-items="center">
-          <div
-            class="txt-missing txt-body-m-regular global-flex"
-            style:gap="0.25rem">
-            {#if list.items.length > 0}
-              No matching commits
-            {:else}
-              No commits
-            {/if}
-          </div>
+          class="txt-missing txt-body-m-regular global-flex"
+          style:gap="0.25rem">
+          {#if list.items.length > 0}
+            No matching commits
+          {:else}
+            No commits
+          {/if}
         </div>
-      {:else}
+      </div>
+    {:else}
+      <ScrollArea style="flex: 1; min-height: 0;">
         <VirtualList
           items={commitRows}
           hasMore={list.more}
@@ -312,7 +312,7 @@
             {/if}
           {/snippet}
         </VirtualList>
-      {/if}
-    </ScrollArea>
+      </ScrollArea>
+    {/if}
   </div>
 </Layout>
