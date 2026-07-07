@@ -137,7 +137,7 @@ if [[ "$BUILD_DEB" == true ]]; then
       set -euo pipefail
       npm ci
       npm exec -- tauri build --target x86_64-unknown-linux-gnu --bundles deb
-      cp target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb /output/
+      cp \"target/x86_64-unknown-linux-gnu/release/bundle/deb/radicle-desktop_${VERSION}_amd64.deb\" /output/
     "
 
   echo "    radicle-desktop_${VERSION}_amd64.deb"
