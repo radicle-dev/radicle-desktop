@@ -75,12 +75,14 @@
 }
 
 [data-codefont="system"] {
+  --font-family-code: monospace;
   --txt-code-small: 400 0.75rem/1rem monospace;
   --txt-code-regular: 400 0.875rem/1.25rem monospace;
   --txt-code-semibold: 600 0.875rem/1.25rem monospace;
 }
 
 [data-codefont="jetbrains"] {
+  --font-family-code: "JetBrains Mono";
   --txt-code-small: 400 0.75rem/1rem "JetBrains Mono";
   --txt-code-regular: 400 0.875rem/1.25rem "JetBrains Mono";
   --txt-code-semibold: 600 0.875rem/1.25rem "JetBrains Mono";
@@ -90,7 +92,8 @@ html {
   -ms-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
-  font-family: Booton, sans-serif;
+  --font-family-ui: Booton, sans-serif;
+  font-family: var(--font-family-ui);
   /* The root element font size has to be set in px,
    * otherwise Safari breaks. */
   font-size: var(--font-size);

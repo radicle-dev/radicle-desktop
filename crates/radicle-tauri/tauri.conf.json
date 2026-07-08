@@ -25,6 +25,7 @@
         "connect-src": "'self' ipc: http://ipc.localhost https://files.radicle.dev",
         "img-src": "'self' blob: data: https:",
         "script-src": "'wasm-unsafe-eval'",
+        "worker-src": "'self' blob:",
         "style-src": "'unsafe-inline' 'self'"
       },
       "pattern": {

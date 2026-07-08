@@ -94,6 +94,9 @@
   }
   .popover {
     box-shadow: var(--elevation-low);
+    /* Round the shadow to match the rounded content it wraps; otherwise the
+       square-cornered shadow pokes out past the content's rounded corners. */
+    border-radius: var(--border-radius-md);
     position: fixed;
     top: 0;
     left: 0;

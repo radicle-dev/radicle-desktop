@@ -16,7 +16,7 @@ import type { Tree } from "@bindings/source/Tree";
 
 import type { DraftReview } from "@app/lib/draftReviewStorage";
 import { draftReviewStorage } from "@app/lib/draftReviewStorage";
-import { cachedGetCommitDiff, invoke } from "@app/lib/invoke";
+import { cachedGetCommitDiff, getDiffText, invoke } from "@app/lib/invoke";
 import type { SidebarData } from "@app/lib/router/definitions";
 import { loadSidebarData } from "@app/lib/router/definitions";
 import { didFromPublicKey, unreachable } from "@app/lib/utils";
@@ -88,6 +88,10 @@ export interface LoadedRepoCommitRoute {
     repo: RepoInfo;
     commit: Commit;
     diff: Diff;
+    // Unified patch text that feeds the rendered diff. Fetched here (in parallel
+    // with the structured diff) rather than in the view so first paint doesn't
+    // wait on a second, serial round-trip after the route resolves.
+    patch: string;
     sidebarData: SidebarData;
   };
 }
@@ -345,7 +349,7 @@ export async function loadRepoCommits(
 export async function loadRepoCommit(
   route: RepoCommitRoute,
 ): Promise<LoadedRepoCommitRoute> {
-  const [sidebarData, repo, commit, diff] = await Promise.all([
+  const [sidebarData, repo, commit, diff, patch] = await Promise.all([
     loadSidebarData(),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
@@ -354,12 +358,18 @@ export async function loadRepoCommit(
       rid: route.rid,
       sha: route.commit,
     }),
-    cachedGetCommitDiff(route.rid, route.commit, 3, true),
+    // Highlighting is done client-side by @pierre/diffs from the patch text, so
+    // the structured diff is only needed for the stats badge — skip the
+    // server-side tree-sitter pass.
+    cachedGetCommitDiff(route.rid, route.commit, 3, false),
+    // Patch text that feeds the rendered diff; fetched in parallel so it isn't a
+    // serial round-trip after the route resolves.
+    getDiffText(route.rid, undefined, route.commit, 3),
   ]);
 
   return {
     resource: "repo.commit",
-    params: { sidebarData, repo, commit, diff },
+    params: { sidebarData, repo, commit, diff, patch },
   };
 }
 
