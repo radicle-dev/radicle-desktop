@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     qemu-user-static \
+    rustup \
     wget \
     file \
     jq \
@@ -64,10 +65,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Rust: native ARM64 toolchain so the Tauri CLI runs without emulation,
 # plus the x86_64 target for the actual compiled output.
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | \
-    sh -s -- -y --default-toolchain 1.90
-ENV PATH="/root/.cargo/bin:${PATH}"
-RUN rustup target add x86_64-unknown-linux-gnu
+ARG RUST_VERSION=1.90
+RUN rustup default "${RUST_VERSION}" \
+  && rustup target add x86_64-unknown-linux-gnu
 
 # Node.js 24 (ARM64, runs natively); matches the engines requirement in package.json
 RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - && \
