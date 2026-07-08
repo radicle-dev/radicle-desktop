@@ -16,7 +16,11 @@ import type { Tree } from "@bindings/source/Tree";
 
 import type { DraftReview } from "@app/lib/draftReviewStorage";
 import { draftReviewStorage } from "@app/lib/draftReviewStorage";
-import { cachedGetCommitDiff, invoke } from "@app/lib/invoke";
+import {
+  cachedGetCommitDiff,
+  cachedGetDiffText,
+  invoke,
+} from "@app/lib/invoke";
 import type { SidebarData } from "@app/lib/router/definitions";
 import { loadSidebarData } from "@app/lib/router/definitions";
 import { didFromPublicKey, unreachable } from "@app/lib/utils";
@@ -88,6 +92,7 @@ export interface LoadedRepoCommitRoute {
     repo: RepoInfo;
     commit: Commit;
     diff: Diff;
+    patch: string;
     sidebarData: SidebarData;
   };
 }
@@ -345,7 +350,7 @@ export async function loadRepoCommits(
 export async function loadRepoCommit(
   route: RepoCommitRoute,
 ): Promise<LoadedRepoCommitRoute> {
-  const [sidebarData, repo, commit, diff] = await Promise.all([
+  const [sidebarData, repo, commit, diff, patch] = await Promise.all([
     loadSidebarData(),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
@@ -354,12 +359,19 @@ export async function loadRepoCommit(
       rid: route.rid,
       sha: route.commit,
     }),
-    cachedGetCommitDiff(route.rid, route.commit, 3, true),
+    // @pierre/diffs highlights client-side from the patch text, so we skip the
+    // server-side tree-sitter pass (highlight=false). The structured diff still
+    // drives the file tree, per-file binary/empty notes and status labels, the
+    // stats badge, and the expansion blob lookup.
+    cachedGetCommitDiff(route.rid, route.commit, 3, false),
+    // Patch text that feeds the rendered diff; fetched in parallel so it isn't a
+    // serial round-trip, and cached since a commit's patch is immutable.
+    cachedGetDiffText(route.rid, undefined, route.commit, 3),
   ]);
 
   return {
     resource: "repo.commit",
-    params: { sidebarData, repo, commit, diff },
+    params: { sidebarData, repo, commit, diff, patch },
   };
 }
 

@@ -3,15 +3,15 @@
 
   import { saveToDisk, writeToClipboard } from "@app/lib/invoke";
 
+  import Button from "@app/components/Button.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
 
   interface Props {
-    // Fetched lazily so diff text isn't generated until an action runs.
+    // A thunk so the diff text isn't generated until an action runs.
     text: () => Promise<string>;
-    // Default filename offered when saving to disk.
     fileName: string;
     title?: string;
   }
@@ -49,42 +49,27 @@
   }
 </script>
 
-<style>
-  .trigger {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-  }
-  .trigger:hover,
-  .trigger.active {
-    color: var(--color-text-primary);
-  }
-  .menu {
-    padding: 0.25rem;
-    background-color: var(--color-surface-canvas);
-    border: 1px solid var(--color-border-subtle);
-    border-radius: var(--border-radius-sm);
-  }
-</style>
-
 <Popover placement="bottom-end" bind:expanded>
   {#snippet toggle(onclick)}
-    <button
-      class="trigger"
-      class:active={expanded}
+    <Button
+      variant="naked"
+      active={expanded}
       {title}
       {onclick}
-      aria-label={title}>
+      styleHeight="1.75rem"
+      styleWidth="1.75rem"
+      stylePadding="0"
+      styleJustifyContent="center">
       <Icon name="ellipsis-vertical" />
-    </button>
+    </Button>
   {/snippet}
 
   {#snippet popover()}
-    <div class="menu">
+    <div
+      style:border="1px solid var(--color-border-subtle)"
+      style:border-radius="var(--border-radius-md)"
+      style:background-color="var(--color-surface-canvas)"
+      style:padding="0.25rem">
       <DropdownList items={actions}>
         {#snippet item(action)}
           <DropdownListItem

@@ -94,6 +94,7 @@
   }
   .popover {
     box-shadow: var(--elevation-low);
+    border-radius: var(--border-radius-md);
     position: fixed;
     top: 0;
     left: 0;

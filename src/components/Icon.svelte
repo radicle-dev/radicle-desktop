@@ -41,6 +41,10 @@
     | "dashboard"
     | "device"
     | "diff"
+    | "diff-bars"
+    | "diff-classic"
+    | "diff-split"
+    | "diff-unified"
     | "disconnect"
     | "document"
     | "download"
@@ -339,6 +343,22 @@
   {:else if name === "diff"}
     <path
       d="M13.5 1.5V14.5H2.5V1.5H13.5ZM3.5 13.5H12.5V2.5H3.5V13.5ZM10 10.5V11.5H6V10.5H10ZM8.5 4V5.5H10V6.5H8.5V8H7.5V6.5H6V5.5H7.5V4H8.5Z" />
+  {:else if name === "diff-bars"}
+    <path d="M5 8.5V7.5L15 7.5V8.5L5 8.5Z" />
+    <path d="M5 11.5V10.5H13V11.5H5Z" />
+    <path d="M3 2.5L3 1.5L7 1.5L7 2.5L3 2.5Z" />
+    <path d="M1.5 7.5H3.5L3.5 11.5H1.5L1.5 7.5Z" />
+    <path d="M4 5.5V4.5L12 4.5V5.5L4 5.5Z" />
+    <path d="M7 13.5V14.5H3V13.5H7Z" />
+  {:else if name === "diff-classic"}
+    <path d="M8.5 5.5H12V6.5H8.5V10H7.5V6.5H4V5.5H7.5V2H8.5V5.5Z" />
+    <path d="M12 12.5V13.5H4V12.5H12Z" />
+  {:else if name === "diff-split"}
+    <path d="M1.5 2.5H14.5V13.5H1.5V2.5ZM2.5 3.5V12.5H13.5V3.5H2.5Z" />
+    <path d="M7.5 2.5H8.5V13.5H7.5V2.5Z" />
+  {:else if name === "diff-unified"}
+    <path d="M1.5 2.5H14.5V13.5H1.5V2.5ZM2.5 3.5V12.5H13.5V3.5H2.5Z" />
+    <path d="M1.5 7.5H14.5V8.5H1.5V7.5Z" />
   {:else if name === "disconnect"}
     <path
       d="M2.5 2.5L9.5 2.5L9.5 5.5L8.5 5.5L8.5 3.5L3.5 3.5L3.5 12.5L8.5 12.5L8.5 10.5L9.5 10.5L9.5 13.5L2.5 13.5L2.5 2.5Z" />

@@ -178,6 +178,16 @@ export async function getDiffText(
   });
 }
 
+// Commits and patch revisions are immutable, so the same (base, head, unified,
+// path) always yields the same patch text — safe to cache. Capped since a
+// commit's full patch can be sizeable.
+export const cachedGetDiffText = cached(
+  getDiffText,
+  (...[rid, base, head, unified, path]) =>
+    `get_diff_text:${rid}:${base}:${head}:${unified}:${path}`,
+  { max: 100 },
+);
+
 async function getCommitDiff(
   rid: string,
   sha: string,
