@@ -22,6 +22,12 @@ use crate::source;
 use crate::syntax::{ToPretty, highlighter};
 use crate::traits::Profile;
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+// See <https://learn.microsoft.com/windows/win32/procthread/process-creation-flags#flags>.
+#[cfg(windows)]
+const CREATE_NO_WINDOW: u32 = 0x08000000;
+
 pub const MAX_BLOB_SIZE: usize = 10_485_760;
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -95,7 +101,8 @@ fn resolve_revision(
 /// `None` if git is unavailable or its output can't be parsed, so the caller
 /// can fall back to the (slower) radicle-surf diff.
 fn numstat(repo_dir: &std::path::Path, base: git::Oid, head: git::Oid) -> Option<diff::Stats> {
-    let output = std::process::Command::new("git")
+    let mut command = std::process::Command::new("git");
+    command
         .current_dir(repo_dir)
         // Porcelain `git diff` honours user configuration (diff.renames,
         // diff.algorithm, external diff drivers, …), which would make the
@@ -107,7 +114,10 @@ fn numstat(repo_dir: &std::path::Path, base: git::Oid, head: git::Oid) -> Option
         .arg("diff")
         .arg("--numstat")
         .arg(base.to_string())
-        .arg(head.to_string())
+        .arg(head.to_string());
+    #[cfg(windows)]
+    command.creation_flags(CREATE_NO_WINDOW);
+    let output = command
         .output()
         .ok()
         .filter(|output| output.status.success())?;
@@ -147,7 +157,8 @@ fn last_path_commit(
     head: git::Oid,
     path: &std::path::Path,
 ) -> Result<repo::Commit, Error> {
-    let fast = std::process::Command::new("git")
+    let mut command = std::process::Command::new("git");
+    command
         .current_dir(repo_path)
         .arg("rev-list")
         .arg("-1")
@@ -156,7 +167,10 @@ fn last_path_commit(
         // `:(literal)` disables pathspec glob matching so file names
         // containing `[`, `*` or `?` (e.g. `src/pages/[id].ts`) are looked
         // up verbatim instead of being treated as wildcard patterns.
-        .arg(format!(":(literal){}", path.display()))
+        .arg(format!(":(literal){}", path.display()));
+    #[cfg(windows)]
+    command.creation_flags(CREATE_NO_WINDOW);
+    let fast = command
         .output()
         .ok()
         .filter(|output| output.status.success())
@@ -865,14 +879,16 @@ pub trait Repo: Profile {
         // tamper-evident; the bitmap/commit-graph are local derived indexes
         // over those same objects, not a new trust input. Falls back to the
         // walk below if the git binary is unavailable or errors.
-        let count = std::process::Command::new("git")
-            .current_dir(repo.backend.path())
-            .args([
-                "rev-list",
-                "--count",
-                "--use-bitmap-index",
-                &head.to_string(),
-            ])
+        let mut command = std::process::Command::new("git");
+        command.current_dir(repo.backend.path()).args([
+            "rev-list",
+            "--count",
+            "--use-bitmap-index",
+            &head.to_string(),
+        ]);
+        #[cfg(windows)]
+        command.creation_flags(CREATE_NO_WINDOW);
+        let count = command
             .output()
             .ok()
             .filter(|output| output.status.success())
