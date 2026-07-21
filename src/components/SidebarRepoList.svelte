@@ -600,7 +600,10 @@
           <span class="icon"><Icon name="filter" /></span>
         </button>
       </span>
-      All Repos{unpinnedReposCount > 1 ? ` (${unpinnedReposCount})` : ""}
+      All Repos
+      {#if unpinnedReposCount > 1}
+        <span class="global-counter-badge">{unpinnedReposCount}</span>
+      {/if}
       <span class="icon">
         <Icon name={reposExpanded.value ? "chevron-down" : "chevron-up"} />
       </span>
