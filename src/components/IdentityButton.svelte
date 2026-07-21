@@ -4,7 +4,12 @@
   import debounce from "lodash/debounce";
 
   import { writeToClipboard } from "@app/lib/invoke";
-  import { didFromPublicKey, explorerUrl, truncateDid } from "@app/lib/utils";
+  import {
+    didFromPublicKey,
+    explorerHost,
+    explorerUrl,
+    truncateDid,
+  } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
@@ -60,11 +65,14 @@
         style:text-decoration="none"
         style:width="100%"
         onclick={closeFocused}
-        href={explorerUrl(`users/${didFromPublicKey(config.publicKey)}`)}
+        href={explorerUrl(
+          `users/${didFromPublicKey(config.publicKey)}`,
+          config,
+        )}
         target="_blank">
         <DropdownListItem styleGap="0.5rem" styleWidth="100%" selected={false}>
           <Icon name="seed" />
-          view on iris.radicle.network
+          Open in {explorerHost(config)}
           <span style:margin-left="auto"><Icon name="open-external" /></span>
         </DropdownListItem>
       </a>

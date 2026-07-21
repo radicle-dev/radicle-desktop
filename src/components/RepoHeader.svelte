@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import debounce from "lodash/debounce";
@@ -15,9 +16,10 @@
 
   interface Props {
     repo: RepoInfo;
+    config: Config;
   }
 
-  const { repo }: Props = $props();
+  const { repo, config }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
@@ -27,7 +29,7 @@
   }, 1000);
 
   async function copyLink() {
-    await writeToClipboard(explorerUrl(repo.rid));
+    await writeToClipboard(explorerUrl(repo.rid, config));
     copyIcon = "checkmark";
     restoreCopyIcon();
   }
@@ -131,7 +133,7 @@
                 style:white-space="nowrap"
                 style:text-decoration="none"
                 style:width="100%"
-                href={explorerUrl(`users/${delegate.did}`)}
+                href={explorerUrl(`users/${delegate.did}`, config)}
                 target="_blank">
                 {#if delegate.alias}
                   <span class="txt-overflow alias">

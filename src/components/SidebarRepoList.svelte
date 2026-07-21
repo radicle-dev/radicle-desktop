@@ -37,6 +37,7 @@
 </script>
 
 <script lang="ts">
+  import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { RepoSummary } from "@bindings/repo/RepoSummary";
 
@@ -53,7 +54,11 @@
     writeToClipboard,
   } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
-  import { explorerUrl, formatRepositoryId } from "@app/lib/utils";
+  import {
+    explorerHost,
+    explorerUrl,
+    formatRepositoryId,
+  } from "@app/lib/utils";
 
   import AddRepoButton from "@app/components/AddRepoButton.svelte";
   import ContextMenu from "@app/components/ContextMenu.svelte";
@@ -69,12 +74,14 @@
     initialRepos: RepoSummary[];
     initialSeededNotReplicated: string[];
     activeRepo?: RepoInfo;
+    config: Config;
   }
 
   const {
     initialRepos,
     initialSeededNotReplicated,
     activeRepo = undefined,
+    config,
   }: Props = $props();
 
   let repos: RepoSummary[] = $derived(initialRepos);
@@ -716,7 +723,7 @@
 
 {#if contextMenu}
   {@const repo = contextMenu.repo}
-  {@const url = explorerUrl(repo.rid)}
+  {@const url = explorerUrl(repo.rid, config)}
   <ContextMenu
     x={contextMenu.x}
     y={contextMenu.y}
@@ -741,7 +748,7 @@
       role="menuitem"
       onclick={() => writeToClipboard(url)}>
       <Icon name="link" />
-      Copy link to radicle.network
+      Copy link to {explorerHost(config)}
     </button>
     <a
       class="menu-item"
@@ -750,7 +757,7 @@
       target="_blank"
       rel="noreferrer noopener">
       <Icon name="open-external" />
-      Open on radicle.network
+      Open in {explorerHost(config)}
     </a>
   </ContextMenu>
 {/if}

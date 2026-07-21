@@ -1,9 +1,10 @@
 use radicle::crypto::PublicKey;
+use radicle::explorer::Explorer;
 use serde::Serialize;
 use ts_rs::TS;
 
 use radicle::node::Alias;
-use radicle::node::config::DefaultSeedingPolicy;
+use radicle::node::config::{ConnectAddress, DefaultSeedingPolicy};
 
 /// Service configuration.
 #[derive(Debug, TS, Serialize, PartialEq)]
@@ -21,6 +22,13 @@ pub struct Config {
     #[serde(default)]
     #[ts(type = "{ default: 'allow', scope: 'followed' | 'all' } | { default: 'block' }")]
     pub seeding_policy: DefaultSeedingPolicy,
+    /// Public explorer URL template, e.g. `https://radicle.network/nodes/$host/$rid$path`.
+    #[ts(as = "String")]
+    pub public_explorer: Explorer,
+    /// Preferred seed addresses, in priority order. Used to pick a host for
+    /// explorer links.
+    #[ts(as = "Vec<String>")]
+    pub preferred_seeds: Vec<ConnectAddress>,
 }
 
 pub struct Version {

@@ -9,6 +9,7 @@
   import { invoke } from "@app/lib/invoke";
   import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import * as router from "@app/lib/router";
+  import type { SidebarData } from "@app/lib/router/definitions";
   import { modifierKey } from "@app/lib/utils";
 
   import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
@@ -27,9 +28,11 @@
     oid: string;
     commit: Commit;
     commits: PaginatedQuery<Commit[]>;
+    sidebarData: SidebarData;
   }
 
-  const { repo, peer, revision, oid, commit, commits }: Props = $props();
+  const { repo, peer, revision, oid, commit, commits, sidebarData }: Props =
+    $props();
 
   const baseRoute = $derived({
     resource: "repo.commits" as const,
@@ -209,7 +212,7 @@
 
 <Layout selfScroll>
   <div class="page">
-    <RepoHeader {repo} />
+    <RepoHeader {repo} config={sidebarData.config} />
     <SourceHeader
       {repo}
       {peer}

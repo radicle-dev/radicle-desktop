@@ -2,6 +2,7 @@ import type { Author } from "@bindings/cob/Author";
 import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { Review } from "@bindings/cob/patch/Review";
+import type { Config } from "@bindings/config/Config";
 import type { ComponentProps } from "svelte";
 
 import bs58 from "bs58";
@@ -288,10 +289,37 @@ export function safeHttpUrl(url: string): string | undefined {
   return undefined;
 }
 
-export function explorerUrl(
-  path: string,
-  seed = "iris.radicle.network",
-  explorer = "https://radicle.network",
-) {
-  return `${explorer}/nodes/${seed}/${path}`;
+// Seed to fall back to when `config.preferredSeeds` is empty.
+const DEFAULT_SEED = "rosa.radicle.network";
+
+// The host of the first entry in `config.preferredSeeds`, if any, parsed from
+// its "<NID>@<host>:<port>" address form. Used to pick a seed that's actually
+// known to replicate the user's repos, instead of a hardcoded default.
+function preferredSeedHost(config: Config): string | undefined {
+  const address = config.preferredSeeds[0];
+  if (!address) {
+    return undefined;
+  }
+  return address.split("@")[1]?.split(":")[0] ?? address;
+}
+
+// The hostname of the configured public explorer, e.g. "radicle.network".
+// Used to label links with the site they actually open.
+export function explorerHost(config: Config): string {
+  try {
+    return new URL(config.publicExplorer).host;
+  } catch {
+    return config.publicExplorer;
+  }
+}
+
+// Build an explorer URL, honouring the user's configured `publicExplorer`
+// template and preferred seed. The template mirrors radicle's `Explorer`
+// type: "<base>/nodes/$host/$rid$path". `path` is everything after the seed
+// host, e.g. `<rid>/issues/<id>` or `users/<did>`.
+export function explorerUrl(path: string, config: Config): string {
+  const seed = preferredSeedHost(config) ?? DEFAULT_SEED;
+  return config.publicExplorer
+    .replace("$host", seed)
+    .replace("$rid$path", path);
 }

@@ -19,6 +19,8 @@ pub trait Profile {
             public_key: p.public_key,
             alias: p.config.node.alias.clone(),
             seeding_policy: p.config.node.seeding_policy,
+            public_explorer: p.config.public_explorer.clone(),
+            preferred_seeds: p.config.preferred_seeds.clone(),
         }
     }
 
@@ -55,6 +57,8 @@ mod test {
                 public_key: *signer.public_key(),
                 alias: Alias::from_str("seed").unwrap(),
                 seeding_policy: config::DefaultSeedingPolicy::Block,
+                public_explorer: state.profile.config.public_explorer.clone(),
+                preferred_seeds: state.profile.config.preferred_seeds.clone(),
             }
         )
     }

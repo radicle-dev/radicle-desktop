@@ -199,6 +199,7 @@
     <SidebarRepoList
       initialRepos={sidebarData.repos}
       initialSeededNotReplicated={sidebarData.seededNotReplicated}
+      config={sidebarData.config}
       {activeRepo} />
   </div>
 

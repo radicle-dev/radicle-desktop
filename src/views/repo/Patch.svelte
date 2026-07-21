@@ -18,6 +18,7 @@
   import * as router from "@app/lib/router";
   import {
     didFromPublicKey,
+    explorerHost,
     explorerUrl,
     patchStatusBackgroundColor,
     patchStatusColor,
@@ -361,8 +362,8 @@
           <Icon name="chevron-right" />
           <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
           <ExternalLink
-            href={explorerUrl(`${repo.rid}/patches/${patch.id}`)}
-            title="Open in radicle.network" />
+            href={explorerUrl(`${repo.rid}/patches/${patch.id}`, config)}
+            title={`Open in ${explorerHost(config)}`} />
         </div>
         <div style:margin-left="auto">
           <NewPatchButton rid={repo.rid} ghost />

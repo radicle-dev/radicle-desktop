@@ -13,8 +13,10 @@
   import { diffOptions } from "@app/lib/diffOptions.svelte";
   import { getDiffText, invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
+  import type { SidebarData } from "@app/lib/router/definitions";
   import {
     absoluteTimestamp,
+    explorerHost,
     explorerUrl,
     formatOid,
     formatTimestamp,
@@ -43,9 +45,10 @@
     // Unified patch text feeding the rendered diff (Pierre renders from this,
     // not from the structured `diff`).
     patch: string;
+    sidebarData: SidebarData;
   }
 
-  const { repo, commit, diff, patch }: Props = $props();
+  const { repo, commit, diff, patch, sidebarData }: Props = $props();
 
   let diffView = $state<{
     scrollToFile: (path: string) => void;
@@ -373,8 +376,11 @@
         <Icon name="chevron-right" />
         <Id id={commit.id} clipboard={commit.id} placement="bottom-start" />
         <ExternalLink
-          href={explorerUrl(`${repo.rid}/commits/${commit.id}`)}
-          title="Open in app.radicle.xyz" />
+          href={explorerUrl(
+            `${repo.rid}/commits/${commit.id}`,
+            sidebarData.config,
+          )}
+          title={`Open in ${explorerHost(sidebarData.config)}`} />
       </div>
       <div class="topbar-right">
         <Button

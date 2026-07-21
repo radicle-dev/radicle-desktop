@@ -18,4 +18,13 @@ export type Config = {
   seedingPolicy: { default: "allow"; scope: "followed" | "all" } | {
     default: "block";
   };
+  /**
+   * Public explorer URL template, e.g. `https://radicle.network/nodes/$host/$rid$path`.
+   */
+  publicExplorer: string;
+  /**
+   * Preferred seed addresses, in priority order. Used to pick a host for
+   * explorer links.
+   */
+  preferredSeeds: Array<string>;
 };

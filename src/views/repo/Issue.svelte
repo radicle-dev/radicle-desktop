@@ -16,6 +16,7 @@
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
   import {
+    explorerHost,
     explorerUrl,
     issueStatusBackgroundColor,
     issueStatusColor,
@@ -324,8 +325,8 @@
         <Icon name="chevron-right" />
         <Id id={issue.id} clipboard={issue.id} placement="bottom-start" />
         <ExternalLink
-          href={explorerUrl(`${repo.rid}/issues/${issue.id}`)}
-          title="Open in radicle.network" />
+          href={explorerUrl(`${repo.rid}/issues/${issue.id}`, config)}
+          title={`Open in ${explorerHost(config)}`} />
       </div>
       <div style:margin-left="auto">
         <Button

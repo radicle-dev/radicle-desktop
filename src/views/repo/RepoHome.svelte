@@ -10,6 +10,7 @@
   import { useOverlayScrollbars } from "overlayscrollbars-svelte";
 
   import { invoke, InvokeError } from "@app/lib/invoke";
+  import type { SidebarData } from "@app/lib/router/definitions";
   import { highlight } from "@app/lib/syntax";
 
   import FileBlock from "@app/components/FileBlock.svelte";
@@ -32,10 +33,12 @@
     oid: string;
     commit: Commit;
     readme: Readme | null;
+    sidebarData: SidebarData;
   }
 
   /* eslint-disable prefer-const */
-  let { tree, readme, repo, peer, revision, oid, commit }: Props = $props();
+  let { tree, readme, repo, peer, revision, oid, commit, sidebarData }: Props =
+    $props();
   /* eslint-enable prefer-const */
 
   const baseRoute = $derived({
@@ -141,7 +144,7 @@
     style:display="flex"
     style:flex-direction="column"
     style:height="100%">
-    <RepoHeader {repo} />
+    <RepoHeader {repo} config={sidebarData.config} />
     <SourceHeader
       {repo}
       {peer}
