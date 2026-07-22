@@ -8,10 +8,11 @@
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import debounce from "lodash/debounce";
   import partial from "lodash/partial";
 
   import { nodeRunning } from "@app/lib/events";
-  import { invoke } from "@app/lib/invoke";
+  import { invoke, writeToClipboard } from "@app/lib/invoke";
   import { show } from "@app/lib/modal";
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
@@ -57,6 +58,17 @@
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
   let hideTimeline = $state(true);
+  let copyIcon: "link" | "checkmark" = $state("link");
+  const restoreCopyIcon = debounce(() => {
+    copyIcon = "link";
+  }, 1000);
+  async function copyIssueLink() {
+    await writeToClipboard(
+      explorerUrl(`${repo.rid}/issues/${issue.id}`, config),
+    );
+    copyIcon = "checkmark";
+    restoreCopyIcon();
+  }
 
   $effect(() => {
     // The component doesn't get destroyed when we switch between different
@@ -328,7 +340,11 @@
           href={explorerUrl(`${repo.rid}/issues/${issue.id}`, config)}
           title={`Open in ${explorerHost(config)}`} />
       </div>
-      <div style:margin-left="auto">
+      <div style:margin-left="auto" style:display="flex" style:gap="0.5rem">
+        <Button variant="naked" title="Copy issue link" onclick={copyIssueLink}>
+          <Icon name={copyIcon} />
+          <span class="global-hide-on-medium-desktop-down">Copy link</span>
+        </Button>
         <Button
           styleHeight="2rem"
           variant="ghost"
