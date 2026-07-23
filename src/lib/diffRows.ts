@@ -27,6 +27,7 @@ export type DiffRow =
   | {
       type: "file-note";
       fileIndex: number;
+      file: FileDiff;
       note: "binary" | "empty";
     }
   | {
@@ -58,6 +59,7 @@ export function flattenDiff(
       rows.push({
         type: "file-note",
         fileIndex,
+        file,
         note: file.diff.type === "binary" ? "binary" : "empty",
       });
       return;

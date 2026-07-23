@@ -4,6 +4,7 @@
   import escape from "lodash/escape";
   import partial from "lodash/partial";
 
+  import { binaryImageUrl } from "@app/lib/binaryImage";
   import type { CommentContext, SelectionRange } from "@app/lib/diffComments";
   import {
     findLineThread,
@@ -144,6 +145,12 @@
     gap: 0.5rem;
     padding: 1rem 0;
     font: var(--txt-body-m-regular);
+  }
+  .binary-image {
+    max-width: 100%;
+    max-height: 32rem;
+    object-fit: contain;
+    display: block;
   }
   .addition {
     background-color: var(--color-feedback-success-bg);
@@ -511,8 +518,20 @@
 {:else if row.type === "file-note"}
   <div class="line last file-note">
     {#if row.note === "binary"}
-      <Icon name="binary" />
-      Binary file
+      {#await binaryImageUrl(diffContext.rid, row.file)}
+        <Icon name="binary" />
+        Binary file
+      {:then url}
+        {#if url}
+          <img class="binary-image" src={url} alt={fileDiffPath(row.file)} />
+        {:else}
+          <Icon name="binary" />
+          Binary file
+        {/if}
+      {:catch}
+        <Icon name="binary" />
+        Binary file
+      {/await}
     {:else}
       Empty file
     {/if}
