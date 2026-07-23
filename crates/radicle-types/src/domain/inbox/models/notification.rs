@@ -320,7 +320,7 @@ impl From<(git::fmt::RefString, Option<git::Oid>, Option<git::Oid>)> for RefUpda
             },
             _ => RefUpdate::Skipped {
                 name,
-                oid: new.unwrap_or(radicle::git::raw::Oid::zero().into()),
+                oid: new.unwrap_or(radicle::git::raw::Oid::ZERO_SHA1.into()),
             },
         }
     }

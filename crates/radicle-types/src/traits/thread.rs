@@ -2,6 +2,7 @@ use std::fs;
 
 use radicle::Node;
 use radicle::cob;
+use radicle::crypto::Signer;
 use radicle::git;
 use radicle::identity;
 use radicle::node::Handle;

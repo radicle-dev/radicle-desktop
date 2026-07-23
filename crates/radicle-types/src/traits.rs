@@ -37,8 +37,7 @@ pub trait Profile {
 mod test {
     use std::str::FromStr;
 
-    use radicle::crypto::Signer;
-    use radicle::crypto::test::signer::MockSigner;
+    use radicle::crypto::{Seed, Signer, SigningKey};
     use radicle::node::{Alias, config};
 
     use crate::config::Config;
@@ -48,7 +47,7 @@ mod test {
     fn config() {
         let tmp = tempfile::tempdir().unwrap();
         let profile = test::profile(tmp.path(), [0xff; 32]);
-        let signer = MockSigner::from_seed([0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
         let state = AppState { profile };
 
         assert_eq!(
