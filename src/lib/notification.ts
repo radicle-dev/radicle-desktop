@@ -5,8 +5,7 @@ import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 import { emojiToTwemoji, formatOid, pluralize } from "@app/lib/utils";
 
 export type Action =
-  | ActionWithAuthor<IssueAction>
-  | ActionWithAuthor<PatchAction>;
+  ActionWithAuthor<IssueAction> | ActionWithAuthor<PatchAction>;
 
 // N.b. I have taken the `%` char as indicator for a `txt-id` class
 export function createSummary(

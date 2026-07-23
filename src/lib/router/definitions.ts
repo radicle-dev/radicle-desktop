@@ -49,10 +49,7 @@ export interface LoadedGuideRoute {
 
 export type Route = BootingRoute | RepoRoute | InboxRoute | GuideRoute;
 export type LoadedRoute =
-  | BootingRoute
-  | LoadedRepoRoute
-  | LoadedInboxRoute
-  | LoadedGuideRoute;
+  BootingRoute | LoadedRepoRoute | LoadedInboxRoute | LoadedGuideRoute;
 
 export function isLoadedRepoRoute(
   route: LoadedRoute,

@@ -551,8 +551,7 @@ export function repoUrlToRoute(
     } else if (resource === "patches") {
       const id = segments.shift();
       const status = (searchParams.get("status") ?? undefined) as
-        | PatchStatus
-        | undefined;
+        PatchStatus | undefined;
       const reviewId = searchParams.get("review") ?? undefined;
       if (id) {
         return {

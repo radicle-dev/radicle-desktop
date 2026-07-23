@@ -3,12 +3,7 @@ import { cached } from "@app/lib/cached";
 
 type AtomType = "A" | "B" | "C" | "D";
 type ShapeModel =
-  | "rose"
-  | "starburst"
-  | "ringed"
-  | "tip"
-  | "notched"
-  | "hollow";
+  "rose" | "starburst" | "ringed" | "tip" | "notched" | "hollow";
 type AtomMode = "bands-ABC" | "angle-stripes" | "parity-ACB" | "balanced-rand";
 
 const PALETTE = [

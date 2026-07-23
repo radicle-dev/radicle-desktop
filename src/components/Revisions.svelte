@@ -62,7 +62,7 @@
     </div>
     {#each orderBy( revisions.filter(r => {
         return r.author.did === author.did;
-      }), "timestamp", ["asc"], ) as revision}
+      }), "timestamp", ["asc"] ) as revision}
       <div style:margin="0.5rem 0">
         <DropdownListItem
           selected={revision.id === selectedRevision.id}

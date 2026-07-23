@@ -363,7 +363,7 @@
           thread.root.location?.path,
           rangeAnchorsFromCodeLocation(thread.root.location),
         )}
-        {#if cc.changeCommentStatus && roles.isDelegateOrAuthor( cc.config.publicKey, cc.repoDelegates.map(delegate => delegate.did), thread.root.author.did, )}
+        {#if cc.changeCommentStatus && roles.isDelegateOrAuthor( cc.config.publicKey, cc.repoDelegates.map(delegate => delegate.did), thread.root.author.did )}
           <div style:margin-left="auto">
             {#if thread.root.resolved}
               <div title="Unresolve comment thread">

@@ -347,7 +347,7 @@
           {review.author.alias ??
             truncateId(publicKeyFromDid(review.author.did))}'s verdict
         </span>
-        {#if !!roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), review.author.did, )}
+        {#if !!roles.isDelegateOrAuthor( config.publicKey, repo.delegates.map(delegate => delegate.did), review.author.did )}
           <VerdictButton
             selectedVerdict={verdict}
             draft={"draft" in review}

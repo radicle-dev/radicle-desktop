@@ -15,8 +15,7 @@ export type ParseRequest = {
 };
 
 export type ParseResponse =
-  | { id: number; files: FileDiffMetadata[] }
-  | { id: number; error: string };
+  { id: number; files: FileDiffMetadata[] } | { id: number; error: string };
 
 // `self` is typed against the DOM lib here, so narrow to the worker surface we
 // actually use to avoid the `Window.postMessage` signature.

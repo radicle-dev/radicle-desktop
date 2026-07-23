@@ -191,7 +191,7 @@
       placeholder="Description">
       {#snippet belowTextarea()}
         {#await configPromise then config}
-          {#if !!roles.isDelegate( config.publicKey, repo.delegates.map(d => d.did), )}
+          {#if !!roles.isDelegate( config.publicKey, repo.delegates.map(d => d.did) )}
             <div
               style:display="flex"
               style:align-items="center"
