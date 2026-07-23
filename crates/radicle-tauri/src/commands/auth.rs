@@ -1,9 +1,11 @@
 use std::str::FromStr;
 
+use radicle::crypto::Seed;
 use radicle::crypto::ssh::{self, Passphrase};
 use radicle::node::Alias;
 use radicle::profile::env;
 use radicle_types::error::Error;
+use ssh_key::rand_core::{OsRng, RngCore};
 
 use crate::AppState;
 
@@ -47,7 +49,12 @@ pub(crate) fn init(alias: String, passphrase: Passphrase) -> Result<(), Error> {
             radicle::crypto::ssh::keystore::Error::PassphraseMissing,
         ));
     }
-    let profile = radicle::Profile::init(home, alias, Some(passphrase.clone()), env::seed())?;
+    let seed = env::seed().unwrap_or_else(|| {
+        let mut bytes = [0u8; 32];
+        OsRng.fill_bytes(&mut bytes);
+        Seed::new(bytes)
+    });
+    let profile = radicle::Profile::init(home, alias, Some(passphrase.clone()), seed)?;
     match ssh::agent::Agent::connect() {
         Ok(mut agent) => register(&mut agent, &profile, passphrase.clone())?,
         Err(e) if e.is_not_running() => return Err(Error::AgentNotRunning),

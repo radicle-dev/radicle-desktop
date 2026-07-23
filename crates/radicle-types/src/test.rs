@@ -3,7 +3,7 @@ use std::path::Path;
 use radicle::Storage;
 use radicle::cob::migrate;
 use radicle::crypto::ssh::Keystore;
-use radicle::crypto::{KeyPair, Seed};
+use radicle::crypto::{Seed, Signer, SigningKey};
 use radicle::node::{Features, Timestamp, UserAgent};
 use radicle::profile::Home;
 use radicle::{node, profile};
@@ -17,23 +17,23 @@ pub fn profile(home: &Path, seed: [u8; 32]) -> radicle::Profile {
     let config = profile::Config::new(alias.clone());
     let keystore = Keystore::new(&home.keys());
 
-    let keypair = KeyPair::from_seed(Seed::from(seed));
+    let signer = SigningKey::from_seed(Seed::new(seed));
     let storage = Storage::open(
         home.storage(),
         radicle::git::UserInfo {
             alias: alias.clone(),
-            key: keypair.pk.into(),
+            key: *signer.public_key(),
         },
     )
     .unwrap();
 
     let mut db = home.policies_mut().unwrap();
-    db.follow(&keypair.pk.into(), Some(&alias)).unwrap();
+    db.follow(signer.public_key(), Some(&alias)).unwrap();
 
     let node_db = home.database_mut(config.node.database).unwrap();
     node_db
         .init(
-            &keypair.pk.into(),
+            signer.public_key(),
             Features::SEED,
             &alias,
             &UserAgent::default(),
@@ -47,13 +47,13 @@ pub fn profile(home: &Path, seed: [u8; 32]) -> radicle::Profile {
     cobs.migrate(migrate::ignore).unwrap();
 
     radicle::storage::git::transport::local::register(storage.clone());
-    keystore.store(keypair.clone(), "radicle", None).unwrap();
+    keystore.store(&signer, "radicle", None).unwrap();
 
     radicle::Profile {
         home,
         storage,
         keystore,
-        public_key: keypair.pk.into(),
+        public_key: *signer.public_key(),
         config,
     }
 }

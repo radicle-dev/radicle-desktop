@@ -249,7 +249,7 @@ fn canonical_refs(repo: &storage::git::Repository) -> Result<repo::Canonical, Er
     for (pattern, _) in rules.iter() {
         for r in repo.backend.references_glob(pattern.as_str())? {
             let r = r?;
-            let Some(name) = r.name() else { continue };
+            let Ok(name) = r.name() else { continue };
             let Some(oid) = r.target() else { continue };
 
             if let Some(short) = name.strip_prefix("refs/tags/") {
@@ -295,7 +295,7 @@ fn resolve_tag(repo: &storage::git::Repository, oid: git::raw::Oid) -> Option<re
             oid: commit.id().into(),
             timestamp,
             tagger,
-            message: tag.message().map(str::to_owned),
+            message: tag.message().ok().flatten().map(str::to_owned),
         });
     }
     let commit = repo.backend.find_commit(oid).ok()?;

@@ -318,7 +318,7 @@ where
             })?;
         action(&blob, op, author).map_err(error::TreeAction::from)
     };
-    let name = entry.name()?;
+    let name = entry.name().ok()?;
     // An entry is only considered an action if it:
     //   a) Is a blob
     //   b) Its name is numeric, e.g. 1, 2, 3, etc.

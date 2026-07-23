@@ -10,14 +10,14 @@ doctest = false
 anyhow = { version = "1.0.90" }
 axum = { version = "0.8.1", default-features = false, features = ["json"] }
 base64 = { version = "0.22.1" }
-git2 = { version = "0.20.4", default-features = false, features = ["vendored-libgit2"] }
+git2 = { version = "0.21", default-features = false, features = ["vendored-libgit2"] }
 log = { version = "0.4.22" }
 infer = { version = "0.19.0" }
 mime-infer = { version = "3.0.0" }
-radicle = { version = "0.24", features = ["tor", "i2p"] }
+radicle = { version = "0.25", features = ["tor", "i2p"] }
 radicle-job = { version = "0.6" }
 radicle-localtime = { version = "0.1.0", features = ["serde"] }
-radicle-surf = { version = "0.27.1", features = ["serde"] }
+radicle-surf = { version = "0.28.0", features = ["serde"] }
 serde = { version = "1.0.0", features = ["derive"] }
 serde_json = { version = "1.0.0" }
 sqlite = { version = "0.37.0", features = ["bundled"] }
@@ -53,4 +53,4 @@ ts-rs = { version = "12.0.1", features = [
 url = { version = "2.5.4", features = ["serde"] }
 
 [dev-dependencies]
-radicle = { version = "0.24", features = ["test", "tor", "i2p"] }
+radicle = { version = "0.25", features = ["test", "tor", "i2p"] }
