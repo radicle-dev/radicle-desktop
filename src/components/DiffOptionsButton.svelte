@@ -99,8 +99,8 @@
       active={expanded}
       {onclick}
       title="Diff settings"
-      styleHeight="1.75rem"
-      styleWidth="1.75rem"
+      styleHeight="2rem"
+      styleWidth="2rem"
       stylePadding="0"
       styleJustifyContent="center">
       <Icon name="settings" />

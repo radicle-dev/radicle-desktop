@@ -18,8 +18,6 @@
   import * as router from "@app/lib/router";
   import {
     didFromPublicKey,
-    explorerHost,
-    explorerUrl,
     patchStatusBackgroundColor,
     patchStatusColor,
     patchStatusLabel,
@@ -31,7 +29,6 @@
   import CheckoutPatchButton from "@app/components/CheckoutPatchButton.svelte";
   import CommentComponent from "@app/components/Comment.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
-  import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import NewPatchButton from "@app/components/NewPatchButton.svelte";
@@ -41,6 +38,7 @@
   import RevisionComponent from "@app/components/Revision.svelte";
   import Revisions from "@app/components/Revisions.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
+  import ShareButton from "@app/components/ShareButton.svelte";
   import Topbar from "@app/components/Topbar.svelte";
 
   import Layout from "./Layout.svelte";
@@ -361,11 +359,13 @@
           </button>
           <Icon name="chevron-right" />
           <Id id={patch.id} clipboard={patch.id} placement="bottom-start" />
-          <ExternalLink
-            href={explorerUrl(`${repo.rid}/patches/${patch.id}`, config)}
-            title={`Open in ${explorerHost(config)}`} />
         </div>
-        <div style:margin-left="auto">
+        <div style:margin-left="auto" style:display="flex" style:gap="0.5rem">
+          <ShareButton
+            explorerPath={`${repo.rid}/patches/${patch.id}`}
+            id={patch.id}
+            idLabel="patch"
+            {config} />
           <NewPatchButton rid={repo.rid} ghost />
         </div>
       </Topbar>

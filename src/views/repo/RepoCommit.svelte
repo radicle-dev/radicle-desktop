@@ -16,8 +16,6 @@
   import type { SidebarData } from "@app/lib/router/definitions";
   import {
     absoluteTimestamp,
-    explorerHost,
-    explorerUrl,
     formatOid,
     formatTimestamp,
     gravatarURL,
@@ -28,12 +26,12 @@
   import DiffActions from "@app/components/DiffActions.svelte";
   import DiffOptionsButton from "@app/components/DiffOptionsButton.svelte";
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
-  import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import JobCob from "@app/components/JobCob.svelte";
   import PierreDiff from "@app/components/PierreDiff.svelte";
   import PierreTree from "@app/components/PierreTree.svelte";
+  import ShareButton from "@app/components/ShareButton.svelte";
   import Topbar from "@app/components/Topbar.svelte";
 
   import Layout from "./Layout.svelte";
@@ -375,14 +373,15 @@
         </button>
         <Icon name="chevron-right" />
         <Id id={commit.id} clipboard={commit.id} placement="bottom-start" />
-        <ExternalLink
-          href={explorerUrl(
-            `${repo.rid}/commits/${commit.id}`,
-            sidebarData.config,
-          )}
-          title={`Open in ${explorerHost(sidebarData.config)}`} />
       </div>
       <div class="topbar-right">
+        <span style:display="inline-flex" style:margin-right="0.5rem">
+          <ShareButton
+            explorerPath={`${repo.rid}/commits/${commit.id}`}
+            id={commit.id}
+            idLabel="commit"
+            config={sidebarData.config} />
+        </span>
         <Button
           variant="naked"
           onclick={() => {
