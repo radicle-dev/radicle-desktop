@@ -16,8 +16,6 @@
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
   import {
-    explorerHost,
-    explorerUrl,
     issueStatusBackgroundColor,
     issueStatusColor,
     issueStatusLabel,
@@ -30,13 +28,13 @@
   import CommentComponent from "@app/components/Comment.svelte";
   import Discussion from "@app/components/Discussion.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
-  import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
   import IssueTimeline from "@app/components/IssueTimeline.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
+  import ShareButton from "@app/components/ShareButton.svelte";
   import Topbar from "@app/components/Topbar.svelte";
   import CreateIssueModal from "@app/modals/CreateIssue.svelte";
 
@@ -324,11 +322,13 @@
         </button>
         <Icon name="chevron-right" />
         <Id id={issue.id} clipboard={issue.id} placement="bottom-start" />
-        <ExternalLink
-          href={explorerUrl(`${repo.rid}/issues/${issue.id}`, config)}
-          title={`Open in ${explorerHost(config)}`} />
       </div>
-      <div style:margin-left="auto">
+      <div style:margin-left="auto" style:display="flex" style:gap="0.5rem">
+        <ShareButton
+          explorerPath={`${repo.rid}/issues/${issue.id}`}
+          id={issue.id}
+          idLabel="issue"
+          {config} />
         <Button
           styleHeight="2rem"
           variant="ghost"

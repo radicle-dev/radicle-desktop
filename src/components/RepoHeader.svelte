@@ -2,15 +2,12 @@
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import debounce from "lodash/debounce";
-
-  import { writeToClipboard } from "@app/lib/invoke";
   import { explorerUrl, truncateDid } from "@app/lib/utils";
 
-  import Button from "@app/components/Button.svelte";
   import CheckoutRepoButton from "@app/components/CheckoutRepoButton.svelte";
   import HoverPopover from "@app/components/HoverPopover.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import ShareButton from "@app/components/ShareButton.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
 
@@ -22,17 +19,6 @@
   const { repo, config }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
-
-  let copyIcon: "link" | "checkmark" = $state("link");
-  const restoreCopyIcon = debounce(() => {
-    copyIcon = "link";
-  }, 1000);
-
-  async function copyLink() {
-    await writeToClipboard(explorerUrl(repo.rid, config));
-    copyIcon = "checkmark";
-    restoreCopyIcon();
-  }
 </script>
 
 <style>
@@ -156,10 +142,11 @@
   </div>
 
   <div class="actions">
-    <Button variant="ghost" styleHeight="2rem" onclick={copyLink}>
-      <Icon name={copyIcon} />
-      <span class="global-hide-on-medium-desktop-down">Copy Link</span>
-    </Button>
+    <ShareButton
+      explorerPath={repo.rid}
+      id={repo.rid}
+      idLabel="repository"
+      {config} />
     <CheckoutRepoButton rid={repo.rid} />
   </div>
 </div>
