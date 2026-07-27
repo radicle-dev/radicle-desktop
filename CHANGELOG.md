@@ -1,3 +1,26 @@
+### v0.14.0
+
+**Features**
+
+- Added a share widget to repo, issue and patch pages, replacing the separate
+  copy-link and open-in-explorer buttons
+- Commit diffs are now rendered with Pierre's diff viewer
+
+**Bug fixes**
+
+- Links now use your configured explorer and preferred seed instead of
+  hardcoded defaults
+- Fixed console windows flashing when navigating repos on Windows
+
+
+**Shout-out to our contributors 🙏✨**
+
+- [brandonoxendine](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkpwnLQxFBQXyMK3Es91s8A7Ew7G11BFFyng1dqZR8QhG3)
+- [ck](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkuLTraBcQJ1FNVPjN61vWXhMsTznTzr1Rmn1SfFmdhFkY)
+- [hlatimer266](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkkwiqeqFrjPNvSNuNACpynpwiuVHqF8YHwGLzCBSfNJzZ)
+- [justarandomgeek](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkwfrBy9mKTfcVELcV4wc6zfN379FPMnAqsxnwt4j2TdQ2)
+
+
 ### v0.13.0
 
 **Features**
