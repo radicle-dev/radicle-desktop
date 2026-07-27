@@ -375,8 +375,7 @@ phase_tag() {
   echo
   bold "    Copy the message below into the announcements channel:"
   echo "    --------------------------------------------------------------------"
-  echo
-  echo "@**all** A new Radicle Desktop release is out :point_right: [give it a try](https://radicle.dev/desktop)!"
+  echo "@**all** A new Radicle Desktop release is out :point_right: [give it a try](https://radicle.network/desktop)!"
   echo
   echo "$entry"
   echo "    --------------------------------------------------------------------"
