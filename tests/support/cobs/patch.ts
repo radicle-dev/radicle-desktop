@@ -1,5 +1,4 @@
-import type { RadiclePeer } from "@tests/support/peerManager.js";
-import type { Options } from "execa";
+import type { RadiclePeer, SpawnOptions } from "@tests/support/peerManager.js";
 
 export async function create(
   peer: RadiclePeer,
@@ -7,7 +6,7 @@ export async function create(
   branch: string,
   changeFn: () => Promise<void>,
   messages: string[],
-  options: Options,
+  options: SpawnOptions,
 ): Promise<string> {
   if (branch) {
     await peer.git(["reset", "--hard"], options);
@@ -38,7 +37,7 @@ export async function merge(
   peer: RadiclePeer,
   targetBranch: string,
   featureBranch: string,
-  options: Options,
+  options: SpawnOptions,
 ): Promise<void> {
   await peer.git(["switch", targetBranch], options);
   await peer.git(["merge", featureBranch], options);

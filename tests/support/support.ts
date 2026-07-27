@@ -1,4 +1,4 @@
-import type { Options } from "execa";
+import type { SpawnOptions } from "@tests/support/peerManager.js";
 
 import * as Crypto from "node:crypto";
 import * as Fs from "node:fs/promises";
@@ -12,7 +12,7 @@ export function randomTag(): string {
   return Crypto.randomBytes(8).toString("hex");
 }
 
-export function createOptions(repoFolder: string, days: number): Options {
+export function createOptions(repoFolder: string, days: number): SpawnOptions {
   return {
     cwd: repoFolder,
     // eslint-disable-next-line @typescript-eslint/naming-convention

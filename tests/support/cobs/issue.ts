@@ -1,12 +1,11 @@
-import type { RadiclePeer } from "@tests/support/peerManager.js";
-import type { Options } from "execa";
+import type { RadiclePeer, SpawnOptions } from "@tests/support/peerManager.js";
 
 export async function create(
   peer: RadiclePeer,
   title: string,
   description: string,
   labels: string[],
-  options: Options,
+  options: SpawnOptions,
 ): Promise<string> {
   const issueOptions: string[] = [
     "issue",

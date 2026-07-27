@@ -128,8 +128,11 @@ type SpawnResult = Execa.ResultPromise<
   }
 >;
 
-type SpawnOptions = Omit<
-  Execa.Options,
+// `Execa.Options` is a union of the text and binary encoding variants. Exclude
+// the binary variant, which requires `encoding`, so that the omitted result
+// stays assignable to `Execa.Options`.
+export type SpawnOptions = Omit<
+  Exclude<Execa.Options, { readonly encoding: string }>,
   "stdin" | "stdout" | "stderr" | "lines" | "encoding"
 >;
 
