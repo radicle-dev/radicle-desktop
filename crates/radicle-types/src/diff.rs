@@ -152,7 +152,7 @@ pub struct DiffFile {
 impl From<surf::diff::DiffFile> for DiffFile {
     fn from(value: surf::diff::DiffFile) -> Self {
         Self {
-            oid: crate::oid::from_surf(value.oid),
+            oid: value.oid,
             mode: value.mode.into(),
         }
     }

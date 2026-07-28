@@ -54,7 +54,7 @@ impl Blob {
 impl<T: AsRef<[u8]>> From<surf::blob::Blob<T>> for Blob {
     fn from(blob: surf::blob::Blob<T>) -> Self {
         Blob::new(
-            crate::oid::from_surf(blob.object_id()),
+            blob.object_id(),
             blob.is_binary(),
             blob.commit().clone().into(),
             blob.content(),

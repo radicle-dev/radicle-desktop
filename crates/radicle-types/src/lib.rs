@@ -11,7 +11,6 @@ pub mod config;
 pub mod diff;
 pub mod domain;
 pub mod error;
-pub mod oid;
 pub mod outbound;
 pub mod repo;
 pub mod source;

@@ -182,9 +182,9 @@ fn last_path_commit(
         });
 
     let commit = match fast {
-        Some(oid) => surf_repo.commit(crate::oid::into_surf(oid))?,
+        Some(oid) => surf_repo.commit(oid)?,
         None => surf_repo
-            .last_commit(&path, crate::oid::into_surf(head))?
+            .last_commit(&path, head)?
             .ok_or_else(|| git2::Error::from_str("no commit found for path"))?,
     };
 
@@ -548,7 +548,7 @@ pub trait Repo: Profile {
             Some(sha) => sha,
             None => resolve_revision(&storage_repo, peer, revision)?,
         };
-        let tree = repo.tree(crate::oid::into_surf(oid), &path)?;
+        let tree = repo.tree(oid, &path)?;
         Ok(source::tree::Tree::from_surf(tree, &path))
     }
 
@@ -565,7 +565,7 @@ pub trait Repo: Profile {
 
         let oid = match sha {
             Some(sha) => sha,
-            None => crate::oid::from_surf(surf_repo.head()?),
+            None => surf_repo.head()?,
         };
 
         // Resolve the blob via a direct tree lookup. `surf::Repository::blob`
@@ -642,8 +642,8 @@ pub trait Repo: Profile {
         }
 
         let repo = radicle_surf::Repository::open(&repo_path)?;
-        let base = repo.commit(crate::oid::into_surf(base))?;
-        let commit = repo.commit(crate::oid::into_surf(head))?;
+        let base = repo.commit(base)?;
+        let commit = repo.commit(head)?;
         let diff = repo.diff(base.id, commit.id)?;
         let stats = diff.stats();
 
@@ -830,8 +830,7 @@ pub trait Repo: Profile {
         };
 
         let repo = surf::Repository::open(storage_repo.path())?;
-        let head = crate::oid::into_surf(oid);
-        let commits = repo.history(head)?;
+        let commits = repo.history(oid)?;
         let cursor = skip.unwrap_or(0);
 
         match take {
@@ -927,7 +926,7 @@ pub trait Repo: Profile {
         };
 
         let repo = surf::Repository::open(storage_repo.path())?;
-        let commit = repo.commit(crate::oid::into_surf(oid))?;
+        let commit = repo.commit(oid)?;
 
         Ok(commit.into())
     }
