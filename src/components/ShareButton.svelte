@@ -91,18 +91,32 @@
       // Ignore clipboard failures; there's nothing useful to show the user.
     }
   }
-</script>
 
-<style>
-  /* The 1px gap reveals the container's background as a divider between the two
-     buttons, which relies on the buttons having an opaque fill (ghost). */
-  .split {
-    display: inline-flex;
-    gap: 1px;
-    background-color: var(--color-border-subtle);
-    border-radius: var(--border-radius-sm);
+  // The options open on hover rather than via a chevron. A short close delay
+  // bridges the gap between the button and the floating menu so moving the
+  // pointer between them doesn't dismiss it.
+  let closeTimer: ReturnType<typeof setTimeout> | undefined;
+  function openOptions(open: () => void) {
+    if (closeTimer) {
+      clearTimeout(closeTimer);
+      closeTimer = undefined;
+    }
+    if (!popoverExpanded) open();
   }
-</style>
+  function scheduleClose() {
+    if (closeTimer) clearTimeout(closeTimer);
+    closeTimer = setTimeout(() => {
+      closeFocused();
+      closeTimer = undefined;
+    }, 150);
+  }
+  function cancelClose() {
+    if (closeTimer) {
+      clearTimeout(closeTimer);
+      closeTimer = undefined;
+    }
+  }
+</script>
 
 <!-- Hidden anchor used for the "open" action so Tauri's shell plugin opens the
      link in the system browser, matching how ExternalLink behaves. -->
@@ -116,58 +130,52 @@
   aria-hidden="true">
 </a>
 
-<div class="split">
-  <Button
-    variant="ghost"
-    {styleHeight}
-    flatRight
-    stylePadding="0 0.75rem"
-    title={selected.title}
-    onclick={() => run(selected.kind)}>
-    <Icon
-      name={copied && selected.kind !== "open" ? "checkmark" : selected.icon} />
-    <span class="global-hide-on-medium-desktop-down">{selected.label}</span>
-  </Button>
-
-  <Popover
-    popoverPadding="0"
-    placement="bottom-end"
-    bind:expanded={popoverExpanded}>
-    {#snippet toggle(onclick)}
+<Popover
+  popoverPadding="0"
+  placement="bottom-end"
+  bind:expanded={popoverExpanded}>
+  {#snippet toggle(onclick)}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div onmouseenter={() => openOptions(onclick)} onmouseleave={scheduleClose}>
       <Button
         variant="ghost"
         {styleHeight}
-        styleWidth={styleHeight}
-        flatLeft
-        stylePadding="0"
+        stylePadding="0 0.75rem"
         active={popoverExpanded}
-        title="Share options"
-        {onclick}>
-        <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
+        title={selected.title}
+        onclick={() => run(selected.kind)}>
+        <Icon
+          name={copied && selected.kind !== "open"
+            ? "checkmark"
+            : selected.icon} />
+        <span class="global-hide-on-medium-desktop-down">{selected.label}</span>
       </Button>
-    {/snippet}
-    {#snippet popover()}
-      <div
-        style:border="1px solid var(--color-border-subtle)"
-        style:border-radius="var(--border-radius-sm)"
-        style:background-color="var(--color-surface-canvas)"
-        style:padding="0.25rem">
-        <DropdownList items={actions}>
-          {#snippet item(action)}
-            <DropdownListItem
-              selected={action.kind === selected.kind}
-              styleGap="0.5rem"
-              onclick={() => {
-                shareAction.value = action.kind;
-                closeFocused();
-                void run(action.kind);
-              }}>
-              <Icon name={action.icon} />
-              <span>{action.title}</span>
-            </DropdownListItem>
-          {/snippet}
-        </DropdownList>
-      </div>
-    {/snippet}
-  </Popover>
-</div>
+    </div>
+  {/snippet}
+  {#snippet popover()}
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      onmouseenter={cancelClose}
+      onmouseleave={scheduleClose}
+      style:border="1px solid var(--color-border-subtle)"
+      style:border-radius="var(--border-radius-sm)"
+      style:background-color="var(--color-surface-canvas)"
+      style:padding="0.25rem">
+      <DropdownList items={actions}>
+        {#snippet item(action)}
+          <DropdownListItem
+            selected={action.kind === selected.kind}
+            styleGap="0.5rem"
+            onclick={() => {
+              shareAction.value = action.kind;
+              closeFocused();
+              void run(action.kind);
+            }}>
+            <Icon name={action.icon} />
+            <span>{action.title}</span>
+          </DropdownListItem>
+        {/snippet}
+      </DropdownList>
+    </div>
+  {/snippet}
+</Popover>
