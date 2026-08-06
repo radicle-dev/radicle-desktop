@@ -73,6 +73,10 @@ export function show<T extends Component<any>>(args: ShowArgs<T>): void {
 export function toggle<T extends Component<any>>(args: ShowArgs<T>): void {
   const stored = get(modalStore);
 
+  if (stored?.disableHide) {
+    return;
+  }
+
   if (stored && stored.component === args.component) {
     hide();
     return;
