@@ -13,6 +13,8 @@
   import * as utils from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
+  import { hints } from "@app/lib/hints";
+
   import Icon from "@app/components/Icon.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import Textarea from "@app/components/Textarea.svelte";
@@ -290,6 +292,38 @@
     margin-left: 0.25rem;
   }
 
+  .textarea-wrap {
+    position: relative;
+    display: flex;
+    width: 100%;
+    flex: 1;
+  }
+  .markdown-hint {
+    position: absolute;
+    bottom: 0.375rem;
+    right: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--color-text-quaternary);
+    opacity: 0.6;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .markdown-hint-dismiss {
+    background: none;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    color: inherit;
+    cursor: pointer;
+    font: var(--txt-body-s-regular);
+    padding: 0 0.375rem;
+    line-height: 1.25rem;
+  }
+  .markdown-hint-dismiss:hover {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-secondary);
+  }
   .preview {
     width: 100%;
     font: var(--txt-body-m-regular);
@@ -308,30 +342,48 @@
 </style>
 
 <div class="comment-section" aria-label="extended-textarea" class:inline>
-  {#if preview}
-    <div class="preview" style:min-height={styleMinHeight}>
-      {#if body.trim().length === 0}
-        <span class="txt-missing">Nothing to preview.</span>
-      {:else}
-        <Markdown {rid} breaks content={body} />
+  <div class="textarea-wrap">
+    {#if preview}
+      <div class="preview" style:min-height={styleMinHeight}>
+        {#if body.trim().length === 0}
+          <span class="txt-missing">Nothing to preview.</span>
+        {:else}
+          <Markdown {rid} breaks content={body} />
+        {/if}
+      </div>
+    {:else}
+      <Textarea
+        size={textAreaSize}
+        styleAlignItems="flex-start"
+        {draggingOver}
+        {borderVariant}
+        {stylePadding}
+        {styleMinHeight}
+        bind:selectionEnd
+        bind:selectionStart
+        onpaste={handlePaste}
+        {focus}
+        submit={() => submit({ comment: body, embeds })}
+        bind:value={body}
+        {placeholder} />
+      {#if !hints.isDismissed("markdown")}
+        <div class="markdown-hint txt-body-s-regular">
+          <Icon
+            name="markdown"
+            styleDisplay="inline"
+            styleVerticalAlign="text-top" />
+          Markdown is supported
+          <button
+            type="button"
+            class="markdown-hint-dismiss"
+            title="Don't show again"
+            onclick={() => hints.dismiss("markdown")}>
+            Hide
+          </button>
+        </div>
       {/if}
-    </div>
-  {:else}
-    <Textarea
-      size={textAreaSize}
-      styleAlignItems="flex-start"
-      {draggingOver}
-      {borderVariant}
-      {stylePadding}
-      {styleMinHeight}
-      bind:selectionEnd
-      bind:selectionStart
-      onpaste={handlePaste}
-      {focus}
-      submit={() => submit({ comment: body, embeds })}
-      bind:value={body}
-      {placeholder} />
-  {/if}
+    {/if}
+  </div>
   {@render belowTextarea?.()}
   {#if !hideDiscard || body.trim() !== ""}
     <div class="actions">

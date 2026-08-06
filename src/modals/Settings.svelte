@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { hints } from "@app/lib/hints";
   import { hide } from "@app/lib/modal";
   import { updateChecker } from "@app/lib/updateChecker.svelte";
+  import { pluralize } from "@app/lib/utils";
 
   import AnnounceSwitch from "@app/components/AnnounceSwitch.svelte";
   import BadgeCounterSwitch from "@app/components/BadgeCounterSwitch.svelte";
@@ -129,6 +131,22 @@
         active={updateChecker.isEnabled}
         disable={updateChecker.disable}
         enable={updateChecker.enable} />
+    </div>
+    <div class="row">
+      <div class="row-label">
+        <span class="row-title">Hidden hints</span>
+        <span class="row-description">
+          {hints.dismissedCount === 0
+            ? "You haven't hidden any hints"
+            : `Show the ${hints.dismissedCount} ${pluralize("hint", hints.dismissedCount)} you've hidden again`}
+        </span>
+      </div>
+      <Button
+        variant="ghost"
+        disabled={hints.dismissedCount === 0}
+        onclick={() => hints.resetAll()}>
+        Reset
+      </Button>
     </div>
   </div>
   <div class="footer">
