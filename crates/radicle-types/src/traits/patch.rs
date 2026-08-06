@@ -332,4 +332,37 @@ pub trait PatchesMut: Profile {
             &aliases,
         ))
     }
+
+    /// Remove a patch COB. Equivalent to `rad patch delete`.
+    ///
+    /// Only the COB ref under our own namespace is dropped. On a patch we did
+    /// not author we hold no such ref, so this returns `Ok` having deleted
+    /// nothing — while still evicting the cache entry, hiding the patch until
+    /// the next rebuild. Callers must restrict this to our own patches.
+    fn delete_patch(
+        &self,
+        rid: identity::RepoId,
+        cob_id: git::Oid,
+        opts: cobs::CobOptions,
+    ) -> Result<(), Error> {
+        let profile = self.profile();
+        let mut node = Node::new(profile.home().socket_from_env());
+        let repo = profile.storage.repository(rid)?;
+        let signer = profile.signer()?;
+
+        // Remove via the cache-backed store so the patch is dropped from both
+        // the git refs and the COB cache that listings read from; otherwise the
+        // deleted patch keeps showing up in the patch list.
+        let mut patches = profile.patches_mut(&repo, &signer)?;
+        patches.remove(&cob_id.into())?;
+        drop(patches);
+
+        if opts.announce()
+            && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
+        {
+            log::error!("Not able to announce changes: {}", e)
+        }
+
+        Ok(())
+    }
 }
