@@ -4,7 +4,7 @@ export interface PatchUserActivity {
   isAuthor: boolean;
   isDelegate: boolean;
   revisionCount: number;
-  commitCount: number;
+  commentCount: number;
   reviewCount: number;
   patchesAuthored: number;
   issuesAuthored: number;

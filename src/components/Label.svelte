@@ -13,7 +13,7 @@
     justify-content: center;
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--border-radius-sm);
-    height: 1.5rem;
+    height: 2rem;
     padding: 0 0.5rem;
     color: var(--color-text-tertiary);
     max-width: 10rem;

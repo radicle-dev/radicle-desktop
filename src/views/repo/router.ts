@@ -14,16 +14,14 @@ import type { Readme } from "@bindings/repo/Readme";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { Tree } from "@bindings/source/Tree";
 
-import type { DraftReview } from "@app/lib/draftReviewStorage";
-import { draftReviewStorage } from "@app/lib/draftReviewStorage";
 import {
   cachedGetCommitDiff,
   cachedGetDiffText,
   invoke,
 } from "@app/lib/invoke";
-import type { SidebarData } from "@app/lib/router/definitions";
+import type { LoadedRoute, SidebarData } from "@app/lib/router/definitions";
 import { loadSidebarData } from "@app/lib/router/definitions";
-import { didFromPublicKey, unreachable } from "@app/lib/utils";
+import { unreachable } from "@app/lib/utils";
 
 export type IssueStatus = "all" | Issue["state"]["status"];
 
@@ -127,12 +125,15 @@ export interface LoadedRepoIssuesRoute {
 
 export type PatchStatus = Patch["state"]["status"];
 
+export type PatchView = "activity" | "changes";
+
 export interface RepoPatchRoute {
   resource: "repo.patch";
   rid: string;
   patch: string;
   status: PatchStatus | undefined;
   reviewId: string | undefined;
+  view?: PatchView;
 }
 
 export interface LoadedRepoPatchRoute {
@@ -141,8 +142,10 @@ export interface LoadedRepoPatchRoute {
     repo: RepoInfo;
     config: Config;
     patch: Patch;
+    patches: PaginatedQuery<Patch[]>;
     status: PatchStatus | undefined;
-    review: Review | DraftReview | undefined;
+    view?: PatchView;
+    review: Review | undefined;
     revisions: Revision[];
     activity: Operation<PatchAction>[];
     sidebarData: SidebarData;
@@ -184,40 +187,67 @@ export type LoadedRepoRoute =
 
 export async function loadPatch(
   route: RepoPatchRoute,
-): Promise<LoadedRepoPatchRoute> {
-  const [sidebarData, repo, patch, revisions, activity] = await Promise.all([
-    loadSidebarData(),
-    invoke<RepoInfo>("repo_by_id", {
+  previousLoaded?: LoadedRoute,
+): Promise<LoadedRepoPatchRoute | LoadedRepoPatchesRoute> {
+  // Switching tab (view) or review on the same patch shouldn't refetch the
+  // repo-wide data, so the sidebar and patch list are reused when we stay on
+  // the same patch. The patch itself, its revisions and its activity are
+  // always refetched: they change on every comment, review and edit, and a
+  // reused copy resurrects pre-mutation state when the tab changes.
+  const reuse =
+    previousLoaded?.resource === "repo.patch" &&
+    previousLoaded.params.repo.rid === route.rid &&
+    previousLoaded.params.patch.id === route.patch &&
+    previousLoaded.params.status === route.status
+      ? previousLoaded.params
+      : undefined;
+
+  const [[sidebarData, repo, patches], [patch, revisions, activity]] =
+    await Promise.all([
+      reuse
+        ? ([reuse.sidebarData, reuse.repo, reuse.patches] as const)
+        : Promise.all([
+            loadSidebarData(),
+            invoke<RepoInfo>("repo_by_id", {
+              rid: route.rid,
+            }),
+            invoke<PaginatedQuery<Patch[]>>("list_patches", {
+              rid: route.rid,
+              status: route.status,
+              take: DEFAULT_TAKE,
+            }),
+          ] as const),
+      Promise.all([
+        invoke<Patch | null>("patch_by_id", {
+          rid: route.rid,
+          id: route.patch,
+        }),
+        invoke<Revision[]>("revisions_by_patch", {
+          rid: route.rid,
+          id: route.patch,
+        }),
+        invoke<Operation<PatchAction>[]>("activity_by_patch", {
+          rid: route.rid,
+          id: route.patch,
+        }),
+      ] as const),
+    ]);
+
+  // The patch may have been deleted (removed here, on another device, or a
+  // stale link); fall back to the patch list instead of crashing.
+  if (!patch) {
+    return loadPatches({
+      resource: "repo.patches",
       rid: route.rid,
-    }),
-    invoke<Patch>("patch_by_id", {
-      rid: route.rid,
-      id: route.patch,
-    }),
-    invoke<Revision[]>("revisions_by_patch", {
-      rid: route.rid,
-      id: route.patch,
-    }),
-    invoke<Operation<PatchAction>[]>("activity_by_patch", {
-      rid: route.rid,
-      id: route.patch,
-    }),
-  ]);
+      status: route.status,
+    });
+  }
 
   const config = sidebarData.config;
 
-  const draftReview =
-    route.reviewId !== undefined &&
-    draftReviewStorage.get(route.reviewId, {
-      did: didFromPublicKey(config.publicKey),
-      alias: config.alias,
-    });
-
-  const review =
-    draftReview ||
-    revisions
-      .flatMap(r => r.reviews || [])
-      .find(review => review.id === route.reviewId);
+  const review = revisions
+    .flatMap(r => r.reviews || [])
+    .find(review => review.id === route.reviewId);
 
   return {
     resource: "repo.patch",
@@ -225,8 +255,10 @@ export async function loadPatch(
       repo,
       config,
       patch,
+      patches,
       revisions,
       status: route.status,
+      view: route.view,
       review,
       activity,
       sidebarData,
@@ -473,6 +505,9 @@ export function repoRouteToPath(route: RepoRoute): string {
     if (route.reviewId) {
       searchParams.set("review", route.reviewId);
     }
+    if (route.view) {
+      searchParams.set("view", route.view);
+    }
     if (searchParams.size > 0) {
       url += `?${searchParams}`;
     }
@@ -553,6 +588,11 @@ export function repoUrlToRoute(
       const status = (searchParams.get("status") ?? undefined) as
         PatchStatus | undefined;
       const reviewId = searchParams.get("review") ?? undefined;
+      const viewParam = searchParams.get("view");
+      const view: PatchView | undefined =
+        viewParam === "activity" || viewParam === "changes"
+          ? viewParam
+          : undefined;
       if (id) {
         return {
           resource: "repo.patch",
@@ -560,6 +600,7 @@ export function repoUrlToRoute(
           patch: id,
           status,
           reviewId,
+          view,
         };
       } else {
         return { resource: "repo.patches", rid, status };

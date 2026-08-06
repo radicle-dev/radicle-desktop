@@ -9,6 +9,7 @@ import type { Comment } from "@bindings/cob/thread/Comment";
 import { z } from "zod";
 
 import useLocalStorage from "@app/lib/useLocalStorage.svelte";
+import { publicKeyFromDid } from "@app/lib/utils";
 
 import { invoke } from "./invoke";
 
@@ -24,6 +25,7 @@ export interface DraftReview {
   summary?: string;
   labels: string[];
   comments: Array<Comment<CodeLocation>>;
+  checkedFiles: string[];
 }
 
 const codeRangeSchema: z.Schema<CodeRange> = z.union([
@@ -41,6 +43,14 @@ const codeRangeSchema: z.Schema<CodeRange> = z.union([
 const draftReviewStoredSchema = z.object({
   id: z.string(),
   rid: z.string(),
+  // Node ID of the identity that wrote the draft. Optional so drafts stored
+  // before this field existed keep working; those are treated as belonging to
+  // whoever is signed in, which is how they behaved previously.
+  nid: z.string().optional(),
+  // Patch the revision belongs to. Only used to prune drafts whose revision has
+  // gone away, which can't be done from the revision id alone. Optional for the
+  // same backwards-compatibility reason.
+  patchId: z.string().optional(),
   revision: z.string(),
   verdict: z.union([z.literal("accept"), z.literal("reject")]).optional(),
   summary: z.string().default(""),
@@ -59,6 +69,7 @@ const draftReviewStoredSchema = z.object({
         .optional(),
     }),
   ),
+  checkedFiles: z.array(z.string()).default([]),
 });
 
 type DraftReviewStored = z.infer<typeof draftReviewStoredSchema>;
@@ -69,10 +80,17 @@ const storage = useLocalStorage(
   {},
 );
 
+function belongsTo(draft: DraftReviewStored, nid: string): boolean {
+  return draft.nid === undefined || draft.nid === nid;
+}
+
 export const draftReviewStorage = {
   get(id: string, author: Author): DraftReview | undefined {
     const draftReviewStored = storage.value[id];
-    if (!draftReviewStored) {
+    if (
+      !draftReviewStored ||
+      !belongsTo(draftReviewStored, publicKeyFromDid(author.did))
+    ) {
       return undefined;
     }
 
@@ -80,8 +98,10 @@ export const draftReviewStorage = {
   },
 
   getForRevision(revisionId: string, author: Author): DraftReview | undefined {
+    const nid = publicKeyFromDid(author.did);
     const draftReviewStored = Object.values(storage.value).find(
-      draftReview => draftReview.revision === revisionId,
+      draftReview =>
+        draftReview.revision === revisionId && belongsTo(draftReview, nid),
     );
 
     if (draftReviewStored) {
@@ -89,26 +109,72 @@ export const draftReviewStorage = {
     }
   },
 
-  create(rid: string, revisionId: string): string {
+  create(
+    rid: string,
+    patchId: string,
+    revisionId: string,
+    nid: string,
+  ): string {
     const id = crypto.randomUUID();
     storage.update(reviews => {
       reviews[id] = {
         id,
         rid,
+        nid,
+        patchId,
         revision: revisionId,
+        // Written down rather than defaulted when the bar reads the draft, so
+        // an absent verdict unambiguously means "comment only".
+        verdict: "accept",
         summary: "",
         labels: [],
         comments: [],
+        checkedFiles: [],
       };
       return reviews;
     });
     return id;
   },
 
-  hasForRevision(revisionId: string): boolean {
+  isFileChecked(id: string, filePath: string): boolean {
+    return storage.value[id]?.checkedFiles?.includes(filePath) ?? false;
+  },
+
+  toggleCheckedFile(id: string, filePath: string) {
+    updateStoredDraftReview(id, review => {
+      const set = new Set(review.checkedFiles);
+      if (set.has(filePath)) {
+        set.delete(filePath);
+      } else {
+        set.add(filePath);
+      }
+      return { ...review, checkedFiles: [...set] };
+    });
+  },
+
+  hasForRevision(revisionId: string, nid: string): boolean {
     return Object.values(storage.value).some(
-      review => review.revision === revisionId,
+      review => review.revision === revisionId && belongsTo(review, nid),
     );
+  },
+
+  // Drop drafts whose revision is gone — redacted, or a patch deleted from this
+  // node. Drafts predating `patchId` are skipped: there is no way to tell which
+  // patch they belong to.
+  pruneStale(patchId: string, revisionIds: string[], nid: string) {
+    const live = new Set(revisionIds);
+    storage.update(reviews => {
+      for (const [id, review] of Object.entries(reviews)) {
+        if (
+          review.patchId === patchId &&
+          belongsTo(review, nid) &&
+          !live.has(review.revision)
+        ) {
+          delete reviews[id];
+        }
+      }
+      return reviews;
+    });
   },
 
   update(
@@ -131,9 +197,14 @@ export const draftReviewStorage = {
 
   deleteComment(id: string, commentId: string) {
     updateStoredDraftReview(id, review => {
+      // Guard the miss: `splice(-1, 1)` would drop the last comment instead of
+      // doing nothing.
       const index = review.comments.findIndex(
         comment => comment.id === commentId,
       );
+      if (index === -1) {
+        return review;
+      }
       review.comments.splice(index, 1);
       return review;
     });
@@ -176,19 +247,22 @@ export const draftReviewStorage = {
         );
       }
 
-      storedComment!.body = comment.body;
+      storedComment.body = comment.body;
       return review;
     });
   },
 
   async publish(id: string) {
-    const draftReviewStored = draftReviewStorage.delete(id);
+    const draftReviewStored = storage.value[id];
     if (!draftReviewStored) {
       throw new Error(
         `Failed to publish draft review: Review ${id} does not exist`,
       );
     }
 
+    // Discard the draft only once the review is on the network. Deleting first
+    // loses every comment if the call fails, and leaves the bar unable to
+    // retry because the draft it is rendering no longer exists.
     await invoke<Patch>("create_patch_review", {
       args: {
         rid: draftReviewStored.rid,
@@ -202,6 +276,8 @@ export const draftReviewStorage = {
         })),
       } satisfies CreateReviewArgs,
     });
+
+    draftReviewStorage.delete(id);
   },
 };
 
@@ -233,6 +309,7 @@ function draftReviewFromStored(
     revisionId: draftReviewStored.revision,
     verdict: draftReviewStored.verdict,
     labels: draftReviewStored.labels,
+    checkedFiles: draftReviewStored.checkedFiles,
     comments: draftReviewStored.comments.map(rawComment => ({
       id: rawComment.id,
       author,

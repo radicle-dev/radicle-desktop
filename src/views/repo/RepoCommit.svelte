@@ -4,13 +4,13 @@
     FileStatus,
   } from "@app/components/diffFileHeaderState.svelte";
   import type { Diff } from "@bindings/diff/Diff";
-  import type { FileDiff } from "@bindings/diff/FileDiff";
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Blob } from "@bindings/source/Blob";
   import type { GitStatusEntry } from "@pierre/trees";
 
   import { diffOptions } from "@app/lib/diffOptions.svelte";
+  import { fileDiffPath } from "@app/lib/diffText";
   import { getDiffText, invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import type { SidebarData } from "@app/lib/router/definitions";
@@ -54,17 +54,9 @@
   }>();
   let allCollapsed = $state(false);
 
-  // The new-side path Pierre keys each file by — renames and copies use the new
-  // path, everything else its only path.
-  function newSidePath(file: FileDiff): string {
-    return file.status === "moved" || file.status === "copied"
-      ? file.newPath
-      : file.path;
-  }
-
   const changedFiles = $derived(
     diff.files.map((file): GitStatusEntry => {
-      const path = newSidePath(file);
+      const path = fileDiffPath(file);
       switch (file.status) {
         case "added":
           return { path, status: "added" };
@@ -90,7 +82,7 @@
     const statuses = new Map<string, FileStatus>();
     /* eslint-enable svelte/prefer-svelte-reactivity */
     for (const file of diff.files) {
-      const path = newSidePath(file);
+      const path = fileDiffPath(file);
       statuses.set(path, file.status);
       if (file.diff.type === "binary") {
         notes.set(path, "binary");
@@ -115,7 +107,7 @@
     path: string,
   ): Promise<{ oldContents: string; newContents: string }> {
     const parent = commit.parents[0];
-    const file = diff.files.find(entry => newSidePath(entry) === path);
+    const file = diff.files.find(entry => fileDiffPath(entry) === path);
     let oldContents = "";
     let newContents = "";
     if (!file) {
@@ -300,7 +292,7 @@
             <span class="txt-selectable">{commit.author.name}</span>
           </span>
           committed
-          <Id id={commit.id} clipboard={commit.id} />
+          <Id id={commit.id} clipboard={commit.id} label="commit hash" />
           <span
             class="summary-timestamp"
             title={absoluteTimestamp(commit.committer.time * 1000)}>
@@ -372,7 +364,7 @@
           All commits
         </button>
         <Icon name="chevron-right" />
-        <Id id={commit.id} clipboard={commit.id} placement="bottom-start" />
+        <Id id={commit.id} clipboard={commit.id} label="commit hash" />
       </div>
       <div class="topbar-right">
         <span style:display="inline-flex" style:margin-right="0.5rem">

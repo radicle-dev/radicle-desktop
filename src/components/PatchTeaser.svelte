@@ -3,9 +3,11 @@
   import type { Patch } from "@bindings/cob/patch/Patch";
 
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
-  import { cachedDiffStats } from "@app/lib/invoke";
+  import { cachedConfig, cachedDiffStats } from "@app/lib/invoke";
+  import { entriesFromReviewers } from "@app/lib/reviewSummary";
   import { push } from "@app/lib/router";
   import {
+    absoluteTimestamp,
     authorForNodeId,
     formatTimestamp,
     patchStatusBackgroundColor,
@@ -18,6 +20,7 @@
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import Label from "@app/components/Label.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import ReviewSummary from "@app/components/ReviewSummary.svelte";
 
   interface Props {
     focussed?: boolean;
@@ -28,9 +31,29 @@
 
   const { focussed, patch, rid, status }: Props = $props();
 
-  const hasDraftReview = $derived(
-    patch.revisionIds.some(id => draftReviewStorage.hasForRevision(id)),
-  );
+  // Drafts belong to an identity, so the marker has to know who is signed in.
+  // Until the config arrives the marker stays off rather than showing someone
+  // else's draft.
+  let publicKey: string | undefined = $state();
+  $effect(() => {
+    let cancelled = false;
+    void cachedConfig()
+      .then(result => {
+        if (!cancelled) publicKey = result.publicKey;
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  const hasDraftReview = $derived.by(() => {
+    const nid = publicKey;
+    if (nid === undefined) return false;
+    return patch.revisionIds.some(id =>
+      draftReviewStorage.hasForRevision(id, nid),
+    );
+  });
 </script>
 
 <style>
@@ -101,8 +124,10 @@
         <div class="global-flex txt-body-m-regular" style:flex-wrap="wrap">
           <NodeId {...authorForNodeId(patch.author)} />
           opened
-          <Id id={patch.id} clipboard={patch.id} />
-          {formatTimestamp(patch.timestamp)}
+          <Id id={patch.id} clipboard={patch.id} label="patch ID" />
+          <span title={absoluteTimestamp(patch.timestamp)}>
+            {formatTimestamp(patch.timestamp)}
+          </span>
         </div>
       </div>
     </div>
@@ -127,6 +152,22 @@
       {#each patch.labels as label}
         <Label {label} />
       {/each}
+      {#if patch.commentCount > 0}
+        <div
+          class="txt-body-m-regular global-flex"
+          style:gap="0.25rem"
+          style:border="1px solid var(--color-border-subtle)"
+          style:border-radius="var(--border-radius-sm)"
+          style:height="1.5rem"
+          style:padding="0 0.5rem"
+          style:color="var(--color-text-tertiary)">
+          <Icon name="comment" />
+          {patch.commentCount}
+        </div>
+      {/if}
+      <ReviewSummary
+        reviews={entriesFromReviewers(patch.reviewers)}
+        revisionCount={patch.revisionIds.length} />
       <div
         class="txt-body-m-regular global-flex"
         style:gap="0.25rem"

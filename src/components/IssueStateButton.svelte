@@ -35,7 +35,7 @@
       {onclick}
       active={popoverExpanded}
       title={disabled
-        ? "You must be a delegate to change the issue state"
+        ? "Only delegates can change the issue state"
         : undefined}>
       <span
         class="global-chip"

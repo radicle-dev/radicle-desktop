@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Placement } from "@floating-ui/dom";
   import type { ComponentProps } from "svelte";
 
   import {
@@ -17,19 +16,32 @@
 
   import Icon from "@app/components/Icon.svelte";
 
+  interface Props {
+    ariaLabel?: string;
+    clipboard: string;
+    id: string;
+    // What the hash is (e.g. "patch ID"), named in the tooltip.
+    label?: string;
+    shorten?: boolean;
+  }
+
+  const { ariaLabel, clipboard, id, label, shorten = true }: Props = $props();
+
   let icon: ComponentProps<typeof Icon>["name"] = $state("copy");
-  const text = "Click to copy";
-  let tooltip = $state(text);
+  let copied = $state(false);
+  const tooltip = $derived(
+    copied ? "Copied to clipboard" : label ? `Copy ${label}` : "Click to copy",
+  );
 
   const restoreIcon = debounce(() => {
     icon = "copy";
-    tooltip = text;
+    copied = false;
   }, 1000);
 
   async function copy() {
     await writeToClipboard(clipboard);
     icon = "checkmark";
-    tooltip = "Copied to clipboard";
+    copied = true;
     restoreIcon();
   }
 
@@ -37,34 +49,18 @@
   let anchorEl: HTMLDivElement | undefined = $state();
   let floatingEl: HTMLDivElement | undefined = $state();
 
-  interface Props {
-    ariaLabel?: string;
-    clipboard: string;
-    id: string;
-    placement?: Placement;
-    shorten?: boolean;
-  }
-
-  const {
-    ariaLabel,
-    clipboard,
-    id,
-    placement = "top-start",
-    shorten = true,
-  }: Props = $props();
-
   const setVisible = debounce((value: boolean) => {
     visible = value;
   }, 50);
 
   $effect(() => {
-    // Re-run when tooltip text changes so the wider "Copied to clipboard"
+    // Re-run when the tooltip text changes so the wider "Copied to clipboard"
     // text is repositioned and doesn't overflow the viewport edge.
     void tooltip;
     if (floatingEl && anchorEl) {
       const cleanup = autoUpdate(anchorEl, floatingEl, () => {
         void computePosition(anchorEl!, floatingEl!, {
-          placement,
+          placement: "top-start",
           middleware: [offset(6), flip(), shift({ padding: 8 })],
         }).then(({ x, y }) => {
           if (floatingEl) {

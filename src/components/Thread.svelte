@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { CommentOrigin } from "@app/components/Comment.svelte";
   import type { Author } from "@bindings/cob/Author";
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
   import type { Embed } from "@bindings/cob/thread/Embed";
@@ -16,7 +17,9 @@
     thread: Thread<CodeLocation>;
     rid: string;
     currentUserNid?: string;
-    canEditComment: (author: string) => true | undefined;
+    // Whether the current user may edit or delete a comment by this author.
+    // The protocol reserves both for the comment's own author.
+    canModifyComment: (author: string) => true | undefined;
     editComment?: (
       commentId: string,
       body: string,
@@ -33,19 +36,32 @@
       reaction: string,
     ) => Promise<void>;
     deleteComment?: (commentId: string) => Promise<void>;
+    changeCommentStatus?: (
+      commentId: string,
+      resolved: boolean,
+    ) => Promise<void>;
+    canResolve?: boolean;
+    // Set for threads rendered inside a diff, where there is no surrounding
+    // activity timeline for the outer rail to connect to.
     inline?: boolean;
+    draft?: boolean;
+    origin?: CommentOrigin;
   }
 
   const {
     thread,
     rid,
     currentUserNid,
-    canEditComment,
+    canModifyComment,
     editComment,
     createReply,
     reactOnComment,
     deleteComment,
+    changeCommentStatus,
+    canResolve = false,
     inline = false,
+    draft = false,
+    origin,
   }: Props = $props();
 
   async function toggleReply() {
@@ -101,9 +117,11 @@
   .replies-wrapper::after {
     left: 1.25rem;
   }
-  .replies-wrapper-inline {
-    background-color: var(--color-surface-canvas);
-    border: 1px solid var(--color-border-subtle);
+  /* The outer rail continues the surrounding activity timeline down to the
+     top-level composer. Inline code threads have no timeline around them, so
+     it would end in mid-air; only the reply indent line is drawn there. */
+  .replies-wrapper.inline::before {
+    content: none;
   }
   .replies-list {
     display: flex;
@@ -138,9 +156,12 @@
           reactions={reply.reactions}
           timestamp={reply.edits[0].timestamp}
           body={reply.edits.slice(-1)[0].body}
-          editComment={canEditComment(reply.author.did) &&
+          editComment={canModifyComment(reply.author.did) &&
             editComment?.bind(null, reply.id)}
-          reactOnComment={reactOnComment?.bind(null, reply.id)} />
+          reactOnComment={reactOnComment?.bind(null, reply.id)}
+          deleteComment={canModifyComment(reply.author.did)
+            ? deleteComment?.bind(null, reply.id)
+            : undefined} />
       </div>
     {/each}
     {#if createReply && showReplyForm}
@@ -170,37 +191,46 @@
 {/snippet}
 
 <div class="comments">
-  <div class:top-level-comment={!inline}>
+  <div class="top-level-comment">
     <CommentComponent
       disallowEmptyBody
       {rid}
       {currentUserNid}
+      {draft}
+      {origin}
       id={root.id}
       lastEdit={root.edits.length > 1 ? root.edits.at(-1) : undefined}
       author={root.author}
       reactions={root.reactions}
       timestamp={root.edits.slice(-1)[0].timestamp}
       body={root.edits.slice(-1)[0].body}
-      editComment={canEditComment(root.author.did) &&
+      editComment={canModifyComment(root.author.did) &&
         editComment?.bind(null, root.id)}
       reactOnComment={reactOnComment?.bind(null, root.id)}
-      deleteComment={deleteComment?.bind(null, root.id)}>
+      deleteComment={canModifyComment(root.author.did)
+        ? deleteComment?.bind(null, root.id)
+        : undefined}>
       {#snippet actions()}
+        {#if changeCommentStatus && canResolve}
+          <span
+            class="global-icon-button"
+            title={root.resolved ? "Mark as unresolved" : "Mark as resolved"}>
+            <Icon
+              name={root.resolved ? "comment-checkmark" : "checkmark"}
+              onclick={() => changeCommentStatus(root.id, !root.resolved)} />
+          </span>
+        {/if}
         {#if createReply}
-          <Icon name="reply" onclick={toggleReply} />
+          <span class="global-icon-button" title="Reply">
+            <Icon name="reply" onclick={toggleReply} />
+          </span>
         {/if}
       {/snippet}
     </CommentComponent>
   </div>
   {#if replies.length > 0 || (createReply && showReplyForm)}
-    {#if inline}
-      <div class="replies-wrapper-inline">
-        {@render repliesSnippet()}
-      </div>
-    {:else}
-      <div class="replies-wrapper">
-        {@render repliesSnippet()}
-      </div>
-    {/if}
+    <div class="replies-wrapper" class:inline>
+      {@render repliesSnippet()}
+    </div>
   {/if}
 </div>

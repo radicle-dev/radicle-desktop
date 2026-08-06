@@ -1,3 +1,14 @@
+<script lang="ts" module>
+  // Says where a comment lives when a view mixes comments from several places
+  // — a review's own comments and comments left directly on a revision look
+  // alike otherwise, but they differ in what can be done to them.
+  export interface CommentOrigin {
+    text: string;
+    title?: string;
+    onclick?: () => void;
+  }
+</script>
+
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
   import type { Edit } from "@bindings/cob/patch/Edit";
@@ -29,6 +40,9 @@
     reactions?: Reaction[];
     embeds?: Map<string, Embed>;
     caption?: string;
+    // Marks a comment that is part of an unpublished draft review.
+    draft?: boolean;
+    origin?: CommentOrigin;
     timestamp?: number;
     lastEdit?: Edit;
     disallowEmptyBody?: boolean;
@@ -53,6 +67,8 @@
     reactions,
     embeds,
     caption = "commented",
+    draft = false,
+    origin,
     timestamp,
     lastEdit,
     disallowEmptyBody = false,
@@ -104,6 +120,7 @@
   }
   .header-right {
     display: flex;
+    align-items: center;
     margin-left: auto;
     gap: 0.5rem;
     opacity: 0;
@@ -141,13 +158,16 @@
     gap: 0.5rem;
     padding: 0 0.75rem 0.25rem;
   }
+  button.caption {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
   .timestamp,
   .caption {
     font: var(--txt-body-m-regular);
     color: var(--color-text-quaternary);
-  }
-  .icon-button {
-    cursor: pointer;
   }
 </style>
 
@@ -160,6 +180,26 @@
     <div class="card-header">
       <NodeId {...utils.authorForNodeId(author)} />
       <span class="caption">{caption}</span>
+      {#if draft}
+        <span
+          class="global-chip"
+          title="Not published yet, only visible to you">
+          Draft
+        </span>
+      {/if}
+      {#if origin}
+        {#if origin.onclick}
+          <button
+            class="global-link caption"
+            type="button"
+            title={origin.title}
+            onclick={origin.onclick}>
+            {origin.text}
+          </button>
+        {:else}
+          <span class="caption" title={origin.title}>{origin.text}</span>
+        {/if}
+      {/if}
       {#if beforeTimestamp}
         {@render beforeTimestamp()}
       {/if}
@@ -180,17 +220,17 @@
       {/if}
       <div class="header-right">
         {#if id}
-          <Id {id} clipboard={id} />
+          <Id {id} clipboard={id} label="comment ID" />
         {/if}
         {#if editComment}
-          <div class="icon-button">
+          <span class="global-icon-button" title="Edit comment">
             <Icon name="edit" onclick={toggleEdit} />
-          </div>
+          </span>
         {/if}
-        {#if deleteComment}
-          <div class="icon-button">
+        {#if deleteComment && currentUserNid && utils.publicKeyFromDid(author.did) === currentUserNid}
+          <span class="global-icon-button" title="Delete comment">
             <Icon name="trash" onclick={deleteComment} />
-          </div>
+          </span>
         {/if}
         {#if reactions && reactOnComment}
           <ReactionSelector

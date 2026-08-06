@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use radicle::cob::Title;
 use radicle::node::Handle;
 use radicle::patch::cache::Patches as _;
-use radicle::storage::ReadStorage;
+use radicle::storage::{ReadRepository as _, ReadStorage};
 use radicle::{Node, cob, git, identity};
 
 use crate::cobs;
@@ -22,7 +22,9 @@ pub trait Patches: Profile {
         let patches = profile.patches(&repo)?;
         let patch = patches.get(&id.into())?;
         let aliases = &profile.aliases();
-        let patches = patch.map(|patch| models::patch::Patch::new(id.into(), &patch, aliases));
+        let delegates = Vec::from(repo.delegates()?);
+        let patches =
+            patch.map(|patch| models::patch::Patch::new(id.into(), &patch, &delegates, aliases));
 
         Ok::<_, Error>(patches)
     }
@@ -91,6 +93,51 @@ pub trait Patches: Profile {
 }
 
 pub trait PatchesMut: Profile {
+    /// Publish a review of a revision, together with its code comments.
+    fn create_patch_review(
+        &self,
+        args: models::patch::CreateReviewArgs,
+    ) -> Result<cob::patch::ReviewId, Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(args.rid)?;
+        let signer = profile.signer()?;
+        let mut patches = profile.patches_mut(&repo, &signer)?;
+        let patch_id = match patches.find_by_revision(&args.revision)? {
+            Some(found) => found.id,
+            None => return Err(cob::patch::Error::RevisionNotFound(args.revision).into()),
+        };
+        let mut patch = patches.get_mut(&patch_id)?;
+        // The protocol keeps one review per author per revision: a second
+        // `Review` action is written to the object and then dropped on apply,
+        // leaving a review id that resolves to nothing. Publishing through it
+        // would either fail on the first comment or, for a review with none,
+        // report success while storing nothing at all.
+        if patch
+            .revision(&args.revision)
+            .is_some_and(|rev| rev.review_by(&profile.public_key).is_some())
+        {
+            return Err(Error::ReviewExists);
+        }
+        let review_id = patch.review(
+            args.revision,
+            args.verdict.map(Into::into),
+            args.summary,
+            args.labels,
+        )?;
+
+        for comment in args.comments {
+            patch.review_comment(
+                review_id,
+                comment.body,
+                comment.location.map(Into::into),
+                None,
+                vec![],
+            )?;
+        }
+
+        Ok(review_id)
+    }
+
     fn edit_patch(
         &self,
         rid: identity::RepoId,
@@ -276,6 +323,13 @@ pub trait PatchesMut: Profile {
             log::error!("Not able to announce changes: {}", e)
         }
 
-        Ok::<_, Error>(models::patch::Patch::new(*patch.id(), &patch, &aliases))
+        let delegates = Vec::from(repo.delegates()?);
+
+        Ok::<_, Error>(models::patch::Patch::new(
+            *patch.id(),
+            &patch,
+            &delegates,
+            &aliases,
+        ))
     }
 }

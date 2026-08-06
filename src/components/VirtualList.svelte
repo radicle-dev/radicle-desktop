@@ -141,6 +141,15 @@
     onRestored?.();
   });
 
+  /// Scroll a given item into view, rendering it first if virtualisation has
+  /// it unmounted. Callers reach this through `bind:this`.
+  export function scrollToIndex(
+    index: number,
+    opts?: { align?: "start" | "center" | "end"; smooth?: boolean },
+  ) {
+    handle?.scrollToIndex(index, opts);
+  }
+
   function reportState() {
     if (!handle || !onState) return;
     onState({

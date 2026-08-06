@@ -70,38 +70,20 @@ export const formatTimestamp = (
   timestamp: number,
   current = new Date().getTime(),
 ): string => {
-  const units: Record<string, number> = {
-    year: 24 * 60 * 60 * 1000 * 365,
-    month: (24 * 60 * 60 * 1000 * 365) / 12,
-    day: 24 * 60 * 60 * 1000,
-    hour: 60 * 60 * 1000,
-    minute: 60 * 1000,
-    second: 1000,
-  };
+  const SECOND = 1000;
+  const MINUTE = 60 * SECOND;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
+  const MONTH = (365 * DAY) / 12;
+  const YEAR = 365 * DAY;
 
-  const rtf = new Intl.RelativeTimeFormat("en", {
-    numeric: "auto",
-    style: "long",
-  });
   const elapsed = current - timestamp;
-
-  if (elapsed > units["year"]) {
-    return "more than a year ago";
-  } else if (elapsed < 0) {
-    return "now"; // If elapsed is a negative number we are dealing with an item from the future, and we return "now"
-  }
-
-  for (const u in units) {
-    if (elapsed > units[u] || u === "second") {
-      // We convert the division result to a negative number to get "XX [unit] ago"
-      return rtf.format(
-        Math.round(elapsed / units[u]) * -1,
-        u as Intl.RelativeTimeFormatUnit,
-      );
-    }
-  }
-
-  return new Date(timestamp).toUTCString();
+  if (elapsed < MINUTE) return "now";
+  if (elapsed < HOUR) return `${Math.floor(elapsed / MINUTE)}m`;
+  if (elapsed < DAY) return `${Math.floor(elapsed / HOUR)}h`;
+  if (elapsed < MONTH) return `${Math.floor(elapsed / DAY)}d`;
+  if (elapsed < YEAR) return `${Math.floor(elapsed / MONTH)}mo`;
+  return `${Math.floor(elapsed / YEAR)}y`;
 };
 
 // Svelte action that swallows mousedown so the activating element does not
@@ -209,7 +191,13 @@ export function authorForNodeId(author: Author): ComponentProps<typeof NodeId> {
 }
 
 export function absoluteTimestamp(timestamp: number) {
-  return new Date(Number(timestamp)).toLocaleString();
+  return new Date(Number(timestamp)).toLocaleString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export function formatEditedCaption(author: Author, timestamp: number) {
@@ -217,7 +205,11 @@ export function formatEditedCaption(author: Author, timestamp: number) {
 }
 
 export function pluralize(singular: string, count: number): string {
-  return count === 1 ? singular : `${singular}s`;
+  if (count === 1) return singular;
+  if (/(?:ch|sh|s|x|z)$/i.test(singular)) {
+    return `${singular}es`;
+  }
+  return `${singular}s`;
 }
 
 export function isMac() {
@@ -274,6 +266,46 @@ export function verdictIcon(verdict: Review["verdict"]) {
     return "stop";
   } else {
     return "comment";
+  }
+}
+
+// `revisions_by_patch` returns revisions in the patch's timeline order — the
+// causal order the COB recorded them in — and that order is what "revision N of
+// M" means throughout the UI. Do not re-sort by `timestamp` to recover it: a
+// revision's timestamp is supplied by whoever authored it, so a peer with a
+// skewed clock would silently renumber everyone's revisions.
+export function revisionPosition(
+  revisions: { id: string }[],
+  revisionId: string,
+): number | undefined {
+  const index = revisions.findIndex(r => r.id === revisionId);
+  return index === -1 ? undefined : index + 1;
+}
+
+// A review without a verdict is a comment-only review — what `rad patch review`
+// produces with neither -a nor -r. The protocol has no "needs changes" or
+// "request changes" state, so neither label may imply one: doing so would put
+// words into the mouth of every reviewer who ever left a plain comment.
+export function verdictAction(verdict: Review["verdict"]): string {
+  if (verdict === "accept") {
+    return "Accept";
+  } else if (verdict === "reject") {
+    return "Reject";
+  } else {
+    return "Comment";
+  }
+}
+
+export function verdictBadge(verdict: Review["verdict"]): {
+  label: string;
+  variant: "accept" | "reject" | "comment";
+} {
+  if (verdict === "accept") {
+    return { label: "Accepted", variant: "accept" };
+  } else if (verdict === "reject") {
+    return { label: "Rejected", variant: "reject" };
+  } else {
+    return { label: "Reviewed", variant: "comment" };
   }
 }
 

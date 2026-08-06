@@ -35,6 +35,10 @@ pub enum Error {
     #[error("not able to save embed")]
     SaveEmbedError,
 
+    /// A second review of the same revision by the same author.
+    #[error("you have already reviewed this revision")]
+    ReviewExists,
+
     /// Init Error error.
     #[error(transparent)]
     InitError(#[from] radicle::rad::InitError),
@@ -205,6 +209,7 @@ impl Error {
                 "AliasError.InvalidAlias"
             }
             Error::FileTooLarge(_) => "PayloadError.TooLarge",
+            Error::ReviewExists => "PatchError.ReviewExists",
             _ => "UnknownError",
         }
     }

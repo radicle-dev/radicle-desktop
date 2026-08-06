@@ -1,35 +1,111 @@
 <script lang="ts">
+  import type { PatchView } from "@app/views/repo/router";
   import type { Author } from "@bindings/cob/Author";
   import type { Patch } from "@bindings/cob/patch/Patch";
+  import type { Revision } from "@bindings/cob/patch/Revision";
   import type { Config } from "@bindings/config/Config";
+  import type { Stats } from "@bindings/diff/Stats";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import debounce from "lodash/debounce";
+
   import { nodeRunning } from "@app/lib/events";
-  import { invoke } from "@app/lib/invoke";
+  import { invoke, writeToClipboard } from "@app/lib/invoke";
+  import type { ReviewEntry } from "@app/lib/reviewSummary";
+  import {
+    entriesFromRevisions,
+    isOutdatedReview,
+    reviewSummary,
+    summaryTitle,
+  } from "@app/lib/reviewSummary";
   import * as roles from "@app/lib/roles";
+  import { push } from "@app/lib/router";
+  import {
+    authorForNodeId,
+    formatOid,
+    pluralize,
+    publicKeyFromDid,
+    verdictIcon,
+  } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import AssigneeInput from "@app/components/AssigneeInput.svelte";
+  import DropdownList from "@app/components/DropdownList.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
+  import Icon from "@app/components/Icon.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
-  import PatchStateButton from "@app/components/PatchStateButton.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
+  import UserAvatar from "@app/components/UserAvatar.svelte";
 
   interface Props {
     config: Config;
-    horizontal?: boolean;
     loadPatch: () => Promise<void>;
     patch: Patch;
     repo: RepoInfo;
-    saveState: (newState: Patch["state"]) => Promise<void>;
+    revisions: Revision[];
+    stats?: Stats;
+    // The tab the review is opened from, so its back button returns there.
+    view?: PatchView;
+    onShowChanges?: () => void;
   }
 
   const {
     config,
-    horizontal = false,
     loadPatch,
     patch,
     repo,
-    saveState,
+    revisions,
+    stats,
+    view,
+    onShowChanges,
   }: Props = $props();
+
+  // Shared with the patch list so both summaries say the same thing — the
+  // counting, ordering and outdated rules all live in `reviewSummary`.
+  const summary = $derived(
+    reviewSummary(
+      entriesFromRevisions(
+        revisions,
+        repo.delegates.map(d => d.did),
+      ),
+      revisions.length,
+    ),
+  );
+  const reviews = $derived(summary.reviews);
+  const reviewAuthors = $derived(summary.authors);
+
+  // Which revision a review is of only matters when the patch has more than
+  // one revision; with a single revision the whole indicator is hidden.
+  const showRevision = $derived(revisions.length > 1);
+
+  let reviewersPopoverExpanded = $state(false);
+
+  // `ReviewEntry.reviewId` is optional because the patch list has no review to
+  // link to; every entry built from revisions here carries one.
+  function openReview(reviewId: string | undefined) {
+    if (!reviewId) return;
+    reviewersPopoverExpanded = false;
+    closeFocused();
+    void push({
+      resource: "repo.patch",
+      rid: repo.rid,
+      patch: patch.id,
+      status: undefined,
+      reviewId,
+      view,
+    });
+  }
+
+  let patchIdCopied = $state(false);
+  const resetPatchIdCopied = debounce(() => {
+    patchIdCopied = false;
+  }, 1000);
+  async function copyPatchId() {
+    await writeToClipboard(patch.id);
+    patchIdCopied = true;
+    resetPatchIdCopied();
+  }
 
   let labelSaveInProgress: boolean = $state(false);
   let assigneesSaveInProgress: boolean = $state(false);
@@ -76,58 +152,298 @@
 </script>
 
 <style>
-  .metadata-section {
-    padding: 0.5rem;
-    font: var(--txt-body-m-regular);
+  .meta-row {
     display: flex;
-    flex-direction: column;
-    align-items: flex;
-    height: 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font: var(--txt-body-m-regular);
+  }
+  .stats {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
+  }
+  .stats.stats-button {
+    cursor: pointer;
+  }
+  .stats.stats-button:hover,
+  .stats.stats-button:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
+  .stats .insertions {
+    color: var(--color-feedback-success-text);
+  }
+  .stats .deletions {
+    color: var(--color-feedback-error-text);
+  }
+  .reviews {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    font: var(--txt-body-m-regular);
+  }
+  .reviews:hover,
+  .reviews:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
+  .reviewer-stack {
+    display: inline-flex;
+    align-items: center;
+  }
+  .reviewer-stack :global(img) {
+    outline: 1px solid var(--color-surface-canvas);
+    margin-left: -0.375rem;
+  }
+  .reviewer-stack :global(img:first-child) {
+    margin-left: 0;
+  }
+  .reviewer-overflow {
+    margin-left: 0.25rem;
+    color: var(--color-text-tertiary);
+  }
+  .verdict-accept {
+    color: var(--color-feedback-success-text);
+  }
+  .verdict-reject {
+    color: var(--color-feedback-error-text);
+  }
+  /* Matches the patch list: the whole chip recedes instead of spelling it out,
+     with the tooltip carrying the detail. */
+  .reviews.outdated {
+    color: var(--color-text-quaternary);
+  }
+  .reviews .outdated {
+    color: var(--color-text-quaternary);
+  }
+  .delegate-badge {
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-text-brand);
+  }
+  .patch-id-chip,
+  .author-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
+  }
+  .patch-id-chip {
+    gap: 0.375rem;
+    cursor: pointer;
+  }
+  .patch-id-chip:hover,
+  .patch-id-chip:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
+  .patch-id-value {
+    font: var(--txt-code-regular);
+  }
+  /* Patch icon by default, copy icon on hover, checkmark on click. */
+  .pid-icon-default,
+  .pid-icon-hover {
+    display: inline-flex;
+    align-items: center;
+  }
+  .pid-icon-hover {
+    display: none;
+  }
+  .patch-id-chip:hover .pid-icon-default,
+  .patch-id-chip:focus-visible .pid-icon-default {
+    display: none;
+  }
+  .patch-id-chip:hover .pid-icon-hover,
+  .patch-id-chip:focus-visible .pid-icon-hover {
+    display: inline-flex;
   }
 </style>
 
-<div
-  class="global-flex"
-  style:flex-direction={horizontal ? "row" : "column"}
-  style:align-items="flex-start">
-  <div
-    class="metadata-section"
-    style={horizontal ? "flex: 1;" : "width: 100%;"}>
-    <PatchStateButton
-      selectedState={patch.state}
-      onSelect={newState => {
-        void saveState(newState);
-      }}
-      disabled={!roles.isDelegateOrAuthor(
-        config.publicKey,
-        repo.delegates.map(d => d.did),
-        patch.author.did,
-      )} />
+<div class="meta-row">
+  <div class="author-chip" title="Patch author">
+    <NodeId {...authorForNodeId(patch.author)} />
   </div>
-
-  <div
-    class="metadata-section"
-    style={horizontal ? "flex: 1;" : "width: 100%;"}>
-    <LabelInput
-      allowedToEdit={!!roles.isDelegate(
-        config.publicKey,
-        repo.delegates.map(delegate => delegate.did),
-      )}
-      labels={patch.labels}
-      submitInProgress={labelSaveInProgress}
-      save={saveLabels} />
-  </div>
-
-  <div
-    class="metadata-section"
-    style={horizontal ? "flex: 1;" : "width: 100%;"}>
-    <AssigneeInput
-      allowedToEdit={!!roles.isDelegate(
-        config.publicKey,
-        repo.delegates.map(delegate => delegate.did),
-      )}
-      assignees={patch.assignees}
-      submitInProgress={assigneesSaveInProgress}
-      save={saveAssignees} />
-  </div>
+  <button
+    type="button"
+    class="patch-id-chip"
+    title={patchIdCopied ? "Copied to clipboard" : "Copy patch ID"}
+    onclick={copyPatchId}>
+    {#if patchIdCopied}
+      <Icon name="checkmark" />
+    {:else}
+      <span class="pid-icon-default"><Icon name="hash" /></span>
+      <span class="pid-icon-hover"><Icon name="copy" /></span>
+    {/if}
+    <span class="patch-id-value">{formatOid(patch.id)}</span>
+  </button>
+  {#if stats}
+    {#if onShowChanges}
+      <button
+        type="button"
+        class="stats stats-button"
+        onclick={onShowChanges}
+        title="View changed files">
+        <Icon name="diff" />
+        <span>
+          {stats.filesChanged}
+          {pluralize("file", stats.filesChanged)}
+        </span>
+        <span class="insertions">+{stats.insertions}</span>
+        <span class="deletions">-{stats.deletions}</span>
+      </button>
+    {:else}
+      <div class="stats">
+        <Icon name="diff" />
+        <span>
+          {stats.filesChanged}
+          {pluralize("file", stats.filesChanged)}
+        </span>
+        <span class="insertions">+{stats.insertions}</span>
+        <span class="deletions">-{stats.deletions}</span>
+      </div>
+    {/if}
+  {/if}
+  {#if reviews.length > 0}
+    {@const hasReject = summary.hasReject}
+    {@const allAccept = summary.allAccept}
+    {#snippet reviewsButton(
+      onclick: (() => void) | undefined,
+      single?: ReviewEntry,
+    )}
+      <button
+        type="button"
+        class="reviews"
+        class:outdated={summary.outdated}
+        {onclick}
+        aria-haspopup={reviews.length > 1 ? "menu" : undefined}
+        aria-expanded={reviews.length > 1
+          ? reviewersPopoverExpanded
+          : undefined}
+        title={summaryTitle(summary)}>
+        <span class:verdict-accept={allAccept} class:verdict-reject={hasReject}>
+          <Icon
+            name={summary.outdated
+              ? "clock"
+              : hasReject
+                ? "stop"
+                : allAccept
+                  ? "thumbs-up"
+                  : "comment"} />
+        </span>
+        <span>
+          {reviews.length}
+          {pluralize("review", reviews.length)}
+          {#if single && showRevision}
+            of Revision {single.revisionNumber} of {revisions.length}
+          {/if}
+        </span>
+        {#if summary.outdated && !(single && showRevision)}
+          <!-- Skipped when the single-review case above already names the
+               revision, which would otherwise say it twice. -->
+          <span class="outdated">· r{summary.latestReviewedRevision}</span>
+        {/if}
+        <span class="reviewer-stack">
+          {#each reviewAuthors.slice(0, 3) as author (author.did)}
+            <UserAvatar
+              nodeId={publicKeyFromDid(author.did)}
+              styleWidth="1.125rem" />
+          {/each}
+          {#if reviewAuthors.length > 3}
+            <span class="reviewer-overflow">+{reviewAuthors.length - 3}</span>
+          {/if}
+        </span>
+      </button>
+    {/snippet}
+    <div class="reviewers-compact">
+      {#if reviews.length === 1}
+        {@render reviewsButton(
+          () => openReview(reviews[0].reviewId),
+          reviews[0],
+        )}
+      {:else}
+        <Popover
+          popoverPadding="0"
+          placement="bottom-start"
+          bind:expanded={reviewersPopoverExpanded}>
+          {#snippet toggle(onclick)}
+            {@render reviewsButton(onclick)}
+          {/snippet}
+          {#snippet popover()}
+            <div
+              style:border="1px solid var(--color-border-subtle)"
+              style:border-radius="var(--border-radius-sm)"
+              style:background-color="var(--color-surface-canvas)">
+              <DropdownList items={reviews}>
+                {#snippet item(reviewer)}
+                  <DropdownListItem
+                    selected={false}
+                    styleGap="0.5rem"
+                    onclick={() => openReview(reviewer.reviewId)}>
+                    <span
+                      class:verdict-accept={reviewer.verdict === "accept"}
+                      class:verdict-reject={reviewer.verdict === "reject"}>
+                      <Icon name={verdictIcon(reviewer.verdict)} />
+                    </span>
+                    <NodeId {...authorForNodeId(reviewer.author)} />
+                    {#if reviewer.delegate}
+                      <span class="delegate-badge" title="Delegate">
+                        <Icon name="badge" />
+                      </span>
+                    {/if}
+                    {#if showRevision}
+                      <span
+                        style:margin-left="auto"
+                        style:color="var(--color-text-quaternary)">
+                        Revision {reviewer.revisionNumber} of {revisions.length}
+                        {#if isOutdatedReview(reviewer, revisions.length)}
+                          · outdated
+                        {/if}
+                      </span>
+                    {/if}
+                  </DropdownListItem>
+                {/snippet}
+              </DropdownList>
+            </div>
+          {/snippet}
+        </Popover>
+      {/if}
+    </div>
+  {/if}
+  <LabelInput
+    allowedToEdit={!!roles.isDelegate(
+      config.publicKey,
+      repo.delegates.map(delegate => delegate.did),
+    )}
+    labels={patch.labels}
+    submitInProgress={labelSaveInProgress}
+    save={saveLabels} />
+  <AssigneeInput
+    allowedToEdit={!!roles.isDelegate(
+      config.publicKey,
+      repo.delegates.map(delegate => delegate.did),
+    )}
+    assignees={patch.assignees}
+    submitInProgress={assigneesSaveInProgress}
+    save={saveAssignees} />
 </div>

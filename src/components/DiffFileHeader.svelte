@@ -51,7 +51,11 @@
     gap: 0.5rem;
     width: 100%;
     min-width: 0;
-    min-height: 2.5rem;
+    /* Pinned (not min-height): the diff virtualizer reserves a flat 2.5rem per
+       file header (`diffHeaderHeight` in PierreDiff), so the real header must be
+       exactly that height or a gap/overlap appears under it. Content is a single
+       truncated line, so it always fits. */
+    height: 2.5rem;
     padding: 0 0.5rem;
     font: var(--txt-body-m-regular);
   }

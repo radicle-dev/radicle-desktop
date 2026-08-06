@@ -9,14 +9,14 @@
   import { onDestroy, onMount } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
+  import { hints } from "@app/lib/hints";
   import { invoke } from "@app/lib/invoke";
   import * as utils from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
-  import { hints } from "@app/lib/hints";
-
   import Icon from "@app/components/Icon.svelte";
   import Markdown from "@app/components/Markdown.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import Textarea from "@app/components/Textarea.svelte";
 
   interface Props {
@@ -43,6 +43,15 @@
       comment: string;
       embeds: Map<string, Embed>;
     }) => Promise<void>;
+    submitDescription?: string;
+    secondarySubmit?: {
+      caption: string;
+      description?: string;
+      submit: (opts: {
+        comment: string;
+        embeds: Map<string, Embed>;
+      }) => Promise<void>;
+    };
     close: () => void;
     // If true, adding attachments through drag-and-drop is disabled and there
     // is no "Attach" button. If a string is provided, the "Attach" button is
@@ -75,6 +84,8 @@
     stylePadding,
     borderVariant = "float",
     submit,
+    submitDescription,
+    secondarySubmit,
     close,
     disableAttachments: attachDisabled = false,
     hideDiscard = false,
@@ -253,8 +264,21 @@
     });
   }
 
+  let activeSubmitIndex = $state<0 | 1>(0);
+  let dropdownExpanded = $state(false);
+
+  const activeSubmit = $derived(
+    activeSubmitIndex === 1 && secondarySubmit
+      ? {
+          caption: secondarySubmit.caption,
+          submit: secondarySubmit.submit,
+        }
+      : { caption: submitCaption, submit },
+  );
+
   function submitFn() {
-    void submit({ comment: body, embeds })
+    void activeSubmit
+      .submit({ comment: body, embeds })
       .then(() => (preview = false))
       .catch(e => {
         console.error(e);
@@ -291,7 +315,70 @@
     opacity: 0.6;
     margin-left: 0.25rem;
   }
+  .split-submit {
+    display: flex;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+  .submit-menu {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    width: 22rem;
+    overflow: hidden;
+  }
+  .submit-option {
+    display: grid;
+    grid-template-columns: 1.5rem 1fr;
+    column-gap: 0.5rem;
+    align-items: start;
+    padding: 0.625rem 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .submit-option:last-child {
+    border-bottom: none;
+  }
+  .submit-option:hover {
+    background-color: var(--color-surface-subtle);
+  }
+  .submit-check {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 1.25rem;
+    color: var(--color-text-primary);
+  }
+  .submit-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  .submit-label {
+    font: var(--txt-body-m-medium);
+    color: var(--color-text-primary);
+  }
+  .submit-description {
+    font: var(--txt-body-s-regular);
+    color: var(--color-text-tertiary);
+    white-space: normal;
+  }
 
+  .preview {
+    width: 100%;
+    font: var(--txt-body-m-regular);
+    min-height: 109px;
+    flex: 1;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    padding: 0.75rem;
+  }
+  .inline .preview {
+    border: 0;
+    padding: 0;
+    background-color: transparent;
+  }
   .textarea-wrap {
     position: relative;
     display: flex;
@@ -324,24 +411,21 @@
     background-color: var(--color-surface-subtle);
     color: var(--color-text-secondary);
   }
-  .preview {
-    width: 100%;
-    font: var(--txt-body-m-regular);
-    min-height: 109px;
-    flex: 1;
-    border: 1px solid var(--color-border-subtle);
-    border-radius: var(--border-radius-sm);
-    background-color: var(--color-surface-canvas);
-    padding: 0.75rem;
-  }
-  .inline .preview {
-    border: 0;
-    padding: 0;
-    background-color: transparent;
-  }
 </style>
 
-<div class="comment-section" aria-label="extended-textarea" class:inline>
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div
+  class="comment-section"
+  aria-label="extended-textarea"
+  class:inline
+  onkeydown={event => {
+    if (!preview) return;
+    const auxiliarKey = utils.isMac() ? event.metaKey : event.ctrlKey;
+    if (auxiliarKey && event.key === "Enter") {
+      event.preventDefault();
+      void submit({ comment: body, embeds });
+    }
+  }}>
   <div class="textarea-wrap">
     {#if preview}
       <div class="preview" style:min-height={styleMinHeight}>
@@ -399,25 +483,15 @@
           <span class="global-hide-on-small-desktop-down">Discard</span>
         </Button>
       {/if}
-      {#if !preview}
-        <div
-          style:display=""
-          class="txt-overflow txt-body-m-regular txt-missing"
-          title="Markdown is supported.">
-          {#if embedUploadError}
-            <span style:color="var(--color-feedback-error-text)">
-              <Icon
-                styleDisplay="inline"
-                styleVerticalAlign="text-top"
-                name="warning" />
-              {embedUploadError}
-            </span>
-          {/if}
-          <Icon
-            name="markdown"
-            styleDisplay="inline"
-            styleVerticalAlign="text-top" />
-          Markdown is supported.
+      {#if !preview && embedUploadError}
+        <div class="txt-overflow txt-body-m-regular">
+          <span style:color="var(--color-feedback-error-text)">
+            <Icon
+              styleDisplay="inline"
+              styleVerticalAlign="text-top"
+              name="warning" />
+            {embedUploadError}
+          </span>
         </div>
       {/if}
       <div class="buttons">
@@ -435,21 +509,107 @@
           <Icon name={preview ? "edit" : "eye"} />
           {preview ? "Edit" : "Preview"}
         </Button>
-        <Button
-          variant={effectiveSubmitVariant}
-          title={emptyBodyTooltip}
-          disabled={!isValid() ||
-            submitInProgress ||
-            disableSubmit ||
-            (disallowEmptyBody && body.trim() === "")}
-          onclick={submitFn}>
-          {#if submitInProgress}
-            Saving…
-          {:else}
-            {submitCaption}
-            <span class="shortcut">{utils.modifierKey()}↵</span>
-          {/if}
-        </Button>
+        {#if secondarySubmit}
+          <div class="split-submit">
+            <Button
+              variant={effectiveSubmitVariant}
+              title={emptyBodyTooltip}
+              disabled={!isValid() ||
+                submitInProgress ||
+                disableSubmit ||
+                (disallowEmptyBody && body.trim() === "")}
+              onclick={submitFn}>
+              {#if submitInProgress}
+                Saving…
+              {:else}
+                {activeSubmit.caption}
+                <span class="shortcut">{utils.modifierKey()}↵</span>
+              {/if}
+            </Button>
+            <Popover
+              popoverPadding="0"
+              placement="top-end"
+              bind:expanded={dropdownExpanded}>
+              {#snippet toggle(onclick)}
+                <Button
+                  variant={effectiveSubmitVariant}
+                  disabled={submitInProgress}
+                  {onclick}>
+                  <Icon
+                    name={dropdownExpanded ? "chevron-up" : "chevron-down"} />
+                </Button>
+              {/snippet}
+              {#snippet popover()}
+                <div class="submit-menu">
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
+                  <div
+                    role="button"
+                    tabindex="0"
+                    class="submit-option"
+                    onclick={() => {
+                      activeSubmitIndex = 0;
+                      closeFocused();
+                    }}>
+                    <div class="submit-check">
+                      {#if activeSubmitIndex === 0}
+                        <Icon name="checkmark" />
+                      {/if}
+                    </div>
+                    <div class="submit-text">
+                      <span class="submit-label">{submitCaption}</span>
+                      {#if submitDescription}
+                        <span class="submit-description">
+                          {submitDescription}
+                        </span>
+                      {/if}
+                    </div>
+                  </div>
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
+                  <div
+                    role="button"
+                    tabindex="0"
+                    class="submit-option"
+                    onclick={() => {
+                      activeSubmitIndex = 1;
+                      closeFocused();
+                    }}>
+                    <div class="submit-check">
+                      {#if activeSubmitIndex === 1}
+                        <Icon name="checkmark" />
+                      {/if}
+                    </div>
+                    <div class="submit-text">
+                      <span class="submit-label">
+                        {secondarySubmit.caption}
+                      </span>
+                      {#if secondarySubmit.description}
+                        <span class="submit-description">
+                          {secondarySubmit.description}
+                        </span>
+                      {/if}
+                    </div>
+                  </div>
+                </div>
+              {/snippet}
+            </Popover>
+          </div>
+        {:else}
+          <Button
+            variant={effectiveSubmitVariant}
+            title={emptyBodyTooltip}
+            disabled={!isValid() ||
+              submitInProgress ||
+              disableSubmit ||
+              (disallowEmptyBody && body.trim() === "")}
+            onclick={submitFn}>
+            {#if submitInProgress}
+              Saving…
+            {:else}
+              {submitCaption}
+              <span class="shortcut">{utils.modifierKey()}↵</span>
+            {/if}
+          </Button>
+        {/if}
       </div>
     </div>
   {/if}

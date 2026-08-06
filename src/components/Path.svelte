@@ -8,7 +8,10 @@
 
 <style>
   .container {
+    min-width: 0;
+    overflow: hidden;
     white-space: nowrap;
+    text-overflow: ellipsis;
     -webkit-touch-callout: initial;
     -webkit-user-select: text;
     user-select: text;

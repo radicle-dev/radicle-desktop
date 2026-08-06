@@ -1,8 +1,7 @@
 use std::ops::ControlFlow;
 
-use radicle::patch::cache::Patches as _;
 use radicle::patch::{ReviewId, TYPENAME};
-use radicle::storage::ReadStorage;
+use radicle::storage::{ReadRepository as _, ReadStorage};
 use radicle::{cob, git, identity};
 
 use radicle_types as types;
@@ -31,8 +30,9 @@ pub async fn list_patches(
 ) -> Result<types::cobs::PaginatedQuery<Vec<models::patch::Patch>>, Error> {
     let profile = ctx.profile();
     let aliases = profile.aliases();
+    let delegates = Vec::from(profile.storage.repository(rid)?.delegates()?);
 
-    Ok(sqlite_service.list_paginated(rid, status, skip, take, &aliases)?)
+    Ok(sqlite_service.list_paginated(rid, status, skip, take, &delegates, &aliases)?)
 }
 
 #[tauri::command]
@@ -90,32 +90,7 @@ pub fn create_patch_review(
     ctx: tauri::State<AppState>,
     args: models::patch::CreateReviewArgs,
 ) -> Result<ReviewId, Error> {
-    let repo = ctx.profile.storage.repository(args.rid)?;
-    let signer = ctx.profile.signer()?;
-    let mut patches = ctx.profile.patches_mut(&repo, &signer)?;
-    let patch_id = match patches.find_by_revision(&args.revision)? {
-        Some(found) => found.id,
-        None => return Err(cob::patch::Error::RevisionNotFound(args.revision).into()),
-    };
-    let mut patch = patches.get_mut(&patch_id)?;
-    let review_id = patch.review(
-        args.revision,
-        args.verdict.map(Into::into),
-        args.summary,
-        args.labels,
-    )?;
-
-    for comment in args.comments {
-        patch.review_comment(
-            review_id,
-            comment.body,
-            comment.location.map(Into::into),
-            None,
-            vec![],
-        )?;
-    }
-
-    Ok(review_id)
+    ctx.create_patch_review(args)
 }
 
 #[tauri::command]
