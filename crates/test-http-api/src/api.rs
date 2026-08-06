@@ -114,6 +114,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/revisions_by_patch", post(revision_handler))
         .route("/edit_patch", post(edit_patch_handler))
         .route("/create_patch_review", post(create_patch_review_handler))
+        .route("/delete_patch", post(delete_patch_handler))
         .route("/get_embed", post(get_embeds_handler))
         .route("/save_embed_by_path", post(save_embed_handler))
         .route("/save_embed_by_clipboard", post(save_embed_handler))
@@ -713,6 +714,23 @@ async fn create_patch_review_handler(
     let review_id = ctx.create_patch_review(args)?;
 
     Ok::<_, Error>(Json(review_id))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DeletePatchBody {
+    pub rid: identity::RepoId,
+    pub cob_id: git::Oid,
+    pub opts: CobOptions,
+}
+
+async fn delete_patch_handler(
+    State(ctx): State<Context>,
+    Json(DeletePatchBody { rid, cob_id, opts }): Json<DeletePatchBody>,
+) -> impl IntoResponse {
+    ctx.delete_patch(rid, cob_id, opts)?;
+
+    Ok::<_, Error>(Json(()))
 }
 
 #[derive(Serialize, Deserialize)]
