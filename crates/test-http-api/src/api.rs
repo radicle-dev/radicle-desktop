@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use tower_http::cors::{self, CorsLayer};
 
 use radicle::node::NodeId;
+use radicle::storage::{ReadRepository as _, ReadStorage as _};
 use radicle::{git, identity};
 use radicle_types as types;
 use radicle_types::cobs::CobOptions;
@@ -111,6 +112,8 @@ pub fn router(ctx: Context) -> Router {
         .route("/list_patches", post(patches_handler))
         .route("/patch_by_id", post(patch_handler))
         .route("/revisions_by_patch", post(revision_handler))
+        .route("/edit_patch", post(edit_patch_handler))
+        .route("/create_patch_review", post(create_patch_review_handler))
         .route("/get_embed", post(get_embeds_handler))
         .route("/save_embed_by_path", post(save_embed_handler))
         .route("/save_embed_by_clipboard", post(save_embed_handler))
@@ -641,9 +644,10 @@ async fn patches_handler(
     }): Json<PatchesBody>,
 ) -> impl IntoResponse {
     let aliases = ctx.profile.aliases();
+    let delegates = Vec::from(ctx.profile.storage.repository(rid)?.delegates()?);
     let page = ctx
         .patches
-        .list_paginated(rid, status, skip, take, &aliases)?;
+        .list_paginated(rid, status, skip, take, &delegates, &aliases)?;
 
     Ok::<_, Error>(Json(page))
 }
@@ -670,6 +674,45 @@ async fn revision_handler(
     let revisions = ctx.revisions_by_patch(rid, id)?;
 
     Ok::<_, Error>(Json(revisions))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct EditPatchBody {
+    pub rid: identity::RepoId,
+    pub cob_id: git::Oid,
+    pub action: models::patch::Action,
+    pub opts: CobOptions,
+}
+
+async fn edit_patch_handler(
+    State(ctx): State<Context>,
+    Json(EditPatchBody {
+        rid,
+        cob_id,
+        action,
+        opts,
+    }): Json<EditPatchBody>,
+) -> impl IntoResponse {
+    let patch = ctx.edit_patch(rid, cob_id, action, opts)?;
+
+    Ok::<_, Error>(Json(patch))
+}
+
+// Deserialize only: `CreateReviewArgs` is an inbound type and isn't Serialize.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreatePatchReviewBody {
+    pub args: models::patch::CreateReviewArgs,
+}
+
+async fn create_patch_review_handler(
+    State(ctx): State<Context>,
+    Json(CreatePatchReviewBody { args }): Json<CreatePatchReviewBody>,
+) -> impl IntoResponse {
+    let review_id = ctx.create_patch_review(args)?;
+
+    Ok::<_, Error>(Json(review_id))
 }
 
 #[derive(Serialize, Deserialize)]

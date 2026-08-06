@@ -17,6 +17,30 @@ use crate::cobs;
 use crate::cobs::Author;
 use crate::cobs::FromRadicleAction;
 
+/// One published review, flattened so the patch list can summarise a patch
+/// without loading its revisions.
+///
+/// There is an entry per review, not per reviewer: the protocol allows one
+/// review per author per revision, so the same person appears once for each
+/// revision they reviewed. `revision_number` is the reviewed revision's 1-based
+/// position in the patch timeline, which together with `revision_ids.len()`
+/// tells the UI whether a review still covers the current head.
+#[derive(Debug, TS, Serialize)]
+#[ts(export)]
+#[ts(export_to = "cob/patch/")]
+#[serde(rename_all = "camelCase")]
+pub struct Reviewer {
+    author: cobs::Author,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    verdict: Option<Verdict>,
+    #[ts(type = "number")]
+    revision_number: usize,
+    /// Whether the reviewer is a delegate, so their verdict can be told apart
+    /// from a non-delegate's at a glance.
+    delegate: bool,
+}
+
 #[derive(Debug, TS, Serialize)]
 #[ts(export)]
 #[ts(export_to = "cob/patch/")]
@@ -37,6 +61,9 @@ pub struct Patch {
     timestamp: cob::Timestamp,
     #[ts(as = "Vec<String>")]
     revision_ids: Vec<patch::RevisionId>,
+    #[ts(type = "number")]
+    comment_count: usize,
+    reviewers: Vec<Reviewer>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -50,7 +77,38 @@ pub enum ListPatchesError {
 }
 
 impl Patch {
-    pub fn new(id: patch::PatchId, patch: &patch::Patch, aliases: &impl AliasStore) -> Self {
+    pub fn new(
+        id: patch::PatchId,
+        patch: &patch::Patch,
+        delegates: &[radicle::identity::Did],
+        aliases: &impl AliasStore,
+    ) -> Self {
+        // Every review on every revision, so the patch list can render the same
+        // summary the patch page does. Reviews belong to the revision they were
+        // written against, and carrying `revision_number` is what lets the UI
+        // tell a review of the current head from one left behind by a later
+        // push — see the outdated handling in `reviewSummary`.
+        //
+        // Numbering follows `patch.revisions()`, the patch's timeline order,
+        // which is the same order `revision_ids` below is built from. Redacted
+        // revisions are skipped by both.
+        let reviewers = patch
+            .revisions()
+            .enumerate()
+            .flat_map(|(index, (_, revision))| {
+                revision.reviews().map(move |(key, review)| {
+                    let did = radicle::identity::Did::from(*key);
+
+                    Reviewer {
+                        author: cobs::Author::new(&did, aliases),
+                        verdict: review.verdict().map(Into::into),
+                        revision_number: index + 1,
+                        delegate: delegates.contains(&did),
+                    }
+                })
+            })
+            .collect::<Vec<_>>();
+
         Self {
             id: id.to_string(),
             author: cobs::Author::new(patch.author().id(), aliases),
@@ -65,6 +123,23 @@ impl Patch {
             labels: patch.labels().cloned().collect::<Vec<_>>(),
             timestamp: patch.timestamp(),
             revision_ids: patch.revisions().map(|(id, _)| id).collect(),
+            // Unlike an issue, a revision's description is a field of its own
+            // rather than the root of its discussion thread, so every comment
+            // in the thread counts. Review summaries are likewise separate from
+            // `Review::comments`, which holds only code comments.
+            comment_count: patch
+                .revisions()
+                .map(|(_, revision)| {
+                    let discussion_comments = revision.discussion().comments().count();
+                    let review_comments = revision
+                        .reviews()
+                        .map(|(_, review)| review.comments().count())
+                        .sum::<usize>();
+
+                    discussion_comments + review_comments
+                })
+                .sum(),
+            reviewers,
         }
     }
 

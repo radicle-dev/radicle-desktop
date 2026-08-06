@@ -27,6 +27,7 @@
     idLabel: string;
     config: Config;
     styleHeight?: ComponentProps<typeof Button>["styleHeight"];
+    variant?: ComponentProps<typeof Button>["variant"];
   }
 
   const {
@@ -35,6 +36,7 @@
     idLabel,
     config,
     styleHeight = "2rem",
+    variant = "ghost",
   }: Props = $props();
 
   const url = $derived(explorerUrl(explorerPath, config));
@@ -102,6 +104,12 @@
     background-color: var(--color-border-subtle);
     border-radius: var(--border-radius-sm);
   }
+  /* Naked buttons are transparent, so drop the divider background that would
+     otherwise show through and read as a grey fill. */
+  .split.naked {
+    background-color: transparent;
+    gap: 0;
+  }
 </style>
 
 <!-- Hidden anchor used for the "open" action so Tauri's shell plugin opens the
@@ -116,9 +124,9 @@
   aria-hidden="true">
 </a>
 
-<div class="split">
+<div class="split" class:naked={variant === "naked"}>
   <Button
-    variant="ghost"
+    {variant}
     {styleHeight}
     flatRight
     stylePadding="0 0.75rem"
@@ -135,7 +143,7 @@
     bind:expanded={popoverExpanded}>
     {#snippet toggle(onclick)}
       <Button
-        variant="ghost"
+        {variant}
         {styleHeight}
         styleWidth={styleHeight}
         flatLeft

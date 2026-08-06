@@ -11,8 +11,8 @@
   import { compressActions } from "@app/lib/notification";
   import { push } from "@app/lib/router";
   import {
-    authorForNodeId,
     absoluteTimestamp,
+    authorForNodeId,
     formatTimestamp,
     issueStatusBackgroundColor,
     issueStatusColor,

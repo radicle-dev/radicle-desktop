@@ -121,11 +121,7 @@
   <div class="row">
     <Button variant="outline" disabled>
       <Icon name="label" />
-      {#if updatedLabels.length === 0}
-        Add labels
-      {:else}
-        Labels
-      {/if}
+      Add labels
     </Button>
     {#each updatedLabels as label}
       <Label {label} />
@@ -157,19 +153,13 @@
       <Button
         variant="outline"
         disabled={!allowedToEdit}
-        title={allowedToEdit
-          ? undefined
-          : "Only delegates are allowed to add labels"}
+        title={allowedToEdit ? undefined : "Only delegates can add labels"}
         onclick={() => {
           inputValue = "";
           showInput = true;
         }}>
         <Icon name="label" />
-        {#if updatedLabels.length === 0}
-          Add labels
-        {:else}
-          Labels
-        {/if}
+        Add labels
       </Button>
     {/if}
 

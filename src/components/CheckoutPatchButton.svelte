@@ -33,7 +33,7 @@
       {onclick}
       active={popoverExpanded}>
       <Icon name="checkout" />
-      <span class="global-hide-on-medium-desktop-down">Checkout patch</span>
+      <span class="global-hide-on-medium-desktop-down">Checkout</span>
     </Button>
   {/snippet}
   {#snippet popover()}

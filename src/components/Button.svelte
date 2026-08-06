@@ -12,8 +12,9 @@
     active?: boolean;
     flatLeft?: boolean;
     flatRight?: boolean;
+    bordered?: boolean;
     title?: string;
-    styleHeight?: "1.75rem" | "2rem" | "2.5rem";
+    styleHeight?: "1.5rem" | "1.75rem" | "2rem" | "2.5rem";
     styleWidth?: string;
     styleJustifyContent?: string;
     stylePadding?: string;
@@ -29,6 +30,7 @@
     active = false,
     flatLeft = false,
     flatRight = false,
+    bordered = false,
     title,
     styleHeight = "2rem",
     styleWidth = undefined,
@@ -125,6 +127,13 @@
   .button.outline:hover:not(.disabled) {
     border-color: var(--color-border-mid);
   }
+  .button.bordered {
+    border: 1px solid var(--color-border-subtle);
+    background-color: var(--color-surface-canvas);
+  }
+  .button.bordered:hover:not(.disabled) {
+    background-color: var(--color-surface-subtle);
+  }
 
   .button.outline.active:not(.disabled),
   .button.outline:active:not(.disabled) {
@@ -154,6 +163,7 @@
   class:ghost={variant === "ghost"}
   class:naked={variant === "naked"}
   class:outline={variant === "outline"}
+  class:bordered
   class:disabled
   class:active
   class:flat-left={flatLeft}

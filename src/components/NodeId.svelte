@@ -369,16 +369,16 @@
                   label: `${activity.revisionCount} ${pluralize("revision", activity.revisionCount)}`,
                 }
               : undefined,
-            activity.commitCount > 0
-              ? {
-                  icon: "commit" as IconName,
-                  label: `${activity.commitCount} ${pluralize("commit", activity.commitCount)}`,
-                }
-              : undefined,
             activity.reviewCount > 0
               ? {
-                  icon: "comment" as IconName,
+                  icon: "comment-checkmark" as IconName,
                   label: `${activity.reviewCount} ${pluralize("review", activity.reviewCount)}`,
+                }
+              : undefined,
+            activity.commentCount > 0
+              ? {
+                  icon: "comment" as IconName,
+                  label: `${activity.commentCount} ${pluralize("comment", activity.commentCount)}`,
                 }
               : undefined,
           ] as ({ icon: IconName; label: string } | undefined)[]
