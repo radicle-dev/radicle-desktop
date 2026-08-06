@@ -1,4 +1,5 @@
 import type { DiffOptions } from "@bindings/cob/DiffOptions";
+import type { Config } from "@bindings/config/Config";
 import type { Diff } from "@bindings/diff/Diff";
 import type { Stats } from "@bindings/diff/Stats";
 import type { Commit } from "@bindings/repo/Commit";
@@ -138,6 +139,22 @@ export const cachedListJobs = cached(
   (...[rid, sha]) => `list_jobs:${rid}:${sha}`,
   { max: 200, ttl: 30_000 },
 );
+
+async function alias(nid: string): Promise<string | null> {
+  return withTestBackend(tauri.invoke, "alias", { nid });
+}
+
+export const cachedAlias = cached(alias, (...[nid]) => `alias:${nid}`, {
+  max: 5_000,
+});
+
+async function config(): Promise<Config> {
+  return withTestBackend(tauri.invoke, "config", {});
+}
+
+// The node config is static for the session, so a single-entry cache collapses
+// the many callers (e.g. every NodeId hover card) into one in-flight request.
+export const cachedConfig = cached(config, () => "config", { max: 1 });
 
 async function diffStats(
   rid: string,
