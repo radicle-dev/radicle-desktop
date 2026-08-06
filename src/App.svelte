@@ -18,7 +18,7 @@
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
-  import { hide } from "@app/lib/modal";
+  import { hide, toggle } from "@app/lib/modal";
   import * as router from "@app/lib/router";
   import { isLoadedRepoRoute } from "@app/lib/router/definitions";
   import {
@@ -35,6 +35,7 @@
     theme,
   } from "@app/components/ThemeSwitch.svelte";
   import GuideView from "@app/modals/Guide.svelte";
+  import SettingsView from "@app/modals/Settings.svelte";
   import Auth from "@app/views/auth/Auth.svelte";
   import CreateIdentity from "@app/views/auth/CreateIdentity.svelte";
   import InboxView from "@app/views/Inbox.svelte";
@@ -176,6 +177,9 @@
       decreaseFontSize();
     } else if (auxiliarKey && e.key.toLowerCase() === "0") {
       resetFontSize();
+    } else if (auxiliarKey && e.key === ",") {
+      e.preventDefault();
+      toggle({ component: SettingsView, props: {} });
     }
   }} />
 <FullscreenModalPortal />
