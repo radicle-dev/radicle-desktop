@@ -7,9 +7,3 @@ export function fileDiffPath(file: FileDiff): string {
     ? file.newPath
     : file.path;
 }
-
-// A default filename for saving a single file's diff to disk.
-export function fileDiffName(file: FileDiff): string {
-  const base = fileDiffPath(file).split("/").pop() || "file";
-  return `${base}.diff`;
-}
