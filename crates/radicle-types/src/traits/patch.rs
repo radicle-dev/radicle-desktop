@@ -48,48 +48,6 @@ pub trait Patches: Profile {
 
         Ok::<_, Error>(revisions)
     }
-
-    fn revision_by_id(
-        &self,
-        rid: identity::RepoId,
-        id: git::Oid,
-        revision_id: git::Oid,
-    ) -> Result<Option<models::patch::Revision>, Error> {
-        let profile = self.profile();
-        let repo = profile.storage.repository(rid)?;
-        let patches = profile.patches(&repo)?;
-        let revision = patches.get(&id.into())?.and_then(|patch| {
-            let aliases = &profile.aliases();
-
-            patch
-                .revision(&revision_id.into())
-                .map(|r| models::patch::Revision::new(r.clone(), aliases))
-        });
-
-        Ok::<_, Error>(revision)
-    }
-
-    fn review_by_id(
-        &self,
-        rid: identity::RepoId,
-        id: git::Oid,
-        revision_id: git::Oid,
-        review_id: cob::patch::ReviewId,
-    ) -> Result<Option<models::patch::Review>, Error> {
-        let profile = self.profile();
-        let repo = profile.storage.repository(rid)?;
-        let patches = profile.patches(&repo)?;
-        let review = patches.get(&id.into())?.and_then(|patch| {
-            let aliases = &profile.aliases();
-
-            patch
-                .reviews_of(revision_id.into())
-                .find(|(id, _)| *id == &review_id)
-                .map(|(_, review)| models::patch::Review::new(review.clone(), aliases))
-        });
-
-        Ok::<_, Error>(review)
-    }
 }
 
 pub trait PatchesMut: Profile {
