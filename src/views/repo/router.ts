@@ -35,6 +35,8 @@ export interface RepoHomeRoute {
   rid: string;
   peer?: string;
   revision?: string;
+  /** Skip per-repo default peer redirect for an explicit canonical view. */
+  canonical?: boolean;
 }
 
 export interface RepoCommitsRoute {
@@ -42,6 +44,8 @@ export interface RepoCommitsRoute {
   rid: string;
   peer?: string;
   revision?: string;
+  /** Skip per-repo default peer redirect for an explicit canonical view. */
+  canonical?: boolean;
 }
 
 export type SourceBaseRoute = RepoHomeRoute | RepoCommitsRoute;
@@ -443,7 +447,12 @@ export function repoRouteToPath(route: RepoRoute): string {
     if (route.revision !== undefined) {
       segments.push(route.revision);
     }
-    return segments.join("/");
+    let url = segments.join("/");
+    if (route.canonical && route.peer === undefined) {
+      searchParams.set("canonical", "1");
+      url += `?${searchParams}`;
+    }
+    return url;
   } else if (route.resource === "repo.commits") {
     const segments = [...pathSegments, "commits"];
     if (route.peer !== undefined) {
@@ -452,7 +461,12 @@ export function repoRouteToPath(route: RepoRoute): string {
     if (route.revision !== undefined) {
       segments.push(route.revision);
     }
-    return segments.join("/");
+    let url = segments.join("/");
+    if (route.canonical && route.peer === undefined) {
+      searchParams.set("canonical", "1");
+      url += `?${searchParams}`;
+    }
+    return url;
   } else if (route.resource === "repo.commit") {
     return [...pathSegments, "commits", route.commit].join("/");
   } else if (route.resource === "repo.issue") {
@@ -504,15 +518,28 @@ export function repoUrlToRoute(
         peer = segments.shift();
       }
       const revision = segments.length > 0 ? segments.join("/") : undefined;
-      return { resource: "repo.home", rid, peer, revision };
+      const canonical = searchParams.has("canonical");
+      return {
+        resource: "repo.home",
+        rid,
+        peer,
+        revision,
+        canonical: canonical || undefined,
+      };
     } else if (resource === "commits") {
       let peer: string | undefined;
       if (segments[0] === "remotes") {
         segments.shift();
         peer = segments.shift();
       }
+      const canonical = searchParams.has("canonical");
       if (segments.length === 0) {
-        return { resource: "repo.commits", rid, peer };
+        return {
+          resource: "repo.commits",
+          rid,
+          peer,
+          canonical: canonical || undefined,
+        };
       }
       if (
         peer === undefined &&
@@ -526,6 +553,7 @@ export function repoUrlToRoute(
         rid,
         peer,
         revision: segments.join("/"),
+        canonical: canonical || undefined,
       };
     } else if (resource === "issues") {
       const idOrAction = segments.shift();

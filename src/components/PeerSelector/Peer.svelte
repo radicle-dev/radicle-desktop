@@ -4,8 +4,14 @@
   import type { Tag } from "@bindings/repo/Tag";
 
   import * as router from "@app/lib/router";
+  import {
+    clearDefaultPeer,
+    isDefaultPeer,
+    setDefaultPeer,
+  } from "@app/lib/repoDefaultPeerStorage";
   import { truncateId } from "@app/lib/utils";
 
+  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import TagIcon from "@app/components/PeerSelector/TagIcon.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
@@ -21,6 +27,18 @@
 
   const { baseRoute, remote, selected, revision, tab, onSelect }: Props =
     $props();
+
+  const isDefaultView = $derived(isDefaultPeer(baseRoute.rid, remote.id));
+
+  function toggleDefaultView(event: MouseEvent) {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isDefaultView) {
+      clearDefaultPeer(baseRoute.rid);
+    } else {
+      setDefaultPeer(baseRoute.rid, remote.id);
+    }
+  }
 
   // Initial expansion follows whether this peer is currently selected; the
   // user can collapse/expand it freely after that without being overridden.
@@ -98,6 +116,10 @@
     display: inline-flex;
     align-items: center;
   }
+  .default-view-button {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
   .ref-row {
     display: flex;
     align-items: center;
@@ -153,6 +175,17 @@
       </span>
     {/if}
   </div>
+  <span class="default-view-button">
+    <Button
+      variant="ghost"
+      styleHeight="1.5rem"
+      title={isDefaultView
+        ? "Clear default view for this repository"
+        : "Use this fork as the default view for this repository"}
+      onclick={toggleDefaultView}>
+      <Icon name={isDefaultView ? "bookmark-filled" : "bookmark"} />
+    </Button>
+  </span>
   <Icon name={expanded ? "chevron-up" : "chevron-down"} />
 </div>
 

@@ -3,6 +3,7 @@ import { on } from "svelte/events";
 import { get, writable } from "svelte/store";
 
 import * as mutexExecutor from "@app/lib/mutexExecutor";
+import { applyDefaultPeerView } from "@app/lib/repoDefaultPeer";
 import type { LoadedRoute, Route } from "@app/lib/router/definitions";
 import { loadRoute } from "@app/lib/router/definitions";
 import * as utils from "@app/lib/utils";
@@ -99,7 +100,8 @@ async function navigate(
   const historyNav = pendingHistoryNavigation;
   pendingHistoryNavigation = false;
   isLoading.set(true);
-  const path = routeToPath(newRoute);
+  const resolvedRoute = applyDefaultPeerView(newRoute);
+  const path = routeToPath(resolvedRoute);
 
   if (
     action === "push" &&
@@ -107,15 +109,15 @@ async function navigate(
   ) {
     // Pushing the route that is already active would mint a duplicate
     // history entry, making Back appear to do nothing.
-    window.history.pushState(newRoute, "", path);
+    window.history.pushState(resolvedRoute, "", path);
   } else if (action === "replace") {
-    window.history.replaceState(newRoute, "");
+    window.history.replaceState(resolvedRoute, "", path);
   }
   currentUrl = new URL(window.location.href);
   const currentLoadedRoute = get(activeRouteStore);
 
   const loadedRoute = await loadExecutor.run(async () => {
-    return loadRoute(newRoute, currentLoadedRoute);
+    return loadRoute(resolvedRoute, currentLoadedRoute);
   });
 
   // Only let the last request through.
@@ -125,7 +127,7 @@ async function navigate(
 
   historyNavigation = historyNav;
   activeRouteStore.set(loadedRoute);
-  activeUnloadedRouteStore.set(newRoute);
+  activeUnloadedRouteStore.set(resolvedRoute);
   isLoading.set(false);
   Array.from(
     document.getElementsByClassName("global-reset-scroll-after-navigate"),

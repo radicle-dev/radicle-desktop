@@ -200,6 +200,7 @@
             ...baseRoute,
             peer: undefined,
             revision: undefined,
+            canonical: true,
           });
         }}>
         <Icon name="close" />

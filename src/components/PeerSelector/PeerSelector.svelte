@@ -207,6 +207,7 @@
       ...baseRoute,
       peer: undefined,
       revision,
+      canonical: true,
     });
   }
 
