@@ -585,6 +585,15 @@
             filterQuery = "";
           }
         }} />
+      <button
+        class="filter-button"
+        title="Clear input"
+        onclick={() => {
+          filterQuery = "";
+          filterInputElement.focus();
+        }}>
+        <span class="icon"><Icon name="cross"/></span>
+      </button>
     </span>
   {:else}
     <span class="section-header-label">
