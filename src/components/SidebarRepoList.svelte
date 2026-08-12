@@ -592,7 +592,7 @@
           filterQuery = "";
           filterInputElement.focus();
         }}>
-        <span class="icon"><Icon name="cross"/></span>
+        <span class="icon"><Icon name="close"/></span>
       </button>
     </span>
   {:else}
