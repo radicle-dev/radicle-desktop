@@ -109,6 +109,8 @@
     filesHeader?: Snippet;
     // Files (by new-side path) that start collapsed.
     collapsedPaths?: ReadonlySet<string>;
+    // Restricts the diff to these files (by new-side path).
+    includePaths?: ReadonlySet<string>;
     // Files (by new-side path) marked reviewed. Providing this shows the
     // reviewed toggle in every file header; leave unset to hide it.
     reviewedPaths?: ReadonlySet<string>;
@@ -147,6 +149,7 @@
     stickyTop = undefined,
     filesHeader = undefined,
     collapsedPaths = undefined,
+    includePaths = undefined,
     reviewedPaths = undefined,
     onToggleReviewed = undefined,
     commentCounts = undefined,
@@ -331,8 +334,18 @@
   }
   const lineHeightPx = $derived(codeLineHeight(fontSettings.size));
   let view = $state.raw<CodeView<LineAnnotation> | undefined>(undefined);
-  // The parsed files, kept so `scrollToFile` can map a path to its diff item.
+  // Everything the patch parsed to, kept so `includePaths` can be re-applied
+  // without re-parsing.
+  let allFiles = $state.raw<FileDiffMetadata[]>([]);
+  // The files actually on screen, which is what `scrollToFile` and the comment
+  // layer walk.
   let parsedFiles = $state.raw<FileDiffMetadata[]>([]);
+
+  function visibleFiles(files: FileDiffMetadata[]): FileDiffMetadata[] {
+    return includePaths
+      ? files.filter(file => includePaths.has(file.name))
+      : files;
+  }
 
   // Scroll to a logical position in the scroll content, where 0 is the top of
   // the `header`. Pierre reuses a paged scroll scaffold, so the logical position
@@ -359,8 +372,9 @@
   let pendingScroll: { path: string; anchor?: CommentAnchor } | undefined;
 
   function applyScroll(target: { path: string; anchor?: CommentAnchor }): void {
-    const index = parsedFiles.findIndex(file => file.name === target.path);
-    if (index < 0) {
+    const id = target.path;
+    const item = view?.getItem(id);
+    if (!item) {
       // The patch is parsed off the main thread, so a caller that switches the
       // diff and immediately scrolls arrives before there are any items. Hold
       // the target and apply it once they exist.
@@ -368,8 +382,6 @@
       return;
     }
     pendingScroll = undefined;
-    const id = String(index);
-    const item = view?.getItem(id);
     // A collapsed file has no line to arrive at (a lockfile or one already
     // marked reviewed starts that way), so open it first.
     if (item?.type === "diff" && item.collapsed === true) {
@@ -415,8 +427,8 @@
     if (!instance) {
       return;
     }
-    for (let index = 0; index < parsedFiles.length; index++) {
-      const item = instance.getItem(String(index));
+    for (const file of parsedFiles) {
+      const item = instance.getItem(file.name);
       if (item) {
         instance.updateItem({
           ...item,
@@ -883,8 +895,8 @@
   function buildItems(
     files: FileDiffMetadata[],
   ): CodeViewItem<LineAnnotation>[] {
-    return files.map((fileDiff, index) => ({
-      id: String(index),
+    return files.map(fileDiff => ({
+      id: fileDiff.name,
       type: "diff",
       fileDiff,
       collapsed: collapsedPaths?.has(fileDiff.name) === true,
@@ -1049,8 +1061,8 @@
     }
     untrack(() => {
       let changed = false;
-      for (let index = 0; index < parsedFiles.length; index++) {
-        const item = instance.getItem(String(index));
+      for (const file of parsedFiles) {
+        const item = instance.getItem(file.name);
         if (item?.type !== "diff") {
           continue;
         }
@@ -1071,6 +1083,32 @@
         instance.render(true);
       }
       queueSlotSync(instance.getRenderedItems());
+    });
+  });
+
+  // `includePaths` is a live filter: deleting the last comment on a file should
+  // take the file with it, not leave it behind until the next reload. Compared
+  // by name rather than by set identity, since the host rebuilds the set on
+  // every reload whether or not its contents moved.
+  $effect(() => {
+    void includePaths;
+    const instance = view;
+    if (!instance) {
+      return;
+    }
+    untrack(() => {
+      if (allFiles.length === 0) {
+        return;
+      }
+      const shown = visibleFiles(allFiles);
+      const before = parsedFiles.map(file => file.name).join("\u0000");
+      const after = shown.map(file => file.name).join("\u0000");
+      if (before === after) {
+        return;
+      }
+      parsedFiles = shown;
+      instance.setItems(buildItems(shown));
+      instance.render(true);
     });
   });
 
@@ -1115,8 +1153,10 @@
           if (cancelled) {
             return;
           }
-          parsedFiles = files;
-          instance.setItems(buildItems(files));
+          allFiles = files;
+          const shown = visibleFiles(files);
+          parsedFiles = shown;
+          instance.setItems(buildItems(shown));
           instance.render(true);
           if (pendingScroll !== undefined) {
             applyScroll(pendingScroll);
@@ -1131,6 +1171,10 @@
       return () => {
         cancelled = true;
         view = undefined;
+        // Cleared so the `includePaths` filter cannot fire against the outgoing
+        // patch's files while the next one is still parsing.
+        allFiles = [];
+        parsedFiles = [];
         pendingSlotItems = undefined;
         unmountHeaders();
         unmountAnnotations();

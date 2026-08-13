@@ -52,6 +52,9 @@
     deleteComment?: (commentId: string) => Promise<void>;
     rid: string;
     activityItems?: ActivityItem<A>[];
+    /// Drops the outer margin, for a host that owns the spacing between its own
+    /// blocks. The default keeps the spacing the timeline pages rely on.
+    flush?: boolean;
     renderActivity?: Snippet<[A, { hideAuthor: boolean }]>;
     authorOf?: (data: A) => Author | undefined;
     afterActivity?: Snippet;
@@ -69,6 +72,7 @@
     deleteComment,
     rid,
     activityItems,
+    flush = false,
     renderActivity,
     authorOf,
     afterActivity,
@@ -203,13 +207,19 @@
 </script>
 
 <style>
+  .discussion {
+    margin: 1.5rem 0 2.5rem;
+  }
+  .discussion.flush {
+    margin: 0;
+  }
   .timeline-rail {
     position: relative;
   }
   .activity-stream {
     position: relative;
   }
-  .activity-stream::before {
+  .activity-stream.has-runs::before {
     content: "";
     position: absolute;
     top: 0.5rem;
@@ -275,11 +285,15 @@
   .reply-wrapper {
     margin-top: 1rem;
   }
+  /* Nothing above it to connect to, so the host's own spacing is the whole gap. */
+  .activity-stream:not(.has-runs) + .reply-wrapper {
+    margin-top: 0;
+  }
 </style>
 
-<div style:margin="1.5rem 0 2.5rem 0">
+<div class="discussion" class:flush>
   <div class="timeline-rail">
-    <div class="activity-stream">
+    <div class="activity-stream" class:has-runs={runs.length > 0}>
       {#each runs as run, runIndex (runIndex)}
         {#if run.kind === "thread"}
           <ThreadComponent

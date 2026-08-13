@@ -388,8 +388,9 @@
     return origins;
   });
 
-  // File paths that carry review comments; those files start expanded, the
-  // rest of the changed files render collapsed.
+  // The files this review says something about. The diff below is restricted to
+  // these: a review is a record of what someone had to say, and a file they said
+  // nothing about is context they can already read on the Changes tab.
 
   const commentedPaths = $derived(new Set(fileGroups.map(g => g.path)));
 
@@ -461,19 +462,6 @@
     ),
   );
 
-  // Only the files this review says something about are worth opening; the rest
-  // are context, and so are the lockfiles either way.
-  const collapsedPaths = $derived.by(() => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- rebuilt fresh each derivation
-    const paths = new Set(fileMeta.ignored);
-    for (const path of fileMeta.statuses.keys()) {
-      if (!commentedPaths.has(path)) {
-        paths.add(path);
-      }
-    }
-    return paths;
-  });
-
   const commentCounts = $derived(
     commentCountsByPath(
       reviewCodeComments.threads,
@@ -506,7 +494,6 @@
     align-items: center;
     gap: 0.5rem;
     flex-wrap: wrap;
-    margin-bottom: 0.75rem;
   }
   .back {
     background-color: var(--color-surface-canvas);
@@ -530,7 +517,6 @@
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-bottom: 1.5rem;
     color: var(--color-text-secondary);
     font: var(--txt-body-m-regular);
   }
@@ -565,8 +551,9 @@
     position: relative;
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--border-radius-md);
-    padding: 0.75rem 1rem;
-    margin-bottom: 1.5rem;
+    /* Matches the reply box and `Comment`'s own body inset, so the summary text
+       and the comment placeholder start on the same line. */
+    padding: 0.75rem;
     font: var(--txt-body-m-regular);
   }
   .summary-empty {
@@ -584,9 +571,7 @@
   .summary-edit:focus-visible {
     opacity: 1;
   }
-  .summary-editor {
-    margin-bottom: 1.5rem;
-  }
+
   .action-icon {
     background: none;
     border: 1px solid transparent;
@@ -649,10 +634,28 @@
   }
   /* The chrome is full width inside the diff's scroll content, so it carries
      its own horizontal padding — the same as the patch view's own header. */
+  /* One rhythm for the whole review header: every block below is a direct child
+     and carries no vertical margin of its own, so the spacing stays even
+     whichever blocks a given review actually has. */
   .chrome {
     display: flex;
     flex-direction: column;
-    padding: 1rem 1rem 0;
+    gap: 1.5rem;
+    /* The bottom padding is the same step as the gap: it is what separates the
+       last block from the first file, now that nothing in here carries a margin
+       of its own. */
+    padding: 1rem 1rem 1.5rem;
+  }
+  /* Where the file list would be. Without it the page just stops after the
+     discussion, which reads as something having failed to load. Indented past
+     the cards' border to start on the same line as the text inside them, rather
+     than level with their edges. */
+  .no-line-comments {
+    /* Just short of where the cards' text starts (their border plus padding).
+       Optically that reads as aligned: this line has no box around it, so the
+       mathematical offset looks a touch too far right. */
+    padding-left: 0.75rem;
+    color: var(--color-text-tertiary);
   }
   .timestamp {
     color: var(--color-text-quaternary);
@@ -818,7 +821,7 @@
     </div>
 
     {#if editingSummary}
-      <div class="summary-editor">
+      <div>
         <ExtendedTextarea
           {rid}
           body={review.summary ?? ""}
@@ -858,7 +861,14 @@
       createComment={createDiscussionComment}
       editComment={codeActions.editComment}
       deleteComment={codeActions.deleteComment}
-      reactOnComment={codeActions.reactOnComment} />
+      reactOnComment={codeActions.reactOnComment}
+      flush />
+
+    {#if loadedDiff && commentedPaths.size === 0}
+      <div class="no-line-comments txt-body-m-regular">
+        This review has no line comments.
+      </div>
+    {/if}
   </div>
 {/snippet}
 
@@ -879,7 +889,7 @@
     ? path =>
         getDiffText(rid, reviewedRevision.base, reviewedRevision.head, 3, path)
     : undefined}
-  {collapsedPaths}
+  includePaths={commentedPaths}
   {commentCounts}
   codeComments={reviewCodeComments}
   commentCommit={reviewedRevision?.head}
