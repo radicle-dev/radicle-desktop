@@ -3,6 +3,11 @@
     key: string;
     timestamp: number;
     data: T;
+    /// Renders as a card or a filled band rather than a bare row of text.
+    /// Grouped rows are packed tight against each other, which reads as one
+    /// element when the things being packed have their own edges, so these are
+    /// never folded into a run.
+    standalone?: boolean;
   }
 </script>
 
@@ -77,7 +82,13 @@
 
   type TimelineEntry =
     | { kind: "thread"; key: string; timestamp: number; thread: Thread }
-    | { kind: "activity"; key: string; timestamp: number; data: A };
+    | {
+        kind: "activity";
+        key: string;
+        timestamp: number;
+        data: A;
+        standalone: boolean;
+      };
 
   const timeline: TimelineEntry[] = $derived(
     [
@@ -97,6 +108,7 @@
             key: item.key,
             timestamp: item.timestamp,
             data: item.data,
+            standalone: item.standalone === true,
           }) satisfies TimelineEntry,
       ),
     ].sort((a, b) => a.timestamp - b.timestamp),
@@ -138,7 +150,11 @@
       }
       const author = entryAuthor(entry);
       const last = result[result.length - 1];
+      const groupable =
+        !entry.standalone &&
+        !(last?.kind === "single" && last.entry.standalone);
       if (
+        groupable &&
         author &&
         last &&
         ((last.kind === "single" &&

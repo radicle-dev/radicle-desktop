@@ -785,6 +785,9 @@
           key: `${operation.id}:${actionIndex}`,
           timestamp: operation.timestamp,
           data: { kind: "op", op, commits, reviewThreads, reviewComments },
+          // A merge draws a filled band and a review draws a card; both need
+          // the space around them that a run of bare rows deliberately drops.
+          standalone: op.type === "merge" || op.type === "review",
         });
       });
     });
