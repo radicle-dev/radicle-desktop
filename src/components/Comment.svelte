@@ -98,12 +98,6 @@
     run: () => void | Promise<void>;
   };
 
-  const canDelete = $derived(
-    Boolean(deleteComment) &&
-      currentUserNid !== undefined &&
-      utils.publicKeyFromDid(author.did) === currentUserNid,
-  );
-
   const menuActions: MenuAction[] = $derived.by(() => {
     const actions: MenuAction[] = [];
     if (id) {
@@ -117,7 +111,11 @@
     if (editComment) {
       actions.push({ label: "Edit", icon: "edit", run: toggleEdit });
     }
-    if (canDelete && deleteComment) {
+    // Gated by whoever passes it, exactly as `editComment` is — the protocol
+    // authorizes both the same way (a delegate, or the comment's own author),
+    // so a second, stricter rule here would only hide an action the node would
+    // have accepted.
+    if (deleteComment) {
       actions.push({ label: "Delete", icon: "trash", run: deleteComment });
     }
     return actions;

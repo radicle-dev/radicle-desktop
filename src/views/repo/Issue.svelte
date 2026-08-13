@@ -210,6 +210,27 @@
     }
   }
 
+  /// The protocol authorizes a redaction for a delegate or the comment's own
+  /// author, and refuses it outright for an issue's root comment — which is the
+  /// issue body, and never appears in these threads.
+  async function deleteComment(id: string) {
+    try {
+      await invoke("edit_issue", {
+        rid: repo.rid,
+        cobId: issue.id,
+        action: {
+          type: "comment.redact",
+          id,
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Issue comment deletion failed: ", error);
+    } finally {
+      await reload();
+    }
+  }
+
   async function updateTitle(newTitle: string) {
     try {
       await invoke("edit_issue", {
@@ -453,6 +474,7 @@
             {config}
             {createComment}
             {editComment}
+            {deleteComment}
             {reactOnComment}
             rid={repo.rid}
             {activityItems}

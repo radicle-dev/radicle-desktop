@@ -42,6 +42,9 @@
       authors: Author[],
       reaction: string,
     ) => Promise<void>;
+    // Optional: a discussion whose host has no way to redact a comment simply
+    // does not offer the action.
+    deleteComment?: (commentId: string) => Promise<void>;
     rid: string;
     activityItems?: ActivityItem<A>[];
     renderActivity?: Snippet<[A, { hideAuthor: boolean }]>;
@@ -58,6 +61,7 @@
     createComment,
     editComment,
     reactOnComment,
+    deleteComment,
     rid,
     activityItems,
     renderActivity,
@@ -272,6 +276,7 @@
               repoDelegates.map(delegate => delegate.did),
             )}
             {editComment}
+            {deleteComment}
             createReply={createComment}
             {reactOnComment} />
           <div class="connector"></div>

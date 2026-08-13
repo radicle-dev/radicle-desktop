@@ -857,6 +857,7 @@
       {config}
       createComment={createDiscussionComment}
       editComment={codeActions.editComment}
+      deleteComment={codeActions.deleteComment}
       reactOnComment={codeActions.reactOnComment} />
   </div>
 {/snippet}

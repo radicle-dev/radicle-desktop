@@ -1877,6 +1877,7 @@
     {config}
     {createComment}
     editComment={codeActions.editComment}
+    deleteComment={codeActions.deleteComment}
     reactOnComment={codeActions.reactOnComment}
     {rid}
     {activityItems}
