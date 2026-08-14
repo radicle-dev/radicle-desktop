@@ -600,7 +600,10 @@
      scrolling a fraction of a pixel out from under it. It is content-sized up to
      the height the diff hands the column. */
   .commits-column {
-    max-height: 100%;
+    /* Handed down by the diff. A percentage would resolve against an indefinite
+       box and be dropped, and the list would grow past the port instead of
+       scrolling within it. */
+    max-height: var(--app-diff-overlay-height, 100%);
     overflow-y: auto;
     /* An outset ring, not a border: the file cards beside it are outlined the
        same way, and a real border would sit inside the box and leave the two a

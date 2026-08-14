@@ -727,7 +727,7 @@
   /* Frames the scroll port itself, so the header inside it pins to a border that
      does not move — the same arrangement as the commits column. */
   .comment-column {
-    max-height: 100%;
+    max-height: var(--app-diff-overlay-height, 100%);
     overflow-y: auto;
     /* An outset ring, not a border: the file cards beside it are outlined the
        same way, and a real border would sit inside the box and leave the two a

@@ -324,6 +324,10 @@
     return () => observer.disconnect();
   });
 
+  // What is left of the port once the sticky bar has taken its share — the space
+  // the column actually has, and exactly its height once the bar is pinned.
+  const overlayHeight = $derived(Math.max(portHeight - stickyTopHeight, 0));
+
   // `DiffFileHeader`'s row height (`2.5rem`), fed to Pierre as the exact
   // `diffHeaderHeight` metric. It must be constant across all files — Pierre
   // estimates each file's position from this single metric (not the measured
@@ -1405,10 +1409,16 @@
   {/if}
   {#if overlayLeft}
     <div bind:this={overlayLeftEl} class="pierre-diff-overlay-left">
+      <!-- The height is published as well as applied. Whatever the column holds
+           has to scroll inside it, and for that it needs a definite height of its
+           own: a percentage of this box resolves against an indefinite height and
+           is dropped, so the content would simply grow past the bottom of the
+           port instead of scrolling. -->
       <div
         class="pierre-diff-overlay-left-column"
         style:width={overlayLeftWidth}
-        style:max-height="{portHeight}px">
+        style:max-height="{overlayHeight}px"
+        style:--app-diff-overlay-height="{overlayHeight}px">
         {@render overlayLeft()}
       </div>
     </div>
