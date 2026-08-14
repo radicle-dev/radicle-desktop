@@ -128,6 +128,8 @@
     // The commit a new comment is anchored against — the head of the diff on
     // screen. Required alongside `codeComments` to compose a comment.
     commentCommit?: string;
+    // A thread to single out, so a jump from elsewhere can say where it landed.
+    highlightedCommentId?: string;
   }
 
   const {
@@ -155,6 +157,7 @@
     commentCounts = undefined,
     codeComments = undefined,
     commentCommit = undefined,
+    highlightedCommentId = undefined,
   }: Props = $props();
 
   // Whether the reader may start a new comment: the host has to supply both an
@@ -357,15 +360,56 @@
     view?.scrollTo({ type: "position", position, behavior });
   }
 
-  // Scroll the chrome out of the way, bringing the top of the files column — the
-  // sticky bar and `filesHeader`, then the first file — up to the top of the
-  // port. The header element ends in the gap those hang in, so the chrome is
-  // what is left of it once the gap is taken off.
-  export function scrollToFilesTop(): void {
-    if (headerEl) {
-      const reserve = reserveOnHeader ? reserveHeight : 0;
-      scrollToPosition(headerEl.getBoundingClientRect().height - reserve);
+  // The scroll position that brings the top of the files column — the sticky
+  // bar and `filesHeader`, then the first file — up to the top of the port,
+  // leaving the chrome just above it. The header element ends in the gap those
+  // hang in, so the chrome is what is left of it once the gap is taken off.
+  function filesTopPosition(): number | undefined {
+    if (!headerEl) {
+      return undefined;
     }
+    const reserve = reserveOnHeader ? reserveHeight : 0;
+    return headerEl.getBoundingClientRect().height - reserve;
+  }
+
+  // Scroll the chrome out of the way.
+  export function scrollToFilesTop(): void {
+    const position = filesTopPosition();
+    if (position !== undefined) {
+      scrollToPosition(position);
+    }
+  }
+
+  // Nothing that targets a file should scroll the chrome back into view: the
+  // caller is pointing at something in the files column, and putting the page
+  // header back on screen loses the reader's place in it. Centring a line near
+  // the top of the first file does exactly that, because there is not half a
+  // viewport of diff above it to centre against.
+  //
+  // `scrollTo` resolves its destination privately, during the render it queues,
+  // so the only way to know where it landed is to let it land and look.
+  // `render(true)` runs that render synchronously, which keeps the correction in
+  // the same task — the browser paints once, already clamped.
+  function clampToFilesTop(): void {
+    const instance = view;
+    const floor = filesTopPosition();
+    const first = parsedFiles[0]?.name;
+    if (!instance || floor === undefined || first === undefined) {
+      return;
+    }
+    instance.render(true);
+    if (instance.getScrollTop() >= floor) {
+      return;
+    }
+    // Expressed as the first file aligned to the top rather than as the raw
+    // position: a `position` target has Pierre's sticky-header offset taken off
+    // it, an `item` target does not.
+    instance.scrollTo({
+      type: "item",
+      id: first,
+      align: "start",
+      offset: reserveOnHeader ? reserveHeight : 0,
+    });
   }
 
   // A scroll target that arrived before the patch finished parsing.
@@ -405,6 +449,7 @@
         offset: stickyTopHeight,
       });
     }
+    clampToFilesTop();
   }
 
   // Scroll the diff to a file by its path (item id is its index in the patch).
@@ -753,6 +798,7 @@
         }
         entry.state.annotation = metadata;
         entry.state.comments = codeComments;
+        entry.state.highlightedCommentId = highlightedCommentId;
         entry.state.commit = commentCommit;
         entry.state.onHoverThread = (threadId: string | undefined) => {
           const thread = metadata.threads.find(
@@ -1055,6 +1101,7 @@
     void codeComments;
     void commentCommit;
     void fileStatuses;
+    void highlightedCommentId;
     const instance = view;
     if (!instance) {
       return;
@@ -1307,8 +1354,16 @@
   .pierre-diff-overlay-left-column {
     position: absolute;
     /* Lifted out of the reserved gap like the bar above it, then pushed back
-       down to sit under the bar. */
-    top: calc(var(--app-sticky-top, 0px) - var(--app-diff-reserve, 0px));
+       down to sit under the bar — and one pixel further where there is a bar at
+       all. The column is ringed by an outset shadow, which is drawn *outside*
+       its box: pinned flush against the bar, that pixel row falls under the bar,
+       which is opaque and paints above, and the column loses its top edge. It is
+       the same pixel Pierre's own pinned file headers are offset by, so this
+       also keeps the column and the first header level. */
+    top: calc(
+      var(--app-sticky-top, 0px) - var(--app-diff-reserve, 0px) +
+        var(--app-sticky-gap, 0px)
+    );
     left: 1rem;
     display: flex;
     flex-direction: column;
@@ -1332,6 +1387,7 @@
     ? `calc(${overlayLeftWidth} + 1.5rem)`
     : undefined}
   style:--app-sticky-top="{stickyTopHeight}px"
+  style:--app-sticky-gap={stickyTop ? "1px" : undefined}
   style:--app-diff-reserve={reserveOnHeader ? `${reserveHeight}px` : undefined}>
   {#if header}
     <div bind:this={headerEl} class="pierre-diff-header">

@@ -65,11 +65,14 @@
     gap: 0.375rem;
     color: var(--color-text-quaternary);
   }
+  /* The verdict badge's padding and radius (see `ReviewItem`), so the chips along
+     a comment's authorship line are all the one size. No fixed height: the text's
+     own line box plus that padding is what sets it, which is how the badge is
+     built and what keeps the two the same. */
   .thread-anchor-lines {
     display: inline-flex;
     align-items: center;
-    height: 1.25rem;
-    padding: 0 0.375rem;
+    padding: 0.125rem 0.375rem;
     border-radius: var(--border-radius-sm);
     background-color: var(--color-surface-strong);
     color: var(--color-text-secondary);
@@ -105,6 +108,7 @@
           rid={comments.rid}
           currentUserNid={comments.config.publicKey}
           {thread}
+          highlightedCommentId={state.highlightedCommentId}
           inline
           draft={isDraftThread}
           origin={comments.threadOrigins?.[thread.root.id]}

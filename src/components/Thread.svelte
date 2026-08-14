@@ -50,6 +50,9 @@
     // Rendered on the root comment's authorship line while it is hovered. The
     // replies do not get it: it says something about the thread, not a comment.
     hoverNote?: Snippet;
+    // A single comment to ring, so a jump from elsewhere can say where it
+    // landed. Marks that one comment, root or reply, not the thread around it.
+    highlightedCommentId?: string;
   }
 
   const {
@@ -67,6 +70,7 @@
     draft = false,
     origin,
     hoverNote,
+    highlightedCommentId,
   }: Props = $props();
 
   async function toggleReply() {
@@ -97,7 +101,12 @@
     gap: 0.5rem;
   }
 
+  /* Lifted over the reply rail for the same reason `.reply-box` is: the rail
+     starts half a gap above the replies so it reaches back to this card, and
+     would otherwise be drawn across its bottom edge. */
   .top-level-comment {
+    position: relative;
+    z-index: 1;
     background-color: var(--color-surface-canvas);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--border-radius-sm);
@@ -163,12 +172,26 @@
   .reply-form-box {
     padding: 1rem;
   }
+  /* Says which comment you arrived at after jumping to one. Drawn as a ring
+     outside the card's own border so it adds no height — the diff measures these
+     boxes to lay itself out — and faded rather than switched off, so the eye
+     follows it going as well as coming. */
+  .top-level-comment,
+  .reply-box {
+    transition: box-shadow 0.4s ease-out;
+  }
+  .top-level-comment.highlighted,
+  .reply-box.highlighted {
+    box-shadow: 0 0 0 2px var(--color-border-brand);
+  }
 </style>
 
 {#snippet repliesSnippet()}
   <div class="replies-list">
     {#each replies as reply}
-      <div class="reply-box">
+      <div
+        class="reply-box"
+        class:highlighted={highlightedCommentId === reply.id}>
         <CommentComponent
           disallowEmptyBody
           {rid}
@@ -215,7 +238,9 @@
 {/snippet}
 
 <div class="comments" class:inline>
-  <div class="top-level-comment">
+  <div
+    class="top-level-comment"
+    class:highlighted={highlightedCommentId === root.id}>
     <CommentComponent
       disallowEmptyBody
       {rid}

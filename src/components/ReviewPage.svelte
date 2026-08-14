@@ -19,7 +19,7 @@
   import { commentActions } from "@app/lib/codeCommentActions";
   import type { CodeComments } from "@app/lib/codeComments";
   import { diffOptions } from "@app/lib/diffOptions.svelte";
-  import { fileMetaOf, fullFileLoader } from "@app/lib/diffText";
+  import { fileDiffPath, fileMetaOf, fullFileLoader } from "@app/lib/diffText";
   import { nodeRunning } from "@app/lib/events";
   import {
     cachedGetDiff,
@@ -27,7 +27,8 @@
     getDiffText,
     invoke,
   } from "@app/lib/invoke";
-  import { commentCountsByPath } from "@app/lib/pierreComments";
+  import type { CommentAnchor } from "@app/lib/pierreComments";
+  import { anchorOf } from "@app/lib/pierreComments";
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
   import {
@@ -54,6 +55,7 @@
   import NodeId from "@app/components/NodeId.svelte";
   import PierreDiff from "@app/components/PierreDiff.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
+  import ReviewCommentList from "@app/components/ReviewCommentList.svelte";
 
   interface Props {
     config: Config;
@@ -462,12 +464,45 @@
     ),
   );
 
-  const commentCounts = $derived(
-    commentCountsByPath(
-      reviewCodeComments.threads,
-      commentId => reviewCodeComments.canResolveComment?.(commentId) ?? true,
-    ),
-  );
+  let diffView = $state<ReturnType<typeof PierreDiff> | undefined>();
+
+  // The comment the sidebar last jumped to, marked at both ends — the row that
+  // was clicked and the comment it points at. Held long enough to be noticed and
+  // then dropped, so neither keeps a stale mark on it.
+  let highlightedCommentId = $state<string | undefined>(undefined);
+  let highlightTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function revealComment(commentId: string, anchor: CommentAnchor | undefined) {
+    clearTimeout(highlightTimer);
+    highlightedCommentId = commentId;
+    diffView?.scrollToAnchor(anchor);
+    highlightTimer = setTimeout(() => {
+      highlightedCommentId = undefined;
+    }, 2400);
+  }
+  // Leaving the page inside that window would otherwise fire the timer against a
+  // component that is gone.
+  $effect(() => () => clearTimeout(highlightTimer));
+
+  // The sidebar reads top to bottom alongside the file column, so the files come
+  // in diff order and each file's threads in line order. `fileGroups` is built
+  // from the review's comments, which are in neither.
+  const orderedGroups = $derived.by(() => {
+    const order = new Map(
+      diffFiles.map((file, index) => [fileDiffPath(file), index]),
+    );
+    return fileGroups
+      .filter(group => order.has(group.path))
+      .sort((a, b) => (order.get(a.path) ?? 0) - (order.get(b.path) ?? 0))
+      .map(group => ({
+        path: group.path,
+        threads: [...group.threads].sort(
+          (a, b) =>
+            (anchorOf(a.root.location)?.line ?? 0) -
+            (anchorOf(b.root.location)?.line ?? 0),
+        ),
+      }));
+  });
 
   const verdict = $derived(review.verdict);
   const timestamp = $derived(review.timestamp);
@@ -650,6 +685,18 @@
      discussion, which reads as something having failed to load. Indented past
      the cards' border to start on the same line as the text inside them, rather
      than level with their edges. */
+  /* Frames the scroll port itself, so the header inside it pins to a border that
+     does not move — the same arrangement as the commits column. */
+  .comment-column {
+    max-height: 100%;
+    overflow-y: auto;
+    /* An outset ring, not a border: the file cards beside it are outlined the
+       same way, and a real border would sit inside the box and leave the two a
+       pixel out of line. */
+    box-shadow: 0 0 0 1px var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-canvas);
+  }
   .no-line-comments {
     /* Just short of where the cards' text starts (their border plus padding).
        Optically that reads as aligned: this line has no box around it, so the
@@ -785,16 +832,15 @@
           placement="bottom-end"
           bind:expanded={deleteConfirmExpanded}>
           {#snippet toggle(onclick)}
-            <button
-              type="button"
-              class="action-icon"
-              title="Delete review"
-              aria-haspopup="dialog"
-              aria-expanded={deleteConfirmExpanded}
+            <Button
+              variant="naked"
+              {onclick}
+              active={deleteConfirmExpanded}
               disabled={deleting}
-              {onclick}>
+              title="Delete review">
               <Icon name="trash" />
-            </button>
+              Delete
+            </Button>
           {/snippet}
           {#snippet popover()}
             <div class="delete-confirm">
@@ -872,10 +918,20 @@
   </div>
 {/snippet}
 
+{#snippet commentColumn()}
+  <div class="comment-column">
+    <ReviewCommentList
+      groups={orderedGroups}
+      selectedId={highlightedCommentId}
+      onSelect={revealComment} />
+  </div>
+{/snippet}
+
 <!-- The diff owns the scroll port, and the review's own chrome rides inside it
      as a non-virtualized header, so it scrolls away and leaves the file headers
      pinned — the same arrangement as the Changes tab. -->
 <PierreDiff
+  bind:this={diffView}
   patch={loadedDiff?.text ?? ""}
   cacheKeyPrefix={loadedDiff?.key}
   diffStyle={diffOptions.diffStyle}
@@ -890,7 +946,9 @@
         getDiffText(rid, reviewedRevision.base, reviewedRevision.head, 3, path)
     : undefined}
   includePaths={commentedPaths}
-  {commentCounts}
+  overlayLeft={commentedPaths.size > 0 ? commentColumn : undefined}
+  overlayLeftWidth="19rem"
   codeComments={reviewCodeComments}
   commentCommit={reviewedRevision?.head}
+  {highlightedCommentId}
   header={chrome} />

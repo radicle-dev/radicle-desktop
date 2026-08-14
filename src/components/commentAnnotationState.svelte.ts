@@ -14,6 +14,11 @@ export class CommentAnnotationState {
   // the file out of the diff's render window — which unmounts this component —
   // does not throw the draft away.
   composerBody = $state("");
+  // A thread singled out from elsewhere — the review sidebar scrolling to one —
+  // so it can say which comment you arrived at. Pushed in on every slot sync, so
+  // a comment that mounts after the scroll still picks it up.
+  highlightedCommentId = $state<string | undefined>(undefined);
+
   // Not `$state`: read only at call time. Set per annotation in `PierreDiff`.
   onComposerInput: (body: string) => void = () => {
     // Replaced per annotation.
