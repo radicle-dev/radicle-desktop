@@ -221,11 +221,9 @@
 
   const commentSources = $derived(commentSourcesOf(selectedRevision));
 
-  const visibleCommentCount = $derived(
-    commentSources
-      .filter(s => !hiddenCommentSources.has(s.id))
-      .reduce((total, s) => total + s.count, 0),
-  );
+  // Where the Changes tab's comment stepper stands. Written by that tab, read by
+  // the tab bar below, which is rendered here.
+  let commentPosition = $state({ index: -1, total: 0 });
 
   let commentSourcesExpanded = $state(false);
   let commitCountsByRevisionId: Record<string, number> = $state({});
@@ -788,6 +786,21 @@
   .tabs-right {
     margin-left: auto;
   }
+  /* Tighter than the row it sits in: the two arrows and the count are one
+     control, not three. */
+  .comment-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+  }
+  .comment-position {
+    /* Enough for "16 of 16" without the arrows shifting as the number grows
+       through a walk. */
+    min-width: 4.5rem;
+    text-align: center;
+    color: var(--color-text-secondary);
+    font-variant-numeric: tabular-nums;
+  }
   .avatar-stack {
     display: inline-flex;
     align-items: center;
@@ -974,7 +987,10 @@
         style:margin-left="auto"
         style:gap="0.5rem"
         style:z-index="40">
-        {#if isOwnPatch}
+        <!-- Not on the review view: the page's own Delete is for the review, and
+             a second Delete up here would be one word for two different
+             targets. -->
+        {#if isOwnPatch && !currentReview}
           <Popover
             popoverPadding="0"
             placement="bottom-end"
@@ -1036,40 +1052,45 @@
           patchId={patch.id}
           selectedRevisionId={selectedRevision.id}
           {tab} />
-        {#if ownDraftReview}
-          {#if patchView !== "changes"}
+        <!-- Not on the review view: reviewing is what that view already is, and
+             it carries its own actions on the page. -->
+        {#if !currentReview}
+          {#if ownDraftReview}
+            {#if patchView !== "changes"}
+              <Button
+                variant="secondary"
+                onclick={() => setView("changes")}
+                title="Continue your review of this revision">
+                <Icon name="comment" />
+                <span
+                  class="txt-body-m-regular global-hide-on-medium-desktop-down">
+                  Continue review
+                </span>
+              </Button>
+            {/if}
+          {:else}
             <Button
               variant="secondary"
-              onclick={() => setView("changes")}
-              title="Continue your review of this revision">
+              disabled={hasOwnPublishedReviewOnSelected}
+              onclick={() => {
+                draftReviewStorage.create(
+                  repo.rid,
+                  patch.id,
+                  selectedRevision.id,
+                  config.publicKey,
+                );
+                setView("changes");
+              }}
+              title={hasOwnPublishedReviewOnSelected
+                ? "You already reviewed this revision. You can still add comments on the changes."
+                : "Start a review of this revision"}>
               <Icon name="comment" />
               <span
                 class="txt-body-m-regular global-hide-on-medium-desktop-down">
-                Continue review
+                Review
               </span>
             </Button>
           {/if}
-        {:else}
-          <Button
-            variant="secondary"
-            disabled={hasOwnPublishedReviewOnSelected}
-            onclick={() => {
-              draftReviewStorage.create(
-                repo.rid,
-                patch.id,
-                selectedRevision.id,
-                config.publicKey,
-              );
-              setView("changes");
-            }}
-            title={hasOwnPublishedReviewOnSelected
-              ? "You already reviewed this revision. You can still add comments on the changes."
-              : "Start a review of this revision"}>
-            <Icon name="comment" />
-            <span class="txt-body-m-regular global-hide-on-medium-desktop-down">
-              Review
-            </span>
-          </Button>
         {/if}
       </div>
     </Topbar>
@@ -1137,72 +1158,105 @@
           {@const onLatestRevision = selectedRevision.id === latestRevision.id}
           <div class="tabs-right">
             {#if commentSources.length > 0}
-              <Popover
-                popoverPadding="0"
-                placement="bottom-start"
-                bind:expanded={commentSourcesExpanded}>
-                {#snippet toggle(onclick)}
-                  <Button
-                    variant="outline"
-                    {onclick}
-                    active={commentSourcesExpanded}
-                    title="Choose which comments are shown on the diff">
+              <!-- One control: the arrows walk the comments on the diff and the
+                   count between them opens the filter that decides which are
+                   there to walk. -->
+              <div class="comment-stepper">
+                <Button
+                  variant="naked"
+                  title="Previous comment"
+                  disabled={commentPosition.total === 0}
+                  onclick={() => revisionComponent?.stepComment(-1)}>
+                  <Icon name="arrow-up" />
+                </Button>
+                <Popover
+                  popoverPadding="0"
+                  placement="bottom-start"
+                  bind:expanded={commentSourcesExpanded}>
+                  {#snippet toggle(onclick)}
+                    <Button
+                      variant="outline"
+                      {onclick}
+                      active={commentSourcesExpanded}
+                      title="Choose which comments are shown on the diff">
+                      <div
+                        class="global-flex txt-body-m-regular"
+                        style:gap="0.375rem">
+                        <Icon name="comment" />
+                        <span class="comment-position">
+                          {#if commentPosition.total === 0}
+                            <!-- Hiding every source is the reader's own doing
+                                 and says how to get them back; anything else
+                                 that leaves the diff bare is just "none". -->
+                            {hiddenCommentSources.size === commentSources.length
+                              ? "All hidden"
+                              : "none"}
+                          {:else}
+                            {commentPosition.index >= 0
+                              ? commentPosition.index + 1
+                              : "–"}
+                            of
+                            {commentPosition.total}
+                          {/if}
+                        </span>
+                      </div>
+                    </Button>
+                  {/snippet}
+                  {#snippet popover()}
                     <div
-                      class="global-flex txt-body-m-regular"
-                      style:gap="0.375rem">
-                      <Icon name="comment" />
-                      {visibleCommentCount}
+                      style:border="1px solid var(--color-border-subtle)"
+                      style:border-radius="var(--border-radius-sm)"
+                      style:background-color="var(--color-surface-canvas)">
+                      <DropdownList items={commentSources}>
+                        {#snippet item(source)}
+                          {@const hidden = hiddenCommentSources.has(source.id)}
+                          <DropdownListItem
+                            selected={!hidden}
+                            styleGap="0.5rem"
+                            onclick={() => {
+                              if (hidden) {
+                                hiddenCommentSources.delete(source.id);
+                              } else {
+                                hiddenCommentSources.add(source.id);
+                              }
+                            }}>
+                            <Icon name={hidden ? "eye-slash" : "eye"} />
+                            <span class="avatar-stack">
+                              {#each source.nids.slice(0, 2) as nid (nid)}
+                                <UserAvatar nodeId={nid} styleWidth="1rem" />
+                              {/each}
+                              {#if source.nids.length > 2}
+                                <span class="avatar-overflow">+</span>
+                              {/if}
+                            </span>
+                            <span
+                              style:color={hidden
+                                ? "var(--color-text-tertiary)"
+                                : undefined}>
+                              {source.name}
+                            </span>
+                            <div
+                              class="global-flex"
+                              style:margin-left="auto"
+                              style:padding-left="1rem"
+                              style:color="var(--color-text-tertiary)">
+                              <Icon name="comment" />
+                              {source.count}
+                            </div>
+                          </DropdownListItem>
+                        {/snippet}
+                      </DropdownList>
                     </div>
-                    Comments
-                  </Button>
-                {/snippet}
-                {#snippet popover()}
-                  <div
-                    style:border="1px solid var(--color-border-subtle)"
-                    style:border-radius="var(--border-radius-sm)"
-                    style:background-color="var(--color-surface-canvas)">
-                    <DropdownList items={commentSources}>
-                      {#snippet item(source)}
-                        {@const hidden = hiddenCommentSources.has(source.id)}
-                        <DropdownListItem
-                          selected={!hidden}
-                          styleGap="0.5rem"
-                          onclick={() => {
-                            if (hidden) {
-                              hiddenCommentSources.delete(source.id);
-                            } else {
-                              hiddenCommentSources.add(source.id);
-                            }
-                          }}>
-                          <Icon name={hidden ? "eye-slash" : "eye"} />
-                          <span class="avatar-stack">
-                            {#each source.nids.slice(0, 2) as nid (nid)}
-                              <UserAvatar nodeId={nid} styleWidth="1rem" />
-                            {/each}
-                            {#if source.nids.length > 2}
-                              <span class="avatar-overflow">+</span>
-                            {/if}
-                          </span>
-                          <span
-                            style:color={hidden
-                              ? "var(--color-text-tertiary)"
-                              : undefined}>
-                            {source.name}
-                          </span>
-                          <div
-                            class="global-flex"
-                            style:margin-left="auto"
-                            style:padding-left="1rem"
-                            style:color="var(--color-text-tertiary)">
-                            <Icon name="comment" />
-                            {source.count}
-                          </div>
-                        </DropdownListItem>
-                      {/snippet}
-                    </DropdownList>
-                  </div>
-                {/snippet}
-              </Popover>
+                  {/snippet}
+                </Popover>
+                <Button
+                  variant="naked"
+                  title="Next comment"
+                  disabled={commentPosition.total === 0}
+                  onclick={() => revisionComponent?.stepComment(1)}>
+                  <Icon name="arrow-down" />
+                </Button>
+              </div>
             {/if}
             {#if !onLatestRevision}
               <Button
@@ -1475,7 +1529,8 @@
         chrome={patchHeader}
         {tabs}
         bind:showingRevisionDiff
-        bind:filesExpanded />
+        bind:filesExpanded
+        bind:commentPosition />
     {/snippet}
 
     {#if changesPane}

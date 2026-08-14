@@ -19,7 +19,11 @@
     cachedListCommits,
     getDiffText,
   } from "@app/lib/invoke";
-  import { anchorOf, commentCountsByPath } from "@app/lib/pierreComments";
+  import {
+    anchorOf,
+    commentCountsByPath,
+    isCommentableStatus,
+  } from "@app/lib/pierreComments";
   import { pluralize } from "@app/lib/utils";
 
   import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
@@ -50,6 +54,9 @@
     // The view switcher, stuck to the top of the diff's scroll port. It is the
     // last thing before the two columns, so the description sits above it.
     tabs?: Snippet;
+    // Where the comment stepper stands, for the tab bar to render. An index of
+    // `-1` means it has not been stepped yet.
+    commentPosition?: { index: number; total: number };
   }
 
   /* eslint-disable prefer-const */
@@ -68,6 +75,9 @@
     onSaveDescription,
     chrome,
     tabs,
+    // Another output binding, like `filesExpanded`: the tab bar renders the
+    // stepper and reads this, while the stepping itself happens here.
+    commentPosition = $bindable({ index: -1, total: 0 }),
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -225,6 +235,90 @@
       commentId => comments.canResolveComment?.(commentId) ?? true,
     );
   });
+
+  // Every comment on the diff in the order it is rendered — by file, in the
+  // order the files appear, then down the lines of each. What the tab bar's
+  // stepper walks.
+  const orderedComments = $derived.by(() => {
+    const comments = diffCodeComments;
+    if (!comments) return [];
+    const fileOrder = new Map(
+      diffFiles.map((file, index) => [fileDiffPath(file), index] as const),
+    );
+    return comments.threads
+      .flatMap(thread => {
+        const anchor = anchorOf(thread.root.location);
+        // Dropped for the same two reasons the diff itself drops them: the file
+        // is not in this diff, or its content moved and an anchor in it is
+        // ambiguous. Either way there is nothing on screen to step to.
+        if (!anchor) return [];
+        const order = fileOrder.get(anchor.path);
+        if (order === undefined) return [];
+        if (!isCommentableStatus(fileMeta.statuses.get(anchor.path))) return [];
+        return [
+          {
+            id: thread.root.id,
+            anchor,
+            order,
+            // A deletion is rendered above an addition on the same line, and
+            // two comments on one line are ordered oldest first — the same rule
+            // the annotations themselves are built with.
+            side: anchor.side === "deletions" ? 0 : 1,
+            timestamp: thread.root.edits[0].timestamp,
+          },
+        ];
+      })
+      .sort(
+        (a, b) =>
+          a.order - b.order ||
+          a.anchor.line - b.anchor.line ||
+          a.side - b.side ||
+          a.timestamp - b.timestamp,
+      );
+  });
+
+  // Which comment the stepper is on, held by id rather than by position: the
+  // list shifts as comments are written, deleted or filtered out, and a position
+  // would quietly come to mean a different comment. One that goes away leaves
+  // the stepper unset, which reads as `-1` and starts the walk over.
+  let activeCommentId = $state<string | undefined>();
+  const commentIndex = $derived(
+    activeCommentId === undefined
+      ? -1
+      : orderedComments.findIndex(entry => entry.id === activeCommentId),
+  );
+  $effect(() => {
+    const index = commentIndex;
+    const total = orderedComments.length;
+    if (commentPosition.index !== index || commentPosition.total !== total) {
+      commentPosition = { index, total };
+    }
+  });
+
+  // Rings the comment just stepped to and then lets it go, so the diff is not
+  // left holding a stale mark.
+  let highlightedCommentId = $state<string | undefined>();
+  let highlightTimer: ReturnType<typeof setTimeout> | undefined;
+  $effect(() => () => clearTimeout(highlightTimer));
+
+  /// Walk to the next (`1`) or previous (`-1`) comment on the diff. Called from
+  /// the tab bar, which sits outside this component.
+  export function stepComment(delta: number) {
+    const total = orderedComments.length;
+    if (total === 0) return;
+    // From nothing, a step down starts at the first comment and a step up at the
+    // last. From somewhere, both wrap, so a walk never dead-ends at either end
+    // of a long diff.
+    const from = commentIndex >= 0 ? commentIndex : delta > 0 ? -1 : 0;
+    const target = orderedComments[(from + delta + total) % total];
+    activeCommentId = target.id;
+    clearTimeout(highlightTimer);
+    highlightedCommentId = target.id;
+    highlightTimer = setTimeout(() => {
+      highlightedCommentId = undefined;
+    }, 2400);
+    diffView?.scrollToAnchor(target.anchor);
+  }
 
   // Pierre's context-expand markers hydrate a file lazily from these, so
   // nothing is fetched until the reader expands something.
@@ -504,7 +598,10 @@
   .commits-column {
     max-height: 100%;
     overflow-y: auto;
-    border: 1px solid var(--color-border-subtle);
+    /* An outset ring, not a border: the file cards beside it are outlined the
+       same way, and a real border would sit inside the box and leave the two a
+       pixel out of line. */
+    box-shadow: 0 0 0 1px var(--color-border-subtle);
     border-radius: var(--border-radius-md);
     background-color: var(--color-surface-canvas);
   }
@@ -801,6 +898,7 @@
     ? path => draftReviewStorage.toggleCheckedFile(draftReviewId, path)
     : undefined}
   {commentCounts}
+  {highlightedCommentId}
   codeComments={diffCodeComments}
   commentCommit={isRevisionDiff ? head : undefined}
   header={diffHeader}

@@ -111,6 +111,8 @@
     chrome?: Snippet;
     // The view switcher, which the Changes tab sticks to the top of the diff.
     tabs?: Snippet;
+    // Where the Changes tab's comment stepper stands, for the tab bar to render.
+    commentPosition?: { index: number; total: number };
   }
 
   /* eslint-disable prefer-const */
@@ -133,6 +135,7 @@
     onViewChanges,
     chrome,
     tabs,
+    commentPosition = $bindable({ index: -1, total: 0 }),
   }: Props = $props();
   /* eslint-enable prefer-const */
   let changes = $state<ReturnType<typeof Changes> | undefined>();
@@ -141,6 +144,12 @@
   /// can collapse or expand every file.
   export function setAllFilesCollapsed(collapsed: boolean) {
     changes?.setAllFilesCollapsed(collapsed);
+  }
+
+  /// Forwarded to the Changes tab so the tab bar's stepper can walk the comments
+  /// on the diff.
+  export function stepComment(delta: number) {
+    changes?.stepComment(delta);
   }
 
   /// Forwarded to the Changes tab so the draft review bar, which lives further
@@ -1909,5 +1918,6 @@
     {chrome}
     {tabs}
     bind:showingRevisionDiff
-    bind:filesExpanded />
+    bind:filesExpanded
+    bind:commentPosition />
 {/if}
