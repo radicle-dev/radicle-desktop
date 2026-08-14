@@ -189,9 +189,13 @@
     color: var(--color-text-tertiary);
     white-space: nowrap;
   }
+  /* Sized like the other badges on this line — the verdict badge in
+     `ReviewItem` and `ReviewProgressChip` — so a row carrying several of them
+     reads as one set. */
   .latest-chip {
     flex-shrink: 0;
-    padding: 0 0.375rem;
+    white-space: nowrap;
+    padding: 0.125rem 0.375rem;
     border-radius: var(--border-radius-sm);
     background-color: var(--color-surface-brand-subtle);
     color: var(--color-text-brand);
@@ -405,7 +409,7 @@
           {/if}
         {/if}
         {#if latest}
-          <span class="latest-chip txt-body-s-medium">latest</span>
+          <span class="latest-chip txt-body-s-medium">Latest</span>
         {/if}
         {#if reviewInProgress}
           <ReviewProgressChip onclick={() => onOpenReview?.()} />
