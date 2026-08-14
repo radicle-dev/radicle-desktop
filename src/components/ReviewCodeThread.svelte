@@ -6,6 +6,7 @@
   import type { Config } from "@bindings/config/Config";
 
   import type { CodeComments } from "@app/lib/codeComments";
+  import type { Resolution } from "@app/lib/commentResolutions";
   import { diffOptions } from "@app/lib/diffOptions.svelte";
   import { cachedGetDiffText } from "@app/lib/invoke";
   import { sliceForRange } from "@app/lib/patchSlice";
@@ -36,6 +37,14 @@
       authors: Author[],
       reaction: string,
     ) => Promise<void>;
+    changeCommentStatus?: (
+      commentId: string,
+      resolved: boolean,
+    ) => Promise<void>;
+    // Whether the protocol lets the reader resolve a given comment. Without it
+    // the action is hidden, which is what a standalone revision comment gets.
+    canResolveComment?: (commentId: string) => boolean;
+    resolvedBy?: (commentId: string) => Resolution | undefined;
   }
 
   const {
@@ -49,6 +58,9 @@
     editComment,
     deleteComment,
     reactOnComment,
+    changeCommentStatus,
+    canResolveComment,
+    resolvedBy,
   }: Props = $props();
 
   const noop = () => Promise.resolve();
@@ -69,6 +81,9 @@
       editComment: editComment ?? noop,
       deleteComment,
       reactOnComment,
+      changeCommentStatus,
+      canResolveComment,
+      resolvedBy,
     };
   }
 

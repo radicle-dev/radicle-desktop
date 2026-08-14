@@ -204,6 +204,10 @@ export function formatEditedCaption(author: Author, timestamp: number) {
   return `${author.alias ? author.alias : truncateDid(author.did)} edited ${absoluteTimestamp(timestamp)}`;
 }
 
+export function formatResolvedCaption(author: Author, timestamp: number) {
+  return `${author.alias ? author.alias : truncateDid(author.did)} resolved this ${absoluteTimestamp(timestamp)}`;
+}
+
 export function pluralize(singular: string, count: number): string {
   if (count === 1) return singular;
   if (/(?:ch|sh|s|x|z)$/i.test(singular)) {

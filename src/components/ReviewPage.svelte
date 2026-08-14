@@ -2,6 +2,8 @@
   import type { CommentOrigin } from "@app/components/Comment.svelte";
   import type { PatchView } from "@app/views/repo/router";
   import type { Author } from "@bindings/cob/Author";
+  import type { Operation } from "@bindings/cob/Operation";
+  import type { Action } from "@bindings/cob/patch/Action";
   import type { Patch } from "@bindings/cob/patch/Patch";
   import type { Review } from "@bindings/cob/patch/Review";
   import type { Revision } from "@bindings/cob/patch/Revision";
@@ -18,6 +20,7 @@
   import type { CommentOwner } from "@app/lib/codeCommentActions";
   import { commentActions } from "@app/lib/codeCommentActions";
   import type { CodeComments } from "@app/lib/codeComments";
+  import { resolutionsByComment } from "@app/lib/commentResolutions";
   import { diffOptions } from "@app/lib/diffOptions.svelte";
   import { fileDiffPath, fileMetaOf, fullFileLoader } from "@app/lib/diffText";
   import { nodeRunning } from "@app/lib/events";
@@ -64,23 +67,40 @@
     repoDelegates: Author[];
     review: Review;
     revisions: Revision[];
+    // The patch's operation log, which is the only place that records who
+    // resolved a comment (see `resolutionsByComment`).
+    activity: Operation<Action>[];
     rid: string;
     status: Patch["state"]["status"] | undefined;
     // The tab this review was opened from, so leaving it returns there.
     fromView?: PatchView;
+    // An output binding, as on the Changes tab: the topbar renders the toggle
+    // and reads this, while the collapsing happens here.
+    filesExpanded?: boolean;
+    // Whether there is anything to collapse. The view shows only the files a
+    // comment is anchored in, so a review with none has no file column at all
+    // and the topbar's toggle would act on nothing.
+    hasFiles?: boolean;
   }
 
-  const {
+  /* eslint-disable prefer-const */
+  let {
     config,
     loadPatch,
     patch,
     repoDelegates,
     review,
     revisions,
+    activity,
     rid,
     status,
     fromView,
+    // Only ever written by `setAllFilesCollapsed`, which the topbar calls.
+    // eslint-disable-next-line no-useless-assignment
+    filesExpanded = $bindable(true),
+    hasFiles = $bindable(false),
   }: Props = $props();
+  /* eslint-enable prefer-const */
 
   const isOwnPublishedReview = $derived(
     review.author.did === didFromPublicKey(config.publicKey),
@@ -395,6 +415,17 @@
   // nothing about is context they can already read on the Changes tab.
 
   const commentedPaths = $derived(new Set(fileGroups.map(g => g.path)));
+  $effect(() => {
+    const next = commentedPaths.size > 0;
+    if (hasFiles !== next) {
+      hasFiles = next;
+    }
+  });
+
+  const resolutions = $derived(resolutionsByComment(activity));
+  function resolvedBy(commentId: string) {
+    return resolutions.get(commentId);
+  }
 
   const reviewCodeComments: CodeComments = $derived({
     config,
@@ -409,6 +440,7 @@
     deleteComment: codeActions.deleteComment,
     changeCommentStatus: codeActions.changeCommentStatus,
     canResolveComment,
+    resolvedBy,
     reactOnComment: codeActions.reactOnComment,
   });
 
@@ -465,6 +497,13 @@
   );
 
   let diffView = $state<ReturnType<typeof PierreDiff> | undefined>();
+
+  /// Forwarded to the diff so the topbar, which the patch view renders, can
+  /// collapse or expand every file.
+  export function setAllFilesCollapsed(collapsed: boolean) {
+    filesExpanded = !collapsed;
+    diffView?.setAllCollapsed(collapsed);
+  }
 
   // The comment the sidebar last jumped to, marked at both ends — the row that
   // was clicked and the comment it points at. Held long enough to be noticed and
@@ -922,6 +961,7 @@
   <div class="comment-column">
     <ReviewCommentList
       groups={orderedGroups}
+      {resolvedBy}
       selectedId={highlightedCommentId}
       onSelect={revealComment} />
   </div>

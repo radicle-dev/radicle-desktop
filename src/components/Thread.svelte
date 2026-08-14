@@ -8,7 +8,8 @@
 
   import { tick } from "svelte";
 
-  import { scrollIntoView } from "@app/lib/utils";
+  import type { Resolution } from "@app/lib/commentResolutions";
+  import { formatResolvedCaption, scrollIntoView } from "@app/lib/utils";
 
   import CommentComponent from "@app/components/Comment.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
@@ -53,6 +54,9 @@
     // A single comment to ring, so a jump from elsewhere can say where it
     // landed. Marks that one comment, root or reply, not the thread around it.
     highlightedCommentId?: string;
+    // Who resolved a comment, for its badge to name. Looked up rather than read
+    // off the comment, which carries only the flag (see `resolutionsByComment`).
+    resolvedBy?: (commentId: string) => Resolution | undefined;
   }
 
   const {
@@ -71,7 +75,16 @@
     origin,
     hoverNote,
     highlightedCommentId,
+    resolvedBy,
   }: Props = $props();
+
+  function resolvedCaption(commentId: string): string | undefined {
+    const resolution = resolvedBy?.(commentId);
+    return (
+      resolution &&
+      formatResolvedCaption(resolution.author, resolution.timestamp)
+    );
+  }
 
   async function toggleReply() {
     showReplyForm = !showReplyForm;
@@ -200,6 +213,8 @@
           id={reply.id}
           author={reply.author}
           caption="replied"
+          resolved={reply.resolved}
+          resolvedCaption={resolvedCaption(reply.id)}
           reactions={reply.reactions}
           timestamp={reply.edits[0].timestamp}
           body={reply.edits.slice(-1)[0].body}
@@ -248,6 +263,8 @@
       {draft}
       {origin}
       {hoverNote}
+      resolved={root.resolved}
+      resolvedCaption={resolvedCaption(root.id)}
       id={root.id}
       lastEdit={root.edits.length > 1 ? root.edits.at(-1) : undefined}
       author={root.author}
@@ -265,8 +282,11 @@
           <span
             class="global-icon-button"
             title={root.resolved ? "Mark as unresolved" : "Mark as resolved"}>
+            <!-- The counterpart to the `comment-checkmark` a resolved thread is
+                 counted with, rather than that glyph again: in a button the
+                 badge reads as the state it already is, not as undoing it. -->
             <Icon
-              name={root.resolved ? "comment-checkmark" : "checkmark"}
+              name={root.resolved ? "comment-cross" : "checkmark"}
               onclick={() => changeCommentStatus(root.id, !root.resolved)} />
           </span>
         {/if}

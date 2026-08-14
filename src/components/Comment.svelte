@@ -45,6 +45,14 @@
     caption?: string;
     // Marks a comment that is part of an unpublished draft review.
     draft?: boolean;
+    // Marks a comment whose thread has been dealt with. The review sidebar says
+    // this with a checkmark against a dimmed row; everywhere else the comment is
+    // shown at full strength, so it needs to say so itself.
+    resolved?: boolean;
+    // Names who resolved it, for the badge's tooltip. The comment carries only
+    // the flag, so the caller has to look this up (see `resolutionsByComment`);
+    // where it cannot, the badge says what it always said.
+    resolvedCaption?: string;
     origin?: CommentOrigin;
     timestamp?: number;
     lastEdit?: Edit;
@@ -72,6 +80,8 @@
     embeds,
     caption = "commented",
     draft = false,
+    resolved = false,
+    resolvedCaption,
     origin,
     timestamp,
     lastEdit,
@@ -232,6 +242,23 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-quaternary);
   }
+  /* Shaped and coloured like the verdict badge a review is headed with (see
+     `ReviewItem`), so the two green "this went well" marks read as one thing said
+     in two places.
+
+     The font is declared rather than inherited: inside a diff this card is
+     slotted into Pierre's shadow tree, whose own font size is larger, and the
+     captions beside it each set their own — so an inheriting chip came out the
+     biggest thing on the line. */
+  .resolved-chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-feedback-success-bg);
+    color: var(--color-feedback-success-text);
+    font: var(--txt-body-s-regular);
+  }
   .menu {
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--border-radius-md);
@@ -285,6 +312,13 @@
           )}>
           • edited
         </div>
+      {/if}
+      {#if resolved}
+        <span
+          class="resolved-chip"
+          title={resolvedCaption ?? "Marked as resolved"}>
+          Resolved
+        </span>
       {/if}
       <div class="header-right">
         {#if reactions && reactOnComment}

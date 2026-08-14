@@ -4,6 +4,8 @@ import type { Embed } from "@bindings/cob/thread/Embed";
 import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Config } from "@bindings/config/Config";
 
+import type { Resolution } from "@app/lib/commentResolutions";
+
 /// Says where a comment lives when a view mixes comments from several places —
 /// a review's own comments and comments left directly on a revision look alike
 /// otherwise, but they differ in what can be done to them.
@@ -23,6 +25,10 @@ export interface CodeComments {
   // Decided by the host: the protocol allows the comment author, the review
   // author or the revision author, and only the host knows all three.
   canResolveComment?: (commentId: string) => boolean;
+  // Who resolved a comment, for the resolved badge to name. Only the host can
+  // say: it comes from the patch's operation log rather than from the comment
+  // (see `resolutionsByComment`).
+  resolvedBy?: (commentId: string) => Resolution | undefined;
   config: Config;
   createComment: (
     body: string,

@@ -4,9 +4,15 @@
   import type { Comment } from "@bindings/cob/thread/Comment";
   import type { Thread } from "@bindings/cob/thread/Thread";
 
+  import type { Resolution } from "@app/lib/commentResolutions";
   import type { CommentAnchor } from "@app/lib/pierreComments";
   import { anchorOf, formatAnchorLines } from "@app/lib/pierreComments";
-  import { pluralize, publicKeyFromDid, truncateId } from "@app/lib/utils";
+  import {
+    formatResolvedCaption,
+    pluralize,
+    publicKeyFromDid,
+    truncateId,
+  } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
   import Path from "@app/components/Path.svelte";
@@ -22,9 +28,19 @@
     /// landed somewhere it did not.
     selectedId?: string;
     onSelect: (commentId: string, anchor: CommentAnchor | undefined) => void;
+    // Who resolved a comment, for the checkmark to name — the same tooltip the
+    // `Resolved` badge in the diff carries.
+    resolvedBy?: (commentId: string) => Resolution | undefined;
   }
 
-  const { groups, selectedId, onSelect }: Props = $props();
+  const { groups, selectedId, onSelect, resolvedBy }: Props = $props();
+
+  function resolvedTitle(commentId: string): string {
+    const resolution = resolvedBy?.(commentId);
+    return resolution
+      ? formatResolvedCaption(resolution.author, resolution.timestamp)
+      : "Marked as resolved";
+  }
 
   const threads = $derived(groups.flatMap(group => group.threads));
   const resolved = $derived(
@@ -234,7 +250,9 @@
           <span class="author">{authorName(thread.root.author)}</span>
           <span class="caption">commented</span>
           {#if isResolved}
-            <span class="resolved-mark"><Icon name="checkmark" /></span>
+            <span class="resolved-mark" title={resolvedTitle(thread.root.id)}>
+              <Icon name="checkmark" />
+            </span>
           {/if}
           {#if lines}
             <span class="line">{lines}</span>

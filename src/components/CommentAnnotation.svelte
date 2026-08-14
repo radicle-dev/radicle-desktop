@@ -109,6 +109,7 @@
           currentUserNid={comments.config.publicKey}
           {thread}
           highlightedCommentId={state.highlightedCommentId}
+          resolvedBy={comments.resolvedBy}
           inline
           draft={isDraftThread}
           origin={comments.threadOrigins?.[thread.root.id]}

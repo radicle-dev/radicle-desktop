@@ -1546,6 +1546,7 @@
           repoDelegates={repo.delegates}
           review={currentReview}
           {revisions}
+          {activity}
           rid={repo.rid}
           {status}
           fromView={patchView} />

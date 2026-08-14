@@ -18,6 +18,7 @@
   import type { CommentOwner } from "@app/lib/codeCommentActions";
   import { commentActions } from "@app/lib/codeCommentActions";
   import type { CodeComments } from "@app/lib/codeComments";
+  import { resolutionsByComment } from "@app/lib/commentResolutions";
   import { STANDALONE_COMMENTS } from "@app/lib/commentSources";
   import { diffOptions } from "@app/lib/diffOptions.svelte";
   import { fileDiffPath, fileStatusLabel } from "@app/lib/diffText";
@@ -491,6 +492,13 @@
   // The protocol lets the comment author, the review author or the revision
   // author resolve a review comment; delegates may do anything. Standalone
   // revision comments have no resolve action at all.
+  // A comment records only that it is resolved, so who did it has to come from
+  // the patch's operation log.
+  const resolutions = $derived(resolutionsByComment(activity));
+  function resolvedBy(commentId: string) {
+    return resolutions.get(commentId);
+  }
+
   function canResolveComment(commentId: string): boolean {
     const owner = ownerOf(commentId);
     if (owner?.kind !== "review") return false;
@@ -588,6 +596,7 @@
         deleteComment: codeActions.deleteComment,
         changeCommentStatus: codeActions.changeCommentStatus,
         canResolveComment,
+        resolvedBy,
         reactOnComment: codeActions.reactOnComment,
         repoDelegates,
         rid,
@@ -613,6 +622,7 @@
       deleteComment: codeActions.deleteComment,
       changeCommentStatus: codeActions.changeCommentStatus,
       canResolveComment,
+      resolvedBy,
       reactOnComment: codeActions.reactOnComment,
       repoDelegates,
       rid,
@@ -1829,7 +1839,10 @@
                 createComment={createCodeComment}
                 editComment={codeActions.editComment}
                 deleteComment={codeActions.deleteComment}
-                reactOnComment={codeActions.reactOnComment} />
+                reactOnComment={codeActions.reactOnComment}
+                changeCommentStatus={codeActions.changeCommentStatus}
+                {canResolveComment}
+                {resolvedBy} />
             {/each}
           </div>
         {/if}
