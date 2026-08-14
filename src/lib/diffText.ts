@@ -4,6 +4,7 @@ import type {
 } from "@app/components/diffFileHeaderState.svelte";
 import type { FileDiff } from "@bindings/diff/FileDiff";
 import type { Blob } from "@bindings/source/Blob";
+import type { GitStatusEntry } from "@pierre/trees";
 
 import { isIgnoredPath } from "@app/lib/ignoredFiles";
 import { invoke } from "@app/lib/invoke";
@@ -31,6 +32,27 @@ export function fileStatusLabel(status: FileStatus): string | undefined {
     case "modified":
       return undefined;
   }
+}
+
+/// The changed files in the shape `PierreTree` marks its rows with. A copy reads
+/// as an addition, which is what it is on the new side; there is no "copied" for
+/// the tree to show.
+export function gitStatusEntries(files: FileDiff[]): GitStatusEntry[] {
+  return files.map((file): GitStatusEntry => {
+    const path = fileDiffPath(file);
+    switch (file.status) {
+      case "added":
+        return { path, status: "added" };
+      case "deleted":
+        return { path, status: "deleted" };
+      case "modified":
+        return { path, status: "modified" };
+      case "moved":
+        return { path, status: "renamed" };
+      case "copied":
+        return { path, status: "added" };
+    }
+  });
 }
 
 export interface FileMeta {

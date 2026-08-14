@@ -2,10 +2,13 @@
   import type { Diff } from "@bindings/diff/Diff";
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
-  import type { GitStatusEntry } from "@pierre/trees";
 
   import { diffOptions } from "@app/lib/diffOptions.svelte";
-  import { fileDiffPath, fileMetaOf, fullFileLoader } from "@app/lib/diffText";
+  import {
+    fileMetaOf,
+    fullFileLoader,
+    gitStatusEntries,
+  } from "@app/lib/diffText";
   import { getDiffText } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import type { SidebarData } from "@app/lib/router/definitions";
@@ -49,23 +52,7 @@
   }>();
   let allCollapsed = $state(false);
 
-  const changedFiles = $derived(
-    diff.files.map((file): GitStatusEntry => {
-      const path = fileDiffPath(file);
-      switch (file.status) {
-        case "added":
-          return { path, status: "added" };
-        case "deleted":
-          return { path, status: "deleted" };
-        case "modified":
-          return { path, status: "modified" };
-        case "moved":
-          return { path, status: "renamed" };
-        case "copied":
-          return { path, status: "added" };
-      }
-    }),
-  );
+  const changedFiles = $derived(gitStatusEntries(diff.files));
   const treePaths = $derived(changedFiles.map(file => file.path));
 
   const fileMeta = $derived(fileMetaOf(diff.files));
