@@ -500,10 +500,14 @@
   /* The patch header is the only thing that spans the full width; everything
      below the sticky tab bar lives in the files column, so the commit column can
      simply stick rather than being positioned against any of it. */
+  /* The gap above the tab bar lives here rather than on the bar itself: the bar
+     pins to the top of the scroll port, so a margin of its own would be pinned
+     with it and the collapsed state could never be tighter than the resting one.
+     Held by the chrome, it scrolls away like the rest of the chrome. */
   .diff-header {
     display: flex;
     flex-direction: column;
-    padding: 0 1rem;
+    padding: 0 1rem 0.5rem;
   }
   .revision-description {
     position: relative;

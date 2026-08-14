@@ -768,14 +768,23 @@
   .patch-description-button:focus-visible {
     background-color: var(--color-surface-subtle);
   }
+  /* One line under the row, none above it: the metadata it follows needs air
+     rather than a rule. */
   .tabs {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 0;
-    border-top: 1px solid var(--color-border-subtle);
+    margin-top: 0.5rem;
     border-bottom: 1px solid var(--color-border-subtle);
     margin-bottom: 1rem;
+  }
+  /* On the Changes tab this row is the diff's sticky bar, and anything it
+     carries is carried for as long as it stays pinned. The gap belongs to the
+     metadata above it instead, where it scrolls away and leaves the pinned row
+     as tight as it can be (see `.diff-header` in `Changes`). */
+  .tabs.changes {
+    margin-top: 0;
   }
   .tabs-left,
   .tabs-right {
@@ -1128,7 +1137,7 @@
     {/snippet}
 
     {#snippet tabs()}
-      <div class="tabs">
+      <div class="tabs" class:changes={patchView === "changes"}>
         <div class="tabs-left">
           <Button
             variant={patchView === "activity" ? "ghost" : "naked"}
