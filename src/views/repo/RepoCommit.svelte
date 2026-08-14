@@ -22,7 +22,6 @@
 
   import Button from "@app/components/Button.svelte";
   import DiffActions from "@app/components/DiffActions.svelte";
-  import DiffOptionsButton from "@app/components/DiffOptionsButton.svelte";
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
@@ -310,7 +309,6 @@
           title={allCollapsed ? "Expand all files" : "Collapse all files"}>
           <Icon name={allCollapsed ? "expand-vertical" : "collapse-vertical"} />
         </Button>
-        <DiffOptionsButton />
       </div>
     </Topbar>
     <div class="body">

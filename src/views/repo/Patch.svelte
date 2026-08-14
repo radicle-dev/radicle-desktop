@@ -43,7 +43,6 @@
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Button from "@app/components/Button.svelte";
   import CheckoutPatchButton from "@app/components/CheckoutPatchButton.svelte";
-  import DiffOptionsButton from "@app/components/DiffOptionsButton.svelte";
   import DraftReviewBar from "@app/components/DraftReviewBar.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
@@ -1201,9 +1200,9 @@
                               ? "All hidden"
                               : "none"}
                           {:else}
-                            {commentPosition.index >= 0
-                              ? commentPosition.index + 1
-                              : "–"}
+                            <!-- Reads as 1 before the first step, which is where
+                                 stepping down goes anyway. -->
+                            {Math.max(commentPosition.index + 1, 1)}
                             of
                             {commentPosition.total}
                           {/if}
@@ -1508,7 +1507,6 @@
                   ? "collapse-vertical"
                   : "expand-vertical"} />
             </Button>
-            <DiffOptionsButton />
           </div>
         {/if}
       </div>

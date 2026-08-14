@@ -54,7 +54,6 @@
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Button from "@app/components/Button.svelte";
-  import DiffOptionsButton from "@app/components/DiffOptionsButton.svelte";
   import Discussion from "@app/components/Discussion.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
@@ -1131,7 +1130,6 @@
         onclick={() => setAllFilesCollapsed(filesExpanded)}>
         <Icon name={filesExpanded ? "collapse-vertical" : "expand-vertical"} />
       </Button>
-      <DiffOptionsButton />
     </div>
   </div>
 {/snippet}
