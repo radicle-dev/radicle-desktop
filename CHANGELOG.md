@@ -1,3 +1,29 @@
+### v0.15.0
+
+**Features**
+
+- Reworked the patch page UX, review UI and activity timeline
+- Patch changes are now rendered with Pierre's diff viewer
+- Added a comment column to the review view: every line comment is listed
+  beside the files, and clicking one scrolls the diff to it
+- The review view's column can now switch between comments and a file tree,
+  show only the commented files, or be put away to give the diff full width
+- Added a comment stepper to the Changes tab for walking a diff's comments
+- Diff settings now live in the settings modal, grouped with the code font,
+  instead of a per-view popover
+- Patches can now be deleted
+- Discussion comments can now be deleted
+- Resolved comments now show who resolved them
+- Added an author hover card
+- Timestamps now show their absolute value on hover
+- Added dismissible hints to textboxes
+
+
+**Shout-out to our contributors 🙏✨**
+
+- [brandonoxendine](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkpwnLQxFBQXyMK3Es91s8A7Ew7G11BFFyng1dqZR8QhG3)
+
+
 ### v0.14.0
 
 **Features**
