@@ -307,6 +307,21 @@
   // but then there are no anchors to make room for either, so it stays zero.
   const reserveOnHeader = $derived(header !== undefined);
 
+  // One pixel between the bottom of the reserved gap and the first file, where a
+  // sticky bar hangs in that gap with nothing under it. The bar is opaque and
+  // paints above the diff, so the first card's outset ring — which sits in the
+  // row above the card — would otherwise be drawn underneath it and the card
+  // would come out with no top edge. Only needed where the bar is the last thing
+  // in the gap: with a `filesHeader` below it, that content is transparent and
+  // the ring shows through.
+  //
+  // A pixel is also the most that can safely go on `layout.paddingTop` — see the
+  // note on it below for why anything larger slides Pierre's render window out of
+  // step with the screen.
+  const firstItemGap = $derived(
+    stickyTop !== undefined && filesHeader === undefined ? 1 : 0,
+  );
+
   // The column caps its height at the scroll port's, which it cannot express in
   // CSS: it hangs off a zero-height anchor, so a percentage has nothing to
   // resolve against.
@@ -901,7 +916,9 @@
       // so they drift under their own header and jump in blocks as the window
       // re-quantises. The header's height has no such gap in it.
       layout: {
-        paddingTop: reserveOnHeader ? 0 : stickyTopHeight + filesHeaderHeight,
+        paddingTop: reserveOnHeader
+          ? firstItemGap
+          : stickyTopHeight + filesHeaderHeight + firstItemGap,
         paddingBottom: 8,
         gap: 8,
       },
@@ -1254,6 +1271,13 @@
     void canComment;
     void filesHeaderHeight;
     void stickyTopHeight;
+    // The column appearing or going away changes how wide every file card is,
+    // and with word wrap on that changes how tall its lines are. Nothing in the
+    // options themselves moves, so this is here for the re-render: rendered
+    // items reconcile their measured heights into the layout model, and the rest
+    // do so as they scroll in.
+    void overlayLeft;
+    void overlayLeftWidth;
     const instance = view;
     if (!instance) {
       return;

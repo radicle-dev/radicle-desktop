@@ -9,7 +9,6 @@
   import { anchorOf, formatAnchorLines } from "@app/lib/pierreComments";
   import {
     formatResolvedCaption,
-    pluralize,
     publicKeyFromDid,
     truncateId,
   } from "@app/lib/utils";
@@ -41,11 +40,6 @@
       ? formatResolvedCaption(resolution.author, resolution.timestamp)
       : "Marked as resolved";
   }
-
-  const threads = $derived(groups.flatMap(group => group.threads));
-  const resolved = $derived(
-    threads.filter(thread => thread.root.resolved === true).length,
-  );
 
   /// `NodeId` would be the obvious thing here, but it carries a popover — and
   /// therefore a button — which cannot live inside the button each card already
@@ -85,30 +79,12 @@
 </script>
 
 <style>
-  .header {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    height: 2.5rem;
-    padding: 0 0.5rem;
-    font: var(--txt-body-m-regular);
-    color: var(--color-text-secondary);
-    background-color: var(--color-surface-canvas);
-    border-bottom: 1px solid var(--color-border-subtle);
-  }
-  .icon {
-    display: grid;
-    width: 1rem;
-    height: 1rem;
-    place-items: center;
-  }
-  /* Pinned under the summary, so a long list still says which file you are in. */
+  /* Pinned to the top of the column, so a long list still says which file you
+     are in. The count that used to sit above it is in the bar over both columns
+     now, outside this component. */
   .file {
     position: sticky;
-    top: 2.5rem;
+    top: 0;
     z-index: 1;
     padding: 0.75rem 0.5rem 0.375rem;
     background-color: var(--color-surface-canvas);
@@ -224,12 +200,6 @@
 </style>
 
 <div style:display="flex" style:flex-direction="column" style:width="100%">
-  <div class="header">
-    <span class="icon"><Icon name="comment" /></span>
-    {threads.length}
-    {pluralize("comment", threads.length)} · {resolved} resolved
-  </div>
-
   {#each groups as group (group.path)}
     <div class="file" title={group.path}><Path fullPath={group.path} /></div>
     {#each group.threads as thread (thread.root.id)}

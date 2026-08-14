@@ -22,7 +22,12 @@
   import type { CodeComments } from "@app/lib/codeComments";
   import { resolutionsByComment } from "@app/lib/commentResolutions";
   import { diffOptions } from "@app/lib/diffOptions.svelte";
-  import { fileDiffPath, fileMetaOf, fullFileLoader } from "@app/lib/diffText";
+  import {
+    fileDiffPath,
+    fileMetaOf,
+    fullFileLoader,
+    gitStatusEntries,
+  } from "@app/lib/diffText";
   import { nodeRunning } from "@app/lib/events";
   import {
     cachedGetDiff,
@@ -39,6 +44,7 @@
     authorForNodeId,
     didFromPublicKey,
     formatTimestamp,
+    pluralize,
     publicKeyFromDid,
     revisionPosition,
     verdictAction,
@@ -48,6 +54,7 @@
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Button from "@app/components/Button.svelte";
+  import DiffOptionsButton from "@app/components/DiffOptionsButton.svelte";
   import Discussion from "@app/components/Discussion.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
@@ -57,6 +64,7 @@
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import PierreDiff from "@app/components/PierreDiff.svelte";
+  import PierreTree from "@app/components/PierreTree.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import ReviewCommentList from "@app/components/ReviewCommentList.svelte";
 
@@ -74,17 +82,9 @@
     status: Patch["state"]["status"] | undefined;
     // The tab this review was opened from, so leaving it returns there.
     fromView?: PatchView;
-    // An output binding, as on the Changes tab: the topbar renders the toggle
-    // and reads this, while the collapsing happens here.
-    filesExpanded?: boolean;
-    // Whether there is anything to collapse. The view shows only the files a
-    // comment is anchored in, so a review with none has no file column at all
-    // and the topbar's toggle would act on nothing.
-    hasFiles?: boolean;
   }
 
-  /* eslint-disable prefer-const */
-  let {
+  const {
     config,
     loadPatch,
     patch,
@@ -95,12 +95,7 @@
     rid,
     status,
     fromView,
-    // Only ever written by `setAllFilesCollapsed`, which the topbar calls.
-    // eslint-disable-next-line no-useless-assignment
-    filesExpanded = $bindable(true),
-    hasFiles = $bindable(false),
   }: Props = $props();
-  /* eslint-enable prefer-const */
 
   const isOwnPublishedReview = $derived(
     review.author.did === didFromPublicKey(config.publicKey),
@@ -415,12 +410,15 @@
   // nothing about is context they can already read on the Changes tab.
 
   const commentedPaths = $derived(new Set(fileGroups.map(g => g.path)));
-  $effect(() => {
-    const next = commentedPaths.size > 0;
-    if (hasFiles !== next) {
-      hasFiles = next;
-    }
-  });
+  // A review with no line comments has nothing for the columns or the bar over
+  // them to be about: what is left is the summary, the discussion and a note
+  // saying so. It also means the file filter is out of reach there, which is the
+  // trade for not framing an empty page.
+  const hasLineComments = $derived(commentedPaths.size > 0);
+  const lineCommentThreads = $derived(fileGroups.flatMap(g => g.threads));
+  const resolvedLineComments = $derived(
+    lineCommentThreads.filter(thread => thread.root.resolved === true).length,
+  );
 
   const resolutions = $derived(resolutionsByComment(activity));
   function resolvedBy(commentId: string) {
@@ -498,9 +496,33 @@
 
   let diffView = $state<ReturnType<typeof PierreDiff> | undefined>();
 
-  /// Forwarded to the diff so the topbar, which the patch view renders, can
-  /// collapse or expand every file.
-  export function setAllFilesCollapsed(collapsed: boolean) {
+  // Shared by the comment column and the left half of the sticky bar above it,
+  // so the bar's divider lands on the column's edge.
+  const commentColumnWidth = "19rem";
+
+  let filesExpanded = $state(true);
+  // The column is a way around the review, not part of reading it, so it can be
+  // put away to give the diff the full width.
+  let sideColumnShown = $state(true);
+  // What that column shows: the review's comments, or the files it touches.
+  let sideColumnMode = $state<"comments" | "tree">("comments");
+  // A review is about the lines it comments on, so those files are what the diff
+  // shows by default; the rest of the revision is a click away for the context it
+  // does not mention.
+  let onlyCommentedFiles = $state(true);
+
+  // Left unset to show the whole revision — `PierreDiff` reads no filter at all
+  // as "every file".
+  const visiblePaths = $derived(
+    onlyCommentedFiles ? commentedPaths : undefined,
+  );
+  // The tree lists exactly what the diff is showing, in the diff's own order.
+  const treeFiles = $derived(
+    gitStatusEntries(diffFiles).filter(
+      entry => visiblePaths === undefined || visiblePaths.has(entry.path),
+    ),
+  );
+  function setAllFilesCollapsed(collapsed: boolean) {
     filesExpanded = !collapsed;
     diffView?.setAllCollapsed(collapsed);
   }
@@ -726,14 +748,25 @@
      than level with their edges. */
   /* Frames the scroll port itself, so the header inside it pins to a border that
      does not move — the same arrangement as the commits column. */
-  .comment-column {
+  /* A definite height, handed down by the diff: the column has to scroll on its
+     own once it outgrows the port, and a percentage here resolves against an
+     indefinite box and is dropped. */
+  .side-column {
     max-height: var(--app-diff-overlay-height, 100%);
     overflow-y: auto;
     /* An outset ring, not a border: the file cards beside it are outlined the
        same way, and a real border would sit inside the box and leave the two a
        pixel out of line. */
     box-shadow: 0 0 0 1px var(--color-border-subtle);
-    border-radius: var(--border-radius-md);
+    /* Square at the top, where the header in the sticky bar above continues it. */
+    border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+  }
+  /* The tree scrolls inside itself and stretches to fill the column, so it needs
+     a height rather than a cap — and no scrolling of its own out here. */
+  .side-column.tree {
+    height: var(--app-diff-overlay-height, 100%);
+    overflow: hidden;
+    padding: 0.5rem 0;
     background-color: var(--color-surface-canvas);
   }
   .no-line-comments {
@@ -769,6 +802,59 @@
   }
   .verdict-reject {
     color: var(--color-feedback-error-text);
+  }
+  /* The row above both columns. No rule of its own: the only thing drawn in it
+     is the comment column's header, so past that header it is empty space with
+     the controls floating at its right. Opaque, since the diff scrolls under it. */
+  .sticky-bar {
+    display: flex;
+    align-items: center;
+    /* The one gap in the row is the one between the two columns, which is what
+       separates the comment column's header from the file column's first
+       control. */
+    gap: 0.5rem;
+    height: 2.5rem;
+    background-color: var(--color-surface-canvas);
+  }
+  /* The comment column's heading, which is what it was before it moved up here —
+     same height, padding and weight, and outlined like the column so the two read
+     as one box that happens to be split across a sticky boundary. Rounded at the
+     top only; the column drops its own top corners to meet it.
+
+     The outline is an outset ring, as everything else in this layout is: the
+     column below is offset by exactly one pixel (see `--app-sticky-gap`), which
+     is the row this ring's underside occupies, so the two coincide into the one
+     line that divides the header from the list. */
+  .sticky-bar-summary {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    align-self: stretch;
+    padding: 0 0.5rem;
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+    box-shadow: 0 0 0 1px var(--color-border-subtle);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+  }
+  .sticky-bar-summary .icon {
+    display: grid;
+    width: 1rem;
+    height: 1rem;
+    place-items: center;
+  }
+  /* Joined, so the pair reads as one control with one of its two sides on — the
+     same borderless switch the diff settings popover uses for its pairs. */
+  .sticky-bar-modes {
+    display: flex;
+    align-items: center;
+  }
+  .sticky-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    padding-left: 0.5rem;
   }
 </style>
 
@@ -949,7 +1035,7 @@
       reactOnComment={codeActions.reactOnComment}
       flush />
 
-    {#if loadedDiff && commentedPaths.size === 0}
+    {#if loadedDiff && !hasLineComments}
       <div class="no-line-comments txt-body-m-regular">
         This review has no line comments.
       </div>
@@ -957,14 +1043,119 @@
   </div>
 {/snippet}
 
-{#snippet commentColumn()}
-  <div class="comment-column">
-    <ReviewCommentList
-      groups={orderedGroups}
-      {resolvedBy}
-      selectedId={highlightedCommentId}
-      onSelect={revealComment} />
+<!-- Spans both columns and pins to the top of the scroll port, so what the
+     review adds up to and the controls that act on it stay in reach however far
+     down the diff you are. Its left half is the comment column's own heading,
+     which is why it is as wide as that column. -->
+{#snippet stickyBar()}
+  <div class="sticky-bar">
+    {#if sideColumnShown}
+      <div class="sticky-bar-summary" style:width={commentColumnWidth}>
+        {#if sideColumnMode === "comments"}
+          <span class="icon"><Icon name="comment" /></span>
+          {lineCommentThreads.length}
+          {pluralize("comment", lineCommentThreads.length)} ·
+          {resolvedLineComments} resolved
+        {:else}
+          <span class="icon"><Icon name="document" /></span>
+          {treeFiles.length}
+          {pluralize("file", treeFiles.length)}
+        {/if}
+      </div>
+    {/if}
+    <!-- Everything from here sits at the left edge of the file column, whether
+         that is beside the side column or at the far left once it is away. -->
+    <Button
+      variant="naked"
+      title={sideColumnShown ? "Hide the column" : "Show the column"}
+      onclick={() => (sideColumnShown = !sideColumnShown)}>
+      <Icon name={sideColumnShown ? "sidebar-left-filled" : "sidebar-left"} />
+    </Button>
+    <!-- One column with two things it can hold, so the two buttons are joined
+         into a single control where exactly one is on. -->
+    <div
+      class="sticky-bar-modes"
+      role="radiogroup"
+      aria-label="Column contents">
+      <Button
+        variant="ghost"
+        flatRight
+        active={sideColumnMode === "comments"}
+        title="Show the review's comments"
+        onclick={() => {
+          sideColumnMode = "comments";
+          sideColumnShown = true;
+        }}>
+        <Icon name="comment" />
+      </Button>
+      <Button
+        variant="ghost"
+        flatLeft
+        active={sideColumnMode === "tree"}
+        title="Show the files"
+        onclick={() => {
+          sideColumnMode = "tree";
+          sideColumnShown = true;
+        }}>
+        <Icon name="document" />
+      </Button>
+    </div>
+    <!-- Only where the two differ: a review that comments on every file the
+         revision touches has nothing to filter, and the toggle would sit there
+         saying it had switched to the same set of files.
+
+         Says where things stand rather than what the click does, so it can carry
+         the pressed state like the pair beside it. Both states name their count:
+         how many files are on screen is the question either way. -->
+    {#if commentedPaths.size < diffFiles.length}
+      <Button
+        variant="naked"
+        active={onlyCommentedFiles}
+        title={onlyCommentedFiles
+          ? "Showing only the files with comments"
+          : "Showing every file in the revision"}
+        onclick={() => (onlyCommentedFiles = !onlyCommentedFiles)}>
+        <span class="txt-body-m-regular">
+          {#if onlyCommentedFiles}
+            {commentedPaths.size} commented
+          {:else}
+            All {diffFiles.length} {pluralize("file", diffFiles.length)}
+          {/if}
+        </span>
+      </Button>
+    {/if}
+    <div class="sticky-bar-actions">
+      <Button
+        variant="naked"
+        title={filesExpanded ? "Collapse all files" : "Expand all files"}
+        onclick={() => setAllFilesCollapsed(filesExpanded)}>
+        <Icon name={filesExpanded ? "collapse-vertical" : "expand-vertical"} />
+      </Button>
+      <DiffOptionsButton />
+    </div>
   </div>
+{/snippet}
+
+{#snippet sideColumn()}
+  {#if sideColumnMode === "comments"}
+    <div class="side-column">
+      <ReviewCommentList
+        groups={orderedGroups}
+        {resolvedBy}
+        selectedId={highlightedCommentId}
+        onSelect={revealComment} />
+    </div>
+  {:else}
+    <!-- The tree fills its box rather than growing with its rows, so it needs a
+         height to scroll inside: `max-height` alone leaves it indefinite and the
+         tree collapses. -->
+    <div class="side-column tree">
+      <PierreTree
+        paths={treeFiles.map(file => file.path)}
+        gitStatus={treeFiles}
+        onSelect={path => diffView?.scrollToFile(path)} />
+    </div>
+  {/if}
 {/snippet}
 
 <!-- The diff owns the scroll port, and the review's own chrome rides inside it
@@ -985,9 +1176,10 @@
     ? path =>
         getDiffText(rid, reviewedRevision.base, reviewedRevision.head, 3, path)
     : undefined}
-  includePaths={commentedPaths}
-  overlayLeft={commentedPaths.size > 0 ? commentColumn : undefined}
-  overlayLeftWidth="19rem"
+  includePaths={visiblePaths}
+  overlayLeft={hasLineComments && sideColumnShown ? sideColumn : undefined}
+  overlayLeftWidth={commentColumnWidth}
+  stickyTop={hasLineComments ? stickyBar : undefined}
   codeComments={reviewCodeComments}
   commentCommit={reviewedRevision?.head}
   {highlightedCommentId}
