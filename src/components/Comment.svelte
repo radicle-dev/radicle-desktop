@@ -1,12 +1,8 @@
 <script lang="ts" module>
-  // Says where a comment lives when a view mixes comments from several places
-  // — a review's own comments and comments left directly on a revision look
-  // alike otherwise, but they differ in what can be done to them.
-  export interface CommentOrigin {
-    text: string;
-    title?: string;
-    onclick?: () => void;
-  }
+  // Re-exported so the many components that reach for it through this one keep
+  // working; it lives in `@app/lib/codeComments` because plain TypeScript
+  // modules cannot import a type out of a Svelte component.
+  export type { CommentOrigin } from "@app/lib/codeComments";
 </script>
 
 <script lang="ts">
@@ -15,23 +11,30 @@
   import type { Reaction } from "@bindings/cob/Reaction";
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Snippet } from "svelte";
+  import type { ComponentProps } from "svelte";
 
   import { tick } from "svelte";
 
+  import type { CommentOrigin } from "@app/lib/codeComments";
+  import { writeToClipboard } from "@app/lib/invoke";
   import * as utils from "@app/lib/utils";
 
+  import DropdownList from "@app/components/DropdownList.svelte";
+  import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Id from "@app/components/Id.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
-  import { closeFocused } from "@app/components/Popover.svelte";
+  import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import Reactions from "@app/components/Reactions.svelte";
   import ReactionSelector from "@app/components/ReactionSelector.svelte";
 
   interface Props {
     actions?: Snippet;
     beforeTimestamp?: Snippet;
+    // An aside on the authorship line, between the caption and the timestamp,
+    // shown only while the comment is hovered.
+    hoverNote?: Snippet;
     id?: string;
     rid: string;
     currentUserNid?: string;
@@ -59,6 +62,7 @@
   let {
     actions,
     beforeTimestamp,
+    hoverNote,
     id,
     rid,
     currentUserNid,
@@ -81,18 +85,63 @@
   }: Props = $props();
   /* eslint-enable prefer-const */
 
-  let state: "read" | "edit" | "submit" = $state("read");
+  let mode: "read" | "edit" | "submit" = $state("read");
+  let menuExpanded = $state(false);
+
+  // Everything that acts on the comment itself, as opposed to on the
+  // conversation: kept behind one button so reacting, resolving and replying
+  // stay the visible actions.
+  type MenuAction = {
+    label: string;
+    icon: ComponentProps<typeof Icon>["name"];
+    title?: string;
+    run: () => void | Promise<void>;
+  };
+
+  const canDelete = $derived(
+    Boolean(deleteComment) &&
+      currentUserNid !== undefined &&
+      utils.publicKeyFromDid(author.did) === currentUserNid,
+  );
+
+  const menuActions: MenuAction[] = $derived.by(() => {
+    const actions: MenuAction[] = [];
+    if (id) {
+      actions.push({
+        label: "Copy ID",
+        icon: "copy",
+        title: id,
+        run: () => writeToClipboard(id),
+      });
+    }
+    if (editComment) {
+      actions.push({ label: "Edit", icon: "edit", run: toggleEdit });
+    }
+    if (canDelete && deleteComment) {
+      actions.push({ label: "Delete", icon: "trash", run: deleteComment });
+    }
+    return actions;
+  });
+
+  async function runMenuAction(action: MenuAction) {
+    closeFocused();
+    try {
+      await action.run();
+    } catch (error) {
+      console.error(`${action.label} failed`, error);
+    }
+  }
 
   async function toggleEdit() {
-    if (state === "read") {
-      state = "edit";
+    if (mode === "read") {
+      mode = "edit";
       await tick();
       utils.scrollIntoView(`edit-${id}`, {
         behavior: "smooth",
         block: "center",
       });
-    } else if (state === "edit") {
-      state = "read";
+    } else if (mode === "edit") {
+      mode = "read";
     }
   }
 </script>
@@ -143,6 +192,22 @@
     transition: opacity 0.1s ease-in-out;
     will-change: opacity;
   }
+  /* Takes no space at rest, rather than fading in place like `.hover-only`:
+     sitting mid-sentence, a reserved gap between the caption and the timestamp
+     reads as a hole. */
+  .hover-note {
+    display: none;
+    align-items: center;
+  }
+  .card:is(
+      :hover,
+      :has(:focus-visible),
+      :has(:global([data-expanded])),
+      .editing
+    )
+    .hover-note {
+    display: inline-flex;
+  }
   .card-body {
     display: flex;
     align-items: center;
@@ -169,13 +234,15 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-quaternary);
   }
+  .menu {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-canvas);
+    padding: 0.25rem;
+  }
 </style>
 
-<div
-  class="card"
-  class:editing={state !== "read"}
-  {id}
-  style:width={styleWidth}>
+<div class="card" class:editing={mode !== "read"} {id} style:width={styleWidth}>
   <div style:position="relative">
     <div class="card-header">
       <NodeId {...utils.authorForNodeId(author)} />
@@ -203,6 +270,9 @@
       {#if beforeTimestamp}
         {@render beforeTimestamp()}
       {/if}
+      {#if hoverNote}
+        <span class="hover-note">{@render hoverNote()}</span>
+      {/if}
       {#if timestamp}
         <span class="timestamp" title={utils.absoluteTimestamp(timestamp)}>
           {utils.formatTimestamp(timestamp)}
@@ -219,19 +289,6 @@
         </div>
       {/if}
       <div class="header-right">
-        {#if id}
-          <Id {id} clipboard={id} label="comment ID" />
-        {/if}
-        {#if editComment}
-          <span class="global-icon-button" title="Edit comment">
-            <Icon name="edit" onclick={toggleEdit} />
-          </span>
-        {/if}
-        {#if deleteComment && currentUserNid && utils.publicKeyFromDid(author.did) === currentUserNid}
-          <span class="global-icon-button" title="Delete comment">
-            <Icon name="trash" onclick={deleteComment} />
-          </span>
-        {/if}
         {#if reactions && reactOnComment}
           <ReactionSelector
             placement="top-end"
@@ -245,11 +302,36 @@
             }} />
         {/if}
         {@render actions?.()}
+        {#if menuActions.length > 0}
+          <Popover placement="bottom-end" bind:expanded={menuExpanded}>
+            {#snippet toggle(onclick)}
+              <span class="global-icon-button" title="Comment actions">
+                <Icon name="ellipsis-vertical" {onclick} />
+              </span>
+            {/snippet}
+            {#snippet popover()}
+              <div class="menu">
+                <DropdownList items={menuActions}>
+                  {#snippet item(action)}
+                    <DropdownListItem
+                      selected={false}
+                      styleGap="0.5rem"
+                      title={action.title}
+                      onclick={() => runMenuAction(action)}>
+                      <Icon name={action.icon} />
+                      {action.label}
+                    </DropdownListItem>
+                  {/snippet}
+                </DropdownList>
+              </div>
+            {/snippet}
+          </Popover>
+        {/if}
       </div>
     </div>
   </div>
 
-  {#if (body === undefined || body?.trim() === "") && state === "read"}
+  {#if (body === undefined || body?.trim() === "") && mode === "read"}
     <div class="card-body">
       <span class="txt-missing txt-body-m-regular" style:line-height="1.625rem">
         No description.
@@ -257,7 +339,7 @@
     </div>
   {:else}
     <div class="card-body">
-      {#if editComment && state !== "read"}
+      {#if editComment && mode !== "read"}
         <div id={`edit-${id}`} style:width="100%">
           <ExtendedTextarea
             focus
@@ -270,21 +352,21 @@
             {disableAttachments}
             borderVariant="ghost"
             submitVariant="secondary"
-            submitInProgress={state === "submit"}
+            submitInProgress={mode === "submit"}
             submitCaption="Save"
             placeholder="Leave a comment"
             submit={async ({ comment, embeds }) => {
-              state = "submit";
+              mode = "submit";
               try {
                 await editComment(comment, Array.from(embeds.values()));
               } finally {
-                state = "read";
+                mode = "read";
               }
             }}
             close={async () => {
               body = body;
               await tick();
-              state = "read";
+              mode = "read";
             }} />
         </div>
       {:else}

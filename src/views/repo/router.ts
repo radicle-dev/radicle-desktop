@@ -391,11 +391,10 @@ export async function loadRepoCommit(
       rid: route.rid,
       sha: route.commit,
     }),
-    // @pierre/diffs highlights client-side from the patch text, so we skip the
-    // server-side tree-sitter pass (highlight=false). The structured diff still
-    // drives the file tree, per-file binary/empty notes and status labels, the
-    // stats badge, and the expansion blob lookup.
-    cachedGetCommitDiff(route.rid, route.commit, 3, false),
+    // The diff manifest drives the file tree, per-file binary/empty notes and
+    // status labels, and the stats badge; the diff itself is rendered from the
+    // patch text below.
+    cachedGetCommitDiff(route.rid, route.commit),
     // Patch text that feeds the rendered diff; fetched in parallel so it isn't a
     // serial round-trip, and cached since a commit's patch is immutable.
     cachedGetDiffText(route.rid, undefined, route.commit, 3),

@@ -1,58 +1,51 @@
-<script lang="ts" module>
-  import type { WorkerPoolManager } from "@pierre/diffs/worker";
-
-  import { getOrCreateWorkerPoolSingleton } from "@pierre/diffs/worker";
-  // Vite bundles Pierre's highlighting worker (and its Shiki/WASM deps) into a
-  // self-contained, same-origin worker module.
-  import PierreDiffWorker from "@pierre/diffs/worker/worker.js?worker";
-
-  const themes = { dark: "github-dark", light: "github-light" } as const;
-
-  // Shiki tokenization is the expensive part of rendering a large diff. Run it
-  // in a shared worker pool so it stays off the main thread; if the worker
-  // cannot be created (e.g. blocked by CSP), fall back to main-thread
-  // highlighting rather than failing to render.
-  let workerPoolResolved = false;
-  let workerPool: WorkerPoolManager | undefined;
-  function getWorkerPool(): WorkerPoolManager | undefined {
-    if (workerPoolResolved) {
-      return workerPool;
-    }
-    workerPoolResolved = true;
-    try {
-      workerPool = getOrCreateWorkerPoolSingleton({
-        poolOptions: {
-          workerFactory: () => new PierreDiffWorker(),
-          poolSize: 2,
-        },
-        highlighterOptions: { theme: themes },
-      });
-    } catch (error) {
-      console.error(
-        "PierreDiff: worker pool unavailable; highlighting on the main thread",
-        error,
-      );
-      workerPool = undefined;
-    }
-    return workerPool;
-  }
-</script>
-
 <script lang="ts">
+  import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
+  import type { Thread } from "@bindings/cob/thread/Thread";
   import type {
+    AnnotationSide,
+    CodeViewDiffItem,
     CodeViewItem,
+    CodeViewRenderedItem,
     CodeViewSlotSnapshot,
+    DiffLineAnnotation,
     FileDiffLoadedFiles,
     FileDiffMetadata,
+    SelectedLineRange,
   } from "@pierre/diffs";
   import type { Snippet } from "svelte";
 
-  import { CodeView, CUSTOM_HEADER_SLOT_ID } from "@pierre/diffs";
+  import {
+    CodeView,
+    CUSTOM_HEADER_SLOT_ID,
+    getLineAnnotationName,
+  } from "@pierre/diffs";
   import { mount, unmount, untrack } from "svelte";
 
   import { fontSettings } from "@app/lib/appearance.svelte";
+  import type { CodeComments } from "@app/lib/codeComments";
+  import { forwardPatchActivityContext } from "@app/lib/patchActivityContext";
+  import type {
+    CommentAnchor,
+    ComposerTarget,
+    LineAnnotation,
+  } from "@app/lib/pierreComments";
+  import {
+    anchorOf,
+    fileAnnotations,
+    isCommentableStatus,
+  } from "@app/lib/pierreComments";
   import { parsePatch } from "@app/lib/pierreParse";
+  import {
+    cardUnsafeCSS,
+    codeLineHeight,
+    getWorkerPool,
+    gutterUnsafeCSS,
+    surfaceUnsafeCSS,
+    themes,
+  } from "@app/lib/pierreView";
 
+  import CommentAnnotation from "@app/components/CommentAnnotation.svelte";
+  import { CommentAnnotationState } from "@app/components/commentAnnotationState.svelte";
   import DiffFileHeader from "@app/components/DiffFileHeader.svelte";
   import { DiffFileHeaderState } from "@app/components/diffFileHeaderState.svelte";
   import { theme } from "@app/components/ThemeSwitch.svelte";
@@ -95,6 +88,44 @@
     // Pierre `cacheKey` prefix so the shared worker-pool highlight cache does
     // not collide across diffs that share file paths (see `parsePatch`).
     cacheKeyPrefix?: string;
+    // A column down the left of the diff (the patch view's commit list). It sits
+    // below `header` and sticks to the top of the scroll port once the header has
+    // scrolled past. The file cards are inset by its width so they sit beside it
+    // rather than under it.
+    //
+    // The snippet is handed a box of the height it may occupy and owns its own
+    // overflow — so whatever frames the content can be the scroll port itself,
+    // and anything sticky inside it pins to a border that never moves.
+    overlayLeft?: Snippet;
+    overlayLeftWidth?: string;
+    // A full-width bar that sticks to the top of the scroll port. It is the last
+    // thing before the two columns, and everything that pins below — the column
+    // and Pierre's own file headers — is offset by its height.
+    stickyTop?: Snippet;
+    // Content shown above the first file, beside `overlayLeft` rather than
+    // across the whole width like `header`. Pierre reserves its height between
+    // the header and the first item (`layout.paddingTop`) and accounts for it in
+    // its scroll maths, so it can sit in that gap without displacing anything.
+    filesHeader?: Snippet;
+    // Files (by new-side path) that start collapsed.
+    collapsedPaths?: ReadonlySet<string>;
+    // Files (by new-side path) marked reviewed. Providing this shows the
+    // reviewed toggle in every file header; leave unset to hide it.
+    reviewedPaths?: ReadonlySet<string>;
+    onToggleReviewed?: (path: string) => void;
+    // Resolved/unresolved code-comment counts per new-side path, shown in the
+    // file header.
+    commentCounts?: ReadonlyMap<
+      string,
+      { resolved: number; unresolved: number }
+    >;
+    // Review wiring. Providing it superimposes the code-comment threads on the
+    // diff and, if it can create comments, puts a marker in the gutter for
+    // writing new ones.
+    codeComments?: CodeComments;
+    // The commit a new comment is anchored against — the head of the diff on
+    // screen. Required alongside `codeComments` to compose a comment.
+    commentCommit?: string;
   }
 
   const {
@@ -111,7 +142,47 @@
     fileStatuses = undefined,
     fileDiffText = undefined,
     cacheKeyPrefix = undefined,
+    overlayLeft = undefined,
+    overlayLeftWidth = "21rem",
+    stickyTop = undefined,
+    filesHeader = undefined,
+    collapsedPaths = undefined,
+    reviewedPaths = undefined,
+    onToggleReviewed = undefined,
+    commentCounts = undefined,
+    codeComments = undefined,
+    commentCommit = undefined,
   }: Props = $props();
+
+  // Whether the reader may start a new comment: the host has to supply both an
+  // action and the commit to anchor it against.
+  const canComment = $derived(
+    Boolean(codeComments?.createComment) && commentCommit !== undefined,
+  );
+  // Threads anchored to a line, in the file they belong to. A file whose content
+  // moved cannot carry any: a `CodeLocation` names one path, and which side of
+  // the rename it means is ambiguous.
+  const commentThreads = $derived.by(() => {
+    const threads = codeComments?.threads ?? [];
+    if (threads.length === 0) return threads;
+    return threads.filter(thread => {
+      const anchor = anchorOf(thread.root.location);
+      return anchor && isCommentableStatus(fileStatuses?.get(anchor.path));
+    });
+  });
+  // The open new-comment composer, if any. Transient UI state, so it lives here
+  // rather than in the threads handed down by the host.
+  let composer = $state.raw<ComposerTarget | undefined>(undefined);
+
+  // What has been typed into it, held here rather than in the mounted component:
+  // the component goes away when its file leaves the render window, and losing
+  // a half-written comment to a scroll is not acceptable.
+  let composerBody = $state("");
+  function closeComposer(): void {
+    composer = undefined;
+    composerBody = "";
+    view?.clearSelectedLines();
+  }
 
   // Pierre's first-party lazy content loader. It calls this the first time a
   // partial (patch-parsed) file is expanded, hydrates the file's full content
@@ -136,120 +207,117 @@
       : undefined,
   );
 
-  // Pierre only emits unprefixed `user-select: none` on its gutters, which
-  // WebKit ignores — so with the subtree opted into selection, gutters would
-  // become selectable there. Re-assert it with the `-webkit-` prefix inside the
-  // shadow root (injected into the highest `@layer unsafe`, so it wins).
-  const gutterUnsafeCSS = `
-    [data-column-number],
-    [data-content-buffer],
-    [data-gutter-buffer],
-    [data-separator-wrapper],
-    [data-separator-content] {
-      -webkit-user-select: none;
-      user-select: none;
-    }
-  `;
-
-  // Per-file "card" treatment. Each file is its own `<diffs-container>` custom
-  // element (own shadow root), so `:host` — reachable from the per-file
-  // `unsafeCSS` — is the whole-file box (header + diff). Horizontal spacing via
-  // margin; vertical spacing between files stays on `layout.gap` (vertical
-  // margins fight the virtualizer's height math). `background: transparent`
-  // gives the "no background" look — unchanged lines then show the app canvas,
-  // and only the border + change tints define the card.
-  //
-  // The border is a `box-shadow`, NOT a real border: the virtualizer computes
-  // each file's height from metrics (for `overflow: scroll` it never measures
-  // the container), so a real border's 2px would drift the layout model from
-  // the DOM — corrupting scroll-to targets and the sticky math for short
-  // collapsed files. A box-shadow adds zero layout height. It must be an
-  // *outset* ring: the diff surface now equals the view background, so the
-  // opaque header/line backgrounds would paint over an inset shadow. (The
-  // header/body divider is an inset shadow on `DiffFileHeader`'s own row, so it
-  // adds no height and keeps the header matching the metric.)
-  //
-  // Corners are rounded per-element, not with `overflow: hidden` on `:host`
-  // (that would make the header stick within the file box instead of the scroll
-  // viewport). The header's opaque sticky background would otherwise square off
-  // over the rounded box-shadow, so we round its top corners; the body wrapper
-  // (a sibling of the header, not the sticky element) gets rounded + clipped
-  // bottom corners — safe because the horizontal scroll lives on the inner
-  // `[data-code]`. A header-only card (collapsed, binary, or empty — no rendered
-  // body) rounds all its header corners, driven by the `data-app-no-body`
-  // attribute we set on the host.
-  //
-  // Context separators ("N unmodified lines" / "More context" bars) are also
-  // restyled here: recessed one surface level below the diff, 4px corners, no
-  // hover underline, and Pierre's expand glyph swapped for the app's caret (an
-  // app-file chevron painted via a CSS mask, like the tree's folder glyphs).
-  const caretMask =
-    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='black' d='M4 5.29297L8 9.29297L12 5.29297L12.707 6L8 10.707L3.29297 6L4 5.29297Z'/%3E%3C/svg%3E\")";
-  const cardUnsafeCSS = `
-    :host {
-      margin: 0 0.5rem;
-      border-radius: var(--border-radius-md);
-      box-shadow: 0 0 0 1px var(--color-border-subtle);
-      background: transparent;
-      /* Force the diff surface to the app's view background. The Shiki theme
-         sets \`--diffs-light-bg\`/\`--diffs-dark-bg\` on \`:host\` directly, so
-         overriding those by inheritance fails; overriding the resolved
-         \`--diffs-bg\` from this higher \`@layer\` wins. The header, lines and
-         gutter read it directly, and the separator/context/change tints are
-         \`color-mix\`es off it — so everything sits on the view background with
-         only the border, syntax and add/del/mod tints standing out, while the
-         separators keep their subtle Pierre tint (now mixed off our base). */
-      --diffs-bg: var(--color-surface-canvas);
-      /* Lift the context separators one surface level above the diff. */
-      --diffs-bg-separator-override: var(--color-surface-subtle);
-    }
-    [data-diffs-header] {
-      border-top-left-radius: var(--border-radius-md);
-      border-top-right-radius: var(--border-radius-md);
-    }
-    :host([data-app-no-body]) [data-diffs-header] {
-      border-radius: var(--border-radius-md);
-    }
-    [data-diffs-header] ~ [data-diff],
-    [data-diffs-header] ~ [data-file] {
-      border-bottom-left-radius: var(--border-radius-md);
-      border-bottom-right-radius: var(--border-radius-md);
-      overflow: hidden;
-    }
-    /* Context separators: 4px corners, no hover underline. */
-    [data-separator-content],
-    [data-separator="line-info"] [data-separator-wrapper] {
-      border-radius: var(--border-radius-md);
-    }
-    [data-separator-content]:hover {
-      text-decoration: none;
-    }
-    /* Swap Pierre's expand glyph for the app caret (down; flipped when the
-       separator expands upward). */
-    [data-expand-button] [data-icon] {
-      display: none;
-    }
-    [data-expand-button]::before {
-      content: "";
-      width: 1rem;
-      height: 1rem;
-      background-color: currentColor;
-      -webkit-mask: center / contain no-repeat ${caretMask};
-      mask: center / contain no-repeat ${caretMask};
-    }
-    [data-expand-button][data-expand-up]::before {
-      transform: rotate(180deg);
-    }
-  `;
-
   // Kept out of `$state` proxying (it is an external stateful instance), but
   // still reactive on reassignment so the option effects re-run once it exists.
   let container = $state<HTMLElement>();
   let headerEl = $state<HTMLElement>();
+  let overlayLeftEl = $state<HTMLElement>();
+  let filesHeaderEl = $state<HTMLElement>();
+  let filesHeaderContentEl = $state<HTMLElement>();
+  let stickyTopEl = $state<HTMLElement>();
+  let stickyTopContentEl = $state<HTMLElement>();
   // Handed to CodeView's `renderCodeViewHeader`: it mounts this element at the
   // top of the scroll content and tracks its height itself. Stable reference so
   // option updates do not re-trigger header reconciliation.
-  const renderHeader = (): HTMLElement | undefined => headerEl;
+  //
+  // It doubles as the hook for placing `overlayLeft`: Pierre calls this once per
+  // header host, right after creating it, which is the first moment the column
+  // can be moved to sit after it.
+  const renderHeader = (): HTMLElement | undefined => {
+    placeAnchors();
+    return headerEl;
+  };
+
+  // Put the anchors after the header, so their static position is below it and
+  // `position: sticky` only takes over once the header has scrolled past. Left
+  // where Svelte rendered it, it would sit before the header and cover it. Pierre
+  // only ever inserts its own children relative to its item container, so a
+  // sibling between the header and that container is left alone. Idempotent,
+  // because either can appear first: the host is created on Pierre's first
+  // render, the column whenever its content does.
+  function placeAnchors(): void {
+    const host = view?.getHeaderElement();
+    if (!host) {
+      return;
+    }
+    let previous: Element = host;
+    for (const anchor of [stickyTopEl, overlayLeftEl, filesHeaderEl]) {
+      if (!anchor) {
+        continue;
+      }
+      if (anchor.previousElementSibling !== previous) {
+        previous.after(anchor);
+      }
+      previous = anchor;
+    }
+  }
+  $effect(() => {
+    void stickyTopEl;
+    void overlayLeftEl;
+    void filesHeaderEl;
+    void view;
+    untrack(placeAnchors);
+  });
+
+  // How far everything below the sticky bar has to be pushed down: the column
+  // and the files header while it is in flow, and Pierre's file headers once
+  // they pin.
+  let stickyTopHeight = $state(0);
+  $effect(() => {
+    const el = stickyTopContentEl;
+    if (!el) {
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      stickyTopHeight = el.getBoundingClientRect().height;
+    });
+    observer.observe(el);
+    stickyTopHeight = el.getBoundingClientRect().height;
+    return () => observer.disconnect();
+  });
+
+  let filesHeaderHeight = $state(0);
+  $effect(() => {
+    const el = filesHeaderContentEl;
+    if (!el) {
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      filesHeaderHeight = el.getBoundingClientRect().height;
+    });
+    observer.observe(el);
+    filesHeaderHeight = el.getBoundingClientRect().height;
+    return () => observer.disconnect();
+  });
+
+  // The gap between the chrome and the first file, which the sticky bar and
+  // `filesHeader` hang in. It is padding on the header element, so it counts as
+  // part of the height Pierre measures for it; the anchors that fill it are
+  // siblings that come after the header, which puts them at the *bottom* of the
+  // gap, and each one is offset back up by this much.
+  const reserveHeight = $derived(stickyTopHeight + filesHeaderHeight);
+  // Only the header can carry it. Without one there is nowhere to put the gap
+  // except `layout.paddingTop`, which desynchronises Pierre's render window —
+  // but then there are no anchors to make room for either, so it stays zero.
+  const reserveOnHeader = $derived(header !== undefined);
+
+  // The column caps its height at the scroll port's, which it cannot express in
+  // CSS: it hangs off a zero-height anchor, so a percentage has nothing to
+  // resolve against.
+  let portHeight = $state(0);
+  $effect(() => {
+    const el = container;
+    if (!el || !overlayLeft) {
+      return;
+    }
+    const observer = new ResizeObserver(() => {
+      portHeight = el.clientHeight;
+    });
+    observer.observe(el);
+    portHeight = el.clientHeight;
+    return () => observer.disconnect();
+  });
+
   // `DiffFileHeader`'s row height (`2.5rem`), fed to Pierre as the exact
   // `diffHeaderHeight` metric. It must be constant across all files — Pierre
   // estimates each file's position from this single metric (not the measured
@@ -261,24 +329,83 @@
   function fileHeaderHeight(): number {
     return fontSettings.size * 2.5;
   }
-  // Diff line height, rounded to a whole pixel. `1.25rem` is fractional at some
-  // font sizes (e.g. 17.5px at a 14px root) and WebKit snaps each rendered row
-  // to a whole pixel, so a fractional metric drifts scroll-to-file down a long
-  // diff. Feed this same integer to both the CSS line height and Pierre's
-  // `itemMetrics.lineHeight` so the rendered rows and the virtualization model
-  // agree exactly.
-  const lineHeightPx = $derived(Math.round(fontSettings.size * 1.25));
-  let view = $state.raw<CodeView | undefined>(undefined);
+  const lineHeightPx = $derived(codeLineHeight(fontSettings.size));
+  let view = $state.raw<CodeView<LineAnnotation> | undefined>(undefined);
   // The parsed files, kept so `scrollToFile` can map a path to its diff item.
   let parsedFiles = $state.raw<FileDiffMetadata[]>([]);
 
-  // Scroll the diff to a file by its path (item id is its index in the patch).
-  export function scrollToFile(path: string): void {
-    const index = parsedFiles.findIndex(file => file.name === path);
+  // Scroll to a logical position in the scroll content, where 0 is the top of
+  // the `header`. Pierre reuses a paged scroll scaffold, so the logical position
+  // is not the container's `scrollTop` and has to go through `scrollTo`.
+  export function scrollToPosition(
+    position: number,
+    behavior: "smooth" | "instant" = "smooth",
+  ): void {
+    view?.scrollTo({ type: "position", position, behavior });
+  }
+
+  // Scroll the chrome out of the way, bringing the top of the files column — the
+  // sticky bar and `filesHeader`, then the first file — up to the top of the
+  // port. The header element ends in the gap those hang in, so the chrome is
+  // what is left of it once the gap is taken off.
+  export function scrollToFilesTop(): void {
+    if (headerEl) {
+      const reserve = reserveOnHeader ? reserveHeight : 0;
+      scrollToPosition(headerEl.getBoundingClientRect().height - reserve);
+    }
+  }
+
+  // A scroll target that arrived before the patch finished parsing.
+  let pendingScroll: { path: string; anchor?: CommentAnchor } | undefined;
+
+  function applyScroll(target: { path: string; anchor?: CommentAnchor }): void {
+    const index = parsedFiles.findIndex(file => file.name === target.path);
     if (index < 0) {
+      // The patch is parsed off the main thread, so a caller that switches the
+      // diff and immediately scrolls arrives before there are any items. Hold
+      // the target and apply it once they exist.
+      pendingScroll = target;
       return;
     }
-    view?.scrollTo({ type: "item", id: String(index), align: "start" });
+    pendingScroll = undefined;
+    const id = String(index);
+    const item = view?.getItem(id);
+    // A collapsed file has no line to arrive at (a lockfile or one already
+    // marked reviewed starts that way), so open it first.
+    if (item?.type === "diff" && item.collapsed === true) {
+      setItemCollapsed(item, false);
+    }
+    if (target.anchor) {
+      view?.scrollTo({
+        type: "line",
+        id,
+        lineNumber: target.anchor.line,
+        side: target.anchor.side,
+        align: "center",
+      });
+    } else {
+      // Offset by the sticky bar, which Pierre does not know about: without it
+      // the file header would land behind it.
+      view?.scrollTo({
+        type: "item",
+        id,
+        align: "start",
+        offset: stickyTopHeight,
+      });
+    }
+  }
+
+  // Scroll the diff to a file by its path (item id is its index in the patch).
+  export function scrollToFile(path: string): void {
+    applyScroll({ path });
+  }
+
+  // Scroll the diff to the line a code comment is anchored to.
+  export function scrollToAnchor(anchor: CommentAnchor | undefined): void {
+    if (!anchor) {
+      return;
+    }
+    applyScroll({ path: anchor.path, anchor });
   }
 
   // Collapse or expand every file at once (drives the topbar toggle). Renders
@@ -328,6 +455,9 @@
       target: HTMLElement;
       // The host this wrapper currently lives in, to detect a recycle.
       host: HTMLElement;
+      // The CodeView item this header describes, kept so the header's inputs
+      // can be re-pushed when they change without waiting for a new snapshot.
+      item: CodeViewDiffItem<LineAnnotation>;
     }
   >();
 
@@ -339,18 +469,110 @@
     mountedHeaders.clear();
   }
 
-  // The virtualized CodeView is container-managed, so it emits a snapshot of
-  // rendered items through a slot coordinator (`{ items, header, footer }`). For
-  // each rendered file we ensure a `DiffFileHeader` is mounted into its
-  // custom-header slot and push the current file data into its reactive state;
-  // afterwards we tear down headers whose file is no longer rendered.
-  function syncHeaderSlots(
-    snapshot: CodeViewSlotSnapshot<undefined> | undefined,
+  // Collapse or expand a single file, by CodeView item. Bumps `version`:
+  // CodeView ignores an updateItem whose version is unchanged (see
+  // syncItemRecord).
+  function setItemCollapsed(
+    item: CodeViewDiffItem<LineAnnotation>,
+    collapsed: boolean,
   ): void {
-    const items = snapshot?.items;
+    view?.updateItem({
+      ...item,
+      collapsed,
+      version: (item.version ?? 0) + 1,
+    });
+  }
+
+  // Push the current file data into one mounted header's reactive state. Called
+  // both from the snapshot callback and whenever an input the header renders
+  // changes, since those change independently of which files are rendered.
+  function applyHeaderState(entry: {
+    state: DiffFileHeaderState;
+    host: HTMLElement;
+    item: CodeViewDiffItem<LineAnnotation>;
+  }): void {
+    const { state, host, item } = entry;
+    const fileDiff = item.fileDiff;
+    state.fileDiff = fileDiff;
+    state.status = fileStatuses?.get(fileDiff.name);
+    // Binary comes from the backend (Pierre can't tell binary from empty —
+    // both have no hunks). Any other zero-hunk file (empty/mode-only/pure
+    // rename adds like `.gitkeep`) is treated as empty regardless of how the
+    // backend labelled its diff.
+    const note =
+      fileNotes?.get(fileDiff.name) ??
+      (fileDiff.hunks.length === 0 ? "empty" : undefined);
+    state.note = note;
+    state.collapsed = item.collapsed === true;
+    // Flag header-only cards (collapsed, binary, or empty — anything with no
+    // rendered body) so `cardUnsafeCSS` rounds all four corners of the header
+    // instead of only the top two.
+    host.toggleAttribute(
+      "data-app-no-body",
+      item.collapsed === true || note !== undefined,
+    );
+    state.text = fileDiffText ? () => fileDiffText(fileDiff.name) : undefined;
+    state.reviewed = reviewedPaths
+      ? reviewedPaths.has(fileDiff.name)
+      : undefined;
+    const counts = commentCounts?.get(fileDiff.name);
+    state.resolvedComments = counts?.resolved ?? 0;
+    state.unresolvedComments = counts?.unresolved ?? 0;
+    state.onToggleCollapse = () => {
+      setItemCollapsed(item, !(item.collapsed === true));
+    };
+    state.onToggleReviewed = () => {
+      const wasReviewed = reviewedPaths?.has(fileDiff.name) === true;
+      onToggleReviewed?.(fileDiff.name);
+      // Collapse when marking reviewed, re-expand when un-marking.
+      setItemCollapsed(item, !wasReviewed);
+    };
+  }
+
+  // Mounting and updating the slot components is deferred out of whatever is
+  // running when the snapshot arrives — Pierre emits it from inside a render,
+  // which this component drives from its effects. Svelte parents a `mount()` root
+  // to the effect that was running when it was created, and orphans it when that
+  // effect next runs; a component mounted that way keeps its DOM but its own
+  // `$effect`s stop being reached, which is how a freshly added comment ended up
+  // with no author avatar. In a microtask there is no effect to be parented to.
+  // Plain variables: imperative bookkeeping, and making them reactive would
+  // schedule a Svelte flush for every snapshot Pierre emits while scrolling.
+  let pendingSlotItems: CodeViewRenderedItem<LineAnnotation>[] | undefined;
+  let slotSyncQueued = false;
+
+  function queueSlotSync(
+    items: CodeViewRenderedItem<LineAnnotation>[] | undefined,
+  ): void {
     if (!items) {
       return;
     }
+    pendingSlotItems = items;
+    if (slotSyncQueued) {
+      return;
+    }
+    slotSyncQueued = true;
+    queueMicrotask(() => {
+      slotSyncQueued = false;
+      const items = pendingSlotItems;
+      pendingSlotItems = undefined;
+      // Torn down between the snapshot and here.
+      if (items && view) {
+        syncSlots(items);
+      }
+    });
+  }
+
+  function onSlotSnapshot(
+    snapshot: CodeViewSlotSnapshot<LineAnnotation> | undefined,
+  ): void {
+    queueSlotSync(snapshot?.items);
+  }
+
+  // For each rendered file, ensure a `DiffFileHeader` is mounted into its
+  // custom-header slot and push the current file data into its reactive state;
+  // afterwards tear down headers whose file is no longer rendered.
+  function syncSlots(items: CodeViewRenderedItem<LineAnnotation>[]): void {
     // eslint-disable-next-line svelte/prefer-svelte-reactivity -- transient local set, never reactive
     const present = new Set<string>();
     for (const rendered of items) {
@@ -370,7 +592,7 @@
         host.appendChild(target);
         const state = new DiffFileHeaderState();
         const instance = mount(DiffFileHeader, { target, props: { state } });
-        entry = { state, instance, target, host };
+        entry = { state, instance, target, host, item: rendered.item };
         mountedHeaders.set(rendered.id, entry);
       } else if (entry.host !== host) {
         // Defensive: if Pierre ever moves an id's content onto a different
@@ -380,38 +602,8 @@
         entry.host = host;
       }
 
-      const { item } = rendered;
-      const fileDiff = item.fileDiff;
-      entry.state.fileDiff = fileDiff;
-      entry.state.status = fileStatuses?.get(fileDiff.name);
-      // Binary comes from the backend (Pierre can't tell binary from empty —
-      // both have no hunks). Any other zero-hunk file (empty/mode-only/pure
-      // rename adds like `.gitkeep`) is treated as empty regardless of how the
-      // backend labelled its diff.
-      const note =
-        fileNotes?.get(fileDiff.name) ??
-        (fileDiff.hunks.length === 0 ? "empty" : undefined);
-      entry.state.note = note;
-      entry.state.collapsed = item.collapsed === true;
-      // Flag header-only cards (collapsed, binary, or empty — anything with no
-      // rendered body) so `cardUnsafeCSS` rounds all four corners of the header
-      // instead of only the top two.
-      host.toggleAttribute(
-        "data-app-no-body",
-        item.collapsed === true || note !== undefined,
-      );
-      entry.state.text = fileDiffText
-        ? () => fileDiffText(fileDiff.name)
-        : undefined;
-      entry.state.onToggleCollapse = () => {
-        // Bump `version`: CodeView ignores an updateItem whose version is
-        // unchanged (see syncItemRecord).
-        view?.updateItem({
-          ...item,
-          collapsed: !(item.collapsed === true),
-          version: (item.version ?? 0) + 1,
-        });
-      };
+      entry.item = rendered.item;
+      applyHeaderState(entry);
     }
 
     // Reconcile removals: unmount headers whose file left the snapshot and
@@ -424,7 +616,202 @@
         mountedHeaders.delete(id);
       }
     }
+
+    syncAnnotationSlots(items);
   }
+
+  // One `CommentAnnotation` per annotation slot Pierre renders, keyed by item id
+  // and slot name. Reconciled against every snapshot with the same discipline as
+  // the header slots: mount for new slots, unmount *and detach* for slots that
+  // left, so the vacated host can re-enter Pierre's element pool.
+  // Read during init, so it has to be captured outside the mount callbacks.
+  const annotationContext = forwardPatchActivityContext();
+
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- imperative key→component lookup, never rendered reactively
+  const mountedAnnotations = new Map<
+    string,
+    {
+      state: CommentAnnotationState;
+      instance: ReturnType<typeof mount>;
+      target: HTMLElement;
+      host: HTMLElement;
+    }
+  >();
+
+  // A comment box changing height is the one thing in the diff that resizes
+  // without Pierre being told: replying, resolving and — most visibly — swapping
+  // the composer for the thread it just created all happen inside a mounted
+  // component, behind an annotation set that has not changed.
+  //
+  // Pierre notices (it watches its own container) and remeasures the file, but
+  // stops one step short: the height it wrote on the scroll container is only
+  // refreshed by a render, and that resize path does not schedule one. The
+  // container then holds the taller content's height while the box inside it is
+  // short, and Pierre's sticky offset — which parks the rendered files at the
+  // bottom of the port whenever they are shorter than it — drops the whole diff
+  // into the slack. On a diff that fills the window it never shows; on a short
+  // one the files sink to the middle of the screen.
+  //
+  // Rendering from the observer callback, rather than from a frame after it,
+  // keeps the correction in the same frame as the resize, so nothing is painted
+  // adrift. That does mean this has to run *after* Pierre has remeasured, and
+  // observers are called in the order they were constructed — hence building
+  // this one on demand (always after `CodeView.setup`, which constructs
+  // Pierre's) and dropping it again whenever the view is torn down.
+  let annotationResizeObserver: ResizeObserver | undefined;
+  let annotationResizing = false;
+
+  function observeAnnotation(target: HTMLElement): void {
+    annotationResizeObserver ??= new ResizeObserver(() => {
+      if (annotationResizing) {
+        return;
+      }
+      annotationResizing = true;
+      try {
+        view?.render(true);
+      } finally {
+        annotationResizing = false;
+      }
+    });
+    annotationResizeObserver.observe(target);
+  }
+
+  function unmountAnnotations(): void {
+    for (const { instance, target } of mountedAnnotations.values()) {
+      void unmount(instance);
+      target.remove();
+    }
+    mountedAnnotations.clear();
+    annotationResizeObserver?.disconnect();
+    annotationResizeObserver = undefined;
+  }
+
+  function syncAnnotationSlots(
+    items: CodeViewRenderedItem<LineAnnotation>[],
+  ): void {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- transient local set, never reactive
+    const present = new Set<string>();
+    for (const rendered of items) {
+      if (rendered.type !== "diff") {
+        continue;
+      }
+      const host = rendered.element;
+      // What each slot should show right now, rather than what Pierre happens to
+      // be holding: it is only told about the slots themselves, so its copy of
+      // the contents goes stale on every reply and resolve.
+
+      const current = new Map(
+        (annotationsFor(rendered.item.fileDiff) ?? []).map(annotation => [
+          getLineAnnotationName(annotation),
+          annotation.metadata,
+        ]),
+      );
+      for (const annotation of rendered.item.annotations ?? []) {
+        const slot = getLineAnnotationName(annotation);
+        const metadata = current.get(slot);
+        // A slot Pierre still has but that has nothing left to show; the item
+        // update that removes it is on its way.
+        if (!metadata) {
+          continue;
+        }
+        const key = `${rendered.id}|${slot}`;
+        present.add(key);
+        let entry = mountedAnnotations.get(key);
+        if (!entry) {
+          const target = document.createElement("div");
+          target.slot = slot;
+          target.dataset.appAnnotation = "";
+          // Pierre's own annotation wrapper does the same: the slot's shadow
+          // context is a `pre`, whose `white-space` inherits into slotted
+          // content and would hold a comment to one line.
+          target.style.whiteSpace = "normal";
+          host.appendChild(target);
+          const state = new CommentAnnotationState();
+          const instance = mount(CommentAnnotation, {
+            target,
+            props: { state },
+            context: annotationContext,
+          });
+          entry = { state, instance, target, host };
+          mountedAnnotations.set(key, entry);
+          observeAnnotation(target);
+        } else if (entry.host !== host) {
+          host.appendChild(entry.target);
+          entry.host = host;
+        }
+        entry.state.annotation = metadata;
+        entry.state.comments = codeComments;
+        entry.state.commit = commentCommit;
+        entry.state.onHoverThread = (threadId: string | undefined) => {
+          const thread = metadata.threads.find(
+            candidate => candidate.root.id === threadId,
+          );
+          if (thread) {
+            paintTint(host, thread);
+          } else {
+            clearTint();
+          }
+        };
+        entry.state.composerBody = composerBody;
+        entry.state.onComposerInput = value => {
+          composerBody = value;
+        };
+        entry.state.onCloseComposer = closeComposer;
+      }
+    }
+
+    for (const [key, entry] of mountedAnnotations) {
+      if (!present.has(key)) {
+        annotationResizeObserver?.unobserve(entry.target);
+        void unmount(entry.instance);
+        entry.target.remove();
+        mountedAnnotations.delete(key);
+      }
+    }
+  }
+
+  // Header content in the virtualized path is delivered via a slot coordinator,
+  // not the render* options. The gutter marker needs no slot: with no
+  // `renderGutterUtility` Pierre renders its own.
+  function slotCoordinator(hasAnnotations: boolean) {
+    return {
+      hasHeaderRenderers: true,
+      hasAnnotationRenderer: hasAnnotations,
+      hasGutterRenderer: false,
+      onSnapshotChange: onSlotSnapshot,
+    };
+  }
+
+  // Whether the diff carries comments can change without the patch changing, and
+  // the coordinator decides whether Pierre emits annotation slots at all.
+  $effect(() => {
+    const hasAnnotations = codeComments !== undefined;
+    const instance = view;
+    if (!instance) {
+      return;
+    }
+    untrack(() => {
+      if (instance.setSlotCoordinator(slotCoordinator(hasAnnotations))) {
+        instance.render(true);
+      }
+    });
+  });
+
+  // Header inputs change independently of which files are rendered (marking a
+  // file reviewed, say), and the slot coordinator only fires when the rendered
+  // set changes — so re-push them into the mounted headers here.
+  $effect(() => {
+    void fileNotes;
+    void fileStatuses;
+    void fileDiffText;
+    void reviewedPaths;
+    void commentCounts;
+    untrack(() => {
+      for (const entry of mountedHeaders.values()) {
+        applyHeaderState(entry);
+      }
+    });
+  });
 
   function options(
     themeType: "dark" | "light",
@@ -441,8 +828,21 @@
       diffIndicators,
       lineDiffType,
       stickyHeaders: true,
-      unsafeCSS: gutterUnsafeCSS + cardUnsafeCSS,
-      layout: { paddingTop: 0, paddingBottom: 8, gap: 8 },
+      unsafeCSS: gutterUnsafeCSS + surfaceUnsafeCSS + cardUnsafeCSS,
+      // The gap the sticky bar and `filesHeader` hang in is *not* reserved here
+      // — it rides on the header element's own height instead (see
+      // `.pierre-diff-header`). Pierre picks which lines to render from
+      // `scrollTop - header.height`, leaving `paddingTop` out of that one
+      // calculation while every other measurement it takes includes it. A
+      // sizeable value therefore slides the render window out of step with the
+      // screen: a file's lines are laid out for a scroll position it is not at,
+      // so they drift under their own header and jump in blocks as the window
+      // re-quantises. The header's height has no such gap in it.
+      layout: {
+        paddingTop: reserveOnHeader ? 0 : stickyTopHeight + filesHeaderHeight,
+        paddingBottom: 8,
+        gap: 8,
+      },
       // Own the whole file header: Pierre renders only our custom-header slot
       // (mounted per file in `syncHeaderSlots`), so no built-in icon/stat chrome
       // to fight with CSS.
@@ -465,74 +865,279 @@
         diffHeaderHeight: headerHeight,
         lineHeight: lineHeightPx,
       },
+      // Pierre's own gutter marker for writing a comment: it follows the hovered
+      // line and can be dragged down it to cover a range. Line selection is on
+      // alongside it so the range being covered is painted while dragging;
+      // pointer-down is confined to the line-number column, so selecting the code
+      // text itself still works.
+      ...(canComment
+        ? {
+            enableGutterUtility: true,
+            enableLineSelection: true,
+            onGutterUtilityClick: openComposer,
+          }
+        : {}),
     };
   }
 
-  function buildItems(files: FileDiffMetadata[]): CodeViewItem[] {
+  function buildItems(
+    files: FileDiffMetadata[],
+  ): CodeViewItem<LineAnnotation>[] {
     return files.map((fileDiff, index) => ({
       id: String(index),
       type: "diff",
       fileDiff,
+      collapsed: collapsedPaths?.has(fileDiff.name) === true,
+      annotations: annotationsFor(fileDiff),
     }));
   }
 
-  // Structural rebuild: only when the patch or layout style changes.
+  function annotationsFor(
+    fileDiff: FileDiffMetadata,
+  ): DiffLineAnnotation<LineAnnotation>[] | undefined {
+    if (
+      !codeComments ||
+      !isCommentableStatus(fileStatuses?.get(fileDiff.name))
+    ) {
+      return undefined;
+    }
+    return fileAnnotations(fileDiff.name, commentThreads, composer);
+  }
+
+  // The lines a comment refers to, tinted while the comment is hovered so the
+  // code it is about can be picked out without painting the whole diff.
+  //
+  // Pierre has no public per-line decoration API — the hooks that could do it are
+  // protected on its renderer and it builds its own — so this reproduces what its
+  // line selection does: mix the line's own computed diff background with a tint.
+  // The rules have to be inside the file's shadow root, and they deliberately do
+  // not go through Pierre's `unsafeCSS`: it treats any change to that string as a
+  // layout change, resetting every file's layout cache and relaying out from the
+  // first item, which discards the measured comment heights and throws the reader
+  // back to the top of the diff. Injected here instead, and only while hovering,
+  // Pierre never has to know. An unlayered stylesheet also beats both of its own
+  // layers, so no `@layer` juggling.
+  let tintStyle: HTMLStyleElement | undefined;
+
+  function clearTint(): void {
+    tintStyle?.remove();
+    tintStyle = undefined;
+  }
+
+  function commentedLines(location: CodeLocation): number[] {
+    const range = location.new ?? location.old;
+    if (!range) return [];
+    if (range.type === "chars") return [range.line];
+    const lines: number[] = [];
+    for (let line = range.range.start; line < range.range.end; line++) {
+      lines.push(line);
+    }
+    return lines;
+  }
+
+  function tintSelectors(
+    side: AnnotationSide,
+    line: number,
+    column: "content" | "number",
+  ): string[] {
+    const attribute = column === "content" ? "data-line" : "data-column-number";
+    // A unified row shows the new-side number, except on a deleted line where it
+    // shows the old one — so matching on the number alone would tint the wrong
+    // row for an old-side comment. The line type is what tells the two apart.
+    const unified =
+      side === "deletions"
+        ? '[data-line-type="change-deletion"]'
+        : ':not([data-line-type="change-deletion"])';
+    // Split lays each side out in its own column, where the numbers are already
+    // unambiguous. Both forms are emitted so this works whichever is on screen.
+    const split = side === "deletions" ? "data-deletions" : "data-additions";
+    return [
+      `[data-unified] [${attribute}="${line}"]${unified}`,
+      `[${split}] [${attribute}="${line}"]`,
+    ];
+  }
+
+  function paintTint(host: HTMLElement, thread: Thread<CodeLocation>): void {
+    clearTint();
+    const location = thread.root.location;
+    const anchor = anchorOf(location);
+    const shadow = host.shadowRoot;
+    if (!location || !anchor || !shadow) {
+      return;
+    }
+    const content: string[] = [];
+    const numbers: string[] = [];
+    for (const line of commentedLines(location)) {
+      content.push(...tintSelectors(anchor.side, line, "content"));
+      numbers.push(...tintSelectors(anchor.side, line, "number"));
+    }
+    if (content.length === 0) {
+      return;
+    }
+    // Mixing against the line's own background rather than replacing it, so the
+    // tint reads the same over context, added and deleted lines.
+    const mix = (weight: string) =>
+      `--diffs-line-bg: color-mix(in lab, var(--diffs-computed-diff-line-bg, var(--diffs-bg)) ${weight}, var(--app-diff-comment-tint));`;
+    const style = document.createElement("style");
+    style.textContent = `
+      ${content.join(",\n")} { ${mix("86%")} }
+      ${numbers.join(",\n")} { ${mix("78%")} }
+    `;
+    shadow.appendChild(style);
+    tintStyle = style;
+  }
+
+  // Which slots a file's annotations occupy — and only that. Replacing a file's
+  // annotation array makes Pierre drop every measured annotation height in that
+  // file and lay it out as if the comments had no height at all, which yanks the
+  // scroll position; so it is only told when the set of slots really changes.
+  // What goes *in* a slot is pushed straight into the mounted component instead
+  // (see `syncAnnotationSlots`), which is all a reply, an edit or a resolve
+  // touches.
+  function annotationSignature(
+    annotations: DiffLineAnnotation<LineAnnotation>[] | undefined,
+  ): string {
+    if (!annotations || annotations.length === 0) return "";
+    return annotations
+      .map(({ side, lineNumber }) => `${side}:${lineNumber}`)
+      .sort()
+      .join("|");
+  }
+
+  // Open the new-comment composer on what the gutter marker covers. Pierre
+  // reports the line range it was dragged over, on the side it started from.
+  function openComposer(
+    range: SelectedLineRange,
+    context: { item: CodeViewItem<LineAnnotation> },
+  ): void {
+    const { item } = context;
+    if (item.type !== "diff") {
+      return;
+    }
+    const path = item.fileDiff.name;
+    if (!isCommentableStatus(fileStatuses?.get(path))) {
+      return;
+    }
+    const side = range.side ?? "additions";
+    // A drag in a split diff can end on the other side, where the end line
+    // counts a different file. There is no range that means both, so keep the
+    // line it started from.
+    const crossSide = range.endSide !== undefined && range.endSide !== side;
+    const end = crossSide ? range.start : range.end;
+    composer = {
+      path,
+      side,
+      firstLine: Math.min(range.start, end),
+      lastLine: Math.max(range.start, end),
+    };
+    composerBody = "";
+  }
+
+  // Push comment changes onto the items. The threads arrive as new objects on
+  // every patch reload, so only a real change in what occupies the slots is
+  // published; the mounted components are then refreshed either way, since a
+  // reply or a resolve changes what a slot renders without moving it.
+  $effect(() => {
+    void commentThreads;
+    void composer;
+    void codeComments;
+    void commentCommit;
+    void fileStatuses;
+    const instance = view;
+    if (!instance) {
+      return;
+    }
+    untrack(() => {
+      let changed = false;
+      for (let index = 0; index < parsedFiles.length; index++) {
+        const item = instance.getItem(String(index));
+        if (item?.type !== "diff") {
+          continue;
+        }
+        const next = annotationsFor(item.fileDiff);
+        if (
+          annotationSignature(item.annotations) === annotationSignature(next)
+        ) {
+          continue;
+        }
+        instance.updateItem({
+          ...item,
+          annotations: next,
+          version: (item.version ?? 0) + 1,
+        });
+        changed = true;
+      }
+      if (changed) {
+        instance.render(true);
+      }
+      queueSlotSync(instance.getRenderedItems());
+    });
+  });
+
+  // Structural rebuild: only when the patch text or the container changes.
+  //
+  // Everything past those two reads is untracked, and has to stay that way. The
+  // first render synchronously reaches into the slot syncing, which reads most of
+  // this component's props — statuses, notes, comment counts, threads — and a
+  // dependency on any of those would rebuild the whole view every time the patch
+  // is reloaded and hands down equivalent-but-new objects. Rebuilding empties the
+  // scroll container, so the browser clamps the scroll to the top and the reader
+  // loses their place. Options and items are kept current by the effects below
+  // instead.
   $effect(() => {
     const el = container;
     if (!el) {
       return;
     }
     const p = patch;
-    // `diffStyle` is applied via `setOptions` below, so reading it untracked
-    // keeps a split/unified toggle from re-parsing and rebuilding the diff.
-    const instance = new CodeView(
-      untrack(() => options($theme, diffStyle, fileHeaderHeight())),
-      // Off-thread highlighting; falls back to the main thread if unavailable.
-      getWorkerPool(),
-      // The container element is owned by this component.
-      true,
-    );
-    instance.setup(el);
-    // Header content in the virtualized path is delivered via a slot
-    // coordinator, not the render* options.
-    instance.setSlotCoordinator({
-      hasHeaderRenderers: true,
-      hasAnnotationRenderer: false,
-      hasGutterRenderer: false,
-      onSnapshotChange: syncHeaderSlots,
+    return untrack(() => {
+      const instance = new CodeView(
+        options($theme, diffStyle, fileHeaderHeight()),
+        // Off-thread highlighting; falls back to the main thread if unavailable.
+        getWorkerPool(),
+        // The container element is owned by this component.
+        true,
+      );
+      instance.setup(el);
+      instance.setSlotCoordinator(slotCoordinator(codeComments !== undefined));
+      // Published before the first render: that render creates the header host,
+      // and `renderHeader` reads `view` to place the sticky column after it.
+      view = instance;
+      // Mount empty first so the header paints immediately, then fill in the
+      // files once the patch has been parsed off the main thread.
+      instance.render(true);
+
+      let cancelled = false;
+      // A target held for the previous patch must not fire against this one.
+      pendingScroll = undefined;
+      parsePatch(p, cacheKeyPrefix)
+        .then(files => {
+          if (cancelled) {
+            return;
+          }
+          parsedFiles = files;
+          instance.setItems(buildItems(files));
+          instance.render(true);
+          if (pendingScroll !== undefined) {
+            applyScroll(pendingScroll);
+          }
+        })
+        .catch((error: unknown) => {
+          if (!cancelled) {
+            console.error("PierreDiff: failed to parse patch", error);
+          }
+        });
+
+      return () => {
+        cancelled = true;
+        view = undefined;
+        pendingSlotItems = undefined;
+        unmountHeaders();
+        unmountAnnotations();
+        clearTint();
+        instance.cleanUp();
+      };
     });
-    // Mount empty first so the header paints immediately, then fill in the
-    // files once the patch has been parsed off the main thread.
-    instance.render(true);
-    view = instance;
-
-    let cancelled = false;
-    // `cacheKeyPrefix` changes in lockstep with `patch` (both derive from the
-    // commit), so read it untracked — the `patch` dependency already rebuilds.
-    parsePatch(
-      p,
-      untrack(() => cacheKeyPrefix),
-    )
-      .then(files => {
-        if (cancelled) {
-          return;
-        }
-        parsedFiles = files;
-        instance.setItems(buildItems(files));
-        instance.render(true);
-      })
-      .catch((error: unknown) => {
-        if (!cancelled) {
-          console.error("PierreDiff: failed to parse patch", error);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-      view = undefined;
-      unmountHeaders();
-      instance.cleanUp();
-    };
   });
 
   // Theme toggle, layout style, font-size (header-height), and diff-preference
@@ -551,6 +1156,9 @@
     void wordWrap;
     void diffIndicators;
     void lineDiffType;
+    void canComment;
+    void filesHeaderHeight;
+    void stickyTopHeight;
     const instance = view;
     if (!instance) {
       return;
@@ -585,55 +1193,133 @@
 </script>
 
 <style>
+  /* Zero-height sticky anchor: it takes no space in the scroll content, and the
+     column inside it overflows (absolute) so it overlays the diff rather than
+     displacing it. Sitting after the header, its static position is below the
+     header — so it scrolls with the content until the header is gone, then pins.
+     `sticky` on the column itself cannot do this: inside an absolutely
+     positioned box there is nothing to stick to. */
+  /* Carries the gap the anchors below hang in, so that it counts towards the
+     height Pierre measures for the header rather than towards
+     `layout.paddingTop` (see the `layout` option for why that matters). */
+  .pierre-diff-header {
+    padding-bottom: var(--app-diff-reserve, 0px);
+  }
+  /* Sticks at the very top; everything that pins below it is offset by its
+     height (`--app-sticky-top`). Opaque, so the header scrolls under it.
+
+     It pins when the top of the reserved gap reaches the port, which is a
+     gap's worth before the anchor itself gets there — the anchor sits at the
+     bottom of the gap, since the gap belongs to the header above it. Sticking
+     at `--app-diff-reserve` and lifting the content by the same amount puts it
+     at the top of the gap while the chrome is still in view, and at the top of
+     the port once it is not. */
+  .pierre-diff-sticky-top {
+    position: sticky;
+    top: var(--app-diff-reserve, 0px);
+    height: 0;
+    z-index: 4;
+  }
+  .pierre-diff-sticky-top-content {
+    position: absolute;
+    top: calc(-1 * var(--app-diff-reserve, 0px));
+    left: 0;
+    right: 0;
+    /* `flow-root` so the bar's own bottom margin counts towards the measured
+       height everything below is offset by. */
+    display: flow-root;
+    padding: 0 1rem;
+    background-color: var(--color-surface-canvas);
+  }
+  /* Sticks at 0 like the bar above it, so the two move in lockstep; the column
+     itself is offset down by the bar's height, which is right whether the anchor
+     is pinned or still in flow. */
+  .pierre-diff-overlay-left {
+    position: sticky;
+    top: var(--app-diff-reserve, 0px);
+    height: 0;
+    z-index: 2;
+  }
+  /* Another zero-height anchor, this one not sticky: it stays put at the foot of
+     the reserved gap so its content hangs up into it, beside the column rather
+     than across the width. `flow-root` so the content's own bottom margin counts
+     towards the measured height that reserves that gap. */
+  .pierre-diff-files-header {
+    position: relative;
+    height: 0;
+  }
+  .pierre-diff-files-header-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flow-root;
+    margin-left: var(--app-diff-left-inset, 1rem);
+    margin-right: 1rem;
+  }
+  /* Does not scroll itself — the content does, so that the frame around it
+     belongs to the scroll port and anything sticky inside pins to a border that
+     never moves. */
+  .pierre-diff-overlay-left-column {
+    position: absolute;
+    /* Lifted out of the reserved gap like the bar above it, then pushed back
+       down to sit under the bar. */
+    top: calc(var(--app-sticky-top, 0px) - var(--app-diff-reserve, 0px));
+    left: 1rem;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0.5rem;
+  }
   .pierre-diff {
     flex: 1;
     min-height: 0;
     min-width: 0;
-    /* Feed the app's configured code font and sizing into Pierre (its `:host`
-       reads these custom properties, which inherit across the shadow boundary).
-       Matches `--txt-code-regular`. The line height is set on the element itself
-       (`--diffs-line-height`, below) as a whole-pixel value that mirrors
-       `itemMetrics.lineHeight`, so the rendered rows and Pierre's model agree. */
-    --diffs-font-family: var(--font-family-code);
-    --diffs-font-size: 0.875rem;
-
-    /* Chrome colours from our design tokens. Syntax token colours still come
-       from the Shiki theme (github light/dark); these only retint the diff
-       surfaces, line numbers, and add/delete/modify accents so the frame
-       matches the app without changing the highlighting look and feel. */
-    /* Text colour from our tokens. The base *surface* cannot be set here: the
-       Shiki theme (github-dark/light) writes `--diffs-light-bg`/`--diffs-dark-bg`
-       directly onto the shadow `:host`, which beats any value inherited from this
-       light-DOM ancestor. So `--diffs-bg` is forced to the app's view background
-       in `cardUnsafeCSS` (a higher `@layer`) instead — every neutral surface and
-       the change-tint mixes derive from it. */
-    --diffs-light: var(--color-text-primary);
-    --diffs-dark: var(--color-text-primary);
-    /* Line numbers. */
-    --diffs-fg-number-override: var(--color-text-tertiary);
-    /* Add / delete / modify accents feed the line-tint mixes. */
-    --diffs-addition-color-override: var(--color-feedback-success-text);
-    --diffs-deletion-color-override: var(--color-feedback-error-text);
-    --diffs-modified-color-override: var(--color-text-brand);
     /* CodeView attaches its scroll listener to this element but does not set
        `overflow` itself, so it must be the scroll viewport. */
     overflow-y: auto;
-    /* The app disables selection globally on `html` and opts in per element.
-       `user-select` inherits across the shadow boundary, so opt the whole
-       Pierre subtree back in; its own CSS keeps gutters/line numbers
-       unselectable. */
-    -webkit-user-select: text;
-    user-select: text;
   }
 </style>
 
 <div
   bind:this={container}
-  class="pierre-diff"
-  style:--diffs-line-height="{lineHeightPx}px">
+  class="pierre-diff global-pierre-surface"
+  style:--diffs-line-height="{lineHeightPx}px"
+  style:--app-diff-left-inset={overlayLeft
+    ? `calc(${overlayLeftWidth} + 1.5rem)`
+    : undefined}
+  style:--app-sticky-top="{stickyTopHeight}px"
+  style:--app-diff-reserve={reserveOnHeader ? `${reserveHeight}px` : undefined}>
   {#if header}
     <div bind:this={headerEl} class="pierre-diff-header">
       {@render header()}
+    </div>
+  {/if}
+  {#if stickyTop}
+    <div bind:this={stickyTopEl} class="pierre-diff-sticky-top">
+      <div
+        bind:this={stickyTopContentEl}
+        class="pierre-diff-sticky-top-content">
+        {@render stickyTop()}
+      </div>
+    </div>
+  {/if}
+  {#if overlayLeft}
+    <div bind:this={overlayLeftEl} class="pierre-diff-overlay-left">
+      <div
+        class="pierre-diff-overlay-left-column"
+        style:width={overlayLeftWidth}
+        style:max-height="{portHeight}px">
+        {@render overlayLeft()}
+      </div>
+    </div>
+  {/if}
+  {#if filesHeader}
+    <div bind:this={filesHeaderEl} class="pierre-diff-files-header">
+      <div
+        bind:this={filesHeaderContentEl}
+        class="pierre-diff-files-header-content">
+        {@render filesHeader()}
+      </div>
     </div>
   {/if}
 </div>

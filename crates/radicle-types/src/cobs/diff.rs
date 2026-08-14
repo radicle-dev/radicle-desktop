@@ -10,6 +10,4 @@ pub struct DiffOptions {
     pub base: git::Oid,
     #[ts(as = "String")]
     pub head: git::Oid,
-    pub unified: Option<u32>,
-    pub highlight: Option<bool>,
 }

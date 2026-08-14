@@ -19,8 +19,10 @@ export const IGNORED_FILENAMES: ReadonlySet<string> = new Set([
   "flake.lock",
 ]);
 
+export function isIgnoredPath(path: string): boolean {
+  return IGNORED_FILENAMES.has(path.slice(path.lastIndexOf("/") + 1));
+}
+
 export function isIgnoredFile(file: FileDiff): boolean {
-  const path = fileDiffPath(file);
-  const filename = path.slice(path.lastIndexOf("/") + 1);
-  return IGNORED_FILENAMES.has(filename);
+  return isIgnoredPath(fileDiffPath(file));
 }

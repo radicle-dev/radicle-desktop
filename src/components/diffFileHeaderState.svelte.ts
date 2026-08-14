@@ -14,8 +14,19 @@ export class DiffFileHeaderState {
   collapsed = $state(false);
   // `undefined` hides the actions menu.
   text = $state<(() => Promise<string>) | undefined>(undefined);
+  // `undefined` hides the reviewed toggle, which only exists while a draft
+  // review is open.
+  reviewed = $state<boolean | undefined>(undefined);
+  // Code-comment threads anchored in this file. Only threads that can be
+  // resolved are counted, so a file never shows permanently unresolved work
+  // (see `CodeComments.canResolveComment`).
+  resolvedComments = $state(0);
+  unresolvedComments = $state(0);
   // Not `$state`: read only at click time. Set per file in `syncHeaderSlots`.
   onToggleCollapse: () => void = () => {
+    // Replaced per file.
+  };
+  onToggleReviewed: () => void = () => {
     // Replaced per file.
   };
 }

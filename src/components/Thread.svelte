@@ -4,6 +4,7 @@
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
+  import type { Snippet } from "svelte";
 
   import { tick } from "svelte";
 
@@ -46,6 +47,9 @@
     inline?: boolean;
     draft?: boolean;
     origin?: CommentOrigin;
+    // Rendered on the root comment's authorship line while it is hovered. The
+    // replies do not get it: it says something about the thread, not a comment.
+    hoverNote?: Snippet;
   }
 
   const {
@@ -62,6 +66,7 @@
     inline = false,
     draft = false,
     origin,
+    hoverNote,
   }: Props = $props();
 
   async function toggleReply() {
@@ -97,10 +102,29 @@
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--border-radius-sm);
   }
+  /* Inside a diff the surrounding surface is already the canvas, so a comment on
+     it needs the next step up to read as sitting over the code rather than
+     blending into it. */
+  .comments.inline .top-level-comment,
+  .comments.inline .reply-box,
+  .comments.inline .reply-form-box {
+    background-color: var(--color-surface-subtle);
+  }
+  /* That surface is what an icon button fills with on hover, so on these cards
+     the hover would be invisible; take it one step further instead. */
+  .comments.inline :global(.global-icon-button:hover),
+  .comments.inline :global(.global-icon-button:focus-visible) {
+    background-color: var(--color-surface-strong);
+  }
 
   .replies-wrapper {
     position: relative;
     margin-left: 3rem;
+  }
+  /* The same indent the activity timeline sets for its threads; the 3rem default
+     is only ever seen where neither of them applies. */
+  .comments.inline .replies-wrapper {
+    margin-left: 1.5rem;
   }
   .replies-wrapper::before,
   .replies-wrapper::after {
@@ -190,7 +214,7 @@
   </div>
 {/snippet}
 
-<div class="comments">
+<div class="comments" class:inline>
   <div class="top-level-comment">
     <CommentComponent
       disallowEmptyBody
@@ -198,6 +222,7 @@
       {currentUserNid}
       {draft}
       {origin}
+      {hoverNote}
       id={root.id}
       lastEdit={root.edits.length > 1 ? root.edits.at(-1) : undefined}
       author={root.author}

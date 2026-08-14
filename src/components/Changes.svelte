@@ -1,20 +1,27 @@
 <script lang="ts">
-  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
   import type { Embed } from "@bindings/cob/thread/Embed";
+  import type { Diff } from "@bindings/diff/Diff";
   import type { Commit } from "@bindings/repo/Commit";
+  import type { Snippet } from "svelte";
 
   import { tick, untrack } from "svelte";
 
+  import type { CodeComments } from "@app/lib/codeComments";
+  import { diffOptions } from "@app/lib/diffOptions.svelte";
+  import { fileDiffPath, fileMetaOf, fullFileLoader } from "@app/lib/diffText";
+  import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import {
     cachedDiffStats,
     cachedGetDiff,
+    cachedGetDiffText,
     cachedListCommits,
+    getDiffText,
   } from "@app/lib/invoke";
+  import { anchorOf, commentCountsByPath } from "@app/lib/pierreComments";
   import { pluralize } from "@app/lib/utils";
 
-  import Button from "@app/components/Button.svelte";
-  import Changeset from "@app/components/Changeset.svelte";
   import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
   import CommitsContainer from "@app/components/CommitsContainer.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
@@ -22,7 +29,7 @@
   import Id from "@app/components/Id.svelte";
   import JobCob from "@app/components/JobCob.svelte";
   import Markdown from "@app/components/Markdown.svelte";
-  import { getScrollViewport } from "@app/components/ScrollArea.svelte";
+  import PierreDiff from "@app/components/PierreDiff.svelte";
 
   interface Props {
     patchId: string;
@@ -36,6 +43,13 @@
     filesExpanded?: boolean;
     canEditDescription?: boolean;
     onSaveDescription?: (body: string, embeds: Embed[]) => Promise<void>;
+    // The patch view's own header (title, metadata, tabs). Rendered inside the
+    // diff's scroll content, full width, so it scrolls away like the rest of the
+    // top of the page.
+    chrome?: Snippet;
+    // The view switcher, stuck to the top of the diff's scroll port. It is the
+    // last thing before the two columns, so the description sits above it.
+    tabs?: Snippet;
   }
 
   /* eslint-disable prefer-const */
@@ -46,16 +60,22 @@
     codeComments,
     draftReviewId,
     showingRevisionDiff = $bindable(true),
+    // An output binding: the tab bar renders the toggle and reads this, while
+    // this component only resets it when the diff on screen changes.
+    // eslint-disable-next-line no-useless-assignment
     filesExpanded = $bindable(true),
     canEditDescription = false,
     onSaveDescription,
+    chrome,
+    tabs,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
   let selectedCommit = $state<string>();
   let selectedCommitData = $state<Commit>();
   let editingDescription = $state(false);
-  let diffScrollEl = $state<HTMLElement>();
+  let commitsColumnEl = $state<HTMLElement>();
+  let diffView = $state<ReturnType<typeof PierreDiff> | undefined>();
   // Parent reuses this component across patch revisions; a sibling $effect
   // resets base and head when patchId changes.
   // svelte-ignore state_referenced_locally
@@ -121,6 +141,96 @@
   // the base it was diffed from, and placement matches on path and line alone,
   // so a narrowed view carries no comment layer at all.
   const diffCodeComments = $derived(isRevisionDiff ? codeComments : undefined);
+
+  // Both halves of the diff, loaded together and published in one go: Pierre
+  // renders from the patch text, while the structured diff supplies the stats,
+  // per-file status and the binary/empty marks Pierre cannot derive from a
+  // hunk-less file.
+  //
+  // `key` doubles as Pierre's `cacheKey` prefix, so it has to be published in
+  // the same update as the text it belongs to: keying the shared highlight
+  // cache by file path alone collides across diffs and renders files blank.
+  let loadedDiff = $state.raw<
+    { key: string; text: string; diff: Diff } | undefined
+  >();
+  let diffReady = $state.raw<Promise<unknown>>(Promise.resolve());
+  let diffFailed = $state(false);
+  $effect(() => {
+    const ridLocal = rid;
+    const baseLocal = base;
+    const headLocal = head;
+    const key = `${baseLocal}-${headLocal}`;
+    if (untrack(() => loadedDiff?.key) === key) return;
+    let cancelled = false;
+    diffFailed = false;
+    const request = Promise.all([
+      cachedGetDiffText(ridLocal, baseLocal, headLocal, 3),
+      cachedGetDiff(ridLocal, {
+        base: baseLocal,
+        head: headLocal,
+      }),
+    ])
+      .then(([text, diff]) => {
+        if (cancelled) return;
+        loadedDiff = { key, text, diff };
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        console.error(
+          `Changes: failed to load the diff for ${baseLocal}..${headLocal}`,
+          error,
+        );
+        diffFailed = true;
+      });
+    diffReady = request;
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  const diffFiles = $derived(loadedDiff?.diff.files ?? []);
+  const stats = $derived(loadedDiff?.diff.stats);
+
+  const fileMeta = $derived(fileMetaOf(diffFiles));
+
+  const reviewedPaths = $derived.by(() => {
+    if (!draftReviewId) return undefined;
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- rebuilt fresh each derivation
+    const paths = new Set<string>();
+    for (const file of diffFiles) {
+      const path = fileDiffPath(file);
+      if (draftReviewStorage.isFileChecked(draftReviewId, path)) {
+        paths.add(path);
+      }
+    }
+    return paths;
+  });
+
+  // Lockfiles and generated manifests are noise in a review, and a file already
+  // marked reviewed has been dealt with, so both start collapsed.
+  const collapsedPaths = $derived.by(() => {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- rebuilt fresh each derivation
+    const paths = new Set(fileMeta.ignored);
+    for (const path of reviewedPaths ?? []) {
+      paths.add(path);
+    }
+    return paths;
+  });
+
+  const commentCounts = $derived.by(() => {
+    const comments = diffCodeComments;
+    if (!comments) return undefined;
+    return commentCountsByPath(
+      comments.threads,
+      commentId => comments.canResolveComment?.(commentId) ?? true,
+    );
+  });
+
+  // Pierre's context-expand markers hydrate a file lazily from these, so
+  // nothing is fetched until the reader expands something.
+  const loadFullFile = $derived(
+    fullFileLoader(rid, base, head, () => diffFiles),
+  );
 
   const isActiveCommit = (commitId: string) => selectedCommit === commitId;
   const isTeaserDisabled = (commitId: string) =>
@@ -191,12 +301,6 @@
     return () => observer.disconnect();
   });
 
-  // The Changes tab scrolls with the page (see the CSS): the whole patch
-  // scrolls so the headers move off-screen and the diff gets the full height,
-  // while the commit list is sticky and stays in view alongside it.
-  let reviewLayout = $state<HTMLElement>();
-  const getViewport = getScrollViewport();
-
   // Bring the top of the diff into view after the reader changes what the diff
   // column shows; otherwise the old scroll position leaves you mid-diff and the
   // new commit message looks missing.
@@ -206,48 +310,45 @@
   // auto-selects its only commit — so an effect could not tell "the reader
   // picked a commit" from "the revision changed underneath them", and scrolled
   // on both.
-  let scrollRequest = 0;
   async function scrollToDiff() {
-    const request = ++scrollRequest;
-    // Measure only once the column above the diff has settled. The stats row
-    // sits in an `{#await}` keyed on base..head, so a cold cache unmounts it and
-    // the diff jumps up by its height — measuring first would aim the scroll at
-    // a position that no longer exists by the time it lands.
-    await cachedDiffStats(rid, base, head).catch(() => undefined);
     await tick();
-    // A newer click already started its own scroll; that one wins.
-    if (request !== scrollRequest) return;
-    const vp = getViewport();
-    const el = diffScrollEl;
-    if (!vp || !el) return;
-    const top =
-      el.getBoundingClientRect().top -
-      vp.getBoundingClientRect().top +
-      vp.scrollTop;
-    vp.scrollTo({ top: Math.max(top, 0), behavior: "smooth" });
+    diffView?.scrollToFilesTop();
   }
 
-  let changeset = $state<ReturnType<typeof Changeset> | undefined>();
+  /// Collapse or expand every file. Driven from the tab bar, which the patch
+  /// view renders.
+  export function setAllFilesCollapsed(collapsed: boolean) {
+    filesExpanded = !collapsed;
+    diffView?.setAllCollapsed(collapsed);
+  }
 
   /// Scroll to one of the draft review's code comments. Called from the review
   /// bar, which sits outside this component.
-  export async function revealComment(threadId: string, path: string) {
+  export async function revealComment(location: CodeLocation) {
     // Code comments are only superimposed on the revision's own diff, so a view
     // narrowed to a single commit has none to scroll to. Widen back first.
     if (!isRevisionDiff) {
       selectRevision({ headId: revision.head, baseId: revision.base });
-      // The widened diff is a fresh `{#await}`, so `changeset` is remounted;
-      // wait for it before asking it to scroll.
       await tick();
-      await cachedGetDiff(rid, {
-        base: revision.base,
-        head: revision.head,
-        unified: 3,
-        highlight: true,
-      }).catch(() => undefined);
-      await tick();
+      await diffReady;
     }
-    await changeset?.revealThread(threadId, path);
+    // Pierre holds the target until the widened patch has been parsed.
+    diffView?.scrollToAnchor(anchorOf(location));
+  }
+
+  // Keep the selected commit inside the commit column's own scroll port,
+  // without touching the diff's scroll position.
+  function revealActiveCommit() {
+    const column = commitsColumnEl;
+    const active = column?.querySelector<HTMLElement>(".commit.active");
+    if (!column || !active) return;
+    const columnRect = column.getBoundingClientRect();
+    const rect = active.getBoundingClientRect();
+    if (rect.top < columnRect.top) {
+      column.scrollTop -= columnRect.top - rect.top;
+    } else if (rect.bottom > columnRect.bottom) {
+      column.scrollTop += rect.bottom - columnRect.bottom;
+    }
   }
 
   function selectCommitAt(index: number) {
@@ -261,11 +362,7 @@
       commit,
     });
     void scrollToDiff();
-    void tick().then(() => {
-      reviewLayout
-        ?.querySelector(".commit.active")
-        ?.scrollIntoView({ block: "nearest" });
-    });
+    void tick().then(revealActiveCommit);
   }
 
   // Up/Down step through commits; Escape deselects. Ignored while typing.
@@ -304,9 +401,22 @@
 </script>
 
 <style>
+  /* The chrome spans the whole width; everything below it shares the row with
+     the commit column, so it carries the same inset as the file cards. */
+  /* The patch header is the only thing that spans the full width; everything
+     below the sticky tab bar lives in the files column, so the commit column can
+     simply stick rather than being positioned against any of it. */
+  .diff-header {
+    display: flex;
+    flex-direction: column;
+    padding: 0 1rem;
+  }
   .revision-description {
     position: relative;
     margin-bottom: 1rem;
+    /* Matches the change summary's inset below it, so the two read as one
+       column of text — but with no border or fill of its own. */
+    padding: 0.375rem 0.75rem;
     color: var(--color-text-primary);
   }
   .revision-description:has(.revision-description-actions)
@@ -387,51 +497,18 @@
   .revision-description-button:focus-visible {
     background-color: var(--color-surface-subtle);
   }
-  .review-layout {
-    display: grid;
-    grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
-    gap: 1rem;
-    align-items: start;
-    min-height: 0;
-  }
-  /* The whole patch scrolls with the page; the commit list sticks to the top of
-     the viewport and scrolls internally only when it's taller than the screen,
-     so it stays in view while you scroll through the diff. */
+  /* The card is the scroll port, not something inside one: its border then
+     belongs to the frame the sticky list header pins against, instead of
+     scrolling a fraction of a pixel out from under it. It is content-sized up to
+     the height the diff hands the column. */
   .commits-column {
-    position: sticky;
-    top: 0;
-    align-self: start;
-    max-height: calc(100vh - 1rem);
-    min-width: 0;
+    max-height: 100%;
     overflow-y: auto;
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--border-radius-md);
     background-color: var(--color-surface-canvas);
   }
-  .diff-column {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-  }
-  .diff-scroll {
-    border-radius: var(--border-radius-md);
-  }
-  @media (max-width: 60rem) {
-    .review-layout {
-      grid-template-columns: 1fr;
-    }
-    .commits-column {
-      position: static;
-      max-height: none;
-      overflow-y: visible;
-    }
-    .diff-column {
-      display: block;
-    }
-  }
   .stats-row {
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -534,7 +611,85 @@
   }
 </style>
 
-<div>
+{#snippet commitsColumn()}
+  {#if commitList.length > 0}
+    <div class="commits-column" bind:this={commitsColumnEl}>
+      <CommitsContainer>
+        {#snippet leftHeader()}
+          <div class="global-flex txt-body-m-regular summary">
+            {commitList.length}
+            {pluralize("commit", commitList.length)} on base
+            <Id
+              id={revision.base}
+              clipboard={revision.base}
+              label="base commit" />
+          </div>
+        {/snippet}
+        <div class="commits">
+          {#each commitList as commit}
+            {@const active = isActiveCommit(commit.id)}
+            {@const toggle = () => {
+              if (active) {
+                // Keep the sole commit selected; there's nothing else to show.
+                if (commitList.length === 1) return;
+                selectRevision({
+                  headId: revision.head,
+                  baseId: revision.base,
+                });
+              } else {
+                selectRevision({
+                  headId: commit.id,
+                  baseId: commit.parents[0],
+                  commitId: commit.id,
+                  commit,
+                });
+              }
+              void scrollToDiff();
+            }}
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="commit" class:active onclick={toggle}>
+              <CobCommitTeaser
+                stacked
+                hoverable
+                disabled={isTeaserDisabled(commit.id)}
+                {commit}>
+                {#if commit.parents.length > 0}
+                  {#await cachedDiffStats(rid, commit.parents[0], commit.id) then commitStats}
+                    <span class="commit-stats">
+                      <Icon name="document" />
+                      {commitStats.filesChanged}
+                      <span class="insertions">+{commitStats.insertions}</span>
+                      <span class="deletions">-{commitStats.deletions}</span>
+                    </span>
+                  {/await}
+                {/if}
+                {#if commit.id === revision.head}
+                  <JobCob {rid} commit={commit.id} />
+                {/if}
+              </CobCommitTeaser>
+              {#if active && commitList.length > 1}
+                <span class="commit-close" title="Show all changes">
+                  <Icon name="close" />
+                </span>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      </CommitsContainer>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet diffHeader()}
+  <div class="diff-header">
+    {#if chrome}
+      {@render chrome()}
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet filesHeader()}
   {#if showRevisionDescription || canEditDescription}
     {#if editingDescription}
       <div class="revision-description">
@@ -588,132 +743,67 @@
       </div>
     {/if}
   {/if}
-  <div class="review-layout" bind:this={reviewLayout}>
-    <div class="commits-column">
-      {#if commitList.length > 0}
-        <CommitsContainer>
-          {#snippet leftHeader()}
-            <div class="global-flex txt-body-m-regular summary">
-              {commitList.length}
-              {pluralize("commit", commitList.length)} on base
-              <Id
-                id={revision.base}
-                clipboard={revision.base}
-                label="base commit" />
-              <div class="global-chip">Base</div>
-            </div>
-          {/snippet}
-          <div class="commits">
-            {#each commitList as commit}
-              {@const active = isActiveCommit(commit.id)}
-              {@const toggle = () => {
-                if (active) {
-                  // Keep the sole commit selected; there's nothing else to show.
-                  if (commitList.length === 1) return;
-                  selectRevision({
-                    headId: revision.head,
-                    baseId: revision.base,
-                  });
-                } else {
-                  selectRevision({
-                    headId: commit.id,
-                    baseId: commit.parents[0],
-                    commitId: commit.id,
-                    commit,
-                  });
-                }
-                void scrollToDiff();
-              }}
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div class="commit" class:active onclick={toggle}>
-                <CobCommitTeaser
-                  stacked
-                  hoverable
-                  disabled={isTeaserDisabled(commit.id)}
-                  {commit}>
-                  {#if commit.parents.length > 0}
-                    {#await cachedDiffStats(rid, commit.parents[0], commit.id) then stats}
-                      <span class="commit-stats">
-                        <Icon name="document" />
-                        {stats.filesChanged}
-                        <span class="insertions">+{stats.insertions}</span>
-                        <span class="deletions">-{stats.deletions}</span>
-                      </span>
-                    {/await}
-                  {/if}
-                  {#if commit.id === revision.head}
-                    <JobCob {rid} commit={commit.id} />
-                  {/if}
-                </CobCommitTeaser>
-                {#if active && commitList.length > 1}
-                  <span class="commit-close" title="Show all changes">
-                    <Icon name="close" />
-                  </span>
-                {/if}
-              </div>
-            {/each}
-          </div>
-        </CommitsContainer>
+  <div class="stats-row txt-body-m-regular">
+    <div class="stats" style:color="var(--color-text-secondary)">
+      {#if diffFailed}
+        <span style:color="var(--color-feedback-error-text)">
+          Failed to load the changes.
+        </span>
+      {:else if stats}
+        {stats.filesChanged}
+        {pluralize("file", stats.filesChanged)} modified with
+        <span style:color="var(--color-feedback-success-text)">
+          {stats.insertions}
+          {pluralize("insertion", stats.insertions)}
+        </span>
+        and
+        <span style:color="var(--color-feedback-error-text)">
+          {stats.deletions}
+          {pluralize("deletion", stats.deletions)}
+        </span>
+      {:else}
+        Loading…
       {/if}
     </div>
-    <div class="diff-column">
-      {#await cachedDiffStats(rid, base, head) then stats}
-        <div class="stats-row txt-body-m-regular">
-          <div class="stats" style:color="var(--color-text-secondary)">
-            {stats.filesChanged}
-            {pluralize("file", stats.filesChanged)} modified with
-            <span style:color="var(--color-feedback-success-text)">
-              {stats.insertions}
-              {pluralize("insertion", stats.insertions)}
-            </span>
-            and
-            <span style:color="var(--color-feedback-error-text)">
-              {stats.deletions}
-              {pluralize("deletion", stats.deletions)}
-            </span>
-          </div>
-          {#if stats.filesChanged > 0}
-            <Button
-              variant="naked"
-              onclick={() => (filesExpanded = !filesExpanded)}>
-              {#if filesExpanded}
-                <Icon name="collapse-vertical" />
-                Collapse all
-              {:else}
-                <Icon name="expand-vertical" />
-                Expand all
-              {/if}
-            </Button>
-          {/if}
-        </div>
-      {/await}
-      <div class="diff-scroll" bind:this={diffScrollEl}>
-        {#if selectedCommitData}
-          <div class="selected-commit-message txt-selectable">
-            <div class="selected-commit-summary txt-body-m-medium">
-              {selectedCommitData.summary}
-            </div>
-            {#if selectedCommitData.message.trim() !== selectedCommitData.summary.trim()}
-              <pre class="selected-commit-body">{selectedCommitData.message
-                  .replace(selectedCommitData.summary, "")
-                  .trim()}</pre>
-            {/if}
-          </div>
-        {/if}
-        {#await cachedGetDiff(rid, { base, head, unified: 3, highlight: true })}
-          <span class="txt-body-m-regular">Loading…</span>
-        {:then diff}
-          <Changeset
-            bind:this={changeset}
-            expanded={filesExpanded}
-            {head}
-            {diff}
-            {rid}
-            codeComments={diffCodeComments}
-            draftReviewId={isRevisionDiff ? draftReviewId : undefined} />
-        {/await}
-      </div>
-    </div>
   </div>
-</div>
+
+  <div>
+    {#if selectedCommitData}
+      <div class="selected-commit-message txt-selectable">
+        <div class="selected-commit-summary txt-body-m-medium">
+          {selectedCommitData.summary}
+        </div>
+        {#if selectedCommitData.message.trim() !== selectedCommitData.summary.trim()}
+          <pre class="selected-commit-body">{selectedCommitData.message
+              .replace(selectedCommitData.summary, "")
+              .trim()}</pre>
+        {/if}
+      </div>
+    {/if}
+  </div>
+{/snippet}
+
+<PierreDiff
+  bind:this={diffView}
+  patch={loadedDiff?.text ?? ""}
+  cacheKeyPrefix={loadedDiff?.key}
+  diffStyle={diffOptions.diffStyle}
+  wordWrap={diffOptions.wordWrap}
+  diffIndicators={diffOptions.indicators}
+  lineDiffType={diffOptions.lineDiffType}
+  {loadFullFile}
+  fileNotes={fileMeta.notes}
+  fileStatuses={fileMeta.statuses}
+  fileDiffText={path => getDiffText(rid, base, head, 3, path)}
+  {collapsedPaths}
+  {reviewedPaths}
+  onToggleReviewed={draftReviewId
+    ? path => draftReviewStorage.toggleCheckedFile(draftReviewId, path)
+    : undefined}
+  {commentCounts}
+  codeComments={diffCodeComments}
+  commentCommit={isRevisionDiff ? head : undefined}
+  header={diffHeader}
+  overlayLeft={commitsColumn}
+  {filesHeader}
+  stickyTop={tabs} />

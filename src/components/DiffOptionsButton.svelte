@@ -5,6 +5,17 @@
 
   import Icon from "@app/components/Icon.svelte";
 
+  type DiffStyleOption = {
+    value: DiffOptions["diffStyle"];
+    icon: ComponentProps<typeof Icon>["name"];
+    title: string;
+  };
+
+  const diffStyleOptions: DiffStyleOption[] = [
+    { value: "unified", icon: "diff-unified", title: "Unified" },
+    { value: "split", icon: "diff-split", title: "Split" },
+  ];
+
   type IndicatorOption = {
     value: DiffOptions["indicators"];
     icon: ComponentProps<typeof Icon>["name"];
@@ -53,7 +64,9 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    width: 20rem;
+    /* Wide enough to keep every label on one line next to its buttons; the
+       widest pairing is "Word diff" against its four options. */
+    width: 23rem;
     padding: 0.75rem 1rem;
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--border-radius-md);
@@ -109,6 +122,23 @@
 
   {#snippet popover()}
     <div class="panel">
+      <div class="row">
+        Diff style
+        <div class="switch">
+          {#each diffStyleOptions as option, index}
+            <Button
+              variant="ghost"
+              flatLeft={index > 0}
+              flatRight={index < diffStyleOptions.length - 1}
+              active={diffOptions.diffStyle === option.value}
+              title={option.title}
+              onclick={() => (diffOptions.diffStyle = option.value)}
+              styleJustifyContent="center">
+              <Icon name={option.icon} />
+            </Button>
+          {/each}
+        </div>
+      </div>
       <div class="row">
         Word wrap
         {@render boolSwitch(

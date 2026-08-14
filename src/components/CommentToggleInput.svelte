@@ -17,6 +17,9 @@
     };
     onclose?: () => void;
     onexpand?: () => void;
+    // Bindable so a host that outlives this component can keep what was typed —
+    // the review diff unmounts an off-screen composer.
+    body?: string;
     disallowEmptyBody?: boolean;
     // See `ExtendedTextarea`
     disableAttachments?: boolean | string;
@@ -35,6 +38,7 @@
     onexpand,
     disallowEmptyBody = false,
     disableAttachments,
+    body = $bindable(""),
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -59,6 +63,7 @@
 
 {#if state !== "collapsed"}
   <ExtendedTextarea
+    bind:body
     {disallowEmptyBody}
     {rid}
     {placeholder}

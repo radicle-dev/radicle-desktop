@@ -192,3 +192,43 @@ a {
     display: none !important;
   }
 }
+
+/* Feeds the app's tokens into `@pierre/diffs`. Its shadow roots read these
+   custom properties, which inherit across the boundary, so anything hosting a
+   Pierre diff — `PierreDiff` for a whole revision, `PierreSnippet` for the few
+   lines a comment is about — carries this class. Instance-specific values
+   (`--diffs-line-height`, the sticky offsets) stay inline on the element. */
+.global-pierre-surface {
+  /* Code font and sizing, matching `--txt-code-regular`. The line height is set
+     on the element itself as a whole-pixel value that mirrors Pierre's
+     `itemMetrics.lineHeight`, so rendered rows and its model agree. */
+  --diffs-font-family: var(--font-family-code);
+  --diffs-font-size: 0.875rem;
+
+  /* Chrome colours from our design tokens. Syntax token colours still come from
+     the Shiki theme (github light/dark); these only retint the diff surfaces,
+     line numbers, and add/delete/modify accents so the frame matches the app
+     without changing the highlighting look and feel.
+
+     The base *surface* cannot be set here: the Shiki theme writes
+     `--diffs-light-bg`/`--diffs-dark-bg` directly onto the shadow `:host`, which
+     beats any value inherited from a light-DOM ancestor. So `--diffs-bg` is
+     forced to the app's view background in `cardUnsafeCSS` (a higher `@layer`)
+     instead — every neutral surface and the change-tint mixes derive from it. */
+  --diffs-light: var(--color-text-primary);
+  --diffs-dark: var(--color-text-primary);
+  /* Line numbers. */
+  --diffs-fg-number-override: var(--color-text-tertiary);
+  /* Add / delete / modify accents feed the line-tint mixes. */
+  --diffs-addition-color-override: var(--color-feedback-success-text);
+  --diffs-deletion-color-override: var(--color-feedback-error-text);
+  --diffs-modified-color-override: var(--color-text-brand);
+  /* Mixed into the background of every line a comment refers to. */
+  --app-diff-comment-tint: var(--color-surface-brand-secondary);
+
+  /* The app disables selection globally on `html` and opts in per element.
+     `user-select` inherits across the shadow boundary, so opt the whole Pierre
+     subtree back in; its own CSS keeps gutters and line numbers unselectable. */
+  -webkit-user-select: text;
+  user-select: text;
+}

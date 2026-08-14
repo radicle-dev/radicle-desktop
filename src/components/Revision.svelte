@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { CommentOrigin } from "@app/components/Comment.svelte";
-  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { Author } from "@bindings/cob/Author";
   import type { Operation } from "@bindings/cob/Operation";
   import type { Action } from "@bindings/cob/patch/Action";
@@ -11,17 +10,26 @@
   import type { Config } from "@bindings/config/Config";
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { Snippet } from "svelte";
 
   import partial from "lodash/partial";
   import { slide } from "svelte/transition";
 
   import type { CommentOwner } from "@app/lib/codeCommentActions";
   import { commentActions } from "@app/lib/codeCommentActions";
+  import type { CodeComments } from "@app/lib/codeComments";
   import { STANDALONE_COMMENTS } from "@app/lib/commentSources";
+  import { diffOptions } from "@app/lib/diffOptions.svelte";
+  import { fileDiffPath, fileStatusLabel } from "@app/lib/diffText";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import { isIgnoredFile } from "@app/lib/ignoredFiles";
-  import { cachedGetDiff, cachedListCommits, invoke } from "@app/lib/invoke";
+  import {
+    cachedGetDiff,
+    cachedGetDiffText,
+    cachedListCommits,
+    invoke,
+  } from "@app/lib/invoke";
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
   import {
@@ -38,7 +46,7 @@
     type ActivityItem,
   } from "@app/components/Discussion.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
-  import FileDiff from "@app/components/FileDiff.svelte";
+  import FileBlock from "@app/components/FileBlock.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
@@ -46,6 +54,8 @@
     type FlattenedPatchOperation,
     splitDescription,
   } from "@app/components/PatchActivityItem.svelte";
+  import Path from "@app/components/Path.svelte";
+  import PierreSnippet from "@app/components/PierreSnippet.svelte";
   import { closeFocused } from "@app/components/Popover.svelte";
   import Reactions from "@app/components/Reactions.svelte";
   import ReactionSelector from "@app/components/ReactionSelector.svelte";
@@ -96,6 +106,11 @@
     hiddenCommentSources?: string[];
     filesExpanded?: boolean;
     onViewChanges?: (revisionId: string) => void;
+    // The patch view's own header, forwarded to the Changes tab so it can render
+    // it inside the diff's scroll content.
+    chrome?: Snippet;
+    // The view switcher, which the Changes tab sticks to the top of the diff.
+    tabs?: Snippet;
   }
 
   /* eslint-disable prefer-const */
@@ -116,14 +131,22 @@
     hiddenCommentSources = [],
     filesExpanded = $bindable(true),
     onViewChanges,
+    chrome,
+    tabs,
   }: Props = $props();
   /* eslint-enable prefer-const */
   let changes = $state<ReturnType<typeof Changes> | undefined>();
 
+  /// Forwarded to the Changes tab so the tab bar, which the patch view renders,
+  /// can collapse or expand every file.
+  export function setAllFilesCollapsed(collapsed: boolean) {
+    changes?.setAllFilesCollapsed(collapsed);
+  }
+
   /// Forwarded to the Changes tab so the draft review bar, which lives further
   /// up in the patch view, can scroll the diff to one of its comments.
-  export async function revealComment(threadId: string, path: string) {
-    await changes?.revealComment(threadId, path);
+  export async function revealComment(location: CodeLocation) {
+    await changes?.revealComment(location);
   }
 
   const currentUserAuthor: Author = $derived({
@@ -1315,6 +1338,20 @@
        inherits into Pierre's shadow DOM, where the card border is a box-shadow. */
     --color-border-subtle: transparent;
   }
+  /* Status chips beside the file name, matching `DiffFileHeader`'s. */
+  .added {
+    color: var(--color-feedback-success-text);
+    background-color: var(--color-feedback-success-bg);
+  }
+  .deleted {
+    color: var(--color-feedback-error-text);
+    background-color: var(--color-feedback-error-bg);
+  }
+  .moved,
+  .copied {
+    color: var(--color-text-secondary);
+    background: var(--color-surface-subtle);
+  }
   /* In the decorative fan preview, show only the file name, not the full path
      (`Path` splits the directory into `.path` and the name into `.filename`). */
   .file-fan-card :global(.path) {
@@ -1600,7 +1637,7 @@
                   <div class="revision-card-divider"></div>
                 {/if}
                 <div class="revision-diff-tease">
-                  {#await cachedGetDiff( rid, { base: targetRev.base, head: targetRev.head, unified: 3, highlight: true } )}
+                  {#await cachedGetDiff( rid, { base: targetRev.base, head: targetRev.head } )}
                     <div class="revision-diff-loading txt-body-m-regular">
                       Loading diff…
                     </div>
@@ -1629,17 +1666,47 @@
                         class="file-fan-stack"
                         style:--card-count={previewFiles.length}>
                         {#each previewFiles as file, i (i)}
+                          {@const path = fileDiffPath(file)}
                           <div
                             class="file-fan-card"
                             style:z-index={i + 1}
                             class:first={i === 0}>
                             <div class="file-fan-card-inner">
-                              <FileDiff
-                                {file}
-                                head={targetRev.head}
-                                {rid}
-                                expanded
-                                expandable={false} />
+                              <FileBlock expandable={false} sticky={false}>
+                                {#snippet leftHeader()}
+                                  {@const statusLabel = fileStatusLabel(
+                                    file.status,
+                                  )}
+                                  <Path fullPath={path} />
+                                  {#if statusLabel}
+                                    <span class="global-chip {file.status}">
+                                      {statusLabel}
+                                    </span>
+                                  {/if}
+                                {/snippet}
+                                {#snippet rightHeader()}
+                                  {#if file.diff.type === "plain"}
+                                    <span
+                                      style:color="var(--color-feedback-success-text)">
+                                      +{file.diff.stats.additions}
+                                    </span>
+                                    <span
+                                      style:color="var(--color-feedback-error-text)">
+                                      -{file.diff.stats.deletions}
+                                    </span>
+                                  {/if}
+                                {/snippet}
+                                {#await cachedGetDiffText(rid, targetRev.base, targetRev.head, 3, path)}
+                                  <div></div>
+                                {:then filePatch}
+                                  <PierreSnippet
+                                    patch={filePatch}
+                                    {path}
+                                    cacheKey={`fan:${targetRev.head}:${path}`}
+                                    diffIndicators={diffOptions.indicators}
+                                    lineDiffType={diffOptions.lineDiffType} />
+                                {/await}
+                              </FileBlock>
                             </div>
                           </div>
                         {/each}
@@ -1835,6 +1902,8 @@
     onSaveDescription={async (body, embeds) => {
       await editRevision(body, embeds, revision.id);
     }}
+    {chrome}
+    {tabs}
     bind:showingRevisionDiff
     bind:filesExpanded />
 {/if}

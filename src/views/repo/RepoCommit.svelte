@@ -1,17 +1,12 @@
 <script lang="ts">
-  import type {
-    FileNote,
-    FileStatus,
-  } from "@app/components/diffFileHeaderState.svelte";
   import type { Diff } from "@bindings/diff/Diff";
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
-  import type { Blob } from "@bindings/source/Blob";
   import type { GitStatusEntry } from "@pierre/trees";
 
   import { diffOptions } from "@app/lib/diffOptions.svelte";
-  import { fileDiffPath } from "@app/lib/diffText";
-  import { getDiffText, invoke } from "@app/lib/invoke";
+  import { fileDiffPath, fileMetaOf, fullFileLoader } from "@app/lib/diffText";
+  import { getDiffText } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import type { SidebarData } from "@app/lib/router/definitions";
   import {
@@ -73,71 +68,16 @@
   );
   const treePaths = $derived(changedFiles.map(file => file.path));
 
-  // `notes` marks files with no renderable text diff: Pierre has no binary
-  // concept and would render them as an empty body with a dead expand caret, so
-  // the header shows a note and drops the caret instead.
-  const fileMeta = $derived.by(() => {
-    /* eslint-disable svelte/prefer-svelte-reactivity -- rebuilt fresh each derivation, never mutated in place */
-    const notes = new Map<string, FileNote>();
-    const statuses = new Map<string, FileStatus>();
-    /* eslint-enable svelte/prefer-svelte-reactivity */
-    for (const file of diff.files) {
-      const path = fileDiffPath(file);
-      statuses.set(path, file.status);
-      if (file.diff.type === "binary") {
-        notes.set(path, "binary");
-      } else if (file.diff.type === "empty") {
-        notes.set(path, "empty");
-      }
-    }
-    return { notes, statuses };
-  });
+  const fileMeta = $derived(fileMetaOf(diff.files));
   const fileNotes = $derived(fileMeta.notes);
   const fileStatuses = $derived(fileMeta.statuses);
 
-  // Fetch a file's full old/new contents on demand (for diff expansion). The
-  // old side comes from the commit's first parent; added/deleted files only
-  // have one side.
-  async function fetchBlob(path: string, sha: string): Promise<string> {
-    const blob = await invoke<Blob>("repo_blob", { rid: repo.rid, path, sha });
-    return blob.binary ? "" : blob.content;
-  }
-
-  async function loadFullFile(
-    path: string,
-  ): Promise<{ oldContents: string; newContents: string }> {
-    const parent = commit.parents[0];
-    const file = diff.files.find(entry => fileDiffPath(entry) === path);
-    let oldContents = "";
-    let newContents = "";
-    if (!file) {
-      return { oldContents, newContents };
-    }
-    switch (file.status) {
-      case "added":
-        newContents = await fetchBlob(file.path, commit.id);
-        break;
-      case "deleted":
-        if (parent) {
-          oldContents = await fetchBlob(file.path, parent);
-        }
-        break;
-      case "modified":
-        newContents = await fetchBlob(file.path, commit.id);
-        if (parent) {
-          oldContents = await fetchBlob(file.path, parent);
-        }
-        break;
-      case "moved":
-      case "copied":
-        newContents = await fetchBlob(file.newPath, commit.id);
-        if (parent) {
-          oldContents = await fetchBlob(file.oldPath, parent);
-        }
-        break;
-    }
-    return { oldContents, newContents };
-  }
+  // Pierre's context-expand markers hydrate a file lazily from these. The old
+  // side comes from the commit's first parent, which a root commit does not
+  // have.
+  const loadFullFile = $derived(
+    fullFileLoader(repo.rid, commit.parents[0], commit.id, () => diff.files),
+  );
 </script>
 
 <style>
@@ -382,19 +322,6 @@
           }}
           title={allCollapsed ? "Expand all files" : "Collapse all files"}>
           <Icon name={allCollapsed ? "expand-vertical" : "collapse-vertical"} />
-        </Button>
-        <Button
-          variant="naked"
-          onclick={() =>
-            (diffOptions.diffStyle =
-              diffOptions.diffStyle === "unified" ? "split" : "unified")}
-          title={diffOptions.diffStyle === "unified"
-            ? "Switch to split view"
-            : "Switch to unified view"}>
-          <Icon
-            name={diffOptions.diffStyle === "unified"
-              ? "diff-unified"
-              : "diff-split"} />
         </Button>
         <DiffOptionsButton />
       </div>

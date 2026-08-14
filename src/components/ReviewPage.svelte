@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { CommentOrigin } from "@app/components/Comment.svelte";
-  import type { CodeComments } from "@app/components/Diff.svelte";
   import type { PatchView } from "@app/views/repo/router";
   import type { Author } from "@bindings/cob/Author";
   import type { Patch } from "@bindings/cob/patch/Patch";
@@ -12,13 +11,23 @@
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Config } from "@bindings/config/Config";
+  import type { FileDiff } from "@bindings/diff/FileDiff";
+
+  import { untrack } from "svelte";
 
   import type { CommentOwner } from "@app/lib/codeCommentActions";
   import { commentActions } from "@app/lib/codeCommentActions";
-  import { fileDiffPath } from "@app/lib/diffText";
+  import type { CodeComments } from "@app/lib/codeComments";
+  import { diffOptions } from "@app/lib/diffOptions.svelte";
+  import { fileMetaOf, fullFileLoader } from "@app/lib/diffText";
   import { nodeRunning } from "@app/lib/events";
-  import { isIgnoredFile } from "@app/lib/ignoredFiles";
-  import { cachedGetDiff, invoke } from "@app/lib/invoke";
+  import {
+    cachedGetDiff,
+    cachedGetDiffText,
+    getDiffText,
+    invoke,
+  } from "@app/lib/invoke";
+  import { commentCountsByPath } from "@app/lib/pierreComments";
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
   import {
@@ -39,11 +48,11 @@
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
-  import FileDiff from "@app/components/FileDiff.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import PierreDiff from "@app/components/PierreDiff.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
 
   interface Props {
@@ -381,6 +390,7 @@
 
   // File paths that carry review comments; those files start expanded, the
   // rest of the changed files render collapsed.
+
   const commentedPaths = $derived(new Set(fileGroups.map(g => g.path)));
 
   const reviewCodeComments: CodeComments = $derived({
@@ -398,6 +408,78 @@
     canResolveComment,
     reactOnComment: codeActions.reactOnComment,
   });
+
+  // Both halves of the reviewed revision's diff, loaded together and published
+  // in one go: Pierre renders from the patch text, while the structured diff
+  // supplies the per-file status and the binary/empty marks it cannot derive
+  // from a hunk-less file.
+  //
+  // `key` doubles as Pierre's `cacheKey` prefix, so it has to be published in
+  // the same update as the text it belongs to: keying the shared highlight cache
+  // by file path alone collides across diffs and renders files blank.
+  let loadedDiff = $state.raw<
+    { key: string; text: string; files: FileDiff[] } | undefined
+  >();
+  $effect(() => {
+    const rev = reviewedRevision;
+    if (!rev) return;
+    const ridLocal = rid;
+    const key = `${rev.base}-${rev.head}`;
+    if (untrack(() => loadedDiff?.key) === key) return;
+    let cancelled = false;
+    void Promise.all([
+      cachedGetDiffText(ridLocal, rev.base, rev.head, 3),
+      cachedGetDiff(ridLocal, {
+        base: rev.base,
+        head: rev.head,
+      }),
+    ])
+      .then(([text, diff]) => {
+        if (cancelled) return;
+        loadedDiff = { key, text, files: diff.files };
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        console.error(
+          `ReviewPage: failed to load the diff for ${rev.base}..${rev.head}`,
+          error,
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  const diffFiles = $derived(loadedDiff?.files ?? []);
+  const fileMeta = $derived(fileMetaOf(diffFiles));
+  const loadFullFile = $derived(
+    fullFileLoader(
+      rid,
+      reviewedRevision?.base,
+      reviewedRevision?.head ?? "",
+      () => diffFiles,
+    ),
+  );
+
+  // Only the files this review says something about are worth opening; the rest
+  // are context, and so are the lockfiles either way.
+  const collapsedPaths = $derived.by(() => {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- rebuilt fresh each derivation
+    const paths = new Set(fileMeta.ignored);
+    for (const path of fileMeta.statuses.keys()) {
+      if (!commentedPaths.has(path)) {
+        paths.add(path);
+      }
+    }
+    return paths;
+  });
+
+  const commentCounts = $derived(
+    commentCountsByPath(
+      reviewCodeComments.threads,
+      commentId => reviewCodeComments.canResolveComment?.(commentId) ?? true,
+    ),
+  );
 
   const verdict = $derived(review.verdict);
   const timestamp = $derived(review.timestamp);
@@ -565,10 +647,12 @@
     cursor: progress;
     opacity: 0.6;
   }
-  .threads {
+  /* The chrome is full width inside the diff's scroll content, so it carries
+     its own horizontal padding — the same as the patch view's own header. */
+  .chrome {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    padding: 1rem 1rem 0;
   }
   .timestamp {
     color: var(--color-text-quaternary);
@@ -599,194 +683,203 @@
   }
 </style>
 
-<div class="header">
-  <button type="button" class="back" onclick={backToPatch} title={backCaption}>
-    <Icon name="arrow-left" />
-    {backCaption}
-  </button>
-</div>
-
-<div class="meta">
-  <NodeId {...authorForNodeId(review.author)} />
-  {#if isOwnPublishedReview}
-    {@const verdictLabel = verdictBadge(verdict).label}
-    <Popover
-      popoverPadding="0"
-      placement="bottom-start"
-      bind:expanded={verdictPickerExpanded}>
-      {#snippet toggle(onclick)}
-        <button
-          type="button"
-          class="verdict-chip verdict-toggle"
-          class:accept={verdict === "accept"}
-          class:reject={verdict === "reject"}
-          aria-haspopup="menu"
-          aria-expanded={verdictPickerExpanded}
-          disabled={savingVerdict}
-          {onclick}>
-          <Icon name={verdictIcon(verdict)} />
-          {verdictLabel}
-          <Icon name={verdictPickerExpanded ? "chevron-up" : "chevron-down"} />
-        </button>
-      {/snippet}
-      {#snippet popover()}
-        <div
-          style:border="1px solid var(--color-border-subtle)"
-          style:border-radius="var(--border-radius-sm)"
-          style:background-color="var(--color-surface-canvas)"
-          style:min-width="10rem">
-          <DropdownList items={verdictOptions}>
-            {#snippet item(option)}
-              {@const disabled = option.value === undefined && summary === ""}
-              <DropdownListItem
-                selected={verdict === option.value}
-                {disabled}
-                title={disabled
-                  ? "Add a summary before switching to Comment"
-                  : undefined}
-                styleGap="0.5rem"
-                onclick={() => setVerdict(option.value)}>
-                <span
-                  class:verdict-accept={option.value === "accept"}
-                  class:verdict-reject={option.value === "reject"}>
-                  <Icon name={verdictIcon(option.value)} />
-                </span>
-                {option.label}
-              </DropdownListItem>
-            {/snippet}
-          </DropdownList>
-        </div>
-      {/snippet}
-    </Popover>
-  {:else}
-    <span
-      class="verdict-chip"
-      class:accept={verdict === "accept"}
-      class:reject={verdict === "reject"}>
-      <Icon name={verdictIcon(verdict)} />
-      {verdict === "accept"
-        ? "Accepted"
-        : verdict === "reject"
-          ? "Rejected"
-          : "Reviewed"}
-    </span>
-  {/if}
-  {#if reviewedRevision}
-    <span>
-      Revision {reviewedRevisionNumber} of {revisions.length}
-    </span>
-    <Id
-      id={reviewedRevision.id}
-      clipboard={reviewedRevision.id}
-      label="revision ID" />
-  {/if}
-  <span class="timestamp" title={absoluteTimestamp(timestamp)}>
-    {formatTimestamp(timestamp)}
-  </span>
-  {#if isOwnPublishedReview}
-    <span style:margin-left="auto"></span>
-    <Popover
-      popoverPadding="0"
-      placement="bottom-end"
-      bind:expanded={deleteConfirmExpanded}>
-      {#snippet toggle(onclick)}
-        <button
-          type="button"
-          class="action-icon"
-          title="Delete review"
-          aria-haspopup="dialog"
-          aria-expanded={deleteConfirmExpanded}
-          disabled={deleting}
-          {onclick}>
-          <Icon name="trash" />
-        </button>
-      {/snippet}
-      {#snippet popover()}
-        <div class="delete-confirm">
-          <div class="delete-confirm-message">
-            Delete this review? This cannot be undone.
-          </div>
-          <div class="delete-confirm-actions">
-            <Button variant="naked" onclick={() => closeFocused()}>
-              Cancel
-            </Button>
-            <button
-              type="button"
-              class="delete-confirm-button"
-              onclick={deleteReview}
-              disabled={deleting}>
-              <Icon name="trash" />
-              Delete review
-            </button>
-          </div>
-        </div>
-      {/snippet}
-    </Popover>
-  {/if}
-</div>
-
-{#if editingSummary}
-  <div class="summary-editor">
-    <ExtendedTextarea
-      {rid}
-      body={review.summary ?? ""}
-      focus
-      submitCaption={savingSummary ? "Saving…" : "Save"}
-      disableSubmit={savingSummary}
-      submit={async ({ comment }) => {
-        await saveSummary(comment);
-      }}
-      close={() => (editingSummary = false)} />
-  </div>
-{:else if summary !== "" || isOwnPublishedReview}
-  <div class="summary">
-    {#if summary !== ""}
-      <Markdown {rid} breaks content={summary} />
-    {:else}
-      <span class="summary-empty">No summary.</span>
-    {/if}
-    {#if isOwnPublishedReview}
+{#snippet chrome()}
+  <div class="chrome">
+    <div class="header">
       <button
         type="button"
-        class="action-icon summary-edit"
-        title="Edit summary"
-        onclick={() => (editingSummary = true)}>
-        <Icon name="edit" />
+        class="back"
+        onclick={backToPatch}
+        title={backCaption}>
+        <Icon name="arrow-left" />
+        {backCaption}
       </button>
-    {/if}
-  </div>
-{/if}
-
-<Discussion
-  {repoDelegates}
-  cobId={patch.id}
-  {rid}
-  {commentThreads}
-  {config}
-  createComment={createDiscussionComment}
-  editComment={codeActions.editComment}
-  reactOnComment={codeActions.reactOnComment} />
-
-{#if reviewedRevision}
-  {@const rev = reviewedRevision}
-  {#await cachedGetDiff( rid, { base: rev.base, head: rev.head, unified: 3, highlight: true } )}
-    <div class="threads-loading txt-body-m-regular">Loading changes…</div>
-  {:then diff}
-    <div class="threads">
-      {#each diff.files as file, i (i)}
-        {@const path = fileDiffPath(file)}
-        <!-- FileBlock renders the header and the body as siblings, so each
-             file needs its own wrapper; otherwise the parent's gap lands
-             between a file's header and its diff. -->
-        <div>
-          <FileDiff
-            {file}
-            head={rev.head}
-            {rid}
-            codeComments={reviewCodeComments}
-            expanded={commentedPaths.has(path) && !isIgnoredFile(file)} />
-        </div>
-      {/each}
     </div>
-  {/await}
-{/if}
+
+    <div class="meta">
+      <NodeId {...authorForNodeId(review.author)} />
+      {#if isOwnPublishedReview}
+        {@const verdictLabel = verdictBadge(verdict).label}
+        <Popover
+          popoverPadding="0"
+          placement="bottom-start"
+          bind:expanded={verdictPickerExpanded}>
+          {#snippet toggle(onclick)}
+            <button
+              type="button"
+              class="verdict-chip verdict-toggle"
+              class:accept={verdict === "accept"}
+              class:reject={verdict === "reject"}
+              aria-haspopup="menu"
+              aria-expanded={verdictPickerExpanded}
+              disabled={savingVerdict}
+              {onclick}>
+              <Icon name={verdictIcon(verdict)} />
+              {verdictLabel}
+              <Icon
+                name={verdictPickerExpanded ? "chevron-up" : "chevron-down"} />
+            </button>
+          {/snippet}
+          {#snippet popover()}
+            <div
+              style:border="1px solid var(--color-border-subtle)"
+              style:border-radius="var(--border-radius-sm)"
+              style:background-color="var(--color-surface-canvas)"
+              style:min-width="10rem">
+              <DropdownList items={verdictOptions}>
+                {#snippet item(option)}
+                  {@const disabled =
+                    option.value === undefined && summary === ""}
+                  <DropdownListItem
+                    selected={verdict === option.value}
+                    {disabled}
+                    title={disabled
+                      ? "Add a summary before switching to Comment"
+                      : undefined}
+                    styleGap="0.5rem"
+                    onclick={() => setVerdict(option.value)}>
+                    <span
+                      class:verdict-accept={option.value === "accept"}
+                      class:verdict-reject={option.value === "reject"}>
+                      <Icon name={verdictIcon(option.value)} />
+                    </span>
+                    {option.label}
+                  </DropdownListItem>
+                {/snippet}
+              </DropdownList>
+            </div>
+          {/snippet}
+        </Popover>
+      {:else}
+        <span
+          class="verdict-chip"
+          class:accept={verdict === "accept"}
+          class:reject={verdict === "reject"}>
+          <Icon name={verdictIcon(verdict)} />
+          {verdict === "accept"
+            ? "Accepted"
+            : verdict === "reject"
+              ? "Rejected"
+              : "Reviewed"}
+        </span>
+      {/if}
+      {#if reviewedRevision}
+        <span>
+          Revision {reviewedRevisionNumber} of {revisions.length}
+        </span>
+        <Id
+          id={reviewedRevision.id}
+          clipboard={reviewedRevision.id}
+          label="revision ID" />
+      {/if}
+      <span class="timestamp" title={absoluteTimestamp(timestamp)}>
+        {formatTimestamp(timestamp)}
+      </span>
+      {#if isOwnPublishedReview}
+        <span style:margin-left="auto"></span>
+        <Popover
+          popoverPadding="0"
+          placement="bottom-end"
+          bind:expanded={deleteConfirmExpanded}>
+          {#snippet toggle(onclick)}
+            <button
+              type="button"
+              class="action-icon"
+              title="Delete review"
+              aria-haspopup="dialog"
+              aria-expanded={deleteConfirmExpanded}
+              disabled={deleting}
+              {onclick}>
+              <Icon name="trash" />
+            </button>
+          {/snippet}
+          {#snippet popover()}
+            <div class="delete-confirm">
+              <div class="delete-confirm-message">
+                Delete this review? This cannot be undone.
+              </div>
+              <div class="delete-confirm-actions">
+                <Button variant="naked" onclick={() => closeFocused()}>
+                  Cancel
+                </Button>
+                <button
+                  type="button"
+                  class="delete-confirm-button"
+                  onclick={deleteReview}
+                  disabled={deleting}>
+                  <Icon name="trash" />
+                  Delete review
+                </button>
+              </div>
+            </div>
+          {/snippet}
+        </Popover>
+      {/if}
+    </div>
+
+    {#if editingSummary}
+      <div class="summary-editor">
+        <ExtendedTextarea
+          {rid}
+          body={review.summary ?? ""}
+          focus
+          submitCaption={savingSummary ? "Saving…" : "Save"}
+          disableSubmit={savingSummary}
+          submit={async ({ comment }) => {
+            await saveSummary(comment);
+          }}
+          close={() => (editingSummary = false)} />
+      </div>
+    {:else if summary !== "" || isOwnPublishedReview}
+      <div class="summary">
+        {#if summary !== ""}
+          <Markdown {rid} breaks content={summary} />
+        {:else}
+          <span class="summary-empty">No summary.</span>
+        {/if}
+        {#if isOwnPublishedReview}
+          <button
+            type="button"
+            class="action-icon summary-edit"
+            title="Edit summary"
+            onclick={() => (editingSummary = true)}>
+            <Icon name="edit" />
+          </button>
+        {/if}
+      </div>
+    {/if}
+
+    <Discussion
+      {repoDelegates}
+      cobId={patch.id}
+      {rid}
+      {commentThreads}
+      {config}
+      createComment={createDiscussionComment}
+      editComment={codeActions.editComment}
+      reactOnComment={codeActions.reactOnComment} />
+  </div>
+{/snippet}
+
+<!-- The diff owns the scroll port, and the review's own chrome rides inside it
+     as a non-virtualized header, so it scrolls away and leaves the file headers
+     pinned — the same arrangement as the Changes tab. -->
+<PierreDiff
+  patch={loadedDiff?.text ?? ""}
+  cacheKeyPrefix={loadedDiff?.key}
+  diffStyle={diffOptions.diffStyle}
+  wordWrap={diffOptions.wordWrap}
+  diffIndicators={diffOptions.indicators}
+  lineDiffType={diffOptions.lineDiffType}
+  {loadFullFile}
+  fileNotes={fileMeta.notes}
+  fileStatuses={fileMeta.statuses}
+  fileDiffText={reviewedRevision
+    ? path =>
+        getDiffText(rid, reviewedRevision.base, reviewedRevision.head, 3, path)
+    : undefined}
+  {collapsedPaths}
+  {commentCounts}
+  codeComments={reviewCodeComments}
+  commentCommit={reviewedRevision?.head}
+  header={chrome} />

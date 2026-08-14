@@ -20,6 +20,7 @@
   import {
     cachedDiffStats,
     cachedGetDiff,
+    cachedGetDiffText,
     cachedListCommits,
     invoke,
   } from "@app/lib/invoke";
@@ -42,6 +43,7 @@
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Button from "@app/components/Button.svelte";
   import CheckoutPatchButton from "@app/components/CheckoutPatchButton.svelte";
+  import DiffOptionsButton from "@app/components/DiffOptionsButton.svelte";
   import DraftReviewBar from "@app/components/DraftReviewBar.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
@@ -135,6 +137,11 @@
     revisions.length > 1 ? "revisions" : "patch",
   );
   const patchView: PatchView = $derived(view ?? "activity");
+  // On the Changes view the diff owns the scroll — the page around it does not
+  // scroll at all, and the patch chrome is rendered inside the diff's scroll
+  // content instead (see `patchHeader`). A review page does the same with its
+  // own chrome, so both bypass `.main` for a full-height pane.
+  const changesPane = $derived(patchView === "changes" && !currentReview);
   function setView(next: PatchView) {
     void router.push({
       resource: "repo.patch",
@@ -179,16 +186,18 @@
   let pendingRevisionId: string | undefined;
 
   // Warm the Changes-tab data for the selected revision in the background, so
-  // opening the tab is instant instead of showing a fetch + highlight delay.
+  // opening the tab is instant instead of showing a fetch delay. Both halves of
+  // what the tab renders: the patch text Pierre renders from, and the structured
+  // diff it takes stats and per-file status from.
   $effect(() => {
     const rev = selectedRevision;
-    const diffOptions = {
+    void cachedGetDiffText(repo.rid, rev.base, rev.head, 3).catch(
+      () => undefined,
+    );
+    void cachedGetDiff(repo.rid, {
       base: rev.base,
       head: rev.head,
-      unified: 3,
-      highlight: true,
-    };
-    void cachedGetDiff(repo.rid, diffOptions).catch(() => undefined);
+    }).catch(() => undefined);
     void cachedListCommits(repo.rid, rev.base, rev.head).catch(() => undefined);
     void cachedDiffStats(repo.rid, rev.base, rev.head).catch(() => undefined);
   });
@@ -548,8 +557,6 @@
     void cachedGetDiff(repo.rid, {
       base: rev.base,
       head: rev.head,
-      unified: 3,
-      highlight: false,
     }).then(diff => {
       if (cancelled) return;
       const filePaths = new Set(
@@ -612,9 +619,18 @@
     gap: 0.75rem;
     padding: 0.75rem;
     min-width: 16rem;
+    /* Without a cap the prompt lays itself out on one line and spans the
+       window. */
+    max-width: 24rem;
   }
   .confirm-delete-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     color: var(--color-text-primary);
+  }
+  .confirm-delete-note {
+    color: var(--color-text-secondary);
   }
   .confirm-delete-actions {
     display: flex;
@@ -676,15 +692,15 @@
       "meta"
       "content";
     column-gap: 2rem;
-    transition:
-      max-width 200ms ease,
-      padding 200ms ease;
   }
-  /* On the Changes view, drop the centered max-width and wide side margins so
-     the review uses the full width. Animated on enter/leave. */
-  .main.wide {
-    max-width: 100%;
-    padding: 1.5rem 2rem;
+  /* The Changes view and a review page do not use `.main` at all: the diff owns
+     the scroll and renders the chrome inside its own scroll content, so this
+     pane only has to hand it the remaining height without scrolling itself. */
+  .diff-pane {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    min-width: 0;
   }
   .title {
     grid-area: title;
@@ -979,10 +995,15 @@
                 style:border-radius="var(--border-radius-sm)"
                 style:background-color="var(--color-surface-canvas)">
                 <div class="confirm-delete">
-                  <div class="confirm-delete-text txt-body-m-regular">
-                    Delete this patch from your node? This removes your copy
-                    only — you won't be able to restore it here, and peers who
-                    have already replicated the patch keep theirs.
+                  <div class="confirm-delete-text">
+                    <div class="txt-body-m-medium">
+                      Delete this patch from your node?
+                    </div>
+                    <div class="confirm-delete-note txt-body-m-regular">
+                      Only your copy is removed. You won't be able to restore it
+                      here, and peers who have already replicated the patch keep
+                      theirs.
+                    </div>
                   </div>
                   <div class="confirm-delete-actions">
                     <Button
@@ -1053,462 +1074,475 @@
       </div>
     </Topbar>
 
-    <ScrollArea style="flex: 1; min-height: 0;">
-      <div>
-        <div class="main" class:wide={patchView === "changes"}>
-          <div class="title">
-            <PatchStateButton
-              selectedState={patch.state}
-              onSelect={newState => {
-                void saveState(newState);
-              }}
-              disabled={!canEditPatch} />
-            <EditableTitle
-              {updateTitle}
-              allowedToEdit={canEditPatch ? true : undefined}
-              title={patch.title}
-              cobId={patch.id} />
-          </div>
-          <div class="meta-bar">
-            <PatchMetadata
-              {config}
-              {loadPatch}
-              {patch}
-              {repo}
-              {revisions}
-              stats={latestRevisionStats}
-              view={patchView}
-              onShowChanges={() => {
-                selectedRevisionId = latestRevision.id;
-                setView("changes");
-              }} />
-          </div>
+    <!-- Grid children of `.main`, which places them by area — so they cannot be
+         bundled with the tab bar, which belongs inside `.content`. -->
+    {#snippet patchHeader()}
+      <div class="title">
+        <PatchStateButton
+          selectedState={patch.state}
+          onSelect={newState => {
+            void saveState(newState);
+          }}
+          disabled={!canEditPatch} />
+        <EditableTitle
+          {updateTitle}
+          allowedToEdit={canEditPatch ? true : undefined}
+          title={patch.title}
+          cobId={patch.id} />
+      </div>
+      <div class="meta-bar">
+        <PatchMetadata
+          {config}
+          {loadPatch}
+          {patch}
+          {repo}
+          {revisions}
+          stats={latestRevisionStats}
+          view={patchView}
+          onShowChanges={() => {
+            selectedRevisionId = latestRevision.id;
+            setView("changes");
+          }} />
+      </div>
+    {/snippet}
 
-          <div class="content">
-            {#if patchView !== "changes" && !currentReview}
-              <div
-                class="patch-description"
-                class:collapsed={descriptionCollapsed}>
-                <div class="patch-description-body" bind:this={descriptionEl}>
-                  <RevisionComponent
-                    rid={repo.rid}
-                    {repo}
-                    repoDelegates={repo.delegates}
-                    patchId={patch.id}
-                    {loadPatch}
-                    revision={revisions[0]}
-                    {config}
-                    view="description" />
-                </div>
-                {#if descriptionOverflows}
-                  <div class="patch-description-toggle">
-                    <button
-                      type="button"
-                      class="patch-description-button txt-body-m-medium"
-                      onclick={() =>
-                        (descriptionExpanded = !descriptionExpanded)}>
-                      {descriptionExpanded ? "Show less" : "Show more"}
-                      <Icon
-                        name={descriptionExpanded
-                          ? "collapse-vertical"
-                          : "expand-vertical"} />
-                    </button>
+    {#snippet tabs()}
+      <div class="tabs">
+        <div class="tabs-left">
+          <Button
+            variant={patchView === "activity" ? "ghost" : "naked"}
+            active={patchView === "activity"}
+            onclick={() => setView("activity")}>
+            <Icon name="activity" />
+            Activity
+          </Button>
+          <Button
+            variant={patchView === "changes" ? "ghost" : "naked"}
+            active={patchView === "changes"}
+            onclick={() => setView("changes")}>
+            <Icon name="diff" />
+            Changes
+          </Button>
+        </div>
+        {#if patchView === "activity"}
+          {#if bottomOffscreen}
+            <div class="tabs-right">
+              <Button variant="naked" onclick={jumpToMostRecent}>
+                <Icon name="arrow-down" />
+                Jump to most recent
+              </Button>
+            </div>
+          {/if}
+        {:else if patchView === "changes"}
+          {@const onLatestRevision = selectedRevision.id === latestRevision.id}
+          <div class="tabs-right">
+            {#if commentSources.length > 0}
+              <Popover
+                popoverPadding="0"
+                placement="bottom-start"
+                bind:expanded={commentSourcesExpanded}>
+                {#snippet toggle(onclick)}
+                  <Button
+                    variant="outline"
+                    {onclick}
+                    active={commentSourcesExpanded}
+                    title="Choose which comments are shown on the diff">
+                    <div
+                      class="global-flex txt-body-m-regular"
+                      style:gap="0.375rem">
+                      <Icon name="comment" />
+                      {visibleCommentCount}
+                    </div>
+                    Comments
+                  </Button>
+                {/snippet}
+                {#snippet popover()}
+                  <div
+                    style:border="1px solid var(--color-border-subtle)"
+                    style:border-radius="var(--border-radius-sm)"
+                    style:background-color="var(--color-surface-canvas)">
+                    <DropdownList items={commentSources}>
+                      {#snippet item(source)}
+                        {@const hidden = hiddenCommentSources.has(source.id)}
+                        <DropdownListItem
+                          selected={!hidden}
+                          styleGap="0.5rem"
+                          onclick={() => {
+                            if (hidden) {
+                              hiddenCommentSources.delete(source.id);
+                            } else {
+                              hiddenCommentSources.add(source.id);
+                            }
+                          }}>
+                          <Icon name={hidden ? "eye-slash" : "eye"} />
+                          <span class="avatar-stack">
+                            {#each source.nids.slice(0, 2) as nid (nid)}
+                              <UserAvatar nodeId={nid} styleWidth="1rem" />
+                            {/each}
+                            {#if source.nids.length > 2}
+                              <span class="avatar-overflow">+</span>
+                            {/if}
+                          </span>
+                          <span
+                            style:color={hidden
+                              ? "var(--color-text-tertiary)"
+                              : undefined}>
+                            {source.name}
+                          </span>
+                          <div
+                            class="global-flex"
+                            style:margin-left="auto"
+                            style:padding-left="1rem"
+                            style:color="var(--color-text-tertiary)">
+                            <Icon name="comment" />
+                            {source.count}
+                          </div>
+                        </DropdownListItem>
+                      {/snippet}
+                    </DropdownList>
                   </div>
-                {/if}
-              </div>
+                {/snippet}
+              </Popover>
             {/if}
-
-            {#if currentReview}
-              <ReviewPage
-                {config}
-                {loadPatch}
-                {patch}
-                repoDelegates={repo.delegates}
-                review={currentReview}
-                {revisions}
-                rid={repo.rid}
-                {status}
-                fromView={patchView} />
-            {:else}
-              <div class="tabs">
-                <div class="tabs-left">
+            {#if !onLatestRevision}
+              <Button
+                variant="outline"
+                onclick={() => void selectRevision(latestRevision.id)}>
+                <Icon name="revision" />
+                Back to latest revision
+              </Button>
+            {/if}
+            {#if orderedRevisions.length > 1}
+              <Popover
+                popoverPadding="0"
+                placement="bottom-start"
+                bind:expanded={revisionPickerExpanded}>
+                {#snippet toggle(onclick)}
                   <Button
-                    variant={patchView === "activity" ? "ghost" : "naked"}
-                    active={patchView === "activity"}
-                    onclick={() => setView("activity")}>
-                    <Icon name="activity" />
-                    Activity
+                    variant="outline"
+                    {onclick}
+                    active={revisionPickerExpanded}>
+                    <Icon name="revision" />
+                    <span
+                      style:color={onLatestRevision
+                        ? "var(--color-text-secondary)"
+                        : "var(--color-feedback-warning-text)"}>
+                      Revision {selectedRevisionIndex >= 0
+                        ? selectedRevisionIndex + 1
+                        : "?"} of
+                      {orderedRevisions.length}
+                    </span>
+                    <span class="txt-id">
+                      {selectedRevision.id.substring(0, 7)}
+                    </span>
+                    <Icon
+                      name={revisionPickerExpanded
+                        ? "chevron-up"
+                        : "chevron-down"} />
                   </Button>
-                  <Button
-                    variant={patchView === "changes" ? "ghost" : "naked"}
-                    active={patchView === "changes"}
-                    onclick={() => setView("changes")}>
-                    <Icon name="diff" />
-                    Changes
-                  </Button>
-                </div>
-                {#if patchView === "activity"}
-                  {#if bottomOffscreen}
-                    <div class="tabs-right">
-                      <Button variant="naked" onclick={jumpToMostRecent}>
-                        <Icon name="arrow-down" />
-                        Jump to most recent
+                {/snippet}
+                {#snippet popover()}
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
+                  <div
+                    style:border="1px solid var(--color-border-subtle)"
+                    style:border-radius="var(--border-radius-sm)"
+                    style:background-color="var(--color-surface-canvas)"
+                    style:width="max-content"
+                    style:max-width="min(48rem, 90vw)"
+                    onclick={e => {
+                      if (
+                        columnMenuEl &&
+                        !e.composedPath().includes(columnMenuEl)
+                      ) {
+                        columnMenuOpen = false;
+                      }
+                    }}>
+                    <div class="revision-sort">
+                      <span class="revision-sort-label">Sort by</span>
+                      <Button
+                        variant="ghost"
+                        active
+                        title={listSettings.sortDesc
+                          ? "Newest first"
+                          : "Oldest first"}
+                        onclick={() => revisionListSettings.toggle("sortDesc")}>
+                        Date
+                        <Icon
+                          name={listSettings.sortDesc
+                            ? "arrow-down"
+                            : "arrow-up"} />
                       </Button>
+                      <span class="revision-sort-label">Group by</span>
+                      <Button
+                        variant={listSettings.groupByAuthor ? "ghost" : "naked"}
+                        active={listSettings.groupByAuthor}
+                        title={listSettings.groupByAuthor
+                          ? "Show revisions in one list"
+                          : "Bucket revisions per author, patch author first"}
+                        onclick={() =>
+                          revisionListSettings.toggle("groupByAuthor")}>
+                        Author
+                      </Button>
+                      <span class="revision-columns" bind:this={columnMenuEl}>
+                        <Button
+                          variant="naked"
+                          active={columnMenuOpen}
+                          title="Choose which columns are shown"
+                          styleHeight="1.75rem"
+                          styleWidth="1.75rem"
+                          stylePadding="0"
+                          styleJustifyContent="center"
+                          onclick={() => (columnMenuOpen = !columnMenuOpen)}>
+                          <Icon name="ellipsis-vertical" />
+                        </Button>
+                        {#if columnMenuOpen}
+                          <div class="column-menu">
+                            <DropdownListItem
+                              selected={listSettings.showNumber}
+                              styleGap="0.5rem"
+                              onclick={() =>
+                                revisionListSettings.toggle("showNumber")}>
+                              <Icon
+                                name={listSettings.showNumber
+                                  ? "eye"
+                                  : "eye-slash"} />
+                              Revision number
+                            </DropdownListItem>
+                            <DropdownListItem
+                              selected={listSettings.showStats}
+                              styleGap="0.5rem"
+                              onclick={() =>
+                                revisionListSettings.toggle("showStats")}>
+                              <Icon
+                                name={listSettings.showStats
+                                  ? "eye"
+                                  : "eye-slash"} />
+                              Changed lines
+                            </DropdownListItem>
+                            <DropdownListItem
+                              selected={listSettings.showReviewers}
+                              styleGap="0.5rem"
+                              onclick={() =>
+                                revisionListSettings.toggle("showReviewers")}>
+                              <Icon
+                                name={listSettings.showReviewers
+                                  ? "eye"
+                                  : "eye-slash"} />
+                              Reviewers
+                            </DropdownListItem>
+                          </div>
+                        {/if}
+                      </span>
+                    </div>
+                    {#if listSettings.showReviewers}
+                      <span
+                        bind:this={reviewProbeEl}
+                        class="revision-reviews revision-reviews-probe"
+                        aria-hidden="true">
+                        <ReviewSummary
+                          borderless
+                          reviews={widestReviewRow
+                            ? revisionReviewEntries(widestReviewRow)
+                            : []} />
+                        {#if anyRevisionHasDraft}
+                          <ReviewProgressChip nid={config.publicKey} />
+                        {/if}
+                      </span>
+                    {/if}
+                    <DropdownList items={dropdownRevisions}>
+                      {#snippet item(rev)}
+                        {@const title = revisionTitle(rev)}
+                        {@const commitCount = commitCountsByRevisionId[rev.id]}
+                        <DropdownListItem
+                          selected={rev.id === selectedRevision.id}
+                          styleGap="0.5rem"
+                          onclick={() => {
+                            void selectRevision(rev.id);
+                            closeFocused();
+                          }}>
+                          {#if listSettings.showNumber}
+                            <span class="revision-number">
+                              r{revisionNumberById[rev.id]}
+                            </span>
+                          {/if}
+                          <Icon name="revision" />
+                          <span class="txt-id">
+                            {rev.id.substring(0, 7)}
+                          </span>
+                          <span
+                            class="revision-date"
+                            title={absoluteTimestamp(rev.timestamp)}>
+                            {formatTimestamp(rev.timestamp)}
+                          </span>
+                          <span
+                            class="revision-title"
+                            class:empty={title === undefined}>
+                            {title ?? "No description"}
+                          </span>
+                          <span class="revision-author">
+                            <NodeId {...authorForNodeId(rev.author)} />
+                          </span>
+                          <!-- Rendered even while the count is still
+                               loading so the column keeps its width
+                               and the rows stay aligned. -->
+                          <span class="revision-commits-meta">
+                            {#if commitCount !== undefined}
+                              <Icon name="commit" />
+                              {commitCount}
+                            {/if}
+                          </span>
+                          {#if listSettings.showStats}
+                            {@const stats = statsByRevisionId[rev.id]}
+                            <!-- Reserved while the stats load, so the
+                                 columns beside it stay put. -->
+                            <span class="revision-stats">
+                              {#if stats}
+                                <span class="stats-insertions">
+                                  +{stats.insertions}
+                                </span>
+                                <span class="stats-deletions">
+                                  -{stats.deletions}
+                                </span>
+                              {:else}
+                                <span
+                                  class="stats-loading"
+                                  title="Counting changed lines…">
+                                  <Spinner />
+                                </span>
+                              {/if}
+                            </span>
+                          {/if}
+                          {#if listSettings.showReviewers}
+                            <span
+                              class="revision-reviews"
+                              style:flex="0 0 {reviewColumnWidth}px"
+                              style:margin-left={reviewColumnWidth > 0
+                                ? "1rem"
+                                : "0"}>
+                              <ReviewSummary
+                                borderless
+                                reviews={revisionReviewEntries(rev)} />
+                              {#if draftRevisionIds.includes(rev.id)}
+                                <ReviewProgressChip nid={config.publicKey} />
+                              {/if}
+                            </span>
+                          {/if}
+                        </DropdownListItem>
+                      {/snippet}
+                    </DropdownList>
+                  </div>
+                {/snippet}
+              </Popover>
+            {/if}
+            <Button
+              variant="naked"
+              title={filesExpanded ? "Collapse all files" : "Expand all files"}
+              onclick={() =>
+                revisionComponent?.setAllFilesCollapsed(filesExpanded)}>
+              <Icon
+                name={filesExpanded
+                  ? "collapse-vertical"
+                  : "expand-vertical"} />
+            </Button>
+            <DiffOptionsButton />
+          </div>
+        {/if}
+      </div>
+    {/snippet}
+
+    {#snippet revisionBody()}
+      <RevisionComponent
+        bind:this={revisionComponent}
+        rid={repo.rid}
+        {repo}
+        repoDelegates={repo.delegates}
+        patchId={patch.id}
+        {loadPatch}
+        revision={selectedRevision}
+        {config}
+        view={patchView}
+        {activity}
+        {revisions}
+        draftReviewId={ownDraftReview?.id}
+        {draftRevisionIds}
+        hiddenCommentSources={[...hiddenCommentSources]}
+        onViewChanges={revisionId => {
+          pendingRevisionId = revisionId;
+          selectedRevisionId = revisionId;
+          setView("changes");
+        }}
+        chrome={patchHeader}
+        {tabs}
+        bind:showingRevisionDiff
+        bind:filesExpanded />
+    {/snippet}
+
+    {#if changesPane}
+      <div class="diff-pane">
+        {@render revisionBody()}
+      </div>
+    {:else if currentReview}
+      <div class="diff-pane">
+        <ReviewPage
+          {config}
+          {loadPatch}
+          {patch}
+          repoDelegates={repo.delegates}
+          review={currentReview}
+          {revisions}
+          rid={repo.rid}
+          {status}
+          fromView={patchView} />
+      </div>
+    {:else}
+      <ScrollArea style="flex: 1; min-height: 0;">
+        <div>
+          <div class="main">
+            {@render patchHeader()}
+
+            <div class="content">
+              {#if patchView !== "changes" && !currentReview}
+                <div
+                  class="patch-description"
+                  class:collapsed={descriptionCollapsed}>
+                  <div class="patch-description-body" bind:this={descriptionEl}>
+                    <RevisionComponent
+                      rid={repo.rid}
+                      {repo}
+                      repoDelegates={repo.delegates}
+                      patchId={patch.id}
+                      {loadPatch}
+                      revision={revisions[0]}
+                      {config}
+                      view="description" />
+                  </div>
+                  {#if descriptionOverflows}
+                    <div class="patch-description-toggle">
+                      <button
+                        type="button"
+                        class="patch-description-button txt-body-m-medium"
+                        onclick={() =>
+                          (descriptionExpanded = !descriptionExpanded)}>
+                        {descriptionExpanded ? "Show less" : "Show more"}
+                        <Icon
+                          name={descriptionExpanded
+                            ? "collapse-vertical"
+                            : "expand-vertical"} />
+                      </button>
                     </div>
                   {/if}
-                {:else if patchView === "changes"}
-                  {@const onLatestRevision =
-                    selectedRevision.id === latestRevision.id}
-                  <div class="tabs-right">
-                    {#if commentSources.length > 0}
-                      <Popover
-                        popoverPadding="0"
-                        placement="bottom-start"
-                        bind:expanded={commentSourcesExpanded}>
-                        {#snippet toggle(onclick)}
-                          <Button
-                            variant="outline"
-                            {onclick}
-                            active={commentSourcesExpanded}
-                            title="Choose which comments are shown on the diff">
-                            <div
-                              class="global-flex txt-body-m-regular"
-                              style:gap="0.375rem">
-                              <Icon name="comment" />
-                              {visibleCommentCount}
-                            </div>
-                            Comments
-                          </Button>
-                        {/snippet}
-                        {#snippet popover()}
-                          <div
-                            style:border="1px solid var(--color-border-subtle)"
-                            style:border-radius="var(--border-radius-sm)"
-                            style:background-color="var(--color-surface-canvas)">
-                            <DropdownList items={commentSources}>
-                              {#snippet item(source)}
-                                {@const hidden = hiddenCommentSources.has(
-                                  source.id,
-                                )}
-                                <DropdownListItem
-                                  selected={!hidden}
-                                  styleGap="0.5rem"
-                                  onclick={() => {
-                                    if (hidden) {
-                                      hiddenCommentSources.delete(source.id);
-                                    } else {
-                                      hiddenCommentSources.add(source.id);
-                                    }
-                                  }}>
-                                  <Icon name={hidden ? "eye-slash" : "eye"} />
-                                  <span class="avatar-stack">
-                                    {#each source.nids.slice(0, 2) as nid (nid)}
-                                      <UserAvatar
-                                        nodeId={nid}
-                                        styleWidth="1rem" />
-                                    {/each}
-                                    {#if source.nids.length > 2}
-                                      <span class="avatar-overflow">+</span>
-                                    {/if}
-                                  </span>
-                                  <span
-                                    style:color={hidden
-                                      ? "var(--color-text-tertiary)"
-                                      : undefined}>
-                                    {source.name}
-                                  </span>
-                                  <div
-                                    class="global-flex"
-                                    style:margin-left="auto"
-                                    style:padding-left="1rem"
-                                    style:color="var(--color-text-tertiary)">
-                                    <Icon name="comment" />
-                                    {source.count}
-                                  </div>
-                                </DropdownListItem>
-                              {/snippet}
-                            </DropdownList>
-                          </div>
-                        {/snippet}
-                      </Popover>
-                    {/if}
-                    {#if !onLatestRevision}
-                      <Button
-                        variant="outline"
-                        onclick={() => void selectRevision(latestRevision.id)}>
-                        <Icon name="revision" />
-                        Back to latest revision
-                      </Button>
-                    {/if}
-                    {#if orderedRevisions.length > 1}
-                      <Popover
-                        popoverPadding="0"
-                        placement="bottom-start"
-                        bind:expanded={revisionPickerExpanded}>
-                        {#snippet toggle(onclick)}
-                          <Button
-                            variant="outline"
-                            {onclick}
-                            active={revisionPickerExpanded}>
-                            <Icon name="revision" />
-                            <span
-                              style:color={onLatestRevision
-                                ? "var(--color-text-secondary)"
-                                : "var(--color-feedback-warning-text)"}>
-                              Revision {selectedRevisionIndex >= 0
-                                ? selectedRevisionIndex + 1
-                                : "?"} of
-                              {orderedRevisions.length}
-                            </span>
-                            <span class="txt-id">
-                              {selectedRevision.id.substring(0, 7)}
-                            </span>
-                            <Icon
-                              name={revisionPickerExpanded
-                                ? "chevron-up"
-                                : "chevron-down"} />
-                          </Button>
-                        {/snippet}
-                        {#snippet popover()}
-                          <!-- svelte-ignore a11y_no_static_element_interactions -->
-                          <!-- svelte-ignore a11y_click_events_have_key_events -->
-                          <div
-                            style:border="1px solid var(--color-border-subtle)"
-                            style:border-radius="var(--border-radius-sm)"
-                            style:background-color="var(--color-surface-canvas)"
-                            style:width="max-content"
-                            style:max-width="min(48rem, 90vw)"
-                            onclick={e => {
-                              if (
-                                columnMenuEl &&
-                                !e.composedPath().includes(columnMenuEl)
-                              ) {
-                                columnMenuOpen = false;
-                              }
-                            }}>
-                            <div class="revision-sort">
-                              <span class="revision-sort-label">Sort by</span>
-                              <Button
-                                variant="ghost"
-                                active
-                                title={listSettings.sortDesc
-                                  ? "Newest first"
-                                  : "Oldest first"}
-                                onclick={() =>
-                                  revisionListSettings.toggle("sortDesc")}>
-                                Date
-                                <Icon
-                                  name={listSettings.sortDesc
-                                    ? "arrow-down"
-                                    : "arrow-up"} />
-                              </Button>
-                              <span class="revision-sort-label">Group by</span>
-                              <Button
-                                variant={listSettings.groupByAuthor
-                                  ? "ghost"
-                                  : "naked"}
-                                active={listSettings.groupByAuthor}
-                                title={listSettings.groupByAuthor
-                                  ? "Show revisions in one list"
-                                  : "Bucket revisions per author, patch author first"}
-                                onclick={() =>
-                                  revisionListSettings.toggle("groupByAuthor")}>
-                                Author
-                              </Button>
-                              <span
-                                class="revision-columns"
-                                bind:this={columnMenuEl}>
-                                <Button
-                                  variant="naked"
-                                  active={columnMenuOpen}
-                                  title="Choose which columns are shown"
-                                  styleHeight="1.75rem"
-                                  styleWidth="1.75rem"
-                                  stylePadding="0"
-                                  styleJustifyContent="center"
-                                  onclick={() =>
-                                    (columnMenuOpen = !columnMenuOpen)}>
-                                  <Icon name="ellipsis-vertical" />
-                                </Button>
-                                {#if columnMenuOpen}
-                                  <div class="column-menu">
-                                    <DropdownListItem
-                                      selected={listSettings.showNumber}
-                                      styleGap="0.5rem"
-                                      onclick={() =>
-                                        revisionListSettings.toggle(
-                                          "showNumber",
-                                        )}>
-                                      <Icon
-                                        name={listSettings.showNumber
-                                          ? "eye"
-                                          : "eye-slash"} />
-                                      Revision number
-                                    </DropdownListItem>
-                                    <DropdownListItem
-                                      selected={listSettings.showStats}
-                                      styleGap="0.5rem"
-                                      onclick={() =>
-                                        revisionListSettings.toggle(
-                                          "showStats",
-                                        )}>
-                                      <Icon
-                                        name={listSettings.showStats
-                                          ? "eye"
-                                          : "eye-slash"} />
-                                      Changed lines
-                                    </DropdownListItem>
-                                    <DropdownListItem
-                                      selected={listSettings.showReviewers}
-                                      styleGap="0.5rem"
-                                      onclick={() =>
-                                        revisionListSettings.toggle(
-                                          "showReviewers",
-                                        )}>
-                                      <Icon
-                                        name={listSettings.showReviewers
-                                          ? "eye"
-                                          : "eye-slash"} />
-                                      Reviewers
-                                    </DropdownListItem>
-                                  </div>
-                                {/if}
-                              </span>
-                            </div>
-                            {#if listSettings.showReviewers}
-                              <span
-                                bind:this={reviewProbeEl}
-                                class="revision-reviews revision-reviews-probe"
-                                aria-hidden="true">
-                                <ReviewSummary
-                                  borderless
-                                  reviews={widestReviewRow
-                                    ? revisionReviewEntries(widestReviewRow)
-                                    : []} />
-                                {#if anyRevisionHasDraft}
-                                  <ReviewProgressChip nid={config.publicKey} />
-                                {/if}
-                              </span>
-                            {/if}
-                            <DropdownList items={dropdownRevisions}>
-                              {#snippet item(rev)}
-                                {@const title = revisionTitle(rev)}
-                                {@const commitCount =
-                                  commitCountsByRevisionId[rev.id]}
-                                <DropdownListItem
-                                  selected={rev.id === selectedRevision.id}
-                                  styleGap="0.5rem"
-                                  onclick={() => {
-                                    void selectRevision(rev.id);
-                                    closeFocused();
-                                  }}>
-                                  {#if listSettings.showNumber}
-                                    <span class="revision-number">
-                                      r{revisionNumberById[rev.id]}
-                                    </span>
-                                  {/if}
-                                  <Icon name="revision" />
-                                  <span class="txt-id">
-                                    {rev.id.substring(0, 7)}
-                                  </span>
-                                  <span
-                                    class="revision-date"
-                                    title={absoluteTimestamp(rev.timestamp)}>
-                                    {formatTimestamp(rev.timestamp)}
-                                  </span>
-                                  <span
-                                    class="revision-title"
-                                    class:empty={title === undefined}>
-                                    {title ?? "No description"}
-                                  </span>
-                                  <span class="revision-author">
-                                    <NodeId {...authorForNodeId(rev.author)} />
-                                  </span>
-                                  <!-- Rendered even while the count is still
-                                       loading so the column keeps its width
-                                       and the rows stay aligned. -->
-                                  <span class="revision-commits-meta">
-                                    {#if commitCount !== undefined}
-                                      <Icon name="commit" />
-                                      {commitCount}
-                                    {/if}
-                                  </span>
-                                  {#if listSettings.showStats}
-                                    {@const stats = statsByRevisionId[rev.id]}
-                                    <!-- Reserved while the stats load, so the
-                                         columns beside it stay put. -->
-                                    <span class="revision-stats">
-                                      {#if stats}
-                                        <span class="stats-insertions">
-                                          +{stats.insertions}
-                                        </span>
-                                        <span class="stats-deletions">
-                                          -{stats.deletions}
-                                        </span>
-                                      {:else}
-                                        <span
-                                          class="stats-loading"
-                                          title="Counting changed lines…">
-                                          <Spinner />
-                                        </span>
-                                      {/if}
-                                    </span>
-                                  {/if}
-                                  {#if listSettings.showReviewers}
-                                    <span
-                                      class="revision-reviews"
-                                      style:flex="0 0 {reviewColumnWidth}px"
-                                      style:margin-left={reviewColumnWidth > 0
-                                        ? "1rem"
-                                        : "0"}>
-                                      <ReviewSummary
-                                        borderless
-                                        reviews={revisionReviewEntries(rev)} />
-                                      {#if draftRevisionIds.includes(rev.id)}
-                                        <ReviewProgressChip
-                                          nid={config.publicKey} />
-                                      {/if}
-                                    </span>
-                                  {/if}
-                                </DropdownListItem>
-                              {/snippet}
-                            </DropdownList>
-                          </div>
-                        {/snippet}
-                      </Popover>
-                    {/if}
-                  </div>
-                {/if}
-              </div>
+                </div>
+              {/if}
 
-              <RevisionComponent
-                bind:this={revisionComponent}
-                rid={repo.rid}
-                {repo}
-                repoDelegates={repo.delegates}
-                patchId={patch.id}
-                {loadPatch}
-                revision={selectedRevision}
-                {config}
-                view={patchView}
-                {activity}
-                {revisions}
-                draftReviewId={ownDraftReview?.id}
-                {draftRevisionIds}
-                hiddenCommentSources={[...hiddenCommentSources]}
-                onViewChanges={revisionId => {
-                  pendingRevisionId = revisionId;
-                  selectedRevisionId = revisionId;
-                  setView("changes");
-                }}
-                bind:showingRevisionDiff
-                bind:filesExpanded />
-            {/if}
+              {@render tabs()}
+              {@render revisionBody()}
+            </div>
           </div>
         </div>
-      </div>
-      <div bind:this={bottomSentinel} aria-hidden="true"></div>
-    </ScrollArea>
+        <div bind:this={bottomSentinel} aria-hidden="true"></div>
+      </ScrollArea>
+    {/if}
 
     {#if ownDraftReview && patchView !== "activity"}
       <DraftReviewBar
@@ -1546,9 +1580,8 @@
             // falls back to plain text.
             undefined
           : comment => {
-              const path = comment.location?.path;
-              if (path) {
-                void revisionComponent?.revealComment(comment.id, path);
+              if (comment.location) {
+                void revisionComponent?.revealComment(comment.location);
               }
             }} />
     {/if}

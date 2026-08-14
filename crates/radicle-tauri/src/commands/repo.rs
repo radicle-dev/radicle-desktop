@@ -105,13 +105,8 @@ pub async fn get_commit_diff(
     ctx: tauri::State<'_, AppState>,
     rid: RepoId,
     sha: git::Oid,
-    unified: Option<u32>,
-    highlight: Option<bool>,
 ) -> Result<types::diff::Diff, Error> {
-    blocking(ctx, move |ctx| {
-        ctx.get_commit_diff(rid, sha, unified, highlight)
-    })
-    .await
+    blocking(ctx, move |ctx| ctx.get_commit_diff(rid, sha)).await
 }
 
 #[tauri::command]

@@ -8,6 +8,7 @@
 
   import type { DraftReview } from "@app/lib/draftReviewStorage";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
+  import { formatAnchor } from "@app/lib/pierreComments";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -177,17 +178,7 @@
   }
 
   function formatLocation(location: CodeLocation | undefined): string {
-    if (!location) return "";
-    const range = location.new ?? location.old;
-    if (!range) return location.path;
-    if (range.type === "lines") {
-      const start = range.range.start + 1;
-      const end = range.range.end;
-      return start === end
-        ? `${location.path}:${start}`
-        : `${location.path}:${start}-${end}`;
-    }
-    return `${location.path}:${range.line + 1}`;
+    return location ? formatAnchor(location) : "";
   }
 
   const verdictLabel = $derived(

@@ -205,26 +205,15 @@ export const cachedGetDiffText = cached(
   { max: 100 },
 );
 
-async function getCommitDiff(
-  rid: string,
-  sha: string,
-  unified = 3,
-  highlight = true,
-): Promise<Diff> {
-  return withTestBackend(tauri.invoke, "get_commit_diff", {
-    rid,
-    sha,
-    unified,
-    highlight,
-  });
+async function getCommitDiff(rid: string, sha: string): Promise<Diff> {
+  return withTestBackend(tauri.invoke, "get_commit_diff", { rid, sha });
 }
 
-// Commits are immutable, so SHA is a perfect cache key. Cap entries since
-// each highlighted Diff can be sizeable.
+// Commits are immutable, so SHA is a perfect cache key. Cap entries since a
+// Diff can be sizeable.
 export const cachedGetCommitDiff = cached(
   getCommitDiff,
-  (...[rid, sha, unified, highlight]) =>
-    `get_commit_diff:${rid}:${sha}:${unified}:${highlight}`,
+  (...[rid, sha]) => `get_commit_diff:${rid}:${sha}`,
   { max: 100 },
 );
 

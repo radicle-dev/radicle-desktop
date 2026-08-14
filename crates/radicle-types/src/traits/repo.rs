@@ -19,7 +19,6 @@ use crate::diff::Diff;
 use crate::error::Error;
 use crate::repo;
 use crate::source;
-use crate::syntax::{ToPretty, highlighter};
 use crate::traits::Profile;
 
 #[cfg(windows)]
@@ -704,42 +703,29 @@ pub trait Repo: Profile {
         })
     }
 
+    /// A manifest of the files a diff touches and their stats — not the lines,
+    /// which the app gets from `get_diff_text`. Nothing here depends on how much
+    /// context a hunk carries, so the diff is taken with none: it is thrown away
+    /// either way, and computing it is work.
     fn get_diff(
         &self,
         rid: identity::RepoId,
         options: cobs::diff::DiffOptions,
     ) -> Result<Diff, Error> {
-        let unified = options.unified.unwrap_or(5);
-        let highlight = options.highlight.unwrap_or(true);
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?.backend;
-        let diff = tree_diff(&repo, Some(options.base), options.head, unified, false)?;
+        let diff = tree_diff(&repo, Some(options.base), options.head, 0, false)?;
         let diff = surf::diff::Diff::try_from(diff)?;
-
-        if highlight {
-            return Ok::<_, Error>(diff.pretty(highlighter(), &(), &repo));
-        }
 
         Ok::<_, Error>(diff.into())
     }
 
-    fn get_commit_diff(
-        &self,
-        rid: identity::RepoId,
-        sha: git::Oid,
-        unified: Option<u32>,
-        highlight: Option<bool>,
-    ) -> Result<Diff, Error> {
-        let unified = unified.unwrap_or(5);
-        let highlight = highlight.unwrap_or(true);
+    /// As `get_diff`, for a commit against its first parent.
+    fn get_commit_diff(&self, rid: identity::RepoId, sha: git::Oid) -> Result<Diff, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?.backend;
-        let diff = tree_diff(&repo, None, sha, unified, false)?;
+        let diff = tree_diff(&repo, None, sha, 0, false)?;
         let diff = surf::diff::Diff::try_from(diff)?;
-
-        if highlight {
-            return Ok::<_, Error>(diff.pretty(highlighter(), &(), &repo));
-        }
 
         Ok::<_, Error>(diff.into())
     }

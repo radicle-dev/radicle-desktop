@@ -102,6 +102,13 @@
     white-space: nowrap;
     flex-shrink: 0;
   }
+  .comments {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    color: var(--color-text-secondary);
+  }
   .add {
     color: var(--color-feedback-success-text);
   }
@@ -146,6 +153,35 @@
       <span class="del">-{stats.deletions}</span>
     {/if}
   </span>
+
+  {#if state.unresolvedComments > 0}
+    <span class="comments" title="Unresolved comments">
+      <Icon name="comment" />
+      {state.unresolvedComments}
+    </span>
+  {/if}
+  {#if state.resolvedComments > 0}
+    <span class="comments" title="Resolved comments">
+      <Icon name="comment-checkmark" />
+      {state.resolvedComments}
+    </span>
+  {/if}
+
+  {#if state.reviewed !== undefined}
+    <Button
+      variant="ghost"
+      active={state.reviewed}
+      bordered
+      styleHeight="1.5rem"
+      stylePadding="0 0.375rem"
+      title={state.reviewed
+        ? "Mark file as not reviewed"
+        : "Mark file as reviewed"}
+      onclick={() => state.onToggleReviewed()}>
+      <Icon name={state.reviewed ? "checkmark" : "eye"} />
+      {state.reviewed ? "Reviewed" : "Review"}
+    </Button>
+  {/if}
 
   {#if text !== undefined}
     <DiffActions {text} {fileName} title="File diff actions" />

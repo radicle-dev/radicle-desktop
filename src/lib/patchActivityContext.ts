@@ -30,3 +30,15 @@ export function setPatchActivitySource(source: PatchActivitySource) {
 export function getPatchActivitySource(): PatchActivitySource | undefined {
   return getContext(KEY);
 }
+
+/// The current source packaged for `mount()`. A comment thread superimposed on a
+/// diff is mounted as its own component tree, outside the component hierarchy
+/// that set this up, and its author cards would otherwise lose their figures.
+export function forwardPatchActivityContext(): Map<unknown, unknown> {
+  const context = new Map<unknown, unknown>();
+  const source = getPatchActivitySource();
+  if (source) {
+    context.set(KEY, source);
+  }
+  return context;
+}

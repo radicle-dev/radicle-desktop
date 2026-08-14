@@ -373,20 +373,13 @@ async fn save_diff_handler(
 struct CommitDiffBody {
     pub rid: identity::RepoId,
     pub sha: git::Oid,
-    pub unified: Option<u32>,
-    pub highlight: Option<bool>,
 }
 
 async fn commit_diff_handler(
     State(ctx): State<Context>,
-    Json(CommitDiffBody {
-        rid,
-        sha,
-        unified,
-        highlight,
-    }): Json<CommitDiffBody>,
+    Json(CommitDiffBody { rid, sha }): Json<CommitDiffBody>,
 ) -> impl IntoResponse {
-    let diff = ctx.get_commit_diff(rid, sha, unified, highlight)?;
+    let diff = ctx.get_commit_diff(rid, sha)?;
 
     Ok::<_, Error>(Json(diff))
 }
