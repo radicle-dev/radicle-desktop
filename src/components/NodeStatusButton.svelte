@@ -6,6 +6,12 @@
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
 
+  interface Props {
+    collapsed?: boolean;
+  }
+
+  const { collapsed = false }: Props = $props();
+
   let popoverExpanded: boolean = $state(false);
 </script>
 
@@ -16,20 +22,21 @@
   {#snippet toggle(onclick)}
     <Button
       variant="naked"
+      title={collapsed ? ($nodeRunning ? "Online" : "Offline") : undefined}
       {onclick}
       active={popoverExpanded}
-      styleWidth="100%"
+      styleWidth={collapsed ? "2rem" : "100%"}
       styleJustifyContent="flex-start">
       {#if $nodeRunning}
         <span style:color="var(--color-text-tertiary)">
           <Icon name="online" />
         </span>
-        Online
+        <span class="label">Online</span>
       {:else}
         <span style:color="var(--color-text-tertiary)">
           <Icon name="offline" />
         </span>
-        Offline
+        <span class="label">Offline</span>
       {/if}
     </Button>
   {/snippet}

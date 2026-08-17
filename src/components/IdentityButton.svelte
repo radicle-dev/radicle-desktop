@@ -20,9 +20,10 @@
 
   interface Props {
     config: Config;
+    collapsed?: boolean;
   }
 
-  const { config }: Props = $props();
+  const { config, collapsed = false }: Props = $props();
 
   let popoverExpanded: boolean = $state(false);
   let copyIcon: "copy" | "checkmark" = $state("copy");
@@ -33,10 +34,16 @@
 
 <Popover placement="bottom-start" bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
-    <Button variant="naked" active={popoverExpanded} {onclick}>
+    <Button
+      variant="naked"
+      title={collapsed ? config.alias : undefined}
+      styleWidth={collapsed ? "2rem" : "100%"}
+      styleJustifyContent="flex-start"
+      active={popoverExpanded}
+      {onclick}>
       <UserAvatar nodeId={config.publicKey} styleWidth="1rem" />
-      {config.alias}
-      <span style:color="var(--color-text-tertiary)">
+      <span class="label">{config.alias}</span>
+      <span class="label" style:color="var(--color-text-tertiary)">
         <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
       </span>
     </Button>
