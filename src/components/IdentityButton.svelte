@@ -33,10 +33,15 @@
 
 <Popover placement="bottom-start" bind:expanded={popoverExpanded}>
   {#snippet toggle(onclick)}
-    <Button variant="naked" active={popoverExpanded} {onclick}>
+    <Button
+      variant="naked"
+      styleWidth="100%"
+      styleJustifyContent="flex-start"
+      active={popoverExpanded}
+      {onclick}>
       <UserAvatar nodeId={config.publicKey} styleWidth="1rem" />
-      {config.alias}
-      <span style:color="var(--color-text-tertiary)">
+      <span class="label">{config.alias}</span>
+      <span class="label" style:color="var(--color-text-tertiary)">
         <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
       </span>
     </Button>

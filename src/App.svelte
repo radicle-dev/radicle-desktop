@@ -21,6 +21,7 @@
   import { hide, toggle } from "@app/lib/modal";
   import * as router from "@app/lib/router";
   import { isLoadedRepoRoute } from "@app/lib/router/definitions";
+  import { toggleSidebar } from "@app/lib/sidebar.svelte";
   import {
     setUnlistenNodeEvents,
     unlistenNodeEvents,
@@ -151,9 +152,13 @@
 
 <style>
   .layout {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    grid-template-rows: 100%;
+    display: flex;
+    height: 100%;
+    overflow: hidden;
+  }
+  .content-pane {
+    flex: 1 1 0;
+    min-width: 0;
     height: 100%;
     overflow: hidden;
   }
@@ -180,6 +185,9 @@
     } else if (auxiliarKey && e.key === ",") {
       e.preventDefault();
       toggle({ component: SettingsView, props: {} });
+    } else if (auxiliarKey && e.key.toLowerCase() === "b") {
+      e.preventDefault();
+      toggleSidebar();
     }
   }} />
 <FullscreenModalPortal />
@@ -213,26 +221,28 @@
     <AppSidebar
       sidebarData={$activeRouteStore.params.sidebarData}
       {activeRepo} />
-    {#if $activeRouteStore.resource === "inbox"}
-      <InboxView {...$activeRouteStore.params} />
-    {:else if $activeRouteStore.resource === "guide"}
-      <GuideView {...$activeRouteStore.params} />
-    {:else if $activeRouteStore.resource === "repo.home"}
-      <RepoHome {...$activeRouteStore.params} />
-    {:else if $activeRouteStore.resource === "repo.commits"}
-      <RepoCommits {...$activeRouteStore.params} />
-    {:else if $activeRouteStore.resource === "repo.commit"}
-      <RepoCommit {...$activeRouteStore.params} />
-    {:else if $activeRouteStore.resource === "repo.issue"}
-      <Issue {...$activeRouteStore.params} />
-    {:else if $activeRouteStore.resource === "repo.issues"}
-      <Issues {...$activeRouteStore.params} />
-    {:else if $activeRouteStore.resource === "repo.patch"}
-      <Patch {...$activeRouteStore.params} />
-    {:else if $activeRouteStore.resource === "repo.patches"}
-      <Patches {...$activeRouteStore.params} />
-    {:else}
-      {unreachable($activeRouteStore)}
-    {/if}
+    <div class="content-pane">
+      {#if $activeRouteStore.resource === "inbox"}
+        <InboxView {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "guide"}
+        <GuideView {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.home"}
+        <RepoHome {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.commits"}
+        <RepoCommits {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.commit"}
+        <RepoCommit {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.issue"}
+        <Issue {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.issues"}
+        <Issues {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.patch"}
+        <Patch {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.patches"}
+        <Patches {...$activeRouteStore.params} />
+      {:else}
+        {unreachable($activeRouteStore)}
+      {/if}
+    </div>
   </div>
 {/if}

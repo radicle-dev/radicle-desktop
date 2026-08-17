@@ -43,10 +43,12 @@
 
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
-  import { cubicOut } from "svelte/easing";
-  import { crossfade } from "svelte/transition";
+  import { backOut, cubicOut } from "svelte/easing";
+  import { crossfade, fade, scale, slide } from "svelte/transition";
 
   import { nodeRunning } from "@app/lib/events";
+  import type { FlipSnapshot } from "@app/lib/flip";
+  import { captureFlip, playFlip } from "@app/lib/flip";
   import { dynamicInterval, resetDynamicInterval } from "@app/lib/interval";
   import {
     cachedListReposSummary,
@@ -56,6 +58,7 @@
   } from "@app/lib/invoke";
   import { show } from "@app/lib/modal";
   import * as router from "@app/lib/router";
+  import { sidebarCollapsed } from "@app/lib/sidebar.svelte";
   import {
     explorerHost,
     explorerUrl,
@@ -116,6 +119,15 @@
     }
   });
 
+  // Collapsing discards the filter, so re-expanding comes back to a plain
+  // header rather than a stale query.
+  $effect(() => {
+    if (sidebarCollapsed.value) {
+      filterOpen = false;
+      filterQuery = "";
+    }
+  });
+
   $effect(() => {
     if (seededNotReplicated.length > 0) {
       dynamicInterval("seededNotReplicated", reloadRepos, 5_000);
@@ -157,6 +169,29 @@
   const unpinnedReposCount = $derived(
     repos.filter(r => !pinnedRepoIds.value.includes(r.rid)).length,
   );
+
+  // FLIP the "All Repos" header's icon and buttons, plus its own height, as it
+  // reflows on collapse. Measured relative to the header, so its downward shift
+  // (the controls growing above it) is left to the shared layout transition.
+  let allReposHeaderEl = $state<HTMLElement | undefined>();
+  let headerFirst: FlipSnapshot | undefined;
+  const HEADER_FLIP = { selector: "[data-flip]", animateHeight: true };
+
+  $effect.pre(() => {
+    // Measure before the DOM reflows for the new state.
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    sidebarCollapsed.value;
+
+    headerFirst = captureFlip(allReposHeaderEl, HEADER_FLIP);
+  });
+
+  $effect(() => {
+    // ...and play once it has.
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    sidebarCollapsed.value;
+
+    playFlip(allReposHeaderEl, headerFirst, HEADER_FLIP);
+  });
 
   const ANIMATION_DURATION_MS = 220;
   let animatingPinnedList = $state(false);
@@ -337,6 +372,7 @@
     justify-content: space-between;
     cursor: pointer;
     user-select: none;
+    overflow: hidden;
   }
   .section-header-label {
     display: flex;
@@ -349,6 +385,10 @@
     display: flex;
     align-items: center;
     gap: 0.25rem;
+  }
+  /* No room on the rail; the repo rows below stand on their own there. */
+  .section-header.mini {
+    display: none;
   }
 
   .filter-button {
@@ -394,6 +434,19 @@
     text-decoration: none;
     user-select: none;
     -webkit-user-select: none;
+    transition: width 0.2s ease;
+  }
+  .nav-item .txt-overflow {
+    min-width: 0;
+  }
+  /* No room on the rail, and reordering is off there, so rows stay plain
+     links. */
+  :global(.sidebar.mini) .row-actions {
+    display: none;
+  }
+  /* Centred on the rail. */
+  :global(.sidebar.mini) .repos-list {
+    align-items: center;
   }
   .nav-item :global(img),
   .nav-item :global(svg) {
@@ -409,8 +462,20 @@
   .nav-item .global-counter-badge {
     margin-left: auto;
   }
+  /* Rows unroll from behind the repo they belong to -- the `slide` transition
+     clips them while the height animates -- rather than appearing in place. */
+  .sub-items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding-top: 0.25rem;
+  }
   .sub-item {
     padding-left: 2rem;
+    transition: padding-left 0.2s ease;
+  }
+  .sub-item.mini {
+    padding-left: 0.5rem;
   }
 
   .pending-item {
@@ -436,12 +501,19 @@
     background-color: var(--color-surface-mid);
   }
 
+  /* Out of flow: hidden, they still reserved a button's width on every row.
+     They sit over the end of the name instead, on the row's own fill. */
   .nav-item .row-actions {
     visibility: hidden;
-    margin-left: auto;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0.5rem;
     display: flex;
     align-items: center;
     gap: 0.125rem;
+    padding-left: 0.25rem;
+    background-color: var(--color-surface-subtle);
     color: var(--color-text-tertiary);
   }
   .nav-item:hover .row-actions,
@@ -473,11 +545,13 @@
     cursor: grab;
   }
 
+  /* No gap: the sub-items carry their own top padding, so it animates open with
+     them. A gap here would appear and vanish with the mount, jumping either
+     side of the transition. */
   .repo-row-group {
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
   }
   .repo-row-group.drop-before::before,
   .repo-row-group.drop-after::after {
@@ -524,6 +598,31 @@
   .icon {
     color: var(--color-text-tertiary);
   }
+  .repo-icon {
+    position: relative;
+    display: inline-flex;
+  }
+  /* Hover swaps the repo icon for arrows showing what a click will do. Keyed
+     off the label so the buttons beside it don't trigger it. */
+  .icon-stack {
+    display: grid;
+  }
+  .icon-default,
+  .icon-hover {
+    grid-area: 1 / 1;
+    transition: opacity 150ms ease;
+  }
+  .icon-hover {
+    opacity: 0;
+  }
+  .section-header-label:hover .icon-default,
+  .section-header:focus-visible .icon-default {
+    opacity: 0;
+  }
+  .section-header-label:hover .icon-hover,
+  .section-header:focus-visible .icon-hover {
+    opacity: 1;
+  }
 
   .menu-item {
     display: flex;
@@ -558,7 +657,7 @@
   }
 </style>
 
-{#if seededNotReplicated.length > 0}
+{#if seededNotReplicated.length > 0 && !sidebarCollapsed.value}
   <div
     class="section-header"
     onclick={() => (fetchingExpanded.value = !fetchingExpanded.value)}
@@ -622,7 +721,9 @@
 </div>
 
 <div
+  bind:this={allReposHeaderEl}
   class="section-header"
+  class:mini={sidebarCollapsed.value}
   onclick={() => {
     if (!filterOpen) {
       reposExpanded.value = !reposExpanded.value;
@@ -671,7 +772,31 @@
     </span>
   {:else}
     <span class="section-header-label">
-      <span onclick={e => e.stopPropagation()} role="none">
+      <span class="icon repo-icon" data-flip>
+        <span class="icon-stack">
+          <span class="icon-default"><Icon name="repository" /></span>
+          <span class="icon-hover">
+            <Icon
+              name={reposExpanded.value
+                ? "collapse-vertical"
+                : "expand-vertical"} />
+          </span>
+        </span>
+      </span>
+      <span class="label">All Repos</span>
+      {#if !sidebarCollapsed.value && unpinnedReposCount > 1}
+        <span
+          class="global-counter-badge"
+          in:scale={{ duration: 200, easing: backOut, start: 0 }}
+          out:fade={{ duration: 200 }}>
+          {unpinnedReposCount}
+        </span>
+      {/if}
+    </span>
+  {/if}
+  <span class="section-header-actions">
+    {#if !filterOpen}
+      <span data-flip onclick={e => e.stopPropagation()} role="none">
         <button
           class="filter-button"
           title="Filter repos"
@@ -680,20 +805,15 @@
             filterOpen = true;
             reposExpanded.value = true;
           }}>
-          <span class="icon"><Icon name="filter" /></span>
+          <span class="icon"><Icon name="search" /></span>
         </button>
       </span>
-      All Repos
-      {#if unpinnedReposCount > 1}
-        <span class="global-counter-badge">{unpinnedReposCount}</span>
-      {/if}
-      <span class="icon">
-        <Icon name={reposExpanded.value ? "chevron-down" : "chevron-up"} />
-      </span>
-    </span>
-  {/if}
-  <span class="section-header-actions">
-    <span onclick={e => e.stopPropagation()} role="none">
+    {/if}
+    <span
+      class="add-repo-action"
+      data-flip
+      onclick={e => e.stopPropagation()}
+      role="none">
       <AddRepoButton reload={reloadRepos} {repos} {seededNotReplicated} />
     </span>
   </span>
@@ -707,12 +827,14 @@
     class:context-active={contextMenu?.repo.rid === repo.rid}
     class:dragging={pinned && drag.draggingRid === repo.rid}
     draggable="false"
-    onmousedown={pinned ? e => drag.onMouseDown(e, repo.rid) : undefined}
-    onclick={pinned ? drag.onClick : undefined}
+    onmousedown={pinned && !sidebarCollapsed.value
+      ? e => drag.onMouseDown(e, repo.rid)
+      : undefined}
+    onclick={pinned && !sidebarCollapsed.value ? drag.onClick : undefined}
     oncontextmenu={e => openContextMenu(e, repo)}
     href={router.routeToPath({ resource: "repo.home", rid: repo.rid })}>
     <RepoAvatar name={repo.name} rid={repo.rid} styleWidth="1rem" />
-    <span class="txt-overflow">{repo.name}</span>
+    <span class="txt-overflow label">{repo.name}</span>
     <span
       class="row-actions"
       role="none"
@@ -735,28 +857,32 @@
   </a>
   {#if activeRid() === repo.rid}
     {@const activeProject = activeRepo?.payloads["xyz.radicle.project"]}
-    {@render subItem(
-      router.routeToPath({
-        resource: "repo.issues",
-        rid: repo.rid,
-        status: "open",
-      }),
-      "issue",
-      "Issues",
-      isIssues(repo.rid),
-      activeProject?.meta.issues.open || undefined,
-    )}
-    {@render subItem(
-      router.routeToPath({
-        resource: "repo.patches",
-        rid: repo.rid,
-        status: "open",
-      }),
-      "patch",
-      "Patches",
-      isPatches(repo.rid),
-      activeProject?.meta.patches.open || undefined,
-    )}
+    <div
+      class="sub-items"
+      transition:slide={{ duration: ANIMATION_DURATION_MS }}>
+      {@render subItem(
+        router.routeToPath({
+          resource: "repo.issues",
+          rid: repo.rid,
+          status: "open",
+        }),
+        "issue",
+        "Issues",
+        isIssues(repo.rid),
+        activeProject?.meta.issues.open || undefined,
+      )}
+      {@render subItem(
+        router.routeToPath({
+          resource: "repo.patches",
+          rid: repo.rid,
+          status: "open",
+        }),
+        "patch",
+        "Patches",
+        isPatches(repo.rid),
+        activeProject?.meta.patches.open || undefined,
+      )}
+    </div>
   {/if}
 {/snippet}
 
@@ -767,16 +893,25 @@
   active: boolean,
   count: number | undefined,
 )}
-  <a class="nav-item sub-item" class:active {href}>
+  <a
+    class="nav-item sub-item"
+    class:active
+    class:mini={sidebarCollapsed.value}
+    {href}>
     <span class="icon"><Icon name={icon} /></span>
-    {label}
-    {#if count !== undefined}
-      <span class="global-counter-badge">{count}</span>
+    <span class="label">{label}</span>
+    {#if !sidebarCollapsed.value && count !== undefined}
+      <span
+        class="global-counter-badge"
+        in:scale={{ duration: 200, easing: backOut, start: 0 }}
+        out:fade={{ duration: 200 }}>
+        {count}
+      </span>
     {/if}
   </a>
 {/snippet}
 
-{#if reposExpanded.value}
+{#if reposExpanded.value && !sidebarCollapsed.value}
   <ScrollArea
     style="flex: 1; min-height: 0; mask-image: linear-gradient(to bottom, transparent 0, black 0.5rem, black calc(100% - 0.5rem), transparent 100%);">
     <div class="repos-list">
