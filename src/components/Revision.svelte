@@ -103,6 +103,9 @@
     // revision list can be marked, not just the selected one.
     draftRevisionIds?: string[];
     showingRevisionDiff?: boolean;
+    // Whether the description is being edited, so the view around it can keep
+    // it open rather than collapsing what is being typed.
+    editingDescription?: boolean;
     // Review ids (and `STANDALONE_COMMENTS`) whose code comments are
     // hidden from the diff.
     hiddenCommentSources?: string[];
@@ -132,6 +135,7 @@
     draftReviewId,
     draftRevisionIds = [],
     showingRevisionDiff = $bindable(true),
+    editingDescription = $bindable(false),
     hiddenCommentSources = [],
     filesExpanded = $bindable(true),
     onViewChanges,
@@ -1016,8 +1020,6 @@
       );
     }) as Thread[],
   );
-
-  let editingDescription = $state(false);
 
   async function editRevision(
     description: string,

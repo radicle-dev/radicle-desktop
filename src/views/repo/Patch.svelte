@@ -282,8 +282,11 @@
   let descriptionExpanded = $state(false);
   let descriptionEl = $state<HTMLElement>();
   let descriptionOverflows = $state(false);
+  let descriptionEditing = $state(false);
+  // Editing keeps the description open: collapsing it would hide part of what
+  // is being written, and the height is the editor's rather than the text's.
   const descriptionCollapsed = $derived(
-    descriptionOverflows && !descriptionExpanded,
+    descriptionOverflows && !descriptionExpanded && !descriptionEditing,
   );
   $effect(() => {
     const el = descriptionEl;
@@ -1578,9 +1581,10 @@
                       {loadPatch}
                       revision={revisions[0]}
                       {config}
-                      view="description" />
+                      view="description"
+                      bind:editingDescription={descriptionEditing} />
                   </div>
-                  {#if descriptionOverflows}
+                  {#if descriptionOverflows && !descriptionEditing}
                     <div class="patch-description-toggle">
                       <button
                         type="button"
