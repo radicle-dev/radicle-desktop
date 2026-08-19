@@ -1106,18 +1106,32 @@
     align-items: center;
     gap: 0.125rem;
   }
+  /* A fixed square rather than padding around whatever is nested inside: the
+     reaction trigger sits in a block wrapper, so its icon forms a line box and
+     took the leading with it, making the button taller than the edit one. */
   .body-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex: none;
+    width: 1.5rem;
+    height: 1.5rem;
     background: none;
     border: none;
-    padding: 0.25rem;
+    padding: 0;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
     color: var(--color-text-tertiary);
     opacity: 0;
     transition: opacity 150ms ease;
+  }
+  /* The trigger brings its own padding, colour and hover fill; the body action
+     around it already provides all three. */
+  .body-action :global(.global-icon-button) {
+    display: flex;
+    padding: 0;
+    color: inherit;
+    background-color: transparent;
   }
   .patch-body:hover .body-action,
   .patch-body:focus-within .body-action,
