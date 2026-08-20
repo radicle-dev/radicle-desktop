@@ -20,7 +20,7 @@
   let {
     hasItems = true,
     placeholder,
-    icon = "filter",
+    icon = "search",
     show = $bindable(),
     value = $bindable(),
     onFocus,
@@ -63,8 +63,9 @@
         variant="naked"
         {styleHeight}
         keyShortcuts="ctrl+f"
+        title={placeholder}
         onclick={() => (show = true)}>
-        <Icon name="filter" />
+        <Icon name={icon} />
       </Button>
     </div>
   {/if}

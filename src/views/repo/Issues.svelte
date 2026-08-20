@@ -236,8 +236,8 @@
       <div class="global-flex" style:margin-left="auto" style:gap="0.5rem">
         <FuzzySearch
           hasItems={list.items.length > 0}
-          placeholder={`Fuzzy filter issues ${modifierKey()} + f`}
-          icon={loading ? "clock" : "filter"}
+          placeholder={`Search issues ${modifierKey()} + f`}
+          icon={loading ? "clock" : "search"}
           onFocus={async () => {
             try {
               loading = true;

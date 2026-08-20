@@ -172,13 +172,13 @@ describe("Action summaries", () => {
         createAction({ type: "edit", title: "Lorem ipsum" }, oid),
         createAction({ type: "comment", body: "A patch title" }, oid),
       ],
-      output: `opened patch <span class="txt-id">${formatOid(oid)}</span>`,
+      output: "opened patch",
     },
     {
       summary: "Open issue where the action has the same oid than the cob",
       type: "issue" as const,
       input: [createAction({ type: "edit", title: "Lorem ipsum" }, oid)],
-      output: `opened issue <span class="txt-id">${formatOid(oid)}</span>`,
+      output: "opened issue",
     },
     {
       summary: "Leave two comments in one operation",

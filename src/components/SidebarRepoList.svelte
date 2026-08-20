@@ -20,6 +20,12 @@
     !window.localStorage,
   );
 
+  // The order the sidebar lists repositories in: pinned ones first, in the
+  // order the user dragged them into.
+  export function sidebarPinOrder(): string[] {
+    return pinnedRepoIds.value;
+  }
+
   export function revealRepoInSidebar(rid: string) {
     if (pinnedRepoIds.value.includes(rid)) return;
 

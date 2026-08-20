@@ -19,6 +19,7 @@ pub fn list_notifications(
 ) -> Result<notification::NotificationsByRepoList, Error> {
     let profile = &ctx.profile;
     let aliases = profile.aliases();
+    let me = profile.did();
     let repos_with_groups = sqlite_service.repo_group(params.clone())?;
 
     let mut repo_counts = std::collections::HashMap::new();
@@ -111,6 +112,10 @@ pub fn list_notifications(
                                                 status: (p.state().clone()).into(),
                                                 actions,
                                                 repo_id: Some(repo_id),
+                                                relevance: notification::Relevance::for_patch(
+                                                    &p, &me,
+                                                ),
+                                                revision_names: notification::revision_names(&p),
                                             },
                                         )),
                                         Ok(None) => {
@@ -144,6 +149,9 @@ pub fn list_notifications(
                                                 status: (*i.state()).into(),
                                                 actions,
                                                 repo_id: Some(repo_id),
+                                                relevance: notification::Relevance::for_issue(
+                                                    &i, &me,
+                                                ),
                                             },
                                         )),
                                         Ok(None) => {
