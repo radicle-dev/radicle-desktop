@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "name": "Infrastructure",
+  "description": "Garden and seed nodes",
+  "members": [
+    "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK",
+    "did:key:z6MktaNvN1KVFMkSRAiN4qK5yvX1zuEEaseeX5sffhzPZRZW"
+  ],
+  "repos": [
+    "rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5",
+    "rad:zhbMU4DUXrzB8xT6qAJh6yZ7bFMK"
+  ]
+}
