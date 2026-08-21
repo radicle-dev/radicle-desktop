@@ -1,6 +1,9 @@
 <script lang="ts">
   import type { ComponentProps } from "svelte";
 
+  import { modalStore } from "@app/lib/modal";
+  import { isMac, isTyping } from "@app/lib/utils";
+
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import TextInput from "@app/components/TextInput.svelte";
@@ -20,7 +23,7 @@
   let {
     hasItems = true,
     placeholder,
-    icon = "filter",
+    icon = "search",
     show = $bindable(),
     value = $bindable(),
     onFocus,
@@ -28,7 +31,23 @@
     styleHeight = "2rem",
   }: Props = $props();
   /* eslint-enable prefer-const */
+
+  function handleKeydown(event: KeyboardEvent) {
+    const auxiliarKey = isMac() ? event.metaKey : event.ctrlKey;
+    if (
+      auxiliarKey &&
+      event.key.toLowerCase() === "f" &&
+      hasItems &&
+      $modalStore === undefined &&
+      !isTyping(event.target)
+    ) {
+      event.preventDefault();
+      show = true;
+    }
+  }
 </script>
+
+<svelte:window onkeydown={handleKeydown} />
 
 {#if hasItems}
   {#if show}
@@ -64,7 +83,7 @@
         {styleHeight}
         keyShortcuts="ctrl+f"
         onclick={() => (show = true)}>
-        <Icon name="filter" />
+        <Icon name={icon} />
       </Button>
     </div>
   {/if}

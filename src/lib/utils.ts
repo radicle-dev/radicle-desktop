@@ -231,6 +231,14 @@ export function modifierKey() {
   return isMac() ? "⌘" : "ctrl";
 }
 
+export function isTyping(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+  const tag = target.tagName.toLowerCase();
+  return tag === "input" || tag === "textarea" || target.isContentEditable;
+}
+
 export function parseNodeId(
   nid: string,
 ): { prefix: string; pubkey: string } | undefined {

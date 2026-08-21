@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { fade } from "svelte/transition";
+
   import { hide, modalStore } from "@app/lib/modal";
 </script>
 
@@ -33,6 +35,7 @@
       role="button"
       tabindex="0"
       class="overlay"
+      transition:fade={{ duration: 120 }}
       onclick={$modalStore.disableScrimClose ? undefined : hide}
       style:cursor={$modalStore.disableHide ? "not-allowed" : "default"}>
     </div>

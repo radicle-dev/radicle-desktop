@@ -253,7 +253,7 @@
       </div>
       <div class="filter-search" class:expanded={showSearch}>
         <FuzzySearch
-          placeholder={`Fuzzy filter notifications ${modifierKey()} + f`}
+          placeholder={`Search notifications ${modifierKey()} + f`}
           bind:show={showSearch}
           bind:value={searchInput} />
       </div>

@@ -18,14 +18,14 @@
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
-  import { hide, toggle } from "@app/lib/modal";
+  import { hide, modalStore, show, toggle } from "@app/lib/modal";
   import * as router from "@app/lib/router";
   import { isLoadedRepoRoute } from "@app/lib/router/definitions";
   import {
     setUnlistenNodeEvents,
     unlistenNodeEvents,
   } from "@app/lib/startup.svelte";
-  import { isMac, unreachable } from "@app/lib/utils";
+  import { isMac, isTyping, unreachable } from "@app/lib/utils";
 
   import AppSidebar from "@app/components/AppSidebar.svelte";
   import { codeFont } from "@app/components/CodeFontSwitch.svelte";
@@ -34,7 +34,9 @@
     loadTheme,
     theme,
   } from "@app/components/ThemeSwitch.svelte";
+  import CreateIssueModal from "@app/modals/CreateIssue.svelte";
   import GuideView from "@app/modals/Guide.svelte";
+  import KeyboardShortcutsModal from "@app/modals/KeyboardShortcuts.svelte";
   import SettingsView from "@app/modals/Settings.svelte";
   import Auth from "@app/views/auth/Auth.svelte";
   import CreateIdentity from "@app/views/auth/CreateIdentity.svelte";
@@ -171,7 +173,12 @@
     const plusKey = e.key === "1" || e.key === "=";
     if (e.key === "Escape") {
       hide();
-    } else if (auxiliarKey && (e.key === "+" || plusKey)) {
+      return;
+    }
+    if (isTyping(e.target)) {
+      return;
+    }
+    if (auxiliarKey && (e.key === "+" || plusKey)) {
       increaseFontSize();
     } else if (auxiliarKey && e.key === "-") {
       decreaseFontSize();
@@ -180,6 +187,25 @@
     } else if (auxiliarKey && e.key === ",") {
       e.preventDefault();
       toggle({ component: SettingsView, props: {} });
+    } else if (e.key === "?" && !auxiliarKey && !e.altKey) {
+      // Only toggle our own modal, so an open modal isn't replaced from
+      // under the user.
+      const open = $modalStore?.component;
+      if (open === undefined || open === KeyboardShortcutsModal) {
+        e.preventDefault();
+        toggle({ component: KeyboardShortcutsModal, props: {} });
+      }
+    } else if (
+      auxiliarKey &&
+      e.key.toLowerCase() === "n" &&
+      activeRepo &&
+      $modalStore === undefined
+    ) {
+      const resource = $activeRouteStore.resource;
+      if (resource === "repo.issues" || resource === "repo.issue") {
+        e.preventDefault();
+        show({ component: CreateIssueModal, props: { repo: activeRepo } });
+      }
     }
   }} />
 <FullscreenModalPortal />
