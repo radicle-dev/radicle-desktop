@@ -3,6 +3,7 @@ import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { Review } from "@bindings/cob/patch/Review";
 import type { Config } from "@bindings/config/Config";
+import type { RepoSummary } from "@bindings/repo/RepoSummary";
 import type { ComponentProps } from "svelte";
 
 import bs58 from "bs58";
@@ -11,6 +12,10 @@ import md5 from "md5";
 import twemojiModule from "twemoji";
 
 import NodeId from "@app/components/NodeId.svelte";
+
+export function isTeamRepo(repos: RepoSummary[], rid: string): boolean {
+  return repos.find(repo => repo.rid === rid)?.isTeam ?? false;
+}
 
 export const unreachable = (value: never): never => {
   throw new Error(`Unreachable code: ${value}`);

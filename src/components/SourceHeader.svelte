@@ -3,10 +3,12 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { RepoRefs } from "@bindings/repo/RepoRefs";
+  import type { Blob } from "@bindings/source/Blob";
   import type { Snippet } from "svelte";
 
   import { cachedRepoCommitCount, invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
+  import { parseTeam } from "@app/lib/team";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -20,12 +22,22 @@
     oid: string;
     commit?: Commit;
     baseRoute: SourceBaseRoute;
-    active: "files" | "commits";
+    active: "files" | "commits" | "repos" | "members";
+    isTeam?: boolean;
     extra?: Snippet;
   }
 
-  const { repo, peer, revision, oid, commit, baseRoute, active, extra }: Props =
-    $props();
+  const {
+    repo,
+    peer,
+    revision,
+    oid,
+    commit,
+    baseRoute,
+    active,
+    isTeam = false,
+    extra,
+  }: Props = $props();
 
   // The commit count requires a full history walk on the backend, so it is
   // fetched after render instead of blocking navigation. The key guard keeps
@@ -52,6 +64,47 @@
           commitCountKey = undefined;
         }
         console.error("Failed to load commit count", error);
+      });
+  });
+
+  // Team tab counts come from the team manifest, which is not loaded by the
+  // source views, so fetch it after render for team repos only. Same keyed
+  // guard as the commit count; a missing/invalid manifest simply leaves the
+  // counts unset (no badge), never logs.
+  let teamRepoCount: number | undefined = $state();
+  let teamMemberCount: number | undefined = $state();
+  let teamCountKey: string | undefined;
+
+  $effect(() => {
+    if (!isTeam) {
+      return;
+    }
+    const requested = `${repo.rid}:${oid}`;
+    if (teamCountKey === requested) {
+      return;
+    }
+    teamCountKey = requested;
+    teamRepoCount = undefined;
+    teamMemberCount = undefined;
+    void invoke<Blob>("repo_blob", {
+      rid: repo.rid,
+      path: ".radicle/team.json",
+      sha: oid,
+    })
+      .then(blob => {
+        if (teamCountKey !== requested) {
+          return;
+        }
+        const team = parseTeam(blob.content);
+        if (team.status === "ok") {
+          teamRepoCount = team.team.repos.length;
+          teamMemberCount = team.team.members.length;
+        }
+      })
+      .catch(() => {
+        if (teamCountKey === requested) {
+          teamCountKey = undefined;
+        }
       });
   });
 
@@ -164,6 +217,32 @@
         <span class="global-counter-badge">{commitCount}</span>
       {/if}
     </a>
+    {#if isTeam}
+      <a
+        class="tab"
+        class:active={active === "repos"}
+        href={router.routeToPath({
+          resource: "repo.team.repos",
+          rid: repo.rid,
+        })}>
+        <Icon name="repository" />Repos
+        {#if teamRepoCount !== undefined}
+          <span class="global-counter-badge">{teamRepoCount}</span>
+        {/if}
+      </a>
+      <a
+        class="tab"
+        class:active={active === "members"}
+        href={router.routeToPath({
+          resource: "repo.team.members",
+          rid: repo.rid,
+        })}>
+        <Icon name="avatar-incognito" />Members
+        {#if teamMemberCount !== undefined}
+          <span class="global-counter-badge">{teamMemberCount}</span>
+        {/if}
+      </a>
+    {/if}
   </div>
 
   {#if extra}

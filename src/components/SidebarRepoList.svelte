@@ -13,6 +13,13 @@
     !window.localStorage,
   );
 
+  const teamsExpanded = useLocalStorage(
+    "sidebarTeamsExpanded",
+    boolean(),
+    true,
+    !window.localStorage,
+  );
+
   const pinnedRepoIds = useLocalStorage(
     "sidebarPinnedRepos",
     array(string()),
@@ -151,8 +158,18 @@
     filteredRepos.filter(r => !pinnedRepoIds.value.includes(r.rid)),
   );
 
+  const teamRepos = $derived(unpinnedFilteredRepos.filter(r => r.isTeam));
+
+  const nonTeamUnpinnedRepos = $derived(
+    unpinnedFilteredRepos.filter(r => !r.isTeam),
+  );
+
+  const teamsCount = $derived(
+    repos.filter(r => !pinnedRepoIds.value.includes(r.rid) && r.isTeam).length,
+  );
+
   const unpinnedReposCount = $derived(
-    repos.filter(r => !pinnedRepoIds.value.includes(r.rid)).length,
+    repos.filter(r => !pinnedRepoIds.value.includes(r.rid) && !r.isTeam).length,
   );
 
   const ANIMATION_DURATION_MS = 220;
@@ -538,6 +555,43 @@
   {/each}
 </div>
 
+{#if teamRepos.length > 0}
+  <div
+    class="section-header"
+    onclick={() => (teamsExpanded.value = !teamsExpanded.value)}
+    role="button"
+    tabindex="0"
+    onkeydown={e => {
+      if (e.key === "Enter" || e.key === " ") {
+        teamsExpanded.value = !teamsExpanded.value;
+      }
+    }}>
+    <span class="section-header-label">
+      Teams
+      {#if teamsCount > 1}
+        <span class="global-counter-badge">{teamsCount}</span>
+      {/if}
+      <span class="icon">
+        <Icon name={teamsExpanded.value ? "chevron-down" : "chevron-up"} />
+      </span>
+    </span>
+  </div>
+
+  {#if teamsExpanded.value}
+    <div class="repos-list">
+      {#each teamRepos as repo (repo.rid)}
+        <div
+          class="repo-row-group"
+          animate:flip={{ duration: animationDuration }}
+          in:receive={{ key: repo.rid, duration: animationDuration }}
+          out:send={{ key: repo.rid, duration: animationDuration }}>
+          {@render repoRowInner(repo, false)}
+        </div>
+      {/each}
+    </div>
+  {/if}
+{/if}
+
 <div
   class="section-header"
   onclick={() => {
@@ -697,7 +751,7 @@
   <ScrollArea
     style="flex: 1; min-height: 0; mask-image: linear-gradient(to bottom, transparent 0, black 0.5rem, black calc(100% - 0.5rem), transparent 100%);">
     <div class="repos-list">
-      {#each unpinnedFilteredRepos as repo (repo.rid)}
+      {#each nonTeamUnpinnedRepos as repo (repo.rid)}
         <div
           class="repo-row-group"
           data-unpinned-rid={repo.rid}

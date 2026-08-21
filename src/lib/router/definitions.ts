@@ -11,6 +11,8 @@ import {
   loadRepoCommit,
   loadRepoCommits,
   loadRepoHome,
+  loadRepoTeamMembers,
+  loadRepoTeamRepos,
 } from "@app/views/repo/router";
 
 import { cachedListReposSummary, invoke } from "@app/lib/invoke";
@@ -58,6 +60,8 @@ export function isLoadedRepoRoute(
     route.resource === "repo.home" ||
     route.resource === "repo.commits" ||
     route.resource === "repo.commit" ||
+    route.resource === "repo.team.repos" ||
+    route.resource === "repo.team.members" ||
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||
     route.resource === "repo.patch" ||
@@ -108,6 +112,10 @@ export async function loadRoute(
     return loadRepoCommits(route);
   } else if (route.resource === "repo.commit") {
     return loadRepoCommit(route);
+  } else if (route.resource === "repo.team.repos") {
+    return loadRepoTeamRepos(route);
+  } else if (route.resource === "repo.team.members") {
+    return loadRepoTeamMembers(route);
   } else if (route.resource === "repo.issue") {
     return loadIssue(route);
   } else if (route.resource === "repo.issues") {
