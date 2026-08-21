@@ -18,6 +18,8 @@ pub struct RepoSummary {
     #[ts(as = "String")]
     pub rid: identity::RepoId,
     pub name: String,
+    pub description: String,
+    pub is_team: bool,
 }
 
 #[derive(Serialize, TS)]
