@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://radicle.dev/RIP-XXXX/team.schema.json",
+  "title": "Radicle team",
+  "description": "Contents of .radicle/team.json on the default branch of a team repository. One repository describes exactly one team. The repository's RID is the team's identifier; its delegates are the team's admins.",
+  "type": "object",
+  "required": [
+    "version",
+    "name",
+    "members",
+    "repos"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "description": "Schema version, not the team's version. Incremented only on breaking changes. A consumer that does not understand this value must refuse to interpret the file rather than parse it partially.",
+      "type": "integer",
+      "const": 1
+    },
+    "name": {
+      "description": "Display name of the team.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255
+    },
+    "description": {
+      "description": "Short summary of the team. Long form content belongs in .radicle/profile/README.md.",
+      "type": "string",
+      "maxLength": 1024
+    },
+    "members": {
+      "description": "DIDs of the team's members. Membership is a claim by whoever controls this repository and grants no access to anything.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/did"
+      },
+      "uniqueItems": true,
+      "maxItems": 1024
+    },
+    "repos": {
+      "description": "RIDs of the repositories associated with the team. Association is a claim and does not require the repository's consent.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rid"
+      },
+      "uniqueItems": true,
+      "maxItems": 4096
+    }
+  },
+  "$defs": {
+    "did": {
+      "description": "The lexical form of a canonical Radicle peer identifier: did:key: followed by a 48 character base58btc value beginning z6Mk. The pattern rejects the encodings used by other standard key types, but it does not prove that the decoded multicodec is ed25519-pub; consumers must decode the value for conformance.",
+      "type": "string",
+      "pattern": "^did:key:z6Mk[1-9a-km-zA-HJ-NP-Z]{44}$",
+      "examples": [
+        "did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"
+      ]
+    },
+    "rid": {
+      "description": "A repository identifier: rad: followed by a multibase base58btc encoding (leading z) of a Git object identifier. Bounded to the SHA-1 object format, the only one Radicle defines today; a new object format will require a new bound.",
+      "type": "string",
+      "examples": [
+        "rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5"
+      ],
+      "pattern": "^rad:z[1-9a-km-zA-HJ-NP-Z]{20,28}$"
+    }
+  }
+}

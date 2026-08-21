@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "name": "hdh.me",
+  "description": "Everything belonging to hdh.me",
+  "members": ["did:key:z6MkhaXgBZDvotDkL5257faiztiGiC2QtKLGpbnnEGta2doK"],
+  "repos": ["rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5"],
+  "dns": {
+    "txt": "hdh.me"
+  },
+  "nodes": ["z6MkkfM3tPXNPrPevKr3uSiQtHPuwnNhu2yUVjgd2jXVsVz5"]
+}

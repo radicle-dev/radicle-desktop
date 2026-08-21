@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "name": "From the future",
+  "members": [],
+  "repos": [],
+  "policy": {
+    "roles": ["maintainer"]
+  }
+}

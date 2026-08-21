@@ -3,3 +3,5 @@ arch/radicle-desktop.git
 crates
 *.md
 *.lock
+schemas/team.schema.json
+schemas/teams-payload.schema.json
