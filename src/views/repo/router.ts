@@ -12,15 +12,19 @@ import type { Diff } from "@bindings/diff/Diff";
 import type { Commit } from "@bindings/repo/Commit";
 import type { Readme } from "@bindings/repo/Readme";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
+import type { Blob } from "@bindings/source/Blob";
 import type { Tree } from "@bindings/source/Tree";
 
 import {
   cachedGetCommitDiff,
   cachedGetDiffText,
   invoke,
+  InvokeError,
 } from "@app/lib/invoke";
 import type { LoadedRoute, SidebarData } from "@app/lib/router/definitions";
 import { loadSidebarData } from "@app/lib/router/definitions";
+import type { TeamParseResult } from "@app/lib/team";
+import { parseTeam } from "@app/lib/team";
 import { unreachable } from "@app/lib/utils";
 
 export type IssueStatus = "all" | Issue["state"]["status"];
@@ -43,6 +47,42 @@ export interface RepoCommitsRoute {
 }
 
 export type SourceBaseRoute = RepoHomeRoute | RepoCommitsRoute;
+
+export interface RepoTeamReposRoute {
+  resource: "repo.team.repos";
+  rid: string;
+}
+
+export interface RepoTeamMembersRoute {
+  resource: "repo.team.members";
+  rid: string;
+}
+
+export interface LoadedRepoTeamReposRoute {
+  resource: "repo.team.repos";
+  params: {
+    repo: RepoInfo;
+    oid: string;
+    commit: Commit;
+    peer?: string;
+    revision?: string;
+    team: TeamParseResult;
+    sidebarData: SidebarData;
+  };
+}
+
+export interface LoadedRepoTeamMembersRoute {
+  resource: "repo.team.members";
+  params: {
+    repo: RepoInfo;
+    oid: string;
+    commit: Commit;
+    peer?: string;
+    revision?: string;
+    team: TeamParseResult;
+    sidebarData: SidebarData;
+  };
+}
 
 export interface RepoCommitRoute {
   resource: "repo.commit";
@@ -172,6 +212,8 @@ export type RepoRoute =
   | RepoHomeRoute
   | RepoCommitsRoute
   | RepoCommitRoute
+  | RepoTeamReposRoute
+  | RepoTeamMembersRoute
   | RepoIssueRoute
   | RepoIssuesRoute
   | RepoPatchRoute
@@ -180,6 +222,8 @@ export type LoadedRepoRoute =
   | LoadedRepoHomeRoute
   | LoadedRepoCommitsRoute
   | LoadedRepoCommitRoute
+  | LoadedRepoTeamReposRoute
+  | LoadedRepoTeamMembersRoute
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
   | LoadedRepoPatchRoute
@@ -328,6 +372,28 @@ async function loadSourceContext(route: {
   };
 }
 
+// For a team repo, the Files tab defaults to the profile README, falling back
+// to the team manifest. Returns a Readme-shaped blob so RepoHome renders it as
+// the initial file: markdown for the README, plain JSON for the manifest.
+async function loadTeamDefaultBlob(
+  route: RepoHomeRoute,
+  oid: string,
+): Promise<Readme | null> {
+  for (const path of [".radicle/profile/README.md", ".radicle/team.json"]) {
+    try {
+      const blob = await invoke<Blob>("repo_blob", {
+        rid: route.rid,
+        path,
+        sha: oid,
+      });
+      return { ...blob, path };
+    } catch {
+      // Path not present; try the next candidate.
+    }
+  }
+  return null;
+}
+
 export async function loadRepoHome(
   route: RepoHomeRoute,
 ): Promise<LoadedRepoHomeRoute> {
@@ -346,13 +412,67 @@ export async function loadRepoHome(
     }),
   ]);
 
+  const isTeam =
+    context.sidebarData.repos.find(r => r.rid === route.rid)?.isTeam ?? false;
+
+  const readmeOrManifest = isTeam
+    ? ((await loadTeamDefaultBlob(route, context.oid)) ?? readme)
+    : readme;
+
   return {
     resource: "repo.home",
     params: {
       ...context,
-      readme,
+      readme: readmeOrManifest,
       tree,
     },
+  };
+}
+
+async function loadTeamManifest(
+  rid: string,
+  oid: string,
+): Promise<TeamParseResult> {
+  try {
+    const blob = await invoke<Blob>("repo_blob", {
+      rid,
+      path: ".radicle/team.json",
+      sha: oid,
+    });
+    return parseTeam(blob.content);
+  } catch (error) {
+    // A missing path and a real backend failure both surface as a thrown
+    // InvokeError with no distinct "not found" code, so we cannot claim the
+    // file is simply absent — surface the actual error instead of masking it.
+    return {
+      status: "invalid",
+      message:
+        error instanceof InvokeError
+          ? error.message
+          : "Could not read the team file.",
+    };
+  }
+}
+
+export async function loadRepoTeamRepos(
+  route: RepoTeamReposRoute,
+): Promise<LoadedRepoTeamReposRoute> {
+  const context = await loadSourceContext(route);
+  const team = await loadTeamManifest(route.rid, context.oid);
+  return {
+    resource: "repo.team.repos",
+    params: { ...context, team },
+  };
+}
+
+export async function loadRepoTeamMembers(
+  route: RepoTeamMembersRoute,
+): Promise<LoadedRepoTeamMembersRoute> {
+  const context = await loadSourceContext(route);
+  const team = await loadTeamManifest(route.rid, context.oid);
+  return {
+    resource: "repo.team.members",
+    params: { ...context, team },
   };
 }
 
@@ -486,6 +606,10 @@ export function repoRouteToPath(route: RepoRoute): string {
     return segments.join("/");
   } else if (route.resource === "repo.commit") {
     return [...pathSegments, "commits", route.commit].join("/");
+  } else if (route.resource === "repo.team.repos") {
+    return [...pathSegments, "team", "repos"].join("/");
+  } else if (route.resource === "repo.team.members") {
+    return [...pathSegments, "team", "members"].join("/");
   } else if (route.resource === "repo.issue") {
     let url = [...pathSegments, "issues", route.issue].join("/");
     searchParams.set("status", route.status);
@@ -561,6 +685,15 @@ export function repoUrlToRoute(
         peer,
         revision: segments.join("/"),
       };
+    } else if (resource === "team") {
+      const sub = segments.shift();
+      if (sub === "repos") {
+        return { resource: "repo.team.repos", rid };
+      }
+      if (sub === "members") {
+        return { resource: "repo.team.members", rid };
+      }
+      return null;
     } else if (resource === "issues") {
       const idOrAction = segments.shift();
       if (idOrAction) {

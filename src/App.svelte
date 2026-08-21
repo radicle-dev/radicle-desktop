@@ -47,6 +47,8 @@
   import RepoCommit from "@app/views/repo/RepoCommit.svelte";
   import RepoCommits from "@app/views/repo/RepoCommits.svelte";
   import RepoHome from "@app/views/repo/RepoHome.svelte";
+  import RepoTeamMembers from "@app/views/repo/RepoTeamMembers.svelte";
+  import RepoTeamRepos from "@app/views/repo/RepoTeamRepos.svelte";
 
   import Command from "./components/Command.svelte";
   import ExternalLink from "./components/ExternalLink.svelte";
@@ -207,6 +209,10 @@
         <RepoCommits {...$activeRouteStore.params} />
       {:else if $activeRouteStore.resource === "repo.commit"}
         <RepoCommit {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.team.repos"}
+        <RepoTeamRepos {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.team.members"}
+        <RepoTeamMembers {...$activeRouteStore.params} />
       {:else if $activeRouteStore.resource === "repo.issue"}
         <Issue {...$activeRouteStore.params} />
       {:else if $activeRouteStore.resource === "repo.issues"}

@@ -12,6 +12,7 @@
   import { invoke, InvokeError } from "@app/lib/invoke";
   import type { SidebarData } from "@app/lib/router/definitions";
   import { highlight } from "@app/lib/syntax";
+  import { isTeamRepo } from "@app/lib/utils";
 
   import FileBlock from "@app/components/FileBlock.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -47,6 +48,8 @@
     peer,
     revision,
   });
+
+  const isTeam = $derived(isTeamRepo(sidebarData.repos, repo.rid));
 
   let currentPath = $state("");
   let codeElement: HTMLElement | undefined = $state();
@@ -152,6 +155,7 @@
       {oid}
       {commit}
       {baseRoute}
+      {isTeam}
       active="files" />
     <div
       style:display="grid"
