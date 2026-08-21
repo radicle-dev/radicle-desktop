@@ -4,7 +4,6 @@
   import type { DiffOptions } from "@app/lib/diffOptions.svelte";
   import { diffOptions } from "@app/lib/diffOptions.svelte";
   import { hints } from "@app/lib/hints";
-  import { hide } from "@app/lib/modal";
   import { updateChecker } from "@app/lib/updateChecker.svelte";
   import { pluralize } from "@app/lib/utils";
 
@@ -70,7 +69,6 @@
   .header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 0 1.5rem;
     height: 3.25rem;
     flex-shrink: 0;
@@ -119,11 +117,6 @@
 <div class="modal">
   <div class="header">
     <span class="title">Settings</span>
-    <Button variant="naked" onclick={hide}>
-      <span style:color="var(--color-text-tertiary)">
-        <Icon name="close" />
-      </span>
-    </Button>
   </div>
   <div class="rows">
     <div class="row">
