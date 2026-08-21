@@ -1,3 +1,17 @@
+<script lang="ts" module>
+  let openActive: (() => void) | undefined;
+
+  // Opens and focuses the search of the list on screen. Returns false when
+  // there is none, or it has nothing to search.
+  export function openListSearch(): boolean {
+    if (openActive === undefined) {
+      return false;
+    }
+    openActive();
+    return true;
+  }
+</script>
+
 <script lang="ts">
   import type { ComponentProps } from "svelte";
 
@@ -20,7 +34,7 @@
   let {
     hasItems = true,
     placeholder,
-    icon = "filter",
+    icon = "search",
     show = $bindable(),
     value = $bindable(),
     onFocus,
@@ -28,12 +42,35 @@
     styleHeight = "2rem",
   }: Props = $props();
   /* eslint-enable prefer-const */
+
+  function open() {
+    show = true;
+    // Mounting autofocuses the input, but it may already be open and blurred.
+    requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLInputElement>('input[name="list-search"]')
+        ?.focus({ preventScroll: true });
+    });
+  }
+
+  $effect(() => {
+    if (!hasItems) {
+      return;
+    }
+    openActive = open;
+    return () => {
+      if (openActive === open) {
+        openActive = undefined;
+      }
+    };
+  });
 </script>
 
 {#if hasItems}
   {#if show}
     <TextInput
       autofocus
+      name="list-search"
       {onFocus}
       {onSubmit}
       onBlur={() => {
@@ -64,7 +101,7 @@
         {styleHeight}
         keyShortcuts="ctrl+f"
         onclick={() => (show = true)}>
-        <Icon name="filter" />
+        <Icon name={icon} />
       </Button>
     </div>
   {/if}

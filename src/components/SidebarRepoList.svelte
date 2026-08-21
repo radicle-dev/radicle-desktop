@@ -1,4 +1,6 @@
 <script lang="ts" module>
+  import type { RepoSummary } from "@bindings/repo/RepoSummary";
+
   import { array, boolean, string } from "zod";
 
   import useLocalStorage from "@app/lib/useLocalStorage.svelte";
@@ -20,6 +22,49 @@
     !window.localStorage,
   );
 
+  // The list as currently rendered, which the sidebar refreshes on its own,
+  // so it can be newer than the route's sidebar data.
+  let liveRepos: RepoSummary[] | undefined;
+
+  function pinnedFrom(repos: RepoSummary[]): RepoSummary[] {
+    const byRid = new Map(repos.map(r => [r.rid, r]));
+    return pinnedRepoIds.value
+      .map(rid => byRid.get(rid))
+      .filter((r): r is RepoSummary => r !== undefined);
+  }
+
+  // The sidebar's top-to-bottom order: pinned repos first, in the order they
+  // were pinned, then the rest. Exported so that the Cmd+1..9 shortcuts land
+  // on the same rows the user is looking at. Deliberately ignores the filter
+  // query, which is transient, so the numbering stays put while typing in it.
+  // Falls back to the given repos while the sidebar isn't mounted.
+  export function sidebarRepoOrder(fallback: RepoSummary[]): RepoSummary[] {
+    return orderRepos(liveRepos ?? fallback);
+  }
+
+  function orderRepos(repos: RepoSummary[]): RepoSummary[] {
+    return pinnedFrom(repos).concat(
+      repos.filter(r => !pinnedRepoIds.value.includes(r.rid)),
+    );
+  }
+
+  export function openRepoFilter() {
+    filterOpen = true;
+    reposExpanded.value = true;
+    // Opening already focuses the input, but not when it was open and blurred.
+    requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLInputElement>("[data-repo-filter]")
+        ?.focus({ preventScroll: true });
+    });
+  }
+
+  export function isRepoFilter(target: EventTarget | null): boolean {
+    return (
+      target instanceof HTMLElement && target.hasAttribute("data-repo-filter")
+    );
+  }
+
   export function revealRepoInSidebar(rid: string) {
     if (pinnedRepoIds.value.includes(rid)) return;
 
@@ -39,7 +84,6 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
-  import type { RepoSummary } from "@bindings/repo/RepoSummary";
   import type { CrossfadeParams } from "svelte/transition";
 
   import { onMount, untrack } from "svelte";
@@ -66,6 +110,7 @@
     explorerHost,
     explorerUrl,
     formatRepositoryId,
+    isMac,
   } from "@app/lib/utils";
 
   import AddRepoButton from "@app/components/AddRepoButton.svelte";
@@ -97,6 +142,24 @@
   let seededNotReplicated: string[] = $derived(initialSeededNotReplicated);
   let filterInputElement: HTMLInputElement | undefined = $state(undefined);
 
+  const shortcutNumbers = $derived(
+    new Map(
+      orderRepos(repos)
+        .slice(0, 9)
+        .map((r, i) => [r.rid, i + 1]),
+    ),
+  );
+
+  let showShortcutNumbers = $state(false);
+
+  function isShortcutModifier(e: KeyboardEvent): boolean {
+    return e.key === (isMac() ? "Meta" : "Control");
+  }
+
+  function hideShortcutNumbers() {
+    showShortcutNumbers = false;
+  }
+
   let contextMenu = $state<
     { x: number; y: number; repo: RepoSummary; target: HTMLElement } | undefined
   >(undefined);
@@ -115,6 +178,13 @@
   function closeContextMenu() {
     contextMenu = undefined;
   }
+
+  $effect(() => {
+    liveRepos = repos;
+    return () => {
+      liveRepos = undefined;
+    };
+  });
 
   $effect(() => {
     if (filterOpen && filterInputElement) {
@@ -158,12 +228,7 @@
     !window.localStorage,
   );
 
-  const pinnedRepos = $derived.by(() => {
-    const byRid = new Map(repos.map(r => [r.rid, r]));
-    return pinnedRepoIds.value
-      .map(rid => byRid.get(rid))
-      .filter((r): r is RepoSummary => r !== undefined);
-  });
+  const pinnedRepos = $derived.by(() => pinnedFrom(repos));
 
   const unpinnedFilteredRepos = $derived(
     filteredRepos.filter(r => !pinnedRepoIds.value.includes(r.rid)),
@@ -715,6 +780,27 @@
   :global(.view.mini) .nav-item.context-active .avatar-lock {
     background-color: var(--color-surface-subtle);
   }
+  .avatar-shortcut {
+    display: flex;
+    position: absolute;
+    right: -0.25rem;
+    bottom: -0.25rem;
+    align-items: center;
+    justify-content: center;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-secondary);
+    font: var(--txt-body-s-semibold);
+    font-size: 0.625rem;
+    line-height: 1;
+  }
+  .nav-item:hover .avatar-shortcut,
+  .nav-item.active .avatar-shortcut,
+  .nav-item.context-active .avatar-shortcut {
+    background-color: var(--color-surface-subtle);
+  }
   /* Out of flow: hidden, they still reserved a button's width on every row.
      They sit over the end of the name instead, on the row's own fill. */
   .nav-item .row-actions {
@@ -881,6 +967,19 @@
   }
 </style>
 
+<svelte:window
+  onkeydown={e => {
+    if (isShortcutModifier(e)) {
+      showShortcutNumbers = true;
+    }
+  }}
+  onkeyup={e => {
+    if (isShortcutModifier(e)) {
+      hideShortcutNumbers();
+    }
+  }}
+  onblur={hideShortcutNumbers} />
+
 {#if seededNotReplicated.length > 0 && !sidebarCollapsed.value}
   <div
     class="section-header"
@@ -971,6 +1070,7 @@
       role="none">
       <input
         bind:this={filterInputElement}
+        data-repo-filter
         class="filter-input"
         placeholder="Filter repos…"
         bind:value={filterQuery}
@@ -1046,6 +1146,7 @@
 
 {#snippet repoRowInner(repo: RepoSummary, pinned: boolean = false)}
   {@const pinState = pinnedRepoIds.value.includes(repo.rid)}
+  {@const shortcutNumber = shortcutNumbers.get(repo.rid)}
   <a
     class="nav-item"
     class:not-seeded={!repo.seeding}
@@ -1062,7 +1163,9 @@
     href={router.routeToPath({ resource: "repo.home", rid: repo.rid })}>
     <span class="avatar">
       <RepoAvatar name={repo.name} rid={repo.rid} styleWidth="1rem" />
-      {#if repo.private}
+      {#if showShortcutNumbers && shortcutNumber !== undefined}
+        <span class="avatar-shortcut">{shortcutNumber}</span>
+      {:else if repo.private}
         <span class="avatar-lock">
           <Icon name="lock" />
         </span>

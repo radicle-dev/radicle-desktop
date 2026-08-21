@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { fade } from "svelte/transition";
+
   import { hide, modalStore } from "@app/lib/modal";
   import { DRAG_REGION_HEIGHT } from "@app/lib/window";
 
@@ -46,6 +48,7 @@
       role="button"
       tabindex="0"
       class="overlay"
+      transition:fade={{ duration: 120 }}
       onclick={$modalStore.disableScrimClose ? undefined : hide}
       style:cursor={$modalStore.disableHide ? "not-allowed" : "default"}>
     </div>
@@ -57,7 +60,7 @@
         data-tauri-drag-region>
       </div>
     {/if}
-    <div class="content">
+    <div class="content" data-modal-content>
       <svelte:component this={$modalStore.component} {...$modalStore.props} />
     </div>
   </div>

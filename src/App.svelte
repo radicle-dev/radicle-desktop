@@ -17,25 +17,36 @@
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
-  import { hide, toggle } from "@app/lib/modal";
+  import { hide, modalStore, show, toggle } from "@app/lib/modal";
   import * as router from "@app/lib/router";
-  import { isLoadedRepoRoute } from "@app/lib/router/definitions";
-  import { toggleSidebar } from "@app/lib/sidebar.svelte";
+  import {
+    isLoadedRepoRoute,
+    sidebarDataOf,
+  } from "@app/lib/router/definitions";
+  import { sidebarCollapsed, toggleSidebar } from "@app/lib/sidebar.svelte";
   import {
     setUnlistenNodeEvents,
     unlistenNodeEvents,
   } from "@app/lib/startup.svelte";
-  import { isMac, unreachable } from "@app/lib/utils";
+  import { isMac, isTyping, unreachable } from "@app/lib/utils";
   import { dragWindow } from "@app/lib/window";
 
   import AppSidebar from "@app/components/AppSidebar.svelte";
   import { codeFont } from "@app/components/CodeFontSwitch.svelte";
+  import { openListSearch } from "@app/components/FuzzySearch.svelte";
+  import {
+    isRepoFilter,
+    openRepoFilter,
+    sidebarRepoOrder,
+  } from "@app/components/SidebarRepoList.svelte";
   import {
     followSystemTheme,
     loadTheme,
     theme,
   } from "@app/components/ThemeSwitch.svelte";
+  import CreateIssueModal from "@app/modals/CreateIssue.svelte";
   import GuideView from "@app/modals/Guide.svelte";
+  import KeyboardShortcutsModal from "@app/modals/KeyboardShortcuts.svelte";
   import SettingsView from "@app/modals/Settings.svelte";
   import Auth from "@app/views/auth/Auth.svelte";
   import CreateIdentity from "@app/views/auth/CreateIdentity.svelte";
@@ -60,6 +71,14 @@
     const route = $activeRouteStore;
     return isLoadedRepoRoute(route) ? route.params.repo : undefined;
   });
+
+  function modalHasTextEntry(): boolean {
+    return (
+      document.querySelector(
+        "[data-modal-content] :is(textarea, [contenteditable='true'], input:not([type='checkbox'], [type='radio'], [type='range'], [type='button']))",
+      ) !== null
+    );
+  }
 
   window
     .matchMedia("(prefers-color-scheme: dark)")
@@ -149,21 +168,86 @@
   onkeydown={e => {
     const auxiliarKey = isMac() ? e.metaKey : e.ctrlKey;
     // Handles the position of the plus key on different keyboard layouts.
-    const plusKey = e.key === "1" || e.key === "=";
+    const plusKey = e.key === "+" || e.key === "=";
+    const backKey = isMac()
+      ? e.metaKey && e.key === "["
+      : e.altKey && e.key === "ArrowLeft";
+    const forwardKey = isMac()
+      ? e.metaKey && e.key === "]"
+      : e.altKey && e.key === "ArrowRight";
+    const noModal = $modalStore === undefined;
     if (e.key === "Escape") {
       hide();
-    } else if (auxiliarKey && (e.key === "+" || plusKey)) {
+      return;
+    }
+    // The first press goes to the sidebar's repo filter, the second one from
+    // there to the search of the list on screen.
+    if (auxiliarKey && e.key.toLowerCase() === "f" && noModal) {
+      if (isRepoFilter(e.target)) {
+        if (openListSearch()) {
+          e.preventDefault();
+        }
+      } else if (!isTyping(e.target)) {
+        e.preventDefault();
+        if (sidebarCollapsed.value) {
+          openListSearch();
+        } else {
+          openRepoFilter();
+        }
+      }
+      return;
+    }
+    if (isTyping(e.target)) {
+      return;
+    }
+    if (auxiliarKey && plusKey) {
       increaseFontSize();
     } else if (auxiliarKey && e.key === "-") {
       decreaseFontSize();
     } else if (auxiliarKey && e.key.toLowerCase() === "0") {
       resetFontSize();
+    } else if (auxiliarKey && e.key.toLowerCase() === "r") {
+      e.preventDefault();
+      // A reload would throw away whatever is being composed in a modal.
+      if (!modalHasTextEntry()) {
+        // Matches the sidebar's reload button rather than re-fetching per route.
+        window.location.reload();
+      }
+    } else if (auxiliarKey && /^[1-9]$/.test(e.key) && noModal) {
+      const repos = sidebarDataOf($activeRouteStore)?.repos;
+      const repo = repos && sidebarRepoOrder(repos)[Number(e.key) - 1];
+      if (repo) {
+        e.preventDefault();
+        void router.push({ resource: "repo.home", rid: repo.rid });
+      }
+    } else if (backKey && noModal) {
+      e.preventDefault();
+      window.history.back();
+    } else if (forwardKey && noModal) {
+      e.preventDefault();
+      window.history.forward();
     } else if (auxiliarKey && e.key === ",") {
       e.preventDefault();
       toggle({ component: SettingsView, props: {} });
     } else if (auxiliarKey && e.key.toLowerCase() === "b") {
       e.preventDefault();
       toggleSidebar();
+    } else if (e.key === "?" && !auxiliarKey && !e.altKey) {
+      // Only toggle our own modal, so an open modal isn't replaced from
+      // under the user.
+      const open = $modalStore?.component;
+      if (open === undefined || open === KeyboardShortcutsModal) {
+        e.preventDefault();
+        toggle({ component: KeyboardShortcutsModal, props: {} });
+      }
+    } else if (
+      auxiliarKey &&
+      e.key.toLowerCase() === "n" &&
+      activeRepo &&
+      noModal
+    ) {
+      e.preventDefault();
+      show({ component: CreateIssueModal, props: { repo: activeRepo } });
     }
   }} />
 <FullscreenModalPortal />

@@ -224,9 +224,9 @@
       {#snippet extra()}
         <FuzzySearch
           hasItems={list.items.length > 0}
-          placeholder={`Fuzzy filter commits ${modifierKey()} + f`}
+          placeholder={`Search commits ${modifierKey()} + f`}
           styleHeight="1.75rem"
-          icon={loading ? "clock" : "filter"}
+          icon={loading ? "clock" : "search"}
           onFocus={async () => {
             try {
               loading = true;
