@@ -96,6 +96,15 @@ fn resolve_revision(
     }
 }
 
+fn has_team_manifest(profile: &radicle::Profile, rid: identity::RepoId) -> Result<bool, Error> {
+    let repo = profile.storage.repository(rid)?;
+    let (_, head) = repo.head()?;
+    let tree = repo.backend.find_commit(head.into())?.tree()?;
+    Ok(tree
+        .get_path(std::path::Path::new(".radicle/team.json"))
+        .is_ok())
+}
+
 /// Tally `git diff --numstat` between two commits into diff stats. Returns
 /// `None` if git is unavailable or its output can't be parsed, so the caller
 /// can fall back to the (slower) radicle-surf diff.
@@ -410,6 +419,8 @@ pub trait Repo: Profile {
             entries.push(repo::RepoSummary {
                 rid,
                 name: data.name,
+                description: data.description,
+                is_team: has_team_manifest(&profile, rid).unwrap_or(false),
             });
         }
 
