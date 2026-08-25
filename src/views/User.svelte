@@ -12,8 +12,6 @@
   import { USER_ACTIVITY_TAKE } from "@app/lib/router/definitions";
   import {
     absoluteTimestamp,
-    explorerHost,
-    explorerUrl,
     formatRepositoryId,
     formatTimestamp,
     issueStatusColor,
@@ -33,6 +31,7 @@
   import Popover from "@app/components/Popover.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
+  import ShareButton from "@app/components/ShareButton.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
   import Layout from "@app/views/repo/Layout.svelte";
 
@@ -349,16 +348,8 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
   }
-  a.external {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-    color: var(--color-text-secondary);
-    font: var(--txt-body-m-regular);
-    text-decoration: none;
-  }
-  a.external:hover {
-    color: var(--color-text-primary);
+  .share {
+    display: flex;
   }
 
   .calendar-block {
@@ -677,15 +668,14 @@
             </div>
           </div>
 
-          <a
-            class="external"
-            href={explorerUrl(`users/${user.did}`, config)}
-            title={`View profile on ${explorerHost(config)}`}
-            target="_blank"
-            rel="noreferrer">
-            Open in {explorerHost(config)}
-            <Icon name="open-external" />
-          </a>
+          <div class="share">
+            <ShareButton
+              explorerPath={`users/${user.did}`}
+              id={user.did}
+              idLabel="DID"
+              copyIdLabel="Copy DID"
+              {config} />
+          </div>
         </div>
       </ScrollArea>
     </div>
