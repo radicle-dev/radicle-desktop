@@ -1,6 +1,8 @@
 use radicle::node::{AliasStore, NodeId};
 
 use crate::config::Config;
+use crate::error::Error;
+use crate::user;
 
 pub mod cobs;
 pub mod issue;
@@ -29,6 +31,23 @@ pub trait Profile {
         let aliases = p.aliases();
 
         aliases.alias(&nid)
+    }
+
+    fn user(&self, nid: NodeId) -> Result<user::User, Error> {
+        let p = self.profile();
+        let policies = p.policies()?;
+
+        Ok(user::User {
+            did: nid.into(),
+            public_key: nid,
+            alias: p.aliases().alias(&nid),
+            ssh: user::Ssh {
+                full: radicle::crypto::ssh::fmt::key(&nid),
+                hash: radicle::crypto::ssh::fmt::fingerprint(&nid),
+            },
+            following: policies.is_following(&nid)?,
+            is_local: nid == p.public_key,
+        })
     }
 }
 

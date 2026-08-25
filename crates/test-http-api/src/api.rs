@@ -20,6 +20,9 @@ use radicle_types::cobs::FromRadicleAction;
 use radicle_types::cobs::issue;
 use radicle_types::cobs::issue::NewIssue;
 use radicle_types::config::Version;
+use radicle_types::domain::contribution::models::contribution as contribution_models;
+use radicle_types::domain::contribution::service::Service as ContributionService;
+use radicle_types::domain::contribution::traits::ContributionService as _;
 use radicle_types::domain::issue::service::Service as IssueService;
 use radicle_types::domain::issue::traits::IssueService as _;
 use radicle_types::domain::patch::models;
@@ -40,6 +43,7 @@ pub struct Context {
     profile: Arc<radicle::Profile>,
     patches: Arc<Service<Sqlite>>,
     issues: Arc<IssueService<Sqlite>>,
+    contributions: Arc<ContributionService<Sqlite>>,
 }
 
 impl Repo for Context {}
@@ -61,11 +65,13 @@ impl Context {
         profile: Arc<radicle::Profile>,
         patches: Arc<Service<Sqlite>>,
         issues: Arc<IssueService<Sqlite>>,
+        contributions: Arc<ContributionService<Sqlite>>,
     ) -> Self {
         Self {
             profile,
             patches,
             issues,
+            contributions,
         }
     }
 }
@@ -73,6 +79,10 @@ impl Context {
 pub fn router(ctx: Context) -> Router {
     Router::new()
         .route("/config", post(config_handler))
+        .route("/user", post(user_handler))
+        .route("/user_contributions", post(user_contributions_handler))
+        .route("/user_activity", post(user_activity_handler))
+        .route("/user_calendar", post(user_calendar_handler))
         .route("/authenticate", post(auth_handler))
         .route("/repo_count", post(repo_count_handler))
         .route("/list_repos", post(repo_root_handler))
@@ -102,6 +112,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/get_commit_diff", post(commit_diff_handler))
         .route("/list_repo_commits", post(list_repo_commits_handler))
         .route("/repo_commit_count", post(repo_commit_count_handler))
+        .route("/repo_activity", post(repo_activity_handler))
         .route("/repo_commit", post(repo_commit_handler))
         .route("/list_issues", post(issues_handler))
         .route("/create_issue", post(create_issue_handler))
@@ -141,6 +152,70 @@ async fn config_handler(State(ctx): State<Context>) -> impl IntoResponse {
 
 async fn auth_handler() -> impl IntoResponse {
     Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UserOptions {
+    nid: NodeId,
+}
+
+async fn user_handler(
+    State(ctx): State<Context>,
+    Json(UserOptions { nid }): Json<UserOptions>,
+) -> impl IntoResponse {
+    let user = ctx.user(nid)?;
+
+    Ok::<_, Error>(Json(user))
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ContributionOptions {
+    did: identity::Did,
+}
+
+async fn user_contributions_handler(
+    State(ctx): State<Context>,
+    Json(ContributionOptions { did }): Json<ContributionOptions>,
+) -> impl IntoResponse {
+    let contributions = ctx.contributions.contributions_by_author(did)?;
+
+    Ok::<_, Error>(Json(contributions))
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ActivityOptions {
+    did: identity::Did,
+    limit: Option<usize>,
+}
+
+async fn user_activity_handler(
+    State(ctx): State<Context>,
+    Json(ActivityOptions { did, limit }): Json<ActivityOptions>,
+) -> impl IntoResponse {
+    let mut activity: Vec<contribution_models::ActivityItem> = ctx
+        .contributions
+        .recent_activity_by_author(did, limit.unwrap_or(10))?;
+    // Revision numbering is not in the cache; it comes from the patch itself.
+    ctx.annotate_revision_positions(&mut activity);
+
+    Ok::<_, Error>(Json(activity))
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct CalendarOptions {
+    did: identity::Did,
+    days: Option<u32>,
+}
+
+async fn user_calendar_handler(
+    State(ctx): State<Context>,
+    Json(CalendarOptions { did, days }): Json<CalendarOptions>,
+) -> impl IntoResponse {
+    let calendar = ctx
+        .contributions
+        .contribution_calendar(did, days.unwrap_or(365))?;
+
+    Ok::<_, Error>(Json(calendar))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -425,6 +500,15 @@ async fn repo_commit_count_handler(
     let count = ctx.repo_commit_count(rid, head)?;
 
     Ok::<_, Error>(Json(count))
+}
+
+async fn repo_activity_handler(
+    State(ctx): State<Context>,
+    Json(RepoCommitCountBody { rid, head }): Json<RepoCommitCountBody>,
+) -> impl IntoResponse {
+    let activity = ctx.repo_activity(rid, head)?;
+
+    Ok::<_, Error>(Json(activity))
 }
 
 #[derive(Serialize, Deserialize)]

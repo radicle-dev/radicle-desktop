@@ -82,7 +82,8 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
 
     let inbox_service = domain::inbox::service::Service::new(inbox_db);
     let patch_service = domain::patch::service::Service::new(cobs_db.clone());
-    let issue_service = domain::issue::service::Service::new(cobs_db);
+    let issue_service = domain::issue::service::Service::new(cobs_db.clone());
+    let contribution_service = domain::contribution::service::Service::new(cobs_db);
 
     let node_handle = app.app_handle().clone();
 
@@ -91,6 +92,7 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     app.manage(inbox_service);
     app.manage(patch_service);
     app.manage(issue_service);
+    app.manage(contribution_service);
 
     tauri::async_runtime::spawn(async move {
         loop {

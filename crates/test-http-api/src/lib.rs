@@ -7,6 +7,7 @@ use tokio::net::TcpListener;
 use radicle::Profile;
 use radicle::cob::cache::COBS_DB_FILE;
 
+use radicle_types::domain::contribution::service::Service as ContributionService;
 use radicle_types::domain::issue::service::Service as IssueService;
 use radicle_types::domain::patch::service::Service as PatchService;
 
@@ -33,9 +34,15 @@ fn router(profile: Profile) -> anyhow::Result<Router> {
     let cobs_db =
         radicle_types::outbound::sqlite::Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
     let patch_service = PatchService::new(cobs_db.clone());
-    let issue_service = IssueService::new(cobs_db);
+    let issue_service = IssueService::new(cobs_db.clone());
+    let contribution_service = ContributionService::new(cobs_db);
 
-    let ctx = api::Context::new(profile, Arc::new(patch_service), Arc::new(issue_service));
+    let ctx = api::Context::new(
+        profile,
+        Arc::new(patch_service),
+        Arc::new(issue_service),
+        Arc::new(contribution_service),
+    );
 
     Ok(api::router(ctx))
 }
