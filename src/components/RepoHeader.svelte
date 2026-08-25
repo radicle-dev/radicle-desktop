@@ -2,11 +2,10 @@
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import { explorerUrl, truncateDid } from "@app/lib/utils";
+  import { routeToPath } from "@app/lib/router";
+  import { truncateDid } from "@app/lib/utils";
 
   import CheckoutRepoButton from "@app/components/CheckoutRepoButton.svelte";
-  import HoverPopover from "@app/components/HoverPopover.svelte";
-  import Icon from "@app/components/Icon.svelte";
   import ShareButton from "@app/components/ShareButton.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
@@ -67,10 +66,15 @@
     gap: 0.25rem;
   }
   .avatar-wrap {
+    display: block;
     width: 1.25rem;
     height: 1.25rem;
     overflow: hidden;
     flex-shrink: 0;
+    border-radius: var(--border-radius-sm);
+  }
+  .avatar-wrap:hover {
+    outline: 1px solid var(--color-border-strong);
   }
   .actions {
     display: flex;
@@ -107,35 +111,12 @@
       <span class="meta-value">{repo.threshold}/{repo.delegates.length}</span>
       <div class="avatars">
         {#each repo.delegates as delegate}
-          <HoverPopover placement="bottom-start" stylePadding="0.25rem 0.5rem">
-            {#snippet toggle()}
-              <div class="avatar-wrap">
-                <UserAvatar nodeId={delegate.did} styleWidth="1.25rem" />
-              </div>
-            {/snippet}
-            {#snippet popover()}
-              <a
-                class="global-flex txt-body-m-regular"
-                style:white-space="nowrap"
-                style:text-decoration="none"
-                style:width="100%"
-                href={explorerUrl(`users/${delegate.did}`, config)}
-                target="_blank">
-                {#if delegate.alias}
-                  <span class="txt-overflow alias">
-                    {delegate.alias}
-                  </span>
-                {:else}
-                  <span class="no-alias">
-                    {truncateDid(delegate.did)}
-                  </span>
-                {/if}
-                <span style:margin-left="auto">
-                  <Icon name="open-external" />
-                </span>
-              </a>
-            {/snippet}
-          </HoverPopover>
+          <a
+            class="avatar-wrap"
+            href={routeToPath({ resource: "user", did: delegate.did })}
+            title={delegate.alias ?? truncateDid(delegate.did)}>
+            <UserAvatar nodeId={delegate.did} styleWidth="1.25rem" />
+          </a>
         {/each}
       </div>
     </div>
