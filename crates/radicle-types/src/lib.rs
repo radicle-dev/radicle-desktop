@@ -6,6 +6,7 @@ use traits::patch::{Patches, PatchesMut};
 use traits::repo::Repo;
 use traits::thread::Thread;
 
+pub mod binaries;
 pub mod cobs;
 pub mod config;
 pub mod diff;
