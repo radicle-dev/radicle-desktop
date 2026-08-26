@@ -21,12 +21,6 @@ use crate::repo;
 use crate::source;
 use crate::traits::Profile;
 
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
-// See <https://learn.microsoft.com/windows/win32/procthread/process-creation-flags#flags>.
-#[cfg(windows)]
-const CREATE_NO_WINDOW: u32 = 0x08000000;
-
 pub const MAX_BLOB_SIZE: usize = 10_485_760;
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -100,7 +94,7 @@ fn resolve_revision(
 /// `None` if git is unavailable or its output can't be parsed, so the caller
 /// can fall back to the (slower) radicle-surf diff.
 fn numstat(repo_dir: &std::path::Path, base: git::Oid, head: git::Oid) -> Option<diff::Stats> {
-    let mut command = std::process::Command::new("git");
+    let mut command = crate::binaries::git_command()?;
     command
         .current_dir(repo_dir)
         // Porcelain `git diff` honours user configuration (diff.renames,
@@ -114,8 +108,7 @@ fn numstat(repo_dir: &std::path::Path, base: git::Oid, head: git::Oid) -> Option
         .arg("--numstat")
         .arg(base.to_string())
         .arg(head.to_string());
-    #[cfg(windows)]
-    command.creation_flags(CREATE_NO_WINDOW);
+
     let output = command
         .output()
         .ok()
@@ -156,29 +149,29 @@ fn last_path_commit(
     head: git::Oid,
     path: &std::path::Path,
 ) -> Result<repo::Commit, Error> {
-    let mut command = std::process::Command::new("git");
-    command
-        .current_dir(repo_path)
-        .arg("rev-list")
-        .arg("-1")
-        .arg(head.to_string())
-        .arg("--")
-        // `:(literal)` disables pathspec glob matching so file names
-        // containing `[`, `*` or `?` (e.g. `src/pages/[id].ts`) are looked
-        // up verbatim instead of being treated as wildcard patterns.
-        .arg(format!(":(literal){}", path.display()));
-    #[cfg(windows)]
-    command.creation_flags(CREATE_NO_WINDOW);
-    let fast = command
-        .output()
-        .ok()
-        .filter(|output| output.status.success())
-        .and_then(|output| {
-            String::from_utf8_lossy(&output.stdout)
-                .trim()
-                .parse::<git::Oid>()
-                .ok()
-        });
+    let fast = crate::binaries::git_command().and_then(|mut command| {
+        command
+            .current_dir(repo_path)
+            .arg("rev-list")
+            .arg("-1")
+            .arg(head.to_string())
+            .arg("--")
+            // `:(literal)` disables pathspec glob matching so file names
+            // containing `[`, `*` or `?` (e.g. `src/pages/[id].ts`) are looked
+            // up verbatim instead of being treated as wildcard patterns.
+            .arg(format!(":(literal){}", path.display()));
+
+        command
+            .output()
+            .ok()
+            .filter(|output| output.status.success())
+            .and_then(|output| {
+                String::from_utf8_lossy(&output.stdout)
+                    .trim()
+                    .parse::<git::Oid>()
+                    .ok()
+            })
+    });
 
     let commit = match fast {
         Some(oid) => surf_repo.commit(oid)?,
@@ -864,25 +857,25 @@ pub trait Repo: Profile {
         // tamper-evident; the bitmap/commit-graph are local derived indexes
         // over those same objects, not a new trust input. Falls back to the
         // walk below if the git binary is unavailable or errors.
-        let mut command = std::process::Command::new("git");
-        command.current_dir(repo.backend.path()).args([
-            "rev-list",
-            "--count",
-            "--use-bitmap-index",
-            &head.to_string(),
-        ]);
-        #[cfg(windows)]
-        command.creation_flags(CREATE_NO_WINDOW);
-        let count = command
-            .output()
-            .ok()
-            .filter(|output| output.status.success())
-            .and_then(|output| {
-                String::from_utf8_lossy(&output.stdout)
-                    .trim()
-                    .parse::<usize>()
-                    .ok()
-            });
+        let count = crate::binaries::git_command().and_then(|mut command| {
+            command.current_dir(repo.backend.path()).args([
+                "rev-list",
+                "--count",
+                "--use-bitmap-index",
+                &head.to_string(),
+            ]);
+
+            command
+                .output()
+                .ok()
+                .filter(|output| output.status.success())
+                .and_then(|output| {
+                    String::from_utf8_lossy(&output.stdout)
+                        .trim()
+                        .parse::<usize>()
+                        .ok()
+                })
+        });
         if let Some(count) = count {
             return Ok(count);
         }
