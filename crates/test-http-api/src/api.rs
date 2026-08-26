@@ -84,6 +84,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/repo_by_id", post(repo_handler))
         .route("/list_repo_refs", post(list_repo_refs_handler))
         .route("/version", post(version_handler))
+        .route("/git_info", post(git_info_handler))
         .route("/diff_stats", post(diff_stats_handler))
         .route(
             "/activity_by_issue",
@@ -207,6 +208,10 @@ async fn list_repo_refs_handler(
     let refs = ctx.list_repo_refs(rid)?;
 
     Ok::<_, Error>(Json(refs))
+}
+
+async fn git_info_handler() -> impl IntoResponse {
+    Ok::<_, Error>(Json(types::binaries::git_info()))
 }
 
 async fn version_handler() -> impl IntoResponse {

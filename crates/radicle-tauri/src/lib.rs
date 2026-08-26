@@ -96,6 +96,7 @@ pub fn run() {
             startup::startup,
             startup::version,
             startup::check_radicle_cli,
+            startup::git_info,
             thread::create_issue_comment,
             thread::create_patch_comment,
         ])

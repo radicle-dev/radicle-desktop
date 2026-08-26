@@ -1,9 +1,11 @@
 <script lang="ts">
+  import type { GitInfo } from "@bindings/config/GitInfo";
   import type { ComponentProps } from "svelte";
 
   import type { DiffOptions } from "@app/lib/diffOptions.svelte";
   import { diffOptions } from "@app/lib/diffOptions.svelte";
   import { hints } from "@app/lib/hints";
+  import { invoke } from "@app/lib/invoke";
   import { hide } from "@app/lib/modal";
   import { updateChecker } from "@app/lib/updateChecker.svelte";
   import { pluralize } from "@app/lib/utils";
@@ -27,6 +29,11 @@
     icon?: ComponentProps<typeof Icon>["name"];
     title?: string;
   };
+
+  // The app shells out to git for a few reads that are much faster than doing
+  // them itself, and finds the binary on its own. Shown here so that a user
+  // seeing the slow path can tell which git — if any — was picked.
+  const gitInfo = invoke<GitInfo>("git_info");
 
   const diffStyleOptions: Option<DiffOptions["diffStyle"]>[] = [
     { value: "unified", icon: "diff-unified", title: "Unified" },
@@ -109,6 +116,9 @@
   .section {
     border-top: 1px solid var(--color-border-subtle);
   }
+  .git {
+    overflow-wrap: anywhere;
+  }
   .footer {
     padding: 4rem 1.5rem 1.5rem;
     font: var(--txt-body-m-regular);
@@ -185,6 +195,24 @@
         onclick={() => hints.resetAll()}>
         Reset
       </Button>
+    </div>
+    <div class="row">
+      <div class="row-label">
+        <span class="row-title">Git binary</span>
+        {#await gitInfo}
+          <span class="row-description">Looking for git…</span>
+        {:then info}
+          <span class="row-description git txt-selectable">
+            {info?.path
+              ? `${info.version ?? "git"} at ${info.path}`
+              : "None found, using a slower built-in fallback"}
+          </span>
+        {:catch}
+          <span class="row-description">
+            Could not tell which git is in use
+          </span>
+        {/await}
+      </div>
     </div>
   </div>
   <!-- How every diff in the app is drawn — the commit view, a patch's changes

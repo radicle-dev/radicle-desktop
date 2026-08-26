@@ -14,6 +14,9 @@
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
+use serde::Serialize;
+use ts_rs::TS;
+
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
 // See <https://learn.microsoft.com/windows/win32/procthread/process-creation-flags#flags>.
@@ -36,19 +39,60 @@ const PROBE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
 #[cfg(target_os = "macos")]
 const APPLE_GIT_SHIM: &str = "/usr/bin/git";
 
+/// The git binary the app resolved, for display in the settings.
+#[derive(Clone, Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "config/")]
+pub struct GitInfo {
+    /// Absolute path of the binary. Unset when none was found.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub path: Option<String>,
+    /// What it answers `--version` with. Unset when none was found.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub version: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+struct Git {
+    path: PathBuf,
+    version: String,
+}
+
 /// The resolved git binary. `None` means "searched and found nothing", which
 /// is cached like any other answer so that a machine without git does not
 /// rescan on every diff.
-static GIT: OnceLock<Option<PathBuf>> = OnceLock::new();
+static GIT: OnceLock<Option<Git>> = OnceLock::new();
 
 /// The git binary to shell out to, or `None` when the machine has none that
 /// works. Callers are expected to have a fallback: everything the app runs
 /// git for is an optimization over the same work done through libgit2.
 pub fn git() -> Option<PathBuf> {
+    resolve().map(|git| git.path)
+}
+
+/// What was resolved, so that the settings can show which binary the app is
+/// using and a bug report can say which one that was.
+pub fn git_info() -> GitInfo {
+    match resolve() {
+        Some(git) => GitInfo {
+            path: Some(git.path.to_string_lossy().into_owned()),
+            version: Some(git.version),
+        },
+        None => GitInfo {
+            path: None,
+            version: None,
+        },
+    }
+}
+
+fn resolve() -> Option<Git> {
     GIT.get_or_init(|| {
         let git = search();
         match &git {
-            Some(path) => log::info!("Using git binary {}", path.display()),
+            Some(git) => log::info!("Using git binary {}: {}", git.path.display(), git.version),
             None => log::warn!(
                 "No working git binary found; falling back to libgit2 for diff stats, \
                  commit counts and file history, which is slower on large repositories"
@@ -120,18 +164,18 @@ fn candidates(name: &str) -> impl Iterator<Item = PathBuf> {
     path.into_iter().chain(known)
 }
 
-fn search() -> Option<PathBuf> {
+fn search() -> Option<Git> {
     if let Some(pinned) = std::env::var_os(GIT_ENV) {
-        let pinned = PathBuf::from(pinned);
-        match validate(&pinned) {
+        let path = PathBuf::from(pinned);
+        match validate(&path) {
             Some(version) => {
-                log::info!("{GIT_ENV} pins git to {}: {version}", pinned.display());
+                log::info!("{GIT_ENV} pins git to {}", path.display());
 
-                return Some(pinned);
+                return Some(Git { path, version });
             }
             None => log::warn!(
                 "{GIT_ENV} is set to {}, which does not run git; detecting instead",
-                pinned.display()
+                path.display()
             ),
         }
     }
@@ -144,7 +188,7 @@ fn search() -> Option<PathBuf> {
 /// wrapper Git for Windows means for others to call, as opposed to the bare
 /// executable under `Git\mingw64\bin`.
 #[cfg(windows)]
-fn detect() -> Option<PathBuf> {
+fn detect() -> Option<Git> {
     const PROGRAM_FILES: &[&str] = &["ProgramW6432", "ProgramFiles(x86)", "ProgramFiles"];
 
     let program_files = PROGRAM_FILES
@@ -156,25 +200,25 @@ fn detect() -> Option<PathBuf> {
     candidates("git.exe")
         .chain(program_files)
         .chain(local)
-        .find(|candidate| validate(candidate).is_some())
+        .find_map(|path| validate(&path).map(|version| Git { path, version }))
 }
 
 #[cfg(not(windows))]
-fn detect() -> Option<PathBuf> {
-    for candidate in candidates("git") {
+fn detect() -> Option<Git> {
+    for path in candidates("git") {
         // Skipping the shim has to leave a Homebrew or Nix git further down
         // the line still reachable, which is why this is a whole list of
         // candidates rather than the first `git` on `PATH`.
         #[cfg(target_os = "macos")]
-        if candidate == Path::new(APPLE_GIT_SHIM) && !command_line_tools_installed() {
+        if path == Path::new(APPLE_GIT_SHIM) && !command_line_tools_installed() {
             log::info!(
                 "Skipping {APPLE_GIT_SHIM}: the Command Line Developer Tools are not installed, \
                  so running it would only prompt to install them"
             );
             continue;
         }
-        if validate(&candidate).is_some() {
-            return Some(candidate);
+        if let Some(version) = validate(&path) {
+            return Some(Git { path, version });
         }
     }
 

@@ -3,6 +3,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use radicle::cob::cache::COBS_DB_FILE;
 use radicle::node::{Handle, NOTIFICATIONS_DB_FILE, Node};
 
+use radicle_types::binaries::GitInfo;
 use radicle_types::config::{Config, Version};
 use radicle_types::error::Error;
 use radicle_types::traits::Profile;
@@ -30,6 +31,13 @@ pub(crate) fn check_radicle_cli(ctx: tauri::State<AppState>) -> Result<(), Error
     }
 
     Err(Error::RadicleNotInstalled)
+}
+
+/// Which git binary the app ended up shelling out to, for the settings to
+/// show. Read-only: it is detected, not configured.
+#[tauri::command]
+pub(crate) fn git_info() -> GitInfo {
+    radicle_types::binaries::git_info()
 }
 
 #[tauri::command]
