@@ -1,6 +1,7 @@
 mod commands;
 
 use radicle_types::AppState;
+use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{auth, cob, diff, inbox, profile, repo, startup, thread};
 
@@ -16,14 +17,26 @@ pub fn run() {
         log::warn!("Unable to set open file limit: {e}");
     }
 
-    #[cfg(debug_assertions)]
+    // Launched from a terminal the logs belong on stdout, where the developer
+    // running us can see them. Launched from the desktop there is nowhere for
+    // stdout to go, so they belong in a file the user can be pointed at:
+    // `~/Library/Logs/<bundle id>/` on macOS, `<data dir>/logs/` elsewhere.
+    // `TERM` is what tells the two apart: it survives the pipes that
+    // `npm run tauri dev` puts between the app and the terminal, which
+    // `std::io::IsTerminal` on our own stdout would not.
+    let terminal = std::env::var_os("TERM").is_some();
     let builder = tauri::Builder::default().plugin(
         tauri_plugin_log::Builder::new()
             .level(log::LevelFilter::Info)
+            .max_file_size(5_000_000)
+            .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
+            .target(Target::new(if terminal {
+                TargetKind::Stdout
+            } else {
+                TargetKind::LogDir { file_name: None }
+            }))
             .build(),
     );
-    #[cfg(not(debug_assertions))]
-    let builder = tauri::Builder::default();
 
     builder
         .plugin(tauri_plugin_dialog::init())
