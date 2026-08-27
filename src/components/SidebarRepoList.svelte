@@ -1,4 +1,6 @@
 <script lang="ts" module>
+  import type { RepoSummary } from "@bindings/repo/RepoSummary";
+
   import { array, boolean, string } from "zod";
 
   import useLocalStorage from "@app/lib/useLocalStorage.svelte";
@@ -20,6 +22,23 @@
     !window.localStorage,
   );
 
+  function pinnedFrom(repos: RepoSummary[]): RepoSummary[] {
+    const byRid = new Map(repos.map(r => [r.rid, r]));
+    return pinnedRepoIds.value
+      .map(rid => byRid.get(rid))
+      .filter((r): r is RepoSummary => r !== undefined);
+  }
+
+  // The sidebar's top-to-bottom order: pinned repos first, in the order they
+  // were pinned, then the rest. Exported so that the Cmd+1..9 shortcuts land
+  // on the same rows the user is looking at. Deliberately ignores the filter
+  // query, which is transient, so the numbering stays put while typing in it.
+  export function sidebarRepoOrder(repos: RepoSummary[]): RepoSummary[] {
+    return pinnedFrom(repos).concat(
+      repos.filter(r => !pinnedRepoIds.value.includes(r.rid)),
+    );
+  }
+
   export function revealRepoInSidebar(rid: string) {
     if (pinnedRepoIds.value.includes(rid)) return;
 
@@ -39,7 +58,6 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
-  import type { RepoSummary } from "@bindings/repo/RepoSummary";
 
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
@@ -140,12 +158,7 @@
     !window.localStorage,
   );
 
-  const pinnedRepos = $derived.by(() => {
-    const byRid = new Map(repos.map(r => [r.rid, r]));
-    return pinnedRepoIds.value
-      .map(rid => byRid.get(rid))
-      .filter((r): r is RepoSummary => r !== undefined);
-  });
+  const pinnedRepos = $derived.by(() => pinnedFrom(repos));
 
   const unpinnedFilteredRepos = $derived(
     filteredRepos.filter(r => !pinnedRepoIds.value.includes(r.rid)),

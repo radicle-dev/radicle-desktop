@@ -65,6 +65,12 @@ export function isLoadedRepoRoute(
   );
 }
 
+// Every route but `booting` carries the sidebar data, which has no params at
+// all, so reach for it through here rather than narrowing at each call site.
+export function sidebarDataOf(route: LoadedRoute): SidebarData | undefined {
+  return route.resource === "booting" ? undefined : route.params.sidebarData;
+}
+
 export async function loadSidebarData(): Promise<SidebarData> {
   const [config, repos, notificationCount, seededNotReplicated] =
     await Promise.all([

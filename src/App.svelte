@@ -20,7 +20,10 @@
   import { invoke } from "@app/lib/invoke";
   import { hide, modalStore, show, toggle } from "@app/lib/modal";
   import * as router from "@app/lib/router";
-  import { isLoadedRepoRoute } from "@app/lib/router/definitions";
+  import {
+    isLoadedRepoRoute,
+    sidebarDataOf,
+  } from "@app/lib/router/definitions";
   import {
     setUnlistenNodeEvents,
     unlistenNodeEvents,
@@ -29,6 +32,7 @@
 
   import AppSidebar from "@app/components/AppSidebar.svelte";
   import { codeFont } from "@app/components/CodeFontSwitch.svelte";
+  import { sidebarRepoOrder } from "@app/components/SidebarRepoList.svelte";
   import {
     followSystemTheme,
     loadTheme,
@@ -170,7 +174,7 @@
   onkeydown={e => {
     const auxiliarKey = isMac() ? e.metaKey : e.ctrlKey;
     // Handles the position of the plus key on different keyboard layouts.
-    const plusKey = e.key === "1" || e.key === "=";
+    const plusKey = e.key === "+" || e.key === "=";
     if (e.key === "Escape") {
       hide();
       return;
@@ -178,12 +182,23 @@
     if (isTyping(e.target)) {
       return;
     }
-    if (auxiliarKey && (e.key === "+" || plusKey)) {
+    if (auxiliarKey && plusKey) {
       increaseFontSize();
     } else if (auxiliarKey && e.key === "-") {
       decreaseFontSize();
     } else if (auxiliarKey && e.key.toLowerCase() === "0") {
       resetFontSize();
+    } else if (auxiliarKey && e.key.toLowerCase() === "r") {
+      e.preventDefault();
+      // Matches the sidebar's reload button rather than re-fetching per route.
+      window.location.reload();
+    } else if (auxiliarKey && /^[1-9]$/.test(e.key)) {
+      const repos = sidebarDataOf($activeRouteStore)?.repos;
+      const repo = repos && sidebarRepoOrder(repos)[Number(e.key) - 1];
+      if (repo) {
+        e.preventDefault();
+        void router.push({ resource: "repo.home", rid: repo.rid });
+      }
     } else if (auxiliarKey && e.key === ",") {
       e.preventDefault();
       toggle({ component: SettingsView, props: {} });
