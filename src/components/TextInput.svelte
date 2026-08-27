@@ -4,7 +4,7 @@
 
   import { onMount } from "svelte";
 
-  import { matchesCombo } from "@app/lib/shortcuts.svelte";
+  import { matchesShortcut } from "@app/lib/shortcuts.svelte";
 
   interface Props {
     autofocus?: boolean;
@@ -80,7 +80,7 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
-    if (matchesCombo(event, "Mod+Enter") && onModifierSubmit) {
+    if (matchesShortcut(event, "submit") && onModifierSubmit) {
       event.preventDefault();
       onModifierSubmit();
       return;

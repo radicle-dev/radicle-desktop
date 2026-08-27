@@ -11,7 +11,7 @@
 
   import { hints } from "@app/lib/hints";
   import { invoke } from "@app/lib/invoke";
-  import { matchesCombo } from "@app/lib/shortcuts.svelte";
+  import { matchesShortcut } from "@app/lib/shortcuts.svelte";
   import * as utils from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
@@ -437,7 +437,7 @@
   class:inline
   onkeydown={event => {
     if (!preview) return;
-    if (matchesCombo(event, "Mod+Enter")) {
+    if (matchesShortcut(event, "submit")) {
       event.preventDefault();
       void submit({ comment: body, embeds });
     }

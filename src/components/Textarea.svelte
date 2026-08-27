@@ -6,7 +6,13 @@
 
   import { onMount, tick } from "svelte";
 
-  import { matchesCombo } from "@app/lib/shortcuts.svelte";
+  import type { MarkdownFormat, TextEdit } from "@app/lib/markdownFormat";
+  import {
+    applyMarkdownFormat,
+    applyTextEdit,
+    pasteLinkEdit,
+  } from "@app/lib/markdownFormat";
+  import { matchesShortcut } from "@app/lib/shortcuts.svelte";
 
   interface Props {
     draggingOver?: boolean;
@@ -109,12 +115,68 @@
     });
   });
 
+  const formats: MarkdownFormat[] = ["bold", "italic", "code", "link"];
+
+  // `insertText` keeps the edit on the native undo stack; assigning is a fallback.
+  function applyEdit(element: HTMLTextAreaElement, edit: TextEdit) {
+    element.setSelectionRange(edit.from, edit.to);
+    const applied = edit.text
+      ? document.execCommand("insertText", false, edit.text)
+      : document.execCommand("delete");
+    if (!applied) {
+      value = applyTextEdit(element.value, edit);
+    }
+
+    selectionStart = edit.selectionStart;
+    selectionEnd = edit.selectionEnd;
+    void tick().then(() =>
+      element.setSelectionRange(edit.selectionStart, edit.selectionEnd),
+    );
+  }
+
+  function handlePaste(
+    event: ClipboardEvent & {
+      currentTarget: EventTarget & HTMLTextAreaElement;
+    },
+  ) {
+    void onpaste?.(event);
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    const element = event.currentTarget;
+    const edit = pasteLinkEdit(
+      element.value,
+      element.selectionStart,
+      element.selectionEnd,
+      event.clipboardData?.getData("text/plain") ?? "",
+    );
+    if (edit) {
+      event.preventDefault();
+      applyEdit(element, edit);
+    }
+  }
+
   function handleKeydown(event: KeyboardEvent) {
-    if (matchesCombo(event, "Mod+Enter")) {
+    if (matchesShortcut(event, "submit")) {
       void submit();
     }
     if (event.key === "Escape") {
       textareaElement?.blur();
+    }
+
+    const format = formats.find(f => matchesShortcut(event, f));
+    if (format && textareaElement) {
+      event.preventDefault();
+      applyEdit(
+        textareaElement,
+        applyMarkdownFormat(
+          format,
+          textareaElement.value,
+          textareaElement.selectionStart,
+          textareaElement.selectionEnd,
+        ),
+      );
     }
   }
 </script>
@@ -198,7 +260,7 @@
       ? "scroll"
       : undefined}
     {placeholder}
-    {onpaste}
+    onpaste={handlePaste}
     {oninput}
     {onkeypress}
     onfocus={() => (focussed = true)}

@@ -70,7 +70,41 @@ export const shortcuts = {
   },
   decreaseFontSize: { combos: ["Mod+-"], description: "Decrease font size" },
   resetFontSize: { combos: ["Mod+0"], description: "Reset font size" },
-  closeModal: { combos: ["Escape"], description: "Close modal" },
+  closeModal: {
+    combos: ["Escape"],
+    description: "Close modal",
+    note: "In a modal",
+  },
+  submit: {
+    combos: ["Mod+Enter"],
+    description: "Submit",
+    note: "In a comment or description",
+  },
+  bold: {
+    combos: ["Mod+B"],
+    description: "Bold",
+    note: "In a comment or description",
+  },
+  italic: {
+    combos: ["Mod+I"],
+    description: "Italic",
+    note: "In a comment or description",
+  },
+  code: {
+    combos: ["Mod+E"],
+    description: "Code",
+    note: "In a comment or description",
+  },
+  link: {
+    combos: ["Mod+K"],
+    description: "Link",
+    note: "In a comment or description",
+  },
+  pasteLink: {
+    combos: ["Mod+V"],
+    description: "Paste a URL over selected text to link it",
+    note: "In a comment or description",
+  },
 } satisfies Record<string, ShortcutDoc>;
 
 export type ShortcutId = keyof typeof shortcuts;
@@ -148,6 +182,10 @@ export function matchesCombo(event: KeyboardEvent, combo: Combo): boolean {
     event.key.charCodeAt(0) > 127 &&
     event.code === (/\d/.test(key) ? `Digit${key}` : `Key${key.toUpperCase()}`)
   );
+}
+
+export function matchesShortcut(event: KeyboardEvent, id: ShortcutId): boolean {
+  return (shortcuts[id].combos as Combo[]).some(c => matchesCombo(event, c));
 }
 
 const keyLabels: Record<string, string> = {

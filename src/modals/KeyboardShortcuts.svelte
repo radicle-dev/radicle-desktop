@@ -9,11 +9,24 @@
     description: s.description,
     note: "note" in s ? s.note : undefined,
   }));
+
+  const globalRows = rows.filter(row => !row.note);
+  const notes = rows
+    .map(row => row.note)
+    .filter(
+      (note, index, all): note is string =>
+        note !== undefined && all.indexOf(note) === index,
+    );
+  const contextGroups = notes.map(note => ({
+    note,
+    rows: rows.filter(row => row.note === note),
+  }));
 </script>
 
 <style>
   .modal {
-    width: 30rem;
+    width: max-content;
+    max-width: calc(100vw - 4rem);
     display: flex;
     flex-direction: column;
     border-radius: var(--border-radius-lg);
@@ -32,13 +45,21 @@
     font: var(--txt-heading-s);
     color: var(--color-text-primary);
   }
-  .rows {
+  .columns {
+    display: grid;
+    grid-template-columns: auto auto;
+  }
+  .column {
     display: grid;
     grid-template-columns: auto 1fr;
     align-items: center;
+    align-content: start;
     column-gap: 1rem;
     row-gap: 0.75rem;
     padding: 1.5rem;
+  }
+  .column + .column {
+    border-left: 1px solid var(--color-border-subtle);
   }
   .keys {
     display: flex;
@@ -63,16 +84,30 @@
     color: var(--color-text-tertiary);
   }
   .description {
-    display: flex;
-    flex-direction: column;
     font: var(--txt-body-m-regular);
     color: var(--color-text-primary);
   }
   .note {
+    grid-column: 1 / -1;
     font: var(--txt-body-s-regular);
     color: var(--color-text-tertiary);
   }
+  .note:not(:first-child) {
+    margin-top: 0.25rem;
+  }
 </style>
+
+{#snippet shortcutRow(row: (typeof rows)[number])}
+  <div class="keys">
+    {#each row.keys as key, index (key)}
+      {#if index > 0}
+        <span class="plus">+</span>
+      {/if}
+      <span class="key">{key}</span>
+    {/each}
+  </div>
+  <span class="description">{row.description}</span>
+{/snippet}
 
 <div
   class="modal"
@@ -81,22 +116,19 @@
   <div class="header">
     <span class="title">Keyboard shortcuts</span>
   </div>
-  <div class="rows">
-    {#each rows as row, index (index)}
-      <div class="keys">
-        {#each row.keys as key, index (key)}
-          {#if index > 0}
-            <span class="plus">+</span>
-          {/if}
-          <span class="key">{key}</span>
+  <div class="columns">
+    <div class="column">
+      {#each globalRows as row, index (index)}
+        {@render shortcutRow(row)}
+      {/each}
+    </div>
+    <div class="column">
+      {#each contextGroups as group (group.note)}
+        <span class="note">{group.note}</span>
+        {#each group.rows as row, index (index)}
+          {@render shortcutRow(row)}
         {/each}
-      </div>
-      <span class="description">
-        {row.description}
-        {#if row.note}
-          <span class="note">{row.note}</span>
-        {/if}
-      </span>
-    {/each}
+      {/each}
+    </div>
   </div>
 </div>
