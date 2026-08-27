@@ -4,7 +4,7 @@ import useLocalStorage from "@app/lib/useLocalStorage.svelte";
 
 // One-off tips that can be dismissed permanently. Kept in a single list so
 // settings can offer to bring all of them back.
-export type HintId = "markdown";
+export type HintId = "markdown" | "guide";
 
 const storage = useLocalStorage("dismissedHints", z.array(z.string()), []);
 

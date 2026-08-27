@@ -6,6 +6,7 @@
   import { boolean } from "zod";
 
   import { checkRadicleCLI } from "@app/lib/checkRadicleCLI.svelte";
+  import { hints } from "@app/lib/hints";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
   import { modalStore, show } from "@app/lib/modal";
@@ -154,6 +155,36 @@
     font: var(--txt-body-s-regular);
     color: var(--color-text-tertiary);
   }
+  .guide-item {
+    position: relative;
+    display: flex;
+  }
+  .guide-dismiss {
+    position: absolute;
+    top: 50%;
+    right: 0.5rem;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s ease;
+  }
+  .guide-item:hover .guide-dismiss,
+  .guide-item:focus-within .guide-dismiss {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .guide-dismiss:hover {
+    color: var(--color-text-primary);
+  }
 </style>
 
 <div class="sidebar">
@@ -204,15 +235,27 @@
   </div>
 
   <div class="bottom">
-    <Button
-      variant="naked"
-      styleWidth="100%"
-      styleJustifyContent="flex-start"
-      active={isGuide()}
-      onclick={() => router.push({ resource: "guide" })}>
-      <span class="icon"><Icon name="guide" /></span>
-      Guide
-    </Button>
+    {#if !hints.isDismissed("guide")}
+      <div class="guide-item">
+        <Button
+          variant="naked"
+          styleWidth="100%"
+          styleJustifyContent="flex-start"
+          active={isGuide()}
+          onclick={() => router.push({ resource: "guide" })}>
+          <span class="icon"><Icon name="guide" /></span>
+          Guide
+        </Button>
+        <button
+          type="button"
+          class="guide-dismiss"
+          title="Hide Guide"
+          aria-label="Hide Guide"
+          onclick={() => hints.dismiss("guide")}>
+          <Icon name="close" />
+        </button>
+      </div>
+    {/if}
     <Button
       variant="naked"
       styleWidth="100%"
