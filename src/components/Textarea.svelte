@@ -6,6 +6,12 @@
 
   import { onMount, tick } from "svelte";
 
+  import type { MarkdownFormat, TextEdit } from "@app/lib/markdownFormat";
+  import {
+    applyMarkdownFormat,
+    applyTextEdit,
+    pasteLinkEdit,
+  } from "@app/lib/markdownFormat";
   import * as utils from "@app/lib/utils";
 
   interface Props {
@@ -109,6 +115,32 @@
     });
   });
 
+  const formatShortcuts: Record<string, MarkdownFormat> = {
+    b: "bold",
+    i: "italic",
+    e: "code",
+    k: "link",
+  };
+
+  // Writing through `insertText` keeps the edit on the textarea's native undo
+  // stack, so Cmd+Z treats it the same way it treats typing. Assigning the
+  // value would clear that stack instead, so it is only a fallback.
+  function applyEdit(element: HTMLTextAreaElement, edit: TextEdit) {
+    element.setSelectionRange(edit.from, edit.to);
+    const applied = edit.text
+      ? document.execCommand("insertText", false, edit.text)
+      : document.execCommand("delete");
+    if (!applied) {
+      value = applyTextEdit(element.value, edit);
+    }
+
+    selectionStart = edit.selectionStart;
+    selectionEnd = edit.selectionEnd;
+    void tick().then(() =>
+      element.setSelectionRange(edit.selectionStart, edit.selectionEnd),
+    );
+  }
+
   // Pasting a link over a selection wraps the selected text in markdown link
   // syntax, matching GitHub and other markdown editors. Anything else falls
   // through to the browser's default paste.
@@ -137,15 +169,7 @@
     }
 
     event.preventDefault();
-
-    const link = `[${element.value.substring(start, end)}](${url})`;
-    const caret = start + link.length;
-    value = element.value
-      .substring(0, start)
-      .concat(link, element.value.substring(end));
-    selectionStart = caret;
-    selectionEnd = caret;
-    void tick().then(() => element.setSelectionRange(caret, caret));
+    applyEdit(element, pasteLinkEdit(element.value, start, end, url));
   }
 
   function handleKeydown(event: KeyboardEvent) {
@@ -156,6 +180,25 @@
     }
     if (event.key === "Escape") {
       textareaElement?.blur();
+    }
+
+    // Shift and Alt are left alone so that combinations the platform or the app
+    // binds elsewhere still reach it.
+    const format =
+      auxiliarKey && !event.shiftKey && !event.altKey
+        ? formatShortcuts[event.key.toLowerCase()]
+        : undefined;
+    if (format && textareaElement) {
+      event.preventDefault();
+      applyEdit(
+        textareaElement,
+        applyMarkdownFormat(
+          format,
+          textareaElement.value,
+          textareaElement.selectionStart,
+          textareaElement.selectionEnd,
+        ),
+      );
     }
   }
 </script>
