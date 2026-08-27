@@ -199,6 +199,12 @@
         e.preventDefault();
         void router.push({ resource: "repo.home", rid: repo.rid });
       }
+    } else if (auxiliarKey && e.key === "[") {
+      e.preventDefault();
+      window.history.back();
+    } else if (auxiliarKey && e.key === "]") {
+      e.preventDefault();
+      window.history.forward();
     } else if (auxiliarKey && e.key === ",") {
       e.preventDefault();
       toggle({ component: SettingsView, props: {} });

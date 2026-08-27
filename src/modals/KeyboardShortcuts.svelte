@@ -11,6 +11,8 @@
     { keys: [modifierKey(), "f"], description: "Search the current list" },
     { keys: [modifierKey(), "n"], description: "New issue" },
     { keys: [modifierKey(), "1…9"], description: "Go to the nth repo" },
+    { keys: [modifierKey(), "["], description: "Go back" },
+    { keys: [modifierKey(), "]"], description: "Go forward" },
     { keys: [modifierKey(), "r"], description: "Reload" },
     { keys: [modifierKey(), ","], description: "Settings" },
     { keys: [modifierKey(), "+"], description: "Increase font size" },
