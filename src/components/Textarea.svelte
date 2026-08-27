@@ -109,6 +109,45 @@
     });
   });
 
+  // Pasting a link over a selection wraps the selected text in markdown link
+  // syntax, matching GitHub and other markdown editors. Anything else falls
+  // through to the browser's default paste.
+  function handlePaste(
+    event: ClipboardEvent & {
+      currentTarget: EventTarget & HTMLTextAreaElement;
+    },
+  ) {
+    void onpaste?.(event);
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    const element = event.currentTarget;
+    const start = element.selectionStart;
+    const end = element.selectionEnd;
+    if (start === end) {
+      return;
+    }
+
+    const url = utils.pastedLinkUrl(
+      event.clipboardData?.getData("text/plain") ?? "",
+    );
+    if (!url) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const link = `[${element.value.substring(start, end)}](${url})`;
+    const caret = start + link.length;
+    value = element.value
+      .substring(0, start)
+      .concat(link, element.value.substring(end));
+    selectionStart = caret;
+    selectionEnd = caret;
+    void tick().then(() => element.setSelectionRange(caret, caret));
+  }
+
   function handleKeydown(event: KeyboardEvent) {
     event.stopPropagation();
     const auxiliarKey = utils.isMac() ? event.metaKey : event.ctrlKey;
@@ -200,7 +239,7 @@
       ? "scroll"
       : undefined}
     {placeholder}
-    {onpaste}
+    onpaste={handlePaste}
     {oninput}
     {onkeypress}
     onfocus={() => (focussed = true)}

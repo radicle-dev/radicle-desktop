@@ -325,6 +325,26 @@ export function safeHttpUrl(url: string): string | undefined {
   return undefined;
 }
 
+// Returns the URL when `text` is a single bare link, otherwise undefined. Used
+// to decide whether a paste over a selection should become a markdown link.
+// The pasted text is returned verbatim rather than normalised, so the editor
+// keeps exactly what the user copied.
+export function pastedLinkUrl(text: string): string | undefined {
+  const candidate = text.trim();
+  if (candidate === "" || /\s/.test(candidate)) {
+    return undefined;
+  }
+  try {
+    const { protocol } = new URL(candidate);
+    if (protocol === "http:" || protocol === "https:") {
+      return candidate;
+    }
+  } catch {
+    // fall through
+  }
+  return undefined;
+}
+
 // Seed to fall back to when `config.preferredSeeds` is empty.
 const DEFAULT_SEED = "rosa.radicle.network";
 
