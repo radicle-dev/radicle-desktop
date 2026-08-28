@@ -22,6 +22,21 @@ pub struct RepoSummary {
     pub is_team: bool,
 }
 
+/// A team named by a repository's `dev.radicle.teams.v1` identity-document
+/// payload, together with whether that team lists the repository back in its
+/// own `.radicle/team.json`.
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub struct RepoTeam {
+    #[ts(as = "String")]
+    pub rid: identity::RepoId,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    pub mutual: bool,
+}
+
 #[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]

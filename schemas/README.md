@@ -38,6 +38,59 @@ files named `invalid-*` must not.
 including a relative image link. Note that relative images in rendered markdown
 do not currently resolve in this app.
 
+## `teams-payload.schema.json`
+
+Schema for the value of the `dev.radicle.teams.v1` payload in a repository's
+identity document — the optional reverse assertion. A team lists the
+repositories it covers; a repository may assert the reverse by adding this
+payload to its identity document (an identity revision, agreed by its
+delegates), not by publishing a file on its default branch.
+
+```json
+{
+  "teams": ["rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5"]
+}
+```
+
+The payload is optional and **its absence carries no meaning**. Changing the
+identity document requires a delegate majority, so most associations will be
+one-sided for a long time. Treat corroboration as a positive signal when
+present and show nothing when absent. Never warn on a one-sided association: a
+signal that fires on the common case teaches people to ignore it.
+
+`team.json` (a file on the default branch) means the repository *is* a team; the
+`dev.radicle.teams.v1` payload means it belongs to one. A repository may hold both,
+which is a team that itself belongs to another team.
+
+The payload carries **no `version` field**: the identifier carries the version,
+so `dev.radicle.teams.v1` is itself the compatibility boundary and a future
+incompatible shape is published as `dev.radicle.teams.v2`.
+
+There are four states per listed repository, and the fourth is not the second:
+
+| Team lists repo | Repo lists team | State |
+|---|---|---|
+| yes | yes | both assert |
+| yes | no | team asserts only |
+| no | yes | repo asserts only |
+| yes | not replicated locally | unknown |
+
+Reading the reverse assertion requires that repository's identity document, so
+for an RID this node has not replicated the answer is unknown rather than absent.
+
+### Fixtures
+
+In `fixtures/teams-payload/`, kept in a subfolder deliberately: the team fixture
+tests discover `fixtures/*.json` by prefix and assert every `valid-*` parses as a
+team, so a payload file sitting beside them would break that suite.
+
+| File | Conforms | Exercises |
+|---|---|---|
+| `valid-payload-single.json` | yes | One team. |
+| `valid-payload-empty.json` | yes | Empty list, asserting no affiliation. |
+| `invalid-payload-did.json` | no | A DID where an RID is expected. |
+| `invalid-payload-oversize-rid.json` | no | An identifier longer than any object id encodes to. |
+
 ### Notes
 
 - `version` gates interpretation. A file declaring an unknown version must be

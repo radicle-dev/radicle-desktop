@@ -159,3 +159,19 @@ pub fn unseed(ctx: tauri::State<'_, AppState>, rid: RepoId) -> Result<(), Error>
 pub async fn seeded_not_replicated(ctx: tauri::State<'_, AppState>) -> Result<Vec<RepoId>, Error> {
     ctx.seeded_not_replicated()
 }
+
+#[tauri::command]
+pub async fn repos_asserting_team(
+    ctx: tauri::State<'_, AppState>,
+    rid: RepoId,
+) -> Result<Vec<RepoId>, Error> {
+    blocking(ctx, move |ctx| ctx.repos_asserting_team(rid)).await
+}
+
+#[tauri::command]
+pub async fn repo_teams(
+    ctx: tauri::State<'_, AppState>,
+    rid: RepoId,
+) -> Result<Vec<types::repo::RepoTeam>, Error> {
+    blocking(ctx, move |ctx| ctx.repo_teams(rid)).await
+}

@@ -70,6 +70,8 @@ pub fn run() {
             repo::list_repo_refs,
             repo::list_repos,
             repo::list_repos_summary,
+            repo::repos_asserting_team,
+            repo::repo_teams,
             repo::repo_by_id,
             repo::repo_commit_count,
             repo::repo_commit,

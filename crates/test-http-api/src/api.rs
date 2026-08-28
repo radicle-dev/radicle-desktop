@@ -81,6 +81,8 @@ pub fn router(ctx: Context) -> Router {
             "/seeded_not_replicated",
             post(seeded_not_replicated_handler),
         )
+        .route("/repos_asserting_team", post(repos_asserting_team_handler))
+        .route("/repo_teams", post(repo_teams_handler))
         .route("/repo_by_id", post(repo_handler))
         .route("/list_repo_refs", post(list_repo_refs_handler))
         .route("/version", post(version_handler))
@@ -170,6 +172,22 @@ async fn list_repos_summary_handler(State(ctx): State<Context>) -> impl IntoResp
 async fn seeded_not_replicated_handler(State(ctx): State<Context>) -> impl IntoResponse {
     let rids = ctx.seeded_not_replicated()?;
     Ok::<_, Error>(Json(rids))
+}
+
+async fn repos_asserting_team_handler(
+    State(ctx): State<Context>,
+    Json(RepoBody { rid }): Json<RepoBody>,
+) -> impl IntoResponse {
+    let rids = ctx.repos_asserting_team(rid)?;
+    Ok::<_, Error>(Json(rids))
+}
+
+async fn repo_teams_handler(
+    State(ctx): State<Context>,
+    Json(RepoBody { rid }): Json<RepoBody>,
+) -> impl IntoResponse {
+    let teams = ctx.repo_teams(rid)?;
+    Ok::<_, Error>(Json(teams))
 }
 
 async fn list_notifications_handler() -> impl IntoResponse {

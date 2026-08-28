@@ -105,6 +105,67 @@ fn has_team_manifest(profile: &radicle::Profile, rid: identity::RepoId) -> Resul
         .is_ok())
 }
 
+#[derive(serde::Deserialize)]
+struct TeamManifest {
+    version: u32,
+    name: String,
+    #[serde(default)]
+    repos: Vec<String>,
+}
+
+/// Read a blob at `path` in the repo's tree at `head`. `None` on any failure
+/// (missing file included) — never an error.
+fn read_blob_at(repo: &storage::git::Repository, head: git::Oid, path: &str) -> Option<Vec<u8>> {
+    let tree = repo.backend.find_commit(head.into()).ok()?.tree().ok()?;
+    let entry = tree.get_path(std::path::Path::new(path)).ok()?;
+    let blob = entry.to_object(&repo.backend).ok()?.peel_to_blob().ok()?;
+    Some(blob.content().to_vec())
+}
+
+/// The team RIDs named by a `dev.radicle.teams.v1` payload value (the object
+/// `{ "teams": [...] }`). Non-RID entries are skipped — a malformed entry
+/// simply does not name a team. Per the teams RIP, a repository asserts
+/// affiliation through this identity-document payload, not a tree file.
+fn parse_teams_payload(value: &serde_json::Value) -> Vec<identity::RepoId> {
+    value
+        .get("teams")
+        .and_then(|teams| teams.as_array())
+        .map(|teams| {
+            teams
+                .iter()
+                .filter_map(|v| v.as_str())
+                .filter_map(|s| s.parse::<identity::RepoId>().ok())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// The team RIDs a repository asserts affiliation with, read from its identity
+/// document's `dev.radicle.teams.v1` payload. Empty when the payload is absent —
+/// which carries no meaning and is the common case.
+fn doc_teams(doc: &Doc) -> Vec<identity::RepoId> {
+    let Ok(id) = "dev.radicle.teams.v1".parse::<doc::PayloadId>() else {
+        return Vec::new();
+    };
+    match doc.payload().get(&id) {
+        Some(payload) => parse_teams_payload(payload),
+        None => Vec::new(),
+    }
+}
+
+/// Whether `doc` asserts affiliation with `team`.
+fn asserts_team(doc: &Doc, team: &identity::RepoId) -> bool {
+    doc_teams(doc).contains(team)
+}
+
+/// Parse `.radicle/team.json` at `head`. `None` when absent, unparseable, or an
+/// unknown `version`.
+fn read_team_manifest(repo: &storage::git::Repository, head: git::Oid) -> Option<TeamManifest> {
+    let parsed: TeamManifest =
+        serde_json::from_slice(&read_blob_at(repo, head, ".radicle/team.json")?).ok()?;
+    (parsed.version == 1).then_some(parsed)
+}
+
 /// Tally `git diff --numstat` between two commits into diff stats. Returns
 /// `None` if git is unavailable or its output can't be parsed, so the caller
 /// can fall back to the (slower) radicle-surf diff.
@@ -958,5 +1019,98 @@ pub trait Repo: Profile {
             .collect::<Vec<_>>();
 
         Ok(entries)
+    }
+
+    /// RIDs of locally-stored repositories that assert affiliation with `rid`
+    /// via the `dev.radicle.teams.v1` payload in their identity document. The
+    /// payloads are already loaded by `repositories()`, so this is a map lookup
+    /// per repo — no per-repo open or tree walk. Scoped to team views.
+    fn repos_asserting_team(&self, rid: identity::RepoId) -> Result<Vec<identity::RepoId>, Error> {
+        let profile = self.profile();
+        let storage = &profile.storage;
+        // Affiliation lives in the identity document, which `repositories()`
+        // already loads — no per-repo open or tree walk needed.
+        let entries = storage
+            .repositories()?
+            .into_iter()
+            .filter(|info| asserts_team(&info.doc, &rid))
+            .map(|info| info.rid)
+            .collect();
+        Ok(entries)
+    }
+
+    /// The teams a repository names in its `dev.radicle.teams.v1` identity-document
+    /// payload, each with whether that team lists the repository back (`mutual`)
+    /// and its display name. Reads this repo's identity document plus each named
+    /// team's `.radicle/team.json` — cheap enough for a repo page.
+    fn repo_teams(&self, rid: identity::RepoId) -> Result<Vec<repo::RepoTeam>, Error> {
+        let profile = self.profile();
+        let storage = &profile.storage;
+        let DocAt { doc, .. } = storage.repository(rid)?.identity_doc()?;
+        let team_rids = doc_teams(&doc);
+
+        let mut out = Vec::with_capacity(team_rids.len());
+        for team_rid in team_rids {
+            let manifest = storage.repository(team_rid).ok().and_then(|team_repo| {
+                let head = team_repo.head().ok()?.1;
+                read_team_manifest(&team_repo, head)
+            });
+            let (name, mutual) = match manifest {
+                Some(m) => {
+                    let mutual = m
+                        .repos
+                        .iter()
+                        .filter_map(|r| r.parse::<identity::RepoId>().ok())
+                        .any(|r| r == rid);
+                    (Some(m.name), mutual)
+                }
+                None => (None, false),
+            };
+            out.push(repo::RepoTeam {
+                rid: team_rid,
+                name,
+                mutual,
+            });
+        }
+        Ok(out)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{identity, parse_teams_payload};
+
+    fn fixture(name: &str) -> serde_json::Value {
+        let bytes = std::fs::read(format!(
+            "{}/../../schemas/fixtures/teams-payload/{name}",
+            env!("CARGO_MANIFEST_DIR")
+        ))
+        .unwrap();
+        serde_json::from_slice(&bytes).unwrap()
+    }
+
+    #[test]
+    fn teams_payload_conformance() {
+        let none = Vec::<identity::RepoId>::new();
+        // A well-formed single team resolves to its RID; an empty list to none.
+        let expected: identity::RepoId = "rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5".parse().unwrap();
+        assert_eq!(
+            parse_teams_payload(&fixture("valid-payload-single.json")),
+            vec![expected]
+        );
+        assert_eq!(
+            parse_teams_payload(&fixture("valid-payload-empty.json")),
+            none
+        );
+        // Non-conforming entries (a DID, an oversize RID) name no team, so they
+        // are dropped rather than reported as an affiliation.
+        assert_eq!(
+            parse_teams_payload(&fixture("invalid-payload-did.json")),
+            none
+        );
+        assert_eq!(
+            parse_teams_payload(&fixture("invalid-payload-oversize-rid.json")),
+            none
+        );
     }
 }

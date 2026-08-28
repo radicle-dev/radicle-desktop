@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://radicle.dev/RIP-XXXX/teams-payload.schema.json",
+  "title": "Radicle team affiliation payload",
+  "description": "Value of the dev.radicle.teams.v1 payload in a repository's identity document. It records the teams that this repository asserts cover it. The payload is optional; its absence carries no meaning.",
+  "type": "object",
+  "required": [
+    "teams"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "teams": {
+      "description": "RIDs of the team repositories this repository asserts cover it. May be empty, which asserts no affiliation.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rid"
+      },
+      "uniqueItems": true,
+      "maxItems": 256
+    }
+  },
+  "$defs": {
+    "rid": {
+      "description": "A repository identifier: rad: followed by a multibase base58btc encoding (leading z) of a Git object identifier. Bounded to the SHA-1 object format, the only one Radicle defines today; a new object format will require a new bound.",
+      "type": "string",
+      "examples": [
+        "rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5"
+      ],
+      "pattern": "^rad:z[1-9a-km-zA-HJ-NP-Z]{20,28}$"
+    }
+  }
+}
