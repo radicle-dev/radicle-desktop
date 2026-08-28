@@ -29,6 +29,7 @@
     offset?: number;
     popoverPadding?: string;
     expanded?: boolean;
+    styleDisplay?: string;
   }
 
   /* eslint-disable prefer-const */
@@ -39,6 +40,7 @@
     offset: offsetPx = 4,
     popoverPadding,
     expanded = $bindable(false),
+    styleDisplay = undefined,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -109,7 +111,8 @@
   data-popover-id={id}
   data-expanded={expanded || undefined}
   bind:this={containerEl}
-  class="container">
+  class="container"
+  style:display={styleDisplay}>
   {@render toggle(toggleFn)}
 
   {#if expanded}

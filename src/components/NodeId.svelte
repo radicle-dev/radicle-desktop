@@ -282,6 +282,7 @@
 <Popover
   popoverPadding="0"
   placement="bottom-start"
+  styleDisplay={inline ? "inline-flex" : undefined}
   bind:expanded={cardExpanded}>
   {#snippet toggle(_onclick)}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
