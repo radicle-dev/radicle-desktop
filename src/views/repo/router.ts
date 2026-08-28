@@ -67,6 +67,7 @@ export interface LoadedRepoTeamReposRoute {
     peer?: string;
     revision?: string;
     team: TeamParseResult;
+    assertingRids: string[];
     sidebarData: SidebarData;
   };
 }
@@ -459,9 +460,15 @@ export async function loadRepoTeamRepos(
 ): Promise<LoadedRepoTeamReposRoute> {
   const context = await loadSourceContext(route);
   const team = await loadTeamManifest(route.rid, context.oid);
+  // Only scan for repos that assert this team when the team file is renderable;
+  // the scan is dedicated to this view and never runs from list_repos_summary.
+  const assertingRids =
+    team.status === "ok"
+      ? await invoke<string[]>("repos_asserting_team", { rid: route.rid })
+      : [];
   return {
     resource: "repo.team.repos",
-    params: { ...context, team },
+    params: { ...context, team, assertingRids },
   };
 }
 
