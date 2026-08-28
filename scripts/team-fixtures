@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+# Local Radicle repos exercising the teams reverse-assertion states.
+# All repos are PRIVATE + unseeded: local storage only, nothing announced.
+#   scripts/team-fixtures setup             # detect-and-skip; creates if absent
+#   scripts/team-fixtures teardown          # DRY RUN — prints what it would remove
+#   scripts/team-fixtures teardown --apply  # actually removes (guarded)
+set -euo pipefail
+
+PREFIX="teamfix-"
+RID_RE='^rad:z[1-9A-HJ-NP-Za-km-z]+$'
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+WORK="$REPO_ROOT/tests/tmp/team-fixtures"
+MANIFEST="$WORK/rids.env"
+STORAGE="$(rad path)/storage"
+COMMIT=(-c user.name="Team Fixtures" -c user.email="fixtures@localhost")
+
+# Guard: STORAGE must be a real, existing .../storage directory.
+case "$STORAGE" in
+  */storage) ;;
+  *) echo "refusing: storage '$STORAGE' does not end in /storage" >&2; exit 1 ;;
+esac
+if [ -z "$STORAGE" ] || [ ! -d "$STORAGE" ]; then
+  echo "refusing: storage dir '$STORAGE' missing" >&2; exit 1
+fi
+
+valid_rid() { printf '%s' "$1" | grep -qE "$RID_RE"; }
+
+repo_name() {
+  rad inspect "$1" --payload 2>/dev/null \
+    | grep -oE '"name": *"[^"]*"' | head -1 \
+    | sed -E 's/.*"name": *"([^"]*)".*/\1/' || true
+}
+
+fixture_rids() {
+  if [ -f "$MANIFEST" ]; then
+    # Only the repos we created — never the UNRESOLVABLE entry, which names no
+    # real repository and would otherwise be skipped by the name guard forever.
+    grep -oE '^(INFRA|ALPHA|BETA|GAMMA)=rad:z[A-Za-z0-9]+' "$MANIFEST" 2>/dev/null \
+      | grep -oE 'rad:z[A-Za-z0-9]+' | sort -u || true
+  else
+    rad ls --all 2>/dev/null | grep -E "$PREFIX" \
+      | grep -oE 'rad:z[A-Za-z0-9]+' | sort -u || true
+  fi
+}
+
+teardown() { # $1 = --apply to delete; otherwise dry run
+  local apply="${1:-}" rid name dir skipped=0
+  if [ "$apply" = "--apply" ]; then
+    echo "== teardown (APPLY — deleting) =="
+  else
+    echo "== teardown (dry run) =="
+  fi
+  for rid in $(fixture_rids); do
+    if ! valid_rid "$rid"; then
+      echo "skip (bad RID): $rid" >&2; skipped=$((skipped + 1)); continue
+    fi
+    name="$(repo_name "$rid")"
+    case "$name" in
+      "$PREFIX"*) ;;
+      *) echo "skip ($rid name='$name' not $PREFIX*)" >&2; skipped=$((skipped + 1)); continue ;;
+    esac
+    dir="$STORAGE/${rid#rad:}"
+    if [ "$apply" = "--apply" ]; then
+      echo "remove: $dir  ($rid, $name)"
+      rad unseed "$rid" >/dev/null 2>&1 || true   # no-op for --no-seed repos
+      if [ -d "$dir" ]; then rm -rf -- "$dir"; fi
+    else
+      echo "would remove: $dir  ($rid, $name)"
+    fi
+  done
+  if [ "$apply" != "--apply" ]; then
+    echo "(dry run — pass --apply to delete; working copies under $WORK)"
+  elif [ "$skipped" -eq 0 ]; then
+    rm -rf -- "$WORK"
+  else
+    echo "kept $WORK (and its manifest): $skipped entr(ies) skipped by the guards" >&2
+  fi
+}
+
+new_rid() { # dir name desc [relpath content] -> echoes a validated RID
+  local dir="$1" name="$2" desc="$3" rel="${4:-}" content="${5:-}" out rid
+  mkdir -p "$WORK/$dir"
+  git -C "$WORK/$dir" init -b main -q
+  : > "$WORK/$dir/.gitkeep"
+  if [ -n "$rel" ]; then
+    mkdir -p "$WORK/$dir/$(dirname "$rel")"
+    printf '%s\n' "$content" > "$WORK/$dir/$rel"
+  fi
+  git -C "$WORK/$dir" add -A
+  git -C "$WORK/$dir" "${COMMIT[@]}" commit -q -m "Initial"
+  out="$(cd "$WORK/$dir" && rad init --name "$name" --description "$desc" \
+      --default-branch main --private --no-confirm --no-seed 2>&1)"
+  rid="$(printf '%s' "$out" | grep -oE 'rad:z[A-Za-z0-9]+' | head -1 || true)"
+  if ! valid_rid "$rid" || [ ! -d "$STORAGE/${rid#rad:}" ]; then
+    echo "FATAL: rad init for '$name' produced no usable RID (got '$rid')" >&2
+    printf '%s\n' "$out" >&2
+    exit 1
+  fi
+  printf '%s\n' "$rid"
+}
+
+push_file() { # dir relpath content
+  local dir="$1" rel="$2" content="$3"
+  mkdir -p "$WORK/$dir/$(dirname "$rel")"
+  printf '%s\n' "$content" > "$WORK/$dir/$rel"
+  git -C "$WORK/$dir" add -A
+  git -C "$WORK/$dir" "${COMMIT[@]}" commit -q -m "Add $rel"
+  git -C "$WORK/$dir" push -q rad main
+}
+
+affiliate() { # repo_rid team_rid — assert affiliation in the identity document
+  rad id update --repo "$1" \
+    --payload dev.radicle.teams.v1 teams "[\"$2\"]" \
+    --title "Affiliate with team" --no-confirm --quiet
+}
+
+setup() {
+  # detect-and-skip only when ALL four exist on disk.
+  if [ -f "$MANIFEST" ]; then
+    local have=0 key r
+    for key in INFRA ALPHA BETA GAMMA; do
+      r="$(grep -oE "^${key}=rad:z[A-Za-z0-9]+" "$MANIFEST" | head -1 | cut -d= -f2 || true)"
+      if [ -n "$r" ] && [ -d "$STORAGE/${r#rad:}" ]; then
+        have=$((have + 1))
+      fi
+    done
+    if [ "$have" -eq 4 ]; then
+      echo "fixtures already present:"; cat "$MANIFEST"; return 0
+    fi
+  fi
+  if [ -n "$(fixture_rids)" ]; then
+    echo "partial fixtures present — run 'scripts/team-fixtures teardown --apply' first" >&2
+    exit 1
+  fi
+
+  mkdir -p "$WORK"
+  local UNRESOLVABLE INFRA ALPHA BETA GAMMA
+  UNRESOLVABLE="$(grep -oE 'rad:z[A-Za-z0-9]+' \
+    "$REPO_ROOT/schemas/fixtures/valid-unresolvable-refs.json" | head -1 || true)"
+  if ! valid_rid "$UNRESOLVABLE"; then
+    echo "FATAL: no valid RID in valid-unresolvable-refs.json" >&2; exit 1
+  fi
+
+  INFRA="$(new_rid infra "${PREFIX}infra" 'Team repository')"
+  ALPHA="$(new_rid alpha "${PREFIX}alpha" 'Both assert')"
+  BETA="$(new_rid  beta  "${PREFIX}beta"  'Team asserts only')"
+  GAMMA="$(new_rid gamma "${PREFIX}gamma" 'Repo asserts only')"
+
+  # Reverse assertion now lives in the identity document (dev.radicle.teams.v1
+  # payload), not a tree file. alpha and gamma both name infra; beta does not.
+  affiliate "$ALPHA" "$INFRA"
+  affiliate "$GAMMA" "$INFRA"
+
+  push_file infra .radicle/team.json "{
+  \"version\": 1,
+  \"name\": \"teamfix Infrastructure\",
+  \"description\": \"Reverse-assertion fixtures\",
+  \"members\": [],
+  \"repos\": [
+    \"$ALPHA\",
+    \"$BETA\",
+    \"$UNRESOLVABLE\"
+  ]
+}"
+
+  push_file infra .radicle/profile/README.md "# teamfix Infrastructure
+
+A fixture team for exercising the teams UI: reverse assertion, attested
+repositories, and this profile page.
+
+## Repositories
+
+- **teamfix-alpha** — both sides assert (listed here, and names this team back).
+- **teamfix-beta** — team asserts only.
+- **teamfix-gamma** — repo asserts only, so it is not listed here.
+
+Membership grants nothing; these files are public statements, trusted the way a
+README is trusted."
+
+  { echo "INFRA=$INFRA"; echo "ALPHA=$ALPHA"; echo "BETA=$BETA"
+    echo "GAMMA=$GAMMA"; echo "UNRESOLVABLE=$UNRESOLVABLE"; } | tee "$MANIFEST"
+  echo; echo "Open the team repo: $INFRA"
+}
+
+case "${1:-setup}" in
+  setup) setup ;;
+  teardown) teardown "${2:-}" ;;
+  *) echo "usage: $0 [setup|teardown [--apply]]" >&2; exit 1 ;;
+esac
