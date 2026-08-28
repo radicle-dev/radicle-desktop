@@ -1,12 +1,15 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { RepoTeam } from "@bindings/repo/RepoTeam";
 
-  import { explorerUrl, truncateDid } from "@app/lib/utils";
+  import { invoke } from "@app/lib/invoke";
+  import { explorerUrl, formatRepositoryId, truncateDid } from "@app/lib/utils";
 
   import CheckoutRepoButton from "@app/components/CheckoutRepoButton.svelte";
   import HoverPopover from "@app/components/HoverPopover.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import RepoAvatar from "@app/components/RepoAvatar.svelte";
   import ShareButton from "@app/components/ShareButton.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
@@ -19,6 +22,32 @@
   const { repo, config }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
+
+  // The teams this repository names in its dev.radicle.teams.v1 identity-document
+  // payload. Loaded after render (off the navigation path); a repo without the
+  // payload simply returns none, so the block is hidden.
+  let teams: RepoTeam[] = $state([]);
+  let teamsRid: string | undefined;
+
+  $effect(() => {
+    const requested = repo.rid;
+    if (teamsRid === requested) {
+      return;
+    }
+    teamsRid = requested;
+    teams = [];
+    void invoke<RepoTeam[]>("repo_teams", { rid: requested })
+      .then(result => {
+        if (teamsRid === requested) {
+          teams = result;
+        }
+      })
+      .catch(() => {
+        if (teamsRid === requested) {
+          teamsRid = undefined;
+        }
+      });
+  });
 </script>
 
 <style>
@@ -41,6 +70,42 @@
   .description {
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
+  }
+  .team-avatar {
+    width: 1.25rem;
+    height: 1.25rem;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+  }
+  /* A team that does not list this repository back is greyed and desaturated —
+     the app's existing idiom for something present but not carrying weight. */
+  .team-avatar.oneway {
+    filter: grayscale(1);
+    opacity: 0.5;
+  }
+  .popover-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .popover {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 26rem;
+  }
+  .popover-title {
+    font: var(--txt-body-m-semibold);
+    color: var(--color-text-primary);
+  }
+  .popover p {
+    margin: 0;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+  }
+  .popover :global(code) {
+    font-family: var(--font-family-code);
   }
   .meta {
     display: flex;
@@ -91,6 +156,37 @@
   }
 </style>
 
+{#snippet teamPopover(team: RepoTeam)}
+  {@const name = team.name ?? formatRepositoryId(team.rid)}
+  <div class="popover">
+    <div class="popover-header">
+      <span class="team-avatar" class:oneway={!team.mutual}>
+        <RepoAvatar
+          name={team.name ?? ""}
+          rid={team.rid}
+          styleWidth="1.25rem" />
+      </span>
+      <span class="popover-title">{name}</span>
+    </div>
+    {#if team.mutual}
+      <!-- prettier-ignore -->
+      <p>This repository names {name} in its identity document, under <code>dev.radicle.teams.v1</code>, and {name} lists this repository in its own <code>.radicle/team.json</code>.</p>
+      <p>
+        Two public statements that agree. Nothing has been checked, and neither
+        grants anything.
+      </p>
+    {:else}
+      <!-- prettier-ignore -->
+      <p>This repository names {name} in its identity document, under <code>dev.radicle.teams.v1</code>. {name}'s own file does not list this repository.</p>
+      <p>
+        Usually the team dropped it and the reference was left behind. The
+        reference lives in this repository's identity, so only its delegates can
+        remove it, through the CLI.
+      </p>
+    {/if}
+  </div>
+{/snippet}
+
 <div class="header">
   <div class="project txt-selectable">
     <div class="name txt-overflow">{project.data.name}</div>
@@ -101,6 +197,29 @@
 
   <div class="meta">
     <VisibilityBadge type={repo.visibility.type} />
+
+    {#if teams.length > 0}
+      <div class="meta-item">
+        <span class="meta-label">Teams</span>
+        <div class="avatars">
+          {#each teams as team (team.rid)}
+            <HoverPopover placement="bottom-start" stylePadding="1rem">
+              {#snippet toggle()}
+                <div class="team-avatar" class:oneway={!team.mutual}>
+                  <RepoAvatar
+                    name={team.name ?? ""}
+                    rid={team.rid}
+                    styleWidth="1.25rem" />
+                </div>
+              {/snippet}
+              {#snippet popover()}
+                {@render teamPopover(team)}
+              {/snippet}
+            </HoverPopover>
+          {/each}
+        </div>
+      </div>
+    {/if}
 
     <div class="meta-item">
       <span class="meta-label">Delegates</span>

@@ -5,15 +5,18 @@
   import { formatRepositoryId } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
+  import HoverPopover from "@app/components/HoverPopover.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import Label from "@app/components/Label.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
 
   interface Props {
     repos: string[];
+    assertingRids: string[];
     sidebarData: SidebarData;
   }
 
-  const { repos, sidebarData }: Props = $props();
+  const { repos, assertingRids, sidebarData }: Props = $props();
 
   const rows = $derived(
     repos.map(rid => ({
@@ -75,6 +78,12 @@
     gap: 0.125rem;
     min-width: 0;
   }
+  .name-line {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
   .name {
     font: var(--txt-body-m-medium);
     color: var(--color-text-primary);
@@ -112,7 +121,48 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
   }
+  .popover {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 26rem;
+  }
+  .popover-title {
+    font: var(--txt-body-m-semibold);
+    color: var(--color-text-primary);
+  }
+  .popover p {
+    margin: 0;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+  }
+  .popover :global(code) {
+    font-family: var(--font-family-code);
+  }
 </style>
+
+{#snippet attested()}
+  <HoverPopover placement="bottom-start" stylePadding="1rem">
+    {#snippet toggle()}
+      <Label label="attested" icon="checkmark" />
+    {/snippet}
+    {#snippet popover()}
+      <div class="popover">
+        <div class="popover-title">Both sides name each other</div>
+        <!-- prettier-ignore -->
+        <p>This team lists the repository in <code>.radicle/team.json</code>, and the repository names this team in its identity document, under <code>dev.radicle.teams.v1</code>.</p>
+        <p>
+          Neither file grants anything and nothing has been checked. They are
+          public statements, trusted the way a README is trusted.
+        </p>
+        <p>
+          Most repositories never publish the second file. Its absence says
+          nothing either way.
+        </p>
+      </div>
+    {/snippet}
+  </HoverPopover>
+{/snippet}
 
 {#if rows.length > 0}
   <div class="list">
@@ -125,7 +175,12 @@
             <RepoAvatar name={summary.name} {rid} styleWidth="2.5rem" />
           </span>
           <div class="body">
-            <span class="name txt-overflow">{summary.name}</span>
+            <div class="name-line">
+              <span class="name txt-overflow">{summary.name}</span>
+              {#if assertingRids.includes(rid)}
+                {@render attested()}
+              {/if}
+            </div>
             <span class="meta txt-overflow">
               <span class="rid">{formatRepositoryId(rid)}</span>
               {#if summary.description}

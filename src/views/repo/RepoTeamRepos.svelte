@@ -19,11 +19,20 @@
     peer?: string;
     revision?: string;
     team: TeamParseResult;
+    assertingRids: string[];
     sidebarData: SidebarData;
   }
 
-  const { repo, oid, commit, peer, revision, team, sidebarData }: Props =
-    $props();
+  const {
+    repo,
+    oid,
+    commit,
+    peer,
+    revision,
+    team,
+    assertingRids,
+    sidebarData,
+  }: Props = $props();
 
   const baseRoute = $derived({
     resource: "repo.home" as const,
@@ -62,7 +71,7 @@
     <ScrollArea style="flex: 1; min-height: 0;">
       <div>
         {#if team.status === "ok"}
-          <TeamRepoList repos={team.team.repos} {sidebarData} />
+          <TeamRepoList repos={team.team.repos} {assertingRids} {sidebarData} />
         {:else if team.status === "unsupported-version"}
           <div class="degraded">
             This team file uses version {team.version}, which this app doesn't
