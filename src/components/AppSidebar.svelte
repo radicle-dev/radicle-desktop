@@ -178,7 +178,7 @@
     transition: opacity 0.1s ease;
   }
   .guide-item:hover .guide-dismiss,
-  .guide-item:focus-within .guide-dismiss {
+  .guide-dismiss:focus-visible {
     opacity: 1;
     pointer-events: auto;
   }
