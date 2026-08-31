@@ -156,6 +156,11 @@ pub fn unseed(ctx: tauri::State<'_, AppState>, rid: RepoId) -> Result<(), Error>
 }
 
 #[tauri::command]
+pub fn clean(ctx: tauri::State<'_, AppState>, rid: RepoId) -> Result<(), Error> {
+    ctx.clean(rid)
+}
+
+#[tauri::command]
 pub async fn seeded_not_replicated(ctx: tauri::State<'_, AppState>) -> Result<Vec<RepoId>, Error> {
     ctx.seeded_not_replicated()
 }

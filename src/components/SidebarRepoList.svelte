@@ -43,6 +43,7 @@
 
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
+  import { cubicOut } from "svelte/easing";
   import { crossfade } from "svelte/transition";
 
   import { nodeRunning } from "@app/lib/events";
@@ -53,6 +54,7 @@
     invoke,
     writeToClipboard,
   } from "@app/lib/invoke";
+  import { show } from "@app/lib/modal";
   import * as router from "@app/lib/router";
   import {
     explorerHost,
@@ -69,6 +71,7 @@
     DRAG_RID_ATTRIBUTE,
     PINNED_LIST_CLASS,
   } from "@app/components/usePinnedDragReorder.svelte";
+  import ConfirmUnseed from "@app/modals/ConfirmUnseed.svelte";
 
   interface Props {
     initialRepos: RepoSummary[];
@@ -158,13 +161,47 @@
   const ANIMATION_DURATION_MS = 220;
   let animatingPinnedList = $state(false);
   let animationTimeout: ReturnType<typeof setTimeout> | undefined;
+  // The rid currently leaving the list because it was unseeded. Rows normally
+  // vanish instantly (filtering, refreshes); this one fades, and the flip
+  // animation below then closes the gap it leaves behind.
+  let unseedingRid = $state<string | undefined>(undefined);
   const animationDuration = $derived(
-    animatingPinnedList ? ANIMATION_DURATION_MS : 0,
+    animatingPinnedList || unseedingRid !== undefined
+      ? ANIMATION_DURATION_MS
+      : 0,
   );
   const [send, receive] = crossfade({
     duration: ANIMATION_DURATION_MS,
-    fallback: () => ({ duration: 0 }),
+    // A row leaving with no counterpart is either the repo being unseeded, or a
+    // filter/refresh that should not animate at all.
+    fallback: (node, params) =>
+      (params as { key?: string }).key !== undefined &&
+      (params as { key?: string }).key === unseedingRid
+        ? fadeCollapse(node, ANIMATION_DURATION_MS)
+        : { duration: 0 },
   });
+
+  // Fades the row out while collapsing the space it occupies, so the rows below
+  // rise into the gap as it closes. `animate:flip` cannot do this on its own: a
+  // row mid-out-transition still takes up its full height, so flip measures no
+  // movement for its siblings, and they jump once it is finally removed.
+  function fadeCollapse(node: Element, duration: number) {
+    const el = node as HTMLElement;
+    const height = el.offsetHeight;
+    const parent = el.parentElement;
+    // The list separates rows with `gap`, which outlives a zero-height row; a
+    // negative margin takes that last sliver with it.
+    const gap = parent
+      ? parseFloat(getComputedStyle(parent).rowGap || "0") || 0
+      : 0;
+
+    return {
+      duration,
+      easing: cubicOut,
+      css: (t: number) =>
+        `opacity: ${t}; height: ${t * height}px; margin-bottom: ${(t - 1) * gap}px; overflow: hidden; pointer-events: none;`,
+    };
+  }
 
   function withPinAnimation(fn: () => void) {
     animatingPinnedList = true;
@@ -206,6 +243,47 @@
     } catch (error) {
       console.error("Unseed failed", error);
     }
+  }
+
+  // Unseeding drops the seeding policy and removes the repo from this list, so
+  // it goes through a confirmation rather than firing straight off a menu item.
+  // It does not reuse `unseed` above, which swallows its error to keep the
+  // pending-fetch list's trash button quiet — here the error has to reach the
+  // dialog.
+  function confirmUnseed(repo: RepoSummary) {
+    show({
+      component: ConfirmUnseed,
+      props: {
+        name: repo.name,
+        rid: repo.rid,
+        async confirm(clean: boolean) {
+          await invoke<null>("unseed", { rid: repo.rid });
+          // Ordered like the CLI: drop the seeding policy first, then let
+          // storage prune what it can. `clean` keeps the local node's and the
+          // delegates' refs, so a repo we have published to survives in a
+          // reduced form.
+          if (clean) {
+            await invoke<null>("clean", { rid: repo.rid });
+          }
+          // Marked before the list refreshes so the row that disappears fades
+          // out instead of blinking away, and the rows below glide up into the
+          // gap. Cleared once both halves have run.
+          unseedingRid = repo.rid;
+          try {
+            await reloadRepos();
+          } finally {
+            setTimeout(() => {
+              unseedingRid = undefined;
+            }, ANIMATION_DURATION_MS * 2);
+          }
+          // The repo the user is looking at just went away; its route would
+          // resolve to nothing.
+          if (activeRid() === repo.rid) {
+            await router.push({ resource: "inbox" });
+          }
+        },
+      },
+    });
   }
 
   const activeRoute = router.activeRouteStore;
@@ -472,6 +550,11 @@
   }
   .menu-item:hover :global(svg) {
     color: var(--color-text-primary);
+  }
+  .menu-separator {
+    height: 1px;
+    margin: 0.25rem 0;
+    background-color: var(--color-border-subtle);
   }
 </style>
 
@@ -762,5 +845,13 @@
       <Icon name="open-external" />
       Open in {explorerHost(config)}
     </a>
+    <div class="menu-separator"></div>
+    <button
+      class="menu-item"
+      role="menuitem"
+      onclick={() => confirmUnseed(repo)}>
+      <Icon name="seed" />
+      Stop seeding
+    </button>
   </ContextMenu>
 {/if}

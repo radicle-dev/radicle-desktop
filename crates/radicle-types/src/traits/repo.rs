@@ -10,7 +10,7 @@ use radicle::node::AliasStore;
 use radicle::node::routing::Store;
 use radicle::patch::cache::Patches as _;
 use radicle::storage;
-use radicle::storage::{ReadRepository, ReadStorage, RepositoryInfo};
+use radicle::storage::{ReadRepository, ReadStorage, RepositoryInfo, WriteStorage};
 use radicle::{git, identity, node};
 
 use crate::cobs;
@@ -396,10 +396,19 @@ pub trait Repo: Profile {
     fn list_repos_summary(&self) -> Result<Vec<repo::RepoSummary>, Error> {
         let profile = self.profile();
         let storage = &profile.storage;
+        let policies = profile.policies()?;
         let repos = storage.repositories()?;
         let mut entries = Vec::new();
 
         for RepositoryInfo { rid, doc, .. } in repos {
+            // `rad unseed` only drops the seeding policy; the repository stays
+            // in storage. This list backs the sidebar, which is about what you
+            // seed, so an unseeded repo has to leave it even though its files
+            // are still on disk — otherwise unseeding looks like it did nothing.
+            if !policies.is_seeding(&rid)? {
+                continue;
+            }
+
             let Some(data) = doc
                 .payload()
                 .get(&doc::PayloadId::project())
@@ -924,6 +933,20 @@ pub trait Repo: Profile {
         let mut node = radicle::Node::new(profile.home().socket_from_env());
 
         profile.unseed(rid, &mut node)?;
+
+        Ok(())
+    }
+
+    /// Remove the repository's remotes from storage, mirroring `rad clean`.
+    ///
+    /// If the local node has never written signed refs for this repository,
+    /// storage drops it entirely. Otherwise only the remotes that are neither
+    /// the local node's nor a delegate's are removed, and the repository stays
+    /// on disk.
+    fn clean(&self, rid: identity::RepoId) -> Result<(), Error> {
+        let profile = self.profile();
+
+        profile.storage.clean(rid)?;
 
         Ok(())
     }
