@@ -91,6 +91,8 @@
   function isSettings(): boolean {
     return $modalStore?.component === SettingsView;
   }
+
+  let confirmingGuideDismiss = $state(false);
 </script>
 
 <style>
@@ -185,6 +187,20 @@
   .guide-dismiss:hover {
     color: var(--color-text-primary);
   }
+  .guide-confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-secondary);
+  }
+  .guide-confirm-actions {
+    display: flex;
+    gap: 0.25rem;
+  }
 </style>
 
 <div class="sidebar">
@@ -236,25 +252,52 @@
 
   <div class="bottom">
     {#if !hints.isDismissed("guide")}
-      <div class="guide-item">
-        <Button
-          variant="naked"
-          styleWidth="100%"
-          styleJustifyContent="flex-start"
-          active={isGuide()}
-          onclick={() => router.push({ resource: "guide" })}>
-          <span class="icon"><Icon name="guide" /></span>
-          Guide
-        </Button>
-        <button
-          type="button"
-          class="guide-dismiss"
-          title="Hide Guide"
-          aria-label="Hide Guide"
-          onclick={() => hints.dismiss("guide")}>
-          <Icon name="close" />
-        </button>
-      </div>
+      {#if confirmingGuideDismiss}
+        <div class="guide-confirm txt-body-s-regular">
+          <div>
+            Hide the Guide? You can bring it back from Hidden hints in Settings.
+          </div>
+          <div class="guide-confirm-actions">
+            <Button
+              variant="ghost"
+              styleHeight="1.75rem"
+              styleWidth="100%"
+              onclick={() => {
+                hints.dismiss("guide");
+                confirmingGuideDismiss = false;
+              }}>
+              Hide
+            </Button>
+            <Button
+              variant="outline"
+              styleHeight="1.75rem"
+              styleWidth="100%"
+              onclick={() => (confirmingGuideDismiss = false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      {:else}
+        <div class="guide-item">
+          <Button
+            variant="naked"
+            styleWidth="100%"
+            styleJustifyContent="flex-start"
+            active={isGuide()}
+            onclick={() => router.push({ resource: "guide" })}>
+            <span class="icon"><Icon name="guide" /></span>
+            Guide
+          </Button>
+          <button
+            type="button"
+            class="guide-dismiss"
+            title="Hide Guide"
+            aria-label="Hide Guide"
+            onclick={() => (confirmingGuideDismiss = true)}>
+            <Icon name="close" />
+          </button>
+        </div>
+      {/if}
     {/if}
     <Button
       variant="naked"
