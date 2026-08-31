@@ -7,6 +7,7 @@
   import CheckoutRepoButton from "@app/components/CheckoutRepoButton.svelte";
   import HoverPopover from "@app/components/HoverPopover.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import RepoSeeds from "@app/components/RepoSeeds.svelte";
   import ShareButton from "@app/components/ShareButton.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
@@ -101,6 +102,8 @@
 
   <div class="meta">
     <VisibilityBadge type={repo.visibility.type} />
+
+    <RepoSeeds rid={repo.rid} />
 
     <div class="meta-item">
       <span class="meta-label">Delegates</span>

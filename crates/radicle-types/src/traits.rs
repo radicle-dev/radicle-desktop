@@ -5,6 +5,7 @@ use crate::config::Config;
 pub mod cobs;
 pub mod issue;
 pub mod job;
+pub mod node;
 pub mod patch;
 pub mod repo;
 pub mod thread;

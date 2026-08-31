@@ -2,7 +2,7 @@ mod commands;
 
 use radicle_types::AppState;
 
-use commands::{auth, cob, diff, inbox, profile, repo, startup, thread};
+use commands::{auth, cob, diff, inbox, node, profile, repo, startup, thread};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -62,6 +62,9 @@ pub fn run() {
             inbox::clear_notifications,
             inbox::notification_count,
             inbox::list_notifications,
+            node::announce_repo,
+            node::node_status,
+            node::repo_sync_status,
             profile::alias,
             profile::config,
             repo::clean,

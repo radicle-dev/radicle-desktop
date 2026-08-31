@@ -2,6 +2,7 @@ use traits::Profile;
 use traits::cobs::Cobs;
 use traits::issue::{Issues, IssuesMut};
 use traits::job::Jobs;
+use traits::node::Node;
 use traits::patch::{Patches, PatchesMut};
 use traits::repo::Repo;
 use traits::thread::Thread;
@@ -11,6 +12,7 @@ pub mod config;
 pub mod diff;
 pub mod domain;
 pub mod error;
+pub mod node;
 pub mod outbound;
 pub mod repo;
 pub mod source;
@@ -28,6 +30,7 @@ impl Cobs for AppState {}
 impl Issues for AppState {}
 impl IssuesMut for AppState {}
 impl Jobs for AppState {}
+impl Node for AppState {}
 impl Patches for AppState {}
 impl PatchesMut for AppState {}
 impl Profile for AppState {
