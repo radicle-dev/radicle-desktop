@@ -54,6 +54,9 @@ pub struct Patch {
     #[ts(as = "String")]
     head: git::Oid,
     state: State,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    target_branch: Option<String>,
     assignees: Vec<cobs::Author>,
     #[ts(as = "Vec<String>")]
     labels: Vec<cob::Label>,
@@ -80,7 +83,7 @@ impl Patch {
     pub fn new(
         id: patch::PatchId,
         patch: &patch::Patch,
-        delegates: &[radicle::identity::Did],
+        doc: &radicle::identity::Doc,
         aliases: &impl AliasStore,
     ) -> Self {
         // Every review on every revision, so the patch list can render the same
@@ -88,6 +91,7 @@ impl Patch {
         // tell a review of the current head from one left behind by a later
         // push — see the outdated handling in `reviewSummary`. It follows
         // `patch.revisions()`, the timeline order `revision_ids` also uses.
+        let delegates = doc.delegates();
         let reviewers = patch
             .revisions()
             .enumerate()
@@ -110,6 +114,10 @@ impl Patch {
             author: cobs::Author::new(patch.author().id(), aliases),
             title: patch.title().to_string(),
             state: patch.state().clone().into(),
+            target_branch: patch
+                .merge_target_branch(doc)
+                .map(|branch| branch.to_string())
+                .ok(),
             base: *patch.base(),
             head: *patch.head(),
             assignees: patch
@@ -373,7 +381,7 @@ pub enum Action {
     #[serde(rename = "edit")]
     Edit {
         title: String,
-        #[ts(as = "String")]
+        #[ts(type = "\"delegates\" | { branch: string }")]
         target: patch::MergeTarget,
     },
     #[serde(rename = "label")]

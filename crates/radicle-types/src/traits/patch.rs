@@ -22,9 +22,9 @@ pub trait Patches: Profile {
         let patches = profile.patches(&repo)?;
         let patch = patches.get(&id.into())?;
         let aliases = &profile.aliases();
-        let delegates = Vec::from(repo.delegates()?);
+        let doc = repo.identity_doc()?;
         let patches =
-            patch.map(|patch| models::patch::Patch::new(id.into(), &patch, &delegates, aliases));
+            patch.map(|patch| models::patch::Patch::new(id.into(), &patch, &doc, aliases));
 
         Ok::<_, Error>(patches)
     }
@@ -143,7 +143,11 @@ pub trait PatchesMut: Profile {
             models::patch::Action::ReviewCommentUnresolve { review, comment } => {
                 patch.unresolve_review_comment(review, comment)?;
             }
-            models::patch::Action::Edit { title, target } => {
+            models::patch::Action::Edit { title, target: _ } => {
+                // Honouring the client's target would retarget a patch
+                // opened against a non-default branch; `rad patch edit`
+                // carries it forward too.
+                let target = patch.target().clone();
                 patch.edit(Title::try_from(title)?, target)?;
             }
             models::patch::Action::ReviewEdit {
@@ -281,12 +285,12 @@ pub trait PatchesMut: Profile {
             log::error!("Not able to announce changes: {}", e)
         }
 
-        let delegates = Vec::from(repo.delegates()?);
+        let doc = repo.identity_doc()?;
 
         Ok::<_, Error>(models::patch::Patch::new(
             *patch.id(),
             &patch,
-            &delegates,
+            &doc,
             &aliases,
         ))
     }

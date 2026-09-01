@@ -638,10 +638,10 @@ async fn patches_handler(
     }): Json<PatchesBody>,
 ) -> impl IntoResponse {
     let aliases = ctx.profile.aliases();
-    let delegates = Vec::from(ctx.profile.storage.repository(rid)?.delegates()?);
+    let doc = ctx.profile.storage.repository(rid)?.identity_doc()?;
     let page = ctx
         .patches
-        .list_paginated(rid, status, skip, take, &delegates, &aliases)?;
+        .list_paginated(rid, status, skip, take, &doc, &aliases)?;
 
     Ok::<_, Error>(Json(page))
 }

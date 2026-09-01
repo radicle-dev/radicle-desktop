@@ -5,7 +5,7 @@ import type { Embed } from "../thread/Embed";
 import type { Verdict } from "./Verdict";
 
 export type Action =
-  | { "type": "edit"; title: string; target: string }
+  | { "type": "edit"; title: string; target: "delegates" | { branch: string } }
   | { "type": "label"; labels: Array<string> }
   | { "type": "lifecycle"; state: { status: "draft" | "open" | "archived" } }
   | { "type": "assign"; assignees: Array<Author> }

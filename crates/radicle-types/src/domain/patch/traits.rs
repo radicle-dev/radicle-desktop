@@ -52,7 +52,7 @@ pub trait PatchService {
         status: Option<cobs::query::PatchStatus>,
         skip: Option<usize>,
         take: Option<usize>,
-        delegates: &[identity::Did],
+        doc: &identity::Doc,
         aliases: &impl AliasStore,
     ) -> Result<cobs::PaginatedQuery<Vec<models::patch::Patch>>, models::patch::ListPatchesError>
     {
@@ -60,9 +60,8 @@ pub trait PatchService {
             None => Box::new(self.list(rid)?),
             Some(status) => Box::new(self.list_by_status(rid, status.into())?),
         };
-        let summary = |(id, patch): (PatchId, Patch)| {
-            models::patch::Patch::new(id, &patch, delegates, aliases)
-        };
+        let summary =
+            |(id, patch): (PatchId, Patch)| models::patch::Patch::new(id, &patch, doc, aliases);
 
         match take {
             None => Ok(cobs::PaginatedQuery {

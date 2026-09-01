@@ -10,6 +10,7 @@ export type Patch = {
   base: string;
   head: string;
   state: State;
+  targetBranch?: string;
   assignees: Array<Author>;
   labels: Array<string>;
   timestamp: number;

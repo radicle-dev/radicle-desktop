@@ -30,9 +30,9 @@ pub async fn list_patches(
 ) -> Result<types::cobs::PaginatedQuery<Vec<models::patch::Patch>>, Error> {
     let profile = ctx.profile();
     let aliases = profile.aliases();
-    let delegates = Vec::from(profile.storage.repository(rid)?.delegates()?);
+    let doc = profile.storage.repository(rid)?.identity_doc()?;
 
-    Ok(sqlite_service.list_paginated(rid, status, skip, take, &delegates, &aliases)?)
+    Ok(sqlite_service.list_paginated(rid, status, skip, take, &doc, &aliases)?)
 }
 
 #[tauri::command]
