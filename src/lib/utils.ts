@@ -3,6 +3,7 @@ import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { Review } from "@bindings/cob/patch/Review";
 import type { Config } from "@bindings/config/Config";
+import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { ComponentProps } from "svelte";
 
 import bs58 from "bs58";
@@ -15,6 +16,20 @@ import NodeId from "@app/components/NodeId.svelte";
 export const unreachable = (value: never): never => {
   throw new Error(`Unreachable code: ${value}`);
 };
+
+export const REFS_HEADS = "refs/heads/";
+
+// The single place to change once the API stops carrying the default branch
+// in the project payload, which Heartwood no longer requires.
+export function defaultBranch(repo: RepoInfo): string | undefined {
+  return repo.payloads["xyz.radicle.project"]?.data.defaultBranch;
+}
+
+export function unqualifyBranch(refname: string): string {
+  return refname.startsWith(REFS_HEADS)
+    ? refname.slice(REFS_HEADS.length)
+    : refname;
+}
 
 export function formatRepositoryId(id: string): string {
   const parsedId = parseRepositoryId(id);

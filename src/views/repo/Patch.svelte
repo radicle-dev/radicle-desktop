@@ -1514,9 +1514,9 @@
 
     {#snippet revisionBody()}
       <RevisionComponent
+        patchTargetBranch={patch.targetBranch}
         bind:this={revisionComponent}
         rid={repo.rid}
-        {repo}
         repoDelegates={repo.delegates}
         patchId={patch.id}
         {loadPatch}
@@ -1571,8 +1571,8 @@
                   class:collapsed={descriptionCollapsed}>
                   <div class="patch-description-body" bind:this={descriptionEl}>
                     <RevisionComponent
+                      patchTargetBranch={patch.targetBranch}
                       rid={repo.rid}
-                      {repo}
                       repoDelegates={repo.delegates}
                       patchId={patch.id}
                       {loadPatch}

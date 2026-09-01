@@ -6,6 +6,7 @@
   import type { Config } from "@bindings/config/Config";
   import type { Stats } from "@bindings/diff/Stats";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
+  import type { RepoRefs } from "@bindings/repo/RepoRefs";
 
   import debounce from "lodash/debounce";
 
@@ -19,12 +20,14 @@
     summaryTitle,
   } from "@app/lib/reviewSummary";
   import * as roles from "@app/lib/roles";
-  import { push } from "@app/lib/router";
+  import { push, routeToPath } from "@app/lib/router";
   import {
     authorForNodeId,
+    defaultBranch,
     formatOid,
     pluralize,
     publicKeyFromDid,
+    unqualifyBranch,
     verdictIcon,
   } from "@app/lib/utils";
 
@@ -149,6 +152,58 @@
       await loadPatch();
     }
   }
+
+  const targetBranch = $derived(
+    patch.targetBranch === undefined
+      ? undefined
+      : unqualifyBranch(patch.targetBranch),
+  );
+  const targetBranchCaption = $derived(
+    `This patch merges into ${targetBranch}`,
+  );
+
+  // A patch's target is not validated when it is opened, so it can name a
+  // branch the source view cannot resolve. The default branch is canonical by
+  // definition; any other target needs the canonical ref list, which is
+  // expensive enough to load after render. An unresolved target renders
+  // unlinked — a missing link beats one that errors.
+  const targetIsDefaultBranch = $derived(
+    targetBranch !== undefined && targetBranch === defaultBranch(repo),
+  );
+
+  let canonicalBranches: Record<string, string> | undefined = $state();
+  let canonicalBranchesRid: string | undefined;
+
+  $effect(() => {
+    if (targetBranch === undefined || targetIsDefaultBranch) {
+      return;
+    }
+    const requested = repo.rid;
+    if (canonicalBranchesRid === requested) {
+      return;
+    }
+    canonicalBranchesRid = requested;
+    canonicalBranches = undefined;
+    void invoke<RepoRefs>("list_repo_refs", { rid: requested })
+      .then(refs => {
+        if (canonicalBranchesRid === requested) {
+          canonicalBranches = refs.canonical.branches;
+        }
+      })
+      .catch(error => {
+        if (canonicalBranchesRid === requested) {
+          canonicalBranchesRid = undefined;
+        }
+        console.error("Failed to load repo refs", error);
+      });
+  });
+
+  const targetBranchBrowsable = $derived(
+    targetIsDefaultBranch ||
+      (targetBranch !== undefined &&
+        canonicalBranches !== undefined &&
+        targetBranch in canonicalBranches),
+  );
 </script>
 
 <style>
@@ -238,6 +293,7 @@
     color: var(--color-text-brand);
   }
   .patch-id-chip,
+  .target-branch-chip,
   .author-chip {
     display: inline-flex;
     align-items: center;
@@ -249,12 +305,43 @@
     color: var(--color-text-tertiary);
     font: var(--txt-body-m-regular);
   }
+  .target-group {
+    display: inline-flex;
+    align-items: center;
+    height: 2rem;
+    overflow: hidden;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-m-regular);
+  }
+  .target-group .patch-id-chip,
+  .target-group .target-branch-chip {
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
   .patch-id-chip {
     gap: 0.375rem;
     cursor: pointer;
   }
   .patch-id-chip:hover,
   .patch-id-chip:focus-visible {
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-primary);
+  }
+  .target-arrow {
+    display: inline-flex;
+    align-items: center;
+  }
+  .target-branch-chip {
+    gap: 0.375rem;
+    text-decoration: none;
+  }
+  a.target-branch-chip:hover,
+  a.target-branch-chip:focus-visible {
     background-color: var(--color-surface-subtle);
     color: var(--color-text-primary);
   }
@@ -284,19 +371,44 @@
   <div class="author-chip" title="Patch author">
     <NodeId {...authorForNodeId(patch.author)} />
   </div>
-  <button
-    type="button"
-    class="patch-id-chip"
-    title={patchIdCopied ? "Copied to clipboard" : "Copy patch ID"}
-    onclick={copyPatchId}>
-    {#if patchIdCopied}
-      <Icon name="checkmark" />
-    {:else}
-      <span class="pid-icon-default"><Icon name="hash" /></span>
-      <span class="pid-icon-hover"><Icon name="copy" /></span>
+  <div class="target-group">
+    <button
+      type="button"
+      class="patch-id-chip"
+      title={patchIdCopied ? "Copied to clipboard" : "Copy patch ID"}
+      onclick={copyPatchId}>
+      {#if patchIdCopied}
+        <Icon name="checkmark" />
+      {:else}
+        <span class="pid-icon-default"><Icon name="hash" /></span>
+        <span class="pid-icon-hover"><Icon name="copy" /></span>
+      {/if}
+      <span class="patch-id-value">{formatOid(patch.id)}</span>
+    </button>
+    {#if targetBranch}
+      <span class="target-arrow" title={targetBranchCaption}>
+        <Icon name="arrow-right" />
+      </span>
+      {#if targetBranchBrowsable}
+        <a
+          class="target-branch-chip"
+          title={targetBranchCaption}
+          href={routeToPath({
+            resource: "repo.home",
+            rid: repo.rid,
+            revision: targetBranch,
+          })}>
+          <Icon name="branch" />
+          <span>{targetBranch}</span>
+        </a>
+      {:else}
+        <span class="target-branch-chip" title={targetBranchCaption}>
+          <Icon name="branch" />
+          <span>{targetBranch}</span>
+        </span>
+      {/if}
     {/if}
-    <span class="patch-id-value">{formatOid(patch.id)}</span>
-  </button>
+  </div>
   {#if stats}
     {#if onShowChanges}
       <button

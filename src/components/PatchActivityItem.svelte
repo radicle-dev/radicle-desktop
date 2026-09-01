@@ -257,6 +257,11 @@
   .merge-badge :global(*) {
     color: inherit;
   }
+  .merge-target {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
   .copy-link {
     display: inline-flex;
     align-items: center;
@@ -572,7 +577,11 @@
       <div class="summary-line">
         <span class="txt-body-m-medium">merged patch</span>
         {#if targetBranch}
-          into <b>{targetBranch}</b>
+          into
+          <span class="merge-target">
+            <Icon name="branch" />
+            {targetBranch}
+          </span>
         {/if}
       </div>
       <div class="meta">

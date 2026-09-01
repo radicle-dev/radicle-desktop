@@ -9,7 +9,6 @@
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type { Config } from "@bindings/config/Config";
   import type { Commit } from "@bindings/repo/Commit";
-  import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { Snippet } from "svelte";
 
   import partial from "lodash/partial";
@@ -38,6 +37,7 @@
     didFromPublicKey,
     pluralize,
     publicKeyFromDid,
+    unqualifyBranch,
   } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
@@ -88,9 +88,10 @@
 
   interface Props {
     rid: string;
-    repo: RepoInfo;
     repoDelegates: Author[];
     patchId: string;
+    // The patch's resolved merge target, fully qualified.
+    patchTargetBranch?: string;
     revision: Revision;
     config: Config;
     loadPatch: () => Promise<void>;
@@ -119,9 +120,9 @@
   /* eslint-disable prefer-const */
   let {
     rid,
-    repo,
     repoDelegates,
     patchId,
+    patchTargetBranch,
     revision,
     config,
     loadPatch,
@@ -183,7 +184,9 @@
       : undefined;
   });
   const targetBranch = $derived(
-    repo.payloads["xyz.radicle.project"]?.data.defaultBranch,
+    patchTargetBranch === undefined
+      ? undefined
+      : unqualifyBranch(patchTargetBranch),
   );
   let revisionToggles: Record<string, boolean> = $state({});
   let commitGroupToggles: Record<string, boolean> = $state({});
