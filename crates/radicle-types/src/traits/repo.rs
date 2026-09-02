@@ -781,18 +781,20 @@ pub trait Repo: Profile {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
 
-        let repo = surf::Repository::open(repo.path())?;
-        let history = repo.history(&head)?;
+        // Hide `base` from the walk rather than stopping at the first commit
+        // that equals it. A merge commit reaches `base` through one of its
+        // parents, so truncating there drops every commit the other parent
+        // contributes and leaves the revision looking like a single commit.
+        let mut walk = repo.backend.revwalk()?;
+        walk.set_sorting(git2::Sort::TOPOLOGICAL | git2::Sort::TIME)?;
+        walk.push(git::raw::Oid::from_str(&head)?)?;
+        walk.hide(git::raw::Oid::from_str(&base)?)?;
 
-        let commits = history
-            .take_while(|c| {
-                if let Ok(c) = c {
-                    c.id.to_string() != base
-                } else {
-                    false
-                }
-            })
-            .filter_map(|c| c.map(Into::into).ok())
+        let surf_repo = surf::Repository::open(repo.path())?;
+        let commits = walk
+            .filter_map(|oid| oid.ok())
+            .filter_map(|oid| surf_repo.commit(git::Oid::from(oid)).ok())
+            .map(Into::into)
             .collect();
 
         Ok(commits)

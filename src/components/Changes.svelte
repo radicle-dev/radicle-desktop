@@ -345,13 +345,16 @@
   });
 
   // A single-commit revision has nothing to choose between, so select that
-  // commit automatically to surface its message.
+  // commit automatically to surface its message. The diff stays the
+  // revision's own range: a merge commit's first parent is the side it merged
+  // into, not the revision base, so narrowing to the commit diff there would
+  // show the other branch's changes instead of the patch's.
   $effect(() => {
     if (commitList.length === 1 && !selectedCommit) {
       const only = commitList[0];
       selectRevision({
-        headId: only.id,
-        baseId: only.parents[0],
+        headId: revision.head,
+        baseId: revision.base,
         commitId: only.id,
         commit: only,
       });
