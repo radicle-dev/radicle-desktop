@@ -224,7 +224,7 @@ export const cachedGetCommitDiff = cached(
  * unseeding) go through invalidateReposSummary().
  */
 export const cachedListReposSummary = cached(
-  () => invoke<RepoSummary[]>("list_repos_summary"),
+  () => invoke<RepoSummary[]>("list_repos_summary", { show: "seeded" }),
   () => "list_repos_summary",
   { max: 1, ttl: 30_000 },
 );

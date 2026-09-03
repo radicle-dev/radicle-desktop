@@ -19,8 +19,9 @@ pub async fn list_repos(
 #[tauri::command]
 pub async fn list_repos_summary(
     ctx: tauri::State<'_, AppState>,
+    show: Show,
 ) -> Result<Vec<types::repo::RepoSummary>, Error> {
-    blocking(ctx, |ctx| ctx.list_repos_summary()).await
+    blocking(ctx, move |ctx| ctx.list_repos_summary(show)).await
 }
 
 #[tauri::command]
