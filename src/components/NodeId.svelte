@@ -22,6 +22,10 @@
     alias?: string;
     inline?: boolean;
     styleFont?: string;
+    // Hides the alias; the card still shows it.
+    avatarOnly?: boolean;
+    avatarSize?: string;
+    oncardtoggle?: (expanded: boolean) => void;
   }
 
   const {
@@ -29,9 +33,17 @@
     alias,
     inline = false,
     styleFont = undefined,
+    avatarOnly = false,
+    avatarSize = "1rem",
+    oncardtoggle,
   }: Props = $props();
 
   let cardExpanded = $state(false);
+
+  $effect(() => {
+    oncardtoggle?.(cardExpanded);
+  });
+
   let openTimer: ReturnType<typeof setTimeout> | undefined;
   let closeTimer: ReturnType<typeof setTimeout> | undefined;
   let copyIcon: "copy" | "checkmark" = $state("copy");
@@ -118,8 +130,6 @@
     border-radius: var(--border-radius-sm);
   }
   .avatar-container {
-    width: 1rem;
-    height: 1rem;
     overflow: hidden;
     flex-shrink: 0;
   }
@@ -294,17 +304,22 @@
       onmouseleave={scheduleClose}
       onfocusin={openCard}
       onfocusout={scheduleClose}>
-      <div class="avatar-container">
-        <UserAvatar nodeId={publicKey} styleWidth="1rem" />
+      <div
+        class="avatar-container"
+        style:width={avatarSize}
+        style:height={avatarSize}>
+        <UserAvatar nodeId={publicKey} styleWidth={avatarSize} />
       </div>
-      {#if effectiveAlias}
-        <span class="txt-overflow alias">
-          {effectiveAlias}
-        </span>
-      {:else}
-        <span class="no-alias">
-          {truncateId(publicKey)}
-        </span>
+      {#if !avatarOnly}
+        {#if effectiveAlias}
+          <span class="txt-overflow alias">
+            {effectiveAlias}
+          </span>
+        {:else}
+          <span class="no-alias">
+            {truncateId(publicKey)}
+          </span>
+        {/if}
       {/if}
     </div>
   {/snippet}

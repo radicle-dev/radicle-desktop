@@ -1203,6 +1203,14 @@
     <button
       class="menu-item"
       role="menuitem"
+      onclick={() => router.push({ resource: "repo.identity", rid: repo.rid })}>
+      <Icon name="document" />
+      View identity document
+    </button>
+    <div class="menu-separator"></div>
+    <button
+      class="menu-item"
+      role="menuitem"
       onclick={() => writeToClipboard(repo.rid)}>
       <Icon name="copy" />
       Copy RID

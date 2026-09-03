@@ -691,15 +691,7 @@ pub trait Repo: Profile {
             payloads: repo::SupportedPayloads { project },
             delegates,
             threshold: doc.threshold(),
-            visibility: match doc.visibility().clone() {
-                identity::Visibility::Public => repo::Visibility::Public,
-                identity::Visibility::Private { allow } => repo::Visibility::Private {
-                    allow: allow
-                        .iter()
-                        .map(|did| cobs::Author::new(did, &aliases))
-                        .collect(),
-                },
-            },
+            visibility: repo::Visibility::new(doc.visibility(), &aliases),
             rid: repo.id,
             seeding,
             seeded,

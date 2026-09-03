@@ -89,7 +89,8 @@
     flex-direction: row;
     gap: 0.5rem;
     justify-content: center;
-    z-index: 20;
+    /* Portaled to the body, so it has to clear the modal layer as well. */
+    z-index: 400;
     background: var(--color-surface-subtle);
     color: var(--color-text-primary);
     border: 1px solid var(--color-border-subtle);

@@ -1,5 +1,6 @@
 use traits::Profile;
 use traits::cobs::Cobs;
+use traits::identity::Identity;
 use traits::issue::{Issues, IssuesMut};
 use traits::job::Jobs;
 use traits::patch::{Patches, PatchesMut};
@@ -12,6 +13,7 @@ pub mod config;
 pub mod diff;
 pub mod domain;
 pub mod error;
+pub mod identity;
 pub mod outbound;
 pub mod repo;
 pub mod source;
@@ -26,6 +28,7 @@ pub struct AppState {
 impl Repo for AppState {}
 impl Thread for AppState {}
 impl Cobs for AppState {}
+impl Identity for AppState {}
 impl Issues for AppState {}
 impl IssuesMut for AppState {}
 impl Jobs for AppState {}

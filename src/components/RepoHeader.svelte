@@ -2,13 +2,12 @@
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import { explorerUrl, truncateDid } from "@app/lib/utils";
+  import * as router from "@app/lib/router";
+  import { authorForNodeId } from "@app/lib/utils";
 
   import CheckoutRepoButton from "@app/components/CheckoutRepoButton.svelte";
-  import HoverPopover from "@app/components/HoverPopover.svelte";
-  import Icon from "@app/components/Icon.svelte";
+  import NodeId from "@app/components/NodeId.svelte";
   import ShareButton from "@app/components/ShareButton.svelte";
-  import UserAvatar from "@app/components/UserAvatar.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
 
   interface Props {
@@ -19,6 +18,12 @@
   const { repo, config }: Props = $props();
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
+
+  // The cards are portaled out of the stack, so moving onto one ends the
+  // stack's hover. Keep it fanned out while any card is still open.
+  let hovered = $state(false);
+  const cardsOpen: Record<string, boolean> = $state({});
+  const fanned = $derived(hovered || Object.values(cardsOpen).some(Boolean));
 </script>
 
 <style>
@@ -52,8 +57,24 @@
   .meta-item {
     display: flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: 0.25rem;
     font: var(--txt-body-m-regular);
+  }
+  .delegates-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 1.75rem;
+    padding: 0 0.5rem;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background: none;
+    font: inherit;
+    cursor: pointer;
+  }
+  .delegates-button:hover,
+  .delegates-button:focus-visible {
+    background-color: var(--color-surface-subtle);
   }
   .meta-label {
     color: var(--color-text-secondary);
@@ -64,30 +85,27 @@
   .avatars {
     display: flex;
     align-items: center;
-    gap: 0.25rem;
   }
-  .avatar-wrap {
-    width: 1.25rem;
-    height: 1.25rem;
-    overflow: hidden;
-    flex-shrink: 0;
+  /* Positioned so each avatar paints together with its ring; otherwise every
+     ring is painted before any image and the one below covers it. */
+  .avatar {
+    position: relative;
+    display: flex;
+    border-radius: 2px;
+    box-shadow: 0 0 0 2px var(--color-surface-canvas);
+    transition: margin-left 150ms ease;
+  }
+  .avatar + .avatar {
+    margin-left: -0.625rem;
+  }
+  .avatars.fanned .avatar + .avatar {
+    margin-left: 0.25rem;
   }
   .actions {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     flex-shrink: 0;
-  }
-  a {
-    color: inherit;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    text-decoration: none;
-    color: var(--color-text-secondary);
-  }
-  a:hover {
-    color: var(--color-text-primary);
   }
 </style>
 
@@ -106,39 +124,29 @@
       seeds={repo.seeding} />
 
     <div class="meta-item">
-      <span class="meta-label">Delegates</span>
-      <span class="meta-value">{repo.threshold}/{repo.delegates.length}</span>
-      <div class="avatars">
-        {#each repo.delegates as delegate}
-          <HoverPopover placement="bottom-start" stylePadding="0.25rem 0.5rem">
-            {#snippet toggle()}
-              <div class="avatar-wrap">
-                <UserAvatar nodeId={delegate.did} styleWidth="1.25rem" />
-              </div>
-            {/snippet}
-            {#snippet popover()}
-              <a
-                class="global-flex txt-body-m-regular"
-                style:white-space="nowrap"
-                style:text-decoration="none"
-                style:width="100%"
-                href={explorerUrl(`users/${delegate.did}`, config)}
-                target="_blank">
-                {#if delegate.alias}
-                  <span class="txt-overflow alias">
-                    {delegate.alias}
-                  </span>
-                {:else}
-                  <span class="no-alias">
-                    {truncateDid(delegate.did)}
-                  </span>
-                {/if}
-                <span style:margin-left="auto">
-                  <Icon name="open-external" />
-                </span>
-              </a>
-            {/snippet}
-          </HoverPopover>
+      <button
+        type="button"
+        class="delegates-button"
+        title={`A commit becomes canonical once ${repo.threshold} of ${repo.delegates.length} delegates have the same commit on their ${project.data.defaultBranch} branch`}
+        onclick={() =>
+          router.push({ resource: "repo.identity", rid: repo.rid })}>
+        <span class="meta-label">Delegates</span>
+        <span class="meta-value">{repo.threshold}/{repo.delegates.length}</span>
+      </button>
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <div
+        class="avatars"
+        class:fanned
+        onmouseenter={() => (hovered = true)}
+        onmouseleave={() => (hovered = false)}>
+        {#each repo.delegates as delegate, index (delegate.did)}
+          <div class="avatar" style:z-index={repo.delegates.length - index}>
+            <NodeId
+              {...authorForNodeId(delegate)}
+              avatarOnly
+              avatarSize="1.25rem"
+              oncardtoggle={expanded => (cardsOpen[delegate.did] = expanded)} />
+          </div>
         {/each}
       </div>
     </div>

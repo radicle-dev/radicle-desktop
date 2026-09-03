@@ -3,7 +3,7 @@ mod commands;
 use radicle_types::AppState;
 use tauri_plugin_log::{Target, TargetKind};
 
-use commands::{auth, cob, diff, inbox, profile, repo, startup, thread};
+use commands::{auth, cob, diff, identity, inbox, profile, repo, startup, thread};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -69,6 +69,7 @@ pub fn run() {
             diff::get_diff_text,
             diff::save_diff_to_disk,
             repo::get_commit_diff,
+            identity::identity_by_repo,
             inbox::clear_notifications,
             inbox::notification_count,
             inbox::list_notifications,

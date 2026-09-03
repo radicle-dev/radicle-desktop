@@ -86,6 +86,17 @@ pub enum Visibility {
     },
 }
 
+impl Visibility {
+    pub fn new(visibility: &identity::Visibility, aliases: &impl node::AliasStore) -> Self {
+        match visibility {
+            identity::Visibility::Public => Self::Public,
+            identity::Visibility::Private { allow } => Self::Private {
+                allow: allow.iter().map(|did| Author::new(did, aliases)).collect(),
+            },
+        }
+    }
+}
+
 impl From<Visibility> for identity::Visibility {
     fn from(value: Visibility) -> Self {
         match value {

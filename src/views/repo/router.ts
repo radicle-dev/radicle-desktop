@@ -9,6 +9,7 @@ import type { Revision } from "@bindings/cob/patch/Revision";
 import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Config } from "@bindings/config/Config";
 import type { Diff } from "@bindings/diff/Diff";
+import type { Identity } from "@bindings/identity/Identity";
 import type { Commit } from "@bindings/repo/Commit";
 import type { Readme } from "@bindings/repo/Readme";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
@@ -48,6 +49,20 @@ export interface RepoCommitRoute {
   resource: "repo.commit";
   rid: string;
   commit: string;
+}
+
+export interface RepoIdentityRoute {
+  resource: "repo.identity";
+  rid: string;
+}
+
+export interface LoadedRepoIdentityRoute {
+  resource: "repo.identity";
+  params: {
+    repo: RepoInfo;
+    identity: Identity;
+    sidebarData: SidebarData;
+  };
 }
 
 export interface RepoIssueRoute {
@@ -172,6 +187,7 @@ export type RepoRoute =
   | RepoHomeRoute
   | RepoCommitsRoute
   | RepoCommitRoute
+  | RepoIdentityRoute
   | RepoIssueRoute
   | RepoIssuesRoute
   | RepoPatchRoute
@@ -180,6 +196,7 @@ export type LoadedRepoRoute =
   | LoadedRepoHomeRoute
   | LoadedRepoCommitsRoute
   | LoadedRepoCommitRoute
+  | LoadedRepoIdentityRoute
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
   | LoadedRepoPatchRoute
@@ -406,6 +423,25 @@ export async function loadRepoCommit(
   };
 }
 
+export async function loadIdentity(
+  route: RepoIdentityRoute,
+): Promise<LoadedRepoIdentityRoute> {
+  const [sidebarData, repo, identity] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Identity>("identity_by_repo", {
+      rid: route.rid,
+    }),
+  ]);
+
+  return {
+    resource: "repo.identity",
+    params: { sidebarData, repo, identity },
+  };
+}
+
 export async function loadIssue(
   route: RepoIssueRoute,
 ): Promise<LoadedRepoIssueRoute> {
@@ -486,6 +522,8 @@ export function repoRouteToPath(route: RepoRoute): string {
     return segments.join("/");
   } else if (route.resource === "repo.commit") {
     return [...pathSegments, "commits", route.commit].join("/");
+  } else if (route.resource === "repo.identity") {
+    return [...pathSegments, "identity"].join("/");
   } else if (route.resource === "repo.issue") {
     let url = [...pathSegments, "issues", route.issue].join("/");
     searchParams.set("status", route.status);
@@ -561,6 +599,8 @@ export function repoUrlToRoute(
         peer,
         revision: segments.join("/"),
       };
+    } else if (resource === "identity") {
+      return { resource: "repo.identity", rid };
     } else if (resource === "issues") {
       const idOrAction = segments.shift();
       if (idOrAction) {
