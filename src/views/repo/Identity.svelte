@@ -63,19 +63,6 @@
     flex-direction: column;
     height: 100%;
   }
-  .breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 0.375rem;
-  }
-  .breadcrumb-title {
-    color: var(--color-text-primary);
-    font: var(--txt-body-m-medium);
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
   /* Same content column the patch page's `.main` uses. Everything in the
      view sits in it, History included, so nothing stretches to the window. */
   .content {
@@ -312,17 +299,6 @@
     <RepoHeader {repo} config={sidebarData.config} />
 
     <Topbar>
-      <div class="breadcrumb">
-        <Icon name="document" />
-        <span class="breadcrumb-title">Identity</span>
-        {#if identity.current}
-          <Icon name="chevron-right" />
-          <Id
-            id={identity.current}
-            clipboard={identity.current}
-            label="revision ID" />
-        {/if}
-      </div>
       <div class="topbar-actions">
         <Button
           styleHeight="2rem"
