@@ -229,9 +229,14 @@
   .timestamp {
     color: var(--color-text-quaternary);
   }
+  /* Same chip the patch timeline uses for its "Latest" revision. */
   .current-marker {
-    color: var(--color-text-brand);
+    flex-shrink: 0;
     white-space: nowrap;
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-brand-subtle);
+    color: var(--color-text-brand);
   }
   /* Indented to line up with the row's text, clear of the rail marker:
      0.5rem row padding + 1rem marker + 0.625rem gap. */
@@ -362,7 +367,9 @@
                 </span>
                 <span class="item-meta">
                   {#if rev.id === identity.current}
-                    <span class="current-marker">Current</span>
+                    <span class="current-marker txt-body-s-medium">
+                      Current
+                    </span>
                   {/if}
                   <span
                     class="timestamp"
