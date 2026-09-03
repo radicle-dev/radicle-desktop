@@ -77,7 +77,7 @@
       <span class="revision">{revision.slice(0, 7)}</span>
     {/if}
     <div class="actions">
-      <Button variant="secondary" styleHeight="2rem" onclick={copy}>
+      <Button variant="outline" styleHeight="2rem" onclick={copy}>
         <Icon name={copyIcon} />
         Copy
       </Button>
