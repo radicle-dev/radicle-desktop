@@ -396,10 +396,15 @@ pub trait Repo: Profile {
     fn list_repos_summary(&self) -> Result<Vec<repo::RepoSummary>, Error> {
         let profile = self.profile();
         let storage = &profile.storage;
+        let policies = profile.policies()?;
         let repos = storage.repositories()?;
         let mut entries = Vec::new();
 
         for RepositoryInfo { rid, doc, .. } in repos {
+            if !policies.is_seeding(&rid)? {
+                continue;
+            }
+
             let Some(data) = doc
                 .payload()
                 .get(&doc::PayloadId::project())
