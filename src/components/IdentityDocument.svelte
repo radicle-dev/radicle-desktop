@@ -3,8 +3,10 @@
 
   import { authorForNodeId, pluralize, truncateDid } from "@app/lib/utils";
 
+  import HoverPopover from "@app/components/HoverPopover.svelte";
   import Id from "@app/components/Id.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import UserAvatar from "@app/components/UserAvatar.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
 
   interface Props {
@@ -23,50 +25,102 @@
 </script>
 
 <style>
-  .section {
-    border-bottom: 1px solid var(--color-border-subtle);
+  .details {
+    min-width: 0;
   }
-  .section-head {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem 0.5rem;
+  .section {
+    padding: 0.875rem 0;
+  }
+  .section + .section {
+    border-top: 1px solid var(--color-border-subtle);
   }
   .section-title {
     font: var(--txt-body-m-medium);
     color: var(--color-text-primary);
-    margin: 0;
+    margin: 0 0 0.625rem;
   }
-  .section-note {
+  /* Avatars grouped, then names, then the rule they operate under: one
+     horizontal block rather than a row per delegate. */
+  .delegates {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+  }
+  .delegate-cards {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  /* Same bordered chip the patch metadata uses for an author. */
+  .delegate-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2rem;
+    padding: 0 0.625rem 0 0.375rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-primary);
+  }
+  .delegate-card:hover {
+    background-color: var(--color-surface-subtle);
+  }
+  .delegate-alias {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .avatar {
+    width: 1.25rem;
+    height: 1.25rem;
+    overflow: hidden;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .avatar :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .quorum {
     margin-left: auto;
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
+    white-space: nowrap;
   }
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: 2rem;
-    padding: 0.375rem 1rem;
+  .tip-alias {
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-primary);
+    white-space: nowrap;
+  }
+  .tip-did {
+    font: var(--txt-code-small);
+    color: var(--color-text-tertiary);
+    white-space: nowrap;
+  }
+  /* Label beside value, both sized to content: a details list, not rows
+     spanning the window. */
+  .fields {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: 2rem;
+    row-gap: 0.5rem;
+    align-items: baseline;
     font: var(--txt-body-m-regular);
   }
-  .row + .row {
-    border-top: 1px solid var(--color-border-subtle);
-  }
-  .row-label {
-    flex: 0 0 11rem;
+  .field-label {
     color: var(--color-text-secondary);
   }
-  .row-value {
+  .field-value {
     min-width: 0;
     color: var(--color-text-primary);
     overflow-wrap: anywhere;
-  }
-  .row-aside {
-    margin-left: auto;
-    flex-shrink: 0;
-    font: var(--txt-code-small);
-    color: var(--color-text-tertiary);
+    justify-self: start;
   }
   .mono {
     font: var(--txt-code-regular);
@@ -77,132 +131,154 @@
   .empty {
     color: var(--color-text-secondary);
   }
-  .allow-list {
+  .inline-list {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     min-width: 0;
+  }
+  .rule + .rule {
+    margin-top: 0.625rem;
+  }
+  .rule-pattern {
+    font: var(--txt-code-regular);
+    color: var(--color-text-primary);
+    overflow-wrap: anywhere;
+  }
+  .rule-detail {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.125rem;
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
   }
 </style>
 
-<div class="section">
-  <div class="section-head">
-    <h2 class="section-title">Delegates</h2>
-    <span class="section-note">
-      {doc.majority} of {doc.delegates.length}
-      {pluralize("delegate", doc.delegates.length)} must sign off on a change
-    </span>
-  </div>
-  {#each doc.delegates as delegate (delegate.did)}
-    <div class="row">
-      <NodeId {...authorForNodeId(delegate)} />
-      <span class="row-aside">{truncateDid(delegate.did)}</span>
-    </div>
-  {/each}
-</div>
-
-<div class="section">
-  <div class="section-head">
-    <h2 class="section-title">Document</h2>
-  </div>
-  {#if doc.project}
-    <div class="row">
-      <span class="row-label">Default branch</span>
-      <span class="row-value mono">{doc.project.defaultBranch}</span>
-    </div>
-  {/if}
-  <div class="row">
-    <span class="row-label">Visibility</span>
-    <span class="row-value">
-      <VisibilityBadge type={doc.visibility.type} />
-    </span>
-  </div>
-  {#if doc.visibility.type === "private" && doc.visibility.allow}
-    <div class="row">
-      <span class="row-label">Also visible to</span>
-      <span class="row-value allow-list">
-        {#each doc.visibility.allow as peer (peer.did)}
-          <NodeId {...authorForNodeId(peer)} />
-        {/each}
-      </span>
-    </div>
-  {/if}
-  <div class="row">
-    <span class="row-label">Signature threshold</span>
-    <span class="row-value">
-      {doc.threshold} of {doc.delegates.length}
-      <span class="hint">— delegate signatures that make a ref canonical</span>
-    </span>
-  </div>
-  {#if rid}
-    <div class="row">
-      <span class="row-label">Repository ID</span>
-      <span class="row-value mono">
-        <Id id={rid} clipboard={rid} label="repository ID" shorten={false} />
-      </span>
-    </div>
-  {/if}
-  <div class="row">
-    <span class="row-label">Document version</span>
-    <span class="row-value">{doc.version}</span>
-  </div>
-</div>
-
-<div class="section">
-  <div class="section-head">
-    <h2 class="section-title">Canonical refs</h2>
-  </div>
-  {#if doc.canonicalRefs.length > 0}
-    {#each doc.canonicalRefs as rule (rule.pattern)}
-      <div class="row">
-        <span class="row-label mono">{rule.pattern}</span>
-        <span class="row-value allow-list">
-          {#if rule.delegates}
-            <span>
-              Needs {rule.threshold ?? doc.threshold}
-              {pluralize("signature", rule.threshold ?? doc.threshold)}
-              from the delegate set
-            </span>
-          {:else if rule.allow.length > 0}
-            <span>
-              Needs {rule.threshold ?? rule.allow.length}
-              {pluralize("signature", rule.threshold ?? rule.allow.length)}
-              from
-            </span>
-            {#each rule.allow as peer (peer.did)}
-              <NodeId {...authorForNodeId(peer)} />
-            {/each}
-          {:else if rule.threshold !== null}
-            <span>
-              Needs {rule.threshold}
-              {pluralize("signature", rule.threshold)}
-            </span>
-          {/if}
-        </span>
-      </div>
-    {/each}
-  {:else}
-    <div class="row">
-      <span class="row-value empty">
-        No explicit rules. The default branch is resolved by delegate quorum.
-      </span>
-    </div>
-  {/if}
-</div>
-
-{#if otherPayloads.length > 0}
+<div class="details">
   <div class="section">
-    <div class="section-head">
-      <h2 class="section-title">Other payloads</h2>
-    </div>
-    {#each otherPayloads as payload (payload)}
-      <div class="row">
-        <span class="row-label mono">{payload}</span>
-        <span class="row-value hint">
-          Not rendered by this app. See the raw document.
-        </span>
+    <h2 class="section-title">Delegates</h2>
+    <div class="delegates">
+      <div class="delegate-cards">
+        {#each doc.delegates as delegate (delegate.did)}
+          <HoverPopover
+            placement="bottom-start"
+            stylePadding="0.375rem 0.625rem">
+            {#snippet toggle()}
+              <span class="delegate-card">
+                <span class="avatar">
+                  <UserAvatar nodeId={delegate.did} styleWidth="1.25rem" />
+                </span>
+                <span class="delegate-alias">
+                  {delegate.alias ?? truncateDid(delegate.did)}
+                </span>
+              </span>
+            {/snippet}
+            {#snippet popover()}
+              <div>
+                <div class="tip-alias">
+                  {delegate.alias ?? truncateDid(delegate.did)}
+                </div>
+                <div class="tip-did">{truncateDid(delegate.did)}</div>
+              </div>
+            {/snippet}
+          </HoverPopover>
+        {/each}
       </div>
-    {/each}
+      <span class="quorum">
+        {doc.majority} of {doc.delegates.length} must sign off
+      </span>
+    </div>
   </div>
-{/if}
+
+  <div class="section">
+    <h2 class="section-title">Document</h2>
+    <div class="fields">
+      {#if doc.project}
+        <span class="field-label">Default branch</span>
+        <span class="field-value mono">{doc.project.defaultBranch}</span>
+      {/if}
+      <span class="field-label">Visibility</span>
+      <span class="field-value">
+        <VisibilityBadge type={doc.visibility.type} />
+      </span>
+      {#if doc.visibility.type === "private" && doc.visibility.allow}
+        <span class="field-label">Also visible to</span>
+        <span class="field-value inline-list">
+          {#each doc.visibility.allow as peer (peer.did)}
+            <NodeId {...authorForNodeId(peer)} />
+          {/each}
+        </span>
+      {/if}
+      <span class="field-label">Signature threshold</span>
+      <span class="field-value">
+        {doc.threshold} of {doc.delegates.length}
+        <span class="hint">
+          — delegate signatures that make a ref canonical
+        </span>
+      </span>
+      {#if rid}
+        <span class="field-label">Repository ID</span>
+        <span class="field-value mono">
+          <Id id={rid} clipboard={rid} label="repository ID" shorten={false} />
+        </span>
+      {/if}
+      <span class="field-label">Document version</span>
+      <span class="field-value">{doc.version}</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="section-title">Canonical refs</h2>
+    {#if doc.canonicalRefs.length > 0}
+      {#each doc.canonicalRefs as rule (rule.pattern)}
+        <div class="rule">
+          <div class="rule-pattern">{rule.pattern}</div>
+          <div class="rule-detail">
+            {#if rule.delegates}
+              <span>
+                Needs {rule.threshold ?? doc.threshold}
+                {pluralize("signature", rule.threshold ?? doc.threshold)}
+                from the delegate set
+              </span>
+            {:else if rule.allow.length > 0}
+              <span>
+                Needs {rule.threshold ?? rule.allow.length}
+                {pluralize("signature", rule.threshold ?? rule.allow.length)}
+                from
+              </span>
+              {#each rule.allow as peer (peer.did)}
+                <NodeId {...authorForNodeId(peer)} />
+              {/each}
+            {:else if rule.threshold !== null}
+              <span>
+                Needs {rule.threshold}
+                {pluralize("signature", rule.threshold)}
+              </span>
+            {/if}
+          </div>
+        </div>
+      {/each}
+    {:else}
+      <div class="empty">
+        No explicit rules. The default branch is resolved by delegate quorum.
+      </div>
+    {/if}
+  </div>
+
+  {#if otherPayloads.length > 0}
+    <div class="section">
+      <h2 class="section-title">Other payloads</h2>
+      {#each otherPayloads as payload (payload)}
+        <div class="rule">
+          <div class="rule-pattern">{payload}</div>
+          <div class="rule-detail">
+            Not rendered by this app. See the raw document.
+          </div>
+        </div>
+      {/each}
+    </div>
+  {/if}
+</div>

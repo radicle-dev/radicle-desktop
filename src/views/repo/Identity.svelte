@@ -63,15 +63,38 @@
     flex-direction: column;
     height: 100%;
   }
-  .topbar-title {
-    font: var(--txt-body-m-semibold);
-    color: var(--color-text-secondary);
-    padding-right: 0.25rem;
-  }
-  .topbar-meta {
+  .breadcrumb {
     display: flex;
     align-items: center;
+    gap: 0.375rem;
+  }
+  .breadcrumb-title {
+    color: var(--color-text-primary);
+    font: var(--txt-body-m-medium);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* Same content column the patch page's `.main` uses. Everything in the
+     view sits in it, History included, so nothing stretches to the window. */
+  .content {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 1.5rem 6rem;
+    min-width: 0;
+  }
+  .title {
+    font: var(--txt-heading-m);
+    color: var(--color-text-primary);
+    margin-bottom: 1rem;
+  }
+  .meta-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 0.5rem;
+    margin-bottom: 0.5rem;
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
   }
@@ -85,7 +108,8 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.75rem 1rem 0.5rem;
+    padding: 0.875rem 0 0.625rem;
+    border-top: 1px solid var(--color-border-subtle);
   }
   .section-title {
     font: var(--txt-body-m-medium);
@@ -109,7 +133,7 @@
     position: absolute;
     top: 1.25rem;
     bottom: 2rem;
-    left: 1.5rem;
+    left: 1rem;
     width: 1px;
     background-color: var(--color-border-subtle);
     pointer-events: none;
@@ -121,7 +145,7 @@
     gap: 0.625rem;
     width: 100%;
     min-height: 2.25rem;
-    padding: 0.375rem 1rem;
+    padding: 0.375rem 0.5rem;
     border: 0;
     background: none;
     text-align: left;
@@ -146,9 +170,15 @@
   .timeline-item .icon[data-state="redacted"] {
     color: var(--color-feedback-error-text);
   }
-  .timeline-item:hover,
+  .timeline-item:hover {
+    background-color: var(--color-surface-subtle);
+    border-radius: var(--border-radius-md);
+  }
+  /* An open row and its body share one filled, rounded block, so the
+     expansion reads as a contained card the way a patch revision does. */
   .timeline-item.expanded {
     background-color: var(--color-surface-subtle);
+    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
   }
   .timeline-item:hover .icon,
   .timeline-item.expanded .icon {
@@ -207,10 +237,12 @@
     white-space: nowrap;
   }
   /* Indented to line up with the row's text, clear of the rail marker:
-     1rem row padding + 1rem marker + 0.625rem gap. */
+     0.5rem row padding + 1rem marker + 0.625rem gap. */
   .detail {
-    padding: 0.25rem 1rem 1rem 2.625rem;
-    border-bottom: 1px solid var(--color-border-subtle);
+    padding: 0.25rem 0.875rem 1rem 2.125rem;
+    background-color: var(--color-surface-subtle);
+    border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
+    margin-bottom: 0.5rem;
   }
   .detail-section + .detail-section {
     margin-top: 1rem;
@@ -235,6 +267,9 @@
     align-items: center;
     gap: 0.5rem;
     font: var(--txt-body-m-regular);
+  }
+  .detail :global(.global-chip) {
+    background-color: var(--color-surface-canvas);
   }
   .signature-name {
     font-style: italic;
@@ -277,17 +312,15 @@
     <RepoHeader {repo} config={sidebarData.config} />
 
     <Topbar>
-      <span class="topbar-title">Identity</span>
-      <div class="topbar-meta">
-        <span>Revision</span>
-        <Id
-          id={identity.current}
-          clipboard={identity.current}
-          label="revision ID" />
-        {#if current}
-          <span title={absoluteTimestamp(current.timestamp)}>
-            · in force since {absoluteTimestamp(current.timestamp)}
-          </span>
+      <div class="breadcrumb">
+        <Icon name="document" />
+        <span class="breadcrumb-title">Identity</span>
+        {#if identity.current}
+          <Icon name="chevron-right" />
+          <Id
+            id={identity.current}
+            clipboard={identity.current}
+            label="revision ID" />
         {/if}
       </div>
       <div class="topbar-actions">
@@ -305,125 +338,148 @@
     </Topbar>
 
     <ScrollArea style="flex: 1; min-height: 0;">
-      <IdentityDocument doc={identity.doc} rid={identity.rid} />
-
-      <div class="section-head">
-        <h2 class="section-title">History</h2>
-        <span class="section-note">
-          {identity.revisions.length}
-          {pluralize("revision", identity.revisions.length)}
-        </span>
-      </div>
-
-      <div class="timeline" class:has-runs={identity.revisions.length > 1}>
-        {#each identity.revisions as rev (rev.id)}
-          {@const open = expandedId === rev.id}
-          <button
-            type="button"
-            class="timeline-item"
-            class:expanded={open}
-            aria-expanded={open}
-            onclick={() => toggle(rev.id)}>
-            <span class="icon" data-state={rev.state.status}>
-              <span class="icon-stack">
-                <span class="icon-default">
-                  <Icon name={stateIcon(rev.state)} />
-                </span>
-                <span class="icon-hover">
-                  <Icon name={open ? "collapse-vertical" : "expand-vertical"} />
-                </span>
-              </span>
-            </span>
-            <span class="item-body">
-              <NodeId {...authorForNodeId(rev.author)} />
-              <span class="item-title txt-overflow">{rev.title}</span>
-            </span>
-            <span class="item-meta">
-              {#if rev.id === identity.current}
-                <span class="current-marker">Current</span>
-              {/if}
-              <span class="timestamp" title={absoluteTimestamp(rev.timestamp)}>
-                {formatTimestamp(rev.timestamp)}
-              </span>
-            </span>
-          </button>
-          {#if open}
-            <div class="detail" transition:slide={{ duration: 180 }}>
-              {#if stateCaption(rev.state)}
-                <div class="state-caption">{stateCaption(rev.state)}</div>
-              {/if}
-
-              {#if rev.description}
-                <div class="detail-section">
-                  <div class="detail-title">Description</div>
-                  <Markdown breaks content={rev.description} rid={repo.rid} />
-                </div>
-              {/if}
-
-              <div class="detail-section">
-                <div class="detail-title">Changes</div>
-                <IdentityChanges
-                  changes={rev.changes}
-                  root={rev.id === rootId} />
-              </div>
-
-              <div class="detail-section">
-                <div class="detail-title">Signatures</div>
-                {#if rev.accepted.length > 0 || rev.rejected.length > 0}
-                  <div class="signatures">
-                    {#each rev.accepted as delegate (delegate.did)}
-                      <div class="signature">
-                        <span class="accepted-icon">
-                          <Icon name="checkmark" />
-                        </span>
-                        <span class="signature-name">
-                          {delegate.alias ?? delegate.did.slice(8, 20)}
-                        </span>
-                        <span class="muted">signed</span>
-                      </div>
-                    {/each}
-                    {#each rev.rejected as delegate (delegate.did)}
-                      <div class="signature">
-                        <span class="rejected-icon"><Icon name="close" /></span>
-                        <span class="signature-name struck">
-                          {delegate.alias ?? delegate.did.slice(8, 20)}
-                        </span>
-                        <span class="muted">rejected</span>
-                      </div>
-                    {/each}
-                  </div>
-                {:else}
-                  <div class="muted">No signatures recorded.</div>
-                {/if}
-                <div class="quorum-note">
-                  {#if rev.quorum}
-                    Reached quorum: a majority of the delegates in force at the
-                    time signed it.
-                  {:else}
-                    Did not reach quorum: a majority of the delegates in force
-                    at the time did not sign it.
-                  {/if}
-                </div>
-              </div>
-
-              <div class="detail-foot">
-                <IdentityStateBadge state={rev.state} />
-                <Id id={rev.id} clipboard={rev.id} label="revision ID" />
-                <span>{absoluteTimestamp(rev.timestamp)}</span>
-                <Button
-                  styleHeight="1.75rem"
-                  variant="outline"
-                  onclick={() =>
-                    show({
-                      component: RawIdentityDocumentModal,
-                      props: { raw: rev.doc.raw, revision: rev.id },
-                    })}>
-                  <Icon name="code" />Document at this revision
-                </Button>
-              </div>
-            </div>
+      <div class="content">
+        <div class="title">Identity document</div>
+        <div class="meta-bar">
+          {#if identity.current}
+            <span>Revision</span>
+            <Id
+              id={identity.current}
+              clipboard={identity.current}
+              label="revision ID" />
           {/if}
-        {/each}
+          {#if current}
+            <span>· in force since {absoluteTimestamp(current.timestamp)}</span>
+          {:else}
+            <span>· no known revision matches the document in force</span>
+          {/if}
+        </div>
+
+        <IdentityDocument doc={identity.doc} rid={identity.rid} />
+
+        <div class="section-head">
+          <h2 class="section-title">History</h2>
+          <span class="section-note">
+            {identity.revisions.length}
+            {pluralize("revision", identity.revisions.length)}
+          </span>
+        </div>
+
+        <div class="timeline" class:has-runs={identity.revisions.length > 1}>
+          {#each identity.revisions as rev (rev.id)}
+            {@const open = expandedId === rev.id}
+            <button
+              type="button"
+              class="timeline-item"
+              class:expanded={open}
+              aria-expanded={open}
+              onclick={() => toggle(rev.id)}>
+              <span class="icon" data-state={rev.state.status}>
+                <span class="icon-stack">
+                  <span class="icon-default">
+                    <Icon name={stateIcon(rev.state)} />
+                  </span>
+                  <span class="icon-hover">
+                    <Icon
+                      name={open ? "collapse-vertical" : "expand-vertical"} />
+                  </span>
+                </span>
+              </span>
+              <span class="item-body">
+                <NodeId {...authorForNodeId(rev.author)} />
+                <span class="item-title txt-overflow">{rev.title}</span>
+              </span>
+              <span class="item-meta">
+                {#if rev.id === identity.current}
+                  <span class="current-marker">Current</span>
+                {/if}
+                <span
+                  class="timestamp"
+                  title={absoluteTimestamp(rev.timestamp)}>
+                  {formatTimestamp(rev.timestamp)}
+                </span>
+              </span>
+            </button>
+            {#if open}
+              <div class="detail" transition:slide={{ duration: 180 }}>
+                {#if stateCaption(rev.state)}
+                  <div class="state-caption">{stateCaption(rev.state)}</div>
+                {/if}
+
+                {#if rev.description}
+                  <div class="detail-section">
+                    <div class="detail-title">Description</div>
+                    <Markdown breaks content={rev.description} rid={repo.rid} />
+                  </div>
+                {/if}
+
+                <div class="detail-section">
+                  <div class="detail-title">Changes</div>
+                  <IdentityChanges
+                    changes={rev.changes}
+                    root={rev.id === rootId} />
+                </div>
+
+                <div class="detail-section">
+                  <div class="detail-title">Signatures</div>
+                  {#if rev.accepted.length > 0 || rev.rejected.length > 0}
+                    <div class="signatures">
+                      {#each rev.accepted as delegate (delegate.did)}
+                        <div class="signature">
+                          <span class="accepted-icon">
+                            <Icon name="checkmark" />
+                          </span>
+                          <span class="signature-name">
+                            {delegate.alias ?? delegate.did.slice(8, 20)}
+                          </span>
+                          <span class="muted">signed</span>
+                        </div>
+                      {/each}
+                      {#each rev.rejected as delegate (delegate.did)}
+                        <div class="signature">
+                          <span class="rejected-icon">
+                            <Icon name="close" />
+                          </span>
+                          <span class="signature-name struck">
+                            {delegate.alias ?? delegate.did.slice(8, 20)}
+                          </span>
+                          <span class="muted">rejected</span>
+                        </div>
+                      {/each}
+                    </div>
+                  {:else}
+                    <div class="muted">No signatures recorded.</div>
+                  {/if}
+                  <div class="quorum-note">
+                    {#if rev.quorum}
+                      Reached quorum: a majority of the delegates in force at
+                      the time signed it.
+                    {:else}
+                      Did not reach quorum: a majority of the delegates in force
+                      at the time did not sign it.
+                    {/if}
+                  </div>
+                </div>
+
+                <div class="detail-foot">
+                  <IdentityStateBadge state={rev.state} />
+                  <Id id={rev.id} clipboard={rev.id} label="revision ID" />
+                  <span>{absoluteTimestamp(rev.timestamp)}</span>
+                  <Button
+                    styleHeight="1.75rem"
+                    variant="outline"
+                    onclick={() =>
+                      show({
+                        component: RawIdentityDocumentModal,
+                        props: { raw: rev.doc.raw, revision: rev.id },
+                      })}>
+                    <Icon name="code" />Document at this revision
+                  </Button>
+                </div>
+              </div>
+            {/if}
+          {/each}
+        </div>
       </div>
     </ScrollArea>
   </div>

@@ -9,11 +9,13 @@ import type { Revision } from "./Revision";
 export type Identity = {
   rid: string;
   /**
-   * Revision id of the document currently in force.
+   * Revision that produced the document in force, when one can be
+   * identified. Unset if the identity COB holds no revision matching the
+   * document at `refs/rad/id`.
    */
-  current: string;
+  current?: string;
   /**
-   * The document currently in force.
+   * The document currently in force, read from `refs/rad/id`.
    */
   doc: Doc;
   /**

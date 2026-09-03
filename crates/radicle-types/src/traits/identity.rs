@@ -1,5 +1,6 @@
 use radicle::cob::identity;
-use radicle::storage::ReadStorage;
+use radicle::identity::DocAt;
+use radicle::storage::{ReadRepository, ReadStorage};
 
 use crate::cobs::Author;
 use crate::error::Error;
@@ -15,6 +16,18 @@ pub trait Identity: Profile {
         let aliases = profile.aliases();
         let repo = profile.storage.repository(rid)?;
         let identity = identity::Identity::load(&repo)?;
+
+        // The document in force is the one at `refs/rad/id` — the same source
+        // the rest of the app reads for delegates and visibility. The identity
+        // COB's own `current()` can disagree with that ref: it tracks
+        // revisions this node has seen and applied, which may be ahead of, or
+        // behind, the document the repository is actually operating under. So
+        // the history comes from the COB while the document does not.
+        let DocAt {
+            doc: current_doc,
+            blob: current_blob,
+            ..
+        } = repo.identity_doc()?;
 
         // Revisions are keyed by id so a revision can find its parent's
         // document and report what it changed.
@@ -67,10 +80,18 @@ pub trait Identity: Profile {
         // Newest first, matching how the app lists patches and issues.
         revisions.reverse();
 
+        // Which revision produced the document in force, identified by its
+        // document blob. Left unset when no known revision matches, rather
+        // than pointing at a revision whose document is not the live one.
+        let current = identity
+            .revisions()
+            .find(|revision| revision.blob == current_blob)
+            .map(|revision| revision.id);
+
         Ok(types::Identity {
             rid,
-            current: identity.current().id,
-            doc: types::Doc::new(identity.doc(), &aliases),
+            current,
+            doc: types::Doc::new(&current_doc, &aliases),
             revisions,
         })
     }

@@ -19,10 +19,13 @@ use crate::repo::Visibility;
 pub struct Identity {
     #[ts(as = "String")]
     pub rid: radicle::identity::RepoId,
-    /// Revision id of the document currently in force.
-    #[ts(as = "String")]
-    pub current: radicle::git::Oid,
-    /// The document currently in force.
+    /// Revision that produced the document in force, when one can be
+    /// identified. Unset if the identity COB holds no revision matching the
+    /// document at `refs/rad/id`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(as = "Option<String>", optional)]
+    pub current: Option<radicle::git::Oid>,
+    /// The document currently in force, read from `refs/rad/id`.
     pub doc: Doc,
     /// Every revision, newest first.
     pub revisions: Vec<Revision>,
