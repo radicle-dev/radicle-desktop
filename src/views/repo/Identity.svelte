@@ -267,13 +267,31 @@
     gap: 0.5rem;
     font: var(--txt-body-m-regular);
   }
-  .signature-name {
-    font-style: italic;
+  .detail-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .detail-head .detail-title {
+    margin-bottom: 0;
+  }
+  .detail-note {
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+  }
+  /* Markdown sets no base font and neither does `body`, so prose would fall
+     back to the browser's default size instead of the app's. */
+  .description {
+    font: var(--txt-body-m-regular);
     color: var(--color-text-primary);
   }
-  .signature-name.struck {
-    color: var(--color-text-tertiary);
-    text-decoration: line-through;
+  .outcome {
+    color: var(--color-text-secondary);
+  }
+  .abstained-icon {
+    color: var(--color-text-quaternary);
+    display: inline-flex;
   }
   .accepted-icon {
     color: var(--color-feedback-success-text);
@@ -379,6 +397,16 @@
                 </span>
               </button>
               {#if open}
+                <!-- The rule in force for a revision is its parent's
+                     document; the root revision is judged against its own. -->
+                {@const governing =
+                  identity.revisions.find(r => r.id === rev.parent)?.doc
+                    .delegates ?? rev.doc.delegates}
+                {@const decided = new Set([
+                  ...rev.accepted.map(a => a.did),
+                  ...rev.rejected.map(a => a.did),
+                ])}
+                {@const abstained = governing.filter(d => !decided.has(d.did))}
                 <div class="detail" transition:slide={{ duration: 180 }}>
                   {#if stateCaption(rev.state)}
                     <div class="state-caption">{stateCaption(rev.state)}</div>
@@ -387,10 +415,12 @@
                   {#if rev.description}
                     <div class="detail-section">
                       <div class="detail-title">Description</div>
-                      <Markdown
-                        breaks
-                        content={rev.description}
-                        rid={repo.rid} />
+                      <div class="description">
+                        <Markdown
+                          breaks
+                          content={rev.description}
+                          rid={repo.rid} />
+                      </div>
                     </div>
                   {/if}
 
@@ -402,35 +432,42 @@
                   </div>
 
                   <div class="detail-section">
-                    <div class="detail-title">Signatures</div>
-                    {#if rev.accepted.length > 0 || rev.rejected.length > 0}
-                      <div class="signatures">
-                        {#each rev.accepted as delegate (delegate.did)}
-                          <div class="signature">
-                            <span class="accepted-icon">
-                              <Icon name="checkmark" />
-                            </span>
-                            <span class="signature-name">
-                              {delegate.alias ?? delegate.did.slice(8, 20)}
-                            </span>
-                            <span class="muted">signed</span>
-                          </div>
-                        {/each}
-                        {#each rev.rejected as delegate (delegate.did)}
-                          <div class="signature">
-                            <span class="rejected-icon">
-                              <Icon name="close" />
-                            </span>
-                            <span class="signature-name struck">
-                              {delegate.alias ?? delegate.did.slice(8, 20)}
-                            </span>
-                            <span class="muted">rejected</span>
-                          </div>
-                        {/each}
-                      </div>
-                    {:else}
-                      <div class="muted">No signatures recorded.</div>
-                    {/if}
+                    <div class="detail-head">
+                      <div class="detail-title">Signatures</div>
+                      <span class="detail-note">
+                        {rev.accepted.length} of {governing.length}
+                        {pluralize("delegate", governing.length)} signed
+                      </span>
+                    </div>
+                    <div class="signatures">
+                      {#each rev.accepted as delegate (delegate.did)}
+                        <div class="signature">
+                          <span class="accepted-icon">
+                            <Icon name="checkmark" />
+                          </span>
+                          <NodeId {...authorForNodeId(delegate)} />
+                          <span class="outcome">signed</span>
+                        </div>
+                      {/each}
+                      {#each rev.rejected as delegate (delegate.did)}
+                        <div class="signature">
+                          <span class="rejected-icon">
+                            <Icon name="close" />
+                          </span>
+                          <NodeId {...authorForNodeId(delegate)} />
+                          <span class="outcome">rejected</span>
+                        </div>
+                      {/each}
+                      {#each abstained as delegate (delegate.did)}
+                        <div class="signature">
+                          <span class="abstained-icon">
+                            <Icon name="minus" />
+                          </span>
+                          <NodeId {...authorForNodeId(delegate)} />
+                          <span class="outcome muted">no response</span>
+                        </div>
+                      {/each}
+                    </div>
                     <div class="quorum-note">
                       {#if rev.quorum}
                         Reached quorum: a majority of the delegates in force at
