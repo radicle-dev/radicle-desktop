@@ -40,6 +40,7 @@
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { RepoSummary } from "@bindings/repo/RepoSummary";
+  import type { CrossfadeParams } from "svelte/transition";
 
   import { onMount } from "svelte";
   import { flip } from "svelte/animate";
@@ -174,12 +175,20 @@
     duration: ANIMATION_DURATION_MS,
     // A row leaving with no counterpart is either the repo being unseeded, or a
     // filter/refresh that should not animate at all.
-    fallback: (node, params) =>
-      (params as { key?: string }).key !== undefined &&
-      (params as { key?: string }).key === unseedingRid
+    fallback: (node: Element, params: CrossfadeParams & { key?: string }) =>
+      params.key !== undefined && params.key === unseedingRid
         ? fadeCollapse(node, ANIMATION_DURATION_MS)
         : { duration: 0 },
   });
+
+  // Normally cleared when the row finishes its outro; the timer is only a
+  // backstop for a row that leaves without ever running one, which would
+  // otherwise leave every later list change animating.
+  function clearUnseeding(rid: string) {
+    if (unseedingRid === rid) {
+      unseedingRid = undefined;
+    }
+  }
 
   // Fades the row out while collapsing the space it occupies, so the rows below
   // rise into the gap as it closes. `animate:flip` cannot do this on its own: a
@@ -236,20 +245,34 @@
     ]);
   }
 
+  // Ordered like the CLI: drop the seeding policy first, then let storage prune
+  // what it can. `clean` keeps the local node's and the delegates' refs, so a
+  // repo we have published to survives in a reduced form. Throws, so each
+  // caller decides how loud a failure is.
+  async function stopSeeding(rid: string, clean = false) {
+    await invoke<null>("unseed", { rid });
+    if (clean) {
+      await invoke<null>("clean", { rid });
+    }
+  }
+
+  // The pending-fetch list's trash button, which stays quiet on failure. The
+  // list still refreshes: dropping the policy row is what removes a repo from
+  // it, and that happens before anything can throw.
   async function unseed(rid: string) {
     try {
-      await invoke<null>("unseed", { rid });
-      await reloadRepos();
+      await stopSeeding(rid);
     } catch (error) {
       console.error("Unseed failed", error);
+    } finally {
+      await reloadRepos().catch(error =>
+        console.error("Reloading repos failed", error),
+      );
     }
   }
 
   // Unseeding drops the seeding policy and removes the repo from this list, so
   // it goes through a confirmation rather than firing straight off a menu item.
-  // It does not reuse `unseed` above, which swallows its error to keep the
-  // pending-fetch list's trash button quiet — here the error has to reach the
-  // dialog.
   function confirmUnseed(repo: RepoSummary) {
     show({
       component: ConfirmUnseed,
@@ -257,29 +280,30 @@
         name: repo.name,
         rid: repo.rid,
         async confirm(clean: boolean) {
-          await invoke<null>("unseed", { rid: repo.rid });
-          // Ordered like the CLI: drop the seeding policy first, then let
-          // storage prune what it can. `clean` keeps the local node's and the
-          // delegates' refs, so a repo we have published to survives in a
-          // reduced form.
-          if (clean) {
-            await invoke<null>("clean", { rid: repo.rid });
-          }
-          // Marked before the list refreshes so the row that disappears fades
-          // out instead of blinking away, and the rows below glide up into the
-          // gap. Cleared once both halves have run.
+          // Marked before the commands run so the row that disappears fades out
+          // instead of blinking away, and the rows below glide up into the gap.
           unseedingRid = repo.rid;
           try {
-            await reloadRepos();
+            await stopSeeding(repo.rid, clean);
           } finally {
-            setTimeout(() => {
-              unseedingRid = undefined;
-            }, ANIMATION_DURATION_MS * 2);
-          }
-          // The repo the user is looking at just went away; its route would
-          // resolve to nothing.
-          if (activeRid() === repo.rid) {
-            await router.push({ resource: "inbox" });
+            // `unseed` goes first, so it may well have succeeded even when
+            // `clean` threw. Refresh either way rather than leave a row behind
+            // for a repo that is no longer seeded.
+            await reloadRepos().catch(error =>
+              console.error("Reloading repos failed", error),
+            );
+            setTimeout(
+              () => clearUnseeding(repo.rid),
+              ANIMATION_DURATION_MS * 2,
+            );
+            // The repo the user is looking at may have just gone away; its
+            // route would resolve to nothing.
+            if (
+              activeRid() === repo.rid &&
+              !repos.some(r => r.rid === repo.rid)
+            ) {
+              await router.push({ resource: "inbox" });
+            }
           }
         },
       },
@@ -615,7 +639,8 @@
       {...{ [DRAG_RID_ATTRIBUTE]: repo.rid }}
       animate:flip={{ duration: animationDuration }}
       in:receive={{ key: repo.rid, duration: animationDuration }}
-      out:send={{ key: repo.rid, duration: animationDuration }}>
+      out:send={{ key: repo.rid, duration: animationDuration }}
+      onoutroend={() => clearUnseeding(repo.rid)}>
       {@render repoRowInner(repo, true)}
     </div>
   {/each}
@@ -683,7 +708,7 @@
           <span class="icon"><Icon name="filter" /></span>
         </button>
       </span>
-      All Repos
+      Seeded Repos
       {#if unpinnedReposCount > 1}
         <span class="global-counter-badge">{unpinnedReposCount}</span>
       {/if}
@@ -786,7 +811,8 @@
           data-unpinned-rid={repo.rid}
           animate:flip={{ duration: animationDuration }}
           in:receive={{ key: repo.rid, duration: animationDuration }}
-          out:send={{ key: repo.rid, duration: animationDuration }}>
+          out:send={{ key: repo.rid, duration: animationDuration }}
+          onoutroend={() => clearUnseeding(repo.rid)}>
           {@render repoRowInner(repo, false)}
         </div>
       {/each}

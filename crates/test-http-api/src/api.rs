@@ -164,8 +164,11 @@ async fn repo_count_handler(State(ctx): State<Context>) -> impl IntoResponse {
     Ok::<_, Error>(Json(repos))
 }
 
-async fn list_repos_summary_handler(State(ctx): State<Context>) -> impl IntoResponse {
-    let repos = ctx.list_repos_summary()?;
+async fn list_repos_summary_handler(
+    State(ctx): State<Context>,
+    Json(Options { show }): Json<Options>,
+) -> impl IntoResponse {
+    let repos = ctx.list_repos_summary(show)?;
     Ok::<_, Error>(Json(repos))
 }
 

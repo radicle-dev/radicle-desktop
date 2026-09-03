@@ -393,7 +393,7 @@ pub trait Repo: Profile {
         Ok::<_, Error>(entries)
     }
 
-    fn list_repos_summary(&self) -> Result<Vec<repo::RepoSummary>, Error> {
+    fn list_repos_summary(&self, show: Show) -> Result<Vec<repo::RepoSummary>, Error> {
         let profile = self.profile();
         let storage = &profile.storage;
         let policies = profile.policies()?;
@@ -401,11 +401,7 @@ pub trait Repo: Profile {
         let mut entries = Vec::new();
 
         for RepositoryInfo { rid, doc, .. } in repos {
-            // `rad unseed` only drops the seeding policy; the repository stays
-            // in storage. This list backs the sidebar, which is about what you
-            // seed, so an unseeded repo has to leave it even though its files
-            // are still on disk — otherwise unseeding looks like it did nothing.
-            if !policies.is_seeding(&rid)? {
+            if !policies.is_seeding(&rid)? && show == Show::Seeded {
                 continue;
             }
 
@@ -933,6 +929,13 @@ pub trait Repo: Profile {
         let mut node = radicle::Node::new(profile.home().socket_from_env());
 
         profile.unseed(rid, &mut node)?;
+
+        // Unseeding deletes the repository's policy row, so a node whose
+        // default seeding policy is `allow` carries on seeding it. Saying so is
+        // better than reporting success and leaving the repo where it was.
+        if profile.policies()?.is_seeding(&rid)? {
+            return Err(Error::DefaultPolicySeeds);
+        }
 
         Ok(())
     }

@@ -39,6 +39,13 @@ pub enum Error {
     #[error("you have already reviewed this revision")]
     ReviewExists,
 
+    /// Unseeding had no effect because the node seeds everything by default.
+    #[error(
+        "this node's default seeding policy is 'allow', so it keeps seeding this repository; \
+         change `node.seedingPolicy` in your Radicle config to stop"
+    )]
+    DefaultPolicySeeds,
+
     /// Init Error error.
     #[error(transparent)]
     InitError(#[from] radicle::rad::InitError),
