@@ -26,7 +26,6 @@
   import NodeId from "@app/components/NodeId.svelte";
   import RepoHeader from "@app/components/RepoHeader.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
-  import Topbar from "@app/components/Topbar.svelte";
   import RawIdentityDocumentModal from "@app/modals/RawIdentityDocument.svelte";
 
   import Layout from "./Layout.svelte";
@@ -74,7 +73,8 @@
   .title {
     font: var(--txt-heading-m);
     color: var(--color-text-primary);
-    margin-bottom: 1rem;
+    margin: 0 0 1rem;
+    min-width: 0;
   }
   .meta-bar {
     display: flex;
@@ -85,11 +85,12 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
   }
-  .topbar-actions {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+  /* RepoHeader has no bottom border of its own; on Files and Commits the
+     source header supplies one. This view has no toolbar, so the divider
+     lives here. */
+  .repo-context {
+    border-bottom: 1px solid var(--color-border-subtle);
+    flex-shrink: 0;
   }
   .section-head {
     display: flex;
@@ -161,11 +162,21 @@
     background-color: var(--color-surface-subtle);
     border-radius: var(--border-radius-md);
   }
-  /* An open row and its body share one filled, rounded block, so the
-     expansion reads as a contained card the way a patch revision does. */
-  .timeline-item.expanded {
+  /* An open revision is one bordered card wrapping its header row and body,
+     the same construction the patch timeline uses for a revision. */
+  .entry.open {
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-canvas);
+    margin: 0.5rem 0;
+    overflow: hidden;
+  }
+  .entry.open .timeline-item {
+    border-radius: 0;
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .entry.open .timeline-item:hover {
     background-color: var(--color-surface-subtle);
-    border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
   }
   .timeline-item:hover .icon,
   .timeline-item.expanded .icon {
@@ -226,10 +237,7 @@
   /* Indented to line up with the row's text, clear of the rail marker:
      0.5rem row padding + 1rem marker + 0.625rem gap. */
   .detail {
-    padding: 0.25rem 0.875rem 1rem 2.125rem;
-    background-color: var(--color-surface-subtle);
-    border-radius: 0 0 var(--border-radius-md) var(--border-radius-md);
-    margin-bottom: 0.5rem;
+    padding: 0.875rem 1rem 1rem 2.125rem;
   }
   .detail-section + .detail-section {
     margin-top: 1rem;
@@ -254,9 +262,6 @@
     align-items: center;
     gap: 0.5rem;
     font: var(--txt-body-m-regular);
-  }
-  .detail :global(.global-chip) {
-    background-color: var(--color-surface-canvas);
   }
   .signature-name {
     font-style: italic;
@@ -296,26 +301,13 @@
 
 <Layout selfScroll>
   <div class="page">
-    <RepoHeader {repo} config={sidebarData.config} />
-
-    <Topbar>
-      <div class="topbar-actions">
-        <Button
-          styleHeight="2rem"
-          variant="ghost"
-          onclick={() =>
-            show({
-              component: RawIdentityDocumentModal,
-              props: { raw: identity.doc.raw, revision: identity.current },
-            })}>
-          <Icon name="code" />View raw document
-        </Button>
-      </div>
-    </Topbar>
+    <div class="repo-context">
+      <RepoHeader {repo} config={sidebarData.config} />
+    </div>
 
     <ScrollArea style="flex: 1; min-height: 0;">
       <div class="content">
-        <div class="title">Identity document</div>
+        <h1 class="title">Identity document</h1>
         <div class="meta-bar">
           {#if identity.current}
             <span>Revision</span>
@@ -331,7 +323,10 @@
           {/if}
         </div>
 
-        <IdentityDocument doc={identity.doc} rid={identity.rid} />
+        <IdentityDocument
+          doc={identity.doc}
+          rid={identity.rid}
+          revision={identity.current} />
 
         <div class="section-head">
           <h2 class="section-title">History</h2>
@@ -344,116 +339,121 @@
         <div class="timeline" class:has-runs={identity.revisions.length > 1}>
           {#each identity.revisions as rev (rev.id)}
             {@const open = expandedId === rev.id}
-            <button
-              type="button"
-              class="timeline-item"
-              class:expanded={open}
-              aria-expanded={open}
-              onclick={() => toggle(rev.id)}>
-              <span class="icon" data-state={rev.state.status}>
-                <span class="icon-stack">
-                  <span class="icon-default">
-                    <Icon name={stateIcon(rev.state)} />
-                  </span>
-                  <span class="icon-hover">
-                    <Icon
-                      name={open ? "collapse-vertical" : "expand-vertical"} />
+            <div class="entry" class:open>
+              <button
+                type="button"
+                class="timeline-item"
+                class:expanded={open}
+                aria-expanded={open}
+                onclick={() => toggle(rev.id)}>
+                <span class="icon" data-state={rev.state.status}>
+                  <span class="icon-stack">
+                    <span class="icon-default">
+                      <Icon name={stateIcon(rev.state)} />
+                    </span>
+                    <span class="icon-hover">
+                      <Icon
+                        name={open ? "collapse-vertical" : "expand-vertical"} />
+                    </span>
                   </span>
                 </span>
-              </span>
-              <span class="item-body">
-                <NodeId {...authorForNodeId(rev.author)} />
-                <span class="item-title txt-overflow">{rev.title}</span>
-              </span>
-              <span class="item-meta">
-                {#if rev.id === identity.current}
-                  <span class="current-marker">Current</span>
-                {/if}
-                <span
-                  class="timestamp"
-                  title={absoluteTimestamp(rev.timestamp)}>
-                  {formatTimestamp(rev.timestamp)}
+                <span class="item-body">
+                  <NodeId {...authorForNodeId(rev.author)} />
+                  <span class="item-title txt-overflow">{rev.title}</span>
                 </span>
-              </span>
-            </button>
-            {#if open}
-              <div class="detail" transition:slide={{ duration: 180 }}>
-                {#if stateCaption(rev.state)}
-                  <div class="state-caption">{stateCaption(rev.state)}</div>
-                {/if}
-
-                {#if rev.description}
-                  <div class="detail-section">
-                    <div class="detail-title">Description</div>
-                    <Markdown breaks content={rev.description} rid={repo.rid} />
-                  </div>
-                {/if}
-
-                <div class="detail-section">
-                  <div class="detail-title">Changes</div>
-                  <IdentityChanges
-                    changes={rev.changes}
-                    root={rev.id === rootId} />
-                </div>
-
-                <div class="detail-section">
-                  <div class="detail-title">Signatures</div>
-                  {#if rev.accepted.length > 0 || rev.rejected.length > 0}
-                    <div class="signatures">
-                      {#each rev.accepted as delegate (delegate.did)}
-                        <div class="signature">
-                          <span class="accepted-icon">
-                            <Icon name="checkmark" />
-                          </span>
-                          <span class="signature-name">
-                            {delegate.alias ?? delegate.did.slice(8, 20)}
-                          </span>
-                          <span class="muted">signed</span>
-                        </div>
-                      {/each}
-                      {#each rev.rejected as delegate (delegate.did)}
-                        <div class="signature">
-                          <span class="rejected-icon">
-                            <Icon name="close" />
-                          </span>
-                          <span class="signature-name struck">
-                            {delegate.alias ?? delegate.did.slice(8, 20)}
-                          </span>
-                          <span class="muted">rejected</span>
-                        </div>
-                      {/each}
-                    </div>
-                  {:else}
-                    <div class="muted">No signatures recorded.</div>
+                <span class="item-meta">
+                  {#if rev.id === identity.current}
+                    <span class="current-marker">Current</span>
                   {/if}
-                  <div class="quorum-note">
-                    {#if rev.quorum}
-                      Reached quorum: a majority of the delegates in force at
-                      the time signed it.
+                  <span
+                    class="timestamp"
+                    title={absoluteTimestamp(rev.timestamp)}>
+                    {formatTimestamp(rev.timestamp)}
+                  </span>
+                </span>
+              </button>
+              {#if open}
+                <div class="detail" transition:slide={{ duration: 180 }}>
+                  {#if stateCaption(rev.state)}
+                    <div class="state-caption">{stateCaption(rev.state)}</div>
+                  {/if}
+
+                  {#if rev.description}
+                    <div class="detail-section">
+                      <div class="detail-title">Description</div>
+                      <Markdown
+                        breaks
+                        content={rev.description}
+                        rid={repo.rid} />
+                    </div>
+                  {/if}
+
+                  <div class="detail-section">
+                    <div class="detail-title">Changes</div>
+                    <IdentityChanges
+                      changes={rev.changes}
+                      root={rev.id === rootId} />
+                  </div>
+
+                  <div class="detail-section">
+                    <div class="detail-title">Signatures</div>
+                    {#if rev.accepted.length > 0 || rev.rejected.length > 0}
+                      <div class="signatures">
+                        {#each rev.accepted as delegate (delegate.did)}
+                          <div class="signature">
+                            <span class="accepted-icon">
+                              <Icon name="checkmark" />
+                            </span>
+                            <span class="signature-name">
+                              {delegate.alias ?? delegate.did.slice(8, 20)}
+                            </span>
+                            <span class="muted">signed</span>
+                          </div>
+                        {/each}
+                        {#each rev.rejected as delegate (delegate.did)}
+                          <div class="signature">
+                            <span class="rejected-icon">
+                              <Icon name="close" />
+                            </span>
+                            <span class="signature-name struck">
+                              {delegate.alias ?? delegate.did.slice(8, 20)}
+                            </span>
+                            <span class="muted">rejected</span>
+                          </div>
+                        {/each}
+                      </div>
                     {:else}
-                      Did not reach quorum: a majority of the delegates in force
-                      at the time did not sign it.
+                      <div class="muted">No signatures recorded.</div>
                     {/if}
+                    <div class="quorum-note">
+                      {#if rev.quorum}
+                        Reached quorum: a majority of the delegates in force at
+                        the time signed it.
+                      {:else}
+                        Did not reach quorum: a majority of the delegates in
+                        force at the time did not sign it.
+                      {/if}
+                    </div>
+                  </div>
+
+                  <div class="detail-foot">
+                    <IdentityStateBadge state={rev.state} />
+                    <Id id={rev.id} clipboard={rev.id} label="revision ID" />
+                    <span>{absoluteTimestamp(rev.timestamp)}</span>
+                    <Button
+                      styleHeight="1.75rem"
+                      variant="outline"
+                      onclick={() =>
+                        show({
+                          component: RawIdentityDocumentModal,
+                          props: { raw: rev.doc.raw, revision: rev.id },
+                        })}>
+                      <Icon name="code" />Document at this revision
+                    </Button>
                   </div>
                 </div>
-
-                <div class="detail-foot">
-                  <IdentityStateBadge state={rev.state} />
-                  <Id id={rev.id} clipboard={rev.id} label="revision ID" />
-                  <span>{absoluteTimestamp(rev.timestamp)}</span>
-                  <Button
-                    styleHeight="1.75rem"
-                    variant="outline"
-                    onclick={() =>
-                      show({
-                        component: RawIdentityDocumentModal,
-                        props: { raw: rev.doc.raw, revision: rev.id },
-                      })}>
-                    <Icon name="code" />Document at this revision
-                  </Button>
-                </div>
-              </div>
-            {/if}
+              {/if}
+            </div>
           {/each}
         </div>
       </div>

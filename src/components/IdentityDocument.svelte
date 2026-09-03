@@ -1,20 +1,26 @@
 <script lang="ts">
   import type { Doc } from "@bindings/identity/Doc";
 
+  import { show } from "@app/lib/modal";
   import { authorForNodeId, pluralize, truncateDid } from "@app/lib/utils";
 
+  import Button from "@app/components/Button.svelte";
   import HoverPopover from "@app/components/HoverPopover.svelte";
+  import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import UserAvatar from "@app/components/UserAvatar.svelte";
   import VisibilityBadge from "@app/components/VisibilityBadge.svelte";
+  import RawIdentityDocumentModal from "@app/modals/RawIdentityDocument.svelte";
 
   interface Props {
     doc: Doc;
     rid?: string;
+    // Shown alongside the raw document so a copied blob is traceable.
+    revision?: string;
   }
 
-  const { doc, rid }: Props = $props();
+  const { doc, rid, revision }: Props = $props();
 
   // Payloads the sections below render in full. Anything else is listed by
   // name so an unmodelled payload is never silently dropped.
@@ -87,8 +93,16 @@
     height: 100%;
     object-fit: cover;
   }
+  .delegates-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.625rem;
+  }
+  .delegates-head .section-title {
+    margin: 0;
+  }
   .quorum {
-    margin-left: auto;
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
     white-space: nowrap;
@@ -121,6 +135,9 @@
     color: var(--color-text-primary);
     overflow-wrap: anywhere;
     justify-self: start;
+  }
+  .section-action {
+    margin-top: 0.875rem;
   }
   .mono {
     font: var(--txt-code-regular);
@@ -159,7 +176,12 @@
 
 <div class="details">
   <div class="section">
-    <h2 class="section-title">Delegates</h2>
+    <div class="delegates-head">
+      <h2 class="section-title">Delegates</h2>
+      <span class="quorum">
+        {doc.majority} of {doc.delegates.length} must sign off
+      </span>
+    </div>
     <div class="delegates">
       <div class="delegate-cards">
         {#each doc.delegates as delegate (delegate.did)}
@@ -187,9 +209,6 @@
           </HoverPopover>
         {/each}
       </div>
-      <span class="quorum">
-        {doc.majority} of {doc.delegates.length} must sign off
-      </span>
     </div>
   </div>
 
@@ -227,6 +246,18 @@
       {/if}
       <span class="field-label">Document version</span>
       <span class="field-value">{doc.version}</span>
+    </div>
+    <div class="section-action">
+      <Button
+        styleHeight="2rem"
+        variant="outline"
+        onclick={() =>
+          show({
+            component: RawIdentityDocumentModal,
+            props: { raw: doc.raw, revision },
+          })}>
+        <Icon name="code" />View raw document
+      </Button>
     </div>
   </div>
 
