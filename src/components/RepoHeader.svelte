@@ -100,7 +100,10 @@
   </div>
 
   <div class="meta">
-    <VisibilityBadge type={repo.visibility.type} />
+    <VisibilityBadge
+      type={repo.visibility.type}
+      seeded={repo.seeded}
+      seeds={repo.seeding} />
 
     <div class="meta-item">
       <span class="meta-label">Delegates</span>
