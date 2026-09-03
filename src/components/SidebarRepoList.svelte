@@ -460,6 +460,11 @@
     background-color: var(--color-surface-mid);
   }
 
+  .private-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--color-text-tertiary);
+  }
   .nav-item .row-actions {
     visibility: hidden;
     margin-left: auto;
@@ -738,6 +743,11 @@
     href={router.routeToPath({ resource: "repo.home", rid: repo.rid })}>
     <RepoAvatar name={repo.name} rid={repo.rid} styleWidth="1rem" />
     <span class="txt-overflow">{repo.name}</span>
+    {#if repo.private}
+      <span class="private-icon" title="Private repository">
+        <Icon name="lock" />
+      </span>
+    {/if}
     <span
       class="row-actions"
       role="none"
