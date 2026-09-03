@@ -9,6 +9,14 @@ export type RepoInfo = {
   threshold: number;
   visibility: Visibility;
   rid: string;
+  /**
+   * How many nodes on the network are known to seed this repository.
+   */
   seeding: number;
+  /**
+   * Whether the local node seeds this repository. When false the repository
+   * is only in local storage, which `rad ls --all` shows as "local".
+   */
+  seeded: boolean;
   lastCommitTimestamp: number;
 };

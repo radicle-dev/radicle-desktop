@@ -9,6 +9,7 @@ import type { RepoSummary } from "@bindings/repo/RepoSummary";
 import * as tauri from "@tauri-apps/api/core";
 
 import { cached } from "@app/lib/cached";
+import type { RepoListScope } from "@app/lib/repoListScope";
 
 export async function invoke<T = null>(
   cmd: string,
@@ -224,9 +225,10 @@ export const cachedGetCommitDiff = cached(
  * unseeding) go through invalidateReposSummary().
  */
 export const cachedListReposSummary = cached(
-  () => invoke<RepoSummary[]>("list_repos_summary", { show: "seeded" }),
-  () => "list_repos_summary",
-  { max: 1, ttl: 30_000 },
+  (show: RepoListScope) =>
+    invoke<RepoSummary[]>("list_repos_summary", { show }),
+  show => `list_repos_summary:${show}`,
+  { max: 2, ttl: 30_000 },
 );
 
 export function invalidateReposSummary(): void {

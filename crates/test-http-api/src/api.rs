@@ -81,6 +81,7 @@ pub fn router(ctx: Context) -> Router {
             "/seeded_not_replicated",
             post(seeded_not_replicated_handler),
         )
+        .route("/seed", post(seed_handler))
         .route("/unseed", post(unseed_handler))
         .route("/clean", post(clean_handler))
         .route("/repo_by_id", post(repo_handler))
@@ -175,6 +176,15 @@ async fn list_repos_summary_handler(
 async fn seeded_not_replicated_handler(State(ctx): State<Context>) -> impl IntoResponse {
     let rids = ctx.seeded_not_replicated()?;
     Ok::<_, Error>(Json(rids))
+}
+
+async fn seed_handler(
+    State(ctx): State<Context>,
+    Json(RepoBody { rid }): Json<RepoBody>,
+) -> impl IntoResponse {
+    ctx.seed(rid)?;
+
+    Ok::<_, Error>(Json(()))
 }
 
 async fn unseed_handler(

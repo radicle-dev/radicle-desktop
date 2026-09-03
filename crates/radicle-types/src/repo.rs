@@ -19,6 +19,9 @@ pub struct RepoSummary {
     pub rid: identity::RepoId,
     pub name: String,
     pub private: bool,
+    /// False for a repository that is in storage but not seeded, which
+    /// `rad ls --all` shows as "local".
+    pub seeding: bool,
 }
 
 #[derive(Serialize, TS)]
@@ -44,7 +47,11 @@ pub struct RepoInfo {
     pub visibility: Visibility,
     #[ts(as = "String")]
     pub rid: identity::RepoId,
+    /// How many nodes on the network are known to seed this repository.
     pub seeding: usize,
+    /// Whether the local node seeds this repository. When false the repository
+    /// is only in local storage, which `rad ls --all` shows as "local".
+    pub seeded: bool,
     #[ts(type = "number")]
     pub last_commit_timestamp: i64,
 }

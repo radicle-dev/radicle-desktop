@@ -42,9 +42,10 @@
   import type { RepoSummary } from "@bindings/repo/RepoSummary";
   import type { CrossfadeParams } from "svelte/transition";
 
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { flip } from "svelte/animate";
   import { cubicOut } from "svelte/easing";
+  import { get } from "svelte/store";
   import { crossfade } from "svelte/transition";
 
   import { nodeRunning } from "@app/lib/events";
@@ -56,6 +57,7 @@
     writeToClipboard,
   } from "@app/lib/invoke";
   import { show } from "@app/lib/modal";
+  import { repoListScope } from "@app/lib/repoListScope";
   import * as router from "@app/lib/router";
   import {
     explorerHost,
@@ -240,10 +242,22 @@
   async function reloadRepos() {
     invalidateReposSummary();
     [repos, seededNotReplicated] = await Promise.all([
-      cachedListReposSummary(),
+      cachedListReposSummary(repoListScope.value),
       invoke<string[]>("seeded_not_replicated"),
     ]);
   }
+
+  // The route loader already fetched the list for the scope in force, so the
+  // first run only records it; later runs are the preference actually changing.
+  let loadedScope: string | undefined;
+  $effect(() => {
+    const scope = repoListScope.value;
+    const first = loadedScope === undefined;
+    loadedScope = scope;
+    if (!first) {
+      untrack(() => void reloadRepos());
+    }
+  });
 
   // Ordered like the CLI: drop the seeding policy first, then let storage prune
   // what it can. `clean` keeps the local node's and the delegates' refs, so a
@@ -253,6 +267,33 @@
     await invoke<null>("unseed", { rid });
     if (clean) {
       await invoke<null>("clean", { rid });
+    }
+  }
+
+  // The repo view reads `RepoInfo` from the route loader, so its visibility
+  // badge only notices a seeding change if the route loads again. Refreshing
+  // the list alone leaves the badge showing the state from before the click.
+  async function refreshActiveRepo(rid: string) {
+    if (activeRid() !== rid) {
+      return;
+    }
+    await router
+      .replace(get(router.activeUnloadedRouteStore))
+      .catch(error => console.error("Reloading the route failed", error));
+  }
+
+  // Seeding a repository that is only in local storage puts it back on the
+  // network. Nothing is destroyed, so it runs straight off the menu item.
+  async function startSeeding(rid: string) {
+    try {
+      await invoke<null>("seed", { rid });
+    } catch (error) {
+      console.error("Seed failed", error);
+    } finally {
+      await reloadRepos().catch(error =>
+        console.error("Reloading repos failed", error),
+      );
+      await refreshActiveRepo(rid);
     }
   }
 
@@ -296,13 +337,16 @@
               () => clearUnseeding(repo.rid),
               ANIMATION_DURATION_MS * 2,
             );
-            // The repo the user is looking at may have just gone away; its
-            // route would resolve to nothing.
-            if (
-              activeRid() === repo.rid &&
-              !repos.some(r => r.rid === repo.rid)
-            ) {
-              await router.push({ resource: "inbox" });
+            if (activeRid() === repo.rid) {
+              if (repos.some(r => r.rid === repo.rid)) {
+                // Still listed, so the "All" scope is on and the row merely
+                // dimmed; the open repo view needs its badge brought up to date.
+                await refreshActiveRepo(repo.rid);
+              } else {
+                // The repo the user is looking at just went away; its route
+                // would resolve to nothing.
+                await router.push({ resource: "inbox" });
+              }
             }
           }
         },
@@ -460,6 +504,15 @@
     background-color: var(--color-surface-mid);
   }
 
+  /* In the "All" scope the list includes repos that are only in storage;
+     `rad ls --all` dims those too, where it labels them "local". */
+  .nav-item.not-seeded {
+    opacity: 0.55;
+  }
+  .nav-item.not-seeded:hover,
+  .nav-item.not-seeded.active {
+    opacity: 1;
+  }
   .private-icon {
     display: inline-flex;
     flex-shrink: 0;
@@ -713,7 +766,7 @@
           <span class="icon"><Icon name="filter" /></span>
         </button>
       </span>
-      Seeded Repos
+      {repoListScope.value === "all" ? "All Repos" : "Seeded Repos"}
       {#if unpinnedReposCount > 1}
         <span class="global-counter-badge">{unpinnedReposCount}</span>
       {/if}
@@ -733,6 +786,7 @@
   {@const pinState = pinnedRepoIds.value.includes(repo.rid)}
   <a
     class="nav-item"
+    class:not-seeded={!repo.seeding}
     class:active={isRepoHome(repo.rid)}
     class:context-active={contextMenu?.repo.rid === repo.rid}
     class:dragging={pinned && drag.draggingRid === repo.rid}
@@ -882,12 +936,22 @@
       Open in {explorerHost(config)}
     </a>
     <div class="menu-separator"></div>
-    <button
-      class="menu-item"
-      role="menuitem"
-      onclick={() => confirmUnseed(repo)}>
-      <Icon name="seed" />
-      Stop seeding
-    </button>
+    {#if repo.seeding}
+      <button
+        class="menu-item"
+        role="menuitem"
+        onclick={() => confirmUnseed(repo)}>
+        <Icon name="seed" />
+        Stop seeding
+      </button>
+    {:else}
+      <button
+        class="menu-item"
+        role="menuitem"
+        onclick={() => void startSeeding(repo.rid)}>
+        <Icon name="seed-filled" />
+        Start seeding
+      </button>
+    {/if}
   </ContextMenu>
 {/if}

@@ -401,7 +401,9 @@ pub trait Repo: Profile {
         let mut entries = Vec::new();
 
         for RepositoryInfo { rid, doc, .. } in repos {
-            if !policies.is_seeding(&rid)? && show == Show::Seeded {
+            let seeding = policies.is_seeding(&rid)?;
+
+            if !seeding && show == Show::Seeded {
                 continue;
             }
 
@@ -416,6 +418,7 @@ pub trait Repo: Profile {
                 rid,
                 name: data.name,
                 private: doc.is_private(),
+                seeding,
             });
         }
 
@@ -669,6 +672,7 @@ pub trait Repo: Profile {
             .collect::<Vec<_>>();
         let db = profile.database()?;
         let seeding = db.count(&repo.id).unwrap_or_default();
+        let seeded = profile.policies()?.is_seeding(&repo.id)?;
         let (_, head) = repo.head()?;
         let commit = repo.commit(head)?;
         let project = doc
@@ -705,6 +709,7 @@ pub trait Repo: Profile {
             },
             rid: repo.id,
             seeding,
+            seeded,
             last_commit_timestamp: commit.time().seconds() * 1000,
         })
     }

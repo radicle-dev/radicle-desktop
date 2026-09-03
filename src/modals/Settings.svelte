@@ -15,6 +15,7 @@
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import FontSizeSwitch from "@app/components/FontSizeSwitch.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import RepoListSwitch from "@app/components/RepoListSwitch.svelte";
   import SegmentedSwitch from "@app/components/SegmentedSwitch.svelte";
   import ThemeSwitch from "@app/components/ThemeSwitch.svelte";
   import UpdateSwitch from "@app/components/UpdateSwitch.svelte";
@@ -141,6 +142,15 @@
         </span>
       </div>
       <FontSizeSwitch />
+    </div>
+    <div class="row">
+      <div class="row-label">
+        <span class="row-title">Repository list</span>
+        <span class="row-description">
+          List only the repositories you seed, or everything in local storage
+        </span>
+      </div>
+      <RepoListSwitch />
     </div>
     <div class="row">
       <div class="row-label">

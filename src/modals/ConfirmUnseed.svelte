@@ -1,5 +1,6 @@
 <script lang="ts">
   import { disableHide, enableHide, hide } from "@app/lib/modal";
+  import { repoListScope } from "@app/lib/repoListScope";
 
   import Button from "@app/components/Button.svelte";
   import Checkbox from "@app/components/Checkbox.svelte";
@@ -146,8 +147,10 @@
       <span class="note-icon"><Icon name="seed" /></span>
       <div class="note-body">
         <span>
-          Your node stops replicating and announcing this repository, and it
-          leaves the sidebar.
+          Your node stops replicating and announcing this repository{repoListScope.value ===
+          "seeded"
+            ? ", and it leaves the sidebar."
+            : "; the sidebar dims it."}
           {#if !clean}
             The files stay on disk.
           {/if}
