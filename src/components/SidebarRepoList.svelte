@@ -447,6 +447,12 @@
     color: var(--color-text-tertiary);
   }
 
+  .menu-separator {
+    height: 1px;
+    border: 0;
+    margin: 0.25rem -0.25rem;
+    background-color: var(--color-border-subtle);
+  }
   .menu-item {
     display: flex;
     align-items: center;
@@ -732,6 +738,14 @@
     y={contextMenu.y}
     target={contextMenu.target}
     onclose={closeContextMenu}>
+    <button
+      class="menu-item"
+      role="menuitem"
+      onclick={() => router.push({ resource: "repo.identity", rid: repo.rid })}>
+      <Icon name="document" />
+      View identity document
+    </button>
+    <hr class="menu-separator" />
     <button
       class="menu-item"
       role="menuitem"

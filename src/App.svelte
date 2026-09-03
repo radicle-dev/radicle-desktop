@@ -39,6 +39,7 @@
   import Auth from "@app/views/auth/Auth.svelte";
   import CreateIdentity from "@app/views/auth/CreateIdentity.svelte";
   import InboxView from "@app/views/Inbox.svelte";
+  import Identity from "@app/views/repo/Identity.svelte";
   import Issue from "@app/views/repo/Issue.svelte";
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
@@ -223,6 +224,8 @@
       <RepoCommits {...$activeRouteStore.params} />
     {:else if $activeRouteStore.resource === "repo.commit"}
       <RepoCommit {...$activeRouteStore.params} />
+    {:else if $activeRouteStore.resource === "repo.identity"}
+      <Identity {...$activeRouteStore.params} />
     {:else if $activeRouteStore.resource === "repo.issue"}
       <Issue {...$activeRouteStore.params} />
     {:else if $activeRouteStore.resource === "repo.issues"}

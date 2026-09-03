@@ -9,6 +9,7 @@ import type { Revision } from "@bindings/cob/patch/Revision";
 import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Config } from "@bindings/config/Config";
 import type { Diff } from "@bindings/diff/Diff";
+import type { Identity } from "@bindings/identity/Identity";
 import type { Commit } from "@bindings/repo/Commit";
 import type { Readme } from "@bindings/repo/Readme";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
@@ -48,6 +49,24 @@ export interface RepoCommitRoute {
   resource: "repo.commit";
   rid: string;
   commit: string;
+}
+
+export interface RepoIdentityRoute {
+  resource: "repo.identity";
+  rid: string;
+  // Which revision of the identity document to show. Unset means the one
+  // currently in force.
+  revision?: string;
+}
+
+export interface LoadedRepoIdentityRoute {
+  resource: "repo.identity";
+  params: {
+    repo: RepoInfo;
+    identity: Identity;
+    revision?: string;
+    sidebarData: SidebarData;
+  };
 }
 
 export interface RepoIssueRoute {
@@ -172,6 +191,7 @@ export type RepoRoute =
   | RepoHomeRoute
   | RepoCommitsRoute
   | RepoCommitRoute
+  | RepoIdentityRoute
   | RepoIssueRoute
   | RepoIssuesRoute
   | RepoPatchRoute
@@ -180,6 +200,7 @@ export type LoadedRepoRoute =
   | LoadedRepoHomeRoute
   | LoadedRepoCommitsRoute
   | LoadedRepoCommitRoute
+  | LoadedRepoIdentityRoute
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
   | LoadedRepoPatchRoute
@@ -406,6 +427,31 @@ export async function loadRepoCommit(
   };
 }
 
+export async function loadIdentity(
+  route: RepoIdentityRoute,
+): Promise<LoadedRepoIdentityRoute> {
+  const [sidebarData, repo, identity] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Identity>("identity_by_repo", {
+      rid: route.rid,
+    }),
+  ]);
+
+  // A revision id from a stale link would otherwise render an empty detail
+  // pane; fall back to the current document instead.
+  const revision = identity.revisions.some(r => r.id === route.revision)
+    ? route.revision
+    : undefined;
+
+  return {
+    resource: "repo.identity",
+    params: { sidebarData, repo, identity, revision },
+  };
+}
+
 export async function loadIssue(
   route: RepoIssueRoute,
 ): Promise<LoadedRepoIssueRoute> {
@@ -486,6 +532,13 @@ export function repoRouteToPath(route: RepoRoute): string {
     return segments.join("/");
   } else if (route.resource === "repo.commit") {
     return [...pathSegments, "commits", route.commit].join("/");
+  } else if (route.resource === "repo.identity") {
+    let url = [...pathSegments, "identity"].join("/");
+    if (route.revision) {
+      searchParams.set("revision", route.revision);
+      url += `?${searchParams}`;
+    }
+    return url;
   } else if (route.resource === "repo.issue") {
     let url = [...pathSegments, "issues", route.issue].join("/");
     searchParams.set("status", route.status);
@@ -560,6 +613,12 @@ export function repoUrlToRoute(
         rid,
         peer,
         revision: segments.join("/"),
+      };
+    } else if (resource === "identity") {
+      return {
+        resource: "repo.identity",
+        rid,
+        revision: searchParams.get("revision") ?? undefined,
       };
     } else if (resource === "issues") {
       const idOrAction = segments.shift();
