@@ -178,8 +178,7 @@
   .entry.open .timeline-item:hover {
     background-color: var(--color-surface-subtle);
   }
-  .timeline-item:hover .icon,
-  .timeline-item.expanded .icon {
+  .timeline-item:hover .icon {
     background-color: var(--color-surface-subtle);
   }
   /* Hovering swaps the state marker for an expand affordance, the way the
