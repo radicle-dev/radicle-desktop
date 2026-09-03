@@ -3,6 +3,7 @@ use radicle::node::{AliasStore, NodeId};
 use crate::config::Config;
 
 pub mod cobs;
+pub mod identity;
 pub mod issue;
 pub mod job;
 pub mod patch;

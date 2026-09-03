@@ -29,6 +29,7 @@ use radicle_types::error::Error;
 use radicle_types::outbound::sqlite::Sqlite;
 use radicle_types::traits::Profile;
 use radicle_types::traits::cobs::Cobs;
+use radicle_types::traits::identity::Identity;
 use radicle_types::traits::issue::{Issues, IssuesMut};
 use radicle_types::traits::job::Jobs;
 use radicle_types::traits::patch::{Patches, PatchesMut};
@@ -44,6 +45,7 @@ pub struct Context {
 
 impl Repo for Context {}
 impl Cobs for Context {}
+impl Identity for Context {}
 impl Thread for Context {}
 impl Issues for Context {}
 impl IssuesMut for Context {}
@@ -83,6 +85,7 @@ pub fn router(ctx: Context) -> Router {
         )
         .route("/repo_by_id", post(repo_handler))
         .route("/list_repo_refs", post(list_repo_refs_handler))
+        .route("/identity_by_repo", post(identity_handler))
         .route("/version", post(version_handler))
         .route("/diff_stats", post(diff_stats_handler))
         .route(
@@ -198,6 +201,15 @@ async fn repo_handler(
     let info = ctx.repo_by_id(rid)?;
 
     Ok::<_, Error>(Json(info))
+}
+
+async fn identity_handler(
+    State(ctx): State<Context>,
+    Json(RepoBody { rid }): Json<RepoBody>,
+) -> impl IntoResponse {
+    let identity = ctx.identity_by_repo(rid)?;
+
+    Ok::<_, Error>(Json(identity))
 }
 
 async fn list_repo_refs_handler(
