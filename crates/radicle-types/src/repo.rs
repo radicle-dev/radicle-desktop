@@ -18,6 +18,7 @@ pub struct RepoSummary {
     #[ts(as = "String")]
     pub rid: identity::RepoId,
     pub name: String,
+    pub private: bool,
 }
 
 #[derive(Serialize, TS)]

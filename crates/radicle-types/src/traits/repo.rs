@@ -408,6 +408,7 @@ pub trait Repo: Profile {
             entries.push(repo::RepoSummary {
                 rid,
                 name: data.name,
+                private: doc.is_private(),
             });
         }
 
