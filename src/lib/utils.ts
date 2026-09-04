@@ -173,6 +173,11 @@ export const issueStatusBackgroundColor: Record<
   closed: "var(--color-surface-closed)",
 };
 
+export const issueStatusIcon = {
+  open: "issue",
+  closed: "issue-closed",
+} as const satisfies Record<Issue["state"]["status"], string>;
+
 export const issueStatusLabel: Record<Issue["state"]["status"], string> = {
   open: "Open Issues",
   closed: "Closed Issues",

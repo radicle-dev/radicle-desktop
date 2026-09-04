@@ -164,4 +164,37 @@ pub trait IssuesMut: Profile {
 
         Ok::<_, Error>(cobs::issue::Issue::new(issue.id(), &issue, &aliases))
     }
+
+    /// Remove an issue COB. Equivalent to `rad issue delete`.
+    ///
+    /// Only the COB ref under our own namespace is dropped. On an issue we did
+    /// not author we hold no such ref, so this returns `Ok` having deleted
+    /// nothing — while still evicting the cache entry, hiding the issue until
+    /// the next rebuild. Callers must restrict this to our own issues.
+    fn delete_issue(
+        &self,
+        rid: identity::RepoId,
+        cob_id: git::Oid,
+        opts: cobs::CobOptions,
+    ) -> Result<(), Error> {
+        let profile = self.profile();
+        let mut node = Node::new(profile.home().socket_from_env());
+        let repo = profile.storage.repository(rid)?;
+        let signer = profile.signer()?;
+
+        // Remove via the cache-backed store so the issue is dropped from both
+        // the git refs and the COB cache that listings read from; otherwise the
+        // deleted issue keeps showing up in the issue list.
+        let mut issues = profile.issues_mut(&repo, &signer)?;
+        issues.remove(&cob_id.into())?;
+        drop(issues);
+
+        if opts.announce()
+            && let Err(e) = node.announce_refs_for(rid, [profile.public_key])
+        {
+            log::error!("Not able to announce changes: {}", e)
+        }
+
+        Ok(())
+    }
 }

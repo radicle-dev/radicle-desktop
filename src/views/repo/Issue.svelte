@@ -8,35 +8,31 @@
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import partial from "lodash/partial";
-
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
   import { show } from "@app/lib/modal";
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
   import {
-    issueStatusBackgroundColor,
-    issueStatusColor,
+    issueStatusIcon,
     issueStatusLabel,
     publicKeyFromDid,
   } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
-  import AssigneeInput from "@app/components/AssigneeInput.svelte";
   import Button from "@app/components/Button.svelte";
-  import CommentComponent from "@app/components/Comment.svelte";
+  import ConfirmDeleteButton from "@app/components/ConfirmDeleteButton.svelte";
   import Discussion, {
     type ActivityItem,
   } from "@app/components/Discussion.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
   import Icon from "@app/components/Icon.svelte";
-  import Id from "@app/components/Id.svelte";
   import IssueActivityItem, {
     type FlattenedIssueOperation,
   } from "@app/components/IssueActivityItem.svelte";
+  import IssueDescription from "@app/components/IssueDescription.svelte";
+  import IssueMetadata from "@app/components/IssueMetadata.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
-  import LabelInput from "@app/components/LabelInput.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import ShareButton from "@app/components/ShareButton.svelte";
   import Topbar from "@app/components/Topbar.svelte";
@@ -56,8 +52,17 @@
   let { repo, issue, activity, config, threads }: Props = $props();
   /* eslint-enable prefer-const */
 
-  let labelSaveInProgress: boolean = $state(false);
-  let assigneesSaveInProgress: boolean = $state(false);
+  const canEditIssue = $derived(
+    roles.isDelegateOrAuthor(
+      config.publicKey,
+      repo.delegates.map(delegate => delegate.did),
+      issue.author.did,
+    ),
+  );
+
+  const isOwnIssue = $derived(
+    publicKeyFromDid(issue.author.did) === config.publicKey,
+  );
 
   const activityItems: ActivityItem<FlattenedIssueOperation>[] = $derived.by(
     () => {
@@ -72,6 +77,18 @@
       ]);
       const tracker: Partial<Record<Action["type"], Action>> = {};
       const items: ActivityItem<FlattenedIssueOperation>[] = [];
+      const openedTimestamp =
+        issue.body?.edits[0]?.timestamp ?? issue.timestamp;
+      items.push({
+        key: `${issue.id}:opened`,
+        timestamp: openedTimestamp,
+        data: {
+          type: "opened",
+          id: issue.id,
+          author: issue.author,
+          timestamp: openedTimestamp,
+        },
+      });
       activity.forEach(operation => {
         operation.actions.forEach((action, actionIndex) => {
           if (skipped.has(action.type)) {
@@ -114,46 +131,6 @@
       return items;
     },
   );
-
-  async function saveLabels(labels: string[]) {
-    try {
-      labelSaveInProgress = true;
-      await invoke("edit_issue", {
-        rid: repo.rid,
-        cobId: issue.id,
-        action: {
-          type: "label",
-          labels,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Editing labels failed", error);
-    } finally {
-      labelSaveInProgress = false;
-      await reload();
-    }
-  }
-
-  async function saveAssignees(assignees: Author[]) {
-    try {
-      assigneesSaveInProgress = true;
-      await invoke("edit_issue", {
-        rid: repo.rid,
-        cobId: issue.id,
-        action: {
-          type: "assign",
-          assignees,
-        },
-        opts: { announce: $nodeRunning && $announce },
-      });
-    } catch (error) {
-      console.error("Editing assignees failed", error);
-    } finally {
-      assigneesSaveInProgress = false;
-      await reload();
-    }
-  }
 
   async function reload() {
     [issue, activity, threads] = await Promise.all([
@@ -276,6 +253,23 @@
     }
   }
 
+  async function deleteIssue() {
+    try {
+      await invoke("delete_issue", {
+        rid: repo.rid,
+        cobId: issue.id,
+        opts: { announce: $nodeRunning && $announce },
+      });
+      void router.push({
+        resource: "repo.issues",
+        rid: repo.rid,
+        status: issue.state.status,
+      });
+    } catch (error) {
+      console.error("Deleting issue failed", error);
+    }
+  }
+
   async function saveState(state: Issue["state"]) {
     try {
       await invoke("edit_issue", {
@@ -305,6 +299,7 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
+    min-width: 0;
   }
   .breadcrumb-link {
     cursor: pointer;
@@ -317,59 +312,41 @@
   .breadcrumb-link:hover {
     color: var(--color-text-primary);
   }
-  .content {
-    display: grid;
-    grid-template-columns: 1fr 22rem;
+  .breadcrumb-title {
+    color: var(--color-text-primary);
+    font: var(--txt-body-m-medium);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .main {
-    padding: 1.5rem 2rem;
+    padding: 1.5rem 6rem;
     min-width: 0;
+    max-width: 80rem;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "title"
+      "meta"
+      "content";
   }
   .title {
+    grid-area: title;
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    margin-top: 1.5rem;
     margin-bottom: 1rem;
   }
-  .status-chip {
-    padding: 0;
-    height: 2rem;
-    width: 2rem;
-    flex-shrink: 0;
+  .meta-bar {
+    grid-area: meta;
+    margin-bottom: 0.5rem;
   }
-  .issue-body {
-    margin: 1rem 0;
-    position: relative;
-  }
-  .sidebar {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    border-left: 1px solid var(--color-border-subtle);
-    height: 100%;
-    padding: 1.5rem 1rem;
-  }
-  .sidebar-section {
-    padding: 0.5rem;
-    font: var(--txt-body-m-regular);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  @media (max-width: 1349.98px) {
-    .content {
-      grid-template-columns: 1fr;
-    }
-    .sidebar {
-      order: -1;
-      border-left: none;
-      border-bottom: 1px solid var(--color-border-subtle);
-      flex-direction: row;
-      align-items: flex-start;
-    }
-    .sidebar-section {
-      flex: 1;
-    }
+  .content {
+    grid-area: content;
+    min-width: 0;
   }
 </style>
 
@@ -377,7 +354,7 @@
   <div class="page">
     <Topbar>
       <div class="breadcrumb">
-        <Icon name={issue.state.status === "open" ? "issue" : "issue-closed"} />
+        <Icon name={issueStatusIcon[issue.state.status]} />
         <button
           class="breadcrumb-link"
           onclick={() =>
@@ -389,9 +366,16 @@
           {issueStatusLabel[issue.state.status]}
         </button>
         <Icon name="chevron-right" />
-        <Id id={issue.id} clipboard={issue.id} label="issue ID" />
+        <span class="breadcrumb-title">{issue.title}</span>
       </div>
-      <div style:margin-left="auto" style:display="flex" style:gap="0.5rem">
+      <div
+        style:margin-left="auto"
+        style:display="flex"
+        style:gap="0.5rem"
+        style:z-index="40">
+        {#if isOwnIssue}
+          <ConfirmDeleteButton noun="issue" onDelete={deleteIssue} />
+        {/if}
         <ShareButton
           explorerPath={`${repo.rid}/issues/${issue.id}`}
           id={issue.id}
@@ -412,53 +396,35 @@
     </Topbar>
 
     <ScrollArea style="flex: 1; min-height: 0;">
-      <div class="content">
-        <div class="main">
-          <div class="title">
-            <div
-              class="global-chip status-chip"
-              style:color={issueStatusColor[issue.state.status]}
-              style:background-color={issueStatusBackgroundColor[
-                issue.state.status
-              ]}>
-              <Icon
-                name={issue.state.status === "open"
-                  ? "issue"
-                  : "issue-closed"} />
-            </div>
-            <EditableTitle
-              {updateTitle}
-              allowedToEdit={roles.isDelegateOrAuthor(
-                config.publicKey,
-                repo.delegates.map(delegate => delegate.did),
-                issue.author.did,
-              )}
-              title={issue.title}
-              cobId={issue.id} />
-          </div>
+      <div class="main">
+        <div class="title">
+          <IssueStateButton
+            selectedState={issue.state}
+            onSelect={saveState}
+            disabled={!canEditIssue} />
+          <EditableTitle
+            {updateTitle}
+            allowedToEdit={canEditIssue}
+            title={issue.title}
+            cobId={issue.id} />
+        </div>
 
+        <div class="meta-bar">
+          <IssueMetadata {config} {issue} {repo} {reload} />
+        </div>
+
+        <div class="content">
           {#if issue.body}
-            <div class="issue-body">
-              <CommentComponent
-                rid={repo.rid}
-                currentUserNid={config.publicKey}
-                id={issue.id}
-                lastEdit={issue.body.edits.length > 1
-                  ? issue.body.edits.at(-1)
-                  : undefined}
-                author={issue.body.author}
-                caption="opened"
-                reactions={issue.body.reactions}
-                timestamp={issue.body.edits.slice(-1)[0].timestamp}
-                body={issue.body.edits.slice(-1)[0].body}
-                editComment={roles.isDelegateOrAuthor(
-                  config.publicKey,
-                  repo.delegates.map(delegate => delegate.did),
-                  issue.body.author.did,
-                ) && partial(editComment, issue.body.id)}
-                reactOnComment={partial(reactOnComment, issue.body.id)}>
-              </CommentComponent>
-            </div>
+            {@const body = issue.body}
+            <IssueDescription
+              rid={repo.rid}
+              body={body.edits.slice(-1)[0].body}
+              reactions={body.reactions}
+              currentUserNid={config.publicKey}
+              allowedToEdit={!!canEditIssue}
+              editComment={(text, embeds) => editComment(body.id, text, embeds)}
+              reactOnComment={(authors, reaction) =>
+                reactOnComment(body.id, authors, reaction)} />
           {/if}
 
           {#snippet renderActivity(
@@ -481,38 +447,6 @@
             {activityItems}
             {renderActivity}
             authorOf={op => op.author} />
-        </div>
-
-        <div class="sidebar">
-          <div class="sidebar-section">
-            <IssueStateButton
-              selectedState={issue.state}
-              onSelect={saveState}
-              disabled={!roles.isDelegate(
-                config.publicKey,
-                repo.delegates.map(d => d.did),
-              )} />
-          </div>
-          <div class="sidebar-section">
-            <LabelInput
-              allowedToEdit={!!roles.isDelegate(
-                config.publicKey,
-                repo.delegates.map(delegate => delegate.did),
-              )}
-              labels={issue.labels}
-              submitInProgress={labelSaveInProgress}
-              save={saveLabels} />
-          </div>
-          <div class="sidebar-section">
-            <AssigneeInput
-              allowedToEdit={!!roles.isDelegate(
-                config.publicKey,
-                repo.delegates.map(delegate => delegate.did),
-              )}
-              assignees={issue.assignees}
-              submitInProgress={assigneesSaveInProgress}
-              save={saveAssignees} />
-          </div>
         </div>
       </div>
     </ScrollArea>

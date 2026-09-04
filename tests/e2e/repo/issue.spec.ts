@@ -12,7 +12,7 @@ test("correct order of threads", async ({ page }) => {
   await page.getByRole("link", { name: "cobs" }).click();
   await page.getByRole("link", { name: "Issues" }).click();
   await page.getByText("This title has **markdown**").click();
-  const body = page.locator(".issue-body");
+  const body = page.locator(".description-body");
   await expect(body.getByText("This is a description")).toBeVisible();
 
   const topLevelComments = await page.locator(".comments").all();
@@ -43,7 +43,9 @@ test("creation of top level comments", async ({ page }) => {
     );
   await page.getByRole("button", { name: /^Save/ }).click();
   await expect(
-    page.getByText("Make sure that comment creation is working"),
+    page.getByRole("button", {
+      name: "Make sure that comment creation is working",
+    }),
   ).toBeVisible();
   await expect(
     page.getByText(

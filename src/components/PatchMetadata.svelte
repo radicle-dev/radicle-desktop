@@ -8,10 +8,8 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { RepoRefs } from "@bindings/repo/RepoRefs";
 
-  import debounce from "lodash/debounce";
-
   import { nodeRunning } from "@app/lib/events";
-  import { invoke, writeToClipboard } from "@app/lib/invoke";
+  import { invoke } from "@app/lib/invoke";
   import type { ReviewEntry } from "@app/lib/reviewSummary";
   import {
     entriesFromRevisions,
@@ -24,7 +22,6 @@
   import {
     authorForNodeId,
     defaultBranch,
-    formatOid,
     pluralize,
     publicKeyFromDid,
     unqualifyBranch,
@@ -36,6 +33,7 @@
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import IdChip from "@app/components/IdChip.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
@@ -98,16 +96,6 @@
       reviewId,
       view,
     });
-  }
-
-  let patchIdCopied = $state(false);
-  const resetPatchIdCopied = debounce(() => {
-    patchIdCopied = false;
-  }, 1000);
-  async function copyPatchId() {
-    await writeToClipboard(patch.id);
-    patchIdCopied = true;
-    resetPatchIdCopied();
   }
 
   let labelSaveInProgress: boolean = $state(false);
@@ -292,7 +280,6 @@
     align-items: center;
     color: var(--color-text-brand);
   }
-  .patch-id-chip,
   .target-branch-chip,
   .author-chip {
     display: inline-flex;
@@ -316,21 +303,11 @@
     color: var(--color-text-tertiary);
     font: var(--txt-body-m-regular);
   }
-  .target-group .patch-id-chip,
   .target-group .target-branch-chip {
     height: 100%;
     border: 0;
     border-radius: 0;
     background: none;
-  }
-  .patch-id-chip {
-    gap: 0.375rem;
-    cursor: pointer;
-  }
-  .patch-id-chip:hover,
-  .patch-id-chip:focus-visible {
-    background-color: var(--color-surface-subtle);
-    color: var(--color-text-primary);
   }
   .target-arrow {
     display: inline-flex;
@@ -345,26 +322,6 @@
     background-color: var(--color-surface-subtle);
     color: var(--color-text-primary);
   }
-  .patch-id-value {
-    font: var(--txt-code-regular);
-  }
-  /* Patch icon by default, copy icon on hover, checkmark on click. */
-  .pid-icon-default,
-  .pid-icon-hover {
-    display: inline-flex;
-    align-items: center;
-  }
-  .pid-icon-hover {
-    display: none;
-  }
-  .patch-id-chip:hover .pid-icon-default,
-  .patch-id-chip:focus-visible .pid-icon-default {
-    display: none;
-  }
-  .patch-id-chip:hover .pid-icon-hover,
-  .patch-id-chip:focus-visible .pid-icon-hover {
-    display: inline-flex;
-  }
 </style>
 
 <div class="meta-row">
@@ -372,19 +329,7 @@
     <NodeId {...authorForNodeId(patch.author)} />
   </div>
   <div class="target-group">
-    <button
-      type="button"
-      class="patch-id-chip"
-      title={patchIdCopied ? "Copied to clipboard" : "Copy patch ID"}
-      onclick={copyPatchId}>
-      {#if patchIdCopied}
-        <Icon name="checkmark" />
-      {:else}
-        <span class="pid-icon-default"><Icon name="hash" /></span>
-        <span class="pid-icon-hover"><Icon name="copy" /></span>
-      {/if}
-      <span class="patch-id-value">{formatOid(patch.id)}</span>
-    </button>
+    <IdChip id={patch.id} label="patch ID" grouped />
     {#if targetBranch}
       <span class="target-arrow" title={targetBranchCaption}>
         <Icon name="arrow-right" />
