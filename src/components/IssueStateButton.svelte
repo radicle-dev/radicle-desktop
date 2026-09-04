@@ -24,81 +24,115 @@
   let popoverExpanded: boolean = $state(false);
 </script>
 
-<Popover
-  popoverPadding="0"
-  placement="bottom-start"
-  bind:expanded={popoverExpanded}>
-  {#snippet toggle(onclick)}
-    <Button
-      variant="outline"
-      {disabled}
-      {onclick}
-      active={popoverExpanded}
-      title={disabled
-        ? "Only delegates can change the issue state"
-        : undefined}>
-      <span
-        class="global-chip"
-        style:padding="0"
-        style:margin-left="-0.25rem"
-        style:color={disabled
-          ? undefined
-          : issueStatusColor[selectedState.status]}
-        style:background-color={disabled
-          ? undefined
-          : issueStatusBackgroundColor[selectedState.status]}>
-        <Icon
-          name={selectedState.status === "open"
-            ? "issue"
-            : `issue-${selectedState.status}`} />
-      </span>
-      <span style:color={disabled ? undefined : "var(--color-text-secondary)"}>
-        {capitalize(selectedState.status)}
-        {selectedState.status === "closed" ? `as ${selectedState.reason}` : ""}
-      </span>
-      <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
-    </Button>
-  {/snippet}
-  {#snippet popover()}
-    <div
-      style:border="1px solid var(--color-border-subtle)"
-      style:border-radius="var(--border-radius-sm)"
-      style:display="flex"
-      style:gap="0.5rem"
-      style:align-items="center"
-      style:background-color="var(--color-surface-canvas)">
-      <DropdownList
-        items={[
-          { status: "open" },
-          { status: "closed", reason: "solved" },
-          { status: "closed", reason: "other" },
-        ] as State[]}>
-        {#snippet item(state)}
-          <DropdownListItem
-            selected={isEqual(selectedState, state)}
-            styleGap="0.5rem"
-            onclick={() => {
-              onSelect(state);
-              closeFocused();
-            }}>
-            <span
-              class="global-chip"
-              style:padding="0"
-              style:margin-left="-0.5rem"
-              style:color={issueStatusColor[state.status]}
-              style:background-color={issueStatusBackgroundColor[state.status]}>
-              <Icon
-                name={state.status === "open"
-                  ? "issue"
-                  : `issue-${state.status}`} />
-            </span>
-            <span style:color="var(--color-text-secondary)">
-              {capitalize(state.status)}
-              {state.status === "closed" ? `as ${state.reason}` : ""}
-            </span>
-          </DropdownListItem>
-        {/snippet}
-      </DropdownList>
-    </div>
-  {/snippet}
-</Popover>
+<style>
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border-radius: var(--border-radius-sm);
+    font: var(--txt-body-m-regular);
+  }
+</style>
+
+{#if disabled}
+  <span
+    class="status-chip"
+    style:color={issueStatusColor[selectedState.status]}
+    style:background-color={issueStatusBackgroundColor[selectedState.status]}
+    title="Only delegates can change the issue state">
+    <Icon
+      name={selectedState.status === "open"
+        ? "issue"
+        : `issue-${selectedState.status}`} />
+    <span>
+      {capitalize(selectedState.status)}
+      {selectedState.status === "closed" ? `as ${selectedState.reason}` : ""}
+    </span>
+  </span>
+{:else}
+  <Popover
+    popoverPadding="0"
+    placement="bottom-start"
+    bind:expanded={popoverExpanded}>
+    {#snippet toggle(onclick)}
+      <Button
+        variant="outline"
+        {disabled}
+        {onclick}
+        active={popoverExpanded}
+        title={disabled
+          ? "Only delegates can change the issue state"
+          : undefined}>
+        <span
+          class="global-chip"
+          style:padding="0"
+          style:margin-left="-0.25rem"
+          style:color={disabled
+            ? undefined
+            : issueStatusColor[selectedState.status]}
+          style:background-color={disabled
+            ? undefined
+            : issueStatusBackgroundColor[selectedState.status]}>
+          <Icon
+            name={selectedState.status === "open"
+              ? "issue"
+              : `issue-${selectedState.status}`} />
+        </span>
+        <span
+          style:color={disabled ? undefined : "var(--color-text-secondary)"}>
+          {capitalize(selectedState.status)}
+          {selectedState.status === "closed"
+            ? `as ${selectedState.reason}`
+            : ""}
+        </span>
+        <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
+      </Button>
+    {/snippet}
+    {#snippet popover()}
+      <div
+        style:border="1px solid var(--color-border-subtle)"
+        style:border-radius="var(--border-radius-sm)"
+        style:display="flex"
+        style:gap="0.5rem"
+        style:align-items="center"
+        style:background-color="var(--color-surface-canvas)">
+        <DropdownList
+          items={[
+            { status: "open" },
+            { status: "closed", reason: "solved" },
+            { status: "closed", reason: "other" },
+          ] as State[]}>
+          {#snippet item(state)}
+            <DropdownListItem
+              selected={isEqual(selectedState, state)}
+              styleGap="0.5rem"
+              onclick={() => {
+                onSelect(state);
+                closeFocused();
+              }}>
+              <span
+                class="global-chip"
+                style:padding="0"
+                style:margin-left="-0.5rem"
+                style:color={issueStatusColor[state.status]}
+                style:background-color={issueStatusBackgroundColor[
+                  state.status
+                ]}>
+                <Icon
+                  name={state.status === "open"
+                    ? "issue"
+                    : `issue-${state.status}`} />
+              </span>
+              <span style:color="var(--color-text-secondary)">
+                {capitalize(state.status)}
+                {state.status === "closed" ? `as ${state.reason}` : ""}
+              </span>
+            </DropdownListItem>
+          {/snippet}
+        </DropdownList>
+      </div>
+    {/snippet}
+  </Popover>
+{/if}
