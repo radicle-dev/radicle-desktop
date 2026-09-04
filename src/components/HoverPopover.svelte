@@ -35,6 +35,9 @@
 
   // Whether the pointer is currently over the anchor or popover.
   let hovering = false;
+  // Whether focus is inside the anchor or popover, so that a keyboard user can
+  // reach any controls the popover holds.
+  let focused = false;
   // Whether a text-selection drag started inside the popover is ongoing.
   let selecting = false;
 
@@ -46,20 +49,40 @@
     visible = false;
   }, 200);
 
-  function enter() {
-    hovering = true;
+  function open() {
     hide.cancel();
     show();
   }
 
-  function leave() {
-    hovering = false;
-    show.cancel();
-    // A selection drag may move the pointer out of the popover; keep it open
-    // until the drag ends (see endSelection).
-    if (!selecting) {
+  // Any one of pointer, focus or an ongoing selection drag is enough to keep
+  // the popover open, so closing waits until none of them holds it.
+  function close() {
+    if (!hovering && !focused && !selecting) {
+      show.cancel();
       hide();
     }
+  }
+
+  function enter() {
+    hovering = true;
+    open();
+  }
+
+  function leave() {
+    hovering = false;
+    close();
+  }
+
+  // Focus crossing between the anchor and the portalled popover leaves and
+  // re-enters within one task, which the debounced hide absorbs.
+  function focus() {
+    focused = true;
+    open();
+  }
+
+  function blur() {
+    focused = false;
+    close();
   }
 
   // A text-selection drag can move the pointer outside the popover and release
@@ -68,9 +91,7 @@
   function endSelection() {
     selecting = false;
     document.removeEventListener("pointerup", endSelection);
-    if (!hovering) {
-      hide();
-    }
+    close();
   }
 
   function startSelection() {
@@ -121,7 +142,9 @@
   class="container"
   bind:this={anchorEl}
   onmouseenter={enter}
-  onmouseleave={leave}>
+  onmouseleave={leave}
+  onfocusin={focus}
+  onfocusout={blur}>
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
     role="button"
@@ -142,6 +165,8 @@
       style:padding={stylePadding}
       onmouseenter={enter}
       onmouseleave={leave}
+      onfocusin={focus}
+      onfocusout={blur}
       onpointerdown={startSelection}
       onclick={e => e.stopPropagation()}>
       {@render popover()}

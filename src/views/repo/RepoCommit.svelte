@@ -13,14 +13,15 @@
   import * as router from "@app/lib/router";
   import type { SidebarData } from "@app/lib/router/definitions";
   import {
-    absoluteTimestamp,
+    commitTimes,
     formatOid,
     formatTimestamp,
-    gravatarURL,
+    identityKey,
     pluralize,
   } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
+  import CommitAuthors from "@app/components/CommitAuthors.svelte";
   import DiffActions from "@app/components/DiffActions.svelte";
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -50,6 +51,10 @@
     setAllCollapsed: (collapsed: boolean) => void;
   }>();
   let allCollapsed = $state(false);
+
+  const authorIsCommitter = $derived(
+    identityKey(commit.author) === identityKey(commit.committer),
+  );
 
   const changedFiles = $derived(gitStatusEntries(diff.files));
   const treePaths = $derived(changedFiles.map(file => file.path));
@@ -143,12 +148,6 @@
     align-items: center;
     gap: 0.5rem;
   }
-  .summary-avatar {
-    width: 1rem;
-    height: 1rem;
-    border-radius: 999px;
-    flex: none;
-  }
   .summary-timestamp {
     color: var(--color-text-quaternary);
   }
@@ -211,17 +210,12 @@
         </div>
         <div class="summary-meta">
           <span class="summary-author">
-            <img
-              class="summary-avatar"
-              alt=""
-              src={gravatarURL(commit.author.email)} />
+            <CommitAuthors {commit} />
             <span class="txt-selectable">{commit.author.name}</span>
           </span>
-          committed
+          {authorIsCommitter ? "committed" : "authored"}
           <Id id={commit.id} clipboard={commit.id} label="commit hash" />
-          <span
-            class="summary-timestamp"
-            title={absoluteTimestamp(commit.committer.time * 1000)}>
+          <span class="summary-timestamp" title={commitTimes(commit)}>
             {formatTimestamp(commit.committer.time * 1000)}
           </span>
           <JobCob rid={repo.rid} commit={commit.id} />

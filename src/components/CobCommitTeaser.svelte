@@ -2,14 +2,10 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { Snippet } from "svelte";
 
-  import {
-    absoluteTimestamp,
-    formatTimestamp,
-    gravatarURL,
-    twemoji,
-  } from "@app/lib/utils";
+  import { commitTimes, formatTimestamp, twemoji } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
+  import CommitAuthors from "@app/components/CommitAuthors.svelte";
   import CompactCommitAuthorship from "@app/components/CompactCommitAuthorship.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
@@ -101,13 +97,6 @@
     gap: 0.5rem;
     min-width: 0;
   }
-  .commit-avatar {
-    width: 1rem;
-    height: 1rem;
-    border-radius: var(--border-radius-sm);
-    flex-shrink: 0;
-    object-fit: cover;
-  }
   .stacked-header .summary-title {
     flex: 1;
     min-width: 0;
@@ -149,11 +138,7 @@
   aria-label="commit-teaser">
   {#if stacked}
     <div class="stacked-header">
-      <img
-        class="commit-avatar"
-        alt=""
-        src={gravatarURL(commit.author.email)}
-        title={commit.author.name} />
+      <CommitAuthors {commit} />
       <div
         class="summary-title"
         style:cursor={hoverable ? "pointer" : "default"}
@@ -170,9 +155,7 @@
       <span class="meta-hash">
         <Id id={commit.id} clipboard={commit.id} label="commit hash" />
       </span>
-      <span
-        class="meta-time"
-        title={absoluteTimestamp(commit.committer.time * 1000)}>
+      <span class="meta-time" title={commitTimes(commit)}>
         {formatTimestamp(commit.committer.time * 1000)}
       </span>
     </div>

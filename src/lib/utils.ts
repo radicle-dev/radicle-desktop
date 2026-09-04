@@ -3,6 +3,7 @@ import type { Issue } from "@bindings/cob/issue/Issue";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { Review } from "@bindings/cob/patch/Review";
 import type { Config } from "@bindings/config/Config";
+import type { Commit } from "@bindings/repo/Commit";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { ComponentProps } from "svelte";
 
@@ -373,4 +374,55 @@ export function explorerUrl(path: string, config: Config): string {
   return config.publicExplorer
     .replace("$host", seed)
     .replace("$rid$path", path);
+}
+
+export interface GitIdentity {
+  name: string;
+  email: string;
+}
+
+// Two git identities are the same person when they share an address, compared
+// case-insensitively the way `gravatarURL` normalises it. An identity may carry
+// no address at all, so those fall back to the name rather than collapsing into
+// each other.
+export function identityKey(who: GitIdentity): string {
+  const email = who.email.trim().toLowerCase();
+  return email ? `email:${email}` : `name:${who.name.trim().toLowerCase()}`;
+}
+
+// A commit carries an author date and a commit date, which come apart on a
+// rebase or an amend. Views show the commit date, so the tooltip only names the
+// two apart when there is something to tell apart.
+export function commitTimes(commit: Commit): string {
+  const committed = absoluteTimestamp(commit.committer.time * 1000);
+  if (commit.author.time === commit.committer.time) {
+    return committed;
+  }
+
+  return [
+    `Authored — ${absoluteTimestamp(commit.author.time * 1000)}`,
+    `Committed — ${committed}`,
+  ].join("\n");
+}
+
+// Extract `Co-authored-by:` trailers from a commit message.
+//
+// Git only treats the final paragraph of a message as trailers, so a line
+// appearing anywhere earlier — quoted in prose, or in a nested patch — is not
+// one and is ignored here too. Matching is case-insensitive because git's own
+// trailer handling is. The name may be empty, since a git identity only
+// requires an address.
+export function coAuthors(message: string): GitIdentity[] {
+  const paragraphs = message.trimEnd().split(/(?:\r?\n){2,}/);
+  const trailers = paragraphs[paragraphs.length - 1] ?? "";
+  const authors: GitIdentity[] = [];
+
+  for (const line of trailers.split("\n")) {
+    const match = /^co-authored-by:\s*(.*?)\s*<([^<>\s]+)>$/i.exec(line.trim());
+    if (match) {
+      authors.push({ name: match[1], email: match[2] });
+    }
+  }
+
+  return authors;
 }
