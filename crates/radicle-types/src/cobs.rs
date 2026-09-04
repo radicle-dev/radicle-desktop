@@ -61,6 +61,10 @@ impl Author {
     pub fn did(&self) -> &identity::Did {
         &self.did
     }
+
+    pub fn alias(&self) -> Option<&Alias> {
+        self.alias.as_ref()
+    }
 }
 
 pub trait FromRadicleAction<A> {

@@ -101,7 +101,14 @@
 <style>
   .container {
     position: relative;
-    display: inline-block;
+    display: inline-flex;
+  }
+  /* The toggle wraps arbitrary content, so it must not open an inline
+     formatting context: a baseline strut would add line-height leading below
+     the content and push it off-centre wherever the anchor is vertically
+     centred by its parent. */
+  .toggle {
+    display: flex;
   }
   .popover {
     background: var(--color-surface-subtle);
@@ -124,6 +131,7 @@
   onmouseleave={leave}>
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
+    class="toggle"
     role="button"
     tabindex="0"
     onclick={e => {

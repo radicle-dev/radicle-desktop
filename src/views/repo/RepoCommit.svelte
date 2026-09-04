@@ -21,6 +21,7 @@
   } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
+  import CommitSignatureBadge from "@app/components/CommitSignatureBadge.svelte";
   import DiffActions from "@app/components/DiffActions.svelte";
   import DiffStatBadge from "@app/components/DiffStatBadge.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -225,6 +226,9 @@
             {formatTimestamp(commit.committer.time * 1000)}
           </span>
           <JobCob rid={repo.rid} commit={commit.id} />
+          {#if commit.signature}
+            <CommitSignatureBadge signature={commit.signature} />
+          {/if}
         </div>
         <div class="summary-parents">
           <span class="summary-parents-label">

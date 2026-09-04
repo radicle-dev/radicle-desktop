@@ -153,6 +153,70 @@ pub struct ProjectPayloadMeta {
     pub patches: patch::PatchCounts,
 }
 
+/// Outcome of checking a commit's `gpgsig` header.
+///
+/// Absence of the header is not represented here: an unsigned commit carries no
+/// [`CommitSignature`] at all.
+#[derive(Clone, Copy, Serialize, TS, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub enum SignatureStatus {
+    /// An `sshsig` over the `git` namespace that verifies against the Ed25519
+    /// key embedded in the signature.
+    Verified,
+    /// A signature that is well-formed but does not verify over the commit
+    /// payload.
+    Invalid,
+    /// A signature we make no claim about: PGP, a non-Ed25519 key, a namespace
+    /// other than `git`, or a container we cannot parse.
+    Unsupported,
+}
+
+#[derive(Clone, Serialize, TS, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub struct CommitSignature {
+    pub status: SignatureStatus,
+    /// The signing key, as a Radicle identity. Git signs with whatever
+    /// `user.signingKey` points at; when an author points that at their Radicle
+    /// key, the Ed25519 key carried in the signature is also their node ID and
+    /// so resolves to a DID. Absent when the key is not Ed25519.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub signer: Option<Author>,
+    /// Whether the signer is a delegate of this repository.
+    pub delegate: bool,
+    /// Whether the signer was a delegate under some earlier identity revision,
+    /// but is not one now.
+    ///
+    /// This is deliberately an existence claim over the identity history rather
+    /// than a claim about the moment this commit was signed. Nothing in a commit
+    /// object points at an identity revision, so the only way to date a commit
+    /// against the delegate set is its committer timestamp — which the signer
+    /// chooses freely, and can therefore backdate into a delegacy window they no
+    /// longer hold.
+    pub former_delegate: bool,
+    /// Whether the signer has a remote in this repository.
+    pub remote: bool,
+    /// Whether the signing key corresponds to a node we have any evidence for:
+    /// it is a delegate, was one, has a remote here, or is a node the local
+    /// node knows by alias.
+    ///
+    /// Signing a git commit with a Radicle key is a convention an author opts
+    /// into, not something the protocol does, so any Ed25519 key encodes to a
+    /// syntactically valid DID whether or not a node behind it exists. Without
+    /// one of the above, that DID is not evidence of a Radicle identity and
+    /// must not be presented as one.
+    pub known: bool,
+    /// OpenSSH fingerprint of the signing key, in the form
+    /// `git show --show-signature` prints. Present whenever the key is Ed25519.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub fingerprint: Option<String>,
+}
+
 #[derive(Clone, Serialize, TS, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
@@ -168,6 +232,17 @@ pub struct Commit {
     pub summary: String,
     #[ts(as = "Vec<String>")]
     pub parents: Vec<git::Oid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub signature: Option<CommitSignature>,
+}
+
+impl Commit {
+    #[must_use]
+    pub fn with_signature(mut self, signature: Option<CommitSignature>) -> Self {
+        self.signature = signature;
+        self
+    }
 }
 
 #[derive(Serialize, TS)]
@@ -247,6 +322,7 @@ impl From<surf::Commit> for Commit {
             message: value.message,
             summary: value.summary,
             parents: value.parents,
+            signature: None,
         }
     }
 }

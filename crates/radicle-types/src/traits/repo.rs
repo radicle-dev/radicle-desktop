@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use base64::Engine;
 use radicle_surf as surf;
@@ -349,6 +349,175 @@ fn partition_refs(
     }
 
     (branches, tags)
+}
+
+/// The `sshsig` namespace git signs commits under. A signature made for any
+/// other namespace is not a statement about this commit and must not be
+/// accepted for it.
+const GIT_SIGNATURE_NAMESPACE: &str = "git";
+
+/// Check the `gpgsig` header on `oid` against the bytes it covers.
+///
+/// Returns `None` when the commit carries no such header, otherwise the outcome
+/// paired with the signing key when one could be attributed. This answers only
+/// "does this signature verify, and which key made it" — deciding whether that
+/// key is authorized for the repository is the caller's job.
+fn verify_signature(
+    backend: &git::raw::Repository,
+    oid: git::Oid,
+) -> Option<(repo::SignatureStatus, Option<node::NodeId>)> {
+    // libgit2 splits the object into the `gpgsig` value and the exact bytes that
+    // were signed, which is the commit object with that header removed.
+    // Reconstructing the payload by re-serializing a parsed commit would not be
+    // byte-identical and so would fail to verify.
+    let (signature, payload) = backend.extract_signature(&oid.into(), None).ok()?;
+
+    let Ok(signature) = ssh_key::SshSig::from_pem(&signature[..]) else {
+        // Not an `sshsig` container: PGP, or something unparseable.
+        return Some((repo::SignatureStatus::Unsupported, None));
+    };
+    // A signature made under a different namespace is a statement about
+    // something other than this commit, so it must not count for it. Radicle's
+    // own collaborative-object signatures live under the `radicle` namespace and
+    // cover a commit id rather than a commit payload; they are rejected here.
+    if signature.namespace() != GIT_SIGNATURE_NAMESPACE {
+        return Some((repo::SignatureStatus::Unsupported, None));
+    }
+    let ssh_key::public::KeyData::Ed25519(key) = signature.public_key() else {
+        // A Radicle identity is always Ed25519, so any other algorithm is a
+        // signature we cannot attribute to a node.
+        return Some((repo::SignatureStatus::Unsupported, None));
+    };
+
+    // `verify` re-derives the signed blob from the namespace, hash algorithm and
+    // payload before checking it against the key carried in the signature.
+    let verified = ssh_key::PublicKey::from(signature.public_key().clone())
+        .verify(GIT_SIGNATURE_NAMESPACE, &payload[..], &signature)
+        .is_ok();
+
+    // Git does the signing, with whatever `user.signingKey` points at. When an
+    // author points that at their Radicle key, the Ed25519 key in the signature
+    // is also their node ID, so it resolves to a DID with no lookup in between.
+    // Nothing enforces the convention: any other Ed25519 key yields a DID that
+    // corresponds to no known node.
+    let signer = node::NodeId::from(key.0);
+
+    Some(if verified {
+        (repo::SignatureStatus::Verified, Some(signer))
+    } else {
+        // The key is reported even when the check fails, so the UI can say whose
+        // key failed rather than just that something did.
+        (repo::SignatureStatus::Invalid, Some(signer))
+    })
+}
+
+/// Per-repository context for resolving a signing key to a Radicle identity.
+///
+/// The delegate set and remote set are read once and reused across a batch of
+/// commits, so verifying a page of history costs one identity lookup, not one
+/// per commit.
+struct Signers<'a, A> {
+    backend: &'a git::raw::Repository,
+    /// Nodes the local node knows of independently of any alias: those it
+    /// follows, and those gossip says seed this repository.
+    seen: BTreeSet<node::NodeId>,
+    delegates: Option<doc::Delegates>,
+    /// Every DID that has been a delegate under some accepted identity
+    /// revision, including the current ones.
+    historical: BTreeSet<identity::Did>,
+    remotes: BTreeSet<node::NodeId>,
+    aliases: &'a A,
+}
+
+impl<'a, A: AliasStore> Signers<'a, A> {
+    /// Signature reporting is decoration on a commit listing, so a repository
+    /// whose identity or remotes cannot be read still lists its commits — with
+    /// the signature checked and the signer named, but no claim about whether
+    /// that signer is a delegate.
+    fn new(
+        repo: &'a storage::git::Repository,
+        rid: identity::RepoId,
+        profile: &radicle::Profile,
+        aliases: &'a A,
+    ) -> Self {
+        // An alias only says we have a *name* for a node, which is narrower
+        // than knowing the node exists: a node followed without one, or known
+        // from routing gossip, has no alias but is not a stranger either.
+        let mut seen = BTreeSet::new();
+        if let Ok(policies) = profile.policies()
+            && let Ok(followed) = policies.follow_policies()
+        {
+            seen.extend(followed.flatten().map(|policy| policy.nid));
+        }
+        if let Ok(routing) = profile.routing()
+            && let Ok(seeds) = routing.get(&rid)
+        {
+            seen.extend(seeds);
+        }
+
+        // Only accepted revisions count. `Identity::revisions` also yields
+        // revisions still `Active` — proposed, but never adopted by a quorum —
+        // and a single delegate can propose a revision naming anyone. Counting
+        // those would make delegate history self-assertable.
+        let historical = repo
+            .identity()
+            .map(|identity| {
+                identity
+                    .revisions()
+                    .filter(|revision| revision.is_accepted())
+                    .flat_map(|revision| revision.doc.delegates().iter().copied())
+                    .collect()
+            })
+            .unwrap_or_default();
+
+        Self {
+            backend: &repo.backend,
+            seen,
+            delegates: repo
+                .identity_doc()
+                .ok()
+                .map(|DocAt { doc, .. }| doc.delegates().clone()),
+            historical,
+            remotes: repo
+                .remote_ids()
+                .map(|ids| ids.filter_map(|id| id.ok()).collect())
+                .unwrap_or_default(),
+            aliases,
+        }
+    }
+
+    /// Verify the `gpgsig` header on `oid`, if it has one.
+    ///
+    /// Returns `None` for an unsigned commit. Note that a returned
+    /// [`repo::CommitSignature`] answers "who holds the key that signed these
+    /// bytes", not "is this person authorized" — the `delegate` and `remote`
+    /// flags are what the caller needs to turn a verified key into trust.
+    fn verify(&self, oid: git::Oid) -> Option<repo::CommitSignature> {
+        let (status, signer) = verify_signature(self.backend, oid)?;
+        let did = signer.map(identity::Did::from);
+        let delegate = matches!(
+            (&self.delegates, did),
+            (Some(delegates), Some(did)) if delegates.contains(&did)
+        );
+
+        let former_delegate = !delegate && did.is_some_and(|did| self.historical.contains(&did));
+        let remote = signer.is_some_and(|signer| self.remotes.contains(&signer));
+        let author = did.map(|did| cobs::Author::new(&did, self.aliases));
+
+        Some(repo::CommitSignature {
+            status,
+            known: delegate
+                || former_delegate
+                || remote
+                || author.as_ref().is_some_and(|a| a.alias().is_some())
+                || signer.is_some_and(|signer| self.seen.contains(&signer)),
+            fingerprint: signer.map(|signer| radicle::crypto::ssh::fmt::fingerprint(&signer)),
+            signer: author,
+            delegate,
+            former_delegate,
+            remote,
+        })
+    }
 }
 
 pub trait Repo: Profile {
@@ -799,11 +968,17 @@ pub trait Repo: Profile {
         walk.push(git::raw::Oid::from_str(&head)?)?;
         walk.hide(git::raw::Oid::from_str(&base)?)?;
 
+        let aliases = profile.aliases();
+        let signers = Signers::new(&repo, rid, &profile, &aliases);
+
         let surf_repo = surf::Repository::open(repo.path())?;
         let commits = walk
             .filter_map(|oid| oid.ok())
             .filter_map(|oid| surf_repo.commit(git::Oid::from(oid)).ok())
-            .map(Into::into)
+            .map(|commit| {
+                let signature = signers.verify(commit.id);
+                repo::Commit::from(commit).with_signature(signature)
+            })
             .collect();
 
         Ok(commits)
@@ -826,14 +1001,22 @@ pub trait Repo: Profile {
             None => resolve_revision(&storage_repo, peer, revision)?,
         };
 
+        let aliases = profile.aliases();
+        let signers = Signers::new(&storage_repo, rid, &profile, &aliases);
+
         let repo = surf::Repository::open(storage_repo.path())?;
         let commits = repo.history(oid)?;
         let cursor = skip.unwrap_or(0);
+        // Signature checking runs after `skip`/`take` so that paging through a
+        // long history only verifies the page being returned.
+        let sign = |commit: surf::Commit| {
+            let signature = signers.verify(commit.id);
+            repo::Commit::from(commit).with_signature(signature)
+        };
 
         match take {
             None => {
-                let content: Vec<repo::Commit> =
-                    commits.filter_map(|c| c.map(Into::into).ok()).collect();
+                let content: Vec<repo::Commit> = commits.filter_map(|c| c.ok()).map(sign).collect();
 
                 Ok(crate::cobs::PaginatedQuery {
                     cursor: 0,
@@ -843,9 +1026,10 @@ pub trait Repo: Profile {
             }
             Some(take) => {
                 let content: Vec<repo::Commit> = commits
-                    .filter_map(|c| c.map(Into::into).ok())
+                    .filter_map(|c| c.ok())
                     .skip(cursor)
                     .take(take + 1)
+                    .map(sign)
                     .collect();
                 let more = content.len() > take;
                 let content = if more {
@@ -922,10 +1106,14 @@ pub trait Repo: Profile {
             None => resolve_revision(&storage_repo, peer, revision)?,
         };
 
+        let aliases = profile.aliases();
+        let signers = Signers::new(&storage_repo, rid, &profile, &aliases);
+
         let repo = surf::Repository::open(storage_repo.path())?;
         let commit = repo.commit(oid)?;
+        let signature = signers.verify(commit.id);
 
-        Ok(commit.into())
+        Ok(repo::Commit::from(commit).with_signature(signature))
     }
 
     fn unseed(&self, rid: identity::RepoId) -> Result<(), Error> {
@@ -972,5 +1160,257 @@ pub trait Repo: Profile {
             .collect::<Vec<_>>();
 
         Ok(entries)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    /// A real commit object produced by `git commit -S` with `gpg.format=ssh`
+    /// and a Radicle key as `user.signingKey`. Using git's own output rather
+    /// than a signature this crate produced is the point: it pins down the
+    /// payload git actually signs, not our reading of the format.
+    const SIGNED_COMMIT: &[u8] = b"\
+tree 96c45f4710a3a9e9268f13f56d6a7308b463a023\n\
+parent e35baf750ffce50ac03f379e7cfca88dd3ccaa2d\n\
+author R\xc5\xabdolfs O\xc5\xa1i\xc5\x86\xc5\xa1 <rudolfs@osins.org> 1788360297 +0200\n\
+committer R\xc5\xabdolfs O\xc5\xa1i\xc5\x86\xc5\xa1 <rudolfs@osins.org> 1788452563 +0200\n\
+gpgsig -----BEGIN SSH SIGNATURE-----\n\
+\x20U1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAg+56aXUXHOO/BsPu9Fl/ChqjK7E\n\
+\x20vLQv5YsHBI2JWgl7kAAAADZ2l0AAAAAAAAAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5\n\
+\x20AAAAQAqwcPwx+FD1Fro6tplXTtTuFO2MMFkk+atB9h6up2xmYrbTXZNzMIfnpTdU3lseuL\n\
+\x20hGCjr3Id4E588iFaWivA4=\n\
+\x20-----END SSH SIGNATURE-----\n\
+\n\
+Fix patch diff for merge-commit revisions\n\
+\n\
+`list_commits` walked back from the revision head and stopped at the\n\
+first commit equal to `base`. A merge commit reaches `base` through one\n\
+of its parents, so the walk truncated there and dropped everything the\n\
+other parent contributed: a revision whose head merges the target branch\n\
+in looked like a single-commit revision.\n\
+";
+
+    /// Write a raw commit object into a scratch repository. The tree and parent
+    /// it names are not present, which the object database does not require.
+    fn repo_with(object: &[u8]) -> (tempfile::TempDir, git::raw::Repository, git::Oid) {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = git::raw::Repository::init(dir.path()).unwrap();
+        let oid = repo
+            .odb()
+            .unwrap()
+            .write(git::raw::ObjectType::Commit, object)
+            .unwrap();
+
+        (dir, repo, oid.into())
+    }
+
+    #[test]
+    fn verifies_a_git_ssh_signature() {
+        let (_dir, repo, oid) = repo_with(SIGNED_COMMIT);
+        let (status, signer) = verify_signature(&repo, oid).unwrap();
+
+        assert_eq!(status, repo::SignatureStatus::Verified);
+        // This fixture was signed with a Radicle key, so the signing key is
+        // also the signer's node ID.
+        assert_eq!(
+            signer.unwrap().to_string(),
+            "z6MkwPUeUS2fJMfc2HZN1RQTQcTTuhw4HhPySB8JeUg2mVvx"
+        );
+    }
+
+    #[test]
+    fn rejects_a_tampered_payload() {
+        // The signature covers the whole commit object bar the `gpgsig` header,
+        // so editing the message must invalidate it.
+        let tampered = String::from_utf8_lossy(SIGNED_COMMIT)
+            .replace("merge-commit", "merge-commlt")
+            .into_bytes();
+        let (_dir, repo, oid) = repo_with(&tampered);
+        let (status, signer) = verify_signature(&repo, oid).unwrap();
+
+        assert_eq!(status, repo::SignatureStatus::Invalid);
+        assert!(signer.is_some());
+    }
+
+    #[test]
+    fn reports_an_unsigned_commit() {
+        let unsigned = b"\
+tree 96c45f4710a3a9e9268f13f56d6a7308b463a023\n\
+author Alice <alice@example.com> 1788360297 +0200\n\
+committer Alice <alice@example.com> 1788360297 +0200\n\
+\n\
+Initial commit\n";
+        let (_dir, repo, oid) = repo_with(unsigned);
+
+        assert!(verify_signature(&repo, oid).is_none());
+    }
+
+    #[test]
+    fn does_not_accept_another_namespace() {
+        // Radicle signs collaborative objects with the same key and container
+        // but under the `radicle` namespace, over a commit id rather than a
+        // commit payload. Such a signature says nothing about this commit.
+        let mut sig = ssh_key::SshSig::from_pem(
+            &String::from_utf8(SIGNED_COMMIT.to_vec())
+                .unwrap()
+                .lines()
+                .skip_while(|l| !l.starts_with("gpgsig "))
+                .take_while(|l| !l.is_empty())
+                .map(|l| l.trim_start_matches("gpgsig ").trim_start())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )
+        .unwrap();
+        sig = ssh_key::SshSig::new(
+            sig.public_key().clone(),
+            "radicle",
+            sig.hash_alg(),
+            sig.signature().clone(),
+        )
+        .unwrap();
+        let pem = sig.to_pem(ssh_key::LineEnding::LF).unwrap();
+
+        let mut object = b"\
+tree 96c45f4710a3a9e9268f13f56d6a7308b463a023\n\
+author Alice <alice@example.com> 1788360297 +0200\n\
+committer Alice <alice@example.com> 1788360297 +0200\n\
+gpgsig "
+            .to_vec();
+        object.extend(pem.trim_end().replace('\n', "\n ").as_bytes());
+        object.extend(b"\n\nInitial commit\n");
+
+        let (_dir, repo, oid) = repo_with(&object);
+        let (status, signer) = verify_signature(&repo, oid).unwrap();
+
+        assert_eq!(status, repo::SignatureStatus::Unsupported);
+        assert!(signer.is_none());
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod identity_test {
+    use radicle::cob;
+    use radicle::crypto::{Seed, Signer as _, SigningKey};
+    use radicle::identity::Visibility;
+
+    use super::*;
+
+    struct Fixture {
+        _tmp: tempfile::TempDir,
+        profile: radicle::Profile,
+        rid: identity::RepoId,
+    }
+
+    /// A storage repository whose identity is delegated to a single key, so
+    /// that every revision this key proposes reaches quorum on its own and is
+    /// adopted immediately.
+    fn fixture() -> (Fixture, SigningKey) {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = crate::test::profile(tmp.path(), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+
+        let (working, _) = radicle::test::fixtures::repository(tmp.path().join("working"));
+        let (rid, _, _) = radicle::rad::init(
+            &working,
+            "acme".try_into().unwrap(),
+            "",
+            radicle::git::fmt::refname!("master"),
+            Visibility::default(),
+            &signer,
+            &profile.storage,
+        )
+        .unwrap();
+
+        (
+            Fixture {
+                _tmp: tmp,
+                profile,
+                rid,
+            },
+            signer,
+        )
+    }
+
+    fn historical(fixture: &Fixture) -> BTreeSet<identity::Did> {
+        let repo = fixture.profile.storage.repository(fixture.rid).unwrap();
+        let aliases = fixture.profile.aliases();
+
+        Signers::new(&repo, fixture.rid, &fixture.profile, &aliases).historical
+    }
+
+    #[test]
+    fn remembers_a_rescinded_delegate() {
+        let (fixture, signer) = fixture();
+        let repo = fixture.profile.storage.repository(fixture.rid).unwrap();
+        let bob = identity::Did::from(*SigningKey::from_seed(Seed::new([0x01; 32])).public_key());
+
+        let mut identity = cob::identity::Identity::load_mut(&repo, &signer).unwrap();
+        let mut doc = identity.doc().clone().edit();
+        doc.delegate(bob);
+        identity
+            .update(
+                cob::Title::new("Add Bob").unwrap(),
+                "",
+                &doc.clone().verified().unwrap(),
+            )
+            .unwrap();
+
+        let mut doc = identity.doc().clone().edit();
+        doc.rescind(&bob).unwrap();
+        identity
+            .update(
+                cob::Title::new("Remove Bob").unwrap(),
+                "",
+                &doc.verified().unwrap(),
+            )
+            .unwrap();
+
+        let repo = fixture.profile.storage.repository(fixture.rid).unwrap();
+        let DocAt { doc, .. } = repo.identity_doc().unwrap();
+        assert!(!doc.delegates().contains(&bob), "Bob is no longer current");
+        assert!(historical(&fixture).contains(&bob), "Bob is remembered");
+    }
+
+    #[test]
+    fn ignores_a_proposal_that_never_reached_quorum() {
+        // The security property: a revision that was merely *proposed* must not
+        // confer delegate history, or a single delegate could name anyone.
+        let (fixture, signer) = fixture();
+        let repo = fixture.profile.storage.repository(fixture.rid).unwrap();
+        let bob = identity::Did::from(*SigningKey::from_seed(Seed::new([0x01; 32])).public_key());
+        let eve = identity::Did::from(*SigningKey::from_seed(Seed::new([0x02; 32])).public_key());
+
+        // Raise the threshold to two so the next proposal cannot self-adopt.
+        let mut identity = cob::identity::Identity::load_mut(&repo, &signer).unwrap();
+        let mut doc = identity.doc().clone().edit();
+        doc.delegate(bob);
+        doc.threshold = 2;
+        identity
+            .update(
+                cob::Title::new("Add Bob").unwrap(),
+                "",
+                &doc.verified().unwrap(),
+            )
+            .unwrap();
+
+        let mut doc = identity.doc().clone().edit();
+        doc.delegate(eve);
+        let proposal = identity
+            .update(
+                cob::Title::new("Add Eve").unwrap(),
+                "",
+                &doc.verified().unwrap(),
+            )
+            .unwrap();
+
+        assert!(
+            identity.revision(&proposal).unwrap().is_active(),
+            "the proposal is unaccepted"
+        );
+        assert!(!historical(&fixture).contains(&eve), "Eve does not count");
+        assert!(historical(&fixture).contains(&bob), "Bob does count");
     }
 }

@@ -10,6 +10,7 @@
   } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
+  import CommitSignatureBadge from "@app/components/CommitSignatureBadge.svelte";
   import CompactCommitAuthorship from "@app/components/CompactCommitAuthorship.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
@@ -167,6 +168,9 @@
     </div>
     <div class="stacked-meta">
       {@render children?.()}
+      {#if commit.signature}
+        <CommitSignatureBadge signature={commit.signature} compact />
+      {/if}
       <span class="meta-hash">
         <Id id={commit.id} clipboard={commit.id} label="commit hash" />
       </span>
@@ -211,6 +215,9 @@
     </div>
     <div class="right">
       {@render children?.()}
+      {#if commit.signature}
+        <CommitSignatureBadge signature={commit.signature} />
+      {/if}
       <CompactCommitAuthorship {commit}>
         <Id id={commit.id} clipboard={commit.id} label="commit hash" />
       </CompactCommitAuthorship>
