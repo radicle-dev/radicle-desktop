@@ -103,6 +103,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/save_diff_to_disk", post(save_diff_handler))
         .route("/get_commit_diff", post(commit_diff_handler))
         .route("/list_repo_commits", post(list_repo_commits_handler))
+        .route("/list_commits", post(list_commits_handler))
         .route("/repo_commit_count", post(repo_commit_count_handler))
         .route("/repo_commit", post(repo_commit_handler))
         .route("/list_issues", post(issues_handler))
@@ -428,6 +429,22 @@ async fn list_repo_commits_handler(
     }): Json<ListRepoCommitsBody>,
 ) -> impl IntoResponse {
     let commits = ctx.list_repo_commits(rid, head, peer, revision, skip, take)?;
+
+    Ok::<_, Error>(Json(commits))
+}
+
+#[derive(Serialize, Deserialize)]
+struct ListCommitsBody {
+    pub rid: identity::RepoId,
+    pub base: String,
+    pub head: String,
+}
+
+async fn list_commits_handler(
+    State(ctx): State<Context>,
+    Json(ListCommitsBody { rid, base, head }): Json<ListCommitsBody>,
+) -> impl IntoResponse {
+    let commits = ctx.list_commits(rid, base, head)?;
 
     Ok::<_, Error>(Json(commits))
 }
