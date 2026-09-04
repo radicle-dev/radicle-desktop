@@ -407,7 +407,12 @@
   // auto-selects its only commit — so an effect could not tell "the reader
   // picked a commit" from "the revision changed underneath them", and scrolled
   // on both.
+  // Waits for the diff being switched to: the patch is parsed off the main
+  // thread, so scrolling straight away aims at whatever the previous diff left
+  // in the port, gets clamped against it, and is clamped again once the real
+  // content lands — two movements for one click.
   async function scrollToDiff() {
+    await diffReady;
     await tick();
     diffView?.scrollToFilesTop();
   }

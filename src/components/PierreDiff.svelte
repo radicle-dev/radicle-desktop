@@ -391,12 +391,34 @@
     return headerEl.getBoundingClientRect().height - reserve;
   }
 
-  // Scroll the chrome out of the way.
+  // Bring the top of the files column into view, and only ever come back up to
+  // it: a caller asking for the files top wants the diff's first lines on
+  // screen, and they already are whenever the port sits above that point.
+  // Scrolling down from there would pull the chrome off screen on the reader's
+  // behalf, which nothing about picking a commit asks for. Instantly, too — an
+  // animated correction runs for half a second against a diff that is still
+  // loading underneath it, and each adjustment it makes on the way reads as the
+  // view jumping again.
   export function scrollToFilesTop(): void {
-    const position = filesTopPosition();
-    if (position !== undefined) {
-      scrollToPosition(position);
+    // Same reason `pendingScroll` exists: a caller that switches the diff and
+    // asks for its top arrives while the patch is still being parsed, when the
+    // port holds nothing to scroll against. Aiming at that empty port lands
+    // short, and the real content clamps the position a second time when it
+    // arrives, so hold the request and run it once the files are in.
+    if (parsedFiles.length === 0) {
+      pendingFilesTop = true;
+      return;
     }
+    pendingFilesTop = false;
+    const position = filesTopPosition();
+    if (position === undefined) {
+      return;
+    }
+    const current = view?.getScrollTop();
+    if (current !== undefined && current <= position) {
+      return;
+    }
+    scrollToPosition(position, "instant");
   }
 
   // Nothing that targets a file should scroll the chrome back into view: the
@@ -433,6 +455,8 @@
 
   // A scroll target that arrived before the patch finished parsing.
   let pendingScroll: { path: string; anchor?: CommentAnchor } | undefined;
+  // The same, for a files-top request (see `scrollToFilesTop`).
+  let pendingFilesTop = false;
 
   function applyScroll(target: { path: string; anchor?: CommentAnchor }): void {
     const id = target.path;
@@ -1226,6 +1250,7 @@
       let cancelled = false;
       // A target held for the previous patch must not fire against this one.
       pendingScroll = undefined;
+      pendingFilesTop = false;
       parsePatch(p, cacheKeyPrefix)
         .then(files => {
           if (cancelled) {
@@ -1238,6 +1263,8 @@
           instance.render(true);
           if (pendingScroll !== undefined) {
             applyScroll(pendingScroll);
+          } else if (pendingFilesTop) {
+            scrollToFilesTop();
           }
         })
         .catch((error: unknown) => {
