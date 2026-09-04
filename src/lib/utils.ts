@@ -374,3 +374,29 @@ export function explorerUrl(path: string, config: Config): string {
     .replace("$host", seed)
     .replace("$rid$path", path);
 }
+
+export interface CoAuthor {
+  name: string;
+  email: string;
+}
+
+// Extract `Co-authored-by:` trailers from a commit message.
+//
+// Git only treats the final paragraph of a message as trailers, so a line
+// appearing anywhere earlier — quoted in prose, or in a nested patch — is not
+// one and is ignored here too. Matching is case-insensitive because git's own
+// trailer handling is.
+export function coAuthors(message: string): CoAuthor[] {
+  const paragraphs = message.trimEnd().split(/\n{2,}/);
+  const trailers = paragraphs[paragraphs.length - 1] ?? "";
+  const authors: CoAuthor[] = [];
+
+  for (const line of trailers.split("\n")) {
+    const match = /^co-authored-by:\s*(.*?)\s*<([^<>\s]+)>$/i.exec(line.trim());
+    if (match) {
+      authors.push({ name: match[1] || match[2], email: match[2] });
+    }
+  }
+
+  return authors;
+}
