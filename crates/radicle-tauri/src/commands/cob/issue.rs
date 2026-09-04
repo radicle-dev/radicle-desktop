@@ -39,6 +39,16 @@ pub fn edit_issue(
 }
 
 #[tauri::command]
+pub fn delete_issue(
+    ctx: tauri::State<AppState>,
+    rid: identity::RepoId,
+    cob_id: git::Oid,
+    opts: types::cobs::CobOptions,
+) -> Result<(), Error> {
+    ctx.delete_issue(rid, cob_id, opts)
+}
+
+#[tauri::command]
 pub(crate) async fn list_issues(
     ctx: tauri::State<'_, AppState>,
     issue_service: tauri::State<'_, Service<Sqlite>>,

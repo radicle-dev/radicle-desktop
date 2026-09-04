@@ -28,6 +28,7 @@
   import IssueDescription from "@app/components/IssueDescription.svelte";
   import IssueMetadata from "@app/components/IssueMetadata.svelte";
   import IssueStateButton from "@app/components/IssueStateButton.svelte";
+  import Popover from "@app/components/Popover.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import ShareButton from "@app/components/ShareButton.svelte";
   import Topbar from "@app/components/Topbar.svelte";
@@ -46,6 +47,28 @@
   /* eslint-disable prefer-const */
   let { repo, issue, activity, config, threads }: Props = $props();
   /* eslint-enable prefer-const */
+
+  // The protocol lets a delegate do anything, and lets the issue's own author
+  // edit the title and change the state. Labels and assignees stay
+  // delegate-only, so those keep their own check.
+  const canEditIssue = $derived(
+    roles.isDelegateOrAuthor(
+      config.publicKey,
+      repo.delegates.map(delegate => delegate.did),
+      issue.author.did,
+    ),
+  );
+
+  // Deleting drops the COB ref under our own namespace, so peers prune it when
+  // they next fetch. We hold no such ref on anyone else's issue, where deleting
+  // would only evict the local cache and the issue would return on the next
+  // fetch — so the action is author-only.
+  const isOwnIssue = $derived(
+    publicKeyFromDid(issue.author.did) === config.publicKey,
+  );
+
+  let deleteMenuExpanded: boolean = $state(false);
+  let deleting: boolean = $state(false);
 
   const activityItems: ActivityItem<FlattenedIssueOperation>[] = $derived.by(
     () => {
@@ -240,6 +263,28 @@
     }
   }
 
+  async function deleteIssue() {
+    if (deleting) return;
+    deleting = true;
+    try {
+      await invoke("delete_issue", {
+        rid: repo.rid,
+        cobId: issue.id,
+        opts: { announce: $nodeRunning && $announce },
+      });
+      void router.push({
+        resource: "repo.issues",
+        rid: repo.rid,
+        status: issue.state.status,
+      });
+    } catch (error) {
+      console.error("Deleting issue failed", error);
+    } finally {
+      deleting = false;
+      deleteMenuExpanded = false;
+    }
+  }
+
   async function saveState(state: Issue["state"]) {
     try {
       await invoke("edit_issue", {
@@ -318,6 +363,54 @@
     grid-area: content;
     min-width: 0;
   }
+  .confirm-delete {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    min-width: 16rem;
+    /* Without a cap the prompt lays itself out on one line and spans the
+       window. */
+    max-width: 24rem;
+  }
+  .confirm-delete-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: var(--color-text-primary);
+  }
+  .confirm-delete-note {
+    color: var(--color-text-secondary);
+  }
+  .confirm-delete-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+  .confirm-delete-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    height: 2rem;
+    padding: 0 0.75rem;
+    border: 0;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-feedback-error-fill);
+    color: var(--color-text-on-brand);
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+  }
+  .confirm-delete-button:hover:not(:disabled),
+  .confirm-delete-button:focus-visible:not(:disabled) {
+    background-color: var(--color-feedback-error-fill-hover);
+  }
+  .confirm-delete-button:active:not(:disabled) {
+    background-color: var(--color-feedback-error-fill-active);
+  }
+  .confirm-delete-button:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
 </style>
 
 <Layout>
@@ -338,15 +431,72 @@
         <Icon name="chevron-right" />
         <span class="breadcrumb-title">{issue.title}</span>
       </div>
-      <div style:margin-left="auto" style:display="flex" style:gap="0.5rem">
+      <div
+        style:margin-left="auto"
+        style:display="flex"
+        style:gap="0.5rem"
+        style:z-index="40">
+        {#if isOwnIssue}
+          <Popover
+            popoverPadding="0"
+            placement="bottom-end"
+            bind:expanded={deleteMenuExpanded}>
+            {#snippet toggle(onclick)}
+              <Button
+                variant="naked"
+                {onclick}
+                active={deleteMenuExpanded}
+                title="Delete issue from your node">
+                <Icon name="trash" />
+                <span class="global-hide-on-medium-desktop-down">Delete</span>
+              </Button>
+            {/snippet}
+            {#snippet popover()}
+              <div
+                style:border="1px solid var(--color-border-subtle)"
+                style:border-radius="var(--border-radius-sm)"
+                style:background-color="var(--color-surface-canvas)">
+                <div class="confirm-delete">
+                  <div class="confirm-delete-text">
+                    <div class="txt-body-m-medium">
+                      Delete this issue from your node?
+                    </div>
+                    <div class="confirm-delete-note txt-body-m-regular">
+                      Only your copy is removed. You won't be able to restore it
+                      here, and peers who have already replicated the issue keep
+                      theirs.
+                    </div>
+                  </div>
+                  <div class="confirm-delete-actions">
+                    <Button
+                      variant="outline"
+                      disabled={deleting}
+                      onclick={() => (deleteMenuExpanded = false)}>
+                      Cancel
+                    </Button>
+                    <button
+                      type="button"
+                      class="confirm-delete-button txt-body-m-medium"
+                      disabled={deleting}
+                      onclick={deleteIssue}>
+                      <Icon name="trash" />
+                      {deleting ? "Deleting…" : "Delete"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {/snippet}
+          </Popover>
+        {/if}
         <ShareButton
           explorerPath={`${repo.rid}/issues/${issue.id}`}
           id={issue.id}
           idLabel="issue"
+          variant="naked"
           {config} />
         <Button
           styleHeight="2rem"
-          variant="ghost"
+          variant="naked"
           onclick={() =>
             show({
               component: CreateIssueModal,
@@ -363,17 +513,10 @@
           <IssueStateButton
             selectedState={issue.state}
             onSelect={saveState}
-            disabled={!roles.isDelegate(
-              config.publicKey,
-              repo.delegates.map(d => d.did),
-            )} />
+            disabled={!canEditIssue} />
           <EditableTitle
             {updateTitle}
-            allowedToEdit={roles.isDelegateOrAuthor(
-              config.publicKey,
-              repo.delegates.map(delegate => delegate.did),
-              issue.author.did,
-            )}
+            allowedToEdit={canEditIssue}
             title={issue.title}
             cobId={issue.id} />
         </div>

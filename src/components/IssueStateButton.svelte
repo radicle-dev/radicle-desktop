@@ -6,7 +6,6 @@
 
   import { issueStatusBackgroundColor, issueStatusColor } from "@app/lib/utils";
 
-  import Button from "@app/components/Button.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -22,9 +21,30 @@
   const { selectedState, onSelect, disabled = false }: Props = $props();
 
   let popoverExpanded: boolean = $state(false);
+
+  function label(state: State): string {
+    return state.status === "closed"
+      ? `${capitalize(state.status)} as ${state.reason}`
+      : capitalize(state.status);
+  }
 </script>
 
 <style>
+  .status-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    font: var(--txt-body-m-regular);
+    cursor: pointer;
+  }
+  .status-button:hover,
+  .status-button.active {
+    filter: brightness(0.95);
+  }
   .status-chip {
     display: inline-flex;
     align-items: center;
@@ -41,15 +61,12 @@
     class="status-chip"
     style:color={issueStatusColor[selectedState.status]}
     style:background-color={issueStatusBackgroundColor[selectedState.status]}
-    title="Only delegates can change the issue state">
+    title="Only the issue author and delegates can change the issue state">
     <Icon
       name={selectedState.status === "open"
         ? "issue"
         : `issue-${selectedState.status}`} />
-    <span>
-      {capitalize(selectedState.status)}
-      {selectedState.status === "closed" ? `as ${selectedState.reason}` : ""}
-    </span>
+    <span>{label(selectedState)}</span>
   </span>
 {:else}
   <Popover
@@ -57,38 +74,22 @@
     placement="bottom-start"
     bind:expanded={popoverExpanded}>
     {#snippet toggle(onclick)}
-      <Button
-        variant="outline"
-        {disabled}
-        {onclick}
-        active={popoverExpanded}
-        title={disabled
-          ? "Only delegates can change the issue state"
-          : undefined}>
-        <span
-          class="global-chip"
-          style:padding="0"
-          style:margin-left="-0.25rem"
-          style:color={disabled
-            ? undefined
-            : issueStatusColor[selectedState.status]}
-          style:background-color={disabled
-            ? undefined
-            : issueStatusBackgroundColor[selectedState.status]}>
-          <Icon
-            name={selectedState.status === "open"
-              ? "issue"
-              : `issue-${selectedState.status}`} />
-        </span>
-        <span
-          style:color={disabled ? undefined : "var(--color-text-secondary)"}>
-          {capitalize(selectedState.status)}
-          {selectedState.status === "closed"
-            ? `as ${selectedState.reason}`
-            : ""}
-        </span>
+      <button
+        type="button"
+        class="status-button"
+        class:active={popoverExpanded}
+        style:color={issueStatusColor[selectedState.status]}
+        style:background-color={issueStatusBackgroundColor[
+          selectedState.status
+        ]}
+        {onclick}>
+        <Icon
+          name={selectedState.status === "open"
+            ? "issue"
+            : `issue-${selectedState.status}`} />
+        <span>{label(selectedState)}</span>
         <Icon name={popoverExpanded ? "chevron-up" : "chevron-down"} />
-      </Button>
+      </button>
     {/snippet}
     {#snippet popover()}
       <div
@@ -126,8 +127,7 @@
                     : `issue-${state.status}`} />
               </span>
               <span style:color="var(--color-text-secondary)">
-                {capitalize(state.status)}
-                {state.status === "closed" ? `as ${state.reason}` : ""}
+                {label(state)}
               </span>
             </DropdownListItem>
           {/snippet}

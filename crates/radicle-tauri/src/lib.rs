@@ -36,6 +36,7 @@ pub fn run() {
             cob::get_embed,
             cob::issue::activity_by_issue,
             cob::issue::comment_threads_by_issue_id,
+            cob::issue::delete_issue,
             cob::issue::create_issue,
             cob::issue::edit_issue,
             cob::issue::issue_by_id,
