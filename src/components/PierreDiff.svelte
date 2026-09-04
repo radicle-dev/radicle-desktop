@@ -962,13 +962,23 @@
   function buildItems(
     files: FileDiffMetadata[],
   ): CodeViewItem<LineAnnotation>[] {
-    return files.map(fileDiff => ({
-      id: fileDiff.name,
-      type: "diff",
-      fileDiff,
-      collapsed: collapsedPaths?.has(fileDiff.name) === true,
-      annotations: annotationsFor(fileDiff),
-    }));
+    // A type change, a symlink replaced by a regular file for instance, is one
+    // path arriving as two entries. CodeView throws on a duplicate id and the
+    // rejection loses the whole diff, so number the repeats. The first keeps
+    // the bare path, which is what scroll targets and collapsed paths use.
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity
+    const occurrences = new Map<string, number>();
+    return files.map(fileDiff => {
+      const seen = occurrences.get(fileDiff.name) ?? 0;
+      occurrences.set(fileDiff.name, seen + 1);
+      return {
+        id: seen === 0 ? fileDiff.name : `${fileDiff.name}#${seen + 1}`,
+        type: "diff",
+        fileDiff,
+        collapsed: collapsedPaths?.has(fileDiff.name) === true,
+        annotations: annotationsFor(fileDiff),
+      };
+    });
   }
 
   function annotationsFor(
