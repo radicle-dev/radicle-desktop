@@ -1,3 +1,13 @@
+<script lang="ts" module>
+  const alertIcons = {
+    note: "guide",
+    tip: "lightbulb",
+    important: "comment",
+    warning: "warning",
+    caution: "stop",
+  } as const;
+</script>
+
 <script lang="ts">
   import { mount, tick, unmount } from "svelte";
 
@@ -6,6 +16,7 @@
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
   import {
+    alertVariants,
     isTaskCheckbox,
     maximumReferences,
     renderMarkdown,
@@ -332,6 +343,21 @@
         }
       }
 
+      for (const title of container.querySelectorAll("p.alert-title")) {
+        const variant = alertVariants.find(name =>
+          title.parentElement?.classList.contains(`alert-${name}`),
+        );
+        if (!variant) continue;
+
+        icons.push(
+          mount(Icon, {
+            target: title,
+            anchor: title.firstChild ?? undefined,
+            props: { name: alertIcons[variant] },
+          }),
+        );
+      }
+
       enhanceCodeBlocks(container);
 
       if (!scrolledToHash && window.location.hash) {
@@ -656,6 +682,38 @@
   }
   .markdown :global(dl dd) {
     margin: 0 0 0 2rem;
+  }
+
+  .markdown :global(.alert) {
+    border-left: 0.3rem solid var(--alert-color);
+    padding: 0 0 0 1rem;
+    margin: 1rem 0;
+  }
+  .markdown :global(.alert > .alert-title) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--alert-color);
+    font: var(--txt-body-m-semibold);
+    margin-bottom: 0.375rem;
+  }
+  .markdown :global(.alert > :last-child) {
+    margin-bottom: 0;
+  }
+  .markdown :global(.alert-note) {
+    --alert-color: var(--color-feedback-info-text);
+  }
+  .markdown :global(.alert-tip) {
+    --alert-color: var(--color-feedback-success-text);
+  }
+  .markdown :global(.alert-important) {
+    --alert-color: var(--color-feedback-important-text);
+  }
+  .markdown :global(.alert-warning) {
+    --alert-color: var(--color-feedback-warning-text);
+  }
+  .markdown :global(.alert-caution) {
+    --alert-color: var(--color-feedback-error-text);
   }
 </style>
 
