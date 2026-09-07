@@ -1,24 +1,91 @@
+<script lang="ts" module>
+  // Mermaid is heavy and `initialize` mutates a process wide singleton, so load
+  // it lazily and share the one instance across every Markdown component.
+  let mermaidPromise: Promise<typeof import("mermaid").default> | undefined;
+  let mermaidTheme: "dark" | "light" | undefined;
+
+  async function loadMermaid(theme: "dark" | "light") {
+    mermaidPromise ??= import("mermaid").then(
+      ({ default: mermaid }) => mermaid,
+    );
+    const mermaid = await mermaidPromise;
+
+    // `initialize` replaces the entire site config, so it is passed in full and
+    // only re-run when the app theme changed since the last diagram.
+    if (mermaidTheme !== theme) {
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: "strict",
+        // Render our own warning instead of letting mermaid append its
+        // "Syntax error" graphic to the document.
+        suppressErrorRendering: true,
+        theme: theme === "dark" ? "dark" : "default",
+      });
+      mermaidTheme = theme;
+    }
+
+    return mermaid;
+  }
+
+  const alertIcons = {
+    note: "guide",
+    tip: "lightbulb",
+    important: "comment",
+    warning: "warning",
+    caution: "stop",
+  } as const;
+</script>
+
 <script lang="ts">
   import type { Embed } from "@bindings/cob/Embed";
+  import type { Blob as SourceBlob } from "@bindings/source/Blob";
 
   import dompurify from "dompurify";
   import { toDom } from "hast-util-to-dom";
-  import { tick } from "svelte";
+  import { mount, tick, unmount } from "svelte";
+  import { get } from "svelte/store";
 
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
-  import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
+  import {
+    markdownWithExtensions,
+    Renderer,
+    sanitizeConfig,
+  } from "@app/lib/markdown";
+  import { alertVariants } from "@app/lib/markdown";
   import { highlight } from "@app/lib/syntax";
-  import { isCommit, scrollIntoView, twemoji } from "@app/lib/utils";
+  import {
+    canonicalize,
+    canonicalizeGithubImageUrl,
+    isCommit,
+    isUrl,
+    scrollIntoView,
+    twemoji,
+  } from "@app/lib/utils";
+
+  import Icon from "@app/components/Icon.svelte";
+  import { theme } from "@app/components/ThemeSwitch.svelte";
 
   interface Props {
     rid?: string;
     content: string;
+    // Path of the document being rendered, used to resolve relative links to
+    // other files in the repository.
+    path?: string;
+    // Commit the document is being read at, without which repository-relative
+    // images cannot be resolved.
+    sha?: string;
     // If true, add <br> on a single line break
     breaks?: boolean;
   }
 
-  const { rid = "", content, breaks = false }: Props = $props();
+  const {
+    rid = "",
+    content,
+    path = "",
+    sha = undefined,
+    breaks = false,
+  }: Props = $props();
 
   let container: HTMLElement;
 
@@ -39,6 +106,7 @@
         renderer: new Renderer(),
         breaks,
       }) as string,
+      sanitizeConfig,
     );
   }
 
@@ -46,7 +114,11 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     content;
 
-    void tick().then(() => {
+    // Components mounted into the rendered markup, torn down when `content`
+    // changes and the markup they live in is replaced.
+    const mounted: Record<string, unknown>[] = [];
+
+    void tick().then(async () => {
       // Don't run this if the component hasn't mounted yet.
       if (container === null) {
         return;
@@ -135,9 +207,59 @@
         }
       }
 
+      // Images referring to a path in the repository rather than an absolute
+      // URL are read out of storage and handed to the webview as a blob.
+      for (const image of container.querySelectorAll("img")) {
+        const src = image.getAttribute("src");
+        if (!src || image.classList.contains("txt-emoji")) {
+          continue;
+        }
+
+        if (isUrl(src)) {
+          image.setAttribute("src", canonicalizeGithubImageUrl(src));
+          continue;
+        }
+
+        if (src.startsWith("data:") || !sha) {
+          continue;
+        }
+
+        void invoke<SourceBlob>("repo_blob", {
+          rid,
+          path: canonicalize(src, path),
+          sha,
+        })
+          .then(blob => {
+            const bytes = blob.binary
+              ? Uint8Array.from(atob(blob.content), c => c.charCodeAt(0))
+              : new TextEncoder().encode(blob.content);
+
+            image.setAttribute(
+              "src",
+              URL.createObjectURL(new Blob([bytes], { type: blob.mimeType })),
+            );
+          })
+          .catch(() => console.warn("Not able to load image", src));
+      }
+
+      for (const title of container.querySelectorAll("p.alert-title")) {
+        const variant = alertVariants.find(name =>
+          title.parentElement?.classList.contains(`alert-${name}`),
+        );
+        if (!variant) continue;
+
+        mounted.push(
+          mount(Icon, {
+            target: title,
+            anchor: title.firstChild ?? undefined,
+            props: { name: alertIcons[variant] },
+          }),
+        );
+      }
+
       // Replaces code blocks in the background with highlighted code.
       const prefix = "language-";
-      const nodes = Array.from(document.body.querySelectorAll("pre code"));
+      const nodes = Array.from(container.querySelectorAll("pre code"));
 
       const treeChanges: Promise<void>[] = [];
 
@@ -156,8 +278,43 @@
         );
         if (!className) continue;
 
+        const language = className.slice(prefix.length);
+
+        if (language === "mermaid") {
+          const mermaid = await loadMermaid(get(theme));
+          try {
+            const { svg } = await mermaid.render(
+              `mermaid-${crypto.randomUUID()}`,
+              node.textContent ?? "",
+            );
+            // The component may have re-rendered or unmounted while we were
+            // awaiting, in which case `preWrapper` is detached and there is
+            // nothing left to replace.
+            if (preWrapper.isConnected) {
+              const diagram = document.createElement("div");
+              diagram.classList.add("mermaid-diagram");
+              diagram.innerHTML = svg;
+              preWrapper.replaceWith(diagram);
+            }
+          } catch (error) {
+            console.warn("Not able to render mermaid diagram", error);
+            if (preWrapper.isConnected) {
+              const warning = document.createElement("div");
+              warning.classList.add("mermaid-error");
+              mounted.push(
+                mount(Icon, { target: warning, props: { name: "warning" } }),
+              );
+              const message = document.createElement("span");
+              message.textContent = "Couldn't render diagram";
+              warning.appendChild(message);
+              preWrapper.before(warning);
+            }
+          }
+          continue;
+        }
+
         treeChanges.push(
-          highlight(node.textContent ?? "", className.slice(prefix.length))
+          highlight(node.textContent ?? "", language)
             .then(tree => {
               if (tree) {
                 node.replaceChildren(toDom(tree, { fragment: true }));
@@ -173,6 +330,12 @@
         scrollIntoView(window.location.hash.substring(1));
       }
     });
+
+    return () => {
+      for (const component of mounted) {
+        void unmount(component);
+      }
+    };
   });
 </script>
 
@@ -430,6 +593,55 @@
   }
   .markdown :global(dl dd) {
     margin: 0 0 0 2rem;
+  }
+
+  .markdown :global(.alert) {
+    border-left: 0.3rem solid var(--alert-color);
+    padding: 0 0 0 1rem;
+    margin: 1rem 0;
+  }
+  .markdown :global(.alert > .alert-title) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--alert-color);
+    font: var(--txt-body-m-semibold);
+    margin-bottom: 0.375rem;
+  }
+  .markdown :global(.alert > :last-child) {
+    margin-bottom: 0;
+  }
+  .markdown :global(.alert-note) {
+    --alert-color: var(--color-feedback-info-text);
+  }
+  .markdown :global(.alert-tip) {
+    --alert-color: var(--color-feedback-success-text);
+  }
+  .markdown :global(.alert-important) {
+    --alert-color: var(--color-feedback-important-text);
+  }
+  .markdown :global(.alert-warning) {
+    --alert-color: var(--color-feedback-warning-text);
+  }
+  .markdown :global(.alert-caution) {
+    --alert-color: var(--color-feedback-error-text);
+  }
+
+  .markdown :global(.mermaid-diagram) {
+    margin: 1rem 0;
+    text-align: center;
+  }
+  .markdown :global(.mermaid-diagram svg) {
+    max-width: 100%;
+    height: auto;
+  }
+  .markdown :global(.mermaid-error) {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--color-feedback-warning-text);
+    font: var(--txt-body-s-regular);
+    margin: 1rem 0 0.25rem;
   }
 </style>
 

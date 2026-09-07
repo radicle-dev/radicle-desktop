@@ -77,6 +77,50 @@ export function isCommit(input: string): boolean {
   return /^[a-f0-9]{40}$/.test(input);
 }
 
+export function isUrl(input: string): boolean {
+  return /^https?:\/\//.test(input);
+}
+
+// Resolve a path found in a document against the path of that document, so a
+// README at `docs/guide.md` referencing `../demo.jpg` resolves to `demo.jpg`.
+// A leading slash is treated as the repository root.
+export function canonicalize(
+  path: string,
+  base: string,
+  origin = document.location.origin,
+): string {
+  const resolved = path.startsWith("/")
+    ? new URL(path, origin).pathname
+    : base.split("/").slice(0, -1).concat([path]).join("/");
+
+  return new URL(resolved, origin).pathname.replace(/^\//, "");
+}
+
+// Rewrite GitHub "blob" image URLs so they resolve to the raw image content. A
+// URL like https://github.com/<owner>/<repo>/blob/<ref>/<path> serves an HTML
+// page rather than the image bytes, so appending `?raw=true` makes GitHub
+// redirect to the raw content. URLs already pointing at the raw content are
+// returned unchanged.
+export function canonicalizeGithubImageUrl(input: string): string {
+  let url;
+  try {
+    url = new URL(input);
+  } catch {
+    return input;
+  }
+
+  if (
+    (url.hostname === "github.com" || url.hostname === "www.github.com") &&
+    /^\/[^/]+\/[^/]+\/blob\//.test(url.pathname) &&
+    url.searchParams.get("raw") !== "true"
+  ) {
+    url.searchParams.set("raw", "true");
+    return url.toString();
+  }
+
+  return input;
+}
+
 export function formatOid(id: string): string {
   return id.substring(0, 7);
 }

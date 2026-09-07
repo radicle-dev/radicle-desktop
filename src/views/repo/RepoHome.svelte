@@ -257,7 +257,11 @@
                       {/if}
                     {:else if preview}
                       <div style:margin-top="1rem">
-                        <Markdown content={blob.content} />
+                        <Markdown
+                          rid={repo.rid}
+                          path={currentPath}
+                          sha={oid}
+                          content={blob.content} />
                       </div>
                     {:else if blob.content.trim() === ""}
                       <div

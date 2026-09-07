@@ -2,6 +2,8 @@
   import dompurify from "dompurify";
   import escape from "lodash/escape";
 
+  import { sanitizeConfig } from "@app/lib/markdown";
+
   interface Props {
     content: string;
     fontSize?: "tiny" | "small" | "regular" | "medium" | "large";
@@ -32,5 +34,5 @@
   class:txt-body-l-regular={fontSize === "regular"}
   class:txt-body-m-regular={fontSize === "small"}
   class:txt-body-s-regular={fontSize === "tiny"}>
-  {@html dompurify.sanitize(formatInlineTitle(escape(content)))}
+  {@html dompurify.sanitize(formatInlineTitle(escape(content)), sanitizeConfig)}
 </span>

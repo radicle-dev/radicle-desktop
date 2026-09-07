@@ -43,6 +43,12 @@
   --color-feedback-error-border: var(--color-semantic-red-600);
   --color-feedback-error-bg: var(--color-semantic-red-100);
   --color-feedback-error-bg-selected: var(--color-semantic-red-200);
+  --color-feedback-info-text: var(--color-semantic-blue-800);
+  --color-feedback-info-border: var(--color-semantic-blue-600);
+  --color-feedback-info-bg: var(--color-semantic-blue-100);
+  --color-feedback-important-text: var(--color-accent-purple-800);
+  --color-feedback-important-border: var(--color-accent-purple-600);
+  --color-feedback-important-bg: var(--color-accent-purple-100);
 
   --color-feedback-success-fill: var(--color-semantic-green-600);
   --color-feedback-success-fill-hover: var(--color-semantic-green-500);
@@ -118,6 +124,12 @@
   --color-feedback-error-border: var(--color-semantic-red-700);
   --color-feedback-error-bg: var(--color-semantic-red-900);
   --color-feedback-error-bg-selected: var(--color-semantic-red-800);
+  --color-feedback-info-text: var(--color-semantic-blue-400);
+  --color-feedback-info-border: var(--color-semantic-blue-700);
+  --color-feedback-info-bg: var(--color-semantic-blue-900);
+  --color-feedback-important-text: var(--color-accent-purple-400);
+  --color-feedback-important-border: var(--color-accent-purple-700);
+  --color-feedback-important-bg: var(--color-accent-purple-900);
 
   --color-code-keywords: var(--color-accent-blue-400);
   --color-code-strings: var(--color-accent-green-400);
