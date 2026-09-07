@@ -2,8 +2,13 @@
   import { tick } from "svelte";
 
   import type { AsciidocSource } from "@app/lib/asciidoc";
-  import { renderAsciidoc, resolveRepoPath } from "@app/lib/asciidoc";
+  import { renderAsciidoc } from "@app/lib/asciidoc";
   import { enhanceCodeBlocks } from "@app/lib/codeBlocks";
+  import {
+    enhanceRepoImages,
+    RepoImages,
+    resolveRepoPath,
+  } from "@app/lib/repoImages";
   import { scrollIntoView, twemoji } from "@app/lib/utils";
 
   interface Props extends AsciidocSource {
@@ -18,13 +23,24 @@
   let error: string | undefined = $state();
   let scrolledToHash = false;
 
+  const images = new RepoImages();
+
+  $effect(() => () => images.dispose());
+
   $effect(() => {
     let stale = false;
 
     renderAsciidoc(content, { rid, sha, path })
       .then(async result => {
-        // Unchanged markup isn't re-rendered, so its DOM is already enhanced.
-        if (stale || result === html) return;
+        if (stale) return;
+        // Unchanged markup isn't re-rendered, so its DOM is already enhanced,
+        // but its images may come from another revision.
+        if (result === html) {
+          if (container) {
+            enhanceRepoImages(container, { rid, sha, path }, images);
+          }
+          return;
+        }
         html = result;
         error = undefined;
         await tick();
@@ -66,6 +82,7 @@
       }
     }
 
+    enhanceRepoImages(container, { rid, sha, path }, images);
     enhanceCodeBlocks(container);
 
     if (!scrolledToHash && window.location.hash) {

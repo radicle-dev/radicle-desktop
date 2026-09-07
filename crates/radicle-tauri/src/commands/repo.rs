@@ -82,6 +82,18 @@ pub async fn repo_blob(
 }
 
 #[tauri::command]
+pub async fn repo_blob_bytes(
+    ctx: tauri::State<'_, AppState>,
+    rid: RepoId,
+    path: std::path::PathBuf,
+    sha: git::Oid,
+) -> Result<tauri::ipc::Response, Error> {
+    let bytes = blocking(ctx, move |ctx| ctx.repo_blob_bytes(rid, path, sha)).await?;
+
+    Ok(tauri::ipc::Response::new(bytes))
+}
+
+#[tauri::command]
 pub async fn diff_stats(
     ctx: tauri::State<'_, AppState>,
     rid: RepoId,

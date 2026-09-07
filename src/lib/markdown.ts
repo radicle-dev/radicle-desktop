@@ -31,6 +31,7 @@ dompurify.setConfig({
   ALLOWED_URI_REGEXP: allowedUriSchemes,
   ALLOWED_ATTR: [
     "align",
+    "alt",
     "checked",
     "class",
     "href",

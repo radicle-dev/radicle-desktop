@@ -24,6 +24,7 @@
   } from "@app/lib/markdown";
   import { parseEntityHref } from "@app/lib/mentions";
   import { isOid } from "@app/lib/radUri";
+  import { enhanceRepoImages, RepoImages } from "@app/lib/repoImages";
   import { scrollIntoView, twemoji } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
@@ -33,6 +34,12 @@
   interface Props {
     rid?: string;
     content: string;
+    // Path of the document being rendered, used to resolve relative links to
+    // other files in the repository.
+    path?: string;
+    // Commit the document is being read at, without which repository-relative
+    // images cannot be resolved.
+    sha?: string;
     // If true, add <br> on a single line break
     breaks?: boolean;
     toggleTaskItem?: (content: string) => Promise<void> | void;
@@ -41,6 +48,8 @@
   const {
     rid = "",
     content,
+    path = "",
+    sha = undefined,
     breaks = false,
     toggleTaskItem = undefined,
   }: Props = $props();
@@ -68,6 +77,8 @@
     { element: HTMLElement; url: string }
   >();
 
+  const images = new RepoImages();
+
   let destroyed = false;
 
   $effect(() => () => {
@@ -76,6 +87,21 @@
       URL.revokeObjectURL(url);
     }
     embedPreviews.clear();
+    images.dispose();
+  });
+
+  // The revision and path of a document can change while its text stays the
+  // same, so images are resolved apart from the rest of the markup.
+  $effect(() => {
+    const source = { rid, sha, path };
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    content;
+
+    void tick().then(() => {
+      if (container) {
+        enhanceRepoImages(container, source, images);
+      }
+    });
   });
 
   function createEmbedPreview(

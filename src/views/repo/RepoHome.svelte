@@ -322,7 +322,11 @@
                             path={currentPath}
                             onNavigate={showPath} />
                         {:else}
-                          <Markdown content={blob.content} />
+                          <Markdown
+                            rid={repo.rid}
+                            path={currentPath}
+                            sha={oid}
+                            content={blob.content} />
                         {/if}
                       </div>
                     {:else if blob.content.trim() === ""}

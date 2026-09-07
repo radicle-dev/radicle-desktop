@@ -117,6 +117,7 @@ pub fn run() {
             repo::repo_readme,
             repo::repo_tree,
             repo::repo_blob,
+            repo::repo_blob_bytes,
             repo::seed,
             repo::seeded_not_replicated,
             repo::unseed,

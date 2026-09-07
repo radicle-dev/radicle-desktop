@@ -603,6 +603,31 @@ pub trait Repo: Profile {
         ))
     }
 
+    /// The bytes of the file at `path`, for files the webview renders itself,
+    /// like the images in a README. Unlike `repo_blob` it skips the last
+    /// commit lookup and the text encoding.
+    fn repo_blob_bytes(
+        &self,
+        rid: identity::RepoId,
+        path: std::path::PathBuf,
+        sha: git::Oid,
+    ) -> Result<Vec<u8>, Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+        let commit = repo.backend.find_commit(sha.into())?;
+        let entry = commit.tree()?.get_path(&path)?;
+        let blob = entry
+            .to_object(&repo.backend)?
+            .into_blob()
+            .map_err(|_| git2::Error::from_str("path does not point to a blob"))?;
+
+        if blob.size() > MAX_BLOB_SIZE {
+            return Err(Error::FileTooLarge(blob.size()));
+        }
+
+        Ok(blob.content().to_vec())
+    }
+
     fn list_repo_refs(&self, rid: identity::RepoId) -> Result<repo::RepoRefs, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
@@ -1316,6 +1341,43 @@ mod test {
             ("master".into(), "docs/guide.md".into())
         );
         assert_eq!(split("master"), ("master".into(), "".into()));
+    }
+
+    #[test]
+    fn repo_blob_bytes() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(&tmp.path().join("home"), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+        let (rid, _, _, head) =
+            fixtures::project(tmp.path().join("working"), &profile.storage, &signer).unwrap();
+        let backend = &profile.storage.repository(rid).unwrap().backend;
+
+        let large = backend.blob(&vec![0; super::MAX_BLOB_SIZE + 1]).unwrap();
+        let mut tree = backend.treebuilder(None).unwrap();
+        tree.insert("large.png", large, 0o100644).unwrap();
+        let tree = backend.find_tree(tree.write().unwrap()).unwrap();
+        let author = git2::Signature::now("alice", "alice@example.com").unwrap();
+        let large_commit = backend
+            .commit(None, &author, &author, "Add a large file", &tree, &[])
+            .unwrap();
+
+        let state = AppState { profile };
+
+        assert_eq!(
+            state
+                .repo_blob_bytes(rid, "README".into(), head.into())
+                .unwrap(),
+            b"Hello World!\n"
+        );
+        assert!(
+            state
+                .repo_blob_bytes(rid, "missing.png".into(), head.into())
+                .is_err()
+        );
+        assert!(matches!(
+            state.repo_blob_bytes(rid, "large.png".into(), large_commit.into()),
+            Err(crate::error::Error::FileTooLarge(size)) if size == super::MAX_BLOB_SIZE + 1
+        ));
     }
 
     #[test]

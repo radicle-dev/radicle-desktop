@@ -175,6 +175,7 @@ pub fn router(shared: Shared) -> Router {
         .route("/repo_readme", post(readme_handler))
         .route("/repo_tree", post(tree_handler))
         .route("/repo_blob", post(blob_handler))
+        .route("/repo_blob_bytes", post(blob_bytes_handler))
         .route("/get_diff", post(diff_handler))
         .route("/get_diff_text", post(diff_text_handler))
         .route("/save_diff_to_disk", post(save_diff_handler))
@@ -527,6 +528,22 @@ async fn blob_handler(
     let info = ctx.repo_blob(rid, path, sha)?;
 
     Ok::<_, Error>(Json(info))
+}
+
+#[derive(Deserialize)]
+struct BlobBytesBody {
+    pub rid: identity::RepoId,
+    pub path: PathBuf,
+    pub sha: git::Oid,
+}
+
+async fn blob_bytes_handler(
+    Ctx(ctx): Ctx,
+    Json(BlobBytesBody { rid, path, sha }): Json<BlobBytesBody>,
+) -> impl IntoResponse {
+    let bytes = ctx.repo_blob_bytes(rid, path, sha)?;
+
+    Ok::<_, Error>(([(CONTENT_TYPE, "application/octet-stream")], bytes))
 }
 
 async fn diff_handler(

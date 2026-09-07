@@ -103,33 +103,6 @@ const includeScopes = new Map<
 // depth. Every read past this budget is refused.
 export const maxIncludeReads = 256;
 
-/**
- * Resolve a link written relative to the document at `from` into a repository
- * path. Returns undefined when the link points to another origin or to the
- * repository root. Targets that climb above the root stop at it.
- */
-export function resolveRepoPath(
-  href: string,
-  from: string,
-): string | undefined {
-  const dir = from.split("/").slice(0, -1).join("/");
-
-  let url: URL;
-  try {
-    // The trailing slash makes the base a directory, so `a.adoc` resolves as
-    // a sibling of `from` rather than replacing its last segment.
-    url = new URL(href, `${includeOrigin}/${dir ? `${dir}/` : ""}`);
-  } catch {
-    return undefined;
-  }
-
-  if (url.origin !== includeOrigin) {
-    return undefined;
-  }
-
-  return decodeURIComponent(url.pathname).replace(/^\//, "") || undefined;
-}
-
 async function readInclude(uri: string): Promise<Response> {
   let url: URL;
   try {
