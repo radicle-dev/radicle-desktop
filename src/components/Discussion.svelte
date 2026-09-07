@@ -344,6 +344,7 @@
           borderVariant="ghost"
           stylePadding="0.5rem 0.75rem"
           hideDiscard
+          collapseActions
           placeholder="Leave a comment"
           submitActiveVariant="secondary"
           close={() => {

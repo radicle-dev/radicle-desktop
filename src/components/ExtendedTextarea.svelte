@@ -59,6 +59,8 @@
     // reason for disabling. Defaults to `false`
     disableAttachments?: boolean | string;
     hideDiscard?: boolean;
+    // If true, the whole actions row stays hidden until the body has content.
+    collapseActions?: boolean;
     belowTextarea?: Snippet;
   }
 
@@ -89,6 +91,7 @@
     close,
     disableAttachments: attachDisabled = false,
     hideDiscard = false,
+    collapseActions = false,
     belowTextarea,
   }: Props = $props();
   /* eslint-enable prefer-const */
@@ -469,7 +472,7 @@
     {/if}
   </div>
   {@render belowTextarea?.()}
-  {#if !hideDiscard || body.trim() !== ""}
+  {#if !collapseActions || body.trim() !== ""}
     <div class="actions">
       {#if !hideDiscard}
         <Button
