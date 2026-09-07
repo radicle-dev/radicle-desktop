@@ -4,7 +4,6 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { listen } from "@tauri-apps/api/event";
-  import { getCurrentWindow } from "@tauri-apps/api/window";
   import { onDestroy, onMount } from "svelte";
   import { get } from "svelte/store";
 
@@ -27,6 +26,7 @@
     unlistenNodeEvents,
   } from "@app/lib/startup.svelte";
   import { isMac, unreachable } from "@app/lib/utils";
+  import { dragWindow } from "@app/lib/window";
 
   import AppSidebar from "@app/components/AppSidebar.svelte";
   import { codeFont } from "@app/components/CodeFontSwitch.svelte";
@@ -59,27 +59,6 @@
     const route = $activeRouteStore;
     return isLoadedRepoRoute(route) ? route.params.repo : undefined;
   });
-
-  const DRAG_REGION_HEIGHT = 32;
-  const INTERACTIVE_TAGS = new Set([
-    "a",
-    "button",
-    "input",
-    "select",
-    "textarea",
-  ]);
-
-  function isDraggableArea(e: MouseEvent): boolean {
-    if (e.clientY > DRAG_REGION_HEIGHT) return false;
-    let el = e.target as HTMLElement | null;
-    while (el && el !== document.body) {
-      if (INTERACTIVE_TAGS.has(el.tagName.toLowerCase())) return false;
-      if (el.getAttribute("role") === "button") return false;
-      if (el.classList.contains("txt-selectable")) return false;
-      el = el.parentElement;
-    }
-    return true;
-  }
 
   window
     .matchMedia("(prefers-color-scheme: dark)")
@@ -165,11 +144,7 @@
 </style>
 
 <svelte:document
-  onmousedown={e => {
-    if (window.__TAURI_INTERNALS__ && isDraggableArea(e)) {
-      void getCurrentWindow().startDragging();
-    }
-  }}
+  onmousedown={dragWindow}
   onkeydown={e => {
     const auxiliarKey = isMac() ? e.metaKey : e.ctrlKey;
     // Handles the position of the plus key on different keyboard layouts.

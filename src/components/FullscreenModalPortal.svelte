@@ -1,5 +1,10 @@
 <script lang="ts">
   import { hide, modalStore } from "@app/lib/modal";
+  import { DRAG_REGION_HEIGHT } from "@app/lib/window";
+
+  // Only Tauri drags the window, and outside it the strip would do nothing but
+  // swallow the scrim clicks that dismiss the modal.
+  const dragRegion = Boolean(window.__TAURI_INTERNALS__);
 </script>
 
 <style>
@@ -20,6 +25,14 @@
     position: fixed;
   }
 
+  .drag-region {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+  }
+
   .content {
     z-index: 200;
     margin: auto;
@@ -36,6 +49,14 @@
       onclick={$modalStore.disableScrimClose ? undefined : hide}
       style:cursor={$modalStore.disableHide ? "not-allowed" : "default"}>
     </div>
+    {#if dragRegion}
+      <div
+        class="drag-region"
+        style:height="{DRAG_REGION_HEIGHT}px"
+        style:cursor={$modalStore.disableHide ? "not-allowed" : "default"}
+        data-tauri-drag-region>
+      </div>
+    {/if}
     <div class="content">
       <svelte:component this={$modalStore.component} {...$modalStore.props} />
     </div>
