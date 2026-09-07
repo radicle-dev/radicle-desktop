@@ -23,6 +23,7 @@
     toggleTask,
   } from "@app/lib/markdown";
   import { parseEntityHref } from "@app/lib/mentions";
+  import { renderMermaidBlocks } from "@app/lib/mermaid";
   import { isOid } from "@app/lib/radUri";
   import { enhanceRepoImages, RepoImages } from "@app/lib/repoImages";
   import { scrollIntoView, twemoji } from "@app/lib/utils";
@@ -30,6 +31,7 @@
   import Icon from "@app/components/Icon.svelte";
   import Mention from "@app/components/Mention.svelte";
   import ReferenceLink from "@app/components/ReferenceLink.svelte";
+  import { theme } from "@app/components/ThemeSwitch.svelte";
 
   interface Props {
     rid?: string;
@@ -79,6 +81,18 @@
 
   const images = new RepoImages();
 
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- imperative warning→icon lookup, never rendered reactively
+  const diagramWarningIcons = new Map<HTMLElement, ReturnType<typeof mount>>();
+
+  function unmountDiagramWarningIcons(all: boolean) {
+    for (const [warning, icon] of diagramWarningIcons) {
+      if (all || !warning.isConnected) {
+        void unmount(icon);
+        diagramWarningIcons.delete(warning);
+      }
+    }
+  }
+
   let destroyed = false;
 
   $effect(() => () => {
@@ -88,6 +102,7 @@
     }
     embedPreviews.clear();
     images.dispose();
+    unmountDiagramWarningIcons(true);
   });
 
   // The revision and path of a document can change while its text stays the
@@ -101,6 +116,27 @@
       if (container) {
         enhanceRepoImages(container, source, images);
       }
+    });
+  });
+
+  $effect(() => {
+    const diagramTheme = $theme;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    content;
+
+    void tick().then(async () => {
+      if (!container) {
+        return;
+      }
+      unmountDiagramWarningIcons(false);
+      await renderMermaidBlocks(container, diagramTheme, {
+        decorateWarning: warning => {
+          diagramWarningIcons.set(
+            warning,
+            mount(Icon, { target: warning, props: { name: "warning" } }),
+          );
+        },
+      });
     });
   });
 
@@ -740,6 +776,23 @@
   }
   .markdown :global(.alert-caution) {
     --alert-color: var(--color-feedback-error-text);
+  }
+
+  .markdown :global(.mermaid-diagram) {
+    margin: 1rem 0;
+    text-align: center;
+  }
+  .markdown :global(.mermaid-diagram svg) {
+    max-width: 100%;
+    height: auto;
+  }
+  .markdown :global(.mermaid-error) {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--color-feedback-warning-text);
+    font: var(--txt-body-s-regular);
+    margin: 1rem 0 0.25rem;
   }
 </style>
 

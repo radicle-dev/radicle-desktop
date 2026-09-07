@@ -65,6 +65,10 @@ async function createRichRepo(peer: RadiclePeer) {
       "",
       "![Screenshot](./images/shot.png)",
       "",
+      "```mermaid",
+      "graph TD; Start-->Finish",
+      "```",
+      "",
     ].join("\n"),
   );
   await Fs.writeFile(
@@ -77,7 +81,7 @@ async function createRichRepo(peer: RadiclePeer) {
   return { rid };
 }
 
-test("render alerts and repository images in a readme", async ({
+test("render alerts, diagrams and repository images in a readme", async ({
   page,
   peer,
 }) => {
@@ -88,6 +92,8 @@ test("render alerts and repository images in a readme", async ({
   await expect(
     readme.locator(".alert-note").getByText("Read the guide first."),
   ).toBeVisible();
+  await expect(readme.locator(".mermaid-diagram svg")).toBeVisible();
+  await expect(readme.locator(".mermaid-diagram")).toContainText("Finish");
 
   const logoImage = readme.getByRole("img", { name: "Logo" });
   await expect(logoImage).toHaveAttribute("src", /^blob:/);
@@ -104,6 +110,22 @@ test("render alerts and repository images in a readme", async ({
       screenshot.evaluate(image => image.getBoundingClientRect().width),
     )
     .toBe(32);
+});
+
+test("redraw a diagram when the theme changes", async ({ page, peer }) => {
+  const { rid } = await createRichRepo(peer);
+  await page.goto(`/repos/${rid}/home`);
+
+  const diagram = page.locator(".mermaid-diagram svg");
+  await expect(diagram).toBeVisible();
+  const darkId = await diagram.getAttribute("id");
+
+  await page.getByRole("button", { name: "Settings" }).click();
+  await page.getByRole("button", { name: "Light", exact: true }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+
+  await expect(diagram).not.toHaveAttribute("id", darkId ?? "");
+  await expect(page.locator(".mermaid-diagram")).toHaveCount(1);
 });
 
 test("show repository images in an AsciiDoc file", async ({ page, peer }) => {

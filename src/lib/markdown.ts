@@ -1,3 +1,4 @@
+import type { Config } from "dompurify";
 import type {
   MarkedExtension,
   RendererExtension,
@@ -26,7 +27,14 @@ import { bareReferenceStart, matchBareReference } from "@app/lib/mentions";
 const allowedUriSchemes =
   /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|rad|did):|[^a-z]|[a-z+.-]+(?:[^a-z+.:-]|$))/i;
 
-dompurify.setConfig({
+/**
+ * DOMPurify configuration for sanitizing markdown-derived HTML. Pass this as
+ * the second argument to `dompurify.sanitize` at each call site instead of
+ * setting it globally. A global config leaks into every other consumer of the
+ * DOMPurify singleton, including mermaid's internal strict-mode sanitization,
+ * which would then strip the SVG output of valid diagrams.
+ */
+export const sanitizeConfig: Config = {
   /* eslint-disable @typescript-eslint/naming-convention */
   ALLOWED_URI_REGEXP: allowedUriSchemes,
   ALLOWED_ATTR: [
@@ -78,7 +86,7 @@ dompurify.setConfig({
     "ul",
   ],
   /* eslint-enable @typescript-eslint/naming-convention */
-});
+};
 
 // Converts self closing anchor tags into empty anchor tags, to avoid erratic wrapping behaviour
 // e.g. <a name="test"/> -> <a name="test"></a>
@@ -247,6 +255,7 @@ export function renderMarkdown(content: string, breaks = false): string {
       renderer: new Renderer(),
       breaks,
     }) as string,
+    sanitizeConfig,
   );
 }
 

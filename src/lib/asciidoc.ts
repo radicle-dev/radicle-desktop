@@ -4,9 +4,9 @@ import dompurify from "dompurify";
 
 import { invoke } from "@app/lib/invoke";
 
-// `markdown.ts` pins the shared DOMPurify singleton to the markdown allowlist
-// via `setConfig`, which makes per-call configs no-ops. AsciiDoc output needs a
-// wider allowlist, so it gets its own instance.
+// AsciiDoc output needs a wider allowlist than markdown's, and `setConfig`
+// on the shared DOMPurify singleton would leak into every other consumer of
+// it, so it gets its own instance.
 const purify = dompurify(window);
 
 purify.setConfig({
