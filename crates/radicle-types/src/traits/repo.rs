@@ -398,7 +398,8 @@ pub trait Repo: Profile {
             // in storage. This list backs the sidebar, which is about what you
             // seed, so an unseeded repo has to leave it even though its files
             // are still on disk — otherwise unseeding looks like it did nothing.
-            if !policies.is_seeding(&rid)? {
+            let seed_policy = policies.seed_policy(&rid)?;
+            if seed_policy.policy.is_block() {
                 continue;
             }
 
@@ -412,6 +413,7 @@ pub trait Repo: Profile {
             entries.push(repo::RepoSummary {
                 rid,
                 name: data.name,
+                seeding_policy: seed_policy.policy.into(),
             });
         }
 
@@ -944,11 +946,13 @@ pub trait Repo: Profile {
         Ok(())
     }
 
-    fn seed(&self, rid: identity::RepoId) -> Result<(), Error> {
+    /// Seeding an already seeded repository updates its scope, so this is both
+    /// how a repository starts being seeded and how its scope is changed.
+    fn seed(&self, rid: identity::RepoId, scope: repo::SeedingScope) -> Result<(), Error> {
         let profile = self.profile();
         let mut node = radicle::Node::new(profile.home().socket_from_env());
 
-        profile.seed(rid, node::policy::Scope::All, &mut node)?;
+        profile.seed(rid, scope.into(), &mut node)?;
 
         Ok(())
     }
