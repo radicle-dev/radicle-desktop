@@ -22,6 +22,51 @@ pub struct RepoSummary {
     pub is_team: bool,
 }
 
+/// How a team member is named in `.radicle/team.json`.
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub enum MemberKind {
+    /// An actor repository, which can assert membership back.
+    Actor,
+    /// A bare device key: a roster entry, claim-only by construction.
+    Key,
+}
+
+/// Whether a member's own actor repository asserts the membership back.
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub enum Attestation {
+    /// Both sides assert it.
+    Attested,
+    /// The team asserts it; the member's profile does not.
+    Unconfirmed,
+    /// The member's actor repository is not replicated, so its side cannot be
+    /// read. Not the same as unconfirmed.
+    Unknown,
+    /// A bare key has no member side, so attestation does not apply.
+    NotApplicable,
+}
+
+/// One entry of a team's member roster, with the member's half of the
+/// attestation resolved where it can be read.
+#[derive(Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub struct TeamMember {
+    /// The entry exactly as written: a `rad:` RID or a `did:key:` DID.
+    pub id: String,
+    pub kind: MemberKind,
+    pub attestation: Attestation,
+    /// The `name` from the member's profile, when readable.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+}
+
 /// A team named by a repository's `xyz.radicle.teams` identity-document
 /// payload, together with whether that team lists the repository back in its
 /// own `.radicle/team.json`.

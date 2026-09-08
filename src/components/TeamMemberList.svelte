@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type { TeamMember } from "@bindings/repo/TeamMember";
+
   import { invoke } from "@app/lib/invoke";
   import { publicKeyFromDid, truncateDid, truncateId } from "@app/lib/utils";
 
@@ -6,15 +8,32 @@
   import UserAvatar from "@app/components/UserAvatar.svelte";
 
   interface Props {
-    members: string[];
+    rid: string;
     selfPublicKey: string;
   }
 
-  const { members, selfPublicKey }: Props = $props();
+  const { rid, selfPublicKey }: Props = $props();
 
-  const rows = $derived(
-    members.map(did => ({ did, publicKey: publicKeyFromDid(did) })),
+  let roster: TeamMember[] = $state([]);
+
+  $effect(() => {
+    void (async () => {
+      try {
+        roster = await invoke<TeamMember[]>("team_members", { rid });
+      } catch {
+        roster = [];
+      }
+    })();
+  });
+
+  const keyRows = $derived(
+    roster
+      .filter(m => m.kind === "key")
+      .map(m => ({ did: m.id, publicKey: publicKeyFromDid(m.id) })),
   );
+  const actorRows = $derived(roster.filter(m => m.kind === "actor"));
+
+  const rows = $derived(keyRows);
 
   // eslint-disable-next-line svelte/prefer-svelte-reactivity -- must stay non-reactive: a reactive Set would re-trigger the effect on every add and reintroduce the request loop
   const requested = new Set<string>();
@@ -112,6 +131,35 @@
   }
 </style>
 
+{#if actorRows.length > 0}
+  <div class="list">
+    {#each actorRows as member (member.id)}
+      <div class="row">
+        <span class="avatar"><Icon name="repository" /></span>
+        <div class="body">
+          <span class="primary txt-overflow">
+            {#if member.name}
+              <span class="alias txt-overflow">{member.name}</span>
+            {:else}
+              <span class="nid">
+                {truncateId(member.id.replace("rad:", ""))}
+              </span>
+            {/if}
+          </span>
+          <span class="did">actor repository</span>
+        </div>
+        {#if member.attestation === "attested"}
+          <span class="status-label">attested</span>
+        {:else if member.attestation === "unconfirmed"}
+          <span class="status-label">not asserted back</span>
+        {:else if member.attestation === "unknown"}
+          <span class="status-label">not replicated</span>
+        {/if}
+      </div>
+    {/each}
+  </div>
+{/if}
+
 {#if rows.length > 0}
   <div class="list">
     {#each rows as { did, publicKey } (did)}
@@ -142,6 +190,6 @@
       </div>
     {/each}
   </div>
-{:else}
+{:else if actorRows.length === 0}
   <div class="empty">No members.</div>
 {/if}

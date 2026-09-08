@@ -85,6 +85,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/clean", post(clean_handler))
         .route("/repos_asserting_team", post(repos_asserting_team_handler))
         .route("/repo_teams", post(repo_teams_handler))
+        .route("/team_members", post(team_members_handler))
         .route("/repo_by_id", post(repo_handler))
         .route("/list_repo_refs", post(list_repo_refs_handler))
         .route("/version", post(version_handler))
@@ -201,6 +202,14 @@ async fn repos_asserting_team_handler(
 ) -> impl IntoResponse {
     let rids = ctx.repos_asserting_team(rid)?;
     Ok::<_, Error>(Json(rids))
+}
+
+async fn team_members_handler(
+    State(ctx): State<Context>,
+    Json(RepoBody { rid }): Json<RepoBody>,
+) -> impl IntoResponse {
+    let members = ctx.team_members(rid)?;
+    Ok::<_, Error>(Json(members))
 }
 
 async fn repo_teams_handler(

@@ -63,7 +63,7 @@
       <div>
         {#if team.status === "ok"}
           <TeamMemberList
-            members={team.team.members}
+            rid={repo.rid}
             selfPublicKey={sidebarData.config.publicKey} />
         {:else if team.status === "unsupported-version"}
           <div class="degraded">

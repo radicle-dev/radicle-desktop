@@ -90,19 +90,6 @@ fn resolve_revision(
     }
 }
 
-/// The `type` of the `xyz.radicle.actor` payload, when present.
-fn doc_actor_type(doc: &Doc) -> Option<String> {
-    let id = "xyz.radicle.actor".parse::<doc::PayloadId>().ok()?;
-    let payload = doc.payload().get(&id)?;
-    if payload.get("version").and_then(serde_json::Value::as_u64) != Some(1) {
-        return None;
-    }
-    payload
-        .get("type")
-        .and_then(serde_json::Value::as_str)
-        .map(str::to_owned)
-}
-
 fn has_team_manifest(profile: &radicle::Profile, rid: identity::RepoId) -> Result<bool, Error> {
     let repo = profile.storage.repository(rid)?;
     // The actor payload is the criterion of the teams RIP. Fall back to the
@@ -125,6 +112,17 @@ struct TeamManifest {
     name: String,
     #[serde(default)]
     repos: Vec<String>,
+    #[serde(default)]
+    members: Vec<String>,
+}
+
+/// The `.radicle/profile.json` of a user actor repository, of which only the
+/// `teams` member is defined by the teams RIP.
+#[derive(serde::Deserialize)]
+struct ProfileManifest {
+    name: Option<String>,
+    #[serde(default)]
+    teams: Vec<String>,
 }
 
 /// Read a blob at `path` in the repo's tree at `head`. `None` on any failure
@@ -176,6 +174,27 @@ fn doc_teams(doc: &Doc) -> Vec<identity::RepoId> {
 /// Whether `doc` asserts affiliation with `team`.
 fn asserts_team(doc: &Doc, team: &identity::RepoId) -> bool {
     doc_teams(doc).contains(team)
+}
+
+/// The `type` of the `xyz.radicle.actor` payload, when present.
+fn doc_actor_type(doc: &Doc) -> Option<String> {
+    let id = "xyz.radicle.actor".parse::<doc::PayloadId>().ok()?;
+    let payload = doc.payload().get(&id)?;
+    if payload.get("version").and_then(serde_json::Value::as_u64) != Some(1) {
+        return None;
+    }
+    payload
+        .get("type")
+        .and_then(serde_json::Value::as_str)
+        .map(str::to_owned)
+}
+
+/// Parse `.radicle/profile.json` at `head`. `None` when absent or unparseable.
+fn read_profile_manifest(
+    repo: &storage::git::Repository,
+    head: git::Oid,
+) -> Option<ProfileManifest> {
+    serde_json::from_slice(&read_blob_at(repo, head, ".radicle/profile.json")?).ok()
 }
 
 /// Parse `.radicle/team.json` at `head`. `None` when absent, unparseable, or an
@@ -1081,6 +1100,69 @@ pub trait Repo: Profile {
             .map(|info| info.rid)
             .collect();
         Ok(entries)
+    }
+
+    /// The member roster of a team, each entry with its attestation state. An
+    /// actor entry is attested when that actor's `.radicle/profile.json` names
+    /// this team back, unconfirmed when it does not, and unknown when the
+    /// actor repository is not replicated locally. Bare keys have no member
+    /// side and are reported as not applicable.
+    fn team_members(&self, rid: identity::RepoId) -> Result<Vec<repo::TeamMember>, Error> {
+        let profile = self.profile();
+        let storage = &profile.storage;
+        let team_repo = storage.repository(rid)?;
+        let head = team_repo.head()?.1;
+        let Some(manifest) = read_team_manifest(&team_repo, head) else {
+            return Ok(Vec::new());
+        };
+
+        let mut out = Vec::with_capacity(manifest.members.len());
+        for entry in manifest.members {
+            if entry.starts_with("did:key:") {
+                out.push(repo::TeamMember {
+                    id: entry,
+                    kind: repo::MemberKind::Key,
+                    attestation: repo::Attestation::NotApplicable,
+                    name: None,
+                });
+                continue;
+            }
+            let Ok(member_rid) = entry.parse::<identity::RepoId>() else {
+                continue;
+            };
+            let (attestation, name) = match storage.repository(member_rid) {
+                Ok(member_repo) => {
+                    let profile_manifest = member_repo
+                        .head()
+                        .ok()
+                        .and_then(|(_, h)| read_profile_manifest(&member_repo, h));
+                    match profile_manifest {
+                        Some(p) => {
+                            let asserts = p
+                                .teams
+                                .iter()
+                                .filter_map(|t| t.parse::<identity::RepoId>().ok())
+                                .any(|t| t == rid);
+                            let state = if asserts {
+                                repo::Attestation::Attested
+                            } else {
+                                repo::Attestation::Unconfirmed
+                            };
+                            (state, p.name)
+                        }
+                        None => (repo::Attestation::Unconfirmed, None),
+                    }
+                }
+                Err(_) => (repo::Attestation::Unknown, None),
+            };
+            out.push(repo::TeamMember {
+                id: entry,
+                kind: repo::MemberKind::Actor,
+                attestation,
+                name,
+            });
+        }
+        Ok(out)
     }
 
     /// The teams a repository names in its `xyz.radicle.teams` identity-document

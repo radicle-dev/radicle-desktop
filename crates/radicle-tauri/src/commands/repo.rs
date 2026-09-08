@@ -174,6 +174,14 @@ pub async fn repos_asserting_team(
 }
 
 #[tauri::command]
+pub async fn team_members(
+    ctx: tauri::State<'_, AppState>,
+    rid: RepoId,
+) -> Result<Vec<types::repo::TeamMember>, Error> {
+    blocking(ctx, move |ctx| ctx.team_members(rid)).await
+}
+
+#[tauri::command]
 pub async fn repo_teams(
     ctx: tauri::State<'_, AppState>,
     rid: RepoId,
