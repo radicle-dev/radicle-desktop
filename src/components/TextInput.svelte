@@ -4,6 +4,8 @@
 
   import { onMount } from "svelte";
 
+  import * as utils from "@app/lib/utils";
+
   interface Props {
     autofocus?: boolean;
     autoselect?: boolean;
@@ -15,6 +17,7 @@
     onFocus?: () => void;
     onBlur?: () => void;
     onSubmit?: () => void;
+    onModifierSubmit?: () => void;
     oninput?: FormEventHandler<HTMLInputElement>;
     placeholder?: string;
     type?: string;
@@ -35,6 +38,7 @@
     onFocus,
     onBlur,
     onSubmit,
+    onModifierSubmit,
     oninput,
     placeholder,
     type = "text",
@@ -65,6 +69,13 @@
 
   function handleKeydown(event: KeyboardEvent) {
     event.stopPropagation();
+    const auxiliarKey = utils.isMac() ? event.metaKey : event.ctrlKey;
+    if (auxiliarKey && event.key === "Enter" && onModifierSubmit) {
+      event.preventDefault();
+      onModifierSubmit();
+      return;
+    }
+
     if (event.key === "Enter" && valid && onSubmit) {
       onSubmit();
     }
