@@ -26,6 +26,7 @@
 
   const { repo }: Props = $props();
 
+  let commentBox: ExtendedTextarea | undefined = $state();
   let preview = $state(false);
   let title = $state("");
   let body = $state("");
@@ -155,10 +156,12 @@
         placeholder="Title"
         autofocus
         onDismiss={hide}
+        onModifierSubmit={() => commentBox?.triggerSubmit()}
         bind:value={title} />
     {/if}
 
     <ExtendedTextarea
+      bind:this={commentBox}
       textAreaSize="fixed-height"
       disableSubmit={title.trim() === ""}
       disallowEmptyBody

@@ -102,6 +102,12 @@
       ? submitActiveVariant
       : submitVariant,
   );
+  const submitDisabled = $derived(
+    !isValid() ||
+      submitInProgress ||
+      disableSubmit ||
+      (disallowEmptyBody && body.trim() === ""),
+  );
 
   let selectionStart = $state(body.length);
   let selectionEnd = $state(body.length);
@@ -283,6 +289,13 @@
       .catch(e => {
         console.error(e);
       });
+  }
+
+  export function triggerSubmit() {
+    if (submitDisabled) {
+      return;
+    }
+    submitFn();
   }
 </script>
 
@@ -514,10 +527,7 @@
             <Button
               variant={effectiveSubmitVariant}
               title={emptyBodyTooltip}
-              disabled={!isValid() ||
-                submitInProgress ||
-                disableSubmit ||
-                (disallowEmptyBody && body.trim() === "")}
+              disabled={submitDisabled}
               onclick={submitFn}>
               {#if submitInProgress}
                 Saving…
@@ -597,10 +607,7 @@
           <Button
             variant={effectiveSubmitVariant}
             title={emptyBodyTooltip}
-            disabled={!isValid() ||
-              submitInProgress ||
-              disableSubmit ||
-              (disallowEmptyBody && body.trim() === "")}
+            disabled={submitDisabled}
             onclick={submitFn}>
             {#if submitInProgress}
               Saving…
