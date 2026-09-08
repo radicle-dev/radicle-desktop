@@ -149,6 +149,7 @@
       explorerPath={repo.rid}
       id={repo.rid}
       idLabel="repository"
+      variant="naked"
       {config} />
     <CheckoutRepoButton rid={repo.rid} />
   </div>

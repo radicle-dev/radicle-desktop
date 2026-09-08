@@ -396,10 +396,11 @@
           explorerPath={`${repo.rid}/issues/${issue.id}`}
           id={issue.id}
           idLabel="issue"
+          variant="naked"
           {config} />
         <Button
           styleHeight="2rem"
-          variant="ghost"
+          variant="naked"
           onclick={() =>
             show({
               component: CreateIssueModal,
