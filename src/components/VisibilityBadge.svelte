@@ -33,6 +33,6 @@
   class="global-chip badge"
   class:public={type === "public"}
   class:private={type === "private"}>
-  <Icon name={type === "public" ? "seed" : "lock"} />
+  <Icon name={type === "public" ? "globe" : "lock"} />
   {capitalize(type)}
 </span>
