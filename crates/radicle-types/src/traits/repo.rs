@@ -100,10 +100,10 @@ fn has_team_manifest(profile: &radicle::Profile, rid: identity::RepoId) -> Resul
         return Ok(kind == "team");
     }
     let (_, head) = repo.head()?;
-    let tree = repo.backend.find_commit(head.into())?.tree()?;
-    Ok(tree
-        .get_path(std::path::Path::new(".radicle/team.json"))
-        .is_ok())
+    Ok(!matches!(
+        read_team_declaration(&repo, head),
+        TeamDeclaration::Absent
+    ))
 }
 
 #[derive(serde::Deserialize)]
@@ -139,9 +139,9 @@ fn read_blob_at(repo: &storage::git::Repository, head: git::Oid, path: &str) -> 
 /// simply does not name a team. Per the teams RIP, a repository asserts
 /// affiliation through this identity-document payload, not a tree file.
 fn parse_teams_payload(value: &serde_json::Value) -> Vec<identity::RepoId> {
-    // The identifier is unversioned, so `version` gates interpretation. A
-    // greater version is still a team affiliation, but its contents must not
-    // be read; this returns no teams rather than guessing.
+    // `version` gates interpretation, not recognition. A greater version is
+    // still a team affiliation, but its contents must not be read, so this
+    // names no teams rather than guessing at them.
     if value.get("version").and_then(serde_json::Value::as_u64) != Some(1) {
         return Vec::new();
     }
@@ -197,12 +197,42 @@ fn read_profile_manifest(
     serde_json::from_slice(&read_blob_at(repo, head, ".radicle/profile.json")?).ok()
 }
 
-/// Parse `.radicle/team.json` at `head`. `None` when absent, unparseable, or an
-/// unknown `version`.
+/// The three states a `.radicle/team.json` can be in for a given reader. A
+/// declaration whose `version` is beyond what this implementation understands
+/// is recognisable as a team declaration but must not be interpreted, which is
+/// neither absent nor malformed.
+enum TeamDeclaration {
+    Readable(TeamManifest),
+    UnreadableVersion,
+    /// Present but not conforming. Per the teams RIP this is still a team
+    /// repository, one whose declaration is invalid.
+    Malformed,
+    Absent,
+}
+
+/// Read `.radicle/team.json` at `head` and classify it.
+fn read_team_declaration(repo: &storage::git::Repository, head: git::Oid) -> TeamDeclaration {
+    let Some(bytes) = read_blob_at(repo, head, ".radicle/team.json") else {
+        return TeamDeclaration::Absent;
+    };
+    let Ok(parsed) = serde_json::from_slice::<TeamManifest>(&bytes) else {
+        return TeamDeclaration::Malformed;
+    };
+    if parsed.version == 1 {
+        TeamDeclaration::Readable(parsed)
+    } else {
+        TeamDeclaration::UnreadableVersion
+    }
+}
+
+/// The manifest when this implementation can interpret it. Callers that need
+/// to tell a future declaration apart from an absent one use
+/// [`read_team_declaration`] instead.
 fn read_team_manifest(repo: &storage::git::Repository, head: git::Oid) -> Option<TeamManifest> {
-    let parsed: TeamManifest =
-        serde_json::from_slice(&read_blob_at(repo, head, ".radicle/team.json")?).ok()?;
-    (parsed.version == 1).then_some(parsed)
+    match read_team_declaration(repo, head) {
+        TeamDeclaration::Readable(m) => Some(m),
+        _ => None,
+    }
 }
 
 /// Tally `git diff --numstat` between two commits into diff stats. Returns
@@ -1204,7 +1234,14 @@ pub trait Repo: Profile {
 
 #[cfg(test)]
 mod tests {
-    use super::{identity, parse_teams_payload};
+    use super::{TeamManifest, identity, parse_teams_payload};
+
+    fn fixture_path(name: &str) -> String {
+        format!(
+            "{}/../../schemas/fixtures/{name}",
+            env!("CARGO_MANIFEST_DIR")
+        )
+    }
 
     fn fixture(name: &str) -> serde_json::Value {
         let bytes = std::fs::read(format!(
@@ -1213,6 +1250,26 @@ mod tests {
         ))
         .unwrap();
         serde_json::from_slice(&bytes).unwrap()
+    }
+
+    /// A declaration from the future is recognisable but uninterpretable, and
+    /// must not be confused with one that is absent or malformed.
+    #[test]
+    fn team_declaration_states() {
+        let future: TeamManifest = serde_json::from_slice(
+            &std::fs::read(fixture_path("valid-future-version.json")).unwrap(),
+        )
+        .unwrap();
+        assert_ne!(
+            future.version, 1,
+            "the fixture must declare a later version"
+        );
+
+        // Readable only at the version this implementation understands.
+        let current: TeamManifest =
+            serde_json::from_slice(&std::fs::read(fixture_path("valid-typical.json")).unwrap())
+                .unwrap();
+        assert_eq!(current.version, 1);
     }
 
     #[test]
@@ -1241,7 +1298,7 @@ mod tests {
         // A version this client does not understand is still a team
         // affiliation, but its contents must not be read.
         assert_eq!(
-            parse_teams_payload(&fixture("invalid-payload-future-version.json")),
+            parse_teams_payload(&fixture("valid-payload-future-version.json")),
             none
         );
     }

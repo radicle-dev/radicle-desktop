@@ -13,9 +13,9 @@
   "additionalProperties": true,
   "properties": {
     "version": {
-      "description": "Schema version, not the team's version. Incremented only on breaking changes. A consumer that does not understand this value must refuse to interpret the file rather than parse it partially.",
+      "description": "Schema version, not the team's version. Moves only when the meaning of an existing field changes; additive evolution happens through new optional fields at the same version. A consumer that does not understand this value must still recognise the file as a team declaration, but must refuse to interpret its contents rather than parse it partially or treat it as malformed.",
       "type": "integer",
-      "const": 1
+      "minimum": 1
     },
     "name": {
       "description": "Display name of the team.",

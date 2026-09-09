@@ -13,7 +13,7 @@
     "version": {
       "description": "Schema version of this payload. Moves only when the meaning of an existing field changes; additive evolution happens through new optional fields at the same version. A client seeing a version greater than it understands must still recognise the payload as a team affiliation, but must not interpret its contents.",
       "type": "integer",
-      "const": 1
+      "minimum": 1
     },
     "teams": {
       "description": "RIDs of the team repositories this repository asserts cover it. May be empty, which asserts no affiliation.",

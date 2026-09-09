@@ -18,12 +18,20 @@ const validFixtures = fixtures.filter(name => name.startsWith("valid-"));
 const invalidFixtures = fixtures.filter(name => name.startsWith("invalid-"));
 
 describe("parseTeam conformance", () => {
-  test.each(validFixtures)("%s validates", name => {
-    expect(parseTeam(readFixture(name)).status).toBe("ok");
+  // A conforming file is not always a readable one: a declaration from a
+  // later version conforms, and is recognised rather than interpreted.
+  test.each(validFixtures)("%s conforms", name => {
+    expect(parseTeam(readFixture(name)).status).not.toBe("invalid");
   });
 
   test.each(invalidFixtures)("%s is rejected", name => {
-    expect(parseTeam(readFixture(name)).status).not.toBe("ok");
+    expect(parseTeam(readFixture(name)).status).toBe("invalid");
+  });
+
+  test("a later version is recognised, not interpreted", () => {
+    expect(parseTeam(readFixture("valid-future-version.json")).status).toBe(
+      "unsupported-version",
+    );
   });
 });
 
@@ -41,7 +49,7 @@ describe("parseTeam details", () => {
   });
 
   test("refuses an unsupported future version", () => {
-    const result = parseTeam(readFixture("invalid-future-version.json"));
+    const result = parseTeam(readFixture("valid-future-version.json"));
     expect(result).toEqual({ status: "unsupported-version", version: 2 });
   });
 
