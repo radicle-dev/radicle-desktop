@@ -3,13 +3,16 @@
 
   import dompurify from "dompurify";
   import { toDom } from "hast-util-to-dom";
-  import { tick } from "svelte";
+  import { mount, tick, unmount } from "svelte";
 
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
   import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
+  import { parseMentionHref } from "@app/lib/mentions";
   import { highlight } from "@app/lib/syntax";
   import { isCommit, scrollIntoView, twemoji } from "@app/lib/utils";
+
+  import Mention from "@app/components/Mention.svelte";
 
   interface Props {
     rid?: string;
@@ -21,6 +24,21 @@
   const { rid = "", content, breaks = false }: Props = $props();
 
   let container: HTMLElement;
+
+  // Rendered markdown is injected with `{@html}`, so a reference chip cannot
+  // be part of this component's template. Each one is mounted over the anchor
+  // the renderer emitted, and tracked so a re-render does not leak instances
+  // whose DOM has already been thrown away.
+  let mountedMentions: ReturnType<typeof mount>[] = [];
+
+  function unmountMentions() {
+    for (const instance of mountedMentions) {
+      void unmount(instance);
+    }
+    mountedMentions = [];
+  }
+
+  $effect(() => unmountMentions);
 
   const doc = $derived(parseFrontmatter(content));
   const frontMatter = $derived.by(() => {
@@ -52,7 +70,28 @@
         return;
       }
 
+      unmountMentions();
+
       for (const e of container.querySelectorAll("a")) {
+        // A Radicle identifier becomes a chip that resolves its own label and
+        // navigates in-app, so it is handled before the generic link handling
+        // below, which would treat it as an external URL.
+        const mentionHref = e.getAttribute("href") ?? "";
+        const mentionTarget = parseMentionHref(mentionHref);
+        if (mentionTarget) {
+          const host = document.createElement("span");
+          host.style.display = "inline";
+          const fallback = e.textContent || mentionHref;
+          e.replaceWith(host);
+          mountedMentions.push(
+            mount(Mention, {
+              target: host,
+              props: { target: mentionTarget, fallback },
+            }),
+          );
+          continue;
+        }
+
         try {
           const url = new URL(e.href);
           if (url.origin !== window.origin) {

@@ -1,9 +1,14 @@
+import type { AliasSuggestion } from "@bindings/cob/AliasSuggestion";
 import type { DiffOptions } from "@bindings/cob/DiffOptions";
+import type { Issue } from "@bindings/cob/issue/Issue";
+import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
+import type { Patch } from "@bindings/cob/patch/Patch";
 import type { Config } from "@bindings/config/Config";
 import type { Diff } from "@bindings/diff/Diff";
 import type { Stats } from "@bindings/diff/Stats";
 import type { Commit } from "@bindings/repo/Commit";
 import type { Job } from "@bindings/repo/Job";
+import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { RepoSummary } from "@bindings/repo/RepoSummary";
 
 import * as tauri from "@tauri-apps/api/core";
@@ -148,6 +153,104 @@ async function alias(nid: string): Promise<string | null> {
 export const cachedAlias = cached(alias, (...[nid]) => `alias:${nid}`, {
   max: 5_000,
 });
+
+async function searchAliases(query: string): Promise<AliasSuggestion[]> {
+  return withTestBackend(tauri.invoke, "search_aliases", {
+    query: query === "" ? undefined : query,
+  });
+}
+
+// Mention autocomplete re-queries on every keystroke; caching by query
+// collapses the repeated round trips a user makes while narrowing a name down,
+// including when they backspace back to something they already typed.
+export const cachedSearchAliases = cached(
+  searchAliases,
+  (...[query]) => `search_aliases:${query}`,
+  { max: 200, ttl: 60_000 },
+);
+
+// The candidate pool for reference autocomplete. Capped rather than
+// exhaustive: a repo can hold thousands of COBs, and the newest ones are what
+// a comment is overwhelmingly likely to point at.
+const MENTION_CANDIDATE_TAKE = 200;
+
+async function listIssueCandidates(rid: string): Promise<Issue[]> {
+  const issues = await invoke<PaginatedQuery<Issue[]>>("list_issues", {
+    rid,
+    status: undefined,
+    skip: 0,
+    take: MENTION_CANDIDATE_TAKE,
+  });
+
+  return issues.content;
+}
+
+export const cachedListIssueCandidates = cached(
+  listIssueCandidates,
+  (...[rid]) => `issue_candidates:${rid}`,
+  { max: 10, ttl: 30_000 },
+);
+
+async function listPatchCandidates(rid: string): Promise<Patch[]> {
+  const patches = await invoke<PaginatedQuery<Patch[]>>("list_patches", {
+    rid,
+    status: undefined,
+    skip: 0,
+    take: MENTION_CANDIDATE_TAKE,
+  });
+
+  return patches.content;
+}
+
+export const cachedListPatchCandidates = cached(
+  listPatchCandidates,
+  (...[rid]) => `patch_candidates:${rid}`,
+  { max: 10, ttl: 30_000 },
+);
+
+async function repoById(rid: string): Promise<RepoInfo | null> {
+  return withTestBackend(tauri.invoke, "repo_by_id", { rid });
+}
+
+// Resolved to render repo references, of which a comment can hold many
+// pointing at the same repo.
+export const cachedRepoById = cached(
+  repoById,
+  (...[rid]) => `repo_by_id:${rid}`,
+  { max: 200, ttl: 60_000 },
+);
+
+async function issueById(rid: string, id: string): Promise<Issue | null> {
+  return withTestBackend(tauri.invoke, "issue_by_id", { rid, id });
+}
+
+export const cachedIssueById = cached(
+  issueById,
+  (...[rid, id]) => `issue_by_id:${rid}:${id}`,
+  { max: 200, ttl: 60_000 },
+);
+
+async function patchById(rid: string, id: string): Promise<Patch | null> {
+  return withTestBackend(tauri.invoke, "patch_by_id", { rid, id });
+}
+
+export const cachedPatchById = cached(
+  patchById,
+  (...[rid, id]) => `patch_by_id:${rid}:${id}`,
+  { max: 200, ttl: 60_000 },
+);
+
+async function repoCommit(rid: string, sha: string): Promise<Commit | null> {
+  return withTestBackend(tauri.invoke, "repo_commit", { rid, sha });
+}
+
+// Resolving a pasted oid tries this alongside the issue and patch lookups, so
+// the misses are cached too and retyping does not re-query.
+export const cachedRepoCommit = cached(
+  repoCommit,
+  (...[rid, sha]) => `repo_commit:${rid}:${sha}`,
+  { max: 200, ttl: 60_000 },
+);
 
 async function config(): Promise<Config> {
   return withTestBackend(tauri.invoke, "config", {});
