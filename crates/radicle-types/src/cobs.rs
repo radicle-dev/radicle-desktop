@@ -38,6 +38,32 @@ pub enum CacheEvent {
     },
 }
 
+/// A node offered as a mention, with the trust signals needed to tell apart
+/// several nodes claiming the same alias.
+///
+/// Aliases are self-declared and unverified, so any number of nodes can call
+/// themselves the same thing. Whether the local node follows a candidate, and
+/// whether it is the local node itself, is the only information available here
+/// to rank and label them; repo delegates are marked by the frontend, which
+/// already holds the identity document.
+#[derive(Debug, Clone, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/")]
+pub struct AliasSuggestion {
+    #[ts(as = "String")]
+    pub did: identity::Did,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(as = "Option<String>", optional)]
+    pub alias: Option<Alias>,
+    /// The local node follows this node, so the alias is one the user chose to
+    /// record rather than one picked up from gossip.
+    pub followed: bool,
+    /// This is the local node.
+    #[serde(rename = "isSelf")]
+    pub is_self: bool,
+}
+
 #[derive(Debug, Clone, Serialize, TS, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
@@ -60,6 +86,10 @@ impl Author {
 
     pub fn did(&self) -> &identity::Did {
         &self.did
+    }
+
+    pub fn alias(&self) -> Option<&Alias> {
+        self.alias.as_ref()
     }
 }
 
