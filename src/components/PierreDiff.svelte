@@ -373,7 +373,7 @@
   // Scroll to a logical position in the scroll content, where 0 is the top of
   // the `header`. Pierre reuses a paged scroll scaffold, so the logical position
   // is not the container's `scrollTop` and has to go through `scrollTo`.
-  export function scrollToPosition(
+  function scrollToPosition(
     position: number,
     behavior: "smooth" | "instant" = "smooth",
   ): void {
@@ -392,12 +392,24 @@
     return headerEl.getBoundingClientRect().height - reserve;
   }
 
-  // Scroll the chrome out of the way.
+  // Bring the top of the files column into view, and only ever come back up to
+  // it: a caller asking for the files top wants the diff's first lines on
+  // screen, and they already are whenever the port sits above that point.
+  // Scrolling down from there would pull the chrome off screen on the reader's
+  // behalf, which nothing about picking a commit asks for. Instantly, too — an
+  // animated correction runs for half a second against a diff that may still be
+  // loading underneath it, and each adjustment it makes on the way reads as the
+  // view jumping again.
   export function scrollToFilesTop(): void {
     const position = filesTopPosition();
-    if (position !== undefined) {
-      scrollToPosition(position);
+    if (position === undefined) {
+      return;
     }
+    const current = view?.getScrollTop();
+    if (current !== undefined && current <= position) {
+      return;
+    }
+    scrollToPosition(position, "instant");
   }
 
   // Nothing that targets a file should scroll the chrome back into view: the

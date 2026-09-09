@@ -407,7 +407,13 @@
   // auto-selects its only commit — so an effect could not tell "the reader
   // picked a commit" from "the revision changed underneath them", and scrolled
   // on both.
+  //
+  // The tick comes first so that the selection has reached the effect that
+  // loads the diff: `diffReady` is read the moment it is awaited, and reading
+  // it any earlier gets the promise for the diff being navigated away from.
   async function scrollToDiff() {
+    await tick();
+    await diffReady;
     await tick();
     diffView?.scrollToFilesTop();
   }
