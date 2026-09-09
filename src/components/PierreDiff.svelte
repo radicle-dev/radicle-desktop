@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { FileStatus } from "@app/components/diffFileHeaderState.svelte";
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type {
@@ -491,8 +492,8 @@
     if (!instance) {
       return;
     }
-    for (const file of parsedFiles) {
-      const item = instance.getItem(file.name);
+    for (const id of itemIds(parsedFiles)) {
+      const item = instance.getItem(id);
       if (item) {
         instance.updateItem({
           ...item,
@@ -545,6 +546,20 @@
     mountedHeaders.clear();
   }
 
+  // How this entry changed. `fileStatuses` is keyed by path, so the two entries
+  // of a type change would both read as whichever half the structured diff
+  // recorded last; Pierre parsed each entry on its own and knows which this is.
+  function statusOf(fileDiff: FileDiffMetadata): FileStatus | undefined {
+    const status = fileStatuses?.get(fileDiff.name);
+    if (status === "added" && fileDiff.type === "deleted") {
+      return "deleted";
+    }
+    if (status === "deleted" && fileDiff.type === "new") {
+      return "added";
+    }
+    return status;
+  }
+
   // Collapse or expand a single file, by CodeView item. Bumps `version`:
   // CodeView ignores an updateItem whose version is unchanged (see
   // syncItemRecord).
@@ -570,7 +585,7 @@
     const { state, host, item } = entry;
     const fileDiff = item.fileDiff;
     state.fileDiff = fileDiff;
-    state.status = fileStatuses?.get(fileDiff.name);
+    state.status = statusOf(fileDiff);
     // Binary comes from the backend (Pierre can't tell binary from empty —
     // both have no hunks). Any other zero-hunk file (empty/mode-only/pure
     // rename adds like `.gitkeep`) is treated as empty regardless of how the
@@ -959,11 +974,27 @@
     };
   }
 
+  // The item id for each file, in the order they were given. A type change, a
+  // symlink replaced by a regular file for instance, is one path arriving as two
+  // entries, and CodeView throws on a duplicate id, so the repeats are numbered.
+  // The first keeps the bare path, which is what scroll targets and collapsed
+  // paths resolve by. NUL is the separator because a path cannot contain one.
+  function itemIds(files: FileDiffMetadata[]): string[] {
+    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- transient local map, never reactive
+    const occurrences = new Map<string, number>();
+    return files.map(file => {
+      const seen = occurrences.get(file.name) ?? 0;
+      occurrences.set(file.name, seen + 1);
+      return seen === 0 ? file.name : `${file.name}\u0000${seen + 1}`;
+    });
+  }
+
   function buildItems(
     files: FileDiffMetadata[],
   ): CodeViewItem<LineAnnotation>[] {
-    return files.map(fileDiff => ({
-      id: fileDiff.name,
+    const ids = itemIds(files);
+    return files.map((fileDiff, index) => ({
+      id: ids[index],
       type: "diff",
       fileDiff,
       collapsed: collapsedPaths?.has(fileDiff.name) === true,
@@ -1129,8 +1160,8 @@
     }
     untrack(() => {
       let changed = false;
-      for (const file of parsedFiles) {
-        const item = instance.getItem(file.name);
+      for (const id of itemIds(parsedFiles)) {
+        const item = instance.getItem(id);
         if (item?.type !== "diff") {
           continue;
         }
