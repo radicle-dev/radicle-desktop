@@ -74,6 +74,7 @@ pub fn run() {
             inbox::list_notifications,
             profile::alias,
             profile::config,
+            profile::search_aliases,
             repo::clean,
             repo::diff_stats,
             repo::list_commits,

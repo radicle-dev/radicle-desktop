@@ -73,6 +73,8 @@ impl Context {
 pub fn router(ctx: Context) -> Router {
     Router::new()
         .route("/config", post(config_handler))
+        .route("/alias", post(alias_handler))
+        .route("/search_aliases", post(search_aliases_handler))
         .route("/authenticate", post(auth_handler))
         .route("/repo_count", post(repo_count_handler))
         .route("/list_repos", post(repo_root_handler))
@@ -145,6 +147,30 @@ async fn config_handler(State(ctx): State<Context>) -> impl IntoResponse {
 
 async fn auth_handler() -> impl IntoResponse {
     Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+struct AliasBody {
+    pub nid: radicle::node::NodeId,
+}
+
+async fn alias_handler(
+    State(ctx): State<Context>,
+    Json(AliasBody { nid }): Json<AliasBody>,
+) -> impl IntoResponse {
+    Ok::<_, Error>(Json(ctx.alias(nid)))
+}
+
+#[derive(Serialize, Deserialize)]
+struct SearchAliasesBody {
+    pub query: Option<String>,
+}
+
+async fn search_aliases_handler(
+    State(ctx): State<Context>,
+    Json(SearchAliasesBody { query }): Json<SearchAliasesBody>,
+) -> impl IntoResponse {
+    Ok::<_, Error>(Json(ctx.search_aliases(query)))
 }
 
 #[derive(Serialize, Deserialize)]
