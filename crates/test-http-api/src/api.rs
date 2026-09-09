@@ -145,6 +145,7 @@ pub fn router(shared: Shared) -> Router {
         .route("/startup", post(startup_handler))
         .route("/config", post(config_handler))
         .route("/alias", post(alias_handler))
+        .route("/search_aliases", post(search_aliases_handler))
         .route("/authenticate", post(auth_handler))
         .route("/check_radicle_cli", post(check_radicle_cli_handler))
         .route("/node_running", post(node_running_handler))
@@ -285,6 +286,18 @@ async fn check_radicle_cli_handler(Ctx(ctx): Ctx) -> impl IntoResponse {
 
 async fn node_running_handler(Ctx(ctx): Ctx) -> impl IntoResponse {
     Ok::<_, Error>(Json(ctx.node_running()))
+}
+
+#[derive(Deserialize)]
+struct SearchAliasesBody {
+    pub query: Option<String>,
+}
+
+async fn search_aliases_handler(
+    Ctx(ctx): Ctx,
+    Json(SearchAliasesBody { query }): Json<SearchAliasesBody>,
+) -> impl IntoResponse {
+    Ok::<_, Error>(Json(ctx.search_aliases(query)))
 }
 
 #[derive(Serialize, Deserialize)]
