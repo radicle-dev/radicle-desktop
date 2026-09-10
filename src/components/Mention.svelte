@@ -12,11 +12,10 @@
     cachedRepoCommit,
   } from "@app/lib/invoke";
   import type { MentionTarget } from "@app/lib/mentions";
-  import { mentionHref } from "@app/lib/mentions";
+  import { mentionUrl } from "@app/lib/mentions";
   import type { Route } from "@app/lib/router";
   import { push, routeToPath } from "@app/lib/router";
   import {
-    explorerUrl,
     formatOid,
     issueStatusColor,
     patchStatusColor,
@@ -50,7 +49,7 @@
   // the click is intercepted and handled in-app; when it is not, following the
   // link is the only thing that can still work.
   const explorerHref = $derived(
-    config ? explorerUrl(mentionHref(target), config) : undefined,
+    config ? mentionUrl(target, config) : undefined,
   );
 
   $effect(() => {

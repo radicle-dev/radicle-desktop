@@ -1,4 +1,6 @@
-import { parseNodeId, parseRepositoryId } from "@app/lib/utils";
+import type { Config } from "@bindings/config/Config";
+
+import { explorerUrl, parseNodeId, parseRepositoryId } from "@app/lib/utils";
 
 /**
  * A Radicle entity that can be referenced from a comment or description.
@@ -194,7 +196,7 @@ function decodeSegment(segment: string): string {
   }
 }
 
-/** The href the app writes for a reference. */
+/** The identifier a reference resolves to, used to address and cache it. */
 export function mentionHref(target: MentionTarget): string {
   switch (target.type) {
     case "node":
@@ -209,14 +211,42 @@ export function mentionHref(target: MentionTarget): string {
 }
 
 /**
+ * The web explorer URL a reference points at.
+ *
+ * A person lives under `users/`, everything else under its repo id, which is
+ * what the identifier already reads as.
+ */
+export function mentionUrl(target: MentionTarget, config: Config): string {
+  const path =
+    target.type === "node"
+      ? `users/${mentionHref(target)}`
+      : mentionHref(target);
+
+  return explorerUrl(path, config);
+}
+
+/**
  * The markdown a reference is inserted as. The label is what other clients
  * show, so it carries the alias, repo name or COB title.
+ *
+ * The destination is the explorer URL rather than the bare identifier: a
+ * `rad:` or `did:key:` href means nothing to another client, whose sanitizer
+ * drops the unknown scheme and leaves nothing to click. A web URL still opens
+ * the right page in a browser, and this app recognises it on render and turns
+ * it back into a chip that navigates in-app.
  *
  * Characters that would terminate a markdown link label or destination are
  * escaped, so a title containing brackets cannot break out of the link.
  */
-export function mentionMarkdown(target: MentionTarget, label: string): string {
+export function mentionMarkdown(
+  target: MentionTarget,
+  label: string,
+  config: Config | undefined,
+): string {
   const escaped = label.replace(/[[\]\\]/g, character => `\\${character}`);
+  // Without config there is no explorer to point at, so the identifier is
+  // written instead: still a working reference in this app, just not elsewhere.
+  const destination = config ? mentionUrl(target, config) : mentionHref(target);
 
-  return `[${escaped}](${mentionHref(target)})`;
+  return `[${escaped}](${destination})`;
 }

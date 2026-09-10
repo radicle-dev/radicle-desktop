@@ -11,6 +11,7 @@
 <script lang="ts">
   import type { AliasSuggestion } from "@bindings/cob/AliasSuggestion";
   import type { Author } from "@bindings/cob/Author";
+  import type { Config } from "@bindings/config/Config";
   import type { ComponentProps } from "svelte";
 
   import {
@@ -27,6 +28,7 @@
 
   import {
     cachedAlias,
+    cachedConfig,
     cachedIssueById,
     cachedListIssueCandidates,
     cachedListPatchCandidates,
@@ -118,6 +120,9 @@
   let suggestions: Suggestion[] = $state([]);
   let floatingEl: HTMLDivElement | undefined = $state();
   let scrollEl: HTMLDivElement | undefined = $state();
+  // Held so an insertion can write an explorer URL, which is what makes the
+  // reference clickable in clients that know nothing of `rad:` hrefs.
+  let config: Config | undefined = $state(undefined);
   // Only read imperatively, to scroll the active row into view.
   const rowElements: (HTMLButtonElement | undefined)[] = [];
 
@@ -130,6 +135,20 @@
   // The caret keeps its position when the textarea loses focus, so without
   // this the dropdown would hang around over whatever the user moved on to.
   const open = $derived(focused && active && suggestions.length > 0);
+
+  $effect(() => {
+    if (config) return;
+    let cancelled = false;
+    void cachedConfig()
+      .then(result => {
+        if (!cancelled) config = result;
+      })
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  });
 
   $effect(() => {
     if (!textarea) return;
@@ -614,7 +633,7 @@
     onselect({
       start: trigger.start,
       end: trigger.end,
-      markdown: `${mentionMarkdown(suggestion.target, suggestion.label)} `,
+      markdown: `${mentionMarkdown(suggestion.target, suggestion.label, config)} `,
     });
     suggestions = [];
   }
