@@ -39,7 +39,11 @@
     cachedSearchAliases,
   } from "@app/lib/invoke";
   import type { MentionTarget } from "@app/lib/mentions";
-  import { mentionHref, mentionMarkdown } from "@app/lib/mentions";
+  import {
+    bareOidPattern,
+    mentionHref,
+    mentionMarkdown,
+  } from "@app/lib/mentions";
   import type { MentionTrigger } from "@app/lib/mentionTrigger";
   import { findMentionTrigger } from "@app/lib/mentionTrigger";
   import { portal } from "@app/lib/portal";
@@ -274,6 +278,16 @@
     // oid belonging to some other repo.
     if (requested.kind === "oid") {
       return await resolveOid(requested.oid);
+    }
+
+    // An oid typed after a trigger character names something in this repo
+    // too, most often a commit. Text search cannot find one: a commit has no
+    // candidate list to match against, and nothing else in the list is
+    // searched by oid. Falls through when the oid resolves to nothing, so a
+    // hex-looking query still reaches the ordinary search.
+    if (bareOidPattern.test(requested.query)) {
+      const resolved = await resolveOid(requested.query);
+      if (resolved.length > 0) return resolved;
     }
 
     // Section order with nothing typed, most-likely target first: the people
