@@ -1,17 +1,22 @@
 <script lang="ts">
   import type { Issue } from "@bindings/cob/issue/Issue";
   import type { Patch } from "@bindings/cob/patch/Patch";
+  import type { Config } from "@bindings/config/Config";
   import type { ComponentProps } from "svelte";
 
   import {
+    cachedConfig,
     cachedIssueById,
     cachedPatchById,
     cachedRepoById,
     cachedRepoCommit,
   } from "@app/lib/invoke";
   import type { MentionTarget } from "@app/lib/mentions";
-  import { push } from "@app/lib/router";
+  import { mentionHref } from "@app/lib/mentions";
+  import type { Route } from "@app/lib/router";
+  import { push, routeToPath } from "@app/lib/router";
   import {
+    explorerUrl,
     formatOid,
     issueStatusColor,
     patchStatusColor,
@@ -36,6 +41,31 @@
   let issue: Issue | undefined = $state(undefined);
   let patch: Patch | undefined = $state(undefined);
   let commitSummary: string | undefined = $state(undefined);
+  // Set once a lookup has finished and come back empty: the repo is not
+  // replicated locally, or the object is gone.
+  let missing = $state(false);
+  let config: Config | undefined = $state(undefined);
+
+  // Every chip is a real link to the web explorer. When the target is here,
+  // the click is intercepted and handled in-app; when it is not, following the
+  // link is the only thing that can still work.
+  const explorerHref = $derived(
+    config ? explorerUrl(mentionHref(target), config) : undefined,
+  );
+
+  $effect(() => {
+    if (config) return;
+    let cancelled = false;
+    void cachedConfig()
+      .then(result => {
+        if (!cancelled) config = result;
+      })
+      // eslint-disable-next-line @typescript-eslint/no-empty-function
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  });
 
   const repoName = $derived(resolvedRepoName ?? fallback);
 
@@ -46,11 +76,16 @@
     let cancelled = false;
     void cachedRepoById(target.rid)
       .then(result => {
-        if (cancelled || !result) return;
+        if (cancelled) return;
+        if (!result) {
+          missing = true;
+          return;
+        }
         resolvedRepoName = result.payloads["xyz.radicle.project"]?.data.name;
       })
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) missing = true;
+      });
     return () => {
       cancelled = true;
     };
@@ -61,10 +96,13 @@
     let cancelled = false;
     void cachedIssueById(target.rid, target.oid)
       .then(result => {
-        if (!cancelled && result) issue = result;
+        if (cancelled) return;
+        if (result) issue = result;
+        else missing = true;
       })
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) missing = true;
+      });
     return () => {
       cancelled = true;
     };
@@ -75,10 +113,13 @@
     let cancelled = false;
     void cachedPatchById(target.rid, target.oid)
       .then(result => {
-        if (!cancelled && result) patch = result;
+        if (cancelled) return;
+        if (result) patch = result;
+        else missing = true;
       })
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) missing = true;
+      });
     return () => {
       cancelled = true;
     };
@@ -89,10 +130,13 @@
     let cancelled = false;
     void cachedRepoCommit(target.rid, target.oid)
       .then(result => {
-        if (!cancelled && result) commitSummary = result.summary;
+        if (cancelled) return;
+        if (result) commitSummary = result.summary;
+        else missing = true;
       })
-      // eslint-disable-next-line @typescript-eslint/no-empty-function
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) missing = true;
+      });
     return () => {
       cancelled = true;
     };
@@ -109,31 +153,89 @@
     merged: "patch-merged",
   };
 
-  function navigate() {
+  const route: Route | undefined = $derived.by(() => {
+    // A person is rendered by `NodeId`, which brings its own hover card and
+    // does not use any of this.
+    if (target.type === "node") return undefined;
     if (target.type === "repo") {
-      void push({ resource: "repo.home", rid: target.rid });
-    } else if (target.type === "cob" && target.kind === "issue") {
-      void push({
+      return { resource: "repo.home", rid: target.rid };
+    }
+    if (target.type === "commit") {
+      return { resource: "repo.commit", rid: target.rid, commit: target.oid };
+    }
+    if (target.kind === "issue") {
+      return {
         resource: "repo.issue",
         rid: target.rid,
         issue: target.oid,
         status: "all",
-      });
-    } else if (target.type === "commit") {
-      void push({
-        resource: "repo.commit",
-        rid: target.rid,
-        commit: target.oid,
-      });
-    } else if (target.type === "cob") {
-      void push({
-        resource: "repo.patch",
-        rid: target.rid,
-        patch: target.oid,
-        status: undefined,
-        reviewId: undefined,
-      });
+      };
     }
+
+    return {
+      resource: "repo.patch",
+      rid: target.rid,
+      patch: target.oid,
+      status: undefined,
+      reviewId: undefined,
+    };
+  });
+
+  // An in-app path while the target is here, the explorer only once a lookup
+  // has come back empty. The webview opens an external href itself, ahead of
+  // any handler here, so a chip that should navigate in-app must never carry
+  // one.
+  const href = $derived(missing ? explorerHref : route && routeToPath(route));
+
+  function handleClick(event: MouseEvent) {
+    // Nothing to open in-app, so let the webview follow the link out to the
+    // explorer rather than swallowing the click and appearing to do nothing.
+    if (missing || !route) return;
+
+    event.preventDefault();
+
+    // A reference to the page you are already on would otherwise re-render
+    // the same view and look like a dead link. Scrolling back to the top is
+    // the honest answer: you are already here.
+    if (isCurrentPage(route)) {
+      scrollToTop(event.currentTarget as HTMLElement);
+      return;
+    }
+
+    void push(route);
+  }
+
+  /**
+   * Scroll whatever actually scrolls around the chip. Found by walking up from
+   * the chip rather than by class name: which element scrolls differs between
+   * views, and the issue page's container carries no class at all.
+   */
+  function scrollToTop(from: HTMLElement) {
+    let node = from.parentElement;
+    while (node) {
+      const overflow = getComputedStyle(node).overflowY;
+      if (
+        /auto|scroll/.test(overflow) &&
+        node.scrollHeight > node.clientHeight
+      ) {
+        node.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      node = node.parentElement;
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /**
+   * Whether a route points at the page currently open, compared by path only:
+   * the same issue viewed under a different status filter is still the same
+   * issue. Both sides go through `URL` so their escaping matches.
+   */
+  function isCurrentPage(candidate: Route): boolean {
+    return (
+      new URL(routeToPath(candidate), window.origin).pathname ===
+      window.location.pathname
+    );
   }
 </script>
 
@@ -145,7 +247,9 @@
     padding: 0 0.25rem;
     border: 0;
     border-radius: var(--border-radius-sm);
-    background-color: var(--color-fill-ghost);
+    /* One step darker than the canvas the content sits on, in both themes:
+       light #f8f9fa on #ffffff, dark #00060f on #0a1018. */
+    background-color: var(--color-surface-base);
     color: var(--color-text-primary);
     font: inherit;
     font-weight: var(--font-weight-medium);
@@ -163,17 +267,27 @@
   }
   .mention:hover,
   .mention:focus-visible {
-    background-color: var(--color-fill-ghost-hover);
+    /* A step further from the canvas: deeper in light, lifted in dark, since
+       there is nothing darker than `surface-base` to reach for there. */
+    background-color: var(--color-surface-subtle);
   }
   .mention-label {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+  /* Only the family, not the `--txt-code-*` shorthands: those carry their own
+     line-height, which would break the chip's baseline alignment. */
   .mention-oid {
     flex-shrink: 0;
     color: var(--color-text-secondary);
+    font-family: var(--font-family-code);
     font-weight: var(--font-weight-regular);
+  }
+  /* A node with no known alias falls back to its raw id, which reads as an
+     identifier rather than a name. */
+  .mention-node :global(.no-alias) {
+    font-family: var(--font-family-code);
   }
   /* Centred on the line rather than baseline-aligned, which would hang the
      icon below the text. The icon carries the state in its colour alone: a
@@ -193,6 +307,15 @@
     display: inline-flex;
     align-items: baseline;
     vertical-align: baseline;
+    /* Matching `.mention`, so a person reads as the same kind of chip as a
+       repo or an issue rather than as bare text with an avatar. */
+    gap: 0.25rem;
+    padding: 0 0.25rem;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-base);
+  }
+  .mention-node:hover {
+    background-color: var(--color-surface-subtle);
   }
   .mention-node :global(.avatar-alias) {
     align-items: baseline;
@@ -213,50 +336,77 @@
     <NodeId publicKey={target.nid} inline />
   </span>
 {:else if target.type === "repo"}
-  <button type="button" class="mention" onclick={navigate} title={target.rid}>
-    {#if resolvedRepoName}
-      <RepoAvatar rid={target.rid} name={resolvedRepoName} styleWidth="1rem" />
-    {:else}
-      <Icon name="repository" />
-    {/if}
-    <span class="mention-label">{repoName}</span>
-  </button>
-{:else if target.type === "commit"}
-  <button
-    type="button"
+  <a
     class="mention"
-    onclick={navigate}
-    title={commitSummary ?? target.oid}>
+    {href}
+    target={missing ? "_blank" : undefined}
+    rel={missing ? "noreferrer" : undefined}
+    onclick={handleClick}
+    title={missing ? `${target.rid} — not replicated locally` : target.rid}>
+    <span class="mention-status">
+      {#if resolvedRepoName}
+        <RepoAvatar
+          rid={target.rid}
+          name={resolvedRepoName}
+          styleWidth="1rem" />
+      {:else}
+        <Icon name="repository" />
+      {/if}
+    </span>
+    <span class="mention-label">{repoName}</span>
+  </a>
+{:else if target.type === "commit"}
+  <a
+    class="mention"
+    {href}
+    target={missing ? "_blank" : undefined}
+    rel={missing ? "noreferrer" : undefined}
+    onclick={handleClick}
+    title={missing
+      ? `${target.oid} — not replicated locally`
+      : (commitSummary ?? target.oid)}>
     <span class="mention-status">
       <Icon name="commit" />
     </span>
     <span class="mention-label">{commitSummary ?? fallback}</span>
-    <span class="mention-oid">{formatOid(target.oid)}</span>
-  </button>
+    {#if commitSummary}
+      <!-- Only alongside a summary. Unresolved, the label is already the id,
+           and repeating it reads as "commit 8c5df5e 8c5df5e". -->
+      <span class="mention-oid">{formatOid(target.oid)}</span>
+    {/if}
+  </a>
 {:else if target.kind === "issue"}
-  <button
-    type="button"
+  <a
     class="mention"
-    onclick={navigate}
-    title={`${issue?.title ?? fallback} · ${target.oid}`}>
+    {href}
+    target={missing ? "_blank" : undefined}
+    rel={missing ? "noreferrer" : undefined}
+    onclick={handleClick}
+    title={missing
+      ? `${fallback} · ${target.oid} — not replicated locally`
+      : `${issue?.title ?? fallback} · ${target.oid}`}>
     <span
       class="mention-status"
       style:color={issue ? issueStatusColor[issue.state.status] : undefined}>
       <Icon name={issue ? issueIcon[issue.state.status] : "issue"} />
     </span>
     <span class="mention-label">{issue?.title ?? fallback}</span>
-  </button>
+  </a>
 {:else}
-  <button
-    type="button"
+  <a
     class="mention"
-    onclick={navigate}
-    title={`${patch?.title ?? fallback} · ${target.oid}`}>
+    {href}
+    target={missing ? "_blank" : undefined}
+    rel={missing ? "noreferrer" : undefined}
+    onclick={handleClick}
+    title={missing
+      ? `${fallback} · ${target.oid} — not replicated locally`
+      : `${patch?.title ?? fallback} · ${target.oid}`}>
     <span
       class="mention-status"
       style:color={patch ? patchStatusColor[patch.state.status] : undefined}>
       <Icon name={patch ? patchIcon[patch.state.status] : "patch"} />
     </span>
     <span class="mention-label">{patch?.title ?? fallback}</span>
-  </button>
+  </a>
 {/if}
