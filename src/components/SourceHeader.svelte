@@ -7,8 +7,8 @@
   import type { Snippet } from "svelte";
 
   import { cachedRepoCommitCount, invoke } from "@app/lib/invoke";
+  import { parseOrg } from "@app/lib/org";
   import * as router from "@app/lib/router";
-  import { parseTeam } from "@app/lib/team";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -23,7 +23,7 @@
     commit?: Commit;
     baseRoute: SourceBaseRoute;
     active: "files" | "commits" | "repos" | "members";
-    isTeam?: boolean;
+    isOrg?: boolean;
     extra?: Snippet;
   }
 
@@ -35,7 +35,7 @@
     commit,
     baseRoute,
     active,
-    isTeam = false,
+    isOrg = false,
     extra,
   }: Props = $props();
 
@@ -67,43 +67,43 @@
       });
   });
 
-  // Team tab counts come from the team manifest, which is not loaded by the
-  // source views, so fetch it after render for team repos only. Same keyed
+  // Org tab counts come from the org manifest, which is not loaded by the
+  // source views, so fetch it after render for org repos only. Same keyed
   // guard as the commit count; a missing/invalid manifest simply leaves the
   // counts unset (no badge), never logs.
-  let teamRepoCount: number | undefined = $state();
-  let teamMemberCount: number | undefined = $state();
-  let teamCountKey: string | undefined;
+  let orgRepoCount: number | undefined = $state();
+  let orgMemberCount: number | undefined = $state();
+  let orgCountKey: string | undefined;
 
   $effect(() => {
-    if (!isTeam) {
+    if (!isOrg) {
       return;
     }
     const requested = `${repo.rid}:${oid}`;
-    if (teamCountKey === requested) {
+    if (orgCountKey === requested) {
       return;
     }
-    teamCountKey = requested;
-    teamRepoCount = undefined;
-    teamMemberCount = undefined;
+    orgCountKey = requested;
+    orgRepoCount = undefined;
+    orgMemberCount = undefined;
     void invoke<Blob>("repo_blob", {
       rid: repo.rid,
-      path: ".radicle/team.json",
+      path: ".radicle/org.json",
       sha: oid,
     })
       .then(blob => {
-        if (teamCountKey !== requested) {
+        if (orgCountKey !== requested) {
           return;
         }
-        const team = parseTeam(blob.content);
-        if (team.status === "ok") {
-          teamRepoCount = team.team.repos.length;
-          teamMemberCount = team.team.members.length;
+        const org = parseOrg(blob.content);
+        if (org.status === "ok") {
+          orgRepoCount = org.org.repos.length;
+          orgMemberCount = org.org.members.length;
         }
       })
       .catch(() => {
-        if (teamCountKey === requested) {
-          teamCountKey = undefined;
+        if (orgCountKey === requested) {
+          orgCountKey = undefined;
         }
       });
   });
@@ -217,29 +217,29 @@
         <span class="global-counter-badge">{commitCount}</span>
       {/if}
     </a>
-    {#if isTeam}
+    {#if isOrg}
       <a
         class="tab"
         class:active={active === "repos"}
         href={router.routeToPath({
-          resource: "repo.team.repos",
+          resource: "repo.org.repos",
           rid: repo.rid,
         })}>
         <Icon name="repository" />Repos
-        {#if teamRepoCount !== undefined}
-          <span class="global-counter-badge">{teamRepoCount}</span>
+        {#if orgRepoCount !== undefined}
+          <span class="global-counter-badge">{orgRepoCount}</span>
         {/if}
       </a>
       <a
         class="tab"
         class:active={active === "members"}
         href={router.routeToPath({
-          resource: "repo.team.members",
+          resource: "repo.org.members",
           rid: repo.rid,
         })}>
         <Icon name="avatar-incognito" />Members
-        {#if teamMemberCount !== undefined}
-          <span class="global-counter-badge">{teamMemberCount}</span>
+        {#if orgMemberCount !== undefined}
+          <span class="global-counter-badge">{orgMemberCount}</span>
         {/if}
       </a>
     {/if}

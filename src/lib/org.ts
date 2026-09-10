@@ -1,15 +1,15 @@
 import { z } from "zod";
 
-import teamJsonSchema from "../../schemas/team.schema.json";
+import orgJsonSchema from "../../schemas/org.schema.json";
 
-const didPattern = new RegExp(teamJsonSchema.$defs.did.pattern);
-const ridPattern = new RegExp(teamJsonSchema.$defs.rid.pattern);
+const didPattern = new RegExp(orgJsonSchema.$defs.did.pattern);
+const ridPattern = new RegExp(orgJsonSchema.$defs.rid.pattern);
 
 function unique<T>(items: T[]): boolean {
   return new Set(items).size === items.length;
 }
 
-export const teamSchema = z.looseObject({
+export const orgSchema = z.looseObject({
   version: z.literal(1),
   name: z.string().min(1).max(255),
   description: z.string().max(1024).optional(),
@@ -25,7 +25,7 @@ export const teamSchema = z.looseObject({
     .refine(unique, { message: "Repos must be unique" }),
 });
 
-export type Team = z.infer<typeof teamSchema>;
+export type Org = z.infer<typeof orgSchema>;
 
 const knownKeys = new Set([
   "version",
@@ -35,12 +35,12 @@ const knownKeys = new Set([
   "repos",
 ]);
 
-export type TeamParseResult =
-  | { status: "ok"; team: Team; unknownFields: string[] }
+export type OrgParseResult =
+  | { status: "ok"; org: Org; unknownFields: string[] }
   | { status: "unsupported-version"; version: number }
   | { status: "invalid"; message: string };
 
-export function parseTeam(raw: string): TeamParseResult {
+export function parseOrg(raw: string): OrgParseResult {
   let value: unknown;
   try {
     value = JSON.parse(raw);
@@ -60,7 +60,7 @@ export function parseTeam(raw: string): TeamParseResult {
     }
   }
 
-  const result = teamSchema.safeParse(value);
+  const result = orgSchema.safeParse(value);
   if (!result.success) {
     return { status: "invalid", message: z.prettifyError(result.error) };
   }
@@ -69,5 +69,5 @@ export function parseTeam(raw: string): TeamParseResult {
     key => !knownKeys.has(key),
   );
 
-  return { status: "ok", team: result.data, unknownFields };
+  return { status: "ok", org: result.data, unknownFields };
 }

@@ -1,17 +1,17 @@
 # Schemas
 
-## `team.schema.json`
+## `org.schema.json`
 
-JSON Schema (draft 2020-12) for `.radicle/team.json`, the file that declares a
-Radicle team. A repository is a team if and only if that file exists in the root
-tree of its default branch. One repository declares exactly one team, and the
-repository's RID is the team's identifier.
+JSON Schema (draft 2020-12) for `.radicle/org.json`, the file that declares a
+Radicle org. A repository is an org if and only if that file exists in the root
+tree of its default branch. One repository declares exactly one org, and the
+repository's RID is the org's identifier.
 
 This file is a **copy of a convention that is normative elsewhere**. It is kept
 here so the app can validate without a network fetch, and so this repo is
-self-contained. The convention is the Teams RIP, currently the draft
-`kTbz-teams` in the `rips` repository. Keep this copy byte-identical to
-`kTbz-teams/data/team.schema.json` there; `src/lib/team.ts` reads its identifier
+self-contained. The convention is the Orgs RIP, currently the draft
+`kTbz-orgs` in the `rips` repository. Keep this copy byte-identical to
+`kTbz-orgs/data/org.schema.json` there; `src/lib/org.ts` reads its identifier
 patterns straight out of this file so the parser cannot drift from it.
 
 Consumers other than this app read the same file, so the app does not own the
@@ -27,7 +27,7 @@ files named `invalid-*` must not.
 | File | Exercises |
 |---|---|
 | `valid-typical.json` | Two members, two repos, description present. |
-| `valid-minimal.json` | Empty member and repo lists, no description. A newly created team. |
+| `valid-minimal.json` | Empty member and repo lists, no description. A newly created org. |
 | `valid-unknown-fields.json` | Extra `dns` and `nodes` fields written by another tool. Must validate, and must survive a round-trip. |
 | `valid-unresolvable-refs.json` | Well formed DIDs and RIDs that this node has never seen, so nothing resolves to a name. |
 | `invalid-malformed.json` | Empty `name`, a member that is not a DID, a duplicate member, an RID missing its prefix. |
@@ -40,17 +40,17 @@ files named `invalid-*` must not.
 including a relative image link. Note that relative images in rendered markdown
 do not currently resolve in this app.
 
-## `teams-payload.schema.json`
+## `orgs-payload.schema.json`
 
-Schema for the value of the `xyz.radicle.teams` payload in a repository's
-identity document — the optional reverse assertion. A team lists the
+Schema for the value of the `xyz.radicle.orgs` payload in a repository's
+identity document — the optional reverse assertion. An org lists the
 repositories it covers; a repository may assert the reverse by adding this
 payload to its identity document (an identity revision, agreed by its
 delegates), not by publishing a file on its default branch.
 
 ```json
 {
-  "teams": ["rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5"]
+  "orgs": ["rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5"]
 }
 ```
 
@@ -60,22 +60,22 @@ one-sided for a long time. Treat corroboration as a positive signal when
 present and show nothing when absent. Never warn on a one-sided association: a
 signal that fires on the common case teaches people to ignore it.
 
-`team.json` (a file on the default branch) means the repository *is* a team; the
-`xyz.radicle.teams` payload means it belongs to one. A repository may hold both,
-which is a team that itself belongs to another team.
+`org.json` (a file on the default branch) means the repository *is* an org; the
+`xyz.radicle.orgs` payload means it belongs to one. A repository may hold both,
+which is an org that itself belongs to another org.
 
 The payload carries a **`version` field**, gating interpretation in band. A
-version this client does not understand is still a team affiliation, but its
-contents must not be read; `parse_teams_payload` returns no teams rather than
+version this client does not understand is still an org affiliation, but its
+contents must not be read; `parse_orgs_payload` returns no orgs rather than
 guessing. Additive change happens through new optional fields at the same
 version.
 
 There are four states per listed repository, and the fourth is not the second:
 
-| Team lists repo | Repo lists team | State |
+| Org lists repo | Repo lists org | State |
 |---|---|---|
 | yes | yes | both assert |
-| yes | no | team asserts only |
+| yes | no | org asserts only |
 | no | yes | repo asserts only |
 | yes | not replicated locally | unknown |
 
@@ -84,13 +84,13 @@ for an RID this node has not replicated the answer is unknown rather than absent
 
 ### Fixtures
 
-In `fixtures/teams-payload/`, kept in a subfolder deliberately: the team fixture
-tests discover `fixtures/*.json` by prefix and assert every `valid-*` parses as a
-team, so a payload file sitting beside them would break that suite.
+In `fixtures/orgs-payload/`, kept in a subfolder deliberately: the org fixture
+tests discover `fixtures/*.json` by prefix and assert every `valid-*` parses as an
+org, so a payload file sitting beside them would break that suite.
 
 | File | Conforms | Exercises |
 |---|---|---|
-| `valid-payload-single.json` | yes | One team. |
+| `valid-payload-single.json` | yes | One org. |
 | `valid-payload-empty.json` | yes | Empty list, asserting no affiliation. |
 | `invalid-payload-did.json` | no | A DID where an RID is expected. |
 | `invalid-payload-oversize-rid.json` | no | An identifier longer than any object id encodes to. |

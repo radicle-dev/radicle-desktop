@@ -19,10 +19,10 @@ pub struct RepoSummary {
     pub rid: identity::RepoId,
     pub name: String,
     pub description: String,
-    pub is_team: bool,
+    pub is_org: bool,
 }
 
-/// How a team member is named in `.radicle/team.json`.
+/// How an org member is named in `.radicle/org.json`.
 #[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
@@ -42,7 +42,7 @@ pub enum MemberKind {
 pub enum Attestation {
     /// Both sides assert it.
     Attested,
-    /// The team asserts it; the member's profile does not.
+    /// The org asserts it; the member's profile does not.
     Unconfirmed,
     /// The member's actor repository is not replicated, so its side cannot be
     /// read. Not the same as unconfirmed.
@@ -51,13 +51,13 @@ pub enum Attestation {
     NotApplicable,
 }
 
-/// One entry of a team's member roster, with the member's half of the
+/// One entry of an org's member roster, with the member's half of the
 /// attestation resolved where it can be read.
 #[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "repo/")]
-pub struct TeamMember {
+pub struct OrgMember {
     /// The entry exactly as written: a `rad:` RID or a `did:key:` DID.
     pub id: String,
     pub kind: MemberKind,
@@ -67,14 +67,14 @@ pub struct TeamMember {
     pub name: Option<String>,
 }
 
-/// A team named by a repository's `xyz.radicle.teams` identity-document
-/// payload, together with whether that team lists the repository back in its
-/// own `.radicle/team.json`.
+/// An org named by a repository's `xyz.radicle.orgs` identity-document
+/// payload, together with whether that org lists the repository back in its
+/// own `.radicle/org.json`.
 #[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "repo/")]
-pub struct RepoTeam {
+pub struct RepoOrg {
     #[ts(as = "String")]
     pub rid: identity::RepoId,
     #[serde(skip_serializing_if = "Option::is_none")]

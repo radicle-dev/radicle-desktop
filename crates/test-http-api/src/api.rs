@@ -83,9 +83,9 @@ pub fn router(ctx: Context) -> Router {
         )
         .route("/unseed", post(unseed_handler))
         .route("/clean", post(clean_handler))
-        .route("/repos_asserting_team", post(repos_asserting_team_handler))
-        .route("/repo_teams", post(repo_teams_handler))
-        .route("/team_members", post(team_members_handler))
+        .route("/repos_asserting_org", post(repos_asserting_org_handler))
+        .route("/repo_orgs", post(repo_orgs_handler))
+        .route("/org_members", post(org_members_handler))
         .route("/repo_by_id", post(repo_handler))
         .route("/list_repo_refs", post(list_repo_refs_handler))
         .route("/version", post(version_handler))
@@ -196,28 +196,28 @@ async fn clean_handler(
     Ok::<_, Error>(Json(()))
 }
 
-async fn repos_asserting_team_handler(
+async fn repos_asserting_org_handler(
     State(ctx): State<Context>,
     Json(RepoBody { rid }): Json<RepoBody>,
 ) -> impl IntoResponse {
-    let rids = ctx.repos_asserting_team(rid)?;
+    let rids = ctx.repos_asserting_org(rid)?;
     Ok::<_, Error>(Json(rids))
 }
 
-async fn team_members_handler(
+async fn org_members_handler(
     State(ctx): State<Context>,
     Json(RepoBody { rid }): Json<RepoBody>,
 ) -> impl IntoResponse {
-    let members = ctx.team_members(rid)?;
+    let members = ctx.org_members(rid)?;
     Ok::<_, Error>(Json(members))
 }
 
-async fn repo_teams_handler(
+async fn repo_orgs_handler(
     State(ctx): State<Context>,
     Json(RepoBody { rid }): Json<RepoBody>,
 ) -> impl IntoResponse {
-    let teams = ctx.repo_teams(rid)?;
-    Ok::<_, Error>(Json(teams))
+    let orgs = ctx.repo_orgs(rid)?;
+    Ok::<_, Error>(Json(orgs))
 }
 
 async fn list_notifications_handler() -> impl IntoResponse {

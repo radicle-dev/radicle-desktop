@@ -166,25 +166,25 @@ pub async fn seeded_not_replicated(ctx: tauri::State<'_, AppState>) -> Result<Ve
 }
 
 #[tauri::command]
-pub async fn repos_asserting_team(
+pub async fn repos_asserting_org(
     ctx: tauri::State<'_, AppState>,
     rid: RepoId,
 ) -> Result<Vec<RepoId>, Error> {
-    blocking(ctx, move |ctx| ctx.repos_asserting_team(rid)).await
+    blocking(ctx, move |ctx| ctx.repos_asserting_org(rid)).await
 }
 
 #[tauri::command]
-pub async fn team_members(
+pub async fn org_members(
     ctx: tauri::State<'_, AppState>,
     rid: RepoId,
-) -> Result<Vec<types::repo::TeamMember>, Error> {
-    blocking(ctx, move |ctx| ctx.team_members(rid)).await
+) -> Result<Vec<types::repo::OrgMember>, Error> {
+    blocking(ctx, move |ctx| ctx.org_members(rid)).await
 }
 
 #[tauri::command]
-pub async fn repo_teams(
+pub async fn repo_orgs(
     ctx: tauri::State<'_, AppState>,
     rid: RepoId,
-) -> Result<Vec<types::repo::RepoTeam>, Error> {
-    blocking(ctx, move |ctx| ctx.repo_teams(rid)).await
+) -> Result<Vec<types::repo::RepoOrg>, Error> {
+    blocking(ctx, move |ctx| ctx.repo_orgs(rid)).await
 }

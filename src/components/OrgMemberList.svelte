@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { TeamMember } from "@bindings/repo/TeamMember";
+  import type { OrgMember } from "@bindings/repo/OrgMember";
 
   import { invoke } from "@app/lib/invoke";
   import { publicKeyFromDid, truncateDid, truncateId } from "@app/lib/utils";
@@ -14,12 +14,12 @@
 
   const { rid, selfPublicKey }: Props = $props();
 
-  let roster: TeamMember[] = $state([]);
+  let roster: OrgMember[] = $state([]);
 
   $effect(() => {
     void (async () => {
       try {
-        roster = await invoke<TeamMember[]>("team_members", { rid });
+        roster = await invoke<OrgMember[]>("org_members", { rid });
       } catch {
         roster = [];
       }

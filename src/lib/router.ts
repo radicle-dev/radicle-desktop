@@ -191,8 +191,8 @@ export function routeToPath(route: Route): string {
     route.resource === "repo.home" ||
     route.resource === "repo.commits" ||
     route.resource === "repo.commit" ||
-    route.resource === "repo.team.repos" ||
-    route.resource === "repo.team.members" ||
+    route.resource === "repo.org.repos" ||
+    route.resource === "repo.org.members" ||
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||
     route.resource === "repo.patch" ||

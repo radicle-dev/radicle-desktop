@@ -90,24 +90,24 @@ fn resolve_revision(
     }
 }
 
-fn has_team_manifest(profile: &radicle::Profile, rid: identity::RepoId) -> Result<bool, Error> {
+fn has_org_manifest(profile: &radicle::Profile, rid: identity::RepoId) -> Result<bool, Error> {
     let repo = profile.storage.repository(rid)?;
-    // The actor payload is the criterion of the teams RIP. Fall back to the
+    // The actor payload is the criterion of the orgs RIP. Fall back to the
     // declaration file for repositories that predate the actor convention.
     if let Ok(DocAt { doc, .. }) = repo.identity_doc()
         && let Some(kind) = doc_actor_type(&doc)
     {
-        return Ok(kind == "team");
+        return Ok(kind == "org");
     }
     let (_, head) = repo.head()?;
     Ok(!matches!(
-        read_team_declaration(&repo, head),
-        TeamDeclaration::Absent
+        read_org_declaration(&repo, head),
+        OrgDeclaration::Absent
     ))
 }
 
 #[derive(serde::Deserialize)]
-struct TeamManifest {
+struct OrgManifest {
     version: u32,
     name: String,
     #[serde(default)]
@@ -117,12 +117,12 @@ struct TeamManifest {
 }
 
 /// The `.radicle/profile.json` of a user actor repository, of which only the
-/// `teams` member is defined by the teams RIP.
+/// `orgs` member is defined by the orgs RIP.
 #[derive(serde::Deserialize)]
 struct ProfileManifest {
     name: Option<String>,
     #[serde(default)]
-    teams: Vec<String>,
+    orgs: Vec<String>,
 }
 
 /// Read a blob at `path` in the repo's tree at `head`. `None` on any failure
@@ -134,23 +134,22 @@ fn read_blob_at(repo: &storage::git::Repository, head: git::Oid, path: &str) -> 
     Some(blob.content().to_vec())
 }
 
-/// The team RIDs named by an `xyz.radicle.teams` payload value (the object
-/// `{ "teams": [...] }`). Non-RID entries are skipped — a malformed entry
-/// simply does not name a team. Per the teams RIP, a repository asserts
+/// The org RIDs named by an `xyz.radicle.orgs` payload value (the object
+/// `{ "orgs": [...] }`). Non-RID entries are skipped — a malformed entry
+/// simply does not name an org. Per the orgs RIP, a repository asserts
 /// affiliation through this identity-document payload, not a tree file.
-fn parse_teams_payload(value: &serde_json::Value) -> Vec<identity::RepoId> {
+fn parse_orgs_payload(value: &serde_json::Value) -> Vec<identity::RepoId> {
     // `version` gates interpretation, not recognition. A greater version is
-    // still a team affiliation, but its contents must not be read, so this
-    // names no teams rather than guessing at them.
+    // still an org affiliation, but its contents must not be read, so this
+    // names no orgs rather than guessing at them.
     if value.get("version").and_then(serde_json::Value::as_u64) != Some(1) {
         return Vec::new();
     }
     value
-        .get("teams")
-        .and_then(|teams| teams.as_array())
-        .map(|teams| {
-            teams
-                .iter()
+        .get("orgs")
+        .and_then(|orgs| orgs.as_array())
+        .map(|orgs| {
+            orgs.iter()
                 .filter_map(|v| v.as_str())
                 .filter_map(|s| s.parse::<identity::RepoId>().ok())
                 .collect()
@@ -158,22 +157,22 @@ fn parse_teams_payload(value: &serde_json::Value) -> Vec<identity::RepoId> {
         .unwrap_or_default()
 }
 
-/// The team RIDs a repository asserts affiliation with, read from its identity
-/// document's `xyz.radicle.teams` payload. Empty when the payload is absent —
+/// The org RIDs a repository asserts affiliation with, read from its identity
+/// document's `xyz.radicle.orgs` payload. Empty when the payload is absent —
 /// which carries no meaning and is the common case.
-fn doc_teams(doc: &Doc) -> Vec<identity::RepoId> {
-    let Ok(id) = "xyz.radicle.teams".parse::<doc::PayloadId>() else {
+fn doc_orgs(doc: &Doc) -> Vec<identity::RepoId> {
+    let Ok(id) = "xyz.radicle.orgs".parse::<doc::PayloadId>() else {
         return Vec::new();
     };
     match doc.payload().get(&id) {
-        Some(payload) => parse_teams_payload(payload),
+        Some(payload) => parse_orgs_payload(payload),
         None => Vec::new(),
     }
 }
 
-/// Whether `doc` asserts affiliation with `team`.
-fn asserts_team(doc: &Doc, team: &identity::RepoId) -> bool {
-    doc_teams(doc).contains(team)
+/// Whether `doc` asserts affiliation with `org`.
+fn asserts_org(doc: &Doc, org: &identity::RepoId) -> bool {
+    doc_orgs(doc).contains(org)
 }
 
 /// The `type` of the `xyz.radicle.actor` payload, when present.
@@ -197,40 +196,40 @@ fn read_profile_manifest(
     serde_json::from_slice(&read_blob_at(repo, head, ".radicle/profile.json")?).ok()
 }
 
-/// The three states a `.radicle/team.json` can be in for a given reader. A
+/// The three states a `.radicle/org.json` can be in for a given reader. A
 /// declaration whose `version` is beyond what this implementation understands
-/// is recognisable as a team declaration but must not be interpreted, which is
+/// is recognisable as an org declaration but must not be interpreted, which is
 /// neither absent nor malformed.
-enum TeamDeclaration {
-    Readable(TeamManifest),
+enum OrgDeclaration {
+    Readable(OrgManifest),
     UnreadableVersion,
-    /// Present but not conforming. Per the teams RIP this is still a team
+    /// Present but not conforming. Per the orgs RIP this is still an org
     /// repository, one whose declaration is invalid.
     Malformed,
     Absent,
 }
 
-/// Read `.radicle/team.json` at `head` and classify it.
-fn read_team_declaration(repo: &storage::git::Repository, head: git::Oid) -> TeamDeclaration {
-    let Some(bytes) = read_blob_at(repo, head, ".radicle/team.json") else {
-        return TeamDeclaration::Absent;
+/// Read `.radicle/org.json` at `head` and classify it.
+fn read_org_declaration(repo: &storage::git::Repository, head: git::Oid) -> OrgDeclaration {
+    let Some(bytes) = read_blob_at(repo, head, ".radicle/org.json") else {
+        return OrgDeclaration::Absent;
     };
-    let Ok(parsed) = serde_json::from_slice::<TeamManifest>(&bytes) else {
-        return TeamDeclaration::Malformed;
+    let Ok(parsed) = serde_json::from_slice::<OrgManifest>(&bytes) else {
+        return OrgDeclaration::Malformed;
     };
     if parsed.version == 1 {
-        TeamDeclaration::Readable(parsed)
+        OrgDeclaration::Readable(parsed)
     } else {
-        TeamDeclaration::UnreadableVersion
+        OrgDeclaration::UnreadableVersion
     }
 }
 
 /// The manifest when this implementation can interpret it. Callers that need
 /// to tell a future declaration apart from an absent one use
-/// [`read_team_declaration`] instead.
-fn read_team_manifest(repo: &storage::git::Repository, head: git::Oid) -> Option<TeamManifest> {
-    match read_team_declaration(repo, head) {
-        TeamDeclaration::Readable(m) => Some(m),
+/// [`read_org_declaration`] instead.
+fn read_org_manifest(repo: &storage::git::Repository, head: git::Oid) -> Option<OrgManifest> {
+    match read_org_declaration(repo, head) {
+        OrgDeclaration::Readable(m) => Some(m),
         _ => None,
     }
 }
@@ -558,7 +557,7 @@ pub trait Repo: Profile {
                 rid,
                 name: data.name,
                 description: data.description,
-                is_team: has_team_manifest(&profile, rid).unwrap_or(false),
+                is_org: has_org_manifest(&profile, rid).unwrap_or(false),
             });
         }
 
@@ -1115,10 +1114,10 @@ pub trait Repo: Profile {
     }
 
     /// RIDs of locally-stored repositories that assert affiliation with `rid`
-    /// via the `xyz.radicle.teams` payload in their identity document. The
+    /// via the `xyz.radicle.orgs` payload in their identity document. The
     /// payloads are already loaded by `repositories()`, so this is a map lookup
-    /// per repo — no per-repo open or tree walk. Scoped to team views.
-    fn repos_asserting_team(&self, rid: identity::RepoId) -> Result<Vec<identity::RepoId>, Error> {
+    /// per repo — no per-repo open or tree walk. Scoped to org views.
+    fn repos_asserting_org(&self, rid: identity::RepoId) -> Result<Vec<identity::RepoId>, Error> {
         let profile = self.profile();
         let storage = &profile.storage;
         // Affiliation lives in the identity document, which `repositories()`
@@ -1126,30 +1125,30 @@ pub trait Repo: Profile {
         let entries = storage
             .repositories()?
             .into_iter()
-            .filter(|info| asserts_team(&info.doc, &rid))
+            .filter(|info| asserts_org(&info.doc, &rid))
             .map(|info| info.rid)
             .collect();
         Ok(entries)
     }
 
-    /// The member roster of a team, each entry with its attestation state. An
+    /// The member roster of an org, each entry with its attestation state. An
     /// actor entry is attested when that actor's `.radicle/profile.json` names
-    /// this team back, unconfirmed when it does not, and unknown when the
+    /// this org back, unconfirmed when it does not, and unknown when the
     /// actor repository is not replicated locally. Bare keys have no member
     /// side and are reported as not applicable.
-    fn team_members(&self, rid: identity::RepoId) -> Result<Vec<repo::TeamMember>, Error> {
+    fn org_members(&self, rid: identity::RepoId) -> Result<Vec<repo::OrgMember>, Error> {
         let profile = self.profile();
         let storage = &profile.storage;
-        let team_repo = storage.repository(rid)?;
-        let head = team_repo.head()?.1;
-        let Some(manifest) = read_team_manifest(&team_repo, head) else {
+        let org_repo = storage.repository(rid)?;
+        let head = org_repo.head()?.1;
+        let Some(manifest) = read_org_manifest(&org_repo, head) else {
             return Ok(Vec::new());
         };
 
         let mut out = Vec::with_capacity(manifest.members.len());
         for entry in manifest.members {
             if entry.starts_with("did:key:") {
-                out.push(repo::TeamMember {
+                out.push(repo::OrgMember {
                     id: entry,
                     kind: repo::MemberKind::Key,
                     attestation: repo::Attestation::NotApplicable,
@@ -1169,7 +1168,7 @@ pub trait Repo: Profile {
                     match profile_manifest {
                         Some(p) => {
                             let asserts = p
-                                .teams
+                                .orgs
                                 .iter()
                                 .filter_map(|t| t.parse::<identity::RepoId>().ok())
                                 .any(|t| t == rid);
@@ -1185,7 +1184,7 @@ pub trait Repo: Profile {
                 }
                 Err(_) => (repo::Attestation::Unknown, None),
             };
-            out.push(repo::TeamMember {
+            out.push(repo::OrgMember {
                 id: entry,
                 kind: repo::MemberKind::Actor,
                 attestation,
@@ -1195,21 +1194,21 @@ pub trait Repo: Profile {
         Ok(out)
     }
 
-    /// The teams a repository names in its `xyz.radicle.teams` identity-document
-    /// payload, each with whether that team lists the repository back (`mutual`)
+    /// The orgs a repository names in its `xyz.radicle.orgs` identity-document
+    /// payload, each with whether that org lists the repository back (`mutual`)
     /// and its display name. Reads this repo's identity document plus each named
-    /// team's `.radicle/team.json` — cheap enough for a repo page.
-    fn repo_teams(&self, rid: identity::RepoId) -> Result<Vec<repo::RepoTeam>, Error> {
+    /// org's `.radicle/org.json` — cheap enough for a repo page.
+    fn repo_orgs(&self, rid: identity::RepoId) -> Result<Vec<repo::RepoOrg>, Error> {
         let profile = self.profile();
         let storage = &profile.storage;
         let DocAt { doc, .. } = storage.repository(rid)?.identity_doc()?;
-        let team_rids = doc_teams(&doc);
+        let org_rids = doc_orgs(&doc);
 
-        let mut out = Vec::with_capacity(team_rids.len());
-        for team_rid in team_rids {
-            let manifest = storage.repository(team_rid).ok().and_then(|team_repo| {
-                let head = team_repo.head().ok()?.1;
-                read_team_manifest(&team_repo, head)
+        let mut out = Vec::with_capacity(org_rids.len());
+        for org_rid in org_rids {
+            let manifest = storage.repository(org_rid).ok().and_then(|org_repo| {
+                let head = org_repo.head().ok()?.1;
+                read_org_manifest(&org_repo, head)
             });
             let (name, mutual) = match manifest {
                 Some(m) => {
@@ -1222,8 +1221,8 @@ pub trait Repo: Profile {
                 }
                 None => (None, false),
             };
-            out.push(repo::RepoTeam {
-                rid: team_rid,
+            out.push(repo::RepoOrg {
+                rid: org_rid,
                 name,
                 mutual,
             });
@@ -1234,7 +1233,7 @@ pub trait Repo: Profile {
 
 #[cfg(test)]
 mod tests {
-    use super::{TeamManifest, identity, parse_teams_payload};
+    use super::{OrgManifest, identity, parse_orgs_payload};
 
     fn fixture_path(name: &str) -> String {
         format!(
@@ -1245,7 +1244,7 @@ mod tests {
 
     fn fixture(name: &str) -> serde_json::Value {
         let bytes = std::fs::read(format!(
-            "{}/../../schemas/fixtures/teams-payload/{name}",
+            "{}/../../schemas/fixtures/orgs-payload/{name}",
             env!("CARGO_MANIFEST_DIR")
         ))
         .unwrap();
@@ -1255,8 +1254,8 @@ mod tests {
     /// A declaration from the future is recognisable but uninterpretable, and
     /// must not be confused with one that is absent or malformed.
     #[test]
-    fn team_declaration_states() {
-        let future: TeamManifest = serde_json::from_slice(
+    fn org_declaration_states() {
+        let future: OrgManifest = serde_json::from_slice(
             &std::fs::read(fixture_path("valid-future-version.json")).unwrap(),
         )
         .unwrap();
@@ -1266,39 +1265,39 @@ mod tests {
         );
 
         // Readable only at the version this implementation understands.
-        let current: TeamManifest =
+        let current: OrgManifest =
             serde_json::from_slice(&std::fs::read(fixture_path("valid-typical.json")).unwrap())
                 .unwrap();
         assert_eq!(current.version, 1);
     }
 
     #[test]
-    fn teams_payload_conformance() {
+    fn orgs_payload_conformance() {
         let none = Vec::<identity::RepoId>::new();
-        // A well-formed single team resolves to its RID; an empty list to none.
+        // A well-formed single org resolves to its RID; an empty list to none.
         let expected: identity::RepoId = "rad:z3gqcJUoA1n9HaHKufZs5FCSGazv5".parse().unwrap();
         assert_eq!(
-            parse_teams_payload(&fixture("valid-payload-single.json")),
+            parse_orgs_payload(&fixture("valid-payload-single.json")),
             vec![expected]
         );
         assert_eq!(
-            parse_teams_payload(&fixture("valid-payload-empty.json")),
+            parse_orgs_payload(&fixture("valid-payload-empty.json")),
             none
         );
-        // Non-conforming entries (a DID, an oversize RID) name no team, so they
+        // Non-conforming entries (a DID, an oversize RID) name no org, so they
         // are dropped rather than reported as an affiliation.
         assert_eq!(
-            parse_teams_payload(&fixture("invalid-payload-did.json")),
+            parse_orgs_payload(&fixture("invalid-payload-did.json")),
             none
         );
         assert_eq!(
-            parse_teams_payload(&fixture("invalid-payload-oversize-rid.json")),
+            parse_orgs_payload(&fixture("invalid-payload-oversize-rid.json")),
             none
         );
-        // A version this client does not understand is still a team
+        // A version this client does not understand is still an org
         // affiliation, but its contents must not be read.
         assert_eq!(
-            parse_teams_payload(&fixture("valid-payload-future-version.json")),
+            parse_orgs_payload(&fixture("valid-payload-future-version.json")),
             none
         );
     }

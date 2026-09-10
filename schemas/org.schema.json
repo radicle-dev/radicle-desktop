@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://radicle.dev/RIP-XXXX/team.schema.json",
-  "title": "Radicle team",
-  "description": "Contents of .radicle/team.json on the default branch of a team repository: an actor repository whose xyz.radicle.actor payload carries type: \"team\". One repository describes exactly one team. The repository's RID is the team's identifier; its delegates are the team's admins.",
+  "$id": "https://radicle.dev/RIP-XXXX/org.schema.json",
+  "title": "Radicle org",
+  "description": "Contents of .radicle/org.json on the default branch of an org repository: an actor repository whose xyz.radicle.actor payload carries type: \"org\". One repository describes exactly one org. The repository's RID is the org's identifier; its delegates are the org's admins.",
   "type": "object",
   "required": [
     "version",
@@ -13,23 +13,23 @@
   "additionalProperties": true,
   "properties": {
     "version": {
-      "description": "Schema version, not the team's version. Moves only when the meaning of an existing field changes; additive evolution happens through new optional fields at the same version. A consumer that does not understand this value must still recognise the file as a team declaration, but must refuse to interpret its contents rather than parse it partially or treat it as malformed.",
+      "description": "Schema version, not the org's version. Moves only when the meaning of an existing field changes; additive evolution happens through new optional fields at the same version. A consumer that does not understand this value must still recognise the file as an org declaration, but must refuse to interpret its contents rather than parse it partially or treat it as malformed.",
       "type": "integer",
       "minimum": 1
     },
     "name": {
-      "description": "Display name of the team.",
+      "description": "Display name of the org.",
       "type": "string",
       "minLength": 1,
       "maxLength": 255
     },
     "description": {
-      "description": "Short summary of the team. Long form content belongs in .radicle/profile/README.md.",
+      "description": "Short summary of the org. Long form content belongs in .radicle/profile/README.md.",
       "type": "string",
       "maxLength": 1024
     },
     "members": {
-      "description": "The team's members, each named either by their actor repository (rad:, recommended for people: device-stable, resolves to a profile, attestable) or by a bare device key (did:key:, a claim-only roster entry with no member side to assert back). Membership is a claim by whoever controls this repository and grants no access to anything.",
+      "description": "The org's members, each named either by their actor repository (rad:, recommended for people: device-stable, resolves to a profile, attestable) or by a bare device key (did:key:, a claim-only roster entry with no member side to assert back). Membership is a claim by whoever controls this repository and grants no access to anything.",
       "type": "array",
       "items": {
         "oneOf": [
@@ -45,7 +45,7 @@
       "maxItems": 1024
     },
     "repos": {
-      "description": "RIDs of the repositories associated with the team. Association is a claim and does not require the repository's consent.",
+      "description": "RIDs of the repositories associated with the org. Association is a claim and does not require the repository's consent.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/rid"

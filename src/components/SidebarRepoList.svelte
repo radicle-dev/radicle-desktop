@@ -13,8 +13,8 @@
     !window.localStorage,
   );
 
-  const teamsExpanded = useLocalStorage(
-    "sidebarTeamsExpanded",
+  const orgsExpanded = useLocalStorage(
+    "sidebarOrgsExpanded",
     boolean(),
     true,
     !window.localStorage,
@@ -173,18 +173,18 @@
     filteredRepos.filter(r => !pinnedRepoIds.value.includes(r.rid)),
   );
 
-  const teamRepos = $derived(unpinnedFilteredRepos.filter(r => r.isTeam));
+  const orgRepos = $derived(unpinnedFilteredRepos.filter(r => r.isOrg));
 
-  const nonTeamUnpinnedRepos = $derived(
-    unpinnedFilteredRepos.filter(r => !r.isTeam),
+  const nonOrgUnpinnedRepos = $derived(
+    unpinnedFilteredRepos.filter(r => !r.isOrg),
   );
 
-  const teamsCount = $derived(
-    repos.filter(r => !pinnedRepoIds.value.includes(r.rid) && r.isTeam).length,
+  const orgsCount = $derived(
+    repos.filter(r => !pinnedRepoIds.value.includes(r.rid) && r.isOrg).length,
   );
 
   const unpinnedReposCount = $derived(
-    repos.filter(r => !pinnedRepoIds.value.includes(r.rid) && !r.isTeam).length,
+    repos.filter(r => !pinnedRepoIds.value.includes(r.rid) && !r.isOrg).length,
   );
 
   // FLIP the "All Repos" header's icon and buttons, plus its own height, as it
@@ -737,31 +737,31 @@
   {/each}
 </div>
 
-{#if teamRepos.length > 0}
+{#if orgRepos.length > 0}
   <div
     class="section-header"
-    onclick={() => (teamsExpanded.value = !teamsExpanded.value)}
+    onclick={() => (orgsExpanded.value = !orgsExpanded.value)}
     role="button"
     tabindex="0"
     onkeydown={e => {
       if (e.key === "Enter" || e.key === " ") {
-        teamsExpanded.value = !teamsExpanded.value;
+        orgsExpanded.value = !orgsExpanded.value;
       }
     }}>
     <span class="section-header-label">
-      Teams
-      {#if teamsCount > 1}
-        <span class="global-counter-badge">{teamsCount}</span>
+      Orgs
+      {#if orgsCount > 1}
+        <span class="global-counter-badge">{orgsCount}</span>
       {/if}
       <span class="icon">
-        <Icon name={teamsExpanded.value ? "chevron-down" : "chevron-up"} />
+        <Icon name={orgsExpanded.value ? "chevron-down" : "chevron-up"} />
       </span>
     </span>
   </div>
 
-  {#if teamsExpanded.value}
+  {#if orgsExpanded.value}
     <div class="repos-list">
-      {#each teamRepos as repo (repo.rid)}
+      {#each orgRepos as repo (repo.rid)}
         <div
           class="repo-row-group"
           animate:flip={{ duration: animationDuration }}
@@ -969,7 +969,7 @@
   <ScrollArea
     style="flex: 1; min-height: 0; mask-image: linear-gradient(to bottom, transparent 0, black 0.5rem, black calc(100% - 0.5rem), transparent 100%);">
     <div class="repos-list">
-      {#each nonTeamUnpinnedRepos as repo (repo.rid)}
+      {#each nonOrgUnpinnedRepos as repo (repo.rid)}
         <div
           class="repo-row-group"
           data-unpinned-rid={repo.rid}

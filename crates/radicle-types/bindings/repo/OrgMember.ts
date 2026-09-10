@@ -3,10 +3,10 @@ import type { Attestation } from "./Attestation";
 import type { MemberKind } from "./MemberKind";
 
 /**
- * One entry of a team's member roster, with the member's half of the
+ * One entry of an org's member roster, with the member's half of the
  * attestation resolved where it can be read.
  */
-export type TeamMember = {
+export type OrgMember = {
   /**
    * The entry exactly as written: a `rad:` RID or a `did:key:` DID.
    */

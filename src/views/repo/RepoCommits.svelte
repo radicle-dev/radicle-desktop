@@ -10,7 +10,7 @@
   import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import * as router from "@app/lib/router";
   import type { SidebarData } from "@app/lib/router/definitions";
-  import { isTeamRepo, modifierKey } from "@app/lib/utils";
+  import { isOrgRepo, modifierKey } from "@app/lib/utils";
 
   import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
   import FuzzySearch from "@app/components/FuzzySearch.svelte";
@@ -41,7 +41,7 @@
     revision,
   });
 
-  const isTeam = $derived(isTeamRepo(sidebarData.repos, repo.rid));
+  const isOrg = $derived(isOrgRepo(sidebarData.repos, repo.rid));
 
   type CommitGroup = {
     key: string;
@@ -222,7 +222,7 @@
       {oid}
       {commit}
       {baseRoute}
-      {isTeam}
+      {isOrg}
       active="commits">
       {#snippet extra()}
         <FuzzySearch

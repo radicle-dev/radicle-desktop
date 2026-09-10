@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
-  import type { RepoTeam } from "@bindings/repo/RepoTeam";
+  import type { RepoOrg } from "@bindings/repo/RepoOrg";
 
   import { invoke } from "@app/lib/invoke";
   import { explorerUrl, formatRepositoryId, truncateDid } from "@app/lib/utils";
@@ -23,28 +23,28 @@
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
-  // The teams this repository names in its xyz.radicle.teams identity-document
+  // The orgs this repository names in its xyz.radicle.orgs identity-document
   // payload. Loaded after render (off the navigation path); a repo without the
   // payload simply returns none, so the block is hidden.
-  let teams: RepoTeam[] = $state([]);
-  let teamsRid: string | undefined;
+  let orgs: RepoOrg[] = $state([]);
+  let orgsRid: string | undefined;
 
   $effect(() => {
     const requested = repo.rid;
-    if (teamsRid === requested) {
+    if (orgsRid === requested) {
       return;
     }
-    teamsRid = requested;
-    teams = [];
-    void invoke<RepoTeam[]>("repo_teams", { rid: requested })
+    orgsRid = requested;
+    orgs = [];
+    void invoke<RepoOrg[]>("repo_orgs", { rid: requested })
       .then(result => {
-        if (teamsRid === requested) {
-          teams = result;
+        if (orgsRid === requested) {
+          orgs = result;
         }
       })
       .catch(() => {
-        if (teamsRid === requested) {
-          teamsRid = undefined;
+        if (orgsRid === requested) {
+          orgsRid = undefined;
         }
       });
   });
@@ -71,16 +71,16 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
   }
-  .team-avatar {
+  .org-avatar {
     width: 1.25rem;
     height: 1.25rem;
     overflow: hidden;
     flex-shrink: 0;
     display: flex;
   }
-  /* A team that does not list this repository back is greyed and desaturated —
+  /* An org that does not list this repository back is greyed and desaturated —
      the app's existing idiom for something present but not carrying weight. */
-  .team-avatar.oneway {
+  .org-avatar.oneway {
     filter: grayscale(1);
     opacity: 0.5;
   }
@@ -156,30 +156,27 @@
   }
 </style>
 
-{#snippet teamPopover(team: RepoTeam)}
-  {@const name = team.name ?? formatRepositoryId(team.rid)}
+{#snippet orgPopover(org: RepoOrg)}
+  {@const name = org.name ?? formatRepositoryId(org.rid)}
   <div class="popover">
     <div class="popover-header">
-      <span class="team-avatar" class:oneway={!team.mutual}>
-        <RepoAvatar
-          name={team.name ?? ""}
-          rid={team.rid}
-          styleWidth="1.25rem" />
+      <span class="org-avatar" class:oneway={!org.mutual}>
+        <RepoAvatar name={org.name ?? ""} rid={org.rid} styleWidth="1.25rem" />
       </span>
       <span class="popover-title">{name}</span>
     </div>
-    {#if team.mutual}
+    {#if org.mutual}
       <!-- prettier-ignore -->
-      <p>This repository names {name} in its identity document, under <code>xyz.radicle.teams</code>, and {name} lists this repository in its own <code>.radicle/team.json</code>.</p>
+      <p>This repository names {name} in its identity document, under <code>xyz.radicle.orgs</code>, and {name} lists this repository in its own <code>.radicle/org.json</code>.</p>
       <p>
         Two public statements that agree. Nothing has been checked, and neither
         grants anything.
       </p>
     {:else}
       <!-- prettier-ignore -->
-      <p>This repository names {name} in its identity document, under <code>xyz.radicle.teams</code>. {name}'s own file does not list this repository.</p>
+      <p>This repository names {name} in its identity document, under <code>xyz.radicle.orgs</code>. {name}'s own file does not list this repository.</p>
       <p>
-        Usually the team dropped it and the reference was left behind. The
+        Usually the org dropped it and the reference was left behind. The
         reference lives in this repository's identity, so only its delegates can
         remove it, through the CLI.
       </p>
@@ -198,22 +195,22 @@
   <div class="meta">
     <VisibilityBadge type={repo.visibility.type} />
 
-    {#if teams.length > 0}
+    {#if orgs.length > 0}
       <div class="meta-item">
-        <span class="meta-label">Teams</span>
+        <span class="meta-label">Orgs</span>
         <div class="avatars">
-          {#each teams as team (team.rid)}
+          {#each orgs as org (org.rid)}
             <HoverPopover placement="bottom-start" stylePadding="1rem">
               {#snippet toggle()}
-                <div class="team-avatar" class:oneway={!team.mutual}>
+                <div class="org-avatar" class:oneway={!org.mutual}>
                   <RepoAvatar
-                    name={team.name ?? ""}
-                    rid={team.rid}
+                    name={org.name ?? ""}
+                    rid={org.rid}
                     styleWidth="1.25rem" />
                 </div>
               {/snippet}
               {#snippet popover()}
-                {@render teamPopover(team)}
+                {@render orgPopover(org)}
               {/snippet}
             </HoverPopover>
           {/each}

@@ -15,8 +15,8 @@ import twemojiModule from "twemoji";
 
 import NodeId from "@app/components/NodeId.svelte";
 
-export function isTeamRepo(repos: RepoSummary[], rid: string): boolean {
-  return repos.find(repo => repo.rid === rid)?.isTeam ?? false;
+export function isOrgRepo(repos: RepoSummary[], rid: string): boolean {
+  return repos.find(repo => repo.rid === rid)?.isOrg ?? false;
 }
 
 export const unreachable = (value: never): never => {

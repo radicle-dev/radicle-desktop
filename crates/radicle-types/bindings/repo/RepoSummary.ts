@@ -4,5 +4,5 @@ export type RepoSummary = {
   rid: string;
   name: string;
   description: string;
-  isTeam: boolean;
+  isOrg: boolean;
 };

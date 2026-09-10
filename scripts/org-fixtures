@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Local Radicle repos exercising the teams reverse-assertion states.
+# Local Radicle repos exercising the orgs reverse-assertion states.
 # All repos are PRIVATE + unseeded: local storage only, nothing announced.
-#   scripts/team-fixtures setup             # detect-and-skip; creates if absent
-#   scripts/team-fixtures teardown          # DRY RUN — prints what it would remove
-#   scripts/team-fixtures teardown --apply  # actually removes (guarded)
+#   scripts/org-fixtures setup             # detect-and-skip; creates if absent
+#   scripts/org-fixtures teardown          # DRY RUN — prints what it would remove
+#   scripts/org-fixtures teardown --apply  # actually removes (guarded)
 set -euo pipefail
 
-PREFIX="teamfix-"
+PREFIX="orgfix-"
 RID_RE='^rad:z[1-9A-HJ-NP-Za-km-z]+$'
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-WORK="$REPO_ROOT/tests/tmp/team-fixtures"
+WORK="$REPO_ROOT/tests/tmp/org-fixtures"
 MANIFEST="$WORK/rids.env"
 STORAGE="$(rad path)/storage"
-COMMIT=(-c user.name="Team Fixtures" -c user.email="fixtures@localhost")
+COMMIT=(-c user.name="Org Fixtures" -c user.email="fixtures@localhost")
 
 # Guard: STORAGE must be a real, existing .../storage directory.
 case "$STORAGE" in
@@ -108,11 +108,11 @@ push_file() { # dir relpath content
   git -C "$WORK/$dir" push -q rad main
 }
 
-affiliate() { # repo_rid team_rid — assert affiliation in the identity document
+affiliate() { # repo_rid org_rid — assert affiliation in the identity document
   rad id update --repo "$1" \
-    --payload xyz.radicle.teams version 1 \
-    --payload xyz.radicle.teams teams "[\"$2\"]" \
-    --title "Affiliate with team" --no-confirm --quiet
+    --payload xyz.radicle.orgs version 1 \
+    --payload xyz.radicle.orgs orgs "[\"$2\"]" \
+    --title "Affiliate with org" --no-confirm --quiet
 }
 
 declare_actor() { # rid type — the actor payload of the Actor Repos RIP
@@ -137,7 +137,7 @@ setup() {
     fi
   fi
   if [ -n "$(fixture_rids)" ]; then
-    echo "partial fixtures present — run 'scripts/team-fixtures teardown --apply' first" >&2
+    echo "partial fixtures present — run 'scripts/org-fixtures teardown --apply' first" >&2
     exit 1
   fi
 
@@ -149,38 +149,38 @@ setup() {
     echo "FATAL: no valid RID in valid-unresolvable-refs.json" >&2; exit 1
   fi
 
-  INFRA="$(new_rid infra "${PREFIX}infra" 'Team repository')"
+  INFRA="$(new_rid infra "${PREFIX}infra" 'Org repository')"
   USERA="$(new_rid user-a "${PREFIX}user-a" 'Member who asserts back')"
   USERB="$(new_rid user-b "${PREFIX}user-b" 'Member who has not asserted')"
   ALPHA="$(new_rid alpha "${PREFIX}alpha" 'Both assert')"
-  BETA="$(new_rid  beta  "${PREFIX}beta"  'Team asserts only')"
+  BETA="$(new_rid  beta  "${PREFIX}beta"  'Org asserts only')"
   GAMMA="$(new_rid gamma "${PREFIX}gamma" 'Repo asserts only')"
 
-  # Reverse assertion now lives in the identity document (xyz.radicle.teams
+  # Reverse assertion now lives in the identity document (xyz.radicle.orgs
   # payload), not a tree file. alpha and gamma both name infra; beta does not.
   affiliate "$ALPHA" "$INFRA"
   affiliate "$GAMMA" "$INFRA"
 
-  # INFRA is an actor repository of type team; the two users are type user.
-  declare_actor "$INFRA" team
+  # INFRA is an actor repository of type org; the two users are type user.
+  declare_actor "$INFRA" org
   declare_actor "$USERA" user
   declare_actor "$USERB" user
 
   # The member half of an attestation lives in the actor's own profile.
   push_file user-a .radicle/profile.json "{
-  \"name\": \"teamfix-user-a\",
-  \"teams\": [
+  \"name\": \"orgfix-user-a\",
+  \"orgs\": [
     \"$INFRA\"
   ]
 }"
   push_file user-b .radicle/profile.json "{
-  \"name\": \"teamfix-user-b\",
-  \"teams\": []
+  \"name\": \"orgfix-user-b\",
+  \"orgs\": []
 }"
 
-  push_file infra .radicle/team.json "{
+  push_file infra .radicle/org.json "{
   \"version\": 1,
-  \"name\": \"teamfix Infrastructure\",
+  \"name\": \"orgfix Infrastructure\",
   \"description\": \"Reverse-assertion fixtures\",
   \"members\": [
     \"$USERA\",
@@ -195,16 +195,16 @@ setup() {
   ]
 }"
 
-  push_file infra .radicle/profile/README.md "# teamfix Infrastructure
+  push_file infra .radicle/profile/README.md "# orgfix Infrastructure
 
-A fixture team for exercising the teams UI: reverse assertion, attested
+A fixture org for exercising the orgs UI: reverse assertion, attested
 repositories, and this profile page.
 
 ## Repositories
 
-- **teamfix-alpha** — both sides assert (listed here, and names this team back).
-- **teamfix-beta** — team asserts only.
-- **teamfix-gamma** — repo asserts only, so it is not listed here.
+- **orgfix-alpha** — both sides assert (listed here, and names this org back).
+- **orgfix-beta** — org asserts only.
+- **orgfix-gamma** — repo asserts only, so it is not listed here.
 
 Membership grants nothing; these files are public statements, trusted the way a
 README is trusted."
@@ -212,7 +212,7 @@ README is trusted."
   { echo "INFRA=$INFRA"; echo "ALPHA=$ALPHA"; echo "BETA=$BETA"
     echo "GAMMA=$GAMMA"; echo "USERA=$USERA"; echo "USERB=$USERB"
     echo "UNRESOLVABLE=$UNRESOLVABLE"; } | tee "$MANIFEST"
-  echo; echo "Open the team repo: $INFRA"
+  echo; echo "Open the org repo: $INFRA"
 }
 
 case "${1:-setup}" in
