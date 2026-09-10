@@ -10,6 +10,7 @@
   import { useOverlayScrollbars } from "overlayscrollbars-svelte";
 
   import { invoke, InvokeError } from "@app/lib/invoke";
+  import * as router from "@app/lib/router";
   import type { SidebarData } from "@app/lib/router/definitions";
   import { highlight } from "@app/lib/syntax";
 
@@ -34,12 +35,22 @@
     oid: string;
     commit: Commit;
     readme: Readme | null;
+    path?: string;
     sidebarData: SidebarData;
   }
 
   /* eslint-disable prefer-const */
-  let { tree, readme, repo, peer, revision, oid, commit, sidebarData }: Props =
-    $props();
+  let {
+    tree,
+    readme,
+    repo,
+    peer,
+    revision,
+    oid,
+    commit,
+    path,
+    sidebarData,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 
   const baseRoute = $derived({
@@ -53,10 +64,21 @@
   let codeElement: HTMLElement | undefined = $state();
   let error: InvokeError | undefined = $state();
 
+  // The shown file lives in the route, so browsing the tree and following
+  // links inside a document both go through history.
   $effect(() => {
-    blob = readme;
-    currentPath = readme?.path || "";
+    if (path === undefined) {
+      blob = readme;
+      currentPath = readme?.path || "";
+      error = undefined;
+    } else if (path !== currentPath) {
+      void fetchBlob(path);
+    }
   });
+
+  function showPath(filePath: string) {
+    void router.push({ ...baseRoute, path: filePath });
+  }
 
   function isMarkdownPath(path: string): boolean {
     return /\.(md|mkd|markdown)$/i.test(path);
@@ -176,7 +198,11 @@
         {#if tree.entries.length > 0}
           <ScrollArea
             style="border-right: 1px solid var(--color-border-subtle); flex: 1; min-height: 0; width: 100%; padding: 0.5rem;">
-            <TreeComponent {tree} {currentPath} {fetchTree} {fetchBlob} />
+            <TreeComponent
+              {tree}
+              {currentPath}
+              {fetchTree}
+              fetchBlob={async filePath => showPath(filePath)} />
           </ScrollArea>
         {/if}
       </div>
@@ -271,7 +297,7 @@
                             rid={repo.rid}
                             sha={oid}
                             path={currentPath}
-                            onNavigate={fetchBlob} />
+                            onNavigate={showPath} />
                         {:else}
                           <Markdown content={blob.content} />
                         {/if}

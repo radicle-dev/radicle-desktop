@@ -25,8 +25,13 @@ test("open a relative link in the source view", async ({ page }) => {
   const url = page.url();
   await readme.getByRole("link", { name: "the notes" }).click();
 
-  // The link opens the file instead of navigating the app away.
+  // The link opens the file in the source view rather than navigating the
+  // window away, and the file it opened is part of the history.
   await expect(page.getByText("Notes from a sibling file.")).toBeVisible();
+  expect(page.url()).not.toBe(url);
+
+  await page.goBack();
+  await expect(readme.getByText("Alpha section text.")).toBeVisible();
   expect(page.url()).toBe(url);
 });
 
