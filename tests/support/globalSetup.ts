@@ -2,6 +2,7 @@ import * as Fs from "node:fs";
 import * as Path from "node:path";
 
 import {
+  createAsciidocFixture,
   createCobsFixture,
   createMarkdownFixture,
   defaultConfig,
@@ -72,6 +73,8 @@ export default async function globalSetup(): Promise<() => void> {
     try {
       console.log("Creating markdown fixture");
       await createMarkdownFixture(palm);
+      console.log("Creating asciidoc fixture");
+      await createAsciidocFixture(palm);
       console.log("Creating cobs fixture");
       await createCobsFixture(peerManager, palm);
       console.log("All fixtures created");

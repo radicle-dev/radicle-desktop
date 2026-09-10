@@ -488,6 +488,92 @@ export async function createMarkdownFixture(peer: RadiclePeer) {
   );
 }
 
+export async function createAsciidocFixture(peer: RadiclePeer) {
+  const { repoFolder } = await createRepo(peer, { name: "asciidoc" });
+
+  await Fs.writeFile(
+    Path.join(repoFolder, "README.adoc"),
+    [
+      "= AsciiDoc Fixture",
+      "",
+      "A paragraph with a `code span` and a https://radicle.xyz[link].",
+      "",
+      "== Rendering",
+      "",
+      "[source,rust]",
+      "----",
+      "fn main() {}",
+      "----",
+      "",
+      "|===",
+      "|Column A |Column B",
+      "",
+      "|1 |2",
+      "|===",
+      "",
+      // An AsciiDoc cell holding an unbreakable token: the column must stay
+      // inside the viewport instead of widening the page.
+      '[cols="2a,1",options="header"]',
+      "|===",
+      "|URI |Refers to",
+      "",
+      "|",
+      "....",
+      `rad:z${"L".repeat(120)}`,
+      "....",
+      "|A repository",
+      "|===",
+      "",
+      "NOTE: An admonition.",
+      "",
+      "A statement.footnote:[A footnote.]",
+      "",
+      "== Includes",
+      "",
+      "include::_include.adoc[tag=alpha]",
+      "",
+      "include::../../../etc/passwd[]",
+      "",
+      "A link to link:notes.txt[the notes] in the same repository.",
+      "",
+      "== Untrusted markup",
+      "",
+      // A passthrough block is the one place AsciiDoc emits author-supplied
+      // HTML verbatim, so it is what the sanitizer has to catch.
+      "++++",
+      '<script>window.xssMarker = "script";</script>',
+      '<img src="x" onerror="window.xssMarker = \'onerror\';">',
+      '<iframe src="https://example.invalid"></iframe>',
+      "<a href=\"javascript:window.xssMarker = 'href';\">link</a>",
+      "<div onclick=\"window.xssMarker = 'onclick';\">click</div>",
+      "++++",
+      "",
+    ].join("\n"),
+  );
+
+  await Fs.writeFile(
+    Path.join(repoFolder, "notes.txt"),
+    "Notes from a sibling file.\n",
+  );
+
+  await Fs.writeFile(
+    Path.join(repoFolder, "_include.adoc"),
+    [
+      "// tag::alpha[]",
+      "Alpha section text.",
+      "// end::alpha[]",
+      "// tag::beta[]",
+      "Beta section text.",
+      "// end::beta[]",
+      "",
+    ].join("\n"),
+  );
+
+  await peer.git(["add", "."], { cwd: repoFolder });
+  await peer.git(["commit", "-m", "Add AsciiDoc readme"], { cwd: repoFolder });
+  await peer.git(["push", "rad"], { cwd: repoFolder });
+}
+
 export const aliceMainHead = "7babd25a74eb3752ec24672b5edf0e7ecb4daf24";
 export const aliceMainCommitMessage =
   "Verify that crate::DoubleColon::should_work()";

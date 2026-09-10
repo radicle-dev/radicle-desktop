@@ -13,6 +13,7 @@
   import type { SidebarData } from "@app/lib/router/definitions";
   import { highlight } from "@app/lib/syntax";
 
+  import Asciidoc from "@app/components/Asciidoc.svelte";
   import FileBlock from "@app/components/FileBlock.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
@@ -61,6 +62,10 @@
     return /\.(md|mkd|markdown)$/i.test(path);
   }
 
+  function isAsciidocPath(path: string): boolean {
+    return /\.(adoc|asciidoc|asc)$/i.test(path);
+  }
+
   async function fetchTree(path: string) {
     return await invoke<Tree>("repo_tree", { rid: repo.rid, path, sha: oid });
   }
@@ -96,7 +101,10 @@
     }
   });
 
-  let preview = $derived(isMarkdownPath(currentPath));
+  const previewable = $derived(
+    isMarkdownPath(currentPath) || isAsciidocPath(currentPath),
+  );
+  let preview = $derived(previewable);
 
   // Parent reuses this component across routes; a sibling $effect resets blob
   // when the readme prop changes, and fetchBlob mutates it during navigation.
@@ -225,7 +233,7 @@
                 {/snippet}
 
                 {#snippet rightHeader()}
-                  {#if isMarkdownPath(currentPath)}
+                  {#if previewable}
                     <PreviewSwitch bind:preview />
                   {/if}
                 {/snippet}
@@ -257,7 +265,16 @@
                       {/if}
                     {:else if preview}
                       <div style:margin-top="1rem">
-                        <Markdown content={blob.content} />
+                        {#if isAsciidocPath(currentPath)}
+                          <Asciidoc
+                            content={blob.content}
+                            rid={repo.rid}
+                            sha={oid}
+                            path={currentPath}
+                            onNavigate={fetchBlob} />
+                        {:else}
+                          <Markdown content={blob.content} />
+                        {/if}
                       </div>
                     {:else if blob.content.trim() === ""}
                       <div

@@ -475,6 +475,8 @@ pub trait Repo: Profile {
             "README",
             "README.md",
             "README.markdown",
+            "README.adoc",
+            "README.asciidoc",
             "README.txt",
             "README.rst",
             "README.org",
