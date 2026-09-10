@@ -34,6 +34,8 @@ export interface RepoHomeRoute {
   rid: string;
   peer?: string;
   revision?: string;
+  // The file shown in the source view. Trailing URL segments are already
+  // consumed by `revision`, so this travels as a query parameter.
   path?: string;
 }
 

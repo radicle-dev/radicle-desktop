@@ -11,10 +11,10 @@
     tree: Tree;
     currentPath: string;
     fetchTree: (path: string) => Promise<Tree>;
-    fetchBlob: (path: string) => Promise<void>;
+    onSelect: (path: string) => void;
   }
 
-  const { currentPath, tree, fetchTree, fetchBlob }: Props = $props();
+  const { currentPath, tree, fetchTree, onSelect }: Props = $props();
 
   // Manual expand/collapse overrides, keyed by folder prefix. Held here
   // rather than in FileTreeFolder so the state survives the virtualizer
@@ -50,11 +50,11 @@
         {isExpanded}
         {toggleExpanded}
         {fetchTree}
-        {fetchBlob} />
+        {onSelect} />
     {:else}
       <FileTreeFile
         name={entry.name}
-        fetchBlob={() => fetchBlob(entry.path)}
+        onSelect={() => onSelect(entry.path)}
         active={entry.path === currentPath} />
     {/if}
   {/snippet}

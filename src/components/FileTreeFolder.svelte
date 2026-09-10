@@ -7,7 +7,7 @@
 
   interface Props {
     fetchTree: (path: string) => Promise<Tree>;
-    fetchBlob: (path: string) => Promise<void>;
+    onSelect: (path: string) => void;
     currentPath: string;
     name: string;
     prefix: string;
@@ -20,7 +20,7 @@
 
   const {
     name,
-    fetchBlob,
+    onSelect,
     currentPath,
     prefix,
     isExpanded,
@@ -71,7 +71,7 @@
           {#if entry.kind === "tree"}
             <FileTreeFolder
               {fetchTree}
-              {fetchBlob}
+              {onSelect}
               name={entry.name}
               {currentPath}
               {isExpanded}
@@ -81,7 +81,7 @@
           {:else if entry.kind === "blob"}
             <FileTreeFile
               name={entry.name}
-              fetchBlob={() => fetchBlob(entry.path)}
+              onSelect={() => onSelect(entry.path)}
               active={entry.path === currentPath}
               indent={indent + 1.5} />
           {/if}

@@ -3,12 +3,12 @@
 
   const {
     name,
-    fetchBlob,
+    onSelect,
     active,
     indent = 0.5,
   }: {
     name: string;
-    fetchBlob: () => Promise<void>;
+    onSelect: () => void;
     active: boolean;
     indent?: number;
   } = $props();
@@ -41,7 +41,7 @@
   class:active
   style:padding-left="{indent}rem"
   style:padding-right="0.5rem"
-  onclick={fetchBlob}>
+  onclick={onSelect}>
   <div class="global-flex" style:padding="0.25rem 0">
     <div class="icon txt-missing">
       <Icon name="document" />

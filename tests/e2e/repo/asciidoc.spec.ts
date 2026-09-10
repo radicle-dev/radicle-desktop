@@ -25,8 +25,13 @@ test("open a relative link in the source view", async ({ page }) => {
   const url = page.url();
   await readme.getByRole("link", { name: "the notes" }).click();
 
-  // The link opens the file instead of navigating the app away.
+  // The link opens the file in the source view rather than navigating the
+  // window away, and the file it opened is part of the history.
   await expect(page.getByText("Notes from a sibling file.")).toBeVisible();
+  expect(page.url()).not.toBe(url);
+
+  await page.goBack();
+  await expect(readme.getByText("Alpha section text.")).toBeVisible();
   expect(page.url()).toBe(url);
 });
 
@@ -92,6 +97,54 @@ test("bound the reads of recursive includes", async ({ page }) => {
   // The include budget is 256 reads, plus the reads for the file itself and
   // the readme's own include.
   expect(blobReads).toBeLessThanOrEqual(260);
+});
+
+test("go back from a file opened in the tree", async ({ page }) => {
+  await page.goto("/inbox");
+  await page.getByRole("link", { name: "asciidoc" }).click();
+
+  const readme = page.locator(".asciidoc");
+  await expect(readme.getByText("Alpha section text.")).toBeVisible();
+  const url = page.url();
+
+  await page.getByText("notes.txt", { exact: true }).click();
+  await expect(page.getByText("Notes from a sibling file.")).toBeVisible();
+  await expect(page).toHaveURL(/\?path=notes\.txt/);
+
+  await page.goBack();
+  await expect(readme.getByText("Alpha section text.")).toBeVisible();
+  expect(page.url()).toBe(url);
+});
+
+test("show the same path at another revision", async ({ page }) => {
+  await page.goto("/inbox");
+  const commit = page.waitForResponse(
+    response => new URL(response.url()).pathname === "/repo_commit",
+  );
+  await page.getByRole("link", { name: "asciidoc" }).click();
+  const { parents } = (await (await commit).json()) as { parents: string[] };
+  const rid = page.url().match(/\/repos\/(rad:[^/?]+)/)?.[1];
+
+  await page.getByText("notes.txt", { exact: true }).click();
+  await expect(page.getByText("Notes from a sibling file.")).toBeVisible();
+
+  // Follow an in-app link to the same file at the previous commit, so the
+  // view is reused with only the revision changed.
+  await page.evaluate(href => {
+    const anchor = document.createElement("a");
+    anchor.href = href;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }, `/repos/${rid}/home/${parents[0]}?path=notes.txt`);
+
+  await expect(
+    page.getByText("An earlier version of the notes."),
+  ).toBeVisible();
+  await expect(page.getByText("Notes from a sibling file.")).toHaveCount(0);
+
+  await page.goBack();
+  await expect(page.getByText("Notes from a sibling file.")).toBeVisible();
 });
 
 test("sanitize untrusted markup in an AsciiDoc readme", async ({ page }) => {

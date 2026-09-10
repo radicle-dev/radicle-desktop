@@ -597,6 +597,15 @@ export async function createMarkdownFixture(peer: RadiclePeer) {
 export async function createAsciidocFixture(peer: RadiclePeer) {
   const { repoFolder } = await createRepo(peer, { name: "asciidoc" });
 
+  // An older version of a file, so a test can show the same path at two
+  // revisions.
+  await Fs.writeFile(
+    Path.join(repoFolder, "notes.txt"),
+    "An earlier version of the notes.\n",
+  );
+  await peer.git(["add", "."], { cwd: repoFolder });
+  await peer.git(["commit", "-m", "Add notes"], { cwd: repoFolder });
+
   await Fs.writeFile(
     Path.join(repoFolder, "README.adoc"),
     [

@@ -10,6 +10,7 @@
   import { useOverlayScrollbars } from "overlayscrollbars-svelte";
 
   import { invoke, InvokeError } from "@app/lib/invoke";
+  import * as router from "@app/lib/router";
   import type { SidebarData } from "@app/lib/router/definitions";
   import { highlight } from "@app/lib/syntax";
 
@@ -63,14 +64,31 @@
   let codeElement: HTMLElement | undefined = $state();
   let error: InvokeError | undefined = $state();
 
+  // The file that was last opened, so that reloading the same route doesn't
+  // fetch it again, while switching revisions on the same path does.
+  let openedFile: string | undefined;
+
+  // The shown file lives in the route, so browsing the tree and following
+  // links inside a document both go through history.
   $effect(() => {
-    if (path) {
-      void openPath(path);
-    } else {
+    if (!path) {
+      openedFile = undefined;
       blob = readme;
       currentPath = readme?.path || "";
+      error = undefined;
+      return;
+    }
+
+    const file = `${repo.rid}:${oid}:${path}`;
+    if (file !== openedFile) {
+      openedFile = file;
+      void openPath(path);
     }
   });
+
+  function showPath(filePath: string) {
+    void router.push({ ...baseRoute, path: filePath });
+  }
 
   function isMarkdownPath(path: string): boolean {
     return /\.(md|mkd|markdown)$/i.test(path);
@@ -203,7 +221,11 @@
         {#if tree.entries.length > 0}
           <ScrollArea
             style="border-right: 1px solid var(--color-border-subtle); flex: 1; min-height: 0; width: 100%; padding: 0.5rem;">
-            <TreeComponent {tree} {currentPath} {fetchTree} {fetchBlob} />
+            <TreeComponent
+              {tree}
+              {currentPath}
+              {fetchTree}
+              onSelect={showPath} />
           </ScrollArea>
         {/if}
       </div>
@@ -298,7 +320,7 @@
                             rid={repo.rid}
                             sha={oid}
                             path={currentPath}
-                            onNavigate={fetchBlob} />
+                            onNavigate={showPath} />
                         {:else}
                           <Markdown content={blob.content} />
                         {/if}
