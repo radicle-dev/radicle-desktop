@@ -136,8 +136,19 @@
 
 {#if path}
   <!-- The file's own patch text, which is all the renderer needs; the structured
-       diff is not fetched here at all. -->
-  {#await cachedGetDiffText(rid, base, head, 3, path)}
+       diff is not fetched here at all.
+
+       The call is bound to a `{@const}` (which compiles to a derived) rather
+       than made in the `{#await}` itself, so what the block takes as input is
+       the promise. Every patch reload replaces the props this reads, and an
+       inline call would make the block re-run on each one; `{#await}` keeps no
+       record of what it last awaited, so a re-run puts the pending branch back
+       on screen for a microtask. That collapses every snippet on the page, and
+       a reader scrolled below the shortened page gets clamped upwards by the
+       browser. Recomputing through a derived hands back the same cached
+       promise, which compares equal, so the block is left alone. -->
+  {@const filePatchPromise = cachedGetDiffText(rid, base, head, 3, path)}
+  {#await filePatchPromise}
     <div class="fallback">Loading code…</div>
   {:then filePatch}
     <div class="wrapper">

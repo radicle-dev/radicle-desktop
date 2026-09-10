@@ -176,6 +176,11 @@
     return host.split(".").includes(a);
   }
 
+  // Held in a `$derived` rather than called from the `{#await}` below, so the
+  // block's input is the promise itself. See `ReviewCodeThread`; here the cache
+  // also has a TTL, so a re-run can start a fresh request and blank the chip.
+  const jobsPromise = $derived(cachedListJobs(rid, commit));
+
   function toggleNode(key: string) {
     if (collapsed.has(key)) {
       collapsed.delete(key);
@@ -289,7 +294,7 @@
   }
 </style>
 
-{#await cachedListJobs(rid, commit) then jobs}
+{#await jobsPromise then jobs}
   {#if jobs.length > 0}
     {@const groups = groupJobs(jobs)}
     {@const overallCounts = totalCounts(groups)}
