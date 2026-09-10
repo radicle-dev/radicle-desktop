@@ -59,6 +59,8 @@
     primary: string;
     /** Shown after the title, e.g. an abbreviated object id. */
     secondary?: string;
+    /** The name is itself a raw id, so it should be set as one. */
+    mono?: boolean;
     icon?: IconName;
     /** Node id of a person, so the row can show their avatar. */
     avatar?: string;
@@ -293,6 +295,7 @@
         label: `@${label}`,
         primary: label,
         secondary: truncateId(target.nid),
+        mono: alias === undefined,
         avatar: target.nid,
         badge: badgeFor(target.nid, repo?.delegates ?? [], suggestions),
         haystack: label,
@@ -468,6 +471,7 @@
           secondary: truncateId(nid),
           avatar: nid,
           badge: badgeFor(nid, delegates, aliases),
+          mono: author.alias === undefined,
           named: author.alias !== undefined,
           haystack: `${author.alias ?? ""} ${nid}`,
         },
@@ -723,11 +727,17 @@
     white-space: nowrap;
     text-overflow: ellipsis;
   }
+  /* Always an identifier (a truncated node or object id), never a name. */
   .suggestion-secondary {
     margin-left: auto;
     padding-left: 0.5rem;
     color: var(--color-text-secondary);
     font: var(--txt-body-s-regular);
+    font-family: var(--font-family-code);
+  }
+  /* A row whose name is itself a raw id, because no alias is known for it. */
+  .suggestion-primary.mono {
+    font-family: var(--font-family-code);
   }
   .suggestion-icon {
     display: flex;
@@ -774,7 +784,9 @@
               <Icon name={suggestion.icon} />
             </span>
           {/if}
-          <span class="suggestion-primary">{suggestion.primary}</span>
+          <span class="suggestion-primary" class:mono={suggestion.mono}>
+            {suggestion.primary}
+          </span>
           {#if suggestion.badge}
             <span class="suggestion-badge txt-body-s-medium">
               {suggestion.badge}
