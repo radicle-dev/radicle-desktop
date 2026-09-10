@@ -151,10 +151,11 @@ export function parseBareIdentifier(token: string): MentionTarget | undefined {
 
 /**
  * Parse a web explorer URL, e.g.
- * `https://app.radicle.xyz/nodes/<seed>/rad:z…/issues/<oid>`.
+ * `https://app.radicle.xyz/nodes/<seed>/rad:z…/issues/<oid>` or
+ * `https://app.radicle.xyz/nodes/<seed>/users/did:key:z…`.
  *
- * The seed host and any node prefix are ignored: what matters is the RID and
- * the COB it points at, both of which are location independent.
+ * The seed host and any node prefix are ignored: what matters is the entity
+ * the path points at, which is location independent.
  */
 function parseExplorerHref(href: string): MentionTarget | undefined {
   let url: URL;
@@ -165,11 +166,32 @@ function parseExplorerHref(href: string): MentionTarget | undefined {
   }
   if (url.protocol !== "https:" && url.protocol !== "http:") return undefined;
 
-  const segments = url.pathname.split("/").filter(segment => segment !== "");
+  // Copying a URL out of a browser percent-encodes the colons in a DID or a
+  // RID, so segments are decoded before anything is recognised in them.
+  const segments = url.pathname
+    .split("/")
+    .filter(segment => segment !== "")
+    .map(decodeSegment);
+
+  const userIndex = segments.indexOf("users");
+  if (userIndex !== -1) {
+    const parsed = parseNodeId(segments[userIndex + 1] ?? "");
+    return parsed ? { type: "node", nid: parsed.pubkey } : undefined;
+  }
+
   const ridIndex = segments.findIndex(segment => segment.startsWith("rad:z"));
   if (ridIndex === -1) return undefined;
 
   return parseRadReference(segments.slice(ridIndex).join("/"));
+}
+
+/** Decode a path segment, leaving a malformed escape sequence as it stands. */
+function decodeSegment(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
 }
 
 /** The href the app writes for a reference. */
