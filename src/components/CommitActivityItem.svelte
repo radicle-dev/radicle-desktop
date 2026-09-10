@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Commit } from "@bindings/repo/Commit";
 
-  import { absoluteTimestamp, formatTimestamp } from "@app/lib/utils";
+  import { commitTimes, formatTimestamp } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
@@ -13,7 +13,7 @@
 
   const { commit, hideAuthor }: Props = $props();
 
-  const authoredAt = $derived(commit.author.time * 1000);
+  const committedAt = $derived(commit.committer.time * 1000);
 </script>
 
 <style>
@@ -92,8 +92,8 @@
       <div class="meta-hash">
         <Id id={commit.id} clipboard={commit.id} label="commit hash" />
       </div>
-      <div class="timestamp" title={absoluteTimestamp(authoredAt)}>
-        {formatTimestamp(authoredAt)}
+      <div class="timestamp" title={commitTimes(commit)}>
+        {formatTimestamp(committedAt)}
       </div>
     </div>
   </div>
