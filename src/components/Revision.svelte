@@ -1674,11 +1674,16 @@
                 </div>
               {/if}
               {#if targetRev && targetRev.base !== targetRev.head}
+                <!-- Bound outside the `{#await}`; see `ReviewCodeThread`. -->
+                {@const revisionDiff = cachedGetDiff(rid, {
+                  base: targetRev.base,
+                  head: targetRev.head,
+                })}
                 {#if hasBody || hasCommits}
                   <div class="revision-card-divider"></div>
                 {/if}
                 <div class="revision-diff-tease">
-                  {#await cachedGetDiff( rid, { base: targetRev.base, head: targetRev.head } )}
+                  {#await revisionDiff}
                     <div class="revision-diff-loading txt-body-m-regular">
                       Loading diff…
                     </div>
@@ -1737,7 +1742,14 @@
                                     </span>
                                   {/if}
                                 {/snippet}
-                                {#await cachedGetDiffText(rid, targetRev.base, targetRev.head, 3, path)}
+                                {@const filePatchPromise = cachedGetDiffText(
+                                  rid,
+                                  targetRev.base,
+                                  targetRev.head,
+                                  3,
+                                  path,
+                                )}
+                                {#await filePatchPromise}
                                   <div></div>
                                 {:then filePatch}
                                   <PierreSnippet

@@ -768,7 +768,13 @@
                 disabled={isTeaserDisabled(commit.id)}
                 {commit}>
                 {#if commit.parents.length > 0}
-                  {#await cachedDiffStats(rid, commit.parents[0], commit.id) then commitStats}
+                  <!-- Bound outside the `{#await}`; see `ReviewCodeThread`. -->
+                  {@const statsPromise = cachedDiffStats(
+                    rid,
+                    commit.parents[0],
+                    commit.id,
+                  )}
+                  {#await statsPromise then commitStats}
                     <span class="commit-stats">
                       <Icon name="document" />
                       {commitStats.filesChanged}

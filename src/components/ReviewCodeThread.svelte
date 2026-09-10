@@ -136,8 +136,15 @@
 
 {#if path}
   <!-- The file's own patch text, which is all the renderer needs; the structured
-       diff is not fetched here at all. -->
-  {#await cachedGetDiffText(rid, base, head, 3, path)}
+       diff is not fetched here at all.
+
+       Bound to a `{@const}` (a derived) rather than called inside the
+       `{#await}`: a patch reload replaces the props this reads, and an inline
+       call would re-run the block, flashing the pending branch and jumping the
+       scroll position. The derived returns the same cached promise, so it
+       does not. -->
+  {@const filePatchPromise = cachedGetDiffText(rid, base, head, 3, path)}
+  {#await filePatchPromise}
     <div class="fallback">Loading code…</div>
   {:then filePatch}
     <div class="wrapper">

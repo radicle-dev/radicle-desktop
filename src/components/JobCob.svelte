@@ -176,6 +176,10 @@
     return host.split(".").includes(a);
   }
 
+  // Held in a `$derived`; see `ReviewCodeThread`. The TTL here means a re-run
+  // would refetch and blank the chip.
+  const jobsPromise = $derived(cachedListJobs(rid, commit));
+
   function toggleNode(key: string) {
     if (collapsed.has(key)) {
       collapsed.delete(key);
@@ -289,7 +293,7 @@
   }
 </style>
 
-{#await cachedListJobs(rid, commit) then jobs}
+{#await jobsPromise then jobs}
   {#if jobs.length > 0}
     {@const groups = groupJobs(jobs)}
     {@const overallCounts = totalCounts(groups)}
