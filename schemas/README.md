@@ -42,7 +42,7 @@ do not currently resolve in this app.
 
 ## `orgs-payload.schema.json`
 
-Schema for the value of the `xyz.radicle.orgs` payload in a repository's
+Schema for the value of the `dev.radicle.orgs` payload in a repository's
 identity document — the optional reverse assertion. An org lists the
 repositories it covers; a repository may assert the reverse by adding this
 payload to its identity document (an identity revision, agreed by its
@@ -61,7 +61,7 @@ present and show nothing when absent. Never warn on a one-sided association: a
 signal that fires on the common case teaches people to ignore it.
 
 `org.json` (a file on the default branch) means the repository *is* an org; the
-`xyz.radicle.orgs` payload means it belongs to one. A repository may hold both,
+`dev.radicle.orgs` payload means it belongs to one. A repository may hold both,
 which is an org that itself belongs to another org.
 
 The payload carries a **`version` field**, gating interpretation in band. A

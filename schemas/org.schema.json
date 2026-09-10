@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://radicle.dev/RIP-XXXX/org.schema.json",
   "title": "Radicle org",
-  "description": "Contents of .radicle/org.json on the default branch of an org repository: an actor repository whose xyz.radicle.actor payload carries type: \"org\". One repository describes exactly one org. The repository's RID is the org's identifier; its delegates are the org's admins.",
+  "description": "Contents of .radicle/org.json on the default branch of an org repository: an actor repository whose dev.radicle.actor payload carries type: \"org\". One repository describes exactly one org. The repository's RID is the org's identifier; its delegates are the org's admins.",
   "type": "object",
   "required": [
     "version",

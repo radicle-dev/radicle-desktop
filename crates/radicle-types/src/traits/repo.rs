@@ -134,7 +134,7 @@ fn read_blob_at(repo: &storage::git::Repository, head: git::Oid, path: &str) -> 
     Some(blob.content().to_vec())
 }
 
-/// The org RIDs named by an `xyz.radicle.orgs` payload value (the object
+/// The org RIDs named by a `dev.radicle.orgs` payload value (the object
 /// `{ "orgs": [...] }`). Non-RID entries are skipped — a malformed entry
 /// simply does not name an org. Per the orgs RIP, a repository asserts
 /// affiliation through this identity-document payload, not a tree file.
@@ -158,10 +158,10 @@ fn parse_orgs_payload(value: &serde_json::Value) -> Vec<identity::RepoId> {
 }
 
 /// The org RIDs a repository asserts affiliation with, read from its identity
-/// document's `xyz.radicle.orgs` payload. Empty when the payload is absent —
+/// document's `dev.radicle.orgs` payload. Empty when the payload is absent —
 /// which carries no meaning and is the common case.
 fn doc_orgs(doc: &Doc) -> Vec<identity::RepoId> {
-    let Ok(id) = "xyz.radicle.orgs".parse::<doc::PayloadId>() else {
+    let Ok(id) = "dev.radicle.orgs".parse::<doc::PayloadId>() else {
         return Vec::new();
     };
     match doc.payload().get(&id) {
@@ -175,9 +175,9 @@ fn asserts_org(doc: &Doc, org: &identity::RepoId) -> bool {
     doc_orgs(doc).contains(org)
 }
 
-/// The `type` of the `xyz.radicle.actor` payload, when present.
+/// The `type` of the `dev.radicle.actor` payload, when present.
 fn doc_actor_type(doc: &Doc) -> Option<String> {
-    let id = "xyz.radicle.actor".parse::<doc::PayloadId>().ok()?;
+    let id = "dev.radicle.actor".parse::<doc::PayloadId>().ok()?;
     let payload = doc.payload().get(&id)?;
     if payload.get("version").and_then(serde_json::Value::as_u64) != Some(1) {
         return None;
@@ -1114,7 +1114,7 @@ pub trait Repo: Profile {
     }
 
     /// RIDs of locally-stored repositories that assert affiliation with `rid`
-    /// via the `xyz.radicle.orgs` payload in their identity document. The
+    /// via the `dev.radicle.orgs` payload in their identity document. The
     /// payloads are already loaded by `repositories()`, so this is a map lookup
     /// per repo — no per-repo open or tree walk. Scoped to org views.
     fn repos_asserting_org(&self, rid: identity::RepoId) -> Result<Vec<identity::RepoId>, Error> {
@@ -1194,7 +1194,7 @@ pub trait Repo: Profile {
         Ok(out)
     }
 
-    /// The orgs a repository names in its `xyz.radicle.orgs` identity-document
+    /// The orgs a repository names in its `dev.radicle.orgs` identity-document
     /// payload, each with whether that org lists the repository back (`mutual`)
     /// and its display name. Reads this repo's identity document plus each named
     /// org's `.radicle/org.json` — cheap enough for a repo page.

@@ -67,7 +67,7 @@ pub struct OrgMember {
     pub name: Option<String>,
 }
 
-/// An org named by a repository's `xyz.radicle.orgs` identity-document
+/// An org named by a repository's `dev.radicle.orgs` identity-document
 /// payload, together with whether that org lists the repository back in its
 /// own `.radicle/org.json`.
 #[derive(Serialize, TS)]

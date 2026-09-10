@@ -23,7 +23,7 @@
 
   const project = $derived(repo.payloads["xyz.radicle.project"]!);
 
-  // The orgs this repository names in its xyz.radicle.orgs identity-document
+  // The orgs this repository names in its dev.radicle.orgs identity-document
   // payload. Loaded after render (off the navigation path); a repo without the
   // payload simply returns none, so the block is hidden.
   let orgs: RepoOrg[] = $state([]);
@@ -167,14 +167,14 @@
     </div>
     {#if org.mutual}
       <!-- prettier-ignore -->
-      <p>This repository names {name} in its identity document, under <code>xyz.radicle.orgs</code>, and {name} lists this repository in its own <code>.radicle/org.json</code>.</p>
+      <p>This repository names {name} in its identity document, under <code>dev.radicle.orgs</code>, and {name} lists this repository in its own <code>.radicle/org.json</code>.</p>
       <p>
         Two public statements that agree. Nothing has been checked, and neither
         grants anything.
       </p>
     {:else}
       <!-- prettier-ignore -->
-      <p>This repository names {name} in its identity document, under <code>xyz.radicle.orgs</code>. {name}'s own file does not list this repository.</p>
+      <p>This repository names {name} in its identity document, under <code>dev.radicle.orgs</code>. {name}'s own file does not list this repository.</p>
       <p>
         Usually the org dropped it and the reference was left behind. The
         reference lives in this repository's identity, so only its delegates can

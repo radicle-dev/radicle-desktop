@@ -110,15 +110,15 @@ push_file() { # dir relpath content
 
 affiliate() { # repo_rid org_rid — assert affiliation in the identity document
   rad id update --repo "$1" \
-    --payload xyz.radicle.orgs version 1 \
-    --payload xyz.radicle.orgs orgs "[\"$2\"]" \
+    --payload dev.radicle.orgs version 1 \
+    --payload dev.radicle.orgs orgs "[\"$2\"]" \
     --title "Affiliate with org" --no-confirm --quiet
 }
 
 declare_actor() { # rid type — the actor payload of the Actor Repos RIP
   rad id update --repo "$1" \
-    --payload xyz.radicle.actor version 1 \
-    --payload xyz.radicle.actor type "\"$2\"" \
+    --payload dev.radicle.actor version 1 \
+    --payload dev.radicle.actor type "\"$2\"" \
     --title "Declare actor type" --no-confirm --quiet
 }
 
@@ -156,15 +156,15 @@ setup() {
   BETA="$(new_rid  beta  "${PREFIX}beta"  'Org asserts only')"
   GAMMA="$(new_rid gamma "${PREFIX}gamma" 'Repo asserts only')"
 
-  # Reverse assertion now lives in the identity document (xyz.radicle.orgs
+  # Reverse assertion now lives in the identity document (dev.radicle.orgs
   # payload), not a tree file. alpha and gamma both name infra; beta does not.
   affiliate "$ALPHA" "$INFRA"
   affiliate "$GAMMA" "$INFRA"
 
   # INFRA is an actor repository of type org; the two users are type user.
   declare_actor "$INFRA" org
-  declare_actor "$USERA" user
-  declare_actor "$USERB" user
+  declare_actor "$USERA" person
+  declare_actor "$USERB" person
 
   # The member half of an attestation lives in the actor's own profile.
   push_file user-a .radicle/profile.json "{

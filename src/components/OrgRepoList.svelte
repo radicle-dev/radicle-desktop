@@ -150,7 +150,7 @@
       <div class="popover">
         <div class="popover-title">Both sides name each other</div>
         <!-- prettier-ignore -->
-        <p>This org lists the repository in <code>.radicle/org.json</code>, and the repository names this org in its identity document, under <code>xyz.radicle.orgs</code>.</p>
+        <p>This org lists the repository in <code>.radicle/org.json</code>, and the repository names this org in its identity document, under <code>dev.radicle.orgs</code>.</p>
         <p>
           Neither file grants anything and nothing has been checked. They are
           public statements, trusted the way a README is trusted.

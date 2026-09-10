@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://radicle.dev/RIP-XXXX/orgs-payload.schema.json",
   "title": "Radicle org affiliation payload",
-  "description": "Value of the xyz.radicle.orgs payload in a repository's identity document. It records the orgs that this repository asserts cover it. The payload is optional; its absence carries no meaning.",
+  "description": "Value of the dev.radicle.orgs payload in a repository's identity document. It records the orgs that this repository asserts cover it. The payload is optional; its absence carries no meaning.",
   "type": "object",
   "required": [
     "version",
