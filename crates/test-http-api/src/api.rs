@@ -32,6 +32,7 @@ use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::issue::{Issues, IssuesMut};
 use radicle_types::traits::job::Jobs;
 use radicle_types::traits::patch::{Patches, PatchesMut};
+use radicle_types::traits::release::{ReleaseFilter, Releases};
 use radicle_types::traits::repo::{Repo, Show};
 use radicle_types::traits::thread::Thread;
 
@@ -50,6 +51,7 @@ impl IssuesMut for Context {}
 impl Jobs for Context {}
 impl Patches for Context {}
 impl PatchesMut for Context {}
+impl Releases for Context {}
 impl Profile for Context {
     fn profile(&self) -> radicle::Profile {
         self.profile.deref().clone()
@@ -124,6 +126,9 @@ pub fn router(ctx: Context) -> Router {
         .route("/save_embed_by_clipboard", post(save_embed_handler))
         .route("/save_embed_by_bytes", post(save_embed_handler))
         .route("/save_embed_to_disk", post(save_embed_handler))
+        .route("/list_releases", post(releases_handler))
+        .route("/release_by_id", post(release_handler))
+        .route("/release_count", post(release_count_handler))
         .route("/list_jobs", post(jobs_handler))
         .route("/list_notifications", post(list_notifications_handler))
         .route("/notification_count", post(notification_count_handler))
@@ -655,6 +660,60 @@ async fn issue_threads_handler(
     let issue_threads = ctx.comment_threads_by_issue_id(rid, id)?;
 
     Ok::<_, Error>(Json(issue_threads))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReleasesBody {
+    pub rid: identity::RepoId,
+    pub filter: Option<ReleaseFilter>,
+    pub skip: Option<usize>,
+    pub take: Option<usize>,
+}
+
+async fn releases_handler(
+    State(ctx): State<Context>,
+    Json(ReleasesBody {
+        rid,
+        filter,
+        skip,
+        take,
+    }): Json<ReleasesBody>,
+) -> impl IntoResponse {
+    let releases = ctx.list_releases(rid, filter, skip, take)?;
+
+    Ok::<_, Error>(Json(releases))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReleaseBody {
+    pub rid: identity::RepoId,
+    pub id: git::Oid,
+}
+
+async fn release_handler(
+    State(ctx): State<Context>,
+    Json(ReleaseBody { rid, id }): Json<ReleaseBody>,
+) -> impl IntoResponse {
+    let release = ctx.release_by_id(rid, id)?;
+
+    Ok::<_, Error>(Json(release))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReleaseCountBody {
+    pub rid: identity::RepoId,
+}
+
+async fn release_count_handler(
+    State(ctx): State<Context>,
+    Json(ReleaseCountBody { rid }): Json<ReleaseCountBody>,
+) -> impl IntoResponse {
+    let count = ctx.release_count(rid)?;
+
+    Ok::<_, Error>(Json(count))
 }
 
 #[derive(Serialize, Deserialize)]
