@@ -1,7 +1,16 @@
 <script lang="ts">
+  import type { ArtifactProgress } from "@bindings/artifact/ArtifactProgress";
   import type { Artifact } from "@bindings/cob/release/Artifact";
+  import type { UnlistenFn } from "@tauri-apps/api/event";
+
+  import { listen } from "@tauri-apps/api/event";
+
+  import { autoSeed, storeAutoSeed } from "@app/lib/autoSeed";
+  import { invoke } from "@app/lib/invoke";
+  import { formatBytes } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
+  import Checkbox from "@app/components/Checkbox.svelte";
   import Command from "@app/components/Command.svelte";
   import DelegateBadge from "@app/components/DelegateBadge.svelte";
   import ExternalLink from "@app/components/ExternalLink.svelte";
@@ -11,12 +20,102 @@
   interface Props {
     artifact: Artifact;
     delegateIds: Set<string>;
+    releaseId: string;
     rid: string;
   }
 
-  const { artifact, delegateIds, rid }: Props = $props();
+  const { artifact, delegateIds, releaseId, rid }: Props = $props();
 
-  let activeTab: "cli" | "browser" = $state("cli");
+  let activeTab: "app" | "cli" | "browser" = $state("app");
+  // Mirrors the shared preference locally so the checkbox can bind to it,
+  // writing back through the store so every artifact row agrees.
+  let seedAfterDownload = $state($autoSeed);
+  $effect(() => {
+    storeAutoSeed(seedAfterDownload);
+  });
+  let downloading = $state(false);
+  let progress: ArtifactProgress | undefined = $state();
+  let downloadError: string | undefined = $state();
+  let downloaded = $state(false);
+
+  // The node reports byte movement per content id, so a shared event channel
+  // is filtered down to this artifact.
+  $effect(() => {
+    let unlisten: UnlistenFn | undefined;
+    let cancelled = false;
+
+    void listen<ArtifactProgress>("artifact_progress", event => {
+      if (event.payload.cid === artifact.cid) {
+        progress = event.payload;
+      }
+    }).then(fn => {
+      if (cancelled) {
+        fn();
+      } else {
+        unlisten = fn;
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  });
+
+  const percent = $derived.by(() => {
+    if (!progress?.total || progress.offset === undefined) {
+      return undefined;
+    }
+    return Math.min(100, Math.round((progress.offset / progress.total) * 100));
+  });
+
+  const phaseLabel = $derived.by(() => {
+    switch (progress?.phase) {
+      case "connecting":
+        return "Connecting…";
+      case "tryingLocation":
+        return "Trying a source…";
+      case "locationFailed":
+        return "Source failed, trying another…";
+      case "downloading":
+        return "Downloading…";
+      case "exporting":
+        return "Writing to disk…";
+      default:
+        return "Starting…";
+    }
+  });
+
+  async function download() {
+    downloadError = undefined;
+    downloaded = false;
+
+    const dest = await invoke<string | null>("pick_artifact_save_path", {
+      suggestedName: artifact.name,
+    });
+    if (!dest) {
+      return;
+    }
+
+    downloading = true;
+    progress = undefined;
+    try {
+      await invoke("download_artifact", {
+        rid,
+        releaseId,
+        cid: artifact.cid,
+        dest,
+        seed: seedAfterDownload,
+      });
+      downloaded = true;
+    } catch {
+      downloadError =
+        "Download failed. The artifact node may be offline, or no source is reachable.";
+    } finally {
+      downloading = false;
+      progress = undefined;
+    }
+  }
 
   // Whether the location can be opened in a browser, as opposed to being
   // served over the radicle-artifact protocol.
@@ -80,6 +179,43 @@
     white-space: nowrap;
     color: var(--color-text-secondary);
   }
+  .progress-track {
+    height: 0.25rem;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-subtle);
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+  .progress-bar {
+    height: 100%;
+    background-color: var(--color-fill-secondary);
+    transition: width 0.1s linear;
+  }
+  .status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-s-regular);
+  }
+  .error {
+    margin-top: 0.75rem;
+    color: var(--color-foreground-red);
+    font: var(--txt-body-s-regular);
+  }
+  .success {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    color: var(--color-foreground-success);
+    font: var(--txt-body-s-regular);
+  }
+  .seed-option {
+    margin-top: 0.75rem;
+  }
 </style>
 
 <Popover placement="bottom-end" popoverPadding="1rem">
@@ -103,6 +239,15 @@
           styleWidth="100%"
           flatRight
           bordered
+          active={activeTab === "app"}
+          onclick={() => (activeTab = "app")}>
+          <Icon name="download" />App
+        </Button>
+        <Button
+          styleWidth="100%"
+          bordered
+          flatLeft
+          flatRight
           active={activeTab === "cli"}
           onclick={() => (activeTab = "cli")}>
           <Icon name="logo" />CLI
@@ -117,11 +262,55 @@
             : undefined}
           active={activeTab === "browser"}
           onclick={() => (activeTab = "browser")}>
-          <Icon name="download" />Browser
+          <Icon name="open-external" />Browser
         </Button>
       </div>
 
-      {#if activeTab === "cli"}
+      {#if activeTab === "app"}
+        <label for="download-artifact">
+          Download through your artifact node, which verifies the bytes against
+          the content id.
+        </label>
+        <Button
+          variant="secondary"
+          styleWidth="100%"
+          disabled={downloading}
+          onclick={download}>
+          <Icon name="download" />
+          {downloading ? "Downloading…" : "Download"}
+        </Button>
+
+        {#if downloading}
+          <div class="progress-track">
+            <div class="progress-bar" style:width="{percent ?? 0}%"></div>
+          </div>
+          <div class="status">
+            <span>{phaseLabel}</span>
+            {#if progress?.offset !== undefined}
+              <span>
+                {formatBytes(progress.offset)}{progress.total
+                  ? ` / ${formatBytes(progress.total)}`
+                  : ""}
+              </span>
+            {/if}
+          </div>
+        {:else if downloaded}
+          <div class="success">
+            <Icon name="checkmark" />
+            Saved{seedAfterDownload ? " and seeding" : ""}.
+          </div>
+        {/if}
+
+        {#if downloadError}
+          <div class="error">{downloadError}</div>
+        {/if}
+
+        <div class="seed-option">
+          <Checkbox bind:checked={seedAfterDownload}>
+            Seed after downloading
+          </Checkbox>
+        </div>
+      {:else if activeTab === "cli"}
         <label for="download-command">
           Use the Radicle Artifact CLI to download and verify this artifact.
         </label>

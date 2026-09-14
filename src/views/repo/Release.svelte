@@ -490,6 +490,7 @@
                 <ArtifactDownloadButton
                   {artifact}
                   {delegateIds}
+                  releaseId={release.id}
                   rid={repo.rid} />
               </div>
             </div>
