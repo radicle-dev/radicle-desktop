@@ -1,12 +1,15 @@
 use traits::Profile;
+use traits::artifact_node::ArtifactNode;
 use traits::cobs::Cobs;
 use traits::issue::{Issues, IssuesMut};
 use traits::job::Jobs;
 use traits::patch::{Patches, PatchesMut};
 use traits::release::Releases;
+use traits::release_mut::ReleasesMut;
 use traits::repo::Repo;
 use traits::thread::Thread;
 
+pub mod artifact;
 pub mod binaries;
 pub mod cobs;
 pub mod config;
@@ -33,6 +36,8 @@ impl Jobs for AppState {}
 impl Patches for AppState {}
 impl PatchesMut for AppState {}
 impl Releases for AppState {}
+impl ReleasesMut for AppState {}
+impl ArtifactNode for AppState {}
 impl Profile for AppState {
     fn profile(&self) -> radicle::Profile {
         self.profile.clone()

@@ -197,6 +197,12 @@ pub struct Tagger {
 pub struct Tag {
     #[ts(as = "String")]
     pub oid: git::Oid,
+    /// Oid of the annotated tag object itself, as opposed to the commit it
+    /// peels to. Absent for lightweight tags. A release records this so it can
+    /// resolve its own title and tag name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(as = "Option<String>", optional)]
+    pub tag_oid: Option<git::Oid>,
     /// Tagger time for annotated tags, otherwise the commit time of the
     /// tagged commit. Seconds since epoch.
     #[ts(type = "number")]

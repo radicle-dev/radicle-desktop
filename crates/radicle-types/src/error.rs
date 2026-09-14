@@ -193,6 +193,34 @@ pub enum Error {
     /// Serde JSON error.
     #[error(transparent)]
     SerdeJSON(#[from] serde_json::error::Error),
+
+    /// Release creation error.
+    #[error(transparent)]
+    ReleaseCreate(#[from] radicle_artifact::error::Create),
+
+    /// Artifact metadata error.
+    #[error(transparent)]
+    ArtifactMetadata(#[from] radicle_artifact::error::Metadata),
+
+    /// Artifact redaction error.
+    #[error(transparent)]
+    ArtifactRedact(#[from] radicle_artifact::error::Redact),
+
+    /// Content id error.
+    #[error(transparent)]
+    Cid(#[from] radicle_artifact_core::Error),
+
+    /// Object id parse error.
+    #[error(transparent)]
+    ParseObjectId(#[from] radicle::cob::object::ParseObjectId),
+
+    /// URL parse error.
+    #[error(transparent)]
+    UrlParse(#[from] url::ParseError),
+
+    /// Artifact node client error.
+    #[error(transparent)]
+    ArtifactClient(#[from] radicle_artifact_client::ClientError),
 }
 
 impl Error {
@@ -221,6 +249,11 @@ impl Error {
             }
             Error::FileTooLarge(_) => "PayloadError.TooLarge",
             Error::ReviewExists => "PatchError.ReviewExists",
+            // A missing socket is how a node that is not running presents, so
+            // the UI can offer setup guidance instead of a raw I/O error.
+            Error::ArtifactClient(radicle_artifact_client::ClientError::Io(_)) => {
+                "ArtifactNodeError.NotRunning"
+            }
             _ => "UnknownError",
         }
     }

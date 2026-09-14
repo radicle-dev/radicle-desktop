@@ -11,6 +11,18 @@ use radicle_artifact::display::{CommitTitle, TagName};
 
 use crate::cobs;
 
+/// A locally computed content id and size for a file or directory staged for
+/// release, before it is registered on the COB.
+#[derive(Clone, Serialize, TS, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/release/")]
+pub struct ArtifactDigest {
+    pub cid: String,
+    #[ts(type = "number")]
+    pub size_bytes: u64,
+}
+
 /// A place an artifact can be fetched from, contributed by a single node.
 #[derive(Clone, Serialize, TS, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]

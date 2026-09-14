@@ -285,6 +285,7 @@ fn resolve_tag(repo: &storage::git::Repository, oid: git::raw::Oid) -> Option<re
             .unwrap_or_else(|| commit.time().seconds());
         return Some(repo::Tag {
             oid: commit.id().into(),
+            tag_oid: Some(oid.into()),
             timestamp,
             tagger,
             message: tag.message().ok().flatten().map(str::to_owned),
@@ -293,6 +294,7 @@ fn resolve_tag(repo: &storage::git::Repository, oid: git::raw::Oid) -> Option<re
     let commit = repo.backend.find_commit(oid).ok()?;
     Some(repo::Tag {
         oid: commit.id().into(),
+        tag_oid: None,
         timestamp: commit.time().seconds(),
         tagger: None,
         message: None,
