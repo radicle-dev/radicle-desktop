@@ -5,11 +5,7 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import * as router from "@app/lib/router";
-  import {
-    absoluteTimestamp,
-    authorForNodeId,
-    formatTimestamp,
-  } from "@app/lib/utils";
+  import { authorForNodeId } from "@app/lib/utils";
 
   import ArtifactDownloadButton from "@app/components/ArtifactDownloadButton.svelte";
   import Button from "@app/components/Button.svelte";
@@ -18,6 +14,7 @@
   import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import ReleaseMetadata from "@app/components/ReleaseMetadata.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import ShareButton from "@app/components/ShareButton.svelte";
   import Topbar from "@app/components/Topbar.svelte";
@@ -35,6 +32,9 @@
 
   const SIZE_KEY = "sizeBytes";
 
+  // A release COB carries no name of its own. The backend resolves one from the
+  // annotated tag's message, falling back to the commit subject; failing both,
+  // the tag name and then the release id stand in.
   const title = $derived(release.title || release.tagName || release.id);
   const delegateIds = $derived(new Set(repo.delegates.map(d => d.did)));
 
@@ -164,6 +164,15 @@
     display: flex;
     align-items: center;
     gap: 0.375rem;
+    min-width: 0;
+  }
+  .breadcrumb-title {
+    color: var(--color-text-primary);
+    font: var(--txt-body-m-medium);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .breadcrumb-link {
     cursor: pointer;
@@ -177,8 +186,10 @@
     color: var(--color-text-primary);
   }
   .main {
-    padding: 1.5rem 2rem;
+    padding: 1.5rem 6rem;
     min-width: 0;
+    max-width: 80rem;
+    margin: 0 auto;
   }
   .title {
     display: flex;
@@ -194,28 +205,7 @@
     color: var(--color-text-tertiary);
   }
   .metadata-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    font: var(--txt-body-m-regular);
-    color: var(--color-text-secondary);
     margin-bottom: 1.5rem;
-  }
-  .commit-link {
-    display: inline-flex;
-    text-decoration: none;
-    color: inherit;
-  }
-  .commit-link:hover {
-    color: var(--color-text-primary);
-  }
-  .tag {
-    font: var(--txt-body-s-regular);
-    color: var(--color-text-tertiary);
-    border: 1px solid var(--color-border-subtle);
-    border-radius: var(--border-radius-sm);
-    padding: 0 0.375rem;
   }
   .filter {
     display: flex;
@@ -360,7 +350,7 @@
           Releases
         </button>
         <Icon name="chevron-right" />
-        <Id id={release.id} clipboard={release.id} label="release ID" />
+        <span class="breadcrumb-title">{title}</span>
       </div>
       <div style:margin-left="auto" style:display="flex" style:gap="0.5rem">
         <ShareButton
@@ -382,27 +372,7 @@
         </div>
 
         <div class="metadata-row">
-          {#if release.tagName}
-            <span class="tag">{release.tagName}</span>
-          {/if}
-          commit
-          <a
-            class="commit-link"
-            href={router.routeToPath({
-              resource: "repo.commit",
-              rid: repo.rid,
-              commit: release.oid,
-            })}>
-            <Id id={release.oid} clipboard={release.oid} label="commit" />
-          </a>
-          <NodeId {...authorForNodeId(release.creator)} />
-          {#if delegateIds.has(release.creator.did)}
-            <DelegateBadge />
-          {/if}
-          released
-          <span title={absoluteTimestamp(release.createdAt)}>
-            {formatTimestamp(release.createdAt)}
-          </span>
+          <ReleaseMetadata {release} {repo} {delegateIds} />
         </div>
 
         {#if showFilters || redactedCount > 0}

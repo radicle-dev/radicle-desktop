@@ -23,7 +23,8 @@
 
   const { allAuthors, delegateIds, release, rid }: Props = $props();
 
-  // The COB has no title; fall back to the tag name, then the release id.
+  // The COB has no name of its own; the backend resolves one from the tag
+  // message or commit subject. Fall back to the tag name, then the release id.
   const title = $derived(release.title || release.tagName || release.id);
 </script>
 

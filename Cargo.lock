@@ -4516,6 +4516,7 @@ dependencies = [
  "mime-infer",
  "radicle",
  "radicle-artifact",
+ "radicle-artifact-client",
  "radicle-artifact-core",
  "radicle-job",
  "radicle-localtime",
