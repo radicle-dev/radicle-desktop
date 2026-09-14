@@ -472,6 +472,14 @@
       activeRid() === rid
     );
   }
+
+  function isReleases(rid: string): boolean {
+    return (
+      ($activeRoute.resource === "repo.releases" ||
+        $activeRoute.resource === "repo.release") &&
+      activeRid() === rid
+    );
+  }
 </script>
 
 <style>
@@ -1123,6 +1131,18 @@
         isPatches(repo.rid),
         activeProject?.meta.patches.open || undefined,
       )}
+      {@render subItem(
+        repo.name,
+        router.routeToPath({
+          resource: "repo.releases",
+          rid: repo.rid,
+          allAuthors: false,
+        }),
+        "parcel",
+        "Releases",
+        isReleases(repo.rid),
+        undefined,
+      )}
     </div>
   {/if}
 {/snippet}
@@ -1130,7 +1150,7 @@
 {#snippet subItem(
   repoName: string,
   href: string,
-  icon: "branch" | "issue" | "patch",
+  icon: "branch" | "issue" | "patch" | "parcel",
   label: string,
   active: boolean,
   count: number | undefined,

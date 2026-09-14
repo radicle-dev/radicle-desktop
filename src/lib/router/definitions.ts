@@ -8,6 +8,8 @@ import {
   loadIssues,
   loadPatch,
   loadPatches,
+  loadRelease,
+  loadReleases,
   loadRepoCommit,
   loadRepoCommits,
   loadRepoHome,
@@ -62,7 +64,9 @@ export function isLoadedRepoRoute(
     route.resource === "repo.issue" ||
     route.resource === "repo.issues" ||
     route.resource === "repo.patch" ||
-    route.resource === "repo.patches"
+    route.resource === "repo.patches" ||
+    route.resource === "repo.release" ||
+    route.resource === "repo.releases"
   );
 }
 
@@ -117,6 +121,10 @@ export async function loadRoute(
     return loadPatch(route, previousLoaded);
   } else if (route.resource === "repo.patches") {
     return loadPatches(route);
+  } else if (route.resource === "repo.release") {
+    return loadRelease(route);
+  } else if (route.resource === "repo.releases") {
+    return loadReleases(route);
   }
   return route;
 }

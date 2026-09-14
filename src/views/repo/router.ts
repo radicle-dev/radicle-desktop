@@ -6,6 +6,7 @@ import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { Review } from "@bindings/cob/patch/Review";
 import type { Revision } from "@bindings/cob/patch/Revision";
+import type { Release } from "@bindings/cob/release/Release";
 import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Config } from "@bindings/config/Config";
 import type { Diff } from "@bindings/diff/Diff";
@@ -27,6 +28,7 @@ export type IssueStatus = "all" | Issue["state"]["status"];
 
 export const DEFAULT_TAKE = 20;
 export const COMMITS_PAGE_SIZE = 300;
+export const RELEASES_PER_PAGE = 30;
 
 export interface RepoHomeRoute {
   resource: "repo.home";
@@ -168,6 +170,41 @@ export interface LoadedRepoPatchesRoute {
   };
 }
 
+export interface RepoReleasesRoute {
+  resource: "repo.releases";
+  rid: string;
+  allAuthors: boolean;
+}
+
+export interface LoadedRepoReleasesRoute {
+  resource: "repo.releases";
+  params: {
+    repo: RepoInfo;
+    releases: PaginatedQuery<Release[]>;
+    releaseCount: number;
+    allAuthors: boolean;
+    sidebarData: SidebarData;
+  };
+}
+
+export interface RepoReleaseRoute {
+  resource: "repo.release";
+  rid: string;
+  release: string;
+  allAuthors: boolean;
+}
+
+export interface LoadedRepoReleaseRoute {
+  resource: "repo.release";
+  params: {
+    repo: RepoInfo;
+    config: Config;
+    release: Release;
+    allAuthors: boolean;
+    sidebarData: SidebarData;
+  };
+}
+
 export type RepoRoute =
   | RepoHomeRoute
   | RepoCommitsRoute
@@ -175,7 +212,9 @@ export type RepoRoute =
   | RepoIssueRoute
   | RepoIssuesRoute
   | RepoPatchRoute
-  | RepoPatchesRoute;
+  | RepoPatchesRoute
+  | RepoReleaseRoute
+  | RepoReleasesRoute;
 export type LoadedRepoRoute =
   | LoadedRepoHomeRoute
   | LoadedRepoCommitsRoute
@@ -183,7 +222,9 @@ export type LoadedRepoRoute =
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
   | LoadedRepoPatchRoute
-  | LoadedRepoPatchesRoute;
+  | LoadedRepoPatchesRoute
+  | LoadedRepoReleaseRoute
+  | LoadedRepoReleasesRoute;
 
 export async function loadPatch(
   route: RepoPatchRoute,
@@ -462,6 +503,73 @@ export async function loadIssues(
   };
 }
 
+export async function loadReleases(
+  route: RepoReleasesRoute,
+): Promise<LoadedRepoReleasesRoute> {
+  const [sidebarData, repo, releases, releaseCount] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<PaginatedQuery<Release[]>>("list_releases", {
+      rid: route.rid,
+      filter: { allAuthors: route.allAuthors },
+      skip: 0,
+      take: RELEASES_PER_PAGE,
+    }),
+    invoke<number>("release_count", {
+      rid: route.rid,
+    }),
+  ]);
+
+  return {
+    resource: "repo.releases",
+    params: {
+      sidebarData,
+      repo,
+      releases,
+      releaseCount,
+      allAuthors: route.allAuthors,
+    },
+  };
+}
+
+export async function loadRelease(
+  route: RepoReleaseRoute,
+): Promise<LoadedRepoReleaseRoute | LoadedRepoReleasesRoute> {
+  const [sidebarData, repo, release] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Release | null>("release_by_id", {
+      rid: route.rid,
+      id: route.release,
+    }),
+  ]);
+
+  // The release may have been redacted away, or the link may be stale; fall
+  // back to the list instead of rendering an empty page.
+  if (!release) {
+    return loadReleases({
+      resource: "repo.releases",
+      rid: route.rid,
+      allAuthors: route.allAuthors,
+    });
+  }
+
+  return {
+    resource: "repo.release",
+    params: {
+      sidebarData,
+      repo,
+      config: sidebarData.config,
+      release,
+      allAuthors: route.allAuthors,
+    },
+  };
+}
+
 export function repoRouteToPath(route: RepoRoute): string {
   const pathSegments = ["/repos", route.rid];
   const searchParams = new URLSearchParams();
@@ -515,6 +623,20 @@ export function repoRouteToPath(route: RepoRoute): string {
     let url = [...pathSegments, "patches"].join("/");
     if (route.status) {
       searchParams.set("status", route.status);
+      url += `?${searchParams}`;
+    }
+    return url;
+  } else if (route.resource === "repo.release") {
+    let url = [...pathSegments, "releases", route.release].join("/");
+    if (route.allAuthors) {
+      searchParams.set("allAuthors", "true");
+      url += `?${searchParams}`;
+    }
+    return url;
+  } else if (route.resource === "repo.releases") {
+    let url = [...pathSegments, "releases"].join("/");
+    if (route.allAuthors) {
+      searchParams.set("allAuthors", "true");
       url += `?${searchParams}`;
     }
     return url;
@@ -603,6 +725,14 @@ export function repoUrlToRoute(
         };
       } else {
         return { resource: "repo.patches", rid, status };
+      }
+    } else if (resource === "releases") {
+      const id = segments.shift();
+      const allAuthors = searchParams.get("allAuthors") === "true";
+      if (id) {
+        return { resource: "repo.release", rid, release: id, allAuthors };
+      } else {
+        return { resource: "repo.releases", rid, allAuthors };
       }
     } else {
       return null;

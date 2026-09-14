@@ -44,6 +44,8 @@
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
+  import Release from "@app/views/repo/Release.svelte";
+  import Releases from "@app/views/repo/Releases.svelte";
   import RepoCommit from "@app/views/repo/RepoCommit.svelte";
   import RepoCommits from "@app/views/repo/RepoCommits.svelte";
   import RepoHome from "@app/views/repo/RepoHome.svelte";
@@ -215,6 +217,10 @@
         <Patch {...$activeRouteStore.params} />
       {:else if $activeRouteStore.resource === "repo.patches"}
         <Patches {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.release"}
+        <Release {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.releases"}
+        <Releases {...$activeRouteStore.params} />
       {:else}
         {unreachable($activeRouteStore)}
       {/if}
