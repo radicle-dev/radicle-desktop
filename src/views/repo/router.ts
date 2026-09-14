@@ -6,6 +6,10 @@ import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 import type { Patch } from "@bindings/cob/patch/Patch";
 import type { Review } from "@bindings/cob/patch/Review";
 import type { Revision } from "@bindings/cob/patch/Revision";
+import type { Release } from "@bindings/cob/release/Release";
+import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
+import type { ReleaseFilter } from "@bindings/cob/release/ReleaseFilter";
+import type { ReleaseScope } from "@bindings/cob/release/ReleaseScope";
 import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Config } from "@bindings/config/Config";
 import type { Diff } from "@bindings/diff/Diff";
@@ -20,6 +24,7 @@ import {
   cachedGetDiffText,
   invoke,
 } from "@app/lib/invoke";
+import { releaseListScope } from "@app/lib/releases";
 import type { LoadedRoute, SidebarData } from "@app/lib/router/definitions";
 import { loadSidebarData } from "@app/lib/router/definitions";
 import { unreachable } from "@app/lib/utils";
@@ -28,6 +33,7 @@ export type IssueStatus = "all" | Issue["state"]["status"];
 
 export const DEFAULT_TAKE = 20;
 export const COMMITS_PAGE_SIZE = 300;
+export const RELEASES_PER_PAGE = 30;
 
 export interface RepoHomeRoute {
   resource: "repo.home";
@@ -187,6 +193,45 @@ export interface LoadedRepoPatchesRoute {
   };
 }
 
+export interface RepoReleasesRoute {
+  resource: "repo.releases";
+  rid: string;
+  scope?: ReleaseScope;
+}
+
+export interface LoadedRepoReleasesRoute {
+  resource: "repo.releases";
+  params: {
+    repo: RepoInfo;
+    releases: PaginatedQuery<Release[]>;
+    releaseCounts: ReleaseCounts;
+    scope: ReleaseScope;
+    showFilters: boolean;
+    sidebarData: SidebarData;
+  };
+}
+
+export interface RepoReleaseRoute {
+  resource: "repo.release";
+  rid: string;
+  release: string;
+  // The release list the user came from, shown in the breadcrumb.
+  scope?: ReleaseScope;
+  artifactScope?: ReleaseScope;
+}
+
+export interface LoadedRepoReleaseRoute {
+  resource: "repo.release";
+  params: {
+    repo: RepoInfo;
+    config: Config;
+    release: Release;
+    scope?: ReleaseScope;
+    artifactScope?: ReleaseScope;
+    sidebarData: SidebarData;
+  };
+}
+
 export type RepoRoute =
   | RepoHomeRoute
   | RepoCommitsRoute
@@ -195,7 +240,9 @@ export type RepoRoute =
   | RepoIssueRoute
   | RepoIssuesRoute
   | RepoPatchRoute
-  | RepoPatchesRoute;
+  | RepoPatchesRoute
+  | RepoReleaseRoute
+  | RepoReleasesRoute;
 export type LoadedRepoRoute =
   | LoadedRepoHomeRoute
   | LoadedRepoCommitsRoute
@@ -204,7 +251,9 @@ export type LoadedRepoRoute =
   | LoadedRepoIssueRoute
   | LoadedRepoIssuesRoute
   | LoadedRepoPatchRoute
-  | LoadedRepoPatchesRoute;
+  | LoadedRepoPatchesRoute
+  | LoadedRepoReleaseRoute
+  | LoadedRepoReleasesRoute;
 
 export async function loadPatch(
   route: RepoPatchRoute,
@@ -503,6 +552,94 @@ export async function loadIssues(
   };
 }
 
+export function listReleases(
+  rid: string,
+  scope: ReleaseScope,
+  skip: number,
+  // Undefined lists every release.
+  take: number | undefined,
+) {
+  return invoke<PaginatedQuery<Release[]>>("list_releases", {
+    rid,
+    filter: { scope, showRedacted: false } satisfies ReleaseFilter,
+    skip,
+    take,
+  });
+}
+
+export async function loadReleases(
+  route: RepoReleasesRoute,
+): Promise<LoadedRepoReleasesRoute> {
+  let scope = route.scope ?? "trusted";
+  const [sidebarData, repo, firstPage, releaseCounts] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    listReleases(route.rid, scope, 0, RELEASES_PER_PAGE),
+    invoke<ReleaseCounts>("release_counts", {
+      rid: route.rid,
+    }),
+  ]);
+  let releases = firstPage;
+
+  const fallback = releaseListScope(route.scope, releaseCounts);
+  if (fallback !== scope) {
+    scope = fallback;
+    releases = await listReleases(route.rid, scope, 0, RELEASES_PER_PAGE);
+  }
+
+  const showFilters = releaseCounts.delegate > 0 && releaseCounts.other > 0;
+
+  return {
+    resource: "repo.releases",
+    params: {
+      sidebarData,
+      repo,
+      releases,
+      releaseCounts,
+      scope,
+      showFilters,
+    },
+  };
+}
+
+export async function loadRelease(
+  route: RepoReleaseRoute,
+): Promise<LoadedRepoReleaseRoute | LoadedRepoReleasesRoute> {
+  const [sidebarData, repo, release] = await Promise.all([
+    loadSidebarData(),
+    invoke<RepoInfo>("repo_by_id", {
+      rid: route.rid,
+    }),
+    invoke<Release | null>("release_by_id", {
+      rid: route.rid,
+      id: route.release,
+    }),
+  ]);
+
+  // A redacted or stale release falls back to the list.
+  if (!release) {
+    return loadReleases({
+      resource: "repo.releases",
+      rid: route.rid,
+      scope: route.scope,
+    });
+  }
+
+  return {
+    resource: "repo.release",
+    params: {
+      sidebarData,
+      repo,
+      config: sidebarData.config,
+      release,
+      scope: route.scope,
+      artifactScope: route.artifactScope,
+    },
+  };
+}
+
 export function repoRouteToPath(route: RepoRoute): string {
   const pathSegments = ["/repos", route.rid];
   const searchParams = new URLSearchParams();
@@ -565,9 +702,32 @@ export function repoRouteToPath(route: RepoRoute): string {
       url += `?${searchParams}`;
     }
     return url;
+  } else if (route.resource === "repo.release") {
+    let url = [...pathSegments, "releases", route.release].join("/");
+    if (route.scope) {
+      searchParams.set("scope", route.scope);
+    }
+    if (route.artifactScope === "untrusted") {
+      searchParams.set("artifacts", "untrusted");
+    }
+    if (searchParams.size > 0) {
+      url += `?${searchParams}`;
+    }
+    return url;
+  } else if (route.resource === "repo.releases") {
+    let url = [...pathSegments, "releases"].join("/");
+    if (route.scope) {
+      searchParams.set("scope", route.scope);
+      url += `?${searchParams}`;
+    }
+    return url;
   } else {
     return unreachable(route);
   }
+}
+
+function parseReleaseScope(value: string | null): ReleaseScope | undefined {
+  return value === "trusted" || value === "untrusted" ? value : undefined;
 }
 
 export function repoUrlToRoute(
@@ -653,6 +813,24 @@ export function repoUrlToRoute(
         };
       } else {
         return { resource: "repo.patches", rid, status };
+      }
+    } else if (resource === "releases") {
+      const id = segments.shift();
+      const scope = parseReleaseScope(searchParams.get("scope"));
+      if (id) {
+        const artifactScope =
+          searchParams.get("artifacts") === "untrusted"
+            ? "untrusted"
+            : undefined;
+        return {
+          resource: "repo.release",
+          rid,
+          release: id,
+          scope,
+          artifactScope,
+        };
+      } else {
+        return { resource: "repo.releases", rid, scope };
       }
     } else {
       return null;

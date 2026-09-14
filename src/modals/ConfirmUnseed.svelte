@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { disableHide, enableHide, hide } from "@app/lib/modal";
   import { repoListScope } from "@app/lib/repoListScope";
 
-  import Button from "@app/components/Button.svelte";
   import Checkbox from "@app/components/Checkbox.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import ConfirmModal from "@app/modals/ConfirmModal.svelte";
 
   interface Props {
     name: string;
@@ -15,60 +14,9 @@
   const { name, rid, confirm }: Props = $props();
 
   let clean = $state(false);
-  let working = $state(false);
-  let error = $state<string | undefined>(undefined);
-
-  async function run() {
-    if (working) return;
-    working = true;
-    error = undefined;
-    // Two commands run back to back, so the scrim and the close button stay
-    // inert until both have settled.
-    disableHide();
-    try {
-      await confirm(clean);
-      enableHide();
-      hide();
-    } catch (e) {
-      error = e instanceof Error ? e.message : "Unable to stop seeding.";
-      enableHide();
-    } finally {
-      working = false;
-    }
-  }
 </script>
 
 <style>
-  .modal {
-    width: 26rem;
-    display: flex;
-    flex-direction: column;
-    border: 1px solid var(--color-border-subtle);
-    border-radius: var(--border-radius-lg);
-    background-color: var(--color-surface-canvas);
-    overflow: hidden;
-  }
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 1.5rem;
-    height: 3.25rem;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--color-border-subtle);
-  }
-  .title {
-    font: var(--txt-heading-s);
-    color: var(--color-text-primary);
-  }
-  .body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    padding: 1.5rem;
-    font: var(--txt-body-m-regular);
-    color: var(--color-text-secondary);
-  }
   .repo {
     display: flex;
     align-items: center;
@@ -110,33 +58,17 @@
     gap: 0.75rem;
     min-width: 0;
   }
-  .error {
-    color: var(--color-feedback-error-text);
-  }
-  .actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    padding: 0 1.5rem 1.5rem;
-  }
-  .confirm-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
 </style>
 
-<div class="modal">
-  <div class="header">
-    <span class="title">Stop seeding</span>
-    <Button variant="naked" onclick={hide}>
-      <span style:color="var(--color-text-tertiary)">
-        <Icon name="close" />
-      </span>
-    </Button>
-  </div>
-
-  <div class="body">
+<ConfirmModal
+  title="Unseed"
+  width="26rem"
+  icon={clean ? "trash" : "seed"}
+  label="Unseed"
+  busyLabel="Unseeding…"
+  failure="Unable to unseed."
+  confirm={() => confirm(clean)}>
+  {#snippet body({ working })}
     <div class="repo txt-overflow">
       <span class="repo-icon"><Icon name="repository" /></span>
       {name}
@@ -156,7 +88,7 @@
           {/if}
         </span>
         <!-- Its own paragraph rather than a swapped-in sentence, so ticking the
-             box reads as text appearing instead of a block reflowing. -->
+               box reads as text appearing instead of a block reflowing. -->
         {#if clean}
           <span>
             The files go too, except the refs your node signed and the
@@ -171,19 +103,5 @@
         </Checkbox>
       </div>
     </div>
-
-    {#if error}
-      <span class="error">{error}</span>
-    {/if}
-  </div>
-
-  <div class="actions">
-    <Button variant="outline" onclick={hide}>Cancel</Button>
-    <Button variant="ghost" disabled={working} onclick={() => void run()}>
-      <span class="confirm-label">
-        <Icon name={clean ? "trash" : "seed"} />
-        {working ? "Stopping…" : "Stop seeding"}
-      </span>
-    </Button>
-  </div>
-</div>
+  {/snippet}
+</ConfirmModal>

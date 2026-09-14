@@ -13,6 +13,7 @@ describe("basename", () => {
     ["/home/alice/cat.png", "cat.png"],
     ["C:\\Users\\alice\\cat.png", "cat.png"],
     ["cat.png", "cat.png"],
+    ["/home/alice/build/", "build"],
   ])("of %j is %j", (path, expected) => {
     expect(basename(path)).toBe(expected);
   });

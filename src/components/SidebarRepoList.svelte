@@ -52,6 +52,7 @@
 </script>
 
 <script lang="ts">
+  import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { CrossfadeParams } from "svelte/transition";
@@ -192,6 +193,37 @@
 
   onMount(() => {
     return () => resetDynamicInterval("seededNotReplicated");
+  });
+
+  // Kept while navigating inside the repo, so the badge doesn't flicker.
+  let releaseCount = $state<number | undefined>(undefined);
+  let countedRid: string | undefined = undefined;
+
+  $effect(() => {
+    const rid = activeRepo?.rid;
+    if (rid === undefined) {
+      releaseCount = undefined;
+      countedRid = undefined;
+      return;
+    }
+
+    if (countedRid !== rid) {
+      releaseCount = undefined;
+      countedRid = rid;
+    }
+
+    let cancelled = false;
+    invoke<ReleaseCounts>("release_counts", { rid })
+      .then(counts => {
+        if (!cancelled) releaseCount = counts.delegate + counts.other;
+      })
+      .catch(() => {
+        if (!cancelled) releaseCount = undefined;
+      });
+
+    return () => {
+      cancelled = true;
+    };
   });
 
   const filteredRepos = $derived(
@@ -514,6 +546,14 @@
     return (
       ($activeRoute.resource === "repo.patches" ||
         $activeRoute.resource === "repo.patch") &&
+      activeRid() === rid
+    );
+  }
+
+  function isReleases(rid: string): boolean {
+    return (
+      ($activeRoute.resource === "repo.releases" ||
+        $activeRoute.resource === "repo.release") &&
       activeRid() === rid
     );
   }
@@ -1161,6 +1201,17 @@
         isPatches(repo.rid),
         activeProject?.meta.patches.open || undefined,
       )}
+      {@render subItem(
+        repo.name,
+        router.routeToPath({
+          resource: "repo.releases",
+          rid: repo.rid,
+        }),
+        "parcel",
+        "Releases",
+        isReleases(repo.rid),
+        releaseCount || undefined,
+      )}
     </div>
   {/if}
 {/snippet}
@@ -1168,7 +1219,7 @@
 {#snippet subItem(
   repoName: string,
   href: string,
-  icon: "branch" | "issue" | "patch",
+  icon: "branch" | "issue" | "patch" | "parcel",
   label: string,
   active: boolean,
   count: number | undefined,
@@ -1283,7 +1334,7 @@
         role="menuitem"
         onclick={() => confirmUnseed(repo)}>
         <Icon name="seed" />
-        Stop seeding
+        Unseed
       </button>
     {:else}
       <button

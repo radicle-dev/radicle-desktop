@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 
-import { dynamicInterval, resetDynamicInterval } from "@app/lib/interval";
+import { dynamicInterval, poll, resetDynamicInterval } from "@app/lib/interval";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -71,4 +71,42 @@ test("keys run independently", () => {
   vi.advanceTimersByTime(100);
   expect(a).toHaveBeenCalledTimes(1);
   expect(b).toHaveBeenCalledTimes(1);
+});
+
+test("poll runs at once and again a period after each run settles", async () => {
+  let release: (() => void) | undefined;
+  const task = vi.fn(() => new Promise<void>(resolve => (release = resolve)));
+  const stop = poll(task, 100);
+  expect(task).toHaveBeenCalledTimes(1);
+
+  // A slow run never overlaps the next one.
+  await vi.advanceTimersByTimeAsync(500);
+  expect(task).toHaveBeenCalledTimes(1);
+
+  release?.();
+  await vi.advanceTimersByTimeAsync(99);
+  expect(task).toHaveBeenCalledTimes(1);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(task).toHaveBeenCalledTimes(2);
+  stop();
+});
+
+test("stopping a poll ends it and marks a pending run inactive", async () => {
+  let active: (() => boolean) | undefined;
+  let release: (() => void) | undefined;
+  const task = vi.fn(
+    (isActive: () => boolean) =>
+      new Promise<void>(resolve => {
+        active = isActive;
+        release = resolve;
+      }),
+  );
+  const stop = poll(task, 100);
+  expect(active?.()).toBe(true);
+
+  stop();
+  expect(active?.()).toBe(false);
+  release?.();
+  await vi.advanceTimersByTimeAsync(1000);
+  expect(task).toHaveBeenCalledTimes(1);
 });

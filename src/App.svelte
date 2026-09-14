@@ -3,7 +3,6 @@
   import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import { listen } from "@tauri-apps/api/event";
   import { onDestroy, onMount } from "svelte";
   import { get } from "svelte/store";
 
@@ -15,7 +14,6 @@
   } from "@app/lib/appearance.svelte";
   import { checkAuth, startup } from "@app/lib/auth.svelte";
   import { deepLinksReady, listenForDeepLinks } from "@app/lib/deepLink";
-  import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
   import { hide, modalStore, show, toggle } from "@app/lib/modal";
@@ -23,6 +21,7 @@
   import { isLoadedRepoRoute } from "@app/lib/router/definitions";
   import { listenForShortcuts, useShortcuts } from "@app/lib/shortcuts.svelte";
   import {
+    createEventEmittersOnce,
     setUnlistenNodeEvents,
     unlistenNodeEvents,
   } from "@app/lib/startup.svelte";
@@ -48,6 +47,8 @@
   import Issues from "@app/views/repo/Issues.svelte";
   import Patch from "@app/views/repo/Patch.svelte";
   import Patches from "@app/views/repo/Patches.svelte";
+  import Release from "@app/views/repo/Release.svelte";
+  import Releases from "@app/views/repo/Releases.svelte";
   import RepoCommit from "@app/views/repo/RepoCommit.svelte";
   import RepoCommits from "@app/views/repo/RepoCommits.svelte";
   import RepoHome from "@app/views/repo/RepoHome.svelte";
@@ -181,22 +182,7 @@
       return;
     }
 
-    if (window.__TAURI_INTERNALS__) {
-      setUnlistenNodeEvents(
-        await listen<boolean>("node_running", event => {
-          nodeRunning.set(event.payload);
-        }),
-      );
-    } else {
-      // The test backend can't emit events.
-      const pollNodeRunning = () =>
-        invoke<boolean>("node_running")
-          .then(running => nodeRunning.set(running))
-          .catch(console.error);
-      void pollNodeRunning();
-      const interval = setInterval(pollNodeRunning, 2_000);
-      setUnlistenNodeEvents(() => clearInterval(interval));
-    }
+    setUnlistenNodeEvents(await createEventEmittersOnce());
 
     void listenForDeepLinks();
     try {
@@ -299,6 +285,12 @@
         <Patch {...$activeRouteStore.params} />
       {:else if $activeRouteStore.resource === "repo.patches"}
         <Patches {...$activeRouteStore.params} />
+      {:else if $activeRouteStore.resource === "repo.release"}
+        {#key $activeRouteStore.params.release.id}
+          <Release {...$activeRouteStore.params} />
+        {/key}
+      {:else if $activeRouteStore.resource === "repo.releases"}
+        <Releases {...$activeRouteStore.params} />
       {:else}
         {unreachable($activeRouteStore)}
       {/if}

@@ -31,9 +31,7 @@
       error = undefined;
       try {
         await invoke("authenticate", { passphrase });
-        if (window.__TAURI_INTERNALS__) {
-          setUnlistenNodeEvents(await createEventEmittersOnce());
-        }
+        setUnlistenNodeEvents(await createEventEmittersOnce());
         passphrase = " ".repeat(passphrase.length);
         await router.push({ resource: "inbox" });
       } catch (err) {

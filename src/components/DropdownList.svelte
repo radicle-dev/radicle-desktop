@@ -8,9 +8,16 @@
     empty?: Snippet;
     items: T[];
     styleDropdownMinWidth?: string;
+    styleDropdownMaxHeight?: string;
   }
 
-  const { item, empty, items, styleDropdownMinWidth }: Props = $props();
+  const {
+    item,
+    empty,
+    items,
+    styleDropdownMinWidth,
+    styleDropdownMaxHeight = "60vh",
+  }: Props = $props();
 
   let dropdownElement: HTMLDivElement | undefined = undefined;
 
@@ -34,7 +41,6 @@
 <style>
   .dropdown {
     align-items: center;
-    max-height: 60vh;
     overflow-y: auto;
   }
   .dropdown-item {
@@ -46,7 +52,8 @@
 <div
   class="dropdown"
   bind:this={dropdownElement}
-  style:min-width={styleDropdownMinWidth}>
+  style:min-width={styleDropdownMinWidth}
+  style:max-height={styleDropdownMaxHeight}>
   {#each items as i}
     <div class="dropdown-item">
       {@render item(i)}

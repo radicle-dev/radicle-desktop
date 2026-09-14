@@ -1,5 +1,6 @@
 export function basename(path: string): string {
-  return path.split(/[\\/]/).pop() ?? path;
+  const parts = path.split(/[\\/]/).filter(p => p.length > 0);
+  return parts[parts.length - 1] ?? path;
 }
 
 export function embedPreviewKind(

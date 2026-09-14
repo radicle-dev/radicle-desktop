@@ -453,3 +453,64 @@ export function creditedCoAuthors(commit: {
     return true;
   });
 }
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  const units = ["KiB", "MiB", "GiB", "TiB"];
+  let value = bytes / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
+}
+
+export function formatUptime(seconds: number): string {
+  if (seconds < 60) {
+    return `${Math.floor(seconds)}s`;
+  }
+  if (seconds < 3600) {
+    return `${Math.floor(seconds / 60)}m`;
+  }
+  if (seconds < 86400) {
+    return `${Math.floor(seconds / 3600)}h`;
+  }
+  return `${Math.floor(seconds / 86400)}d`;
+}
+
+// CIDs in a release share a long prefix, so the head grows until each label is
+// distinct.
+export function shortenCids(
+  cids: string[],
+  minHead = 7,
+  tailLength = 6,
+  maxHead = 16,
+): Map<string, string> {
+  const display = new Map<string, string>();
+  const unique = [...new Set(cids)];
+  if (unique.length === 0) {
+    return display;
+  }
+
+  let head = minHead;
+  while (
+    head < maxHead &&
+    new Set(unique.map(cid => cid.slice(0, head))).size < unique.length
+  ) {
+    head += 1;
+  }
+
+  for (const cid of unique) {
+    display.set(
+      cid,
+      head + tailLength >= cid.length
+        ? cid
+        : `${cid.slice(0, head)}…${cid.slice(-tailLength)}`,
+    );
+  }
+
+  return display;
+}

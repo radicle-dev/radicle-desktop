@@ -7,9 +7,11 @@ import {
   creditedCoAuthors,
   explorerHost,
   explorerLink,
+  formatBytes,
   formatGitIdentity,
   formatRepositoryId,
   formatTimestamp,
+  formatUptime,
   identityKey,
   isPublishableReview,
   parseNodeId,
@@ -17,6 +19,7 @@ import {
   pluralize,
   revisionPosition,
   safeHttpUrl,
+  shortenCids,
   truncateDid,
   unqualifyBranch,
 } from "@app/lib/utils";
@@ -306,5 +309,76 @@ describe("commit credits", () => {
     expect(
       creditedCoAuthors({ author: alice, committer: bob, message }),
     ).toEqual([carol]);
+  });
+});
+
+describe("formatBytes", () => {
+  test.each([
+    [0, "0 B"],
+    [1023, "1023 B"],
+    [1024, "1.0 KiB"],
+    [1536, "1.5 KiB"],
+    [10 * 1024 - 1, "10.0 KiB"],
+    [10 * 1024, "10 KiB"],
+    [1024 ** 2, "1.0 MiB"],
+    [1024 ** 4, "1.0 TiB"],
+    [1024 ** 5, "1024 TiB"],
+  ])("%d is %j", (bytes, expected) => {
+    expect(formatBytes(bytes)).toBe(expected);
+  });
+});
+
+describe("formatUptime", () => {
+  test.each([
+    [0, "0s"],
+    [59.9, "59s"],
+    [60, "1m"],
+    [3599, "59m"],
+    [3600, "1h"],
+    [86399, "23h"],
+    [86400, "1d"],
+    [86400 * 400, "400d"],
+  ])("%d is %j", (seconds, expected) => {
+    expect(formatUptime(seconds)).toBe(expected);
+  });
+});
+
+describe("shortenCids", () => {
+  const prefix = "bafkr4i";
+
+  test("returns nothing for no ids", () => {
+    expect(shortenCids([]).size).toBe(0);
+  });
+
+  test("keeps the minimum head when ids differ early", () => {
+    const a = "abcdefghij0123456789";
+    const b = "zbcdefghij9876543210";
+    const labels = shortenCids([a, b]);
+    expect(labels.get(a)).toBe("abcdefg…456789");
+    expect(labels.get(b)).toBe("zbcdefg…543210");
+  });
+
+  test("grows the head past a shared prefix until ids differ", () => {
+    const a = `${prefix}aaaa${"x".repeat(20)}111111`;
+    const b = `${prefix}aaab${"x".repeat(20)}111111`;
+    const labels = shortenCids([a, b]);
+    expect(labels.get(a)).toBe(`${prefix}aaaa…111111`);
+    expect(labels.get(b)).toBe(`${prefix}aaab…111111`);
+  });
+
+  test("stops growing the head at the maximum", () => {
+    const a = `${"p".repeat(20)}a${"x".repeat(10)}`;
+    const b = `${"p".repeat(20)}b${"x".repeat(10)}`;
+    expect(shortenCids([a, b]).get(a)).toBe(`${"p".repeat(16)}…xxxxxx`);
+  });
+
+  test("shows an id in full when head and tail cover it", () => {
+    const short = "abcdefghijklm";
+    expect(shortenCids([short]).get(short)).toBe(short);
+  });
+
+  test("labels repeated ids once", () => {
+    const a = "abcdefghij0123456789";
+    expect(shortenCids([a, a]).size).toBe(1);
   });
 });

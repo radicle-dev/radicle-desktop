@@ -23,3 +23,26 @@ export function resetDynamicInterval(key: string) {
   clearTimeout(dynamicIntervals.get(key));
   dynamicIntervals.delete(key);
 }
+
+// Unlike setInterval, a slow run never overlaps the next one.
+export function poll(
+  task: (active: () => boolean) => Promise<void>,
+  period: number,
+): () => void {
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const active = () => !stopped;
+
+  const run = async () => {
+    await task(active);
+    if (!stopped) {
+      timer = setTimeout(() => void run(), period);
+    }
+  };
+  void run();
+
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+  };
+}

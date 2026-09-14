@@ -37,6 +37,7 @@
   import useLocalStorage from "@app/lib/useLocalStorage.svelte";
   import { isMac } from "@app/lib/utils";
 
+  import ArtifactNodeStatusButton from "@app/components/ArtifactNodeStatusButton.svelte";
   import { badgeCounter } from "@app/components/BadgeCounterSwitch.svelte";
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -718,6 +719,7 @@
                 <span class="update-badge">New Update</span>
               {/if}
             </Button>
+            <ArtifactNodeStatusButton />
             <NodeStatusButton />
           </div>
         </div>

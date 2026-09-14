@@ -47,12 +47,12 @@ async function stopSeeding(page: Page, name: string, deleteFiles: boolean) {
   await page.getByRole("link", { name: new RegExp(name) }).click({
     button: "right",
   });
-  await page.getByRole("menuitem", { name: /Stop seeding/ }).click();
+  await page.getByRole("menuitem", { name: /Unseed/ }).click();
   if (deleteFiles) {
     await page.getByText("Delete the files from local storage").click();
   }
   await waitForCommand(page, deleteFiles ? "clean" : "unseed", () =>
-    page.getByRole("button", { name: /Stop seeding$/ }).click(),
+    page.getByRole("button", { name: /Unseed$/ }).click(),
   );
   await expect(page.getByRole("link", { name: new RegExp(name) })).toBeHidden();
 }
@@ -85,7 +85,7 @@ async function exists(path: string) {
   );
 }
 
-test("stopping seeding keeps the repo's files", async ({
+test("unseeding keeps the repo's files", async ({
   page,
   peerManager,
   stateDir,
@@ -97,7 +97,7 @@ test("stopping seeding keeps the repo's files", async ({
   expect(await exists(storedRepo(stateDir, rid))).toBe(true);
 });
 
-test("stopping seeding can delete the repo's files", async ({
+test("unseeding can delete the repo's files", async ({
   page,
   peerManager,
   stateDir,
