@@ -30,6 +30,9 @@
     popoverPadding?: string;
     expanded?: boolean;
     styleDisplay?: string;
+    /* Popovers portal to the body at a z-index that sits below the modal
+       layer, so one opened from inside a modal needs to be raised above it. */
+    styleZIndex?: string;
   }
 
   /* eslint-disable prefer-const */
@@ -41,6 +44,7 @@
     popoverPadding,
     expanded = $bindable(false),
     styleDisplay = undefined,
+    styleZIndex = undefined,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -120,7 +124,8 @@
       use:portal
       bind:this={floatingEl}
       class="popover"
-      style:padding={popoverPadding}>
+      style:padding={popoverPadding}
+      style:z-index={styleZIndex}>
       {@render popover()}
     </div>
   {/if}
