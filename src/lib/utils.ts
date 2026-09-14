@@ -426,3 +426,22 @@ export function coAuthors(message: string): GitIdentity[] {
 
   return authors;
 }
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = bytes / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
+}
+
+export function basename(path: string): string {
+  const parts = path.split(/[\\/]/).filter(p => p.length > 0);
+  return parts[parts.length - 1] ?? path;
+}

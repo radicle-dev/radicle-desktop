@@ -6,14 +6,18 @@
   import { RELEASES_PER_PAGE } from "@app/views/repo/router";
 
   import { invoke } from "@app/lib/invoke";
+  import { modalStore, show } from "@app/lib/modal";
   import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import * as router from "@app/lib/router";
+  import { isMac } from "@app/lib/utils";
 
+  import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import ReleaseTeaser from "@app/components/ReleaseTeaser.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
   import VirtualList from "@app/components/VirtualList.svelte";
+  import CreateReleaseModal from "@app/modals/CreateRelease.svelte";
 
   import Layout from "./Layout.svelte";
 
@@ -27,6 +31,10 @@
   const { repo, releases, releaseCount, allAuthors }: Props = $props();
 
   const delegateIds = $derived(new Set(repo.delegates.map(d => d.did)));
+
+  function openCreateRelease() {
+    show({ component: CreateReleaseModal, props: { repo } });
+  }
 
   const list = createPaginatedList<Release>({
     key: () => `repo.releases:${repo.rid}:${allAuthors}`,
@@ -95,6 +103,15 @@
   }
 </style>
 
+<svelte:document
+  onkeydown={e => {
+    const auxiliarKey = isMac() ? e.metaKey : e.ctrlKey;
+    if (auxiliarKey && e.key.toLowerCase() === "n" && !$modalStore) {
+      e.preventDefault();
+      openCreateRelease();
+    }
+  }} />
+
 <Layout selfScroll>
   <div class="page">
     <Topbar>
@@ -124,6 +141,14 @@
           <Icon name="avatar-incognito" />All
           <span class="global-counter-badge">{releaseCount}</span>
         </a>
+      </div>
+      <div style:margin-left="auto">
+        <Button
+          styleHeight="2rem"
+          variant="secondary"
+          onclick={openCreateRelease}>
+          <Icon name="plus" />New release
+        </Button>
       </div>
     </Topbar>
 
