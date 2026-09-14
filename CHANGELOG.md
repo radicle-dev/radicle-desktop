@@ -1,3 +1,51 @@
+### v0.16.0
+
+**Features**
+
+- Added a collapsible, resizable sidebar that remembers its width and
+  collapsed state across launches
+- Repositories that are only in local storage can now be shown alongside
+  seeded ones, controlled by a new setting
+- Private repositories are now marked with a lock and public ones with a
+  globe in the sidebar
+- Added "Stop seeding" to the sidebar context menu, with the option to
+  delete the repository files as well
+- Patches now show the branch they are opened against, in the patch list,
+  the patch page and the merge activity item
+- The author and committer popover now shows emails, lists co-authors, and
+  shows both the authored and committed time
+- The detected git binary is now shown in the settings
+- The Guide button in the sidebar can now be hidden
+- Added a Cmd+, shortcut to open Settings
+- The issue modal can now be submitted with Cmd+Return from the title field
+- The app now logs to a file when it isn't launched from a terminal
+
+**Bug fixes**
+
+- Fixed patch diffs for revisions whose head is a merge commit dropping
+  most of their commits
+- Fixed a single duplicate path, such as a symlink replaced by a regular
+  file, emptying the whole Changes tab
+- Git and rad are now resolved outside the session PATH, fixing git not
+  being found when the app is launched from the desktop
+- Editing a patch title no longer resets its target branch to the default
+  branch
+- The patch description is no longer collapsed while it is being edited
+- Reacting or commenting no longer makes the view jump
+- Clicking a commit in a patch no longer shifts the layout
+- The window stays draggable while a modal is open
+- Save buttons are now disabled instead of hidden when there is nothing to
+  save
+- Commit time is now used instead of author time consistently
+
+
+**Shout-out to our contributors 🙏✨**
+
+- [2color](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MktwkohCx8aHZ1QCjVZUiLmX92oPZFxRiFZkbq32Tk5Tkm)
+- [brandonoxendine](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkpwnLQxFBQXyMK3Es91s8A7Ew7G11BFFyng1dqZR8QhG3)
+- [upbeat-molar](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkmRaBHeJuJKQE21aRVSe2uW3j5T7gQQAEAY7UF4tr5jRn)
+
+
 ### v0.15.0
 
 **Features**
