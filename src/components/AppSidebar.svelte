@@ -590,26 +590,34 @@
             : 'Collapse'} sidebar ({toggleShortcut})"
           keyShortcuts={isMac() ? "Meta+b" : "Control+b"}
           onclick={toggleSidebar}
-          stylePadding="0 4px">
+          styleWidth="1.5rem"
+          styleHeight="1.5rem"
+          stylePadding="0">
           <span class="icon"><Icon name="sidebar-left" /></span>
         </Button>
         <Button
           variant="naked"
           onclick={() => window.history.back()}
-          stylePadding="0 4px">
+          styleWidth="1.5rem"
+          styleHeight="1.5rem"
+          stylePadding="0">
           <span class="icon"><Icon name="arrow-left" /></span>
         </Button>
         <Button
           variant="naked"
           onclick={() => window.history.forward()}
-          stylePadding="0 4px">
+          styleWidth="1.5rem"
+          styleHeight="1.5rem"
+          stylePadding="0">
           <span class="icon"><Icon name="arrow-right" /></span>
         </Button>
         <Button
           variant="naked"
           title="Reload"
           onclick={() => window.location.reload()}
-          stylePadding="0 4px">
+          styleWidth="1.5rem"
+          styleHeight="1.5rem"
+          stylePadding="0">
           <span class="icon"><Icon name="refresh" /></span>
         </Button>
       </span>

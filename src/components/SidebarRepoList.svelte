@@ -178,22 +178,43 @@
   // (the controls growing above it) is left to the shared layout transition.
   let allReposHeaderEl = $state<HTMLElement | undefined>();
   let headerFirst: FlipSnapshot | undefined;
-  const HEADER_FLIP = { selector: "[data-flip]", animateHeight: true };
+  const HEADER_FLIP_MS = 200;
+  const HEADER_FLIP = {
+    selector: "[data-flip]",
+    animateHeight: true,
+    durationMs: HEADER_FLIP_MS,
+  };
+
+  // FLIP translates the element back from its destination, so the pointer that
+  // clicked it keeps it hovered and a grey square slides across the header
+  // instead of an icon. The fill is dropped for the duration.
+  let headerFlipping = $state(false);
+  let headerFlipTimeout: ReturnType<typeof setTimeout> | undefined;
 
   $effect.pre(() => {
     // Measure before the DOM reflows for the new state.
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    /* eslint-disable @typescript-eslint/no-unused-expressions */
     sidebarCollapsed.value;
+    filterOpen;
+    /* eslint-enable @typescript-eslint/no-unused-expressions */
 
     headerFirst = captureFlip(allReposHeaderEl, HEADER_FLIP);
   });
 
   $effect(() => {
     // ...and play once it has.
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    /* eslint-disable @typescript-eslint/no-unused-expressions */
     sidebarCollapsed.value;
+    filterOpen;
+    /* eslint-enable @typescript-eslint/no-unused-expressions */
 
     playFlip(allReposHeaderEl, headerFirst, HEADER_FLIP);
+
+    headerFlipping = true;
+    if (headerFlipTimeout !== undefined) clearTimeout(headerFlipTimeout);
+    headerFlipTimeout = setTimeout(() => {
+      headerFlipping = false;
+    }, HEADER_FLIP_MS);
   });
 
   const ANIMATION_DURATION_MS = 220;
@@ -246,6 +267,20 @@
       easing: cubicOut,
       css: (t: number) =>
         `opacity: ${t}; height: ${t * height}px; margin-bottom: ${(t - 1) * gap}px; overflow: hidden; pointer-events: none;`,
+    };
+  }
+
+  // `slide` cannot roll this list up: it animates `height`, which never applies
+  // to a `flex: 1` item. `max-height` clamps one, and `--unroll-height` holds
+  // the scroll area at full size so the rows are clipped, not reflowed.
+  function unroll(node: Element, { duration }: { duration: number }) {
+    const height = (node as HTMLElement).offsetHeight;
+
+    return {
+      duration,
+      easing: cubicOut,
+      css: (t: number) =>
+        `max-height: ${t * height}px; overflow: hidden; --unroll-height: ${height}px;`,
     };
   }
 
@@ -459,6 +494,17 @@
     padding: 0;
     overflow: visible;
   }
+  /* Owns the flex sizing so `unroll` can clamp the scroll area inside. */
+  .repos-scroll {
+    flex: 1;
+    min-height: 0;
+    margin-top: -0.5rem;
+  }
+  /* A height, not `flex: 1`, which the scroll area sets inline and would win:
+     mid-transition `unroll` pins this so the wrapper clips it. */
+  .repos-scroll > :global(*) {
+    height: var(--unroll-height, 100%);
+  }
 
   .section-header {
     font: var(--txt-body-m-regular);
@@ -482,14 +528,29 @@
     flex: 1;
     min-width: 0;
   }
-  .section-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
+  /* Moved by `order`, not in the markup: the FLIP matches by element identity,
+     so the button has to stay one element across the toggle. */
+  .filter-action {
+    order: 1;
+    /* Promoted for good: the FLIP promotes it only for the move, and handing
+       the layer back at the end re-rounds its position by a pixel. */
+    will-change: transform;
+  }
+  .filter-action.open {
+    order: -1;
+    /* Lines the icon up with the rows below the header's 0.5rem padding. */
+    margin-left: -0.25rem;
+  }
+  .add-repo-action {
+    order: 2;
   }
   /* No room on the rail; the repo rows below stand on their own there. */
   .section-header.mini {
     display: none;
+  }
+  .section-header.flipping .filter-button:hover,
+  .section-header.flipping :global(.button:hover) {
+    background-color: transparent;
   }
 
   .filter-button {
@@ -503,6 +564,13 @@
     border-radius: var(--border-radius-sm);
     color: var(--color-text-secondary);
     cursor: pointer;
+  }
+  /* The same 1.5rem square as every other icon button in the sidebar. */
+  .filter-action .filter-button {
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    margin-left: 0;
   }
   .filter-button:hover {
     color: var(--color-text-primary);
@@ -763,6 +831,10 @@
   .icon-hover {
     grid-area: 1 / 1;
     transition: opacity 150ms ease;
+    /* Promoted for good, for the same reason the filter button is: the fade
+       puts these on a layer of their own only while it runs, and handing them
+       back at the end re-rounds their position by a pixel. */
+    will-change: opacity;
   }
   .icon-hover {
     opacity: 0;
@@ -877,6 +949,7 @@
   bind:this={allReposHeaderEl}
   class="section-header"
   class:mini={sidebarCollapsed.value}
+  class:flipping={headerFlipping}
   onclick={() => {
     if (!filterOpen) {
       reposExpanded.value = !reposExpanded.value;
@@ -896,15 +969,6 @@
       class="section-header-label"
       onclick={e => e.stopPropagation()}
       role="none">
-      <button
-        class="filter-button"
-        title="Clear filter"
-        onclick={() => {
-          filterOpen = false;
-          filterQuery = "";
-        }}>
-        <span class="icon"><Icon name="search" /></span>
-      </button>
       <input
         bind:this={filterInputElement}
         class="filter-input"
@@ -949,28 +1013,34 @@
       {/if}
     </span>
   {/if}
-  <span class="section-header-actions">
-    {#if !filterOpen}
-      <span data-flip onclick={e => e.stopPropagation()} role="none">
-        <button
-          class="filter-button"
-          title="Filter repos"
-          aria-keyshortcuts="ctrl+f"
-          onclick={() => {
-            filterOpen = true;
-            reposExpanded.value = true;
-          }}>
-          <span class="icon"><Icon name="search" /></span>
-        </button>
-      </span>
-    {/if}
-    <span
-      class="add-repo-action"
-      data-flip
-      onclick={e => e.stopPropagation()}
-      role="none">
-      <AddRepoButton reload={reloadRepos} {repos} {seededNotReplicated} />
-    </span>
+  <span
+    class="filter-action"
+    class:open={filterOpen}
+    data-flip
+    onclick={e => e.stopPropagation()}
+    role="none">
+    <button
+      class="filter-button"
+      title={filterOpen ? "Close filter" : "Filter repos"}
+      aria-keyshortcuts="ctrl+f"
+      onclick={() => {
+        if (filterOpen) {
+          filterOpen = false;
+          filterQuery = "";
+        } else {
+          filterOpen = true;
+          reposExpanded.value = true;
+        }
+      }}>
+      <span class="icon"><Icon name={filterOpen ? "close" : "search"} /></span>
+    </button>
+  </span>
+  <span
+    class="add-repo-action"
+    data-flip
+    onclick={e => e.stopPropagation()}
+    role="none">
+    <AddRepoButton reload={reloadRepos} {repos} {seededNotReplicated} />
   </span>
 </div>
 
@@ -1084,23 +1154,29 @@
   </a>
 {/snippet}
 
-{#if reposExpanded.value && !sidebarCollapsed.value}
-  <ScrollArea
-    style="flex: 1; min-height: 0; margin-top: -0.5rem; mask-image: linear-gradient(to bottom, transparent 0, black 0.5rem, black calc(100% - 0.5rem), transparent 100%);">
-    <div class="repos-list scrolling">
-      {#each unpinnedFilteredRepos as repo (repo.rid)}
-        <div
-          class="repo-row-group"
-          data-unpinned-rid={repo.rid}
-          animate:flip={{ duration: animationDuration }}
-          in:receive={{ key: repo.rid, duration: animationDuration }}
-          out:send={{ key: repo.rid, duration: animationDuration }}
-          onoutroend={() => clearUnseeding(repo.rid)}>
-          {@render repoRowInner(repo, false)}
+{#if !sidebarCollapsed.value}
+  {#if reposExpanded.value}
+    <div
+      class="repos-scroll"
+      transition:unroll|local={{ duration: ANIMATION_DURATION_MS }}>
+      <ScrollArea
+        style="mask-image: linear-gradient(to bottom, transparent 0, black 0.5rem, black calc(100% - 0.5rem), transparent 100%);">
+        <div class="repos-list scrolling">
+          {#each unpinnedFilteredRepos as repo (repo.rid)}
+            <div
+              class="repo-row-group"
+              data-unpinned-rid={repo.rid}
+              animate:flip={{ duration: animationDuration }}
+              in:receive={{ key: repo.rid, duration: animationDuration }}
+              out:send={{ key: repo.rid, duration: animationDuration }}
+              onoutroend={() => clearUnseeding(repo.rid)}>
+              {@render repoRowInner(repo, false)}
+            </div>
+          {/each}
         </div>
-      {/each}
+      </ScrollArea>
     </div>
-  </ScrollArea>
+  {/if}
 {/if}
 
 {#if drag.draggedRepo}

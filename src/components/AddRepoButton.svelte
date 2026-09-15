@@ -112,7 +112,10 @@
       onclick={() => {
         onclick();
       }}
-      active={popoverExpanded}>
+      active={popoverExpanded}
+      styleWidth="1.5rem"
+      styleHeight="1.5rem"
+      stylePadding="0">
       <Icon name="plus" />
     </Button>
   {/snippet}
