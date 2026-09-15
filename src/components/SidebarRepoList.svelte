@@ -509,7 +509,7 @@
   .section-header {
     font: var(--txt-body-m-regular);
     font-variant-ligatures: none;
-    color: var(--color-text-secondary);
+    color: var(--color-text-primary);
     /* No bottom padding: the 2rem action buttons already leave a row's worth
        of slack under the label. */
     padding: 1rem 0 0 0.5rem;
@@ -826,26 +826,32 @@
      off the label so the buttons beside it don't trigger it. */
   .icon-stack {
     display: grid;
+    /* Sized and centred so both icons pivot about the same point. */
+    width: 1rem;
+    place-items: center;
   }
   .icon-default,
   .icon-hover {
     grid-area: 1 / 1;
-    transition: opacity 150ms ease;
-    /* Promoted for good, for the same reason the filter button is: the fade
-       puts these on a layer of their own only while it runs, and handing them
-       back at the end re-rounds their position by a pixel. */
-    will-change: opacity;
+    transition:
+      opacity 150ms ease,
+      transform 150ms ease;
+    /* Promoted for good, for the same reason `.filter-action` is. */
+    will-change: opacity, transform;
   }
   .icon-hover {
     opacity: 0;
+    transform: rotate(-90deg);
   }
   .section-header-label:hover .icon-default,
   .section-header:focus-visible .icon-default {
     opacity: 0;
+    transform: rotate(90deg);
   }
   .section-header-label:hover .icon-hover,
   .section-header:focus-visible .icon-hover {
     opacity: 1;
+    transform: rotate(0);
   }
 
   .menu-item {
