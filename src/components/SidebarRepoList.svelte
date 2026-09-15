@@ -589,6 +589,43 @@
     flex-shrink: 0;
     color: var(--color-text-tertiary);
   }
+  /* The badge is the rail's stand-in for the inline lock, which has no room
+     beside a 1rem avatar in a 2rem square. */
+  .avatar {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+  .avatar-lock {
+    display: none;
+  }
+  :global(.sidebar.mini) .private-icon {
+    display: none;
+  }
+  /* Overhangs the avatar so it clears the generated pattern. Its backdrop is
+     the row's own fill, hence the states below. */
+  :global(.sidebar.mini) .avatar-lock {
+    display: flex;
+    position: absolute;
+    right: -0.1875rem;
+    bottom: -0.1875rem;
+    align-items: center;
+    justify-content: center;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    color: var(--color-text-secondary);
+  }
+  :global(.sidebar.mini) .avatar-lock :global(svg) {
+    width: 0.625rem;
+    height: 0.625rem;
+  }
+  :global(.sidebar.mini) .nav-item:hover .avatar-lock,
+  :global(.sidebar.mini) .nav-item.active .avatar-lock,
+  :global(.sidebar.mini) .nav-item.context-active .avatar-lock {
+    background-color: var(--color-surface-subtle);
+  }
   /* Out of flow: hidden, they still reserved a button's width on every row.
      They sit over the end of the name instead, on the row's own fill. */
   .nav-item .row-actions {
@@ -925,7 +962,14 @@
     onclick={pinned && !sidebarCollapsed.value ? drag.onClick : undefined}
     oncontextmenu={e => openContextMenu(e, repo)}
     href={router.routeToPath({ resource: "repo.home", rid: repo.rid })}>
-    <RepoAvatar name={repo.name} rid={repo.rid} styleWidth="1rem" />
+    <span class="avatar">
+      <RepoAvatar name={repo.name} rid={repo.rid} styleWidth="1rem" />
+      {#if repo.private}
+        <span class="avatar-lock" title="Private repository">
+          <Icon name="lock" />
+        </span>
+      {/if}
+    </span>
     <span class="txt-overflow label">{repo.name}</span>
     {#if repo.private}
       <span class="private-icon" title="Private repository">
