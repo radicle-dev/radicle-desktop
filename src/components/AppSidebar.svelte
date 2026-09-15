@@ -51,7 +51,7 @@
   const { sidebarData, activeRepo = undefined }: Props = $props();
 
   const toggleShortcut = isMac() ? "⌘B" : "Ctrl+B";
-  const dragStripHeight = isMac() ? "2.75rem" : "1.75rem";
+  const dragStripHeight = isMac() ? "2rem" : "1.75rem";
 
   const mini = $derived(collapsed.value);
 
@@ -423,14 +423,17 @@
   .nav {
     flex: 1;
     overflow: visible;
-    padding: 0.5rem;
+    /* No top padding: the 2rem drag strip above is already the gap. */
+    padding: 0 0.5rem 0.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
     min-height: 0;
   }
   .bottom {
-    padding: 0.5rem;
+    /* Tighter on top: the nav's padding and the scroll area's fade runway
+       already sit above. */
+    padding: 0.25rem 0.5rem 0.5rem;
     display: flex;
     flex-direction: column;
     gap: 0.25rem;

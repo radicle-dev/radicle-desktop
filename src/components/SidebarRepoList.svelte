@@ -421,6 +421,10 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+  }
+  /* Runway for the scroll area's fade, so the first and last rows are not
+     masked at rest. Cancelled by the negative margin on `.repos-scroll`. */
+  .repos-list.scrolling {
     padding: 0.5rem 0;
   }
   .pinned-list.empty {
@@ -433,7 +437,9 @@
     font: var(--txt-body-m-regular);
     font-variant-ligatures: none;
     color: var(--color-text-secondary);
-    padding: 0.5rem 0 0.25rem 0.5rem;
+    /* No bottom padding: the 2rem action buttons already leave a row's worth
+       of slack under the label. */
+    padding: 1rem 0 0 0.5rem;
     display: flex;
     align-items: center;
     gap: 0.25rem;
@@ -1004,8 +1010,8 @@
 
 {#if reposExpanded.value && !sidebarCollapsed.value}
   <ScrollArea
-    style="flex: 1; min-height: 0; mask-image: linear-gradient(to bottom, transparent 0, black 0.5rem, black calc(100% - 0.5rem), transparent 100%);">
-    <div class="repos-list">
+    style="flex: 1; min-height: 0; margin-top: -0.5rem; mask-image: linear-gradient(to bottom, transparent 0, black 0.5rem, black calc(100% - 0.5rem), transparent 100%);">
+    <div class="repos-list scrolling">
       {#each unpinnedFilteredRepos as repo (repo.rid)}
         <div
           class="repo-row-group"
