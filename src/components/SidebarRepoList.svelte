@@ -395,6 +395,33 @@
     return activeRepo?.rid;
   }
 
+  // Only on the rail: expanded, the row already says this in text.
+  function repoTitle(repo: RepoSummary): string | undefined {
+    if (!sidebarCollapsed.value) {
+      return undefined;
+    }
+    const state: string[] = [];
+    if (repo.private) state.push("Private");
+    if (!repo.seeding) state.push("Local");
+    return [repo.name, ...state].join(" · ");
+  }
+
+  // Named after the repo too, since on the rail nothing else says whose.
+  function subItemTitle(
+    repoName: string,
+    label: string,
+    count: number | undefined,
+  ): string | undefined {
+    if (!sidebarCollapsed.value) {
+      return undefined;
+    }
+    const parts = [repoName, label];
+    if (count !== undefined) {
+      parts.push(`${count} open`);
+    }
+    return parts.join(" · ");
+  }
+
   function isRepoHome(rid: string): boolean {
     return $activeRoute.resource === "repo.home" && activeRid() === rid;
   }
@@ -955,6 +982,7 @@
     class:active={isRepoHome(repo.rid)}
     class:context-active={contextMenu?.repo.rid === repo.rid}
     class:dragging={pinned && drag.draggingRid === repo.rid}
+    title={repoTitle(repo)}
     draggable="false"
     onmousedown={pinned && !sidebarCollapsed.value
       ? e => drag.onMouseDown(e, repo.rid)
@@ -965,7 +993,7 @@
     <span class="avatar">
       <RepoAvatar name={repo.name} rid={repo.rid} styleWidth="1rem" />
       {#if repo.private}
-        <span class="avatar-lock" title="Private repository">
+        <span class="avatar-lock">
           <Icon name="lock" />
         </span>
       {/if}
@@ -1002,6 +1030,7 @@
       class="sub-items"
       transition:slide={{ duration: ANIMATION_DURATION_MS }}>
       {@render subItem(
+        repo.name,
         router.routeToPath({
           resource: "repo.issues",
           rid: repo.rid,
@@ -1013,6 +1042,7 @@
         activeProject?.meta.issues.open || undefined,
       )}
       {@render subItem(
+        repo.name,
         router.routeToPath({
           resource: "repo.patches",
           rid: repo.rid,
@@ -1028,6 +1058,7 @@
 {/snippet}
 
 {#snippet subItem(
+  repoName: string,
   href: string,
   icon: "branch" | "issue" | "patch",
   label: string,
@@ -1038,6 +1069,7 @@
     class="nav-item sub-item"
     class:active
     class:mini={sidebarCollapsed.value}
+    title={subItemTitle(repoName, label, count)}
     {href}>
     <span class="icon"><Icon name={icon} /></span>
     <span class="label">{label}</span>
