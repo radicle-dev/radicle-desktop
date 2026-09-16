@@ -3,13 +3,11 @@
 
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { onDestroy, onMount, tick } from "svelte";
-  import { backOut } from "svelte/easing";
+  import { backOut, cubicOut } from "svelte/easing";
   import { fade, scale } from "svelte/transition";
   import { boolean } from "zod";
 
   import { checkRadicleCLI } from "@app/lib/checkRadicleCLI.svelte";
-  import type { FlipSnapshot } from "@app/lib/flip";
-  import { captureFlip, playFlip } from "@app/lib/flip";
   import { hints } from "@app/lib/hints";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
@@ -50,34 +48,39 @@
 
   const { sidebarData, activeRepo = undefined }: Props = $props();
 
+  const COLLAPSE_MS = 200;
+
+  // The rail and the expanded sidebar cross as whole views. Each is pinned to a
+  // width for the crossing -- the one leaving to what it had, the one arriving
+  // to where it lands -- so the frame moving underneath cannot drag it sideways.
+  const SWAP_SCALE_FROM = 0.9;
+
+  function swap(
+    node: Element,
+    {
+      duration,
+      rise = 0,
+      width,
+    }: { duration: number; rise?: number; width?: number },
+  ) {
+    const pinned = width ?? (node as HTMLElement).offsetWidth;
+    const scale = (t: number) => SWAP_SCALE_FROM + (1 - SWAP_SCALE_FROM) * t;
+
+    return {
+      duration,
+      easing: cubicOut,
+      css: (t: number, u: number) =>
+        `opacity: ${t};
+         width: ${pinned}px;
+         transform: scale(${scale(t)}) translateY(${u * rise}px);
+         transform-origin: top left;`,
+    };
+  }
+
   const toggleShortcut = isMac() ? "⌘B" : "Ctrl+B";
   const dragStripHeight = isMac() ? "2rem" : "1.75rem";
 
   const mini = $derived(collapsed.value);
-
-  // The window controls move between a row in the drag strip when expanded and
-  // a column on the rail when collapsed. FLIP carries both the move and the
-  // height their row gives up, which lays out to `auto` and so can't be a CSS
-  // transition.
-  let controlsEl = $state<HTMLElement | undefined>();
-  let controlsFirst: FlipSnapshot | undefined;
-  const CONTROLS_FLIP = { animateHeight: true };
-
-  $effect.pre(() => {
-    // Measure before the DOM reflows for the new state.
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    collapsed.value;
-
-    controlsFirst = captureFlip(controlsEl, CONTROLS_FLIP);
-  });
-
-  $effect(() => {
-    // ...and play once it has.
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    collapsed.value;
-
-    playFlip(controlsEl, controlsFirst, CONTROLS_FLIP);
-  });
 
   // How far below the minimum width the drag has to go before it collapses,
   // rather than the edge just sticking at the minimum.
@@ -88,6 +91,12 @@
   // threshold and then jumping open.
   const RAIL_STRETCH_FACTOR = 0.35;
   let railStretch = $state(0);
+
+  // What `.slot` is animating towards.
+  const bodyTargetWidth = $derived(
+    (mini ? RAIL_WIDTH_REM + railStretch : renderedSidebarWidth.value) *
+      rootFontSize(),
+  );
 
   // Crossing the threshold is a jump between two widths rather than tracking
   // the pointer, so the transition is switched back on to carry it. Matches the
@@ -332,25 +341,31 @@
   }
 
   .sidebar {
-    /* Containing block for the window controls and the resize edge. Isolated so
-       both layer against the sidebar, not against portalled popovers. */
+    /* Containing block for the resize edge. Isolated so it layers against the
+       sidebar, not against portalled popovers. */
     position: relative;
     isolation: isolate;
     width: 100%;
     height: 100%;
-    display: flex;
-    flex-direction: column;
     min-height: 0;
     border-right: 1px solid var(--color-border-subtle);
     background-color: var(--color-surface-base);
     transition: background-color 0.2s ease;
+    /* One cell the two views stack in. Tracks are sized from the sidebar, not
+       from its content: an `auto` track would hold both at the wider width. */
+    display: grid;
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
+    overflow: hidden;
   }
   .sidebar.mini {
     background-color: var(--color-surface-canvas);
   }
-  /* Carries the square-up below. */
-  .sidebar :global(.button) {
-    transition: width 0.2s ease;
+  .view {
+    grid-area: 1 / 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   /* The collapse contract: `.label` anywhere in the sidebar is text that gives
      up its space on the rail. Opted into by class alone, so a child that wants
@@ -359,11 +374,10 @@
   .sidebar :global(.label) {
     white-space: nowrap;
     pointer-events: none;
-    transition: opacity 0.2s ease;
   }
   /* A label still fading at full width would push its icon off the rail's
      centre line, so it gives up the space too. */
-  .sidebar.mini :global(.label) {
+  .view.mini :global(.label) {
     opacity: 0;
     width: 0;
     min-width: 0;
@@ -391,7 +405,7 @@
   /* Expanded, the controls lift into the drag strip beside the traffic lights.
      They stay in the row's DOM so the same elements survive the toggle and can
      glide into the rail's column. */
-  .sidebar:not(.mini) .window-controls {
+  .view:not(.mini) .window-controls {
     position: absolute;
     top: 0;
     right: 0.5rem;
@@ -403,11 +417,11 @@
   }
   /* Nothing left in flow once they lift, so dropping the padding collapses the
      row to nothing and gives the space back to the nav. */
-  .sidebar:not(.mini) .controls {
+  .view:not(.mini) .controls {
     padding: 0;
   }
-  .sidebar.mini .controls,
-  .sidebar.mini .window-controls {
+  .view.mini .controls,
+  .view.mini .window-controls {
     flex-direction: column;
     gap: 0.125rem;
     align-items: center;
@@ -439,18 +453,17 @@
     gap: 0.25rem;
   }
   /* The rail is one centred column. */
-  .sidebar.mini .nav {
+  .view.mini .nav {
     align-items: center;
   }
   /* The rail carries navigation only. */
-  .sidebar.mini .bottom {
+  .view.mini .bottom {
     display: none;
   }
-  /* One 2rem square per item, so the hover/selected highlight is a uniform
-     square rather than a full-width bar. */
-  .sidebar.mini :global(.nav-item),
-  .sidebar.mini :global(.button),
-  .sidebar.mini :global(.filter-button) {
+  /* One 2rem square per row, so the hover/selected highlight is a uniform
+     square rather than a full-width bar. Rows only: a `min-width` here would
+     outrank the 1.5rem squares the icon buttons set inline. */
+  .view.mini :global(.nav-item) {
     width: 2rem;
     min-width: 2rem;
     height: 2rem;
@@ -459,14 +472,13 @@
     /* Otherwise held open by the zero-width label. */
     gap: 0;
   }
-  /* Nav items are left out: their 0.5rem padding either side of a 1rem icon
-     already centres it in the 2rem square. */
-  .sidebar.mini :global(.button),
-  .sidebar.mini :global(.filter-button) {
+  .view.mini :global(.button),
+  .view.mini :global(.filter-button) {
     justify-content: center;
+    gap: 0;
   }
   /* `margin-left: auto` on a centred square drags the icon off centre. */
-  .sidebar.mini :global(.update-badge) {
+  .view.mini :global(.update-badge) {
     display: none;
   }
   .nav-item {
@@ -481,7 +493,6 @@
     width: 100%;
     text-decoration: none;
     white-space: nowrap;
-    transition: width 0.2s ease;
   }
   .nav-item:hover {
     background-color: var(--color-surface-subtle);
@@ -575,153 +586,163 @@
     ? `${RAIL_WIDTH_REM + railStretch}rem`
     : `${renderedSidebarWidth.value}rem`}>
   <div class="sidebar" class:mini role="navigation">
-    <div
-      class="drag-strip"
-      style:height={dragStripHeight}
-      data-tauri-drag-region>
-    </div>
+    {#key mini}
+      <!-- Captured per view, so the outgoing one is not restyled mid-exit. -->
+      {@const isMini = mini}
+      <div
+        class="view"
+        class:mini={isMini}
+        in:swap={{ duration: COLLAPSE_MS, rise: 8, width: bodyTargetWidth }}
+        out:swap={{ duration: COLLAPSE_MS }}>
+        <div
+          class="drag-strip"
+          style:height={dragStripHeight}
+          data-tauri-drag-region>
+        </div>
 
-    <div class="controls" bind:this={controlsEl}>
-      <span class="window-controls">
-        <Button
-          variant="naked"
-          title="{collapsed.value
-            ? 'Expand'
-            : 'Collapse'} sidebar ({toggleShortcut})"
-          keyShortcuts={isMac() ? "Meta+b" : "Control+b"}
-          onclick={toggleSidebar}
-          styleWidth="1.5rem"
-          styleHeight="1.5rem"
-          stylePadding="0">
-          <span class="icon"><Icon name="sidebar-left" /></span>
-        </Button>
-        <Button
-          variant="naked"
-          onclick={() => window.history.back()}
-          styleWidth="1.5rem"
-          styleHeight="1.5rem"
-          stylePadding="0">
-          <span class="icon"><Icon name="arrow-left" /></span>
-        </Button>
-        <Button
-          variant="naked"
-          onclick={() => window.history.forward()}
-          styleWidth="1.5rem"
-          styleHeight="1.5rem"
-          stylePadding="0">
-          <span class="icon"><Icon name="arrow-right" /></span>
-        </Button>
-        <Button
-          variant="naked"
-          title="Reload"
-          onclick={() => window.location.reload()}
-          styleWidth="1.5rem"
-          styleHeight="1.5rem"
-          stylePadding="0">
-          <span class="icon"><Icon name="refresh" /></span>
-        </Button>
-      </span>
-    </div>
+        <div class="controls">
+          <span class="window-controls">
+            <Button
+              variant="naked"
+              title="{collapsed.value
+                ? 'Expand'
+                : 'Collapse'} sidebar ({toggleShortcut})"
+              keyShortcuts={isMac() ? "Meta+b" : "Control+b"}
+              onclick={toggleSidebar}
+              styleWidth={isMini ? "2rem" : "1.5rem"}
+              styleHeight={isMini ? "2rem" : "1.5rem"}
+              stylePadding="0">
+              <span class="icon"><Icon name="sidebar-left" /></span>
+            </Button>
+            <Button
+              variant="naked"
+              onclick={() => window.history.back()}
+              styleWidth={isMini ? "2rem" : "1.5rem"}
+              styleHeight={isMini ? "2rem" : "1.5rem"}
+              stylePadding="0">
+              <span class="icon"><Icon name="arrow-left" /></span>
+            </Button>
+            <Button
+              variant="naked"
+              onclick={() => window.history.forward()}
+              styleWidth={isMini ? "2rem" : "1.5rem"}
+              styleHeight={isMini ? "2rem" : "1.5rem"}
+              stylePadding="0">
+              <span class="icon"><Icon name="arrow-right" /></span>
+            </Button>
+            <Button
+              variant="naked"
+              title="Reload"
+              onclick={() => window.location.reload()}
+              styleWidth={isMini ? "2rem" : "1.5rem"}
+              styleHeight={isMini ? "2rem" : "1.5rem"}
+              stylePadding="0">
+              <span class="icon"><Icon name="refresh" /></span>
+            </Button>
+          </span>
+        </div>
 
-    <div class="body">
-      <div class="nav">
-        {#if !mini}
-          <IdentityButton config={sidebarData.config} />
-        {/if}
+        <div class="body">
+          <div class="nav">
+            {#if !mini}
+              <IdentityButton config={sidebarData.config} />
+            {/if}
 
-        <a
-          class="nav-item"
-          class:active={isInbox()}
-          title="Inbox"
-          href={router.routeToPath({ resource: "inbox" })}>
-          <span class="icon"><Icon name="inbox" /></span>
-          <span class="label">Inbox</span>
-          {#if !mini && notificationCount.value > 0}
-            <span
-              class="global-counter-badge"
-              in:scale={{ duration: 200, easing: backOut, start: 0 }}
-              out:fade={{ duration: 200 }}>
-              {notificationCount.value}
-            </span>
-          {/if}
-        </a>
-
-        <SidebarRepoList
-          initialRepos={sidebarData.repos}
-          initialSeededNotReplicated={sidebarData.seededNotReplicated}
-          config={sidebarData.config}
-          {activeRepo} />
-      </div>
-
-      <div class="bottom">
-        {#if !hints.isDismissed("guide")}
-          {#if confirmingGuideDismiss && !mini}
-            <div class="guide-confirm txt-body-s-regular">
-              <div>
-                Hide the Guide? You can bring it back from Hidden hints in
-                Settings.
-              </div>
-              <div class="guide-confirm-actions">
-                <Button
-                  variant="ghost"
-                  styleHeight="1.75rem"
-                  styleWidth="100%"
-                  onclick={() => {
-                    hints.dismiss("guide");
-                    confirmingGuideDismiss = false;
-                  }}>
-                  Hide
-                </Button>
-                <Button
-                  variant="outline"
-                  styleHeight="1.75rem"
-                  styleWidth="100%"
-                  onclick={() => (confirmingGuideDismiss = false)}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          {:else}
-            <div class="guide-item">
-              <Button
-                variant="naked"
-                title="Guide"
-                styleWidth={mini ? "2rem" : "100%"}
-                styleJustifyContent="flex-start"
-                active={isGuide()}
-                onclick={() => router.push({ resource: "guide" })}>
-                <span class="icon"><Icon name="guide" /></span>
-                <span class="label">Guide</span>
-              </Button>
-              {#if !mini}
-                <button
-                  type="button"
-                  class="guide-dismiss"
-                  title="Hide Guide"
-                  aria-label="Hide Guide"
-                  onclick={() => (confirmingGuideDismiss = true)}>
-                  <Icon name="close" />
-                </button>
+            <a
+              class="nav-item"
+              class:active={isInbox()}
+              title="Inbox"
+              href={router.routeToPath({ resource: "inbox" })}>
+              <span class="icon"><Icon name="inbox" /></span>
+              <span class="label">Inbox</span>
+              {#if !mini && notificationCount.value > 0}
+                <span
+                  class="global-counter-badge"
+                  in:scale={{ duration: 200, easing: backOut, start: 0 }}
+                  out:fade={{ duration: 200 }}>
+                  {notificationCount.value}
+                </span>
               {/if}
-            </div>
-          {/if}
-        {/if}
-        <Button
-          variant="naked"
-          title="Settings"
-          styleWidth={mini ? "2rem" : "100%"}
-          styleJustifyContent="flex-start"
-          active={isSettings()}
-          onclick={() => show({ component: SettingsView, props: {} })}>
-          <span class="icon"><Icon name="settings" /></span>
-          <span class="label">Settings</span>
-          {#if updateChecker.newVersion}
-            <span class="update-badge">New Update</span>
-          {/if}
-        </Button>
-        <NodeStatusButton />
+            </a>
+
+            <SidebarRepoList
+              initialRepos={sidebarData.repos}
+              initialSeededNotReplicated={sidebarData.seededNotReplicated}
+              config={sidebarData.config}
+              {activeRepo} />
+          </div>
+
+          <div class="bottom">
+            {#if !hints.isDismissed("guide")}
+              {#if confirmingGuideDismiss && !mini}
+                <div class="guide-confirm txt-body-s-regular">
+                  <div>
+                    Hide the Guide? You can bring it back from Hidden hints in
+                    Settings.
+                  </div>
+                  <div class="guide-confirm-actions">
+                    <Button
+                      variant="ghost"
+                      styleHeight="1.75rem"
+                      styleWidth="100%"
+                      onclick={() => {
+                        hints.dismiss("guide");
+                        confirmingGuideDismiss = false;
+                      }}>
+                      Hide
+                    </Button>
+                    <Button
+                      variant="outline"
+                      styleHeight="1.75rem"
+                      styleWidth="100%"
+                      onclick={() => (confirmingGuideDismiss = false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              {:else}
+                <div class="guide-item">
+                  <Button
+                    variant="naked"
+                    title="Guide"
+                    styleWidth={mini ? "2rem" : "100%"}
+                    styleJustifyContent="flex-start"
+                    active={isGuide()}
+                    onclick={() => router.push({ resource: "guide" })}>
+                    <span class="icon"><Icon name="guide" /></span>
+                    <span class="label">Guide</span>
+                  </Button>
+                  {#if !mini}
+                    <button
+                      type="button"
+                      class="guide-dismiss"
+                      title="Hide Guide"
+                      aria-label="Hide Guide"
+                      onclick={() => (confirmingGuideDismiss = true)}>
+                      <Icon name="close" />
+                    </button>
+                  {/if}
+                </div>
+              {/if}
+            {/if}
+            <Button
+              variant="naked"
+              title="Settings"
+              styleWidth={mini ? "2rem" : "100%"}
+              styleJustifyContent="flex-start"
+              active={isSettings()}
+              onclick={() => show({ component: SettingsView, props: {} })}>
+              <span class="icon"><Icon name="settings" /></span>
+              <span class="label">Settings</span>
+              {#if updateChecker.newVersion}
+                <span class="update-badge">New Update</span>
+              {/if}
+            </Button>
+            <NodeStatusButton />
+          </div>
+        </div>
       </div>
-    </div>
+    {/key}
 
     <div
       class="edge"

@@ -193,20 +193,16 @@
 
   $effect.pre(() => {
     // Measure before the DOM reflows for the new state.
-    /* eslint-disable @typescript-eslint/no-unused-expressions */
-    sidebarCollapsed.value;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     filterOpen;
-    /* eslint-enable @typescript-eslint/no-unused-expressions */
 
     headerFirst = captureFlip(allReposHeaderEl, HEADER_FLIP);
   });
 
   $effect(() => {
     // ...and play once it has.
-    /* eslint-disable @typescript-eslint/no-unused-expressions */
-    sidebarCollapsed.value;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     filterOpen;
-    /* eslint-enable @typescript-eslint/no-unused-expressions */
 
     playFlip(allReposHeaderEl, headerFirst, HEADER_FLIP);
 
@@ -603,18 +599,17 @@
     text-decoration: none;
     user-select: none;
     -webkit-user-select: none;
-    transition: width 0.2s ease;
   }
   .nav-item .txt-overflow {
     min-width: 0;
   }
   /* No room on the rail, and reordering is off there, so rows stay plain
      links. */
-  :global(.sidebar.mini) .row-actions {
+  :global(.view.mini) .row-actions {
     display: none;
   }
   /* Centred on the rail. */
-  :global(.sidebar.mini) .repos-list {
+  :global(.view.mini) .repos-list {
     align-items: center;
   }
   .nav-item :global(img),
@@ -641,7 +636,6 @@
   }
   .sub-item {
     padding-left: 2rem;
-    transition: padding-left 0.2s ease;
   }
   .sub-item.mini {
     padding-left: 0.5rem;
@@ -694,12 +688,12 @@
   .avatar-lock {
     display: none;
   }
-  :global(.sidebar.mini) .private-icon {
+  :global(.view.mini) .private-icon {
     display: none;
   }
   /* Overhangs the avatar so it clears the generated pattern. Its backdrop is
      the row's own fill, hence the states below. */
-  :global(.sidebar.mini) .avatar-lock {
+  :global(.view.mini) .avatar-lock {
     display: flex;
     position: absolute;
     right: -0.1875rem;
@@ -712,13 +706,13 @@
     background-color: var(--color-surface-canvas);
     color: var(--color-text-secondary);
   }
-  :global(.sidebar.mini) .avatar-lock :global(svg) {
+  :global(.view.mini) .avatar-lock :global(svg) {
     width: 0.625rem;
     height: 0.625rem;
   }
-  :global(.sidebar.mini) .nav-item:hover .avatar-lock,
-  :global(.sidebar.mini) .nav-item.active .avatar-lock,
-  :global(.sidebar.mini) .nav-item.context-active .avatar-lock {
+  :global(.view.mini) .nav-item:hover .avatar-lock,
+  :global(.view.mini) .nav-item.active .avatar-lock,
+  :global(.view.mini) .nav-item.context-active .avatar-lock {
     background-color: var(--color-surface-subtle);
   }
   /* Out of flow: hidden, they still reserved a button's width on every row.
