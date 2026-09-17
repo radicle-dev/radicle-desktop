@@ -219,10 +219,11 @@ a {
   --diffs-dark: var(--color-text-primary);
   /* Line numbers. */
   --diffs-fg-number-override: var(--color-text-tertiary);
-  /* Add / delete / modify accents feed the line-tint mixes. */
-  --diffs-addition-color-override: var(--color-feedback-success-text);
-  --diffs-deletion-color-override: var(--color-feedback-error-text);
+  --diffs-addition-color-override: var(--color-diff-addition);
+  --diffs-deletion-color-override: var(--color-diff-deletion);
   --diffs-modified-color-override: var(--color-text-brand);
+  --diffs-fg-number-addition-override: var(--color-feedback-success-text);
+  --diffs-fg-number-deletion-override: var(--color-feedback-error-text);
   /* Mixed into the background of every line a comment refers to. */
   --app-diff-comment-tint: var(--color-surface-brand-secondary);
 

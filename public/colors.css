@@ -44,6 +44,9 @@
   --color-feedback-error-bg: var(--color-semantic-red-100);
   --color-feedback-error-bg-selected: var(--color-semantic-red-200);
 
+  --color-diff-addition: var(--color-semantic-green-500);
+  --color-diff-deletion: var(--color-semantic-red-500);
+
   --color-feedback-success-fill: var(--color-semantic-green-600);
   --color-feedback-success-fill-hover: var(--color-semantic-green-500);
   --color-feedback-success-fill-active: var(--color-semantic-green-700);
@@ -118,6 +121,9 @@
   --color-feedback-error-border: var(--color-semantic-red-700);
   --color-feedback-error-bg: var(--color-semantic-red-900);
   --color-feedback-error-bg-selected: var(--color-semantic-red-800);
+
+  --color-diff-addition: var(--color-semantic-green-400);
+  --color-diff-deletion: var(--color-semantic-red-400);
 
   --color-code-keywords: var(--color-accent-blue-400);
   --color-code-strings: var(--color-accent-green-400);
