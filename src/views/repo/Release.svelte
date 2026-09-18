@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
   import type { Artifact } from "@bindings/cob/release/Artifact";
+  import type { ArtifactDigest } from "@bindings/cob/release/ArtifactDigest";
   import type { Release } from "@bindings/cob/release/Release";
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
@@ -10,8 +11,8 @@
   import { invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import {
-    artifactPlatform,
     authorForNodeId,
+    basename,
     didFromPublicKey,
     shortenCids,
   } from "@app/lib/utils";
@@ -44,6 +45,12 @@
   /* eslint-enable prefer-const */
 
   const SIZE_KEY = "sizeBytes";
+  // An artifact COB carries no display name of its own. `title` in the metadata
+  // map is the convention for one, set by whoever published the release, with
+  // the file name always present underneath as the fallback. Reading it from
+  // the COB rather than guessing from the file name keeps every client showing
+  // the same thing.
+  const TITLE_KEY = "title";
 
   const ownDid = $derived(didFromPublicKey(config.publicKey));
 
@@ -191,11 +198,96 @@
   // that tells them apart is the one shown.
   const cidLabels = $derived(shortenCids(shownArtifacts.map(a => a.cid)));
 
+  function artifactTitle(artifact: Artifact): string | undefined {
+    const title = artifact.metadata[TITLE_KEY];
+    return typeof title === "string" && title.trim() !== ""
+      ? title.trim()
+      : undefined;
+  }
+
   // Which artifact cards are expanded, keyed by content id.
   const expanded: Record<string, boolean> = $state({});
 
   function toggleExpanded(cid: string) {
     expanded[cid] = !expanded[cid];
+  }
+
+  let adding = $state(false);
+  let addError: string | undefined = $state();
+
+  // Registering an artifact is open to any user, so this is not gated on
+  // authorship. Seeding is what makes the bytes reachable, and it needs the
+  // artifact node, so it is attempted only when the node answers: without it
+  // the artifact is registered but nothing can serve it.
+  async function addArtifacts(paths: string[]) {
+    if (paths.length === 0) {
+      return;
+    }
+    adding = true;
+    addError = undefined;
+
+    let nodeRunning: boolean;
+    try {
+      nodeRunning = await invoke<boolean>("artifact_node_running");
+    } catch {
+      nodeRunning = false;
+    }
+
+    let seedFailures = 0;
+    try {
+      // One at a time: each is its own signed COB entry, so a failure part way
+      // through leaves the earlier ones registered.
+      for (const path of paths) {
+        const digest = await invoke<ArtifactDigest>("compute_artifact_cid", {
+          path,
+        });
+        await invoke("register_artifact", {
+          rid: repo.rid,
+          releaseId: release.id,
+          cid: digest.cid,
+          name: basename(path),
+          sizeBytes: digest.sizeBytes,
+        });
+
+        if (nodeRunning) {
+          try {
+            await invoke("seed_artifact", {
+              rid: repo.rid,
+              releaseId: release.id,
+              cid: digest.cid,
+              sourcePath: path,
+            });
+          } catch {
+            seedFailures += 1;
+          }
+        }
+      }
+      if (!nodeRunning) {
+        addError =
+          "Added, but your artifact node is not running, so nothing can serve the bytes yet.";
+      } else if (seedFailures > 0) {
+        addError = `Added, but ${seedFailures} could not be seeded and cannot be downloaded yet.`;
+      }
+    } catch (error) {
+      console.error("Adding artifacts failed", error);
+      addError = "Adding failed.";
+    } finally {
+      adding = false;
+      await reload();
+    }
+  }
+
+  async function addFiles() {
+    closeFocused();
+    await addArtifacts(await invoke<string[]>("pick_artifact_files"));
+  }
+
+  async function addDirectory() {
+    closeFocused();
+    const path = await invoke<string | null>("pick_artifact_directory");
+    if (path) {
+      await addArtifacts([path]);
+    }
   }
 
   // Writing metadata is constrained to the artifact's author or a repository
@@ -371,6 +463,21 @@
   .redacted-toggle {
     margin-left: auto;
   }
+  .add-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    min-width: 11rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+  }
+  .add-error {
+    margin-bottom: 1rem;
+    color: var(--color-feedback-error-text);
+    font: var(--txt-body-s-regular);
+  }
   /* A file list reads better as rows than as a stack of bordered cards: the
      release header is then the only card on the page. */
   .artifact-list {
@@ -403,22 +510,44 @@
   .summary:focus-visible .toggle {
     color: var(--color-text-primary);
   }
+  /* One line that truncates rather than wraps: the chevron is the last item in
+     the row, so it keeps sitting against the text, and a long title shortens
+     the file name beside it instead of pushing the chevron onto its own line. */
   .identity {
     display: flex;
     align-items: baseline;
     gap: 0.5rem;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     min-width: 0;
   }
-  .platform {
+  /* The title is arbitrary-length prose, so it is the one that gives way. */
+  .name {
     font: var(--txt-body-l-regular);
     color: var(--color-text-primary);
-    word-break: break-word;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 3rem;
+    flex-shrink: 1;
+  }
+  /* Held at its natural width: an identifier shortened to a character or two
+     tells a reader nothing, so it keeps its own space and the title yields
+     instead. The cap stops a long file name squeezing out the title. */
+  .trailing {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    max-width: 60%;
+    min-width: 0;
   }
   .filename {
     font: var(--txt-body-m-regular);
     color: var(--color-text-tertiary);
-    word-break: break-all;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
   }
   .artifact-actions {
     display: flex;
@@ -435,9 +564,28 @@
   /* Repeating the words "More info" down the whole list reads as noise, and
      hiding the control until hover leaves no sign it exists. A chevron that
      points down, then flips up, says accordion without either problem. */
+  /* Opened, the row is no longer a one-line summary, so nothing is clipped:
+     the title and file name wrap onto as many lines as they need. */
+  .identity.expanded {
+    flex-wrap: wrap;
+  }
+  .identity.expanded .trailing {
+    max-width: none;
+  }
+  .identity.expanded .name,
+  .identity.expanded .filename {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    max-width: none;
+    min-width: 0;
+  }
   .toggle {
     display: inline-flex;
     align-items: center;
+    align-self: center;
+    flex-shrink: 0;
     color: var(--color-text-tertiary);
     transition: transform 0.15s;
   }
@@ -682,6 +830,36 @@
           idLabel="release"
           variant="naked"
           {config} />
+        <Popover placement="bottom-end" popoverPadding="0">
+          {#snippet toggle(onclick)}
+            <Button
+              styleHeight="2rem"
+              variant="naked"
+              disabled={adding}
+              {onclick}>
+              <Icon name="plus" />
+              {adding ? "Adding…" : "Add artifacts"}
+            </Button>
+          {/snippet}
+          {#snippet popover()}
+            <div class="add-menu">
+              <Button
+                variant="naked"
+                styleWidth="100%"
+                styleJustifyContent="flex-start"
+                onclick={addFiles}>
+                <Icon name="attach" />Files…
+              </Button>
+              <Button
+                variant="naked"
+                styleWidth="100%"
+                styleJustifyContent="flex-start"
+                onclick={addDirectory}>
+                <Icon name="folder" />Directory…
+              </Button>
+            </div>
+          {/snippet}
+        </Popover>
       </div>
     </Topbar>
 
@@ -746,6 +924,10 @@
           </div>
         {/if}
 
+        {#if addError}
+          <div class="add-error">{addError}</div>
+        {/if}
+
         {#if shownArtifacts.length === 0}
           <div class="empty-artifacts">
             <Icon name="attach" />
@@ -775,7 +957,7 @@
             )}
             {@const isOpen = expanded[artifact.cid] === true}
             {@const editable = canEditMetadata(artifact)}
-            {@const platform = artifactPlatform(artifact.name)}
+            {@const artifactName = artifactTitle(artifact)}
             {@const trust = attestationLabel(attestations, delegateIds)}
             <div class="artifact">
               <div class="artifact-row">
@@ -788,22 +970,24 @@
                   aria-expanded={isOpen}
                   title={isOpen ? "Hide details" : "Show details"}
                   onclick={() => toggleExpanded(artifact.cid)}>
-                  <span class="identity">
-                    {#if platform}
-                      <span class="platform">{platform}</span>
-                      <span class="filename">{artifact.name}</span>
-                    {:else}
-                      <span class="platform">{artifact.name}</span>
-                    {/if}
-                    {#if redactedByTrusted(artifact, delegateIds)}
-                      <span class="redacted-badge">
-                        <Icon name="warning" />
-                        {redactedByLabel(artifact, delegateIds)}
+                  <span class="identity" class:expanded={isOpen}>
+                    <span class="name">{artifactName ?? artifact.name}</span>
+                    <!-- One unit, so a line break can never leave the chevron
+                         stranded on a line of its own. -->
+                    <span class="trailing">
+                      {#if artifactName}
+                        <span class="filename">{artifact.name}</span>
+                      {/if}
+                      {#if redactedByTrusted(artifact, delegateIds)}
+                        <span class="redacted-badge">
+                          <Icon name="warning" />
+                          {redactedByLabel(artifact, delegateIds)}
+                        </span>
+                      {/if}
+                      <span class="toggle" class:open={isOpen}>
+                        <Icon name="chevron-down" />
                       </span>
-                    {/if}
-                  </span>
-                  <span class="toggle" class:open={isOpen}>
-                    <Icon name="chevron-down" />
+                    </span>
                   </span>
                 </button>
                 <div class="artifact-actions">
@@ -1079,7 +1263,13 @@
                               {/if}
                             </div>
                             {#each group.urls as url (url)}
-                              <div class="location-url">{url}</div>
+                              <div class="location-url">
+                                <Id
+                                  id={url}
+                                  clipboard={url}
+                                  label="location URL"
+                                  shorten={false} />
+                              </div>
                             {/each}
                           </div>
                         {/each}

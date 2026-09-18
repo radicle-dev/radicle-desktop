@@ -446,38 +446,6 @@ export function basename(path: string): string {
   return parts[parts.length - 1] ?? path;
 }
 
-// Release tooling conventionally names artifacts after the Rust target triple
-// they were built for, e.g. `radicle-httpd-0.29.0-aarch64-apple-darwin.tar.xz`.
-// The triple is the part a reader actually chooses on, but it sits mid-string
-// behind a shared prefix, so it is lifted out into a label. Both an operating
-// system and an architecture have to match, since either alone matches too many
-// unrelated file names to be worth showing.
-export function artifactPlatform(name: string): string | undefined {
-  const lower = name.toLowerCase();
-
-  const system = [
-    { pattern: /apple-darwin|macos|darwin/, label: "macOS" },
-    { pattern: /linux/, label: "Linux" },
-    { pattern: /windows|-msvc|-pc-win/, label: "Windows" },
-    { pattern: /freebsd/, label: "FreeBSD" },
-  ].find(({ pattern }) => pattern.test(lower));
-
-  if (!system) {
-    return undefined;
-  }
-
-  const apple = system.label === "macOS";
-  const architecture = [
-    { pattern: /universal/, label: "Universal" },
-    { pattern: /aarch64|arm64/, label: apple ? "Apple Silicon" : "ARM64" },
-    { pattern: /x86_64|amd64/, label: apple ? "Intel" : "x86_64" },
-    { pattern: /i686|i386/, label: "x86" },
-    { pattern: /riscv64/, label: "RISC-V" },
-  ].find(({ pattern }) => pattern.test(lower));
-
-  return architecture ? `${system.label} · ${architecture.label}` : undefined;
-}
-
 // Shorten a set of content ids for display, as `head…tail`.
 //
 // Content ids are not git oids: every one in a release opens with the same
