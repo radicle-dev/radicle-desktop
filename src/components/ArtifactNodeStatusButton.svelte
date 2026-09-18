@@ -13,6 +13,34 @@
   let running: boolean | undefined = $state();
   let status: ArtifactNodeStatus | undefined = $state();
 
+  // The button itself reports whether the node answers, so this one poll runs
+  // whether or not the popover is open. It is a bare liveness check, unlike the
+  // stats below.
+  $effect(() => {
+    let cancelled = false;
+
+    const refresh = async () => {
+      try {
+        const running_ = await invoke<boolean>("artifact_node_running");
+        if (!cancelled) {
+          running = running_;
+        }
+      } catch {
+        if (!cancelled) {
+          running = false;
+        }
+      }
+    };
+
+    void refresh();
+    const interval = setInterval(() => void refresh(), 5000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  });
+
   // Only polled while the popover is open: the node is a separate process and
   // its stats are of no use to a collapsed button.
   $effect(() => {
@@ -66,6 +94,11 @@
 </script>
 
 <style>
+  .state {
+    margin-left: auto;
+    color: var(--color-text-tertiary);
+    font: var(--txt-body-s-regular);
+  }
   .popover {
     display: flex;
     flex-direction: column;
@@ -115,6 +148,9 @@
         <Icon name="parcel" />
       </span>
       Artifacts
+      {#if running !== undefined}
+        <span class="state">{running ? "Seeding" : "Offline"}</span>
+      {/if}
     </Button>
   {/snippet}
   {#snippet popover()}

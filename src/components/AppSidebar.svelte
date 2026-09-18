@@ -739,8 +739,10 @@
                 <span class="update-badge">New Update</span>
               {/if}
             </Button>
-            <NodeStatusButton />
+            <!-- The rad node is the baseline the rest depends on, so it sits last,
+                 closest to the window edge, with the optional artifact node above. -->
             <ArtifactNodeStatusButton />
+            <NodeStatusButton />
           </div>
         </div>
       </div>
