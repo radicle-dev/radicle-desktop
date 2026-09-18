@@ -140,8 +140,12 @@
 
 <style>
   .popover {
-    font: var(--txt-body-m-regular);
     width: 24rem;
+    padding: 1rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-canvas);
+    font: var(--txt-body-m-regular);
   }
   .tabs {
     display: flex;
@@ -218,7 +222,7 @@
   }
 </style>
 
-<Popover placement="bottom-end" popoverPadding="1rem">
+<Popover placement="bottom-end" popoverPadding="0">
   {#snippet toggle(onclick)}
     <Button
       {onclick}
