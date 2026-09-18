@@ -1,4 +1,5 @@
 <script lang="ts">
+  import HoverPopover from "@app/components/HoverPopover.svelte";
   import Icon from "@app/components/Icon.svelte";
 
   interface Props {
@@ -9,19 +10,37 @@
 </script>
 
 <style>
-  .delegate {
+  .badge {
     display: inline-flex;
     align-items: center;
     flex-shrink: 0;
-    color: var(--color-text-tertiary);
   }
   /* Tighten the gap when the badge follows another element, e.g. a NodeId,
      in a flex row: the icon's own whitespace makes a full gap look loose. */
-  .delegate:not(:first-child) {
+  .badge:not(:first-child) {
     margin-left: -0.25rem;
+  }
+  .delegate {
+    display: inline-flex;
+    align-items: center;
+    color: var(--color-text-tertiary);
+  }
+  .tooltip {
+    font: var(--txt-body-s-regular);
+    color: var(--color-text-primary);
+    white-space: nowrap;
   }
 </style>
 
-<span class="delegate" title={tooltip}>
-  <Icon name="badge" />
+<span class="badge">
+  <HoverPopover stylePadding="0.25rem 0.5rem">
+    {#snippet toggle()}
+      <span class="delegate" aria-label={tooltip}>
+        <Icon name="badge" />
+      </span>
+    {/snippet}
+    {#snippet popover()}
+      <span class="tooltip">{tooltip}</span>
+    {/snippet}
+  </HoverPopover>
 </span>
