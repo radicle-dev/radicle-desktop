@@ -133,6 +133,34 @@
   );
   // Any location at all can be fetched with the CLI, web locations included.
   const downloadable = $derived(artifact.locations.length > 0);
+
+  // The app tab fetches through the artifact node, so it is only offered while
+  // the node answers. The CLI and browser tabs do not need it and stay usable.
+  let nodeRunning: boolean | undefined = $state();
+  $effect(() => {
+    let cancelled = false;
+
+    const refresh = async () => {
+      try {
+        const running = await invoke<boolean>("artifact_node_running");
+        if (!cancelled) {
+          nodeRunning = running;
+        }
+      } catch {
+        if (!cancelled) {
+          nodeRunning = false;
+        }
+      }
+    };
+
+    void refresh();
+    const interval = setInterval(() => void refresh(), 5000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  });
   const command = $derived(
     `rad artifact -r ${rid} download --cid ${artifact.cid}`,
   );
@@ -272,13 +300,21 @@
 
       {#if activeTab === "app"}
         <label for="download-artifact">
-          Download through your artifact node, which verifies the bytes against
-          the content id.
+          {#if nodeRunning === false}
+            Your artifact node is not running, so the bytes cannot be fetched or
+            verified here. The CLI and browser tabs still work.
+          {:else}
+            Download through your artifact node, which verifies the bytes
+            against the content id.
+          {/if}
         </label>
         <Button
           variant="secondary"
           styleWidth="100%"
-          disabled={downloading}
+          disabled={downloading || nodeRunning === false}
+          title={nodeRunning === false
+            ? "Your artifact node is not running"
+            : undefined}
           onclick={download}>
           <Icon name="download" />
           {downloading ? "Downloading…" : "Download"}
