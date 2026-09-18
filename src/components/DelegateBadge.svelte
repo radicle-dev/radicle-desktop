@@ -15,6 +15,15 @@
     align-items: center;
     flex-shrink: 0;
   }
+  /* HoverPopover wraps its trigger in an inline-block container and a block
+     button, whose line boxes push the icon off the centre line of whatever it
+     sits beside. Neither needs a box of its own here. */
+  .badge :global(.container),
+  .badge :global([role="button"]) {
+    display: inline-flex;
+    align-items: center;
+    line-height: 0;
+  }
   /* Tighten the gap when the badge follows another element, e.g. a NodeId,
      in a flex row: the icon's own whitespace makes a full gap look loose. */
   .badge:not(:first-child) {
