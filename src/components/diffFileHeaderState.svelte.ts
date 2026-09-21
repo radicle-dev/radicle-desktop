@@ -1,7 +1,10 @@
 import type { FileDiffMetadata } from "@pierre/diffs";
 
 export type FileStatus = "added" | "deleted" | "modified" | "moved" | "copied";
-export type FileNote = "binary" | "empty";
+// `unchanged` is a file whose contents are identical on both sides — a pure
+// rename or copy, or a mode-only change. It has no lines to render, like
+// `empty`, but the file is not empty and saying so is misleading.
+export type FileNote = "binary" | "empty" | "unchanged";
 
 // Reactive state for a single `DiffFileHeader`. One instance is created per
 // pooled CodeView item element and mutated in place as the element is recycled

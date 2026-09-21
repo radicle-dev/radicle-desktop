@@ -1,5 +1,8 @@
 <script lang="ts">
-  import type { FileStatus } from "@app/components/diffFileHeaderState.svelte";
+  import type {
+    FileNote,
+    FileStatus,
+  } from "@app/components/diffFileHeaderState.svelte";
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
   import type { Thread } from "@bindings/cob/thread/Thread";
   import type {
@@ -24,6 +27,7 @@
 
   import { fontSettings } from "@app/lib/appearance.svelte";
   import type { CodeComments } from "@app/lib/codeComments";
+  import { isRenameStatus } from "@app/lib/diffText";
   import { forwardPatchActivityContext } from "@app/lib/patchActivityContext";
   import type {
     CommentAnchor,
@@ -75,7 +79,7 @@
     ) => Promise<{ oldContents: string; newContents: string }>;
     // Files with no renderable text diff, keyed by new-side path. Pierre has no
     // binary/empty concept, so these get a header note and no expand caret.
-    fileNotes?: ReadonlyMap<string, "binary" | "empty">;
+    fileNotes?: ReadonlyMap<string, FileNote>;
     // Per-file change status, keyed by new-side path — renders as a plain text
     // label after the filename (nothing for a plain modification).
     fileStatuses?: ReadonlyMap<
@@ -599,12 +603,16 @@
     state.fileDiff = fileDiff;
     state.status = statusOf(fileDiff);
     // Binary comes from the backend (Pierre can't tell binary from empty —
-    // both have no hunks). Any other zero-hunk file (empty/mode-only/pure
-    // rename adds like `.gitkeep`) is treated as empty regardless of how the
-    // backend labelled its diff.
+    // both have no hunks). Any other zero-hunk file is treated as having
+    // nothing to render regardless of how the backend labelled its diff: a
+    // moved or copied one still holds its content, anything else is empty.
     const note =
       fileNotes?.get(fileDiff.name) ??
-      (fileDiff.hunks.length === 0 ? "empty" : undefined);
+      (fileDiff.hunks.length === 0
+        ? isRenameStatus(state.status)
+          ? "unchanged"
+          : "empty"
+        : undefined);
     state.note = note;
     state.collapsed = item.collapsed === true;
     // Flag header-only cards (collapsed, binary, or empty — anything with no

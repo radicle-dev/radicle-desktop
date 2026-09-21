@@ -115,6 +115,10 @@
   .del {
     color: var(--color-feedback-error-text);
   }
+  .note {
+    font: var(--txt-body-m-regular);
+    color: var(--color-text-secondary);
+  }
 </style>
 
 <div class="header">
@@ -122,6 +126,8 @@
     <span class="marker" title="Binary file"><Icon name="binary" /></span>
   {:else if state.note === "empty"}
     <span class="marker" title="Empty file"><Icon name="none" /></span>
+  {:else if state.note === "unchanged"}
+    <span class="marker" title="No changes"><Icon name="none" /></span>
   {:else}
     <Button
       variant="naked"
@@ -148,7 +154,12 @@
   {/if}
 
   <span class="stats">
-    {#if !state.note && stats.additions + stats.deletions > 0}
+    {#if state.note === "unchanged"}
+      <!-- A moved or copied file with identical contents has no counts to
+           show, and the bare "Moved" chip leaves it ambiguous whether the
+           move also carried an edit. -->
+      <span class="note">No changes</span>
+    {:else if !state.note && stats.additions + stats.deletions > 0}
       <span class="add">+{stats.additions}</span>
       <span class="del">-{stats.deletions}</span>
     {/if}

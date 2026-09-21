@@ -9,6 +9,11 @@ import type { GitStatusEntry } from "@pierre/trees";
 import { isIgnoredPath } from "@app/lib/ignoredFiles";
 import { invoke } from "@app/lib/invoke";
 
+// A rename or a copy — the two statuses that carry a path on each side.
+export function isRenameStatus(status: FileStatus | undefined): boolean {
+  return status === "moved" || status === "copied";
+}
+
 // The repo-relative path identifying a file diff (the new side for renames
 // and copies).
 export function fileDiffPath(file: FileDiff): string {
@@ -79,7 +84,10 @@ export function fileMetaOf(files: FileDiff[]): FileMeta {
     if (file.diff.type === "binary") {
       notes.set(path, "binary");
     } else if (file.diff.type === "empty") {
-      notes.set(path, "empty");
+      // Surf reports a rename or copy that changed no lines as an empty diff,
+      // which is not the same thing as an empty file: the content is whatever
+      // it was, it just moved.
+      notes.set(path, isRenameStatus(file.status) ? "unchanged" : "empty");
     }
     if (isIgnoredPath(path)) {
       ignored.add(path);
