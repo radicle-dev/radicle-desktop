@@ -121,7 +121,6 @@ pub fn router(ctx: Context) -> Router {
         .route("/delete_patch", post(delete_patch_handler))
         .route("/get_embed", post(get_embeds_handler))
         .route("/save_embed_by_path", post(save_embed_handler))
-        .route("/save_embed_by_clipboard", post(save_embed_handler))
         .route("/save_embed_by_bytes", post(save_embed_handler))
         .route("/save_embed_to_disk", post(save_embed_handler))
         .route("/list_jobs", post(jobs_handler))

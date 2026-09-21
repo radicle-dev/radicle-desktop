@@ -218,47 +218,32 @@
     if (e.clipboardData?.files && e.clipboardData.files.length > 0) {
       e.preventDefault();
       const [preBody, afterBody] = splitBody();
-      // We read the buffer on the backend, if it's a image buffer.
-      if (e.clipboardData.items.length === 1) {
-        const file = e.clipboardData.files[0];
-        const uploadLabel = `[Uploading...]()\n`;
-        body = preBody.concat(uploadLabel, afterBody);
-        try {
-          const oid = await invoke<string>("save_embed_by_clipboard", {
-            name: file.name,
-            rid,
-          });
-
-          embeds.set(oid, { name: file.name, content: `git:${oid}` });
-          body = preBody.concat(`[${file.name}](${oid})\n`, afterBody);
-        } catch {
-          body = preBody.concat(``, afterBody);
-          embedUploadError = "Upload failed, embed exceeded 10Mb.";
-          restoreDragDropText();
-        }
-      } else {
-        return Promise.all(
-          Array.from(e.clipboardData.files).map(async file => {
-            const arrayBuffer = await file.arrayBuffer();
-            const bytes = new Uint8Array(arrayBuffer);
-            const uploadLabel = `[Uploading ${file.name}...]()\n`;
-            body = preBody.concat(uploadLabel, afterBody);
-            try {
-              const oid = await invoke<string>("save_embed_by_bytes", {
-                rid,
-                name: file.name,
-                bytes,
-              });
-              embeds.set(oid, { name: file.name, content: `git:${oid}` });
-              return `[${file.name}](${oid})\n`;
-            } catch {
-              embedUploadError = "Upload failed, embed exceeded 10Mb.";
-              restoreDragDropText();
-              return "";
-            }
-          }),
-        ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
-      }
+      // Every pasted file is read here, in the web view, because that is the
+      // only place its real contents are available. Asking the backend to read
+      // the system clipboard instead returns whatever preview representation
+      // the OS put there alongside the file, which for a copied image file is
+      // a thumbnail rather than the image itself.
+      return Promise.all(
+        Array.from(e.clipboardData.files).map(async file => {
+          const arrayBuffer = await file.arrayBuffer();
+          const bytes = new Uint8Array(arrayBuffer);
+          const uploadLabel = `[Uploading ${file.name}...]()\n`;
+          body = preBody.concat(uploadLabel, afterBody);
+          try {
+            const oid = await invoke<string>("save_embed_by_bytes", {
+              rid,
+              name: file.name,
+              bytes,
+            });
+            embeds.set(oid, { name: file.name, content: `git:${oid}` });
+            return `[${file.name}](${oid})\n`;
+          } catch {
+            embedUploadError = "Upload failed, embed exceeded 10Mb.";
+            restoreDragDropText();
+            return "";
+          }
+        }),
+      ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
     } else {
       // In case that the clipboard data isn't an array of files,
       // we want to make use of the default behavior and insert the clipboard content.
