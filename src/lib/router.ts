@@ -17,6 +17,47 @@ export const activeUnloadedRouteStore = writable<Route>(InitialStore);
 
 let currentUrl: URL | undefined;
 
+// Where we are in the session history, and how far it goes.
+//
+// The web view offers neither: `history.length` counts entries the app never
+// created (it is already 2 on the first paint) and says nothing about which
+// one is current. So each entry the app pushes is stamped with its own
+// position, that stamp is read back on every navigation, and the highest
+// position seen is remembered as the top of the stack. Entries the app did
+// not stamp count as the bottom.
+const HISTORY_INDEX = "radicleHistoryIndex";
+
+let historyDepth = 0;
+
+export const canGoBack = writable<boolean>(false);
+export const canGoForward = writable<boolean>(false);
+
+function historyIndex(): number {
+  const state: unknown = window.history.state;
+  const index =
+    state && typeof state === "object"
+      ? (state as Record<string, unknown>)[HISTORY_INDEX]
+      : undefined;
+  return typeof index === "number" ? index : 0;
+}
+
+function stamp(route: Route, index: number): unknown {
+  return { ...route, [HISTORY_INDEX]: index };
+}
+
+// Whether Back and Forward have anywhere to go.
+//
+// `historyDepth` only grows, except on a push, which discards whatever was
+// ahead of the entry being pushed onto. Reloading the app forgets it, so for
+// the rest of that session Forward stays off until something is pushed again
+// — the entries are still there, but nothing in the web view will admit to
+// how many.
+function syncHistoryBounds(index: number, truncated = false): void {
+  historyDepth = truncated ? index : Math.max(historyDepth, index);
+  canGoBack.set(index > 0);
+  canGoForward.set(index < historyDepth);
+}
+
 // Set while a back/forward (popstate) navigation is in flight, then frozen onto
 // `historyNavigation` for the route that becomes active, so views can choose to
 // restore prior scroll state only for history navigations.
@@ -50,6 +91,9 @@ async function navigateToUrl(
     // same-URL popstate would leak it onto the next unrelated navigation,
     // which would then wrongly restore cached list state.
     pendingHistoryNavigation = false;
+    // The route did not change but our position in the history may have, so
+    // the buttons still need re-evaluating.
+    syncHistoryBounds(historyIndex());
     return;
   }
 
@@ -107,9 +151,16 @@ async function navigate(
   ) {
     // Pushing the route that is already active would mint a duplicate
     // history entry, making Back appear to do nothing.
-    window.history.pushState(newRoute, "", path);
+    const index = historyIndex() + 1;
+    window.history.pushState(stamp(newRoute, index), "", path);
+    syncHistoryBounds(index, true);
   } else if (action === "replace") {
-    window.history.replaceState(newRoute, "");
+    // A replace stays where it is, so it keeps the index it is overwriting.
+    const index = historyIndex();
+    window.history.replaceState(stamp(newRoute, index), "");
+    syncHistoryBounds(index);
+  } else {
+    syncHistoryBounds(historyIndex());
   }
   currentUrl = new URL(window.location.href);
   const currentLoadedRoute = get(activeRouteStore);

@@ -300,6 +300,8 @@
   });
 
   const activeRoute = router.activeRouteStore;
+  const canGoBack = router.canGoBack;
+  const canGoForward = router.canGoForward;
 
   function isInbox(): boolean {
     return $activeRoute.resource === "inbox";
@@ -592,12 +594,16 @@
         </Button>
         <Button
           variant="naked"
+          title="Back"
+          disabled={!$canGoBack}
           onclick={() => window.history.back()}
           stylePadding="0 4px">
           <span class="icon"><Icon name="arrow-left" /></span>
         </Button>
         <Button
           variant="naked"
+          title="Forward"
+          disabled={!$canGoForward}
           onclick={() => window.history.forward()}
           stylePadding="0 4px">
           <span class="icon"><Icon name="arrow-right" /></span>
