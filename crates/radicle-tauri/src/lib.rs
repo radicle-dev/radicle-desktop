@@ -5,8 +5,59 @@ use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{auth, cob, diff, inbox, profile, repo, startup, thread};
 
+/// Answer `--help` and `--version` on the terminal, without a window.
+///
+/// Returns the text to print when one of the two was asked for, and `None`
+/// when the app should start normally. Anything else on the command line is
+/// left alone, so the flags Tauri and the web view read still reach them.
+fn cli_reply<I: IntoIterator<Item = String>>(args: I, version: &str) -> Option<String> {
+    for arg in args {
+        match arg.as_str() {
+            "-h" | "--help" => {
+                return Some(format!(
+                    "\
+Radicle Desktop {version}
+
+A desktop app for Radicle, a peer-to-peer code collaboration and publishing
+stack.
+
+Usage: radicle-desktop [OPTIONS]
+
+Options:
+  -h, --help       Print this help message and exit
+  -V, --version    Print version information and exit
+
+Documentation: https://radicle.dev/desktop"
+                ));
+            }
+            "-V" | "--version" => {
+                return Some(format!(
+                    "radicle-desktop {version} ({})",
+                    env!("GIT_HEAD").trim()
+                ));
+            }
+            _ => {}
+        }
+    }
+
+    None
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let context = tauri::generate_context!();
+
+    // Answered before anything else starts up. An app that has to open its
+    // window to report its own version is no use in the one situation you most
+    // want to ask: when the window is what's broken.
+    if let Some(reply) = cli_reply(
+        std::env::args().skip(1),
+        context.config().version.as_deref().unwrap_or("unknown"),
+    ) {
+        println!("{reply}");
+        return;
+    }
+
     // Raise the open-file limit, matching heartwood's binaries (which all
     // default to 4096). Listing a repo's refs for the peer selector resolves
     // every remote's signed refs through libgit2, opening a descriptor per
@@ -98,6 +149,6 @@ pub fn run() {
             thread::create_issue_comment,
             thread::create_patch_comment,
         ])
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running tauri application");
 }
