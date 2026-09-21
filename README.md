@@ -52,6 +52,11 @@ Each phase does its mechanical work, then prints the manual tasks for its gate
 and the exact flag to resume with. List the phases and see the configuration
 with `scripts/release --list` and `scripts/release --help`.
 
+## Contributing
+
+See [CONTRIBUTING.md][con] for how the code is laid out, what your change has
+to pass, and how to send a patch.
+
 ## Getting in touch
 
 To get in touch with the maintainers, sign up to our [official chat on Zulip][zul].
@@ -60,6 +65,7 @@ To get in touch with the maintainers, sign up to our [official chat on Zulip][zu
 
 The UI is distributed under the terms of GPLv3. See [LICENSE][lic] for details.
 
+[con]: ./CONTRIBUTING.md
 [gfw]: https://gitforwindows.org
 [lic]: ./LICENSE
 [rad]: https://radicle.dev
