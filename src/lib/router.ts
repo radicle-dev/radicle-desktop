@@ -17,6 +17,32 @@ export const activeUnloadedRouteStore = writable<Route>(InitialStore);
 
 let currentUrl: URL | undefined;
 
+const HISTORY_INDEX = "radicleHistoryIndex";
+
+let historyDepth = 0;
+
+export const canGoBack = writable<boolean>(false);
+export const canGoForward = writable<boolean>(false);
+
+function historyIndex(): number {
+  const state: unknown = window.history.state;
+  const index =
+    state && typeof state === "object"
+      ? (state as Record<string, unknown>)[HISTORY_INDEX]
+      : undefined;
+  return typeof index === "number" ? index : 0;
+}
+
+function stamp(route: Route, index: number): unknown {
+  return { ...route, [HISTORY_INDEX]: index };
+}
+
+function updateNavigationState(index: number, truncated = false): void {
+  historyDepth = truncated ? index : Math.max(historyDepth, index);
+  canGoBack.set(index > 0);
+  canGoForward.set(index < historyDepth);
+}
+
 // Set while a back/forward (popstate) navigation is in flight, then frozen onto
 // `historyNavigation` for the route that becomes active, so views can choose to
 // restore prior scroll state only for history navigations.
@@ -50,6 +76,7 @@ async function navigateToUrl(
     // same-URL popstate would leak it onto the next unrelated navigation,
     // which would then wrongly restore cached list state.
     pendingHistoryNavigation = false;
+    updateNavigationState(historyIndex());
     return;
   }
 
@@ -103,13 +130,20 @@ async function navigate(
 
   if (
     action === "push" &&
+    path !== "" &&
     path !== window.location.pathname + window.location.search
   ) {
     // Pushing the route that is already active would mint a duplicate
-    // history entry, making Back appear to do nothing.
-    window.history.pushState(newRoute, "", path);
+    // history entry, making Back appear to do nothing. Booting has no path.
+    const index = historyIndex() + 1;
+    window.history.pushState(stamp(newRoute, index), "", path);
+    updateNavigationState(index, true);
   } else if (action === "replace") {
-    window.history.replaceState(newRoute, "");
+    const index = historyIndex();
+    window.history.replaceState(stamp(newRoute, index), "");
+    updateNavigationState(index);
+  } else {
+    updateNavigationState(historyIndex());
   }
   currentUrl = new URL(window.location.href);
   const currentLoadedRoute = get(activeRouteStore);

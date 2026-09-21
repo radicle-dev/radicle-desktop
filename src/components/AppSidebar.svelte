@@ -316,6 +316,8 @@
   });
 
   const activeRoute = router.activeRouteStore;
+  const canGoBack = router.canGoBack;
+  const canGoForward = router.canGoForward;
 
   function isInbox(): boolean {
     return $activeRoute.resource === "inbox";
@@ -514,6 +516,9 @@
     color: var(--color-text-tertiary);
     flex-shrink: 0;
   }
+  .window-controls :global(.button.disabled .icon) {
+    color: var(--color-text-quaternary);
+  }
   .update-badge {
     margin-left: auto;
     font: var(--txt-body-s-regular);
@@ -614,6 +619,7 @@
               title="{collapsed.value
                 ? 'Expand'
                 : 'Collapse'} sidebar ({toggleShortcut})"
+              ariaLabel="{collapsed.value ? 'Expand' : 'Collapse'} sidebar"
               keyShortcuts={ariaKeyShortcuts("toggleSidebar")}
               onclick={toggleSidebar}
               styleWidth={isMini ? "2rem" : "1.5rem"}
@@ -623,6 +629,9 @@
             </Button>
             <Button
               variant="naked"
+              title="Back"
+              ariaLabel="Back"
+              disabled={!$canGoBack}
               onclick={() => window.history.back()}
               styleWidth={isMini ? "2rem" : "1.5rem"}
               styleHeight={isMini ? "2rem" : "1.5rem"}
@@ -631,6 +640,9 @@
             </Button>
             <Button
               variant="naked"
+              title="Forward"
+              ariaLabel="Forward"
+              disabled={!$canGoForward}
               onclick={() => window.history.forward()}
               styleWidth={isMini ? "2rem" : "1.5rem"}
               styleHeight={isMini ? "2rem" : "1.5rem"}
@@ -640,6 +652,7 @@
             <Button
               variant="naked"
               title="Reload"
+              ariaLabel="Reload"
               onclick={() => window.location.reload()}
               styleWidth={isMini ? "2rem" : "1.5rem"}
               styleHeight={isMini ? "2rem" : "1.5rem"}

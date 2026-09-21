@@ -98,11 +98,19 @@
     },
     {
       shortcut: "back",
-      run: () => window.history.back(),
+      run: () => {
+        if (get(router.canGoBack)) {
+          window.history.back();
+        }
+      },
     },
     {
       shortcut: "forward",
-      run: () => window.history.forward(),
+      run: () => {
+        if (get(router.canGoForward)) {
+          window.history.forward();
+        }
+      },
     },
     {
       shortcut: "reload",

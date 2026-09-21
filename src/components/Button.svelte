@@ -14,6 +14,7 @@
     flatRight?: boolean;
     bordered?: boolean;
     title?: string;
+    ariaLabel?: string;
     styleHeight?: "1.5rem" | "1.75rem" | "2rem" | "2.5rem";
     styleWidth?: string;
     styleJustifyContent?: string;
@@ -32,6 +33,7 @@
     flatRight = false,
     bordered = false,
     title,
+    ariaLabel,
     styleHeight = "2rem",
     styleWidth = undefined,
     styleJustifyContent = undefined,
@@ -184,7 +186,9 @@
   style:--color-text={colors[variant]}
   style:--color-text-hover={colorsHover[variant]}
   style:--color-text-active={colorsActive[variant]}
+  aria-label={ariaLabel}
   aria-keyshortcuts={keyShortcuts}
+  aria-disabled={disabled || undefined}
   onclick={!disabled ? onclick : undefined}
   role="button"
   tabindex="0"
