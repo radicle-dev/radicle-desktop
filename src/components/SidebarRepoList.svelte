@@ -143,6 +143,40 @@
     return () => resetDynamicInterval("seededNotReplicated");
   });
 
+  // Issue and patch counts ride along in the repo payload, but releases are
+  // counted separately. Only the active repo shows sub-items, so only that one
+  // is counted, and the previous number stays on screen while navigating
+  // inside it so the badge doesn't flicker on every route change.
+  let releaseCount = $state<number | undefined>(undefined);
+  let countedRid: string | undefined = undefined;
+
+  $effect(() => {
+    const rid = activeRepo?.rid;
+    if (rid === undefined) {
+      releaseCount = undefined;
+      countedRid = undefined;
+      return;
+    }
+
+    if (countedRid !== rid) {
+      releaseCount = undefined;
+      countedRid = rid;
+    }
+
+    let cancelled = false;
+    invoke<number>("release_count", { rid })
+      .then(count => {
+        if (!cancelled) releaseCount = count;
+      })
+      .catch(() => {
+        if (!cancelled) releaseCount = undefined;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
   const filteredRepos = $derived(
     filterQuery.trim()
       ? repos.filter(r =>
@@ -1141,7 +1175,7 @@
         "parcel",
         "Releases",
         isReleases(repo.rid),
-        undefined,
+        releaseCount || undefined,
       )}
     </div>
   {/if}
