@@ -183,6 +183,7 @@ export interface LoadedRepoReleasesRoute {
     releases: PaginatedQuery<Release[]>;
     releaseCount: number;
     allAuthors: boolean;
+    showFilters: boolean;
     sidebarData: SidebarData;
   };
 }
@@ -506,21 +507,55 @@ export async function loadIssues(
 export async function loadReleases(
   route: RepoReleasesRoute,
 ): Promise<LoadedRepoReleasesRoute> {
-  const [sidebarData, repo, releases, releaseCount] = await Promise.all([
-    loadSidebarData(),
-    invoke<RepoInfo>("repo_by_id", {
-      rid: route.rid,
-    }),
-    invoke<PaginatedQuery<Release[]>>("list_releases", {
-      rid: route.rid,
-      filter: { allAuthors: route.allAuthors },
-      skip: 0,
-      take: RELEASES_PER_PAGE,
-    }),
-    invoke<number>("release_count", {
-      rid: route.rid,
-    }),
-  ]);
+  // The delegate scope is a subset of every author, so the all-authors view
+  // sizes both scopes from its own page, while the delegate view has to ask
+  // for the other scope to size it. Only the filter rides on that extra page,
+  // so a failure there shouldn't take the whole view down.
+  const [sidebarData, repo, releases, releaseCount, everyAuthorPage] =
+    await Promise.all([
+      loadSidebarData(),
+      invoke<RepoInfo>("repo_by_id", {
+        rid: route.rid,
+      }),
+      invoke<PaginatedQuery<Release[]>>("list_releases", {
+        rid: route.rid,
+        filter: { allAuthors: route.allAuthors },
+        skip: 0,
+        take: RELEASES_PER_PAGE,
+      }),
+      invoke<number>("release_count", {
+        rid: route.rid,
+      }),
+      route.allAuthors
+        ? undefined
+        : invoke<PaginatedQuery<Release[]>>("list_releases", {
+            rid: route.rid,
+            filter: { allAuthors: true },
+            skip: 0,
+            take: RELEASES_PER_PAGE,
+          }).catch(() => undefined),
+    ]);
+
+  // Offer the author filter only where the two scopes hold different releases,
+  // so a repo whose releases are all by delegates carries no filter with an
+  // identical list behind it, and one with none of its own still leaves a way
+  // through to the others. Both sizes come from a list the backend returned;
+  // `releaseCount` counts every release COB, including ones the list hides, so
+  // it would overcount either scope. A full page means the list may go on, so
+  // keep the filter rather than have it appear or vanish as the user pages,
+  // and keep it too if the other scope failed to load. Decided here so it
+  // stays fixed for the life of the route.
+  const delegateIds = new Set(repo.delegates.map(d => d.did));
+  const delegateReleaseCount = route.allAuthors
+    ? releases.content.filter(r => delegateIds.has(r.creator.did)).length
+    : releases.content.length;
+  const everyAuthorCount = route.allAuthors
+    ? releases.content.length
+    : everyAuthorPage?.content.length;
+  const showFilters =
+    everyAuthorCount === undefined ||
+    everyAuthorCount === RELEASES_PER_PAGE ||
+    delegateReleaseCount !== everyAuthorCount;
 
   return {
     resource: "repo.releases",
@@ -530,6 +565,7 @@ export async function loadReleases(
       releases,
       releaseCount,
       allAuthors: route.allAuthors,
+      showFilters,
     },
   };
 }

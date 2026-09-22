@@ -26,9 +26,11 @@
     releases: PaginatedQuery<Release[]>;
     releaseCount: number;
     allAuthors: boolean;
+    showFilters: boolean;
   }
 
-  const { repo, releases, releaseCount, allAuthors }: Props = $props();
+  const { repo, releases, releaseCount, allAuthors, showFilters }: Props =
+    $props();
 
   const delegateIds = $derived(new Set(repo.delegates.map(d => d.did)));
 
@@ -116,32 +118,34 @@
   <div class="page">
     <Topbar>
       <span class="topbar-title">Releases</span>
-      <div class="filters">
-        <a
-          class="filter"
-          class:active={!allAuthors}
-          href={router.routeToPath({
-            resource: "repo.releases",
-            rid: repo.rid,
-            allAuthors: false,
-          })}>
-          <Icon name="badge" />Delegates
-          <span class="global-counter-badge">
-            {delegateCount}{list.more ? "+" : ""}
-          </span>
-        </a>
-        <a
-          class="filter"
-          class:active={allAuthors}
-          href={router.routeToPath({
-            resource: "repo.releases",
-            rid: repo.rid,
-            allAuthors: true,
-          })}>
-          <Icon name="avatar-incognito" />All
-          <span class="global-counter-badge">{releaseCount}</span>
-        </a>
-      </div>
+      {#if showFilters}
+        <div class="filters">
+          <a
+            class="filter"
+            class:active={!allAuthors}
+            href={router.routeToPath({
+              resource: "repo.releases",
+              rid: repo.rid,
+              allAuthors: false,
+            })}>
+            <Icon name="badge" />Delegates
+            <span class="global-counter-badge">
+              {delegateCount}{list.more ? "+" : ""}
+            </span>
+          </a>
+          <a
+            class="filter"
+            class:active={allAuthors}
+            href={router.routeToPath({
+              resource: "repo.releases",
+              rid: repo.rid,
+              allAuthors: true,
+            })}>
+            <Icon name="avatar-incognito" />All
+            <span class="global-counter-badge">{releaseCount}</span>
+          </a>
+        </div>
+      {/if}
       <div style:margin-left="auto">
         <Button
           styleHeight="2rem"
@@ -159,7 +163,9 @@
         style:justify-content="center"
         style:align-items="center">
         <div class="txt-missing txt-body-m-regular">
-          {allAuthors ? "No releases" : "No releases by delegates"}
+          {showFilters && !allAuthors
+            ? "No releases by delegates"
+            : "No releases"}
         </div>
       </div>
     {:else}
