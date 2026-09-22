@@ -621,14 +621,17 @@
     flex-wrap: nowrap;
     min-width: 0;
   }
-  /* The title is arbitrary-length prose, so it is the one that gives way. */
+  /* The title is arbitrary-length prose, so it is the one that gives way. No
+     floor on its width: one held the chevron away from a short title, and the
+     60% cap on everything to its right already stops the title being squeezed
+     out. */
   .name {
     font: var(--txt-body-l-regular);
     color: var(--color-text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    min-width: 3rem;
+    min-width: 0;
     flex-shrink: 1;
   }
   /* Held at its natural width: an identifier shortened to a character or two
