@@ -21,6 +21,13 @@ pub struct ArtifactDigest {
     pub cid: String,
     #[ts(type = "number")]
     pub size_bytes: u64,
+    /// Files this covers: 1 for a file, the walked count for a directory. Lets
+    /// the app say what a directory is about to publish before it publishes it.
+    #[ts(type = "number")]
+    pub file_count: u64,
+    /// Whether the path is a directory, which is registered as a single
+    /// artifact named after the folder.
+    pub directory: bool,
 }
 
 /// A place an artifact can be fetched from, contributed by a single node.

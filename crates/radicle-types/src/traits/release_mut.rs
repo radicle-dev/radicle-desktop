@@ -26,15 +26,23 @@ pub trait ReleasesMut: Releases {
     /// canonical walk. The size is returned alongside so the caller can
     /// register the artifact and its size hint in one signed entry.
     fn compute_artifact_cid(&self, path: PathBuf) -> Result<cobs::release::ArtifactDigest, Error> {
-        let cid = if path.is_dir() {
+        let directory = path.is_dir();
+        let cid = if directory {
             cid_utils::compute_content_id(&path)?
         } else {
             cid_utils::compute_blob_cid(&path)?
+        };
+        let file_count = if directory {
+            cid_utils::canonical_walk(&path)?.len() as u64
+        } else {
+            1
         };
 
         Ok(cobs::release::ArtifactDigest {
             cid: cid.to_string(),
             size_bytes: cid_utils::compute_size_from_path(&path)?,
+            file_count,
+            directory,
         })
     }
 

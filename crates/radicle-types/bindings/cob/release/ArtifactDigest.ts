@@ -4,4 +4,17 @@
  * A locally computed content id and size for a file or directory staged for
  * release, before it is registered on the COB.
  */
-export type ArtifactDigest = { cid: string; sizeBytes: number };
+export type ArtifactDigest = {
+  cid: string;
+  sizeBytes: number;
+  /**
+   * Files this covers: 1 for a file, the walked count for a directory. Lets
+   * the app say what a directory is about to publish before it publishes it.
+   */
+  fileCount: number;
+  /**
+   * Whether the path is a directory, which is registered as a single
+   * artifact named after the folder.
+   */
+  directory: boolean;
+};

@@ -9,6 +9,7 @@
   import { slide } from "svelte/transition";
 
   import { invoke } from "@app/lib/invoke";
+  import { show } from "@app/lib/modal";
   import * as router from "@app/lib/router";
   import {
     authorForNodeId,
@@ -30,6 +31,7 @@
   import ShareButton from "@app/components/ShareButton.svelte";
   import TextInput from "@app/components/TextInput.svelte";
   import Topbar from "@app/components/Topbar.svelte";
+  import ConfirmAddArtifacts from "@app/modals/ConfirmAddArtifacts.svelte";
 
   import Layout from "./Layout.svelte";
 
@@ -219,6 +221,11 @@
   // authorship. Seeding is what makes the bytes reachable, and it needs the
   // artifact node, so it is attempted only when the node answers: without it
   // the artifact is registered but nothing can serve it.
+  // Hash and measure first, then ask. Registering signs a COB entry that syncs
+  // to everyone holding the repo and, with the node up, starts serving the
+  // bytes; none of that can be withdrawn afterwards, so the last chance to
+  // change your mind has to come before it, with the sizes and file counts on
+  // screen. Picking a folder by mistake is the case worth catching.
   async function addArtifacts(paths: string[]) {
     if (paths.length === 0) {
       return;
@@ -233,19 +240,53 @@
       nodeRunning = false;
     }
 
+    let staged: { path: string; name: string; digest: ArtifactDigest }[];
+    try {
+      staged = await Promise.all(
+        paths.map(async path => ({
+          path,
+          name: basename(path),
+          digest: await invoke<ArtifactDigest>("compute_artifact_cid", {
+            path,
+          }),
+        })),
+      );
+    } catch (error) {
+      console.error("Reading the selection failed", error);
+      addError = "Could not read what you picked.";
+      adding = false;
+      return;
+    } finally {
+      adding = false;
+    }
+
+    show({
+      component: ConfirmAddArtifacts,
+      props: {
+        staged: staged.map(({ name, digest }) => ({ name, digest })),
+        willSeed: nodeRunning,
+        confirm: () => registerStaged(staged, nodeRunning),
+      },
+    });
+  }
+
+  async function registerStaged(
+    staged: { path: string; name: string; digest: ArtifactDigest }[],
+    nodeRunning: boolean,
+  ) {
+    adding = true;
+    addError = undefined;
+
     let seedFailures = 0;
     try {
       // One at a time: each is its own signed COB entry, so a failure part way
       // through leaves the earlier ones registered.
-      for (const path of paths) {
-        const digest = await invoke<ArtifactDigest>("compute_artifact_cid", {
-          path,
-        });
+      for (const { path, name, digest } of staged) {
         await invoke("register_artifact", {
           rid: repo.rid,
           releaseId: release.id,
           cid: digest.cid,
-          name: basename(path),
+          name,
           sizeBytes: digest.sizeBytes,
         });
 
