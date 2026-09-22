@@ -72,7 +72,22 @@ pub trait ArtifactNode: ReleasesMut {
 
     /// Status of the local artifact node.
     fn artifact_node_status(&self) -> Result<ArtifactNodeStatus, Error> {
-        Ok(ArtifactNodeStatus::from(self.artifact_client().status()?))
+        // The node does not report where its store lives, so it is derived the
+        // same way the node builds it: `<home>/artifacts/store`. Unlike the
+        // control socket, no environment variable moves it.
+        let store_path = self
+            .profile()
+            .home
+            .path()
+            .join(radicle_artifact_core::ARTIFACTS_DIR)
+            .join("store")
+            .to_string_lossy()
+            .into_owned();
+
+        Ok(ArtifactNodeStatus::new(
+            self.artifact_client().status()?,
+            store_path,
+        ))
     }
 
     /// Every artifact the node currently seeds for the repository, as content

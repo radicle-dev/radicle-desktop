@@ -76,11 +76,16 @@ pub struct ArtifactNodeStatus {
     /// Set when no home relay is connected: peers that cannot holepunch may
     /// be unable to reach this node.
     pub relay_unreachable: bool,
+    /// Where the node keeps the bytes it serves. A download writes the file
+    /// the user asked for and keeps a copy here, so this is the second copy
+    /// deleting the saved file does not remove.
+    pub store_path: String,
 }
 
-impl From<Status> for ArtifactNodeStatus {
-    fn from(status: Status) -> Self {
+impl ArtifactNodeStatus {
+    pub fn new(status: Status, store_path: String) -> Self {
         Self {
+            store_path,
             endpoint_id: status.endpoint_id.to_string(),
             started_at_unix: status.started_at_unix,
             seeded_count: status.seeded.count as u64,

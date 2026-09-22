@@ -214,6 +214,18 @@
             {status.seededCount === 1 ? "artifact" : "artifacts"}
             ({formatBytes(status.seededBytesLogical)})
           </span>
+          <!-- The node keeps its own copy of everything it serves, so a
+               download leaves bytes here as well as at the path the user
+               picked. Worth saying where, since deleting the saved file does
+               not reclaim this one. -->
+          <span class="key">Store</span>
+          <span class="endpoint">
+            <Id
+              id={status.storePath}
+              clipboard={status.storePath}
+              label="store path"
+              shorten={false} />
+          </span>
           <span class="key">Connections</span>
           <span class="value">
             {status.connectionsActive} active, {status.connectionsOpenedTotal} total

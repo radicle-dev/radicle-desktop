@@ -65,4 +65,10 @@ export type ArtifactNodeStatus = {
    * be unable to reach this node.
    */
   relayUnreachable: boolean;
+  /**
+   * Where the node keeps the bytes it serves. A download writes the file
+   * the user asked for and keeps a copy here, so this is the second copy
+   * deleting the saved file does not remove.
+   */
+  storePath: string;
 };
