@@ -10,6 +10,10 @@
   export interface StagedArtifact {
     name: string;
     digest: ArtifactDigest;
+    /// Set when the release already holds an artifact with this content id.
+    /// Identity is the content hash, not the file name, so re-picking the same
+    /// bytes lands on the existing entry rather than making a second one.
+    existing?: { name: string; renames: boolean };
   }
 
   interface Props {
@@ -29,6 +33,7 @@
     staged.reduce((sum, s) => sum + s.digest.fileCount, 0),
   );
   const anyDirectory = $derived(staged.some(s => s.digest.directory));
+  const newCount = $derived(staged.filter(s => !s.existing).length);
 
   let working = $state(false);
   let error = $state<string | undefined>(undefined);
@@ -145,6 +150,14 @@
     gap: 0.5rem;
     min-width: 0;
   }
+  /* The quieter band: nothing is lost by re-adding, it is just not the new
+     entry someone might expect. */
+  .note {
+    padding: 0.625rem 0.75rem;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--color-surface-subtle);
+    color: var(--color-text-secondary);
+  }
   .error {
     color: var(--color-feedback-error-text);
   }
@@ -183,11 +196,17 @@
           </span>
           <span class="item-name">{item.name}</span>
           <span class="item-detail">
-            {#if item.digest.directory}
-              {item.digest.fileCount}
-              {item.digest.fileCount === 1 ? "file" : "files"} ·
+            {#if item.existing}
+              {item.existing.renames
+                ? `renames “${item.existing.name}”`
+                : "already added"}
+            {:else}
+              {#if item.digest.directory}
+                {item.digest.fileCount}
+                {item.digest.fileCount === 1 ? "file" : "files"} ·
+              {/if}
+              {formatBytes(item.digest.sizeBytes)}
             {/if}
-            {formatBytes(item.digest.sizeBytes)}
           </span>
         </div>
       {/each}
@@ -199,6 +218,16 @@
         {totalFiles === 1 ? "file" : "files"} in total, {formatBytes(
           totalBytes,
         )}
+      </div>
+    {/if}
+
+    {#if newCount < staged.length}
+      <div class="note">
+        An artifact is identified by the hash of its contents, not by its name,
+        so anything already in this release stays the single entry it is.
+        {#if newCount === 0}
+          Nothing new will be published.
+        {/if}
       </div>
     {/if}
 

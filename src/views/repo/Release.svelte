@@ -261,10 +261,27 @@
       adding = false;
     }
 
+    // Identity is the content hash, so re-picking bytes already in the release
+    // lands on the existing entry. Only its original author can change its
+    // name, so for anyone else a re-add is a no-op worth saying out loud.
+    const byCid = new Map(release.artifacts.map(a => [a.cid, a]));
+
     show({
       component: ConfirmAddArtifacts,
       props: {
-        staged: staged.map(({ name, digest }) => ({ name, digest })),
+        staged: staged.map(({ name, digest }) => {
+          const match = byCid.get(digest.cid);
+          return {
+            name,
+            digest,
+            existing: match
+              ? {
+                  name: match.name,
+                  renames: match.name !== name && match.author.did === ownDid,
+                }
+              : undefined,
+          };
+        }),
         willSeed: nodeRunning,
         confirm: () => registerStaged(staged, nodeRunning),
       },
