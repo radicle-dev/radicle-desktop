@@ -796,12 +796,14 @@
     cursor: default;
     opacity: 0.6;
   }
+  /* The enclosing .section already spaces a heading from its body, so these
+     carry no margin of their own: with one they sat 8px lower than the empty
+     states in the sections above them. */
   .locations,
   .redactions {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    margin-top: 0.5rem;
     font: var(--txt-body-m-regular);
   }
   .location-group {
