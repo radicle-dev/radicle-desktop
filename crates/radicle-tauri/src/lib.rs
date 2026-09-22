@@ -77,6 +77,7 @@ pub fn run() {
             cob::release::pick_artifact_directory,
             cob::release::pick_artifact_save_path,
             cob::release::artifact_node_running,
+            cob::release::artifact_binaries,
             cob::release::artifact_node_status,
             cob::release::is_seeding_artifact,
             cob::release::seed_artifact,

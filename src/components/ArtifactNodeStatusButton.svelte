@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { ArtifactBinaries } from "@bindings/artifact/ArtifactBinaries";
   import type { ArtifactNodeStatus } from "@bindings/artifact/ArtifactNodeStatus";
 
   import { invoke } from "@app/lib/invoke";
@@ -10,9 +11,24 @@
   import Id from "@app/components/Id.svelte";
   import Popover from "@app/components/Popover.svelte";
 
+  // Installs both `rad-artifact` and `rad-artifact-node`.
+  const INSTALL_COMMAND =
+    "curl -sSf https://files.radicle.dev/releases/radicle-artifact/install | sh";
+
   let popoverExpanded: boolean = $state(false);
   let running: boolean | undefined = $state();
   let status: ArtifactNodeStatus | undefined = $state();
+  let binaries: ArtifactBinaries | undefined = $state();
+
+  // A node that is down is a different problem from one that was never
+  // installed, and telling someone to run a binary they do not have is a dead
+  // end. Both binaries are needed: `rad-artifact node start` only spawns the
+  // daemon, which is the separate `rad-artifact-node`. Undefined while the
+  // check is outstanding, so the guidance below does not flash "install" at
+  // someone who has it.
+  const installed = $derived(
+    binaries === undefined ? undefined : binaries.cli && binaries.node,
+  );
 
   // The button itself reports whether the node answers, so this one poll runs
   // whether or not the popover is open. It is a bare liveness check, unlike the
@@ -51,6 +67,17 @@
     let cancelled = false;
 
     const refresh = async () => {
+      try {
+        const binaries_ = await invoke<ArtifactBinaries>("artifact_binaries");
+        if (!cancelled) {
+          binaries = binaries_;
+        }
+      } catch {
+        if (!cancelled) {
+          binaries = undefined;
+        }
+      }
+
       try {
         const status_ = await invoke<ArtifactNodeStatus>(
           "artifact_node_status",
@@ -196,16 +223,28 @@
             {formatBytes(status.inBytes)} in, {formatBytes(status.outBytes)} out
           </span>
         </div>
-      {:else if running === false}
+      {:else if running === false && installed !== undefined}
         <div style:line-height="1.625rem">
-          The artifact node is not running, so artifacts cannot be downloaded or
-          seeded from this app.
+          {#if installed}
+            The artifact node is not running, so artifacts cannot be downloaded
+            or seeded from this app.
+          {:else if binaries?.cli}
+            The artifact seeding daemon is not installed, so artifacts cannot be
+            downloaded or seeded from this app.
+          {:else}
+            The artifact tools are not installed, so artifacts cannot be
+            downloaded or seeded from this app.
+          {/if}
           <div style:margin-top="1rem">
-            Start it with:
+            {installed ? "Start it with:" : "Install them with:"}
             <div style:margin-top="0.5rem">
-              <Command
-                styleWidth="fit-content"
-                command="rad-artifact node start" />
+              {#if installed}
+                <Command
+                  styleWidth="fit-content"
+                  command="rad-artifact node start" />
+              {:else}
+                <Command styleWidth="100%" command={INSTALL_COMMAND} />
+              {/if}
             </div>
           </div>
         </div>

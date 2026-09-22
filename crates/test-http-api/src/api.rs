@@ -161,6 +161,7 @@ pub fn router(ctx: Context) -> Router {
             "/artifact_node_running",
             post(artifact_node_running_handler),
         )
+        .route("/artifact_binaries", post(artifact_binaries_handler))
         .route("/artifact_node_status", post(artifact_node_status_handler))
         .route("/is_seeding_artifact", post(is_seeding_artifact_handler))
         .route("/seed_artifact", post(seed_artifact_handler))
@@ -941,6 +942,10 @@ async fn redact_artifact_handler(
 
 async fn artifact_node_running_handler(State(ctx): State<Context>) -> impl IntoResponse {
     Ok::<_, Error>(Json(ctx.artifact_node_running()))
+}
+
+async fn artifact_binaries_handler() -> impl IntoResponse {
+    Ok::<_, Error>(Json(radicle_types::binaries::artifact_binaries()))
 }
 
 async fn artifact_node_status_handler(State(ctx): State<Context>) -> impl IntoResponse {

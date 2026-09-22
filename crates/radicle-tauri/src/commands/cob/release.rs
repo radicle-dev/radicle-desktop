@@ -191,6 +191,13 @@ pub async fn artifact_node_running(ctx: tauri::State<'_, AppState>) -> Result<bo
     blocking(ctx, |ctx| Ok(ctx.artifact_node_running())).await
 }
 
+/// Which artifact binaries are installed, so a node that is down can be told
+/// apart from one that was never installed.
+#[tauri::command]
+pub fn artifact_binaries() -> radicle_types::binaries::ArtifactBinaries {
+    radicle_types::binaries::artifact_binaries()
+}
+
 #[tauri::command]
 pub async fn artifact_node_status(
     ctx: tauri::State<'_, AppState>,

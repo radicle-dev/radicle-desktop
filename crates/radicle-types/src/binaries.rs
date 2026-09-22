@@ -112,6 +112,43 @@ pub fn rad() -> Option<PathBuf> {
     candidates("rad").find(|path| path.is_file())
 }
 
+#[cfg(windows)]
+const RAD_ARTIFACT_BIN: &str = "rad-artifact.exe";
+#[cfg(not(windows))]
+const RAD_ARTIFACT_BIN: &str = "rad-artifact";
+
+#[cfg(windows)]
+const RAD_ARTIFACT_NODE_BIN: &str = "rad-artifact-node.exe";
+#[cfg(not(windows))]
+const RAD_ARTIFACT_NODE_BIN: &str = "rad-artifact-node";
+
+/// Which of the artifact binaries are installed.
+///
+/// `rad-artifact node start` only starts the daemon; the daemon itself is the
+/// separate `rad-artifact-node` binary, installed by its own crate. So the two
+/// can be missing independently, and "install it" is different advice from
+/// "start it".
+///
+/// Uncached for the same reason as [`rad`]: the UI polls, so an install that
+/// happens while the app runs takes effect without a restart.
+#[derive(Clone, Copy, Debug, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "artifact/")]
+pub struct ArtifactBinaries {
+    /// The `rad-artifact` CLI.
+    pub cli: bool,
+    /// The `rad-artifact-node` seeding daemon.
+    pub node: bool,
+}
+
+pub fn artifact_binaries() -> ArtifactBinaries {
+    ArtifactBinaries {
+        cli: candidates(RAD_ARTIFACT_BIN).any(|path| path.is_file()),
+        node: candidates(RAD_ARTIFACT_NODE_BIN).any(|path| path.is_file()),
+    }
+}
+
 /// Everywhere a binary called `name` might be, `PATH` first so that the user's
 /// own choice wins.
 fn candidates(name: &str) -> impl Iterator<Item = PathBuf> {
