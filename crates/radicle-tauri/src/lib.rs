@@ -79,6 +79,7 @@ pub fn run() {
             cob::release::artifact_node_running,
             cob::release::artifact_binaries,
             cob::release::artifact_node_status,
+            cob::release::seeded_artifacts,
             cob::release::is_seeding_artifact,
             cob::release::seed_artifact,
             cob::release::unseed_artifact,

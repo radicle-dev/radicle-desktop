@@ -75,6 +75,17 @@ pub trait ArtifactNode: ReleasesMut {
         Ok(ArtifactNodeStatus::from(self.artifact_client().status()?))
     }
 
+    /// Every artifact the node currently seeds for the repository, as content
+    /// ids. One call per release view, rather than one per artifact row.
+    fn seeded_artifacts(&self, rid: RepoId) -> Result<Vec<String>, Error> {
+        Ok(self
+            .artifact_client()
+            .list_seeded(rid)?
+            .into_iter()
+            .map(|entry| entry.cid.to_string())
+            .collect())
+    }
+
     /// Whether the node currently seeds this artifact for the repository.
     fn is_seeding_artifact(&self, rid: RepoId, cid: String) -> Result<bool, Error> {
         let cid = Cid::from_str(&cid)

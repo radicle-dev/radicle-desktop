@@ -22,9 +22,20 @@
     delegateIds: Set<string>;
     releaseId: string;
     rid: string;
+    /// Whether the node already seeds this artifact, asked of the node rather
+    /// than assumed from what this component did.
+    seeding: boolean;
+    onDownloaded: () => void;
   }
 
-  const { artifact, delegateIds, releaseId, rid }: Props = $props();
+  const {
+    artifact,
+    delegateIds,
+    releaseId,
+    rid,
+    seeding,
+    onDownloaded,
+  }: Props = $props();
 
   let activeTab: "app" | "cli" | "browser" = $state("app");
   // Mirrors the shared preference locally so the checkbox can bind to it,
@@ -108,6 +119,8 @@
         seed: seedAfterDownload,
       });
       downloaded = true;
+      // Seeding is the node's state, not ours; ask what actually happened.
+      onDownloaded();
     } catch {
       downloadError =
         "Download failed. The artifact node may be offline, or no source is reachable.";
@@ -337,7 +350,7 @@
         {:else if downloaded}
           <div class="success">
             <Icon name="checkmark" />
-            Saved{seedAfterDownload ? " and seeding" : ""}.
+            Saved{seeding ? " and seeding" : ""}.
           </div>
         {/if}
 

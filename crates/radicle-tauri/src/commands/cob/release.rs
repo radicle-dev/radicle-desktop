@@ -205,6 +205,16 @@ pub async fn artifact_node_status(
     blocking(ctx, |ctx| ctx.artifact_node_status()).await
 }
 
+/// Content ids the node seeds for this repository. The release view asks once
+/// and matches its rows against the result.
+#[tauri::command]
+pub async fn seeded_artifacts(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+) -> Result<Vec<String>, Error> {
+    blocking(ctx, move |ctx| ctx.seeded_artifacts(rid)).await
+}
+
 #[tauri::command]
 pub async fn is_seeding_artifact(
     ctx: tauri::State<'_, AppState>,

@@ -163,6 +163,7 @@ pub fn router(ctx: Context) -> Router {
         )
         .route("/artifact_binaries", post(artifact_binaries_handler))
         .route("/artifact_node_status", post(artifact_node_status_handler))
+        .route("/seeded_artifacts", post(seeded_artifacts_handler))
         .route("/is_seeding_artifact", post(is_seeding_artifact_handler))
         .route("/seed_artifact", post(seed_artifact_handler))
         .route("/unseed_artifact", post(unseed_artifact_handler))
@@ -959,6 +960,21 @@ async fn artifact_node_status_handler(State(ctx): State<Context>) -> impl IntoRe
 struct IsSeedingArtifactBody {
     pub rid: identity::RepoId,
     pub cid: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SeededArtifactsBody {
+    pub rid: identity::RepoId,
+}
+
+async fn seeded_artifacts_handler(
+    State(ctx): State<Context>,
+    Json(SeededArtifactsBody { rid }): Json<SeededArtifactsBody>,
+) -> impl IntoResponse {
+    let seeded = ctx.seeded_artifacts(rid)?;
+
+    Ok::<_, Error>(Json(seeded))
 }
 
 async fn is_seeding_artifact_handler(

@@ -337,6 +337,28 @@
     metadataError = undefined;
   }
 
+  // Seeding lives in the node, not the COB, so it has to be asked for rather
+  // than read off the release. One call per view, matched against the rows.
+  let seededCids = $state<Set<string>>(new Set());
+
+  async function refreshSeeded() {
+    try {
+      const cids = await invoke<string[]>("seeded_artifacts", {
+        rid: repo.rid,
+      });
+      seededCids = new Set(cids);
+    } catch {
+      // A node that is down seeds nothing we can confirm, so claim nothing.
+      seededCids = new Set();
+    }
+  }
+
+  $effect(() => {
+    // Re-ask when the route lands on another release.
+    void release.id;
+    void refreshSeeded();
+  });
+
   async function reload() {
     const updated = await invoke<Release | null>("release_by_id", {
       rid: repo.rid,
@@ -611,6 +633,13 @@
     align-items: center;
     gap: 0.25rem;
     color: var(--color-foreground-success);
+    white-space: nowrap;
+  }
+  .seeding {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--color-text-tertiary);
     white-space: nowrap;
   }
   .contributor {
@@ -997,6 +1026,8 @@
                   <ArtifactDownloadButton
                     {artifact}
                     {delegateIds}
+                    seeding={seededCids.has(artifact.cid)}
+                    onDownloaded={refreshSeeded}
                     releaseId={release.id}
                     rid={repo.rid} />
                 </div>
@@ -1017,6 +1048,14 @@
                   <span class="trust">
                     <Icon name="checkmark" />
                     {trust}
+                  </span>
+                {/if}
+                {#if seededCids.has(artifact.cid)}
+                  <span
+                    class="seeding"
+                    title="Your node is seeding this artifact">
+                    <Icon name="parcel" />
+                    Seeding
                   </span>
                 {/if}
                 <!-- The release creator is named in the header, so an artifact
