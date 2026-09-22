@@ -652,12 +652,16 @@
     gap: 0.25rem;
     color: var(--color-text-secondary);
   }
+  /* A short fixed label, so it keeps its own width and never wraps: the title
+     beside it is the part that gives way. */
   .redacted-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+    flex-shrink: 0;
+    white-space: nowrap;
     font: var(--txt-body-s-regular);
-    color: var(--color-feedback-error-text);
+    color: var(--color-text-tertiary);
     border: 1px solid var(--color-border-subtle);
     border-radius: var(--border-radius-sm);
     padding: 0 0.375rem;
@@ -815,12 +819,14 @@
     color: var(--color-text-secondary);
     word-break: break-all;
   }
+  /* The section heading already says these are redactions, so the row carries
+     no warning icon and no alarm colour: it is a record of who did what. */
   .redaction {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: 0.5rem;
-    color: var(--color-feedback-error-text);
+    color: var(--color-text-secondary);
   }
   .reason {
     color: var(--color-text-tertiary);
@@ -1013,7 +1019,6 @@
                       {/if}
                       {#if redactedByTrusted(artifact, delegateIds)}
                         <span class="redacted-badge">
-                          <Icon name="warning" />
                           {redactedByLabel(artifact, delegateIds)}
                         </span>
                       {/if}
@@ -1271,7 +1276,6 @@
                       <div class="redactions">
                         {#each redactions as redaction (redaction.user.did)}
                           <div class="redaction">
-                            <Icon name="warning" />
                             <NodeId {...authorForNodeId(redaction.user)} />
                             {#if delegateIds.has(redaction.user.did)}
                               <DelegateBadge tooltip="Redacted by a delegate" />
