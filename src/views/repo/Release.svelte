@@ -555,9 +555,13 @@
   /* Held at its natural width: an identifier shortened to a character or two
      tells a reader nothing, so it keeps its own space and the title yields
      instead. The cap stops a long file name squeezing out the title. */
+  /* Centred rather than baseline-aligned against the title: the chevron is an
+     icon box with no text baseline of its own, so on a baseline it hangs by
+     its bottom edge and rides visibly high above the title. */
   .trailing {
     display: inline-flex;
     align-items: baseline;
+    align-self: center;
     gap: 0.5rem;
     flex-shrink: 0;
     max-width: 60%;
