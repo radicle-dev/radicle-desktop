@@ -760,9 +760,13 @@
     gap: 0.5rem;
     font: var(--txt-body-m-regular);
   }
+  /* Held at the height of the buttons some of these rows carry, so a heading
+     does not jump when its button appears or goes away, and so every section
+     heading sits at the same height whether or not it has one. */
   .section-title {
     display: flex;
     align-items: center;
+    min-height: 1.5rem;
     gap: 0.5rem;
     font: var(--txt-body-s-medium);
     color: var(--color-text-secondary);
