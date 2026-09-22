@@ -32,6 +32,7 @@
   import TextInput from "@app/components/TextInput.svelte";
   import Topbar from "@app/components/Topbar.svelte";
   import ConfirmAddArtifacts from "@app/modals/ConfirmAddArtifacts.svelte";
+  import ConfirmRedact from "@app/modals/ConfirmRedact.svelte";
 
   import Layout from "./Layout.svelte";
 
@@ -329,6 +330,26 @@
     if (path) {
       await addArtifacts([path]);
     }
+  }
+
+  function openRedact(artifact: Artifact) {
+    show({
+      component: ConfirmRedact,
+      props: {
+        name: artifactTitle(artifact) ?? artifact.name,
+        seeding: seededCids.has(artifact.cid),
+        confirm: async (reason: string) => {
+          await invoke("redact_artifact", {
+            rid: repo.rid,
+            releaseId: release.id,
+            cid: artifact.cid,
+            reason,
+          });
+          await reload();
+          await refreshSeeded();
+        },
+      },
+    });
   }
 
   // Writing metadata is constrained to the artifact's author or a repository
@@ -1312,6 +1333,20 @@
                     <div class="section-title">
                       Redactions
                       <span class="section-count">{redactions.length}</span>
+                      <!-- Offered only to the artifact's author and delegates.
+                           Anyone may redact, but only those two hide it from
+                           the release; for everyone else it would burn their
+                           own ability to attest and change nothing on screen.
+                           Hidden once this node has redacted, since a second
+                           one only rewrites the reason. -->
+                      {#if canEditMetadata(artifact) && !redactions.some(r => r.user.did === ownDid)}
+                        <Button
+                          variant="naked"
+                          styleHeight="1.5rem"
+                          onclick={() => openRedact(artifact)}>
+                          <Icon name="warning" />Redact
+                        </Button>
+                      {/if}
                     </div>
                     {#if redactions.length === 0}
                       <div class="empty-section">No redactions</div>
