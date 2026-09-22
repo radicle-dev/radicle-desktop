@@ -148,7 +148,7 @@ pub async fn redact_artifact(
     reason: String,
 ) -> Result<(), Error> {
     blocking(ctx, move |ctx| {
-        ctx.redact_artifact(rid, release_id, cid, reason)
+        ctx.redact_and_unseed_artifact(rid, release_id, cid, reason)
     })
     .await
 }

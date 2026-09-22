@@ -936,7 +936,7 @@ async fn redact_artifact_handler(
         reason,
     }): Json<RedactArtifactBody>,
 ) -> impl IntoResponse {
-    ctx.redact_artifact(rid, release_id, cid, reason)?;
+    ctx.redact_and_unseed_artifact(rid, release_id, cid, reason)?;
 
     Ok::<_, Error>(Json(()))
 }

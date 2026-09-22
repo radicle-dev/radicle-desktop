@@ -173,6 +173,33 @@ pub trait ArtifactNode: ReleasesMut {
         Ok(())
     }
 
+    /// Redact an artifact and stop this node serving it.
+    ///
+    /// Redaction on its own is only a COB record: it says the artifact should
+    /// no longer be fetched, but it does not stop this node handing out the
+    /// bytes or withdraw the location advertising them. Anyone redacting
+    /// something they published wants it off their node too, so the two go
+    /// together.
+    ///
+    /// The redaction is the permanent, public half, so it is written first and
+    /// a node that is down or refuses the unseed does not undo it. A down node
+    /// is serving nothing in any case.
+    fn redact_and_unseed_artifact(
+        &self,
+        rid: RepoId,
+        release_id: String,
+        cid: String,
+        reason: String,
+    ) -> Result<(), Error> {
+        self.redact_artifact(rid, release_id.clone(), cid.clone(), reason)?;
+
+        if let Err(err) = self.unseed_artifact(rid, release_id, cid) {
+            log::warn!("Redacted artifact could not be unseeded: {err}");
+        }
+
+        Ok(())
+    }
+
     /// Fetch an artifact from the locations on its COB and write it to `dest`.
     ///
     /// The node owns every transport and the export to disk; this resolves the
