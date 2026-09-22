@@ -7,6 +7,7 @@
   import Button from "@app/components/Button.svelte";
   import Command from "@app/components/Command.svelte";
   import Icon from "@app/components/Icon.svelte";
+  import Id from "@app/components/Id.svelte";
   import Popover from "@app/components/Popover.svelte";
 
   let popoverExpanded: boolean = $state(false);
@@ -125,6 +126,13 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  /* The endpoint is an address to hand to someone else, so it is shown whole
+     and wraps rather than being truncated to a prefix that identifies
+     nothing. */
+  .endpoint {
+    color: var(--color-text-secondary);
+    word-break: break-all;
+  }
   .warning {
     display: flex;
     align-items: center;
@@ -164,8 +172,12 @@
         {/if}
         <div class="stats">
           <span class="key">Endpoint</span>
-          <span class="value" title={status.endpointId}>
-            {status.endpointId}
+          <span class="endpoint">
+            <Id
+              id={status.endpointId}
+              clipboard={status.endpointId}
+              label="endpoint"
+              shorten={false} />
           </span>
           <span class="key">Uptime</span>
           <span class="value">{uptime}</span>
