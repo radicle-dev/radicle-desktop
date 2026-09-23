@@ -823,7 +823,18 @@
           class="revision-description-body txt-body-m-regular"
           bind:this={descriptionEl}>
           {#if showRevisionDescription}
-            <Markdown {rid} breaks content={revisionDescription} />
+            <Markdown
+              {rid}
+              breaks
+              content={revision.description.slice(-1)[0]?.body ?? ""}
+              toggleTaskItem={canEditDescription && onSaveDescription
+                ? async content => {
+                    await onSaveDescription(
+                      content,
+                      revision.description.slice(-1)[0]?.embeds ?? [],
+                    );
+                  }
+                : undefined} />
           {:else}
             <span style:color="var(--color-text-tertiary)">No description</span>
           {/if}

@@ -4,6 +4,7 @@
   import type { Operation } from "@bindings/cob/Operation";
   import type { Action } from "@bindings/cob/patch/Action";
   import type { Revision } from "@bindings/cob/patch/Revision";
+  import type { Verdict } from "@bindings/cob/patch/Verdict";
   import type { CodeLocation } from "@bindings/cob/thread/CodeLocation";
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { Thread } from "@bindings/cob/thread/Thread";
@@ -1045,6 +1046,31 @@
     }
   }
 
+  async function editReviewSummary(
+    reviewId: string,
+    summary: string,
+    review: { verdict?: Verdict; labels?: string[] },
+  ) {
+    try {
+      await invoke("edit_patch", {
+        rid,
+        cobId: patchId,
+        action: {
+          type: "review.edit",
+          review: reviewId,
+          summary,
+          verdict: review.verdict,
+          labels: review.labels ?? [],
+        },
+        opts: { announce: $nodeRunning && $announce },
+      });
+    } catch (error) {
+      console.error("Editing review summary failed: ", error);
+    } finally {
+      await loadPatch();
+    }
+  }
+
   async function createComment(
     body: string,
     embeds: Embed[],
@@ -1473,7 +1499,17 @@
   {:else}
     <div class="patch-body txt-body-m-regular">
       {#if body.trim() !== ""}
-        <Markdown {rid} content={body} />
+        <Markdown
+          {rid}
+          content={body}
+          toggleTaskItem={canEdit
+            ? async content => {
+                await editRevision(
+                  content,
+                  revision.description.slice(-1)[0].embeds ?? [],
+                );
+              }
+            : undefined} />
       {:else}
         <span style:color="var(--color-text-tertiary)">No description</span>
       {/if}
@@ -1536,6 +1572,7 @@
             repoDelegates.map(d => d.did),
             targetRev.author.did,
           )}
+        {@const fullDescription = data.op.description}
         {@const descriptionSubject = splitDescription(
           data.op.description,
         ).subject}
@@ -1589,7 +1626,33 @@
                 </div>
               {:else if descriptionVisible}
                 <div class="revision-card-description txt-body-m-regular">
-                  <Markdown {rid} breaks content={revBody} />
+                  <Markdown
+                    {rid}
+                    breaks
+                    content={revBody}
+                    toggleTaskItem={canEditRevision
+                      ? async content => {
+                          // Only the body is shown, beneath the subject. Splice
+                          // the change back into the stored description so
+                          // the subject and spacing around it stay as written.
+                          const full = fullDescription;
+                          const shown = revBody ?? "";
+                          const subject = descriptionSubject ?? "";
+                          const start = full.indexOf(
+                            shown,
+                            full.indexOf(subject) + subject.length,
+                          );
+                          await editRevision(
+                            start === -1
+                              ? `${subject}\n\n${content}`
+                              : full.slice(0, start) +
+                                  content +
+                                  full.slice(start + shown.length),
+                            targetRev?.description.slice(-1)[0]?.embeds ?? [],
+                            revId,
+                          );
+                        }
+                      : undefined} />
                   {#if canEditRevision}
                     <div class="revision-card-description-actions">
                       <button
@@ -1821,12 +1884,19 @@
           r => r.id === opId,
         )}
         {@const hasReviewComments = (reviewRecord?.comments?.length ?? 0) > 0}
+        {@const reviewOp = data.op}
         <ReviewItem
           {rid}
           author={data.op.author}
           verdict={data.op.verdict}
           summary={data.op.summary ?? ""}
           timestamp={data.op.timestamp}
+          toggleTaskItem={data.op.author.did ===
+          didFromPublicKey(config.publicKey)
+            ? async summary => {
+                await editReviewSummary(opId, summary, reviewOp);
+              }
+            : undefined}
           onViewFullReview={hasReviewComments
             ? () =>
                 void push({

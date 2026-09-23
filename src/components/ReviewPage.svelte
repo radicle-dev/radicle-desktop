@@ -1006,7 +1006,15 @@
     {:else if summary !== "" || isOwnPublishedReview}
       <div class="summary">
         {#if summary !== ""}
-          <Markdown {rid} breaks content={summary} />
+          <Markdown
+            {rid}
+            breaks
+            content={review.summary ?? ""}
+            toggleTaskItem={isOwnPublishedReview
+              ? async content => {
+                  await saveSummary(content);
+                }
+              : undefined} />
         {:else}
           <span class="summary-empty">No summary.</span>
         {/if}

@@ -419,6 +419,7 @@
             <IssueDescription
               rid={repo.rid}
               body={body.edits.slice(-1)[0].body}
+              embeds={body.embeds ?? []}
               reactions={body.reactions}
               currentUserNid={config.publicKey}
               allowedToEdit={!!canEditIssue}

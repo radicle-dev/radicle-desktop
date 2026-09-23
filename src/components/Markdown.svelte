@@ -1,13 +1,16 @@
 <script lang="ts">
   import type { Embed } from "@bindings/cob/Embed";
 
-  import dompurify from "dompurify";
   import { toDom } from "hast-util-to-dom";
   import { mount, tick, unmount } from "svelte";
 
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
-  import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
+  import {
+    isTaskCheckbox,
+    renderMarkdown,
+    toggleTask,
+  } from "@app/lib/markdown";
   import { highlight } from "@app/lib/syntax";
   import { isCommit, scrollIntoView, twemoji } from "@app/lib/utils";
 
@@ -18,11 +21,98 @@
     content: string;
     // If true, add <br> on a single line break
     breaks?: boolean;
+    // When set, task-list checkboxes become clickable. Flipping one rewrites
+    // that box in the markdown source and hands the whole document back to be
+    // saved, so the caller only has to persist what it is given.
+    toggleTaskItem?: (content: string) => Promise<void> | void;
   }
 
-  const { rid = "", content, breaks = false }: Props = $props();
+  const {
+    rid = "",
+    content,
+    breaks = false,
+    toggleTaskItem = undefined,
+  }: Props = $props();
+
+  // Guards against a second click landing while the first is still being
+  // saved, which would compute the new document from a stale source.
+  let taskInFlight = $state(false);
+  // The box that had focus when it was clicked. Saving re-renders every box,
+  // so focus is handed to its replacement rather than dropped on the page.
+  let refocusTask: number | undefined = undefined;
+  // Only the first render jumps to the linked anchor. Later ones come from
+  // edits such as ticking a box, and should leave the page where it is.
+  let scrolledToHash = false;
 
   let container: HTMLElement;
+
+  // Every change to the content rebuilds the rendered tree, links included.
+  // Keeping the preview built for each embed lets a re-render put it straight
+  // back instead of fetching and decoding it again, which would leave a gap
+  // where the preview was until the new one arrives.
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- imperative oid→element lookup, never rendered reactively
+  const embedPreviews = new Map<
+    string,
+    { element: HTMLElement; url: string }
+  >();
+
+  let destroyed = false;
+
+  $effect(() => () => {
+    destroyed = true;
+    for (const { url } of embedPreviews.values()) {
+      URL.revokeObjectURL(url);
+    }
+    embedPreviews.clear();
+  });
+
+  function createEmbedPreview(
+    mimeType: string | null | undefined,
+    url: string,
+  ): HTMLElement | undefined {
+    if (mimeType?.startsWith("image")) {
+      const element = document.createElement("img");
+      element.setAttribute("src", url);
+      element.style.display = "block";
+      return element;
+    } else if (mimeType?.startsWith("application")) {
+      // An embed element is what displays a PDF correctly.
+      const element = document.createElement("embed");
+      element.setAttribute("src", url);
+      element.type = mimeType;
+      element.style.overflow = "scroll";
+      element.style.height = "40rem";
+      element.style.overscrollBehavior = "contain";
+      return element;
+    } else if (mimeType?.startsWith("video")) {
+      const element = document.createElement("video");
+      const node = document.createElement("source");
+      node.src = url;
+      element.controls = true;
+      node.type = mimeType;
+      element.style.width = "100%";
+      element.appendChild(node);
+      return element;
+    } else if (mimeType?.startsWith("audio")) {
+      const element = document.createElement("audio");
+      element.style.display = "block";
+      element.src = url;
+      element.controls = true;
+      return element;
+    }
+  }
+
+  function placeEmbedPreview(link: HTMLAnchorElement, element: HTMLElement) {
+    link.style.display = "block";
+    // The same embed can be linked more than once in a document, and one
+    // element can only sit in one place.
+    link.insertAdjacentElement(
+      "afterend",
+      container.contains(element)
+        ? (element.cloneNode(true) as HTMLElement)
+        : element,
+    );
+  }
 
   const doc = $derived(parseFrontmatter(content));
   const frontMatter = $derived.by(() => {
@@ -34,15 +124,6 @@
       console.error("Not able to parse frontmatter: ", error);
     }
   });
-
-  function render(content: string): string {
-    return dompurify.sanitize(
-      markdownWithExtensions.parse(content, {
-        renderer: new Renderer(),
-        breaks,
-      }) as string,
-    );
-  }
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -56,18 +137,103 @@
         return;
       }
 
-      // Replace native task-list checkboxes with read-only styled boxes.
+      // Replace native task-list checkboxes with styled boxes. The checkmark
+      // is always mounted and hidden by CSS while unchecked, so flipping a box
+      // is a single class change.
+      // Only boxes rendered from task-list syntax can be written back; one
+      // written as raw HTML is styled the same but stays read-only.
+      let taskIndex = 0;
       for (const i of container.querySelectorAll('input[type="checkbox"]')) {
-        i.parentElement?.classList.add("task-item");
-        const box = document.createElement("span");
+        const isTask = isTaskCheckbox(i);
+        const index = isTask ? taskIndex++ : -1;
+        // In a loose list `marked` wraps the item's content in a `<p>`, so the
+        // checkbox's parent is not always the list item itself.
+        const item = i.closest("li");
+        item?.classList.add("task-item");
+        const checked = i.hasAttribute("checked");
+        const interactive = toggleTaskItem !== undefined && isTask;
+        const box = document.createElement(interactive ? "button" : "span");
         box.classList.add("task-box");
-        if (i.hasAttribute("checked")) {
-          box.classList.add("checked");
-          icons.push(
-            mount(Icon, { target: box, props: { name: "checkmark" } }),
-          );
+        box.classList.toggle("checked", checked);
+        icons.push(mount(Icon, { target: box, props: { name: "checkmark" } }));
+
+        if (interactive && box instanceof HTMLButtonElement) {
+          box.type = "button";
+          box.setAttribute("role", "checkbox");
+          box.setAttribute("aria-checked", String(checked));
+          // The item's own text, without that of any nested items.
+          const label = item?.cloneNode(true) as HTMLElement | undefined;
+          label?.querySelectorAll("ul, ol").forEach(list => list.remove());
+          box.setAttribute("aria-label", label?.textContent?.trim() || "Task");
+          const setChecked = (value: boolean) => {
+            box.classList.toggle("checked", value);
+            box.setAttribute("aria-checked", String(value));
+          };
+          box.onclick = async () => {
+            if (taskInFlight || !toggleTaskItem) {
+              return;
+            }
+            const source = content;
+            const next = toggleTask(source, index);
+            if (next === undefined) {
+              console.warn("Not able to find task item in markdown source");
+              return;
+            }
+            taskInFlight = true;
+            if (document.activeElement === box) {
+              refocusTask = index;
+            }
+            // Flip the box right away; a successful save reloads the object,
+            // which re-renders this from the stored source.
+            setChecked(!checked);
+            try {
+              await toggleTaskItem(next);
+            } catch (error) {
+              console.error("Not able to save task item: ", error);
+            } finally {
+              taskInFlight = false;
+              // Callers may swallow a failed save rather than throw. Either
+              // way the source is unchanged, so nothing re-renders the box and
+              // it has to be put back here.
+              if (content === source) {
+                setChecked(checked);
+                refocusTask = undefined;
+              }
+            }
+          };
         }
+
         i.replaceWith(box);
+        if (interactive && index === refocusTask) {
+          refocusTask = undefined;
+          box.focus();
+        }
+
+        // `marked` puts a space between the checkbox and the item's text. The
+        // box is spaced by its own margin, so that space only pushes the first
+        // line out of line with the wrapped ones.
+        const text = box.nextSibling;
+        if (text?.nodeType === Node.TEXT_NODE && text.textContent) {
+          text.textContent = text.textContent.replace(/^[ \t]+/, "");
+        }
+      }
+
+      // A list of nothing but task items shows no markers, so it does not need
+      // the indent that makes room for them. Mixed lists keep it.
+      for (const list of container.querySelectorAll("ul, ol")) {
+        const items = Array.from(list.children);
+        if (
+          items.length > 0 &&
+          items.every(c => c.classList.contains("task-item"))
+        ) {
+          list.classList.add("task-list");
+          // The line introducing the list reads as its heading, so it should
+          // not also carry a paragraph's worth of space beneath it.
+          const lead = list.previousElementSibling;
+          if (lead instanceof HTMLParagraphElement) {
+            lead.classList.add("task-list-lead");
+          }
+        }
       }
 
       for (const e of container.querySelectorAll("a")) {
@@ -102,60 +268,50 @@
               name: e.innerText,
             }).catch(console.error);
           };
-          void invoke<Embed>("get_embed", {
-            rid,
-            name: e.innerText,
-            oid: href,
-          })
-            .then(({ mimeType, content }) => {
-              const buffer = Buffer.from(content);
-              const blob = new Blob([buffer]);
-              const url = URL.createObjectURL(blob);
-              // Embed an img element below the link
-              if (mimeType?.startsWith("image")) {
-                const element = document.createElement("img");
-                element.setAttribute("src", url);
-                element.style.display = "block";
-                e.style.display = "block";
-                e.insertAdjacentElement("afterend", element);
-                // Embed an iframe to display pdf correctly element below the link
-              } else if (mimeType?.startsWith("application")) {
-                const element = document.createElement("embed");
-                element.setAttribute("src", url);
-                element.type = mimeType;
-                element.style.overflow = "scroll";
-                element.style.height = "40rem";
-                element.style.overscrollBehavior = "contain";
-                e.style.display = "block";
-                e.insertAdjacentElement("afterend", element);
-              } else if (mimeType?.startsWith("video")) {
-                const element = document.createElement("video");
-                const node = document.createElement("source");
-                node.src = url;
-                element.controls = true;
-                node.type = mimeType;
-                element.style.width = "100%";
-                e.style.display = "block";
-                element.appendChild(node);
-                e.insertAdjacentElement("afterend", element);
-              } else if (mimeType?.startsWith("audio")) {
-                const element = document.createElement("audio");
-                element.style.display = "block";
-                element.src = url;
-                element.controls = true;
-                e.style.display = "block";
-                e.insertAdjacentElement("afterend", element);
-              } else {
-                console.warn(`Not able to provide a preview for this file.`);
-              }
+          const cached = embedPreviews.get(href);
+          if (cached) {
+            placeEmbedPreview(e, cached.element);
+          } else {
+            void invoke<Embed>("get_embed", {
+              rid,
+              name: e.innerText,
+              oid: href,
             })
-            .catch(console.error);
+              .then(({ mimeType, content }) => {
+                if (destroyed) {
+                  return;
+                }
+                // Another render may have fetched this embed in the meantime.
+                let preview = embedPreviews.get(href);
+                if (!preview) {
+                  const url = URL.createObjectURL(
+                    new Blob([Buffer.from(content)]),
+                  );
+                  const element = createEmbedPreview(mimeType, url);
+                  if (!element) {
+                    URL.revokeObjectURL(url);
+                    console.warn(
+                      `Not able to provide a preview for this file.`,
+                    );
+                    return;
+                  }
+                  preview = { element, url };
+                  embedPreviews.set(href, preview);
+                }
+                // The content may have changed while this was being fetched,
+                // taking the link out of the document.
+                if (e.isConnected) {
+                  placeEmbedPreview(e, preview.element);
+                }
+              })
+              .catch(console.error);
+          }
         }
       }
 
       // Replaces code blocks in the background with highlighted code.
       const prefix = "language-";
-      const nodes = Array.from(document.body.querySelectorAll("pre code"));
+      const nodes = Array.from(container.querySelectorAll("pre code"));
 
       const treeChanges: Promise<void>[] = [];
 
@@ -187,9 +343,14 @@
 
       void Promise.allSettled(treeChanges);
 
-      if (window.location.hash) {
+      // `{@html}` replaces the rendered tree on every change, taking the
+      // emoji images with it, so they are put back on every render.
+      twemoji(container, { exclude: ["21a9"] });
+
+      if (!scrolledToHash && window.location.hash) {
         scrollIntoView(window.location.hash.substring(1));
       }
+      scrolledToHash = true;
     });
 
     return () => {
@@ -296,6 +457,32 @@
   .markdown :global(li.task-item) {
     list-style-type: none;
     color: var(--color-text-secondary);
+    /* A hanging indent: the box sits in the padding while a wrapped line lines
+       up with the text above it. Together these are the box's own width. */
+    padding-left: 1.75rem;
+    text-indent: -1.75rem;
+  }
+  /* The indent is inherited, so block content inside an item has to undo it. */
+  .markdown :global(li.task-item ul),
+  .markdown :global(li.task-item ol),
+  .markdown :global(li.task-item pre),
+  .markdown :global(li.task-item blockquote),
+  .markdown :global(li.task-item table) {
+    text-indent: 0;
+  }
+  /* Without markers there is nothing to indent for, and `ul`'s user-agent top
+     margin leaves a gap above every list. */
+  .markdown :global(.task-list) {
+    padding-left: 0;
+    margin-top: 0;
+  }
+  .markdown :global(p.task-list-lead) {
+    margin-bottom: 0;
+  }
+  /* Loose list items carry a paragraph, whose margin would space the items out
+     more than a tight list's. */
+  .markdown :global(li.task-item > p) {
+    margin-bottom: 0;
   }
   .markdown :global(li.task-item .task-box) {
     display: inline-flex;
@@ -304,13 +491,39 @@
     width: 1.25rem;
     height: 1.25rem;
     margin-right: 0.5rem;
+    /* `middle` centres the box on the x-height, which leaves it sitting low
+       against the taller letters. Nudge it onto the cap-height centre; in `em`
+       so it holds wherever the markdown is set at another size. */
     vertical-align: middle;
+    position: relative;
+    top: -0.09em;
     border: 1px solid var(--color-border-mid);
     border-radius: var(--border-radius-md);
     background-color: var(--color-surface-base);
   }
   .markdown :global(li.task-item .task-box.checked) {
     color: var(--color-text-brand);
+  }
+  .markdown :global(li.task-item .task-box:not(.checked) svg) {
+    visibility: hidden;
+  }
+  .markdown :global(li.task-item button.task-box) {
+    padding: 0;
+    cursor: pointer;
+    transition:
+      background-color 0.1s ease,
+      border-color 0.1s ease;
+  }
+  .markdown :global(li.task-item button.task-box:focus-visible) {
+    outline: 2px solid var(--color-border-brand);
+    outline-offset: 1px;
+  }
+  .markdown.busy :global(li.task-item button.task-box) {
+    cursor: progress;
+  }
+  .markdown :global(li.task-item button.task-box:hover) {
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface-subtle);
   }
   .markdown :global(li.task-item:not(:last-child)) {
     margin-bottom: 0.25rem;
@@ -484,6 +697,10 @@
   </div>
 {/if}
 
-<div class="markdown" bind:this={container} use:twemoji={{ exclude: ["21a9"] }}>
-  {@html render(doc.content)}
+<div
+  class="markdown"
+  class:busy={taskInFlight}
+  aria-busy={taskInFlight}
+  bind:this={container}>
+  {@html renderMarkdown(doc.content, breaks)}
 </div>

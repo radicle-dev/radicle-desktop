@@ -7,6 +7,7 @@
   import type { Snippet } from "svelte";
 
   import { tick } from "svelte";
+  import { SvelteMap } from "svelte/reactivity";
 
   import type { Resolution } from "@app/lib/commentResolutions";
   import { formatResolvedCaption, scrollIntoView } from "@app/lib/utils";
@@ -77,6 +78,17 @@
     highlightedCommentId,
     resolvedBy,
   }: Props = $props();
+
+  // A comment edit replaces the comment's embeds, so every edit has to carry
+  // the existing ones forward, keyed by oid as the editor keys new ones.
+  function embedsOf(comment: { embeds?: Embed[] }): Map<string, Embed> {
+    return new SvelteMap(
+      (comment.embeds ?? []).map(embed => [
+        embed.content.replace(/^git:/, ""),
+        embed,
+      ]),
+    );
+  }
 
   function resolvedCaption(commentId: string): string | undefined {
     const resolution = resolvedBy?.(commentId);
@@ -218,6 +230,7 @@
           reactions={reply.reactions}
           timestamp={reply.edits[0].timestamp}
           body={reply.edits.slice(-1)[0].body}
+          embeds={embedsOf(reply)}
           editComment={canModifyComment(reply.author.did) &&
             editComment?.bind(null, reply.id)}
           reactOnComment={reactOnComment?.bind(null, reply.id)}
@@ -271,6 +284,7 @@
       reactions={root.reactions}
       timestamp={root.edits.slice(-1)[0].timestamp}
       body={root.edits.slice(-1)[0].body}
+      embeds={embedsOf(root)}
       editComment={canModifyComment(root.author.did) &&
         editComment?.bind(null, root.id)}
       reactOnComment={reactOnComment?.bind(null, root.id)}
