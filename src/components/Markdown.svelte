@@ -3,13 +3,15 @@
 
   import dompurify from "dompurify";
   import { toDom } from "hast-util-to-dom";
-  import { tick } from "svelte";
+  import { mount, tick, unmount } from "svelte";
 
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
   import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
   import { highlight } from "@app/lib/syntax";
   import { isCommit, scrollIntoView, twemoji } from "@app/lib/utils";
+
+  import Icon from "@app/components/Icon.svelte";
 
   interface Props {
     rid?: string;
@@ -46,10 +48,26 @@
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     content;
 
+    const icons: ReturnType<typeof mount>[] = [];
+
     void tick().then(() => {
       // Don't run this if the component hasn't mounted yet.
       if (container === null) {
         return;
+      }
+
+      // Replace native task-list checkboxes with read-only styled boxes.
+      for (const i of container.querySelectorAll('input[type="checkbox"]')) {
+        i.parentElement?.classList.add("task-item");
+        const box = document.createElement("span");
+        box.classList.add("task-box");
+        if (i.hasAttribute("checked")) {
+          box.classList.add("checked");
+          icons.push(
+            mount(Icon, { target: box, props: { name: "checkmark" } }),
+          );
+        }
+        i.replaceWith(box);
       }
 
       for (const e of container.querySelectorAll("a")) {
@@ -173,6 +191,12 @@
         scrollIntoView(window.location.hash.substring(1));
       }
     });
+
+    return () => {
+      for (const icon of icons) {
+        void unmount(icon);
+      }
+    };
   });
 </script>
 
@@ -270,11 +294,23 @@
   }
 
   .markdown :global(li.task-item) {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-left: -1.2rem;
+    list-style-type: none;
     color: var(--color-text-secondary);
+  }
+  .markdown :global(li.task-item .task-box) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+    border: 1px solid var(--color-border-mid);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-base);
+  }
+  .markdown :global(li.task-item .task-box.checked) {
+    color: var(--color-text-brand);
   }
   .markdown :global(li.task-item:not(:last-child)) {
     margin-bottom: 0.25rem;
