@@ -13,7 +13,6 @@
 #   scripts/release --phase build
 #   scripts/release --phase apt
 #   scripts/release --phase publish
-#   scripts/release --phase arch
 #   scripts/release --phase tag
 #
 #   scripts/release --list      List the phases in order
@@ -39,11 +38,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 TAURI_CONF="$PROJECT_DIR/crates/radicle-tauri/tauri.conf.json"
-PKGBUILD="$PROJECT_DIR/arch/radicle-desktop/PKGBUILD"
 CHANGELOG="$PROJECT_DIR/CHANGELOG.md"
 APT_REPO_DIR="$(cd "$PROJECT_DIR/../radicle-apt-repo" 2>/dev/null && pwd || true)"
 
-PHASES=(prep build apt publish arch tag)
+PHASES=(prep build apt publish tag)
 
 # ---- Output helpers ----
 
@@ -86,35 +84,13 @@ run() {
   fi
 }
 
-# Like run(), but for a command that must run in directory $1.
-run_sh() {
-  if [[ "$DRY_RUN" == true ]]; then
-    printf '    [dry-run] (cd %s && %s)\n' "$1" "${*:2}"
-  else
-    ( cd "$1" && "${@:2}" )
-  fi
-}
-
 # Abort on a missing prerequisite — but only warn under --dry-run, so later
 # phases can still be previewed without their inputs present.
 fail() {
   if [[ "$DRY_RUN" == true ]]; then warn "$*"; else die "$*"; fi
 }
 
-# generate-srcinfo.sh needs a running Docker daemon. Check it before prep
-# mutates anything, so a docker-down situation fails cleanly. Skipped under
-# --dry-run, where the Docker step only prints.
-docker_available() { command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; }
 podman_available() { command -v podman >/dev/null 2>&1 && podman info >/dev/null 2>&1; }
-
-require_docker() {
-  if [[ "$DRY_RUN" == true ]]; then
-    docker_available || warn "Docker is not available (a real run needs it to regenerate .SRCINFO)"
-    return 0
-  fi
-  command -v docker >/dev/null 2>&1 || die "docker not found (needed to regenerate .SRCINFO)"
-  docker info >/dev/null 2>&1 || die "Docker daemon is not running — start Docker and re-run"
-}
 
 # build-artifacts enforces a running Podman itself on a real build. This mirror
 # only surfaces it under --dry-run (build-artifacts isn't executed then), so the
@@ -168,10 +144,9 @@ conf_version() {
   jq -r '.version' "$TAURI_CONF"
 }
 
-# The SHA of the arch-package commit for $1, looked up by its commit subject.
-# This is the second commit of the release patch (its tip) and the one we tag.
-arch_commit_sha() {
-  git -C "$PROJECT_DIR" log --grep="^Update arch package to v$1\$" -1 --format=%H
+# The SHA of the release commit for $1, looked up by its commit subject.
+release_commit_sha() {
+  git -C "$PROJECT_DIR" log --grep="^Release v$1\$" -1 --format=%H
 }
 
 # ---- Phases ----
@@ -179,7 +154,6 @@ arch_commit_sha() {
 phase_prep() {
   local version="$1"
   [[ -n "$version" ]] || die "prep requires --version X.Y.Z"
-  require_docker
 
   step "Preparing release v$version"
 
@@ -225,13 +199,6 @@ phase_prep() {
   local sha
   sha="$(git -C "$PROJECT_DIR" rev-parse HEAD)"
   info "Release commit: $sha"
-
-  step "Updating Arch package to v$version"
-  run sed -i '' -E "s/^_commit=.*/_commit=$sha/" "$PKGBUILD"
-  run sed -i '' -E "s/^pkgver=.*/pkgver='$version'/" "$PKGBUILD"
-  run_sh "$PROJECT_DIR/arch" ./generate-srcinfo.sh
-  run git -C "$PROJECT_DIR" add arch/radicle-desktop/.SRCINFO arch/radicle-desktop/PKGBUILD
-  run git -C "$PROJECT_DIR" commit -m "Update arch package to v$version"
 
   step "Pushing Release Patch"
   if confirm "Push the Release Patch now (git push rad HEAD:refs/patches)?"; then
@@ -328,17 +295,6 @@ phase_publish() {
   step "Published"
   info "https://$FILES_HOST/releases/radicle-desktop/$version/"
   info "latest now resolves to $version (update checker reads latest/latest.json)."
-  next "scripts/release --phase arch"
-}
-
-phase_arch() {
-  local version
-  version="$(conf_version)"
-  step "Publishing the Arch package to the AUR"
-  run_sh "$PROJECT_DIR/arch" ./publish.sh "Release v$version"
-
-  step "AUR package pushed"
-  info "Verify the version at https://aur.archlinux.org/packages/radicle-desktop"
   next "scripts/release --phase tag"
 }
 
@@ -348,11 +304,11 @@ phase_tag() {
   step "Tagging canonical release v$version"
 
   local sha
-  sha="$(arch_commit_sha "$version")"
-  [[ -n "$sha" ]] || fail "could not find the 'Update arch package to v$version' commit (is the patch merged into main?)"
-  info "Tagging commit: ${sha:-<arch-commit-sha>}"
+  sha="$(release_commit_sha "$version")"
+  [[ -n "$sha" ]] || fail "could not find the 'Release v$version' commit (is the patch merged into main?)"
+  info "Tagging commit: ${sha:-<release-commit-sha>}"
 
-  run git -C "$PROJECT_DIR" tag "releases/$version" "${sha:-<arch-commit-sha>}" -m "Release $version"
+  run git -C "$PROJECT_DIR" tag "releases/$version" "${sha:-<release-commit-sha>}" -m "Release $version"
   run git -C "$PROJECT_DIR" push rad --tags
   run rad sync
 
@@ -426,7 +382,6 @@ main() {
     build)    phase_build ;;
     apt)      phase_apt ;;
     publish)  phase_publish ;;
-    arch)     phase_arch ;;
     tag)      phase_tag ;;
     *) die "Unknown phase: $phase (try --list)" ;;
   esac
