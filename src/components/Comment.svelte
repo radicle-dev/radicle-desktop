@@ -404,7 +404,18 @@
       {:else}
         <div style:width="100%">
           <div style:overflow="hidden">
-            <Markdown {rid} breaks content={body ?? ""} />
+            <Markdown
+              {rid}
+              breaks
+              content={body ?? ""}
+              toggleTaskItem={editComment
+                ? async content => {
+                    await editComment(
+                      content,
+                      Array.from(embeds?.values() ?? []),
+                    );
+                  }
+                : undefined} />
           </div>
         </div>
       {/if}

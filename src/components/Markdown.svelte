@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { Embed } from "@bindings/cob/Embed";
 
-  import dompurify from "dompurify";
   import { toDom } from "hast-util-to-dom";
   import { mount, tick, unmount } from "svelte";
 
@@ -9,9 +8,10 @@
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
   import {
-    markdownWithExtensions,
+    isTaskCheckbox,
     maximumReferences,
-    Renderer,
+    renderMarkdown,
+    toggleTask,
   } from "@app/lib/markdown";
   import { parseEntityHref } from "@app/lib/mentions";
   import { isOid } from "@app/lib/radUri";
@@ -27,9 +27,19 @@
     content: string;
     // If true, add <br> on a single line break
     breaks?: boolean;
+    toggleTaskItem?: (content: string) => Promise<void> | void;
   }
 
-  const { rid = "", content, breaks = false }: Props = $props();
+  const {
+    rid = "",
+    content,
+    breaks = false,
+    toggleTaskItem = undefined,
+  }: Props = $props();
+
+  let taskInFlight = $state(false);
+  let refocusTask: number | undefined = undefined;
+  let scrolledToHash = false;
 
   let container: HTMLElement;
 
@@ -44,6 +54,68 @@
 
   $effect(() => unmountMentions);
 
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- imperative oid→element lookup, never rendered reactively
+  const embedPreviews = new Map<
+    string,
+    { element: HTMLElement; url: string }
+  >();
+
+  let destroyed = false;
+
+  $effect(() => () => {
+    destroyed = true;
+    for (const { url } of embedPreviews.values()) {
+      URL.revokeObjectURL(url);
+    }
+    embedPreviews.clear();
+  });
+
+  function createEmbedPreview(
+    mimeType: string | null,
+    url: string,
+  ): HTMLElement | undefined {
+    const kind = embedPreviewKind(mimeType);
+    if (kind === "image") {
+      const element = document.createElement("img");
+      element.setAttribute("src", url);
+      element.style.display = "block";
+      return element;
+    } else if (kind === "document") {
+      const element = document.createElement("embed");
+      element.setAttribute("src", url);
+      element.type = mimeType ?? "";
+      element.style.overflow = "scroll";
+      element.style.height = "40rem";
+      element.style.overscrollBehavior = "contain";
+      return element;
+    } else if (kind === "video") {
+      const element = document.createElement("video");
+      const node = document.createElement("source");
+      node.src = url;
+      element.controls = true;
+      node.type = mimeType ?? "";
+      element.style.width = "100%";
+      element.appendChild(node);
+      return element;
+    } else if (kind === "audio") {
+      const element = document.createElement("audio");
+      element.style.display = "block";
+      element.src = url;
+      element.controls = true;
+      return element;
+    }
+  }
+
+  function placeEmbedPreview(link: HTMLAnchorElement, element: HTMLElement) {
+    link.style.display = "block";
+    link.insertAdjacentElement(
+      "afterend",
+      container.contains(element)
+        ? (element.cloneNode(true) as HTMLElement)
+        : element,
+    );
+  }
+
   const doc = $derived(parseFrontmatter(content));
   const frontMatter = $derived.by(() => {
     try {
@@ -54,15 +126,6 @@
       console.error("Not able to parse frontmatter: ", error);
     }
   });
-
-  function render(content: string): string {
-    return dompurify.sanitize(
-      markdownWithExtensions.parse(content, {
-        renderer: new Renderer(),
-        breaks,
-      }) as string,
-    );
-  }
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
@@ -78,18 +141,85 @@
 
       unmountMentions();
 
-      // Replace native task-list checkboxes with read-only styled boxes.
+      twemoji(container, { exclude: ["21a9"] });
+
+      let taskIndex = 0;
       for (const i of container.querySelectorAll('input[type="checkbox"]')) {
-        i.parentElement?.classList.add("task-item");
-        const box = document.createElement("span");
+        const isTask = isTaskCheckbox(i);
+        const index = isTask ? taskIndex++ : -1;
+        const item = i.closest("li");
+        item?.classList.add("task-item");
+        const checked = i.hasAttribute("checked");
+        const interactive = toggleTaskItem !== undefined && isTask;
+        const box = document.createElement(interactive ? "button" : "span");
         box.classList.add("task-box");
-        if (i.hasAttribute("checked")) {
-          box.classList.add("checked");
-          icons.push(
-            mount(Icon, { target: box, props: { name: "checkmark" } }),
-          );
+        box.classList.toggle("checked", checked);
+        icons.push(mount(Icon, { target: box, props: { name: "checkmark" } }));
+
+        if (interactive && box instanceof HTMLButtonElement) {
+          box.type = "button";
+          box.setAttribute("role", "checkbox");
+          box.setAttribute("aria-checked", String(checked));
+          const label = item?.cloneNode(true) as HTMLElement | undefined;
+          label?.querySelectorAll("ul, ol").forEach(list => list.remove());
+          box.setAttribute("aria-label", label?.textContent?.trim() || "Task");
+          const setChecked = (value: boolean) => {
+            box.classList.toggle("checked", value);
+            box.setAttribute("aria-checked", String(value));
+          };
+          box.onclick = async () => {
+            if (taskInFlight || !toggleTaskItem) {
+              return;
+            }
+            const source = content;
+            const next = toggleTask(source, index);
+            if (next === undefined) {
+              console.warn("Not able to find task item in markdown source");
+              return;
+            }
+            taskInFlight = true;
+            if (document.activeElement === box) {
+              refocusTask = index;
+            }
+            setChecked(!checked);
+            try {
+              await toggleTaskItem(next);
+            } catch (error) {
+              console.error("Not able to save task item: ", error);
+            } finally {
+              taskInFlight = false;
+              if (content === source) {
+                setChecked(checked);
+                refocusTask = undefined;
+              }
+            }
+          };
         }
+
         i.replaceWith(box);
+        if (interactive && index === refocusTask) {
+          refocusTask = undefined;
+          box.focus();
+        }
+
+        const text = box.nextSibling;
+        if (text?.nodeType === Node.TEXT_NODE && text.textContent) {
+          text.textContent = text.textContent.replace(/^[ \t]+/, "");
+        }
+      }
+
+      for (const list of container.querySelectorAll("ul, ol")) {
+        const items = Array.from(list.children);
+        if (
+          items.length > 0 &&
+          items.every(c => c.classList.contains("task-item"))
+        ) {
+          list.classList.add("task-list");
+          const lead = list.previousElementSibling;
+          if (lead instanceof HTMLParagraphElement) {
+            lead.classList.add("task-list-lead");
+          }
+        }
       }
 
       let references = 0;
@@ -163,53 +293,41 @@
               name: e.innerText,
             }).catch(console.error);
           };
-          void invoke<Embed>("get_embed", {
-            rid,
-            name: e.innerText,
-            oid: href,
-          })
-            .then(({ mimeType, content }) => {
-              const buffer = Buffer.from(content);
-              const blob = new Blob([buffer]);
-              const url = URL.createObjectURL(blob);
-              const kind = embedPreviewKind(mimeType);
-              if (kind === "image") {
-                const element = document.createElement("img");
-                element.setAttribute("src", url);
-                element.style.display = "block";
-                e.style.display = "block";
-                e.insertAdjacentElement("afterend", element);
-              } else if (kind === "document") {
-                const element = document.createElement("embed");
-                element.setAttribute("src", url);
-                element.type = mimeType ?? "";
-                element.style.overflow = "scroll";
-                element.style.height = "40rem";
-                element.style.overscrollBehavior = "contain";
-                e.style.display = "block";
-                e.insertAdjacentElement("afterend", element);
-              } else if (kind === "video") {
-                const element = document.createElement("video");
-                const node = document.createElement("source");
-                node.src = url;
-                element.controls = true;
-                node.type = mimeType ?? "";
-                element.style.width = "100%";
-                e.style.display = "block";
-                element.appendChild(node);
-                e.insertAdjacentElement("afterend", element);
-              } else if (kind === "audio") {
-                const element = document.createElement("audio");
-                element.style.display = "block";
-                element.src = url;
-                element.controls = true;
-                e.style.display = "block";
-                e.insertAdjacentElement("afterend", element);
-              } else {
-                console.warn(`Not able to provide a preview for this file.`);
-              }
+          const cached = embedPreviews.get(href);
+          if (cached) {
+            placeEmbedPreview(e, cached.element);
+          } else {
+            void invoke<Embed>("get_embed", {
+              rid,
+              name: e.innerText,
+              oid: href,
             })
-            .catch(console.error);
+              .then(({ mimeType, content }) => {
+                if (destroyed) {
+                  return;
+                }
+                let preview = embedPreviews.get(href);
+                if (!preview) {
+                  const url = URL.createObjectURL(
+                    new Blob([Buffer.from(content)]),
+                  );
+                  const element = createEmbedPreview(mimeType, url);
+                  if (!element) {
+                    URL.revokeObjectURL(url);
+                    console.warn(
+                      `Not able to provide a preview for this file.`,
+                    );
+                    return;
+                  }
+                  preview = { element, url };
+                  embedPreviews.set(href, preview);
+                }
+                if (e.isConnected) {
+                  placeEmbedPreview(e, preview.element);
+                }
+              })
+              .catch(console.error);
+          }
         }
       }
 
@@ -247,9 +365,10 @@
 
       void Promise.allSettled(treeChanges);
 
-      if (window.location.hash) {
+      if (!scrolledToHash && window.location.hash) {
         scrollIntoView(window.location.hash.substring(1));
       }
+      scrolledToHash = true;
     });
 
     return () => {
@@ -356,6 +475,25 @@
   .markdown :global(li.task-item) {
     list-style-type: none;
     color: var(--color-text-secondary);
+    padding-left: 1.75rem;
+    text-indent: -1.75rem;
+  }
+  .markdown :global(li.task-item ul),
+  .markdown :global(li.task-item ol),
+  .markdown :global(li.task-item pre),
+  .markdown :global(li.task-item blockquote),
+  .markdown :global(li.task-item table) {
+    text-indent: 0;
+  }
+  .markdown :global(.task-list) {
+    padding-left: 0;
+    margin-top: 0;
+  }
+  .markdown :global(p.task-list-lead) {
+    margin-bottom: 0;
+  }
+  .markdown :global(li.task-item > p) {
+    margin-bottom: 0;
   }
   .markdown :global(li.task-item .task-box) {
     display: inline-flex;
@@ -365,12 +503,35 @@
     height: 1.25rem;
     margin-right: 0.5rem;
     vertical-align: middle;
+    position: relative;
+    top: -0.09em;
     border: 1px solid var(--color-border-mid);
     border-radius: var(--border-radius-md);
     background-color: var(--color-surface-base);
   }
   .markdown :global(li.task-item .task-box.checked) {
     color: var(--color-text-brand);
+  }
+  .markdown :global(li.task-item .task-box:not(.checked) svg) {
+    visibility: hidden;
+  }
+  .markdown :global(li.task-item button.task-box) {
+    padding: 0;
+    cursor: pointer;
+    transition:
+      background-color 0.1s ease,
+      border-color 0.1s ease;
+  }
+  .markdown :global(li.task-item button.task-box:focus-visible) {
+    outline: 2px solid var(--color-border-brand);
+    outline-offset: 1px;
+  }
+  .markdown.busy :global(li.task-item button.task-box) {
+    cursor: progress;
+  }
+  .markdown :global(li.task-item button.task-box:hover) {
+    border-color: var(--color-border-strong);
+    background-color: var(--color-surface-subtle);
   }
   .markdown :global(li.task-item:not(:last-child)) {
     margin-bottom: 0.25rem;
@@ -544,6 +705,10 @@
   </div>
 {/if}
 
-<div class="markdown" bind:this={container} use:twemoji={{ exclude: ["21a9"] }}>
-  {@html render(doc.content)}
+<div
+  class="markdown"
+  class:busy={taskInFlight}
+  aria-busy={taskInFlight}
+  bind:this={container}>
+  {@html renderMarkdown(doc.content, breaks)}
 </div>

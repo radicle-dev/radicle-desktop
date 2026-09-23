@@ -13,6 +13,7 @@
   interface Props {
     rid: string;
     body: string;
+    embeds: Embed[];
     reactions: Reaction[];
     currentUserNid?: string;
     allowedToEdit: boolean;
@@ -23,6 +24,7 @@
   const {
     rid,
     body,
+    embeds,
     reactions,
     currentUserNid,
     allowedToEdit,
@@ -98,7 +100,15 @@
   {:else}
     <div class="description-body txt-body-m-regular">
       {#if body.trim() !== ""}
-        <Markdown {rid} breaks content={body} />
+        <Markdown
+          {rid}
+          breaks
+          content={body}
+          toggleTaskItem={allowedToEdit
+            ? async content => {
+                await editComment(content, embeds);
+              }
+            : undefined} />
       {:else}
         <span style:color="var(--color-text-tertiary)">No description</span>
       {/if}

@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 import {
   groupCommitsByAuthor,
   isCommitListDescription,
+  replaceDescriptionBody,
   revisionTitle,
   splitDescription,
   visibleCommitsOf,
@@ -33,6 +34,31 @@ describe("splitDescription", () => {
     ["Subject\n", { subject: "Subject" }],
   ])("splits %j into %j", (text, expected) => {
     expect(splitDescription(text)).toEqual(expected);
+  });
+});
+
+describe("replaceDescriptionBody", () => {
+  test.each([
+    ["Subject\n\nold", "Subject\n\nnew"],
+    ["Subject\nold", "Subject\nnew"],
+    ["Subject\r\n\r\nold\r\n", "Subject\r\n\r\nnew\r\n"],
+    ["  Subject  \n\n  old  \n", "  Subject  \n\n  new  \n"],
+  ])("keeps the subject and spacing of %j", (description, expected) => {
+    expect(replaceDescriptionBody(description, "new")).toBe(expected);
+  });
+
+  test("replaces the body even when the subject contains its text", () => {
+    expect(replaceDescriptionBody("Fix old\n\nold", "new")).toBe(
+      "Fix old\n\nnew",
+    );
+  });
+
+  test("adds a body to a description that has none", () => {
+    expect(replaceDescriptionBody("Subject", "new")).toBe("Subject\n\nnew");
+  });
+
+  test("leaves an empty description as just the body", () => {
+    expect(replaceDescriptionBody("", "new")).toBe("new");
   });
 });
 

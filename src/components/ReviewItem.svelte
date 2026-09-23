@@ -20,10 +20,18 @@
     summary: string;
     timestamp: number;
     onViewFullReview?: () => void;
+    toggleTaskItem?: (summary: string) => Promise<void>;
   }
 
-  const { rid, author, verdict, summary, timestamp, onViewFullReview }: Props =
-    $props();
+  const {
+    rid,
+    author,
+    verdict,
+    summary,
+    timestamp,
+    onViewFullReview,
+    toggleTaskItem,
+  }: Props = $props();
 
   const badge = $derived(verdictBadge(verdict));
 </script>
@@ -112,7 +120,7 @@
   </div>
   {#if summary.trim() !== ""}
     <div class="body txt-body-m-regular">
-      <Markdown {rid} breaks content={summary} />
+      <Markdown {rid} breaks content={summary} {toggleTaskItem} />
     </div>
   {/if}
 </div>

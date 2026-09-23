@@ -18,6 +18,24 @@ export function splitDescription(text: string): {
   };
 }
 
+/// Swaps the body beneath the subject, keeping everything else as written.
+export function replaceDescriptionBody(
+  description: string,
+  body: string,
+): string {
+  const { subject = "", body: current = "" } = splitDescription(description);
+  const subjectEnd = description.indexOf(subject) + subject.length;
+  const start = current ? description.indexOf(current, subjectEnd) : -1;
+  if (start === -1) {
+    return subject ? `${subject}\n\n${body}` : body;
+  }
+  return (
+    description.slice(0, start) +
+    body +
+    description.slice(start + current.length)
+  );
+}
+
 /// The first line of a revision's current description.
 export function revisionTitle(revision: Revision): string | undefined {
   return splitDescription(revision.description.at(-1)?.body ?? "").subject;

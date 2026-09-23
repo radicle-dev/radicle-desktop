@@ -14,6 +14,7 @@ import katexMarkedExtension from "marked-katex-extension";
 import markedLinkifyIt from "marked-linkify-it";
 
 import emojis from "@app/lib/emojis";
+import { parseFrontmatter } from "@app/lib/frontmatter";
 import { bareReferenceStart, matchBareReference } from "@app/lib/mentions";
 
 // DOMPurify only keeps hrefs whose scheme it recognises, and drops `rad:` and
@@ -129,6 +130,8 @@ const radicleReferenceMarkedExtension: TokenizerExtension & RendererExtension =
       `<a href="${escape(token.text)}">${escape(token.text)}</a>`,
   };
 
+const TASK_CHECKBOX_CLASS = "task-checkbox";
+
 export class Renderer extends BaseRenderer {
   /**
    * If `baseUrl` is provided, all hrefs attributes in anchor tags, except those
@@ -150,6 +153,10 @@ export class Renderer extends BaseRenderer {
       .replace(/^-|-$/g, "");
 
     return `<h${depth} id="${id}">${text}</h${depth}>`;
+  }
+
+  checkbox({ checked }: Tokens.Checkbox): string {
+    return `<input class="${TASK_CHECKBOX_CLASS}" ${checked ? 'checked="" ' : ""}disabled="" type="checkbox"> `;
   }
 
   link({ href, title, tokens }: Tokens.Link): string {
@@ -176,3 +183,97 @@ export const markdownWithExtensions = new Marked(
     extensions: [anchorMarkedExtension, radicleReferenceMarkedExtension],
   }))(),
 );
+
+export function renderMarkdown(content: string, breaks = false): string {
+  return dompurify.sanitize(
+    markdownWithExtensions.parse(content, {
+      renderer: new Renderer(),
+      breaks,
+    }) as string,
+  );
+}
+
+const TASK_CANDIDATE_RE = /(?:[-*+]|\d{1,9}[.)])[ \t]+\[([ xX])\]/g;
+const CODE_FENCE_RE = /^[ \t]*(`{3,}|~{3,})/;
+
+export function isTaskCheckbox(element: Element): boolean {
+  return element.getAttribute("class") === TASK_CHECKBOX_CLASS;
+}
+
+function taskStates(content: string): boolean[] {
+  // A template's content is inert, so nothing in it loads or runs.
+  const template = document.createElement("template");
+  template.innerHTML = renderMarkdown(content);
+  return Array.from(template.content.querySelectorAll('input[type="checkbox"]'))
+    .filter(isTaskCheckbox)
+    .map(input => input.hasAttribute("checked"));
+}
+
+function fencedRanges(content: string): [number, number][] {
+  const ranges: [number, number][] = [];
+  let open: { fence: string; start: number } | undefined;
+  let offset = 0;
+  for (const line of content.split("\n")) {
+    const fence = CODE_FENCE_RE.exec(line)?.[1];
+    if (fence && open === undefined) {
+      open = { fence, start: offset };
+    } else if (
+      fence &&
+      open &&
+      fence[0] === open.fence[0] &&
+      fence.length >= open.fence.length
+    ) {
+      ranges.push([open.start, offset + line.length]);
+      open = undefined;
+    }
+    offset += line.length + 1;
+  }
+  if (open) {
+    ranges.push([open.start, content.length]);
+  }
+  return ranges;
+}
+
+/// Flips the task-list box at `index`, counted in rendered order.
+export function toggleTask(input: string, index: number): string | undefined {
+  // Frontmatter is not rendered, so it is left out of the search.
+  const { content } = parseFrontmatter(input);
+  const prefix = input.slice(0, input.length - content.length);
+  const states = taskStates(content);
+  if (index >= states.length) {
+    return undefined;
+  }
+
+  const positions = Array.from(
+    content.matchAll(TASK_CANDIDATE_RE),
+    match => match.index + match[0].length - 2,
+  );
+  const fenced = fencedRanges(content);
+  const inCode = (p: number) =>
+    fenced.some(([start, end]) => p >= start && p <= end);
+  const outside = positions.filter(p => !inCode(p));
+  const likely = outside[index];
+  const ordered = [
+    ...(likely === undefined ? [] : [likely]),
+    ...outside.filter(p => p !== likely),
+    ...positions.filter(inCode),
+  ];
+
+  for (const position of ordered) {
+    const next =
+      content.slice(0, position) +
+      (content[position] === " " ? "x" : " ") +
+      content.slice(position + 1);
+    const nextStates = taskStates(next);
+    if (
+      nextStates.length === states.length &&
+      nextStates.every((checked, i) =>
+        i === index ? checked !== states[i] : checked === states[i],
+      )
+    ) {
+      return prefix + next;
+    }
+  }
+
+  return undefined;
+}
