@@ -6,7 +6,7 @@
 
   import { onMount, tick } from "svelte";
 
-  import * as utils from "@app/lib/utils";
+  import { matchesCombo } from "@app/lib/shortcuts.svelte";
 
   interface Props {
     draggingOver?: boolean;
@@ -110,9 +110,7 @@
   });
 
   function handleKeydown(event: KeyboardEvent) {
-    event.stopPropagation();
-    const auxiliarKey = utils.isMac() ? event.metaKey : event.ctrlKey;
-    if (auxiliarKey && event.key === "Enter") {
+    if (matchesCombo(event, "Mod+Enter")) {
       void submit();
     }
     if (event.key === "Escape") {

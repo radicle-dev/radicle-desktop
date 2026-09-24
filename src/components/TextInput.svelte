@@ -4,7 +4,7 @@
 
   import { onMount } from "svelte";
 
-  import * as utils from "@app/lib/utils";
+  import { matchesCombo } from "@app/lib/shortcuts.svelte";
 
   interface Props {
     autofocus?: boolean;
@@ -12,6 +12,9 @@
     disabled?: boolean;
     keyShortcuts?: string;
     left?: Snippet;
+    // Lets shortcuts with Mod through while focused, for fields like filters
+    // that hold nothing worth protecting.
+    modShortcuts?: boolean;
     name?: string;
     onDismiss?: () => void;
     onFocus?: () => void;
@@ -33,6 +36,7 @@
     disabled = false,
     keyShortcuts,
     left,
+    modShortcuts = false,
     name,
     onDismiss,
     onFocus,
@@ -67,10 +71,16 @@
     }
   });
 
+  export function focus() {
+    inputElement?.focus({ preventScroll: true });
+  }
+
+  export function hasFocus(): boolean {
+    return focussed;
+  }
+
   function handleKeydown(event: KeyboardEvent) {
-    event.stopPropagation();
-    const auxiliarKey = utils.isMac() ? event.metaKey : event.ctrlKey;
-    if (auxiliarKey && event.key === "Enter" && onModifierSubmit) {
+    if (matchesCombo(event, "Mod+Enter") && onModifierSubmit) {
       event.preventDefault();
       onModifierSubmit();
       return;
@@ -136,6 +146,7 @@
       focussed = false;
     }}
     bind:this={inputElement}
+    data-mod-shortcuts={modShortcuts || undefined}
     {type}
     {name}
     {placeholder}

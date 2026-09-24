@@ -15,6 +15,7 @@
   import { notificationCount } from "@app/lib/notificationCount.svelte";
   import * as router from "@app/lib/router";
   import type { SidebarData } from "@app/lib/router/definitions";
+  import { ariaKeyShortcuts, useShortcuts } from "@app/lib/shortcuts.svelte";
   import {
     commitSidebarWidth,
     discardSidebarWidthPreview,
@@ -78,6 +79,12 @@
   }
 
   const toggleShortcut = isMac() ? "⌘B" : "Ctrl+B";
+
+  useShortcuts({
+    shortcut: "toggleSidebar",
+    allowInModal: true,
+    run: toggleSidebar,
+  });
   const dragStripHeight = isMac() ? "2rem" : "1.75rem";
 
   const mini = $derived(collapsed.value);
@@ -607,7 +614,7 @@
               title="{collapsed.value
                 ? 'Expand'
                 : 'Collapse'} sidebar ({toggleShortcut})"
-              keyShortcuts={isMac() ? "Meta+b" : "Control+b"}
+              keyShortcuts={ariaKeyShortcuts("toggleSidebar")}
               onclick={toggleSidebar}
               styleWidth={isMini ? "2rem" : "1.5rem"}
               styleHeight={isMini ? "2rem" : "1.5rem"}

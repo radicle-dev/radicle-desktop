@@ -11,6 +11,7 @@
 
   import { hints } from "@app/lib/hints";
   import { invoke } from "@app/lib/invoke";
+  import { matchesCombo } from "@app/lib/shortcuts.svelte";
   import * as utils from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
@@ -436,8 +437,7 @@
   class:inline
   onkeydown={event => {
     if (!preview) return;
-    const auxiliarKey = utils.isMac() ? event.metaKey : event.ctrlKey;
-    if (auxiliarKey && event.key === "Enter") {
+    if (matchesCombo(event, "Mod+Enter")) {
       event.preventDefault();
       void submit({ comment: body, embeds });
     }

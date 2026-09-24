@@ -2,31 +2,13 @@
   import { cubicIn, cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
 
-  import { isMac, modifierKey } from "@app/lib/utils";
+  import { comboKeys, shortcuts } from "@app/lib/shortcuts.svelte";
 
-  type Shortcut = { keys: string[]; description: string };
-
-  const shortcuts: Shortcut[] = [
-    { keys: ["?"], description: "Keyboard shortcuts" },
-    { keys: [modifierKey(), "f"], description: "Search the current list" },
-    { keys: [modifierKey(), "n"], description: "New issue" },
-    { keys: [modifierKey(), "1…9"], description: "Go to the nth repo" },
-    {
-      keys: isMac() ? [modifierKey(), "["] : ["alt", "←"],
-      description: "Go back",
-    },
-    {
-      keys: isMac() ? [modifierKey(), "]"] : ["alt", "→"],
-      description: "Go forward",
-    },
-    { keys: [modifierKey(), "r"], description: "Reload" },
-    { keys: [modifierKey(), "b"], description: "Toggle sidebar" },
-    { keys: [modifierKey(), ","], description: "Settings" },
-    { keys: [modifierKey(), "+"], description: "Increase font size" },
-    { keys: [modifierKey(), "-"], description: "Decrease font size" },
-    { keys: [modifierKey(), "0"], description: "Reset font size" },
-    { keys: ["esc"], description: "Close modal" },
-  ];
+  const rows = Object.values(shortcuts).map(s => ({
+    keys: comboKeys("label" in s ? s.label : s.combos[0]),
+    description: s.description,
+    note: "note" in s ? s.note : undefined,
+  }));
 </script>
 
 <style>
@@ -81,8 +63,14 @@
     color: var(--color-text-tertiary);
   }
   .description {
+    display: flex;
+    flex-direction: column;
     font: var(--txt-body-m-regular);
     color: var(--color-text-primary);
+  }
+  .note {
+    font: var(--txt-body-s-regular);
+    color: var(--color-text-tertiary);
   }
 </style>
 
@@ -94,16 +82,21 @@
     <span class="title">Keyboard shortcuts</span>
   </div>
   <div class="rows">
-    {#each shortcuts as shortcut (shortcut.description)}
+    {#each rows as row, index (index)}
       <div class="keys">
-        {#each shortcut.keys as key, index (key)}
+        {#each row.keys as key, index (key)}
           {#if index > 0}
             <span class="plus">+</span>
           {/if}
           <span class="key">{key}</span>
         {/each}
       </div>
-      <span class="description">{shortcut.description}</span>
+      <span class="description">
+        {row.description}
+        {#if row.note}
+          <span class="note">{row.note}</span>
+        {/if}
+      </span>
     {/each}
   </div>
 </div>

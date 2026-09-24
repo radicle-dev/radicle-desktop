@@ -22,10 +22,6 @@
     !window.localStorage,
   );
 
-  // The list as currently rendered, which the sidebar refreshes on its own,
-  // so it can be newer than the route's sidebar data.
-  let liveRepos: RepoSummary[] | undefined;
-
   function pinnedFrom(repos: RepoSummary[]): RepoSummary[] {
     const byRid = new Map(repos.map(r => [r.rid, r]));
     return pinnedRepoIds.value
@@ -34,34 +30,12 @@
   }
 
   // The sidebar's top-to-bottom order: pinned repos first, in the order they
-  // were pinned, then the rest. Exported so that the Cmd+1..9 shortcuts land
-  // on the same rows the user is looking at. Deliberately ignores the filter
-  // query, which is transient, so the numbering stays put while typing in it.
-  // Falls back to the given repos while the sidebar isn't mounted.
-  export function sidebarRepoOrder(fallback: RepoSummary[]): RepoSummary[] {
-    return orderRepos(liveRepos ?? fallback);
-  }
-
+  // were pinned, then the rest. Cmd+1..9 follow it, deliberately ignoring the
+  // filter query, which is transient, so the numbering stays put while typing
+  // in it.
   function orderRepos(repos: RepoSummary[]): RepoSummary[] {
     return pinnedFrom(repos).concat(
       repos.filter(r => !pinnedRepoIds.value.includes(r.rid)),
-    );
-  }
-
-  export function openRepoFilter() {
-    filterOpen = true;
-    reposExpanded.value = true;
-    // Opening already focuses the input, but not when it was open and blurred.
-    requestAnimationFrame(() => {
-      document
-        .querySelector<HTMLInputElement>("[data-repo-filter]")
-        ?.focus({ preventScroll: true });
-    });
-  }
-
-  export function isRepoFilter(target: EventTarget | null): boolean {
-    return (
-      target instanceof HTMLElement && target.hasAttribute("data-repo-filter")
     );
   }
 
@@ -105,12 +79,16 @@
   import { show } from "@app/lib/modal";
   import { repoListScope } from "@app/lib/repoListScope";
   import * as router from "@app/lib/router";
+  import {
+    ariaKeyShortcuts,
+    modifierHeld,
+    useShortcuts,
+  } from "@app/lib/shortcuts.svelte";
   import { sidebarCollapsed } from "@app/lib/sidebar.svelte";
   import {
     explorerHost,
     explorerUrl,
     formatRepositoryId,
-    isMac,
   } from "@app/lib/utils";
 
   import AddRepoButton from "@app/components/AddRepoButton.svelte";
@@ -150,15 +128,31 @@
     ),
   );
 
-  let showShortcutNumbers = $state(false);
-
-  function isShortcutModifier(e: KeyboardEvent): boolean {
-    return e.key === (isMac() ? "Meta" : "Control");
-  }
-
-  function hideShortcutNumbers() {
-    showShortcutNumbers = false;
-  }
+  useShortcuts(
+    {
+      shortcut: "filter",
+      // The first filter Cmd+F reaches, ahead of the one in the page.
+      priority: 1,
+      enabled: () => !sidebarCollapsed.value,
+      active: () => document.activeElement === filterInputElement,
+      run: () => {
+        filterOpen = true;
+        reposExpanded.value = true;
+        // Opening focuses the input, but it may already be open and blurred.
+        filterInputElement?.focus({ preventScroll: true });
+      },
+    },
+    {
+      shortcut: "goToRepo",
+      run: (_, index) => {
+        const repo = orderRepos(repos)[index];
+        if (!repo) {
+          return false;
+        }
+        void router.push({ resource: "repo.home", rid: repo.rid });
+      },
+    },
+  );
 
   let contextMenu = $state<
     { x: number; y: number; repo: RepoSummary; target: HTMLElement } | undefined
@@ -178,13 +172,6 @@
   function closeContextMenu() {
     contextMenu = undefined;
   }
-
-  $effect(() => {
-    liveRepos = repos;
-    return () => {
-      liveRepos = undefined;
-    };
-  });
 
   $effect(() => {
     if (filterOpen && filterInputElement) {
@@ -967,19 +954,6 @@
   }
 </style>
 
-<svelte:window
-  onkeydown={e => {
-    if (isShortcutModifier(e)) {
-      showShortcutNumbers = true;
-    }
-  }}
-  onkeyup={e => {
-    if (isShortcutModifier(e)) {
-      hideShortcutNumbers();
-    }
-  }}
-  onblur={hideShortcutNumbers} />
-
 {#if seededNotReplicated.length > 0 && !sidebarCollapsed.value}
   <div
     class="section-header"
@@ -1070,7 +1044,7 @@
       role="none">
       <input
         bind:this={filterInputElement}
-        data-repo-filter
+        data-mod-shortcuts
         class="filter-input"
         placeholder="Filter repos…"
         bind:value={filterQuery}
@@ -1122,7 +1096,7 @@
     <button
       class="filter-button"
       title={filterOpen ? "Close filter" : "Filter repos"}
-      aria-keyshortcuts="ctrl+f"
+      aria-keyshortcuts={ariaKeyShortcuts("filter")}
       onclick={() => {
         if (filterOpen) {
           filterOpen = false;
@@ -1163,7 +1137,7 @@
     href={router.routeToPath({ resource: "repo.home", rid: repo.rid })}>
     <span class="avatar">
       <RepoAvatar name={repo.name} rid={repo.rid} styleWidth="1rem" />
-      {#if showShortcutNumbers && shortcutNumber !== undefined}
+      {#if modifierHeld.value && shortcutNumber !== undefined}
         <span class="avatar-shortcut">{shortcutNumber}</span>
       {:else if repo.private}
         <span class="avatar-lock">

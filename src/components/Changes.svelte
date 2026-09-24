@@ -24,6 +24,7 @@
     commentCountsByPath,
     isCommentableStatus,
   } from "@app/lib/pierreComments";
+  import { useShortcuts } from "@app/lib/shortcuts.svelte";
   import { pluralize } from "@app/lib/utils";
 
   import CobCommitTeaser from "@app/components/CobCommitTeaser.svelte";
@@ -468,39 +469,32 @@
     void tick().then(revealActiveCommit);
   }
 
-  // Up/Down step through commits; Escape deselects. Ignored while typing.
-  $effect(() => {
-    const onKeydown = (e: KeyboardEvent) => {
-      const el = document.activeElement;
-      if (
-        el instanceof HTMLElement &&
-        (el.tagName === "INPUT" ||
-          el.tagName === "TEXTAREA" ||
-          el.isContentEditable)
-      ) {
-        return;
-      }
-      if (e.key === "Escape") {
-        if (selectedCommit) {
-          e.preventDefault();
-          selectRevision({ headId: revision.head, baseId: revision.base });
-          void scrollToDiff();
-        }
-        return;
-      }
-      if (commitList.length <= 1) return;
-      const current = commitList.findIndex(c => c.id === selectedCommit);
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        selectCommitAt(current === -1 ? 0 : current + 1);
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
+  useShortcuts(
+    {
+      shortcut: "previousCommit",
+      enabled: () => commitList.length > 1,
+      run: () => {
+        const current = commitList.findIndex(c => c.id === selectedCommit);
         selectCommitAt(current === -1 ? commitList.length - 1 : current - 1);
-      }
-    };
-    window.addEventListener("keydown", onKeydown);
-    return () => window.removeEventListener("keydown", onKeydown);
-  });
+      },
+    },
+    {
+      shortcut: "nextCommit",
+      enabled: () => commitList.length > 1,
+      run: () => {
+        const current = commitList.findIndex(c => c.id === selectedCommit);
+        selectCommitAt(current === -1 ? 0 : current + 1);
+      },
+    },
+    {
+      shortcut: "allCommits",
+      enabled: () => selectedCommit !== undefined,
+      run: () => {
+        selectRevision({ headId: revision.head, baseId: revision.base });
+        void scrollToDiff();
+      },
+    },
+  );
 </script>
 
 <style>

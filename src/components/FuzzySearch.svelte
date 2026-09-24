@@ -1,19 +1,7 @@
-<script lang="ts" module>
-  let openActive: (() => void) | undefined;
-
-  // Opens and focuses the search of the list on screen. Returns false when
-  // there is none, or it has nothing to search.
-  export function openListSearch(): boolean {
-    if (openActive === undefined) {
-      return false;
-    }
-    openActive();
-    return true;
-  }
-</script>
-
 <script lang="ts">
   import type { ComponentProps } from "svelte";
+
+  import { ariaKeyShortcuts, useShortcuts } from "@app/lib/shortcuts.svelte";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -43,34 +31,26 @@
   }: Props = $props();
   /* eslint-enable prefer-const */
 
-  function open() {
-    show = true;
-    // Mounting autofocuses the input, but it may already be open and blurred.
-    requestAnimationFrame(() => {
-      document
-        .querySelector<HTMLInputElement>('input[name="list-search"]')
-        ?.focus({ preventScroll: true });
-    });
-  }
+  let input: TextInput | undefined = $state(undefined);
 
-  $effect(() => {
-    if (!hasItems) {
-      return;
-    }
-    openActive = open;
-    return () => {
-      if (openActive === open) {
-        openActive = undefined;
-      }
-    };
+  useShortcuts({
+    shortcut: "filter",
+    enabled: () => hasItems,
+    active: () => input?.hasFocus() ?? false,
+    run: () => {
+      show = true;
+      // Mounting autofocuses the input, but it may already be open and blurred.
+      input?.focus();
+    },
   });
 </script>
 
 {#if hasItems}
   {#if show}
     <TextInput
+      bind:this={input}
       autofocus
-      name="list-search"
+      modShortcuts
       {onFocus}
       {onSubmit}
       onBlur={() => {
@@ -84,7 +64,7 @@
       }}
       {placeholder}
       {styleHeight}
-      keyShortcuts="ctrl+f"
+      keyShortcuts={ariaKeyShortcuts("filter")}
       bind:value>
       {#snippet left()}
         <div
@@ -99,7 +79,7 @@
       <Button
         variant="naked"
         {styleHeight}
-        keyShortcuts="ctrl+f"
+        keyShortcuts={ariaKeyShortcuts("filter")}
         onclick={() => (show = true)}>
         <Icon name={icon} />
       </Button>
