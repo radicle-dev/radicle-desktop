@@ -153,8 +153,8 @@
       <span class="warning-icon"><Icon name="warning" /></span>
       <div class="warning-body">
         <span>
-          It does not delete anything. The content id stays in the release's
-          history, and anyone who already has the bytes keeps them.
+          Nothing is deleted. The content id stays in the release history, and
+          anyone who already downloaded it keeps their copy.
         </span>
         {#if seeding}
           <span>

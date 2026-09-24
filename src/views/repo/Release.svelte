@@ -323,7 +323,7 @@
       }
       if (!nodeRunning) {
         addError =
-          "Added, but your artifact node is not running, so nothing can serve the bytes yet.";
+          "Added, but your artifact node is not running, so they cannot be downloaded yet.";
       } else if (seedFailures > 0) {
         addError = `Added, but ${seedFailures} could not be seeded and cannot be downloaded yet.`;
       }

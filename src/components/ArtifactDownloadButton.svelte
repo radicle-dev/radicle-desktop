@@ -314,10 +314,10 @@
       {#if activeTab === "app"}
         <label for="download-artifact">
           {#if nodeRunning === false}
-            Your artifact node is not running, so the bytes cannot be fetched or
+            Your artifact node is not running, so nothing can be downloaded or
             verified here. The CLI and browser tabs still work.
           {:else}
-            Download through your artifact node, which verifies the bytes
+            Download through your artifact node, which checks what arrives
             against the content id.
           {/if}
         </label>
