@@ -581,12 +581,12 @@
   }
   /* A file list reads better as rows than as a stack of bordered cards: the
      release header is then the only card on the page. */
-  .artifact-list {
-    border-top: 1px solid var(--color-border-subtle);
-  }
   .artifact {
     padding: 0.75rem 0.25rem;
     border-bottom: 1px solid var(--color-border-subtle);
+  }
+  .artifact:first-child {
+    border-top: 1px solid var(--color-border-subtle);
   }
   .artifact-row {
     display: flex;
