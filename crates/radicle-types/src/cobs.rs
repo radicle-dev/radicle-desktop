@@ -12,6 +12,7 @@ pub mod diff;
 pub mod issue;
 pub mod job;
 pub mod repo;
+pub mod search;
 pub mod stream;
 pub mod thread;
 

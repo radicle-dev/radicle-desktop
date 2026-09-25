@@ -36,6 +36,7 @@
     theme,
   } from "@app/components/ThemeSwitch.svelte";
   import GuideView from "@app/modals/Guide.svelte";
+  import NavigatorView from "@app/modals/Navigator.svelte";
   import SettingsView from "@app/modals/Settings.svelte";
   import Auth from "@app/views/auth/Auth.svelte";
   import CreateIdentity from "@app/views/auth/CreateIdentity.svelte";
@@ -161,6 +162,9 @@
     } else if (auxiliarKey && e.key === ",") {
       e.preventDefault();
       toggle({ component: SettingsView, props: {} });
+    } else if (auxiliarKey && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      toggle({ component: NavigatorView, props: {} });
     } else if (auxiliarKey && e.key.toLowerCase() === "b") {
       e.preventDefault();
       toggleSidebar();

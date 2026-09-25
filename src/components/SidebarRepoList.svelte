@@ -20,6 +20,10 @@
     !window.localStorage,
   );
 
+  export function pinnedRepoOrder(): string[] {
+    return pinnedRepoIds.value;
+  }
+
   export function revealRepoInSidebar(rid: string) {
     if (pinnedRepoIds.value.includes(rid)) return;
 

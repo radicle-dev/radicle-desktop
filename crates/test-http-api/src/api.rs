@@ -111,12 +111,14 @@ pub fn router(ctx: Context) -> Router {
         .route("/repo_commit_count", post(repo_commit_count_handler))
         .route("/repo_commit", post(repo_commit_handler))
         .route("/list_issues", post(issues_handler))
+        .route("/search_issues", post(search_issues_handler))
         .route("/create_issue", post(create_issue_handler))
         .route("/create_issue_comment", post(create_issue_comment_handler))
         .route("/edit_issue", post(edit_issue_handler))
         .route("/issue_by_id", post(issue_handler))
         .route("/comment_threads_by_issue_id", post(issue_threads_handler))
         .route("/list_patches", post(patches_handler))
+        .route("/search_patches", post(search_patches_handler))
         .route("/patch_by_id", post(patch_handler))
         .route("/revisions_by_patch", post(revision_handler))
         .route("/edit_patch", post(edit_patch_handler))
@@ -526,6 +528,26 @@ async fn issues_handler(
         .list_paginated(rid, status.unwrap_or_default(), skip, take, &aliases)?;
 
     Ok::<_, Error>(Json(page))
+}
+
+#[derive(Serialize, Deserialize)]
+struct SearchBody {
+    pub query: String,
+    pub take: usize,
+}
+
+async fn search_issues_handler(
+    State(ctx): State<Context>,
+    Json(SearchBody { query, take }): Json<SearchBody>,
+) -> impl IntoResponse {
+    Ok::<_, Error>(Json(ctx.issues.search(&query, take)?))
+}
+
+async fn search_patches_handler(
+    State(ctx): State<Context>,
+    Json(SearchBody { query, take }): Json<SearchBody>,
+) -> impl IntoResponse {
+    Ok::<_, Error>(Json(ctx.patches.search(&query, take)?))
 }
 
 #[derive(Serialize, Deserialize)]
