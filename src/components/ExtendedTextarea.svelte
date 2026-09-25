@@ -1,13 +1,10 @@
 <script lang="ts">
   import type { MentionInsertion } from "@app/components/MentionAutocomplete.svelte";
   import type { Embed } from "@bindings/cob/thread/Embed";
-  import type { UnlistenFn } from "@tauri-apps/api/event";
   import type { ComponentProps, Snippet } from "svelte";
 
-  import { listen } from "@tauri-apps/api/event";
   import { open } from "@tauri-apps/plugin-dialog";
   import debounce from "lodash/debounce";
-  import { onDestroy, onMount } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
   import { basename } from "@app/lib/embeds";
@@ -123,9 +120,10 @@
     $state(undefined);
   let draggingOver = $state(false);
   let embedUploadError: string | undefined = $state();
-  let dragEnterUnlistenFn: UnlistenFn | undefined = undefined;
-  let dragLeaveUnlistenFn: UnlistenFn | undefined = undefined;
-  let dragDropUnlistenFn: UnlistenFn | undefined = undefined;
+  let dragDepth = 0;
+
+  // Mirrors `MAX_EMBED_SIZE` in `crates/radicle-types/src/traits/thread.rs`.
+  const MAX_EMBED_SIZE = 10_485_760;
 
   const restoreDragDropText = debounce(() => {
     embedUploadError = undefined;
@@ -178,33 +176,60 @@
     textareaElement?.setSelectionRange(selectionStart, selectionEnd);
   }
 
-  onMount(async () => {
-    if (window.__TAURI_INTERNALS__) {
-      if (attachEnabled) {
-        dragEnterUnlistenFn = await listen("tauri://drag-enter", () => {
-          draggingOver = true;
-        });
-
-        dragLeaveUnlistenFn = await listen("tauri://drag-leave", () => {
-          draggingOver = false;
-        });
-
-        dragDropUnlistenFn = await listen<{
-          paths: string[];
-          position: { x: number; y: number };
-        }>("tauri://drag-drop", async event => {
-          draggingOver = false;
-          await uploadEmbeds(event.payload.paths, basename, saveByPath);
-        });
-      }
+  async function saveFileBytes(file: File) {
+    if (file.size > MAX_EMBED_SIZE) {
+      throw new Error(`${file.name} exceeds the embed size limit`);
     }
-  });
+    return invoke<string>("save_embed_by_bytes", {
+      rid,
+      name: file.name,
+      bytes: new Uint8Array(await file.arrayBuffer()),
+    });
+  }
 
-  onDestroy(() => {
-    if (dragEnterUnlistenFn) dragEnterUnlistenFn();
-    if (dragLeaveUnlistenFn) dragLeaveUnlistenFn();
-    if (dragDropUnlistenFn) dragDropUnlistenFn();
-  });
+  function hasFiles(event: DragEvent): boolean {
+    return event.dataTransfer?.types.includes("Files") ?? false;
+  }
+
+  function acceptsDrop(event: DragEvent): boolean {
+    return attachEnabled && !preview && hasFiles(event);
+  }
+
+  function handleDragEnter(event: DragEvent) {
+    if (!hasFiles(event)) return;
+    dragDepth += 1;
+    if (acceptsDrop(event)) {
+      event.preventDefault();
+      draggingOver = true;
+    }
+  }
+
+  function handleDragOver(event: DragEvent) {
+    if (!acceptsDrop(event) || !event.dataTransfer) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }
+
+  function handleDragLeave(event: DragEvent) {
+    if (!hasFiles(event)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) {
+      draggingOver = false;
+    }
+  }
+
+  function handleDrop(event: DragEvent) {
+    if (!hasFiles(event)) return;
+    dragDepth = 0;
+    draggingOver = false;
+    if (!acceptsDrop(event) || !event.dataTransfer) return;
+    event.preventDefault();
+    void uploadEmbeds(
+      Array.from(event.dataTransfer.files),
+      file => file.name,
+      saveFileBytes,
+    );
+  }
 
   async function attachEmbedsByPaths(paths: string[]) {
     await uploadEmbeds(paths, basename, saveByPath);
@@ -228,16 +253,7 @@
             invoke<string>("save_embed_by_clipboard", { name: file.name, rid }),
         );
       } else {
-        await uploadEmbeds(
-          files,
-          file => file.name,
-          async file =>
-            invoke<string>("save_embed_by_bytes", {
-              rid,
-              name: file.name,
-              bytes: new Uint8Array(await file.arrayBuffer()),
-            }),
-        );
+        await uploadEmbeds(files, file => file.name, saveFileBytes);
       }
     }
   }
@@ -410,6 +426,10 @@
 <div
   class="comment-section"
   aria-label="extended-textarea"
+  ondragenter={handleDragEnter}
+  ondragover={handleDragOver}
+  ondragleave={handleDragLeave}
+  ondrop={handleDrop}
   class:inline
   onkeydown={event => {
     if (!preview) return;
