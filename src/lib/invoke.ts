@@ -68,7 +68,10 @@ async function withTestBackend<T>(
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(args),
+        // Tauri's IPC sends byte arrays as plain arrays; do the same here.
+        body: JSON.stringify(args, (_key, value: unknown) =>
+          value instanceof Uint8Array ? Array.from(value) : value,
+        ),
       },
     ).then(async response => {
       if (response.status === 404) {

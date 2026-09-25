@@ -126,7 +126,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/get_embed", post(get_embeds_handler))
         .route("/save_embed_by_path", post(save_embed_handler))
         .route("/save_embed_by_clipboard", post(save_embed_handler))
-        .route("/save_embed_by_bytes", post(save_embed_handler))
+        .route("/save_embed_by_bytes", post(save_embed_by_bytes_handler))
         .route("/save_embed_to_disk", post(save_embed_handler))
         .route("/list_jobs", post(jobs_handler))
         .route("/list_notifications", post(list_notifications_handler))
@@ -642,6 +642,22 @@ async fn save_embed_handler(
     Json(CreateEmbedBody { rid, path }): Json<CreateEmbedBody>,
 ) -> impl IntoResponse {
     let embed = ctx.save_embed_by_path(rid, path)?;
+
+    Ok::<_, Error>(Json(embed))
+}
+
+#[derive(Serialize, Deserialize)]
+struct CreateEmbedByBytesBody {
+    pub rid: identity::RepoId,
+    pub name: String,
+    pub bytes: Vec<u8>,
+}
+
+async fn save_embed_by_bytes_handler(
+    State(ctx): State<Context>,
+    Json(CreateEmbedByBytesBody { rid, name, bytes }): Json<CreateEmbedByBytesBody>,
+) -> impl IntoResponse {
+    let embed = ctx.save_embed_by_bytes(rid, name, bytes)?;
 
     Ok::<_, Error>(Json(embed))
 }

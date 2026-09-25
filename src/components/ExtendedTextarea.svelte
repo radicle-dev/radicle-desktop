@@ -1,12 +1,9 @@
 <script lang="ts">
   import type { Embed } from "@bindings/cob/thread/Embed";
-  import type { UnlistenFn } from "@tauri-apps/api/event";
   import type { ComponentProps, Snippet } from "svelte";
 
-  import { listen } from "@tauri-apps/api/event";
   import { open } from "@tauri-apps/plugin-dialog";
   import debounce from "lodash/debounce";
-  import { onDestroy, onMount } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
   import { hints } from "@app/lib/hints";
@@ -117,9 +114,12 @@
   let selectionEnd = $state(body.length);
   let draggingOver = $state(false);
   let embedUploadError: string | undefined = $state();
-  let dragEnterUnlistenFn: UnlistenFn | undefined = undefined;
-  let dragLeaveUnlistenFn: UnlistenFn | undefined = undefined;
-  let dragDropUnlistenFn: UnlistenFn | undefined = undefined;
+  // `dragenter` and `dragleave` also fire when the pointer crosses between
+  // child elements, so only the outermost pair marks the drag's own bounds.
+  let dragDepth = 0;
+
+  // Mirrors `MAX_EMBED_SIZE` in `crates/radicle-types/src/traits/thread.rs`.
+  const MAX_EMBED_SIZE = 10_485_760;
 
   const restoreDragDropText = debounce(() => {
     embedUploadError = undefined;
@@ -136,55 +136,79 @@
     return [body.substring(0, selectionStart), body.substring(selectionStart)];
   }
 
-  onMount(async () => {
-    if (window.__TAURI_INTERNALS__) {
-      if (attachEnabled) {
-        dragEnterUnlistenFn = await listen("tauri://drag-enter", () => {
-          draggingOver = true;
-        });
+  function hasFiles(event: DragEvent): boolean {
+    return event.dataTransfer?.types.includes("Files") ?? false;
+  }
 
-        dragLeaveUnlistenFn = await listen("tauri://drag-leave", () => {
-          draggingOver = false;
-        });
+  function acceptsDrop(event: DragEvent): boolean {
+    return attachEnabled && !preview && hasFiles(event);
+  }
 
-        dragDropUnlistenFn = await listen<{
-          paths: string[];
-          position: { x: number; y: number };
-        }>("tauri://drag-drop", async event => {
-          draggingOver = false;
-          const [preBody, afterBody] = splitBody();
-
-          return Promise.all(
-            event.payload.paths.map(async path => {
-              const pathSegments = path.split("/");
-              const name = pathSegments[pathSegments.length - 1];
-              const uploadLabel = `[Uploading ${name}...]()\n`;
-
-              body = preBody.concat(uploadLabel, afterBody);
-              try {
-                const oid = await invoke<string>("save_embed_by_path", {
-                  rid,
-                  path,
-                });
-                embeds.set(oid, { name, content: `git:${oid}` });
-                return `[${name}](${oid})\n`;
-              } catch {
-                embedUploadError = "Upload failed, embed exceeded 10Mb.";
-                restoreDragDropText();
-                return "";
-              }
-            }),
-          ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
-        });
-      }
+  // Enter and leave are counted for every file drag, accepted or not, so the
+  // highlight still clears if preview is toggled while a file is held over.
+  function handleDragEnter(event: DragEvent) {
+    if (!hasFiles(event)) return;
+    dragDepth += 1;
+    if (acceptsDrop(event)) {
+      event.preventDefault();
+      draggingOver = true;
     }
-  });
+  }
 
-  onDestroy(() => {
-    if (dragEnterUnlistenFn) dragEnterUnlistenFn();
-    if (dragLeaveUnlistenFn) dragLeaveUnlistenFn();
-    if (dragDropUnlistenFn) dragDropUnlistenFn();
-  });
+  function handleDragOver(event: DragEvent) {
+    if (!acceptsDrop(event) || !event.dataTransfer) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  }
+
+  function handleDragLeave(event: DragEvent) {
+    if (!hasFiles(event)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) {
+      draggingOver = false;
+    }
+  }
+
+  function handleDrop(event: DragEvent) {
+    if (!hasFiles(event)) return;
+    dragDepth = 0;
+    draggingOver = false;
+    if (!acceptsDrop(event) || !event.dataTransfer) return;
+    event.preventDefault();
+    void attachEmbedsByFiles(Array.from(event.dataTransfer.files));
+  }
+
+  async function attachEmbedsByFiles(files: File[]) {
+    const [preBody, afterBody] = splitBody();
+
+    return Promise.all(
+      files.map(async file => {
+        // Checked before reading, so an oversized file is never loaded into
+        // memory and sent across just to be refused.
+        if (file.size > MAX_EMBED_SIZE) {
+          embedUploadError = "Upload failed, embed exceeded 10Mb.";
+          restoreDragDropText();
+          return "";
+        }
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const uploadLabel = `[Uploading ${file.name}...]()\n`;
+        body = preBody.concat(uploadLabel, afterBody);
+        try {
+          const oid = await invoke<string>("save_embed_by_bytes", {
+            rid,
+            name: file.name,
+            bytes,
+          });
+          embeds.set(oid, { name: file.name, content: `git:${oid}` });
+          return `[${file.name}](${oid})\n`;
+        } catch {
+          embedUploadError = "Upload failed, embed exceeded 10Mb.";
+          restoreDragDropText();
+          return "";
+        }
+      }),
+    ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
+  }
 
   async function attachEmbedsByPaths(paths: string[]) {
     const [preBody, afterBody] = splitBody();
@@ -238,27 +262,7 @@
           restoreDragDropText();
         }
       } else {
-        return Promise.all(
-          Array.from(e.clipboardData.files).map(async file => {
-            const arrayBuffer = await file.arrayBuffer();
-            const bytes = new Uint8Array(arrayBuffer);
-            const uploadLabel = `[Uploading ${file.name}...]()\n`;
-            body = preBody.concat(uploadLabel, afterBody);
-            try {
-              const oid = await invoke<string>("save_embed_by_bytes", {
-                rid,
-                name: file.name,
-                bytes,
-              });
-              embeds.set(oid, { name: file.name, content: `git:${oid}` });
-              return `[${file.name}](${oid})\n`;
-            } catch {
-              embedUploadError = "Upload failed, embed exceeded 10Mb.";
-              restoreDragDropText();
-              return "";
-            }
-          }),
-        ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
+        return attachEmbedsByFiles(Array.from(e.clipboardData.files));
       }
     } else {
       // In case that the clipboard data isn't an array of files,
@@ -434,6 +438,10 @@
 <div
   class="comment-section"
   aria-label="extended-textarea"
+  ondragenter={handleDragEnter}
+  ondragover={handleDragOver}
+  ondragleave={handleDragLeave}
+  ondrop={handleDrop}
   class:inline
   onkeydown={event => {
     if (!preview) return;
