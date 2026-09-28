@@ -160,6 +160,6 @@ pub trait Releases: Profile {
         let repo = profile.storage.repository(rid)?;
         let store = ArtifactStore::open_cached(&repo, cache_db_path(profile.cobs()))?;
 
-        Ok(store.count()?)
+        Ok(store.count_refs()?)
     }
 }

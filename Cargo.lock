@@ -4272,9 +4272,9 @@ dependencies = [
 
 [[package]]
 name = "radicle-artifact"
-version = "0.18.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8166746c3d6bf1618d97aebb48d8b3239c31527fc96fc235309f7c47543ba23"
+checksum = "669a25006bd54b060237bc8d93ab2eef04db1add527b5031dc19af6dcdabe614"
 dependencies = [
  "blake3",
  "cid",
@@ -4295,9 +4295,9 @@ dependencies = [
 
 [[package]]
 name = "radicle-artifact-client"
-version = "0.18.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59abfdeba1a2476c45264014ccc0e9d86cee55eb327e755506e5bc8c0d2b0153"
+checksum = "337b4c2291e45b5c3c6d9cad6deb2587b3c3aebcfc102dc3aaf1e39d3deae267"
 dependencies = [
  "cid",
  "radicle",
@@ -4309,9 +4309,9 @@ dependencies = [
 
 [[package]]
 name = "radicle-artifact-core"
-version = "0.18.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba6ef833ec05bb0731b61854c8f39467896d593845c69c0f9437e6f6f2d7bf36"
+checksum = "17410a528d0ed12a9f139bd84d9e976365455109aed044e3f35b6cc21210be10"
 dependencies = [
  "blake3",
  "cid",
