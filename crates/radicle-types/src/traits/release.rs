@@ -1,5 +1,7 @@
-use radicle::identity::doc::{Delegates, DocAt};
-use radicle::storage::{ReadRepository, ReadStorage};
+use std::collections::BTreeSet;
+
+use radicle::identity::Did;
+use radicle::storage::ReadStorage;
 use radicle::{git, identity};
 
 use radicle_artifact::{Artifact, ReleaseId, Releases as ArtifactStore, cache_db_path};
@@ -7,25 +9,6 @@ use radicle_artifact::{Artifact, ReleaseId, Releases as ArtifactStore, cache_db_
 use crate::cobs;
 use crate::error::Error;
 use crate::traits::Profile;
-
-/// Whether an artifact was redacted by its own author or by a delegate.
-fn redacted_by_trusted(artifact: &Artifact, delegates: &Delegates) -> bool {
-    artifact
-        .redactions()
-        .keys()
-        .any(|did| did == artifact.author() || delegates.contains(did))
-}
-
-/// Whether every artifact of a release was redacted by a trusted party. A
-/// release without artifacts is not redacted; it has nothing to redact.
-fn release_redacted(release: &radicle_artifact::Release, delegates: &Delegates) -> bool {
-    let artifacts = release.artifacts();
-
-    !artifacts.is_empty()
-        && artifacts
-            .values()
-            .all(|artifact| redacted_by_trusted(artifact, delegates))
-}
 
 /// How far the caller widened the default, delegate-scoped release view.
 #[derive(Clone, Copy, Default, serde::Serialize, serde::Deserialize)]
@@ -41,17 +24,21 @@ impl ReleaseFilter {
     /// Whether an artifact is shown under this view: authored by a delegate
     /// (or `all_authors`), and not redacted by its author or a delegate (or
     /// `show_redacted`).
-    fn show_artifact(&self, artifact: &Artifact, delegates: &Delegates) -> bool {
+    fn show_artifact(&self, artifact: &Artifact, delegates: &BTreeSet<Did>) -> bool {
         (self.all_authors || delegates.contains(artifact.author()))
-            && (self.show_redacted || !redacted_by_trusted(artifact, delegates))
+            && (self.show_redacted || !artifact.is_redacted_by_trusted(delegates))
     }
 
     /// Whether a release is shown under this view: created by a delegate (or
-    /// `all_authors`), and not left with all of its artifacts redacted by a
-    /// trusted party (or `show_redacted`).
-    fn show_release(&self, release: &radicle_artifact::Release, delegates: &Delegates) -> bool {
+    /// `all_authors`), and holding an artifact not redacted by a trusted party
+    /// (or `show_redacted`).
+    fn show_release(
+        &self,
+        release: &radicle_artifact::Release,
+        delegates: &BTreeSet<Did>,
+    ) -> bool {
         (self.all_authors || delegates.contains(release.creator()))
-            && (self.show_redacted || !release_redacted(release, delegates))
+            && (self.show_redacted || release.has_unredacted_artifacts(delegates))
     }
 }
 
@@ -61,7 +48,7 @@ pub trait Releases: Profile {
     /// Scoped to releases created by a delegate and artifacts authored by a
     /// delegate (hiding those redacted by a trusted party) unless widened with
     /// `filter`. A release whose artifacts were all redacted is hidden with
-    /// them. Without `take` the full list is returned and `skip` is ignored.
+    /// them, and so is a release with no artifacts. Without `take` the full list is returned and `skip` is ignored.
     fn list_releases(
         &self,
         rid: identity::RepoId,
@@ -71,14 +58,13 @@ pub trait Releases: Profile {
     ) -> Result<cobs::PaginatedQuery<Vec<cobs::release::Release>>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let DocAt { doc, .. } = repo.identity_doc()?;
-        let delegates = doc.delegates();
         let aliases = profile.aliases();
         let filter = filter.unwrap_or_default();
 
         // Read through the SQLite cache; it self-warms on read and is shared
         // with other release reads on this node.
         let store = ArtifactStore::open_cached(&repo, cache_db_path(profile.cobs()))?;
+        let delegates = store.delegates();
         let mut releases = store
             .all()?
             .into_iter()
