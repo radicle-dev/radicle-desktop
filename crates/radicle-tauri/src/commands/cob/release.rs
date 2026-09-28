@@ -14,15 +14,15 @@ use crate::AppState;
 use crate::commands::blocking;
 
 #[tauri::command]
-pub(crate) fn list_releases(
-    ctx: tauri::State<AppState>,
+pub(crate) async fn list_releases(
+    ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,
     filter: Option<ReleaseFilter>,
     skip: Option<usize>,
     // None: return all releases, `skip` is ignored.
     take: Option<usize>,
 ) -> Result<types::cobs::PaginatedQuery<Vec<types::cobs::release::Release>>, Error> {
-    ctx.list_releases(rid, filter, skip, take)
+    blocking(ctx, move |ctx| ctx.list_releases(rid, filter, skip, take)).await
 }
 
 #[tauri::command]
@@ -35,11 +35,11 @@ pub(crate) fn release_by_id(
 }
 
 #[tauri::command]
-pub(crate) fn release_counts(
-    ctx: tauri::State<AppState>,
+pub(crate) async fn release_counts(
+    ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,
 ) -> Result<types::cobs::release::ReleaseCounts, Error> {
-    ctx.release_counts(rid)
+    blocking(ctx, move |ctx| ctx.release_counts(rid)).await
 }
 
 #[tauri::command]
