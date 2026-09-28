@@ -105,6 +105,35 @@ impl Artifact {
     }
 }
 
+/// Release counts bucketed by creator trust and artifact redaction. A hidden
+/// release has no artifact left once those redacted by a trusted party are
+/// removed.
+#[derive(Clone, Copy, Serialize, TS, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/release/")]
+pub struct ReleaseCounts {
+    #[ts(type = "number")]
+    pub delegate: usize,
+    #[ts(type = "number")]
+    pub delegate_hidden: usize,
+    #[ts(type = "number")]
+    pub other: usize,
+    #[ts(type = "number")]
+    pub other_hidden: usize,
+}
+
+impl From<radicle_artifact::ReleaseCounts> for ReleaseCounts {
+    fn from(counts: radicle_artifact::ReleaseCounts) -> Self {
+        Self {
+            delegate: counts.delegate,
+            delegate_hidden: counts.delegate_hidden,
+            other: counts.other,
+            other_hidden: counts.other_hidden,
+        }
+    }
+}
+
 /// A release, keyed by a commit and optionally an annotated tag. The COB has
 /// no title of its own: `title` and `tagName` are resolved from the tag or
 /// commit message, and are absent when they cannot be read.

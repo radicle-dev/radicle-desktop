@@ -132,7 +132,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/save_embed_to_disk", post(save_embed_handler))
         .route("/list_releases", post(releases_handler))
         .route("/release_by_id", post(release_handler))
-        .route("/release_count", post(release_count_handler))
+        .route("/release_counts", post(release_counts_handler))
         .route("/compute_artifact_cid", post(compute_artifact_cid_handler))
         .route(
             "/create_or_open_release",
@@ -742,17 +742,17 @@ async fn release_handler(
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct ReleaseCountBody {
+struct ReleaseCountsBody {
     pub rid: identity::RepoId,
 }
 
-async fn release_count_handler(
+async fn release_counts_handler(
     State(ctx): State<Context>,
-    Json(ReleaseCountBody { rid }): Json<ReleaseCountBody>,
+    Json(ReleaseCountsBody { rid }): Json<ReleaseCountsBody>,
 ) -> impl IntoResponse {
-    let count = ctx.release_count(rid)?;
+    let counts = ctx.release_counts(rid)?;
 
-    Ok::<_, Error>(Json(count))
+    Ok::<_, Error>(Json(counts))
 }
 
 #[derive(Serialize, Deserialize)]

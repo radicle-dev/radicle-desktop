@@ -37,6 +37,7 @@
 </script>
 
 <script lang="ts">
+  import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { RepoSummary } from "@bindings/repo/RepoSummary";
@@ -164,9 +165,9 @@
     }
 
     let cancelled = false;
-    invoke<number>("release_count", { rid })
-      .then(count => {
-        if (!cancelled) releaseCount = count;
+    invoke<ReleaseCounts>("release_counts", { rid })
+      .then(counts => {
+        if (!cancelled) releaseCount = counts.delegate + counts.other;
       })
       .catch(() => {
         if (!cancelled) releaseCount = undefined;

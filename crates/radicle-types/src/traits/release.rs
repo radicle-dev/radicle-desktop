@@ -153,13 +153,13 @@ pub trait Releases: Profile {
         }))
     }
 
-    /// Number of releases in a repository, counted from a git ref walk without
-    /// materializing any of them.
-    fn release_count(&self, rid: identity::RepoId) -> Result<usize, Error> {
+    /// Number of releases in a repository, bucketed the same way the default
+    /// list filters them.
+    fn release_counts(&self, rid: identity::RepoId) -> Result<cobs::release::ReleaseCounts, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
         let store = ArtifactStore::open_cached(&repo, cache_db_path(profile.cobs()))?;
 
-        Ok(store.count_refs()?)
+        Ok(store.counts()?.into())
     }
 }

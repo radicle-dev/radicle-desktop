@@ -35,11 +35,11 @@ pub(crate) fn release_by_id(
 }
 
 #[tauri::command]
-pub(crate) fn release_count(
+pub(crate) fn release_counts(
     ctx: tauri::State<AppState>,
     rid: identity::RepoId,
-) -> Result<usize, Error> {
-    ctx.release_count(rid)
+) -> Result<types::cobs::release::ReleaseCounts, Error> {
+    ctx.release_counts(rid)
 }
 
 #[tauri::command]

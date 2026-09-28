@@ -63,7 +63,7 @@ pub fn run() {
             cob::patch::revisions_by_patch,
             cob::release::list_releases,
             cob::release::release_by_id,
-            cob::release::release_count,
+            cob::release::release_counts,
             cob::release::compute_artifact_cid,
             cob::release::create_or_open_release,
             cob::release::register_artifact,

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Release } from "@bindings/cob/release/Release";
+  import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { RELEASES_PER_PAGE } from "@app/views/repo/router";
@@ -24,12 +25,12 @@
   interface Props {
     repo: RepoInfo;
     releases: PaginatedQuery<Release[]>;
-    releaseCount: number;
+    releaseCounts: ReleaseCounts;
     allAuthors: boolean;
     showFilters: boolean;
   }
 
-  const { repo, releases, releaseCount, allAuthors, showFilters }: Props =
+  const { repo, releases, releaseCounts, allAuthors, showFilters }: Props =
     $props();
 
   const delegateIds = $derived(new Set(repo.delegates.map(d => d.did)));
@@ -51,15 +52,6 @@
     pageSize: RELEASES_PER_PAGE,
     id: release => release.id,
   });
-
-  // The delegate-scoped count isn't in repo metadata; derive it from the pages
-  // loaded so far. It labels the segment only, and reads as "30+" while more
-  // pages are outstanding.
-  const delegateCount = $derived(
-    allAuthors
-      ? list.items.filter(r => delegateIds.has(r.creator.did)).length
-      : list.items.length,
-  );
 </script>
 
 <style>
@@ -130,7 +122,7 @@
             })}>
             <Icon name="badge" />Delegates
             <span class="global-counter-badge">
-              {delegateCount}{list.more ? "+" : ""}
+              {releaseCounts.delegate}
             </span>
           </a>
           <a
@@ -142,7 +134,9 @@
               allAuthors: true,
             })}>
             <Icon name="avatar-incognito" />All
-            <span class="global-counter-badge">{releaseCount}</span>
+            <span class="global-counter-badge">
+              {releaseCounts.delegate + releaseCounts.other}
+            </span>
           </a>
         </div>
       {/if}
