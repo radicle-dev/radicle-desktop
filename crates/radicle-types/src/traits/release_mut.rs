@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use radicle::identity;
+use radicle::identity::{self, Did};
 use radicle::storage::ReadStorage;
 use url::Url;
 
@@ -49,10 +49,12 @@ pub trait ReleasesMut: Releases {
     /// Find the release for a commit, or create one. Returns the release id.
     ///
     /// Idempotent: re-running against the same commit reuses the existing
-    /// release rather than creating a second one. `tag` is recorded only when
-    /// the release is created; reusing an existing release leaves its tag
-    /// as-is. Pass `None` for lightweight tags and bare commits, since the
-    /// store accepts only an annotated tag that peels to `oid`.
+    /// release rather than creating a second one. As with `rad-artifact
+    /// release create`, only a release the local user created is reused, so
+    /// artifacts never land under another peer's release. With `tag`, only a
+    /// release carrying that exact tag is reused; without it, the newest one
+    /// for the commit is. Pass `None` for lightweight tags and bare commits,
+    /// since the store accepts only an annotated tag that peels to `oid`.
     fn create_or_open_release(
         &self,
         rid: identity::RepoId,
@@ -63,13 +65,19 @@ pub trait ReleasesMut: Releases {
         let signer = profile.signer()?;
         let repo = profile.storage.repository(rid)?;
 
+        let local = Did::from(profile.public_key);
+
         let mut releases = ArtifactStore::open(&repo)?;
 
         let existing = releases
             .find_by_commit(oid)?
-            .next()
-            .transpose()?
-            .map(|e| e.0);
+            .collect::<Result<Vec<_>, _>>()?
+            .into_iter()
+            .filter(|(_, release)| {
+                release.creator() == &local && tag.is_none_or(|tag| release.tag() == Some(&tag))
+            })
+            .max_by_key(|(_, release)| release.timestamp())
+            .map(|(id, _)| id);
 
         let id = match existing {
             Some(id) => id,
