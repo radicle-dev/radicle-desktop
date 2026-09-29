@@ -3,12 +3,14 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::Router;
-use axum::extract::State;
-use axum::response::{IntoResponse, Json};
+use axum::extract::{Request, State};
+use axum::middleware::{self, Next};
+use axum::response::{IntoResponse, Json, Response};
 use axum::routing::post;
 use hyper::Method;
 use hyper::header::CONTENT_TYPE;
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 use tower_http::cors::{self, CorsLayer};
 
 use radicle::node::NodeId;
@@ -73,6 +75,22 @@ impl Context {
 }
 
 pub fn router(ctx: Context) -> Router {
+    let writes = Router::new()
+        .route("/seed", post(seed_handler))
+        .route("/unseed", post(unseed_handler))
+        .route("/clean", post(clean_handler))
+        .route("/create_issue", post(create_issue_handler))
+        .route("/create_issue_comment", post(create_issue_comment_handler))
+        .route("/edit_issue", post(edit_issue_handler))
+        .route("/delete_issue", post(delete_issue_handler))
+        .route("/edit_patch", post(edit_patch_handler))
+        .route("/create_patch_review", post(create_patch_review_handler))
+        .route("/delete_patch", post(delete_patch_handler))
+        .route_layer(middleware::from_fn_with_state(
+            Arc::new(Mutex::new(())),
+            serialize_writes,
+        ));
+
     Router::new()
         .route("/config", post(config_handler))
         .route("/authenticate", post(auth_handler))
@@ -83,9 +101,6 @@ pub fn router(ctx: Context) -> Router {
             "/seeded_not_replicated",
             post(seeded_not_replicated_handler),
         )
-        .route("/seed", post(seed_handler))
-        .route("/unseed", post(unseed_handler))
-        .route("/clean", post(clean_handler))
         .route("/repo_by_id", post(repo_handler))
         .route("/list_repo_refs", post(list_repo_refs_handler))
         .route("/identity_by_repo", post(identity_handler))
@@ -111,18 +126,11 @@ pub fn router(ctx: Context) -> Router {
         .route("/repo_commit_count", post(repo_commit_count_handler))
         .route("/repo_commit", post(repo_commit_handler))
         .route("/list_issues", post(issues_handler))
-        .route("/create_issue", post(create_issue_handler))
-        .route("/create_issue_comment", post(create_issue_comment_handler))
-        .route("/edit_issue", post(edit_issue_handler))
         .route("/issue_by_id", post(issue_handler))
         .route("/comment_threads_by_issue_id", post(issue_threads_handler))
-        .route("/delete_issue", post(delete_issue_handler))
         .route("/list_patches", post(patches_handler))
         .route("/patch_by_id", post(patch_handler))
         .route("/revisions_by_patch", post(revision_handler))
-        .route("/edit_patch", post(edit_patch_handler))
-        .route("/create_patch_review", post(create_patch_review_handler))
-        .route("/delete_patch", post(delete_patch_handler))
         .route("/get_embed", post(get_embeds_handler))
         .route("/save_embed_by_path", post(save_embed_handler))
         .route("/save_embed_by_clipboard", post(save_embed_handler))
@@ -132,6 +140,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/list_notifications", post(list_notifications_handler))
         .route("/notification_count", post(notification_count_handler))
         .route("/clear_notifications", post(clear_notifications_handler))
+        .merge(writes)
         .layer(
             CorsLayer::new()
                 .allow_origin(cors::Any)
@@ -139,6 +148,15 @@ pub fn router(ctx: Context) -> Router {
                 .allow_headers([CONTENT_TYPE]),
         )
         .with_state(ctx)
+}
+
+async fn serialize_writes(
+    State(lock): State<Arc<Mutex<()>>>,
+    request: Request,
+    next: Next,
+) -> Response {
+    let _guard = lock.lock().await;
+    next.run(request).await
 }
 
 async fn config_handler(State(ctx): State<Context>) -> impl IntoResponse {

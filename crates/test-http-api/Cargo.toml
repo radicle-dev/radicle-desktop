@@ -19,5 +19,5 @@ radicle-types = { path = "../radicle-types" }
 serde = { version = "1.0.0", features = ["derive"] }
 serde_json = { version = "1.0.0", features = ["preserve_order"] }
 thiserror = { version = "2.0.12" }
-tokio = { version = "1.45", default-features = false, features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.45", default-features = false, features = ["macros", "rt-multi-thread", "sync"] }
 tower-http = { version = "0.6.8", default-features = false, features = ["cors", "set-header"] }
