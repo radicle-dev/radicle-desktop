@@ -99,11 +99,7 @@ test("history position survives a reload", async ({ page }) => {
 
 test("shortcuts stay within the app's history", async ({ page }) => {
   await launch(page);
-  const mac = await page.evaluate(
-    () =>
-      navigator.platform.includes("Mac") ||
-      navigator.userAgent.includes("OS X"),
-  );
+  const mac = process.platform === "darwin";
   const backShortcut = mac ? "Meta+BracketLeft" : "Alt+ArrowLeft";
   const forwardShortcut = mac ? "Meta+BracketRight" : "Alt+ArrowRight";
   await openRepo(page);

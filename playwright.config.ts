@@ -15,6 +15,12 @@ function getFreePort(): Promise<number> {
   });
 }
 
+const desktopSafari = devices["Desktop Safari"];
+const userAgent =
+  process.platform === "darwin"
+    ? desktopSafari.userAgent
+    : desktopSafari.userAgent.replace(/\([^)]*\)/, "(X11; Linux x86_64)");
+
 const testHttpApiPort = await getFreePort();
 process.env.VITE_TEST_HTTP_API_PORT = String(testHttpApiPort);
 
@@ -42,7 +48,8 @@ const config: PlaywrightTestConfig = {
     {
       name: "webkit",
       use: {
-        ...devices["Desktop Safari"],
+        ...desktopSafari,
+        userAgent,
       },
     },
   ],
