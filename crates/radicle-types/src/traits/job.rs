@@ -13,7 +13,7 @@ pub trait Jobs: Profile {
         let repo = profile.storage.repository(rid)?;
         let aliases = &profile.aliases();
 
-        let jobs = JobsStore::open(&repo, ReadOnly).unwrap();
+        let jobs = JobsStore::open(&repo, ReadOnly)?;
         let found_jobs: Result<Vec<(JobId, Job)>, _> = jobs.find_by_commit(sha)?.collect();
 
         Ok(found_jobs?
