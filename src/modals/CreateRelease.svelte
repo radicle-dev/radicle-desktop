@@ -39,6 +39,7 @@
   }
 
   let tags: NamedTag[] = $state([]);
+  let tagsError = $state(false);
   let selectedTag: NamedTag | undefined = $state();
   let commitInput = $state("");
   let staged: StagedArtifact[] = $state([]);
@@ -94,24 +95,29 @@
   });
 
   $effect(() => {
-    void invoke<RepoRefs>("list_repo_refs", { rid: repo.rid }).then(refs => {
-      const byName: Record<string, Tag> = {};
-      const add = (entries: Record<string, Tag>) => {
-        for (const [name, tag] of Object.entries(entries)) {
-          const existing = byName[name];
-          if (!existing || (!existing.tagOid && tag.tagOid)) {
-            byName[name] = tag;
+    void invoke<RepoRefs>("list_repo_refs", { rid: repo.rid })
+      .then(refs => {
+        const byName: Record<string, Tag> = {};
+        const add = (entries: Record<string, Tag>) => {
+          for (const [name, tag] of Object.entries(entries)) {
+            const existing = byName[name];
+            if (!existing || (!existing.tagOid && tag.tagOid)) {
+              byName[name] = tag;
+            }
           }
+        };
+        add(refs.canonical.tags);
+        for (const remote of refs.remotes) {
+          add(remote.tags);
         }
-      };
-      add(refs.canonical.tags);
-      for (const remote of refs.remotes) {
-        add(remote.tags);
-      }
-      tags = Object.entries(byName)
-        .map(([name, tag]) => ({ name, tag }))
-        .sort((a, b) => b.tag.timestamp - a.tag.timestamp);
-    });
+        tags = Object.entries(byName)
+          .map(([name, tag]) => ({ name, tag }))
+          .sort((a, b) => b.tag.timestamp - a.tag.timestamp);
+      })
+      .catch((error: unknown) => {
+        console.error("Could not list tags:", error);
+        tagsError = true;
+      });
   });
 
   async function stage(paths: string[]) {
@@ -144,7 +150,10 @@
   }
 
   async function addFiles() {
-    await stage(await invoke<string[]>("pick_artifact_files"));
+    const paths = await invoke<string[] | null>("pick_artifact_files");
+    if (paths) {
+      await stage(paths);
+    }
   }
 
   async function addDirectory() {
@@ -161,8 +170,9 @@
     submitting = true;
     submitError = undefined;
     seedFailures = 0;
+    let releaseId: string;
     try {
-      const releaseId = await invoke<string>("create_or_open_release", {
+      releaseId = await invoke<string>("create_or_open_release", {
         rid: repo.rid,
         oid: target.oid,
         tag: target.tag,
@@ -200,23 +210,26 @@
       // Both creating and registering are idempotent, so when seeding fails
       // the modal stays open and a retry re-seeds rather than duplicating the
       // release.
-      if (seedFailures > 0) {
-        return;
-      }
-
-      enableHide();
-      await router.push({
-        resource: "repo.release",
-        rid: repo.rid,
-        release: releaseId,
-        allAuthors: false,
-      });
-      forceHide();
     } catch {
       submitError = "Could not create the release.";
+      return;
     } finally {
       submitting = false;
     }
+    if (seedFailures > 0) {
+      return;
+    }
+
+    // The release is published by now, so a failed navigation must not be
+    // reported as a failed release.
+    enableHide();
+    forceHide();
+    await router.push({
+      resource: "repo.release",
+      rid: repo.rid,
+      release: releaseId,
+      allAuthors: false,
+    });
   }
 </script>
 
@@ -365,7 +378,11 @@
               {onclick}
               disabled={tags.length === 0}
               active={popoverExpanded}
-              title={tags.length === 0 ? "This repo has no tags" : undefined}>
+              title={tagsError
+                ? "Could not read this repo's tags"
+                : tags.length === 0
+                  ? "This repo has no tags"
+                  : undefined}>
               <Icon name="label" />
               <span style:color="var(--color-text-secondary)">
                 {selectedTag ? selectedTag.name : "Select a tag"}

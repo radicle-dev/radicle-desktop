@@ -2,6 +2,7 @@
   import type { ArtifactBinaries } from "@bindings/artifact/ArtifactBinaries";
   import type { ArtifactNodeStatus } from "@bindings/artifact/ArtifactNodeStatus";
 
+  import { poll } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
   import { formatBytes } from "@app/lib/utils";
 
@@ -33,74 +34,66 @@
   // The button itself reports whether the node answers, so this one poll runs
   // whether or not the popover is open. It is a bare liveness check, unlike the
   // stats below.
-  $effect(() => {
-    let cancelled = false;
-
-    const refresh = async () => {
+  $effect(() =>
+    poll(async active => {
+      let running_: boolean;
       try {
-        const running_ = await invoke<boolean>("artifact_node_running");
-        if (!cancelled) {
-          running = running_;
-        }
+        running_ = await invoke<boolean>("artifact_node_running");
       } catch {
-        if (!cancelled) {
-          running = false;
-        }
+        running_ = false;
       }
-    };
+      if (active()) {
+        running = running_;
+      }
+    }, 5000),
+  );
 
-    void refresh();
-    const interval = setInterval(() => void refresh(), 5000);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  });
-
-  // Only polled while the popover is open: the node is a separate process and
-  // its stats are of no use to a collapsed button.
+  // Installed binaries change rarely, so they are checked once per opening.
   $effect(() => {
     if (!popoverExpanded) {
       return;
     }
     let cancelled = false;
-
-    const refresh = async () => {
-      try {
-        const binaries_ = await invoke<ArtifactBinaries>("artifact_binaries");
+    invoke<ArtifactBinaries>("artifact_binaries")
+      .then(binaries_ => {
         if (!cancelled) {
           binaries = binaries_;
         }
-      } catch {
+      })
+      .catch(() => {
         if (!cancelled) {
           binaries = undefined;
         }
-      }
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
 
+  // Only polled while the popover is open: the node is a separate process and
+  // its stats are of no use to a collapsed button. Cleared on close, so a
+  // reopened popover never shows an old snapshot.
+  $effect(() => {
+    if (!popoverExpanded) {
+      status = undefined;
+      return;
+    }
+    return poll(async active => {
       try {
         const status_ = await invoke<ArtifactNodeStatus>(
           "artifact_node_status",
         );
-        if (!cancelled) {
+        if (active()) {
           status = status_;
           running = true;
         }
       } catch {
-        if (!cancelled) {
+        if (active()) {
           status = undefined;
           running = false;
         }
       }
-    };
-
-    void refresh();
-    const interval = setInterval(() => void refresh(), 3000);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
+    }, 3000);
   });
 
   const uptime = $derived.by(() => {

@@ -22,3 +22,28 @@ export function dynamicInterval(
 export function resetDynamicInterval(key: string) {
   dynamicIntervals.delete(key);
 }
+
+// Run `task` now and again `period` ms after each run settles, so a slow call
+// never overlaps the next one. `task` receives a check that turns false once
+// the returned stop function is called, to drop a late result.
+export function poll(
+  task: (active: () => boolean) => Promise<void>,
+  period: number,
+): () => void {
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const active = () => !stopped;
+
+  const run = async () => {
+    await task(active);
+    if (!stopped) {
+      timer = setTimeout(() => void run(), period);
+    }
+  };
+  void run();
+
+  return () => {
+    stopped = true;
+    clearTimeout(timer);
+  };
+}

@@ -6,6 +6,7 @@
   import { listen } from "@tauri-apps/api/event";
 
   import { autoSeed, storeAutoSeed } from "@app/lib/autoSeed";
+  import { poll } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
   import { formatBytes } from "@app/lib/utils";
 
@@ -38,16 +39,20 @@
   }: Props = $props();
 
   let activeTab: "app" | "cli" | "browser" = $state("app");
-  // Mirrors the shared preference locally so the checkbox can bind to it,
-  // writing back through the store so every artifact row agrees.
-  let seedAfterDownload = $state($autoSeed);
-  $effect(() => {
-    storeAutoSeed(seedAfterDownload);
-  });
+  let expanded = $state(false);
   let downloading = $state(false);
   let progress: ArtifactProgress | undefined = $state();
   let downloadError: string | undefined = $state();
   let downloaded = $state(false);
+
+  // Clear the outcome of a finished download once the popover closes, so a
+  // later visit starts fresh.
+  $effect(() => {
+    if (!expanded && !downloading) {
+      downloaded = false;
+      downloadError = undefined;
+    }
+  });
 
   // The node reports byte movement per content id, so a shared event channel
   // is filtered down to this artifact.
@@ -116,7 +121,7 @@
         releaseId,
         cid: artifact.cid,
         dest,
-        seed: seedAfterDownload,
+        seed: $autoSeed,
       });
       downloaded = true;
       // Seeding is the node's state, not ours; ask what actually happened.
@@ -150,30 +155,19 @@
   // The app tab fetches through the artifact node, so it is only offered while
   // the node answers. The CLI and browser tabs do not need it and stay usable.
   let nodeRunning: boolean | undefined = $state();
-  $effect(() => {
-    let cancelled = false;
-
-    const refresh = async () => {
+  $effect(() =>
+    poll(async active => {
+      let running: boolean;
       try {
-        const running = await invoke<boolean>("artifact_node_running");
-        if (!cancelled) {
-          nodeRunning = running;
-        }
+        running = await invoke<boolean>("artifact_node_running");
       } catch {
-        if (!cancelled) {
-          nodeRunning = false;
-        }
+        running = false;
       }
-    };
-
-    void refresh();
-    const interval = setInterval(() => void refresh(), 5000);
-
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  });
+      if (active()) {
+        nodeRunning = running;
+      }
+    }, 5000),
+  );
   const command = $derived(
     `rad artifact -r ${rid} download --cid ${artifact.cid}`,
   );
@@ -263,7 +257,7 @@
   }
 </style>
 
-<Popover placement="bottom-end" popoverPadding="0">
+<Popover placement="bottom-end" popoverPadding="0" bind:expanded>
   {#snippet toggle(onclick)}
     <Button
       {onclick}
@@ -359,7 +353,7 @@
         {/if}
 
         <div class="seed-option">
-          <Checkbox bind:checked={seedAfterDownload}>
+          <Checkbox bind:checked={() => $autoSeed, storeAutoSeed}>
             Seed after downloading
           </Checkbox>
         </div>
@@ -374,7 +368,7 @@
           These downloads are not verified.
         </div>
         <div class="locations">
-          {#each webLocations as location (location.url)}
+          {#each webLocations as location (`${location.user.did}:${location.url}`)}
             <div class="location">
               {#if delegateIds.has(location.user.did)}
                 <DelegateBadge tooltip="Location added by a delegate" />
