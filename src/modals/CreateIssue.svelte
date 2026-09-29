@@ -164,7 +164,6 @@
       bind:this={commentBox}
       textAreaSize="fixed-height"
       disableSubmit={title.trim() === ""}
-      disallowEmptyBody
       styleMinHeight="20rem"
       submitVariant="secondary"
       submitCaption="Save"

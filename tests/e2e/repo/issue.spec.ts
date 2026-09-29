@@ -85,3 +85,67 @@ test("creation of top level comments", async ({ page }) => {
     ),
   ).toBeVisible();
 });
+
+test("create issue with only a title", async ({ page }) => {
+  await page.goto(`/repos/${cobRid}/issues`);
+  await page.getByRole("button", { name: "New" }).click();
+  const save = page.getByRole("button", { name: /^Save/ });
+  await expect(save).toBeDisabled();
+
+  await page.getByPlaceholder("Title").fill("An issue without a description");
+  await expect(save).toBeEnabled();
+  await save.click();
+
+  await expect(page).toHaveURL(/\/issues\/[0-9a-f]{40}/);
+  await expect(
+    page.getByRole("button", { name: "An issue without a description" }),
+  ).toBeVisible();
+});
+
+test("create issue with only a title via shortcut", async ({ page }) => {
+  await page.goto(`/repos/${cobRid}/issues`);
+  await page.getByRole("button", { name: "New" }).click();
+  await page
+    .getByPlaceholder("Title")
+    .fill("An issue without a description via shortcut");
+  await page.getByPlaceholder("Title").press("ControlOrMeta+Enter");
+
+  await expect(page).toHaveURL(/\/issues\/[0-9a-f]{40}/);
+  await expect(
+    page.getByRole("button", {
+      name: "An issue without a description via shortcut",
+    }),
+  ).toBeVisible();
+});
+
+test("shortcut does not create issue without a title", async ({ page }) => {
+  await page.goto(`/repos/${cobRid}/issues`);
+  await page.getByRole("button", { name: "New" }).click();
+  const url = page.url();
+
+  await page.getByPlaceholder("Title").press("ControlOrMeta+Enter");
+  const description = page.getByPlaceholder("Description");
+  await description.fill("A description without a title");
+  await description.press("ControlOrMeta+Enter");
+
+  await page.getByRole("button", { name: "Preview" }).click();
+  await page.keyboard.press("ControlOrMeta+Enter");
+
+  await expect(page.getByText("No title.")).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Save/ })).toBeDisabled();
+  expect(page.url()).toBe(url);
+});
+
+test("shortcut does not submit an empty comment", async ({ page }) => {
+  await page.goto(`/repos/${cobRid}/issues?status=all`);
+  await page.getByText("This title has **markdown**").click();
+  const comments = page.locator(".comments");
+  await expect(comments).toHaveCount(2);
+
+  const input = page.getByPlaceholder("Leave a comment");
+  await input.fill("   ");
+  await input.press("ControlOrMeta+Enter");
+
+  await expect(input).toHaveValue("   ");
+  await expect(comments).toHaveCount(2);
+});

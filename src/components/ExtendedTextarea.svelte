@@ -439,7 +439,7 @@
     if (!preview) return;
     if (matchesShortcut(event, "submit")) {
       event.preventDefault();
-      void submit({ comment: body, embeds });
+      triggerSubmit();
     }
   }}>
   <div class="textarea-wrap">
@@ -463,7 +463,7 @@
         bind:selectionStart
         onpaste={handlePaste}
         {focus}
-        submit={() => submit({ comment: body, embeds })}
+        submit={async () => triggerSubmit()}
         bind:value={body}
         {placeholder} />
       {#if !hints.isDismissed("markdown")}
