@@ -408,6 +408,29 @@
     }
   }
 
+  // Content ids with a stop request in flight, and the last one that failed.
+  let unseeding = $state<Set<string>>(new Set());
+  let unseedFailed: string | undefined = $state();
+
+  async function stopSeeding(cid: string) {
+    unseeding = new Set([...unseeding, cid]);
+    unseedFailed = undefined;
+    try {
+      await invoke("unseed_artifact", {
+        rid: repo.rid,
+        releaseId: release.id,
+        cid,
+      });
+    } catch (error) {
+      console.error("Stopping seeding failed", error);
+      unseedFailed = cid;
+    } finally {
+      unseeding = new Set([...unseeding].filter(c => c !== cid));
+      await refreshSeeded();
+      await reload();
+    }
+  }
+
   $effect(() => {
     // Re-ask when the route lands on another release.
     void release.id;
@@ -703,6 +726,9 @@
     gap: 0.25rem;
     color: var(--color-text-tertiary);
     white-space: nowrap;
+  }
+  .unseed-error {
+    color: var(--color-foreground-red);
   }
   .contributor {
     display: inline-flex;
@@ -1130,6 +1156,17 @@
                     <Icon name="parcel" />
                     Seeding
                   </span>
+                  <Button
+                    variant="naked"
+                    styleHeight="1.5rem"
+                    disabled={unseeding.has(artifact.cid)}
+                    title="Stop serving this artifact from your node"
+                    onclick={() => stopSeeding(artifact.cid)}>
+                    {unseeding.has(artifact.cid) ? "Stopping…" : "Stop seeding"}
+                  </Button>
+                {/if}
+                {#if unseedFailed === artifact.cid}
+                  <span class="unseed-error">Could not stop seeding.</span>
                 {/if}
                 <!-- The release creator is named in the header, so an artifact
                    only names its own author when somebody else contributed it. -->

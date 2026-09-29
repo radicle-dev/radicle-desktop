@@ -78,6 +78,7 @@ pub fn run() {
             cob::release::artifact_node_status,
             cob::release::seeded_artifacts,
             cob::release::seed_artifact,
+            cob::release::unseed_artifact,
             cob::release::download_artifact,
             cob::save_embed_by_bytes,
             cob::save_embed_by_clipboard,

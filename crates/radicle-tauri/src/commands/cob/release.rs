@@ -194,6 +194,16 @@ pub async fn seed_artifact(
     .await
 }
 
+#[tauri::command]
+pub async fn unseed_artifact(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    release_id: String,
+    cid: String,
+) -> Result<(), Error> {
+    blocking(ctx, move |ctx| ctx.unseed_artifact(rid, release_id, cid)).await
+}
+
 /// Download an artifact to `dest`, forwarding the node's progress frames to
 /// the frontend as `artifact_progress` events keyed by content id.
 #[tauri::command]
