@@ -7,7 +7,7 @@ use radicle::identity::{Did, RepoId};
 use radicle::storage::ReadStorage;
 use url::Url;
 
-use radicle_artifact::{Cid, ReleaseId, Releases as ArtifactStore, cache_db_path};
+use radicle_artifact::{Cid, Releases as ArtifactStore, cache_db_path};
 use radicle_artifact_client::sync::Client;
 use radicle_artifact_client::{DownloadArgs, default_socket};
 use radicle_artifact_core::cid as cid_utils;
@@ -16,7 +16,7 @@ use radicle_artifact_core::protocol::{FetchLocation, FetchProgress, ImportMode};
 
 use crate::artifact::ArtifactNodeStatus;
 use crate::error::Error;
-use crate::traits::release_mut::ReleasesMut;
+use crate::traits::release_mut::{ReleasesMut, parse_cid};
 
 /// Per-frame idle timeout for streaming calls. This bounds the wait for each
 /// progress frame, not the whole transfer, so a download that keeps making
@@ -101,38 +101,27 @@ pub trait ArtifactNode: ReleasesMut {
             .collect())
     }
 
-    /// Whether the node currently seeds this artifact for the repository.
-    fn is_seeding_artifact(&self, rid: RepoId, cid: String) -> Result<bool, Error> {
-        let cid = Cid::from_str(&cid)
-            .map_err(|err| radicle_artifact_core::Error::Cid(err.to_string()))?;
-
-        Ok(self.artifact_client().is_seeding(rid, cid)?)
-    }
-
-    /// The locations recorded on the COB for one artifact, keyed by the node
-    /// that contributed them.
+    /// The locations recorded for one artifact, keyed by the node that
+    /// contributed them.
+    ///
+    /// Unioned across every release carrying the content id, since peers who
+    /// each created a release for the same commit before syncing split its
+    /// locations between their COBs.
     fn artifact_locations(
         &self,
         rid: RepoId,
-        release_id: String,
-        cid: String,
+        cid: &Cid,
     ) -> Result<BTreeMap<Did, BTreeSet<Url>>, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let id = ReleaseId::from_str(&release_id)?;
-        let cid = Cid::from_str(&cid)
-            .map_err(|err| radicle_artifact_core::Error::Cid(err.to_string()))?;
-
         let store = ArtifactStore::open_cached(&repo, cache_db_path(profile.cobs()))?;
-        let Some(release) = store.get(&id)? else {
-            return Ok(BTreeMap::new());
-        };
 
-        Ok(release
-            .artifacts()
-            .get(&cid)
-            .map(|artifact| artifact.locations().clone())
-            .unwrap_or_default())
+        let mut locations: BTreeMap<Did, BTreeSet<Url>> = BTreeMap::new();
+        for (_, did, url) in store.locations_for(cid)? {
+            locations.entry(did).or_default().insert(url);
+        }
+
+        Ok(locations)
     }
 
     /// Import a local file into the node and seed it, then announce the node's
@@ -144,8 +133,7 @@ pub trait ArtifactNode: ReleasesMut {
         cid: String,
         source_path: PathBuf,
     ) -> Result<String, Error> {
-        let parsed = Cid::from_str(&cid)
-            .map_err(|err| radicle_artifact_core::Error::Cid(err.to_string()))?;
+        let parsed = parse_cid(&cid)?;
         let kind = cid_utils::artifact_kind(&parsed)?;
         let release = *radicle::cob::ObjectId::from_str(&release_id)?;
 
@@ -168,17 +156,13 @@ pub trait ArtifactNode: ReleasesMut {
 
     /// Stop seeding an artifact and withdraw the location this node announced.
     fn unseed_artifact(&self, rid: RepoId, release_id: String, cid: String) -> Result<(), Error> {
-        let parsed = Cid::from_str(&cid)
-            .map_err(|err| radicle_artifact_core::Error::Cid(err.to_string()))?;
+        let parsed = parse_cid(&cid)?;
         let release = *radicle::cob::ObjectId::from_str(&release_id)?;
 
         // Drop the COB location first, so peers stop trying to reach us before
         // the bytes stop being served.
         let our_did = Did::from(self.profile().public_key);
-        let url = EndpointId::try_from(&our_did)
-            .map_err(|err| radicle_artifact_core::Error::Cid(err.to_string()))?
-            .to_url()
-            .to_string();
+        let url = EndpointId::try_from(&our_did)?.to_url().to_string();
         self.remove_location(rid, release_id, cid, url)?;
 
         // Untag only this release's seed, so other releases sharing the CID
@@ -229,14 +213,13 @@ pub trait ArtifactNode: ReleasesMut {
         seed: bool,
         on_progress: impl FnMut(&FetchProgress),
     ) -> Result<(), Error> {
-        let parsed = Cid::from_str(&cid)
-            .map_err(|err| radicle_artifact_core::Error::Cid(err.to_string()))?;
+        let parsed = parse_cid(&cid)?;
         let seed = seed
             .then(|| radicle::cob::ObjectId::from_str(&release_id))
             .transpose()?
             .map(|id| *id);
 
-        let locations = self.artifact_locations(rid, release_id, cid)?;
+        let locations = self.artifact_locations(rid, &parsed)?;
 
         self.artifact_client().download(
             DownloadArgs {

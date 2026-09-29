@@ -76,41 +76,6 @@ pub async fn register_artifact(
 }
 
 #[tauri::command]
-pub async fn add_artifact_location(
-    ctx: tauri::State<'_, AppState>,
-    rid: identity::RepoId,
-    release_id: String,
-    cid: String,
-    url: String,
-) -> Result<(), Error> {
-    blocking(ctx, move |ctx| ctx.add_location(rid, release_id, cid, url)).await
-}
-
-#[tauri::command]
-pub async fn remove_artifact_location(
-    ctx: tauri::State<'_, AppState>,
-    rid: identity::RepoId,
-    release_id: String,
-    cid: String,
-    url: String,
-) -> Result<(), Error> {
-    blocking(ctx, move |ctx| {
-        ctx.remove_location(rid, release_id, cid, url)
-    })
-    .await
-}
-
-#[tauri::command]
-pub async fn attest_artifact(
-    ctx: tauri::State<'_, AppState>,
-    rid: identity::RepoId,
-    release_id: String,
-    cid: String,
-) -> Result<(), Error> {
-    blocking(ctx, move |ctx| ctx.attest_artifact(rid, release_id, cid)).await
-}
-
-#[tauri::command]
 pub async fn set_artifact_metadata(
     ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,
@@ -216,15 +181,6 @@ pub async fn seeded_artifacts(
 }
 
 #[tauri::command]
-pub async fn is_seeding_artifact(
-    ctx: tauri::State<'_, AppState>,
-    rid: identity::RepoId,
-    cid: String,
-) -> Result<bool, Error> {
-    blocking(ctx, move |ctx| ctx.is_seeding_artifact(rid, cid)).await
-}
-
-#[tauri::command]
 pub async fn seed_artifact(
     ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,
@@ -236,16 +192,6 @@ pub async fn seed_artifact(
         ctx.seed_artifact(rid, release_id, cid, source_path)
     })
     .await
-}
-
-#[tauri::command]
-pub async fn unseed_artifact(
-    ctx: tauri::State<'_, AppState>,
-    rid: identity::RepoId,
-    release_id: String,
-    cid: String,
-) -> Result<(), Error> {
-    blocking(ctx, move |ctx| ctx.unseed_artifact(rid, release_id, cid)).await
 }
 
 /// Download an artifact to `dest`, forwarding the node's progress frames to

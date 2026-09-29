@@ -140,15 +140,6 @@ pub fn router(ctx: Context) -> Router {
         )
         .route("/register_artifact", post(register_artifact_handler))
         .route(
-            "/add_artifact_location",
-            post(add_artifact_location_handler),
-        )
-        .route(
-            "/remove_artifact_location",
-            post(remove_artifact_location_handler),
-        )
-        .route("/attest_artifact", post(attest_artifact_handler))
-        .route(
             "/set_artifact_metadata",
             post(set_artifact_metadata_handler),
         )
@@ -164,9 +155,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/artifact_binaries", post(artifact_binaries_handler))
         .route("/artifact_node_status", post(artifact_node_status_handler))
         .route("/seeded_artifacts", post(seeded_artifacts_handler))
-        .route("/is_seeding_artifact", post(is_seeding_artifact_handler))
         .route("/seed_artifact", post(seed_artifact_handler))
-        .route("/unseed_artifact", post(unseed_artifact_handler))
         .route("/download_artifact", post(download_artifact_handler))
         .route("/list_jobs", post(jobs_handler))
         .route("/list_notifications", post(list_notifications_handler))
@@ -814,64 +803,6 @@ async fn register_artifact_handler(
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct ArtifactLocationBody {
-    pub rid: identity::RepoId,
-    pub release_id: String,
-    pub cid: String,
-    pub url: String,
-}
-
-async fn add_artifact_location_handler(
-    State(ctx): State<Context>,
-    Json(ArtifactLocationBody {
-        rid,
-        release_id,
-        cid,
-        url,
-    }): Json<ArtifactLocationBody>,
-) -> impl IntoResponse {
-    ctx.add_location(rid, release_id, cid, url)?;
-
-    Ok::<_, Error>(Json(()))
-}
-
-async fn remove_artifact_location_handler(
-    State(ctx): State<Context>,
-    Json(ArtifactLocationBody {
-        rid,
-        release_id,
-        cid,
-        url,
-    }): Json<ArtifactLocationBody>,
-) -> impl IntoResponse {
-    ctx.remove_location(rid, release_id, cid, url)?;
-
-    Ok::<_, Error>(Json(()))
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct AttestArtifactBody {
-    pub rid: identity::RepoId,
-    pub release_id: String,
-    pub cid: String,
-}
-
-async fn attest_artifact_handler(
-    State(ctx): State<Context>,
-    Json(AttestArtifactBody {
-        rid,
-        release_id,
-        cid,
-    }): Json<AttestArtifactBody>,
-) -> impl IntoResponse {
-    ctx.attest_artifact(rid, release_id, cid)?;
-
-    Ok::<_, Error>(Json(()))
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct SetArtifactMetadataBody {
     pub rid: identity::RepoId,
     pub release_id: String,
@@ -957,13 +888,6 @@ async fn artifact_node_status_handler(State(ctx): State<Context>) -> impl IntoRe
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct IsSeedingArtifactBody {
-    pub rid: identity::RepoId,
-    pub cid: String,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct SeededArtifactsBody {
     pub rid: identity::RepoId,
 }
@@ -975,15 +899,6 @@ async fn seeded_artifacts_handler(
     let seeded = ctx.seeded_artifacts(rid)?;
 
     Ok::<_, Error>(Json(seeded))
-}
-
-async fn is_seeding_artifact_handler(
-    State(ctx): State<Context>,
-    Json(IsSeedingArtifactBody { rid, cid }): Json<IsSeedingArtifactBody>,
-) -> impl IntoResponse {
-    let seeding = ctx.is_seeding_artifact(rid, cid)?;
-
-    Ok::<_, Error>(Json(seeding))
 }
 
 #[derive(Serialize, Deserialize)]
@@ -1007,27 +922,6 @@ async fn seed_artifact_handler(
     let url = ctx.seed_artifact(rid, release_id, cid, source_path)?;
 
     Ok::<_, Error>(Json(url))
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct UnseedArtifactBody {
-    pub rid: identity::RepoId,
-    pub release_id: String,
-    pub cid: String,
-}
-
-async fn unseed_artifact_handler(
-    State(ctx): State<Context>,
-    Json(UnseedArtifactBody {
-        rid,
-        release_id,
-        cid,
-    }): Json<UnseedArtifactBody>,
-) -> impl IntoResponse {
-    ctx.unseed_artifact(rid, release_id, cid)?;
-
-    Ok::<_, Error>(Json(()))
 }
 
 #[derive(Serialize, Deserialize)]

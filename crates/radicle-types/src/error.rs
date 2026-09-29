@@ -206,9 +206,9 @@ pub enum Error {
     #[error(transparent)]
     ArtifactRedact(#[from] radicle_artifact::error::Redact),
 
-    /// Content id error.
+    /// Artifact content id, key or I/O error.
     #[error(transparent)]
-    Cid(#[from] radicle_artifact_core::Error),
+    ArtifactCore(#[from] radicle_artifact_core::Error),
 
     /// Object id parse error.
     #[error(transparent)]
@@ -249,11 +249,6 @@ impl Error {
             }
             Error::FileTooLarge(_) => "PayloadError.TooLarge",
             Error::ReviewExists => "PatchError.ReviewExists",
-            // A missing socket is how a node that is not running presents, so
-            // the UI can offer setup guidance instead of a raw I/O error.
-            Error::ArtifactClient(radicle_artifact_client::ClientError::Io(_)) => {
-                "ArtifactNodeError.NotRunning"
-            }
             _ => "UnknownError",
         }
     }

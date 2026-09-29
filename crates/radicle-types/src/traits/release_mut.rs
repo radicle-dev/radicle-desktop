@@ -14,7 +14,7 @@ use crate::traits::release::Releases;
 
 /// Parse a content id, folding the multiformats parse error into our own so
 /// the rest of the app need not depend on the `cid` crate.
-fn parse_cid(cid: &str) -> Result<Cid, Error> {
+pub(crate) fn parse_cid(cid: &str) -> Result<Cid, Error> {
     Cid::from_str(cid).map_err(|err| radicle_artifact_core::Error::Cid(err.to_string()).into())
 }
 
@@ -153,27 +153,6 @@ pub trait ReleasesMut: Releases {
         let mut releases = ArtifactStore::open(&repo)?;
         let mut release = releases.get_mut(&id)?;
         release.remove_location(cid, url, &signer)?;
-
-        Ok(())
-    }
-
-    /// Vouch that the artifact's bytes match its content id.
-    fn attest_artifact(
-        &self,
-        rid: identity::RepoId,
-        release_id: String,
-        cid: String,
-    ) -> Result<(), Error> {
-        let profile = self.profile();
-        let signer = profile.signer()?;
-        let repo = profile.storage.repository(rid)?;
-
-        let id = ReleaseId::from_str(&release_id)?;
-        let cid = parse_cid(&cid)?;
-
-        let mut releases = ArtifactStore::open(&repo)?;
-        let mut release = releases.get_mut(&id)?;
-        release.attest(cid, &signer)?;
 
         Ok(())
     }
