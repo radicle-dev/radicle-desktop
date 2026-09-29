@@ -76,6 +76,20 @@ pub async fn register_artifact(
 }
 
 #[tauri::command]
+pub async fn attest_artifact(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    release_id: String,
+    cid: String,
+    path: std::path::PathBuf,
+) -> Result<(), Error> {
+    blocking(ctx, move |ctx| {
+        ctx.attest_artifact(rid, release_id, cid, path)
+    })
+    .await
+}
+
+#[tauri::command]
 pub async fn set_artifact_metadata(
     ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,

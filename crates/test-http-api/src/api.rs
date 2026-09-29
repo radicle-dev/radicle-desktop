@@ -139,6 +139,7 @@ pub fn router(ctx: Context) -> Router {
             post(create_or_open_release_handler),
         )
         .route("/register_artifact", post(register_artifact_handler))
+        .route("/attest_artifact", post(attest_artifact_handler))
         .route(
             "/set_artifact_metadata",
             post(set_artifact_metadata_handler),
@@ -798,6 +799,29 @@ async fn register_artifact_handler(
     }): Json<RegisterArtifactBody>,
 ) -> impl IntoResponse {
     ctx.register_artifact(rid, release_id, cid, name, size_bytes)?;
+
+    Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AttestArtifactBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub path: std::path::PathBuf,
+}
+
+async fn attest_artifact_handler(
+    State(ctx): State<Context>,
+    Json(AttestArtifactBody {
+        rid,
+        release_id,
+        cid,
+        path,
+    }): Json<AttestArtifactBody>,
+) -> impl IntoResponse {
+    ctx.attest_artifact(rid, release_id, cid, path)?;
 
     Ok::<_, Error>(Json(()))
 }

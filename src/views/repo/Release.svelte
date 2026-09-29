@@ -8,7 +8,7 @@
 
   import { slide } from "svelte/transition";
 
-  import { invoke } from "@app/lib/invoke";
+  import { invoke, InvokeError } from "@app/lib/invoke";
   import { show } from "@app/lib/modal";
   import * as router from "@app/lib/router";
   import {
@@ -405,6 +405,45 @@
     } catch {
       // A node that is down seeds nothing we can confirm, so claim nothing.
       seededCids = new Set();
+    }
+  }
+
+  // Attesting means reproducing the artifact: the backend hashes a local build
+  // and signs only when it arrives at the same content id.
+  let attesting: string | undefined = $state();
+  let attestError: { cid: string; message: string } | undefined = $state();
+
+  async function attest(cid: string, kind: "file" | "directory") {
+    closeFocused();
+    const path =
+      kind === "file"
+        ? (await invoke<string[] | null>("pick_artifact_files"))?.[0]
+        : await invoke<string | null>("pick_artifact_directory");
+    if (!path) {
+      return;
+    }
+
+    attesting = cid;
+    attestError = undefined;
+    try {
+      await invoke("attest_artifact", {
+        rid: repo.rid,
+        releaseId: release.id,
+        cid,
+        path,
+      });
+    } catch (error) {
+      attestError = {
+        cid,
+        message:
+          error instanceof InvokeError &&
+          error.code === "ArtifactError.CidMismatch"
+            ? "Your build has a different content id, so it was not attested."
+            : "Attesting failed.",
+      };
+    } finally {
+      attesting = undefined;
+      await reload();
     }
   }
 
@@ -1346,7 +1385,46 @@
                     <div class="section-title">
                       Attestations
                       <span class="section-count">{attestations.length}</span>
+                      {#if !attestations.some(a => a.did === ownDid)}
+                        <Popover placement="bottom-end" popoverPadding="0">
+                          {#snippet toggle(onclick)}
+                            <Button
+                              variant="naked"
+                              styleHeight="1.5rem"
+                              disabled={attesting === artifact.cid}
+                              title="Attest that your own build has the same content id"
+                              {onclick}>
+                              <Icon name="checkmark" />
+                              {attesting === artifact.cid
+                                ? "Attesting…"
+                                : "Attest"}
+                            </Button>
+                          {/snippet}
+                          {#snippet popover()}
+                            <div class="add-menu">
+                              <Button
+                                variant="naked"
+                                styleWidth="100%"
+                                styleJustifyContent="flex-start"
+                                onclick={() => attest(artifact.cid, "file")}>
+                                <Icon name="attach" />Choose your build…
+                              </Button>
+                              <Button
+                                variant="naked"
+                                styleWidth="100%"
+                                styleJustifyContent="flex-start"
+                                onclick={() =>
+                                  attest(artifact.cid, "directory")}>
+                                <Icon name="folder" />Choose a build directory…
+                              </Button>
+                            </div>
+                          {/snippet}
+                        </Popover>
+                      {/if}
                     </div>
+                    {#if attestError?.cid === artifact.cid}
+                      <div class="meta-error">{attestError.message}</div>
+                    {/if}
                     {#if attestations.length === 0}
                       <div class="empty-section">
                         Nobody has attested to this artifact

@@ -249,6 +249,9 @@ impl Error {
             }
             Error::FileTooLarge(_) => "PayloadError.TooLarge",
             Error::ReviewExists => "PatchError.ReviewExists",
+            Error::ArtifactCore(radicle_artifact_core::Error::CidMismatch { .. }) => {
+                "ArtifactError.CidMismatch"
+            }
             _ => "UnknownError",
         }
     }

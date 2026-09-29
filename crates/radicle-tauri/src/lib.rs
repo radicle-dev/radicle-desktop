@@ -67,6 +67,7 @@ pub fn run() {
             cob::release::compute_artifact_cid,
             cob::release::create_or_open_release,
             cob::release::register_artifact,
+            cob::release::attest_artifact,
             cob::release::set_artifact_metadata,
             cob::release::remove_artifact_metadata,
             cob::release::redact_artifact,

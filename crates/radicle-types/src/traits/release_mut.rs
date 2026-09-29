@@ -157,6 +157,37 @@ pub trait ReleasesMut: Releases {
         Ok(())
     }
 
+    /// Vouch for an artifact by reproducing it: hash a local build at `path`
+    /// and sign an attestation only when it arrives at the same content id.
+    fn attest_artifact(
+        &self,
+        rid: identity::RepoId,
+        release_id: String,
+        cid: String,
+        path: PathBuf,
+    ) -> Result<(), Error> {
+        let id = ReleaseId::from_str(&release_id)?;
+        let expected = parse_cid(&cid)?;
+        let actual = parse_cid(&self.compute_artifact_cid(path)?.cid)?;
+        if actual != expected {
+            return Err(radicle_artifact_core::Error::CidMismatch {
+                expected: expected.to_string(),
+                actual: actual.to_string(),
+            }
+            .into());
+        }
+
+        let profile = self.profile();
+        let signer = profile.signer()?;
+        let repo = profile.storage.repository(rid)?;
+
+        let mut releases = ArtifactStore::open(&repo)?;
+        let mut release = releases.get_mut(&id)?;
+        release.attest(expected, &signer)?;
+
+        Ok(())
+    }
+
     /// Set a free-form metadata key on an artifact.
     fn set_artifact_metadata(
         &self,
