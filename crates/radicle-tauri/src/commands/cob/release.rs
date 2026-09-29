@@ -26,12 +26,12 @@ pub(crate) async fn list_releases(
 }
 
 #[tauri::command]
-pub(crate) fn release_by_id(
-    ctx: tauri::State<AppState>,
+pub(crate) async fn release_by_id(
+    ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,
     id: git::Oid,
 ) -> Result<Option<types::cobs::release::Release>, Error> {
-    ctx.release_by_id(rid, id)
+    blocking(ctx, move |ctx| ctx.release_by_id(rid, id)).await
 }
 
 #[tauri::command]
