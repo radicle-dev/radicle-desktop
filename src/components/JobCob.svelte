@@ -178,7 +178,7 @@
 
   // Held in a `$derived`; see `ReviewCodeThread`. The TTL here means a re-run
   // would refetch and blank the chip.
-  const jobsPromise = $derived(cachedListJobs(rid, commit));
+  const jobsPromise = $derived(cachedListJobs(rid, commit).catch(() => []));
 
   function toggleNode(key: string) {
     if (collapsed.has(key)) {
