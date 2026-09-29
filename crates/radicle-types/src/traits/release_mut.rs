@@ -245,3 +245,41 @@ pub trait ReleasesMut: Releases {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod test {
+    use radicle::crypto::{Seed, SigningKey};
+    use radicle::storage::ReadStorage;
+    use radicle::test::fixtures;
+
+    use radicle_artifact::Releases as ArtifactStore;
+
+    use super::ReleasesMut;
+    use crate::{AppState, test};
+
+    #[test]
+    fn create_or_open_release_skips_other_creators() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(&tmp.path().join("home"), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+        let (rid, _, _, head) =
+            fixtures::project(tmp.path().join("project"), &profile.storage, &signer).unwrap();
+        let oid = radicle::git::Oid::from(head);
+
+        // Another peer releases the same commit first.
+        let other = SigningKey::from_seed(Seed::new([0xee; 32]));
+        let repo = profile.storage.repository(rid).unwrap();
+        let theirs = *ArtifactStore::open(&repo)
+            .unwrap()
+            .create(oid, None, &other)
+            .unwrap()
+            .id();
+
+        let state = AppState { profile };
+        let ours = state.create_or_open_release(rid, oid, None).unwrap();
+
+        assert_ne!(ours, theirs.to_string());
+        assert_eq!(state.create_or_open_release(rid, oid, None).unwrap(), ours);
+    }
+}
