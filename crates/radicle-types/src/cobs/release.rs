@@ -1,7 +1,8 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use radicle::cob;
 use radicle::git;
+use radicle::identity::Did;
 use radicle::node::AliasStore;
 use radicle::storage::git::Repository;
 use serde::Serialize;
@@ -63,6 +64,8 @@ pub struct Artifact {
     pub locations: Vec<Location>,
     pub attestations: Vec<cobs::Author>,
     pub redactions: Vec<Redaction>,
+    /// Whether its author or a delegate redacted it, which hides it by default.
+    pub redacted: bool,
     #[ts(type = "Record<string, unknown>")]
     pub metadata: BTreeMap<String, serde_json::Value>,
 }
@@ -71,6 +74,7 @@ impl Artifact {
     pub fn new(
         cid: &radicle_artifact::Cid,
         artifact: &radicle_artifact::Artifact,
+        delegates: &BTreeSet<Did>,
         aliases: &impl AliasStore,
     ) -> Self {
         Self {
@@ -100,6 +104,7 @@ impl Artifact {
                     reason: reason.clone(),
                 })
                 .collect(),
+            redacted: artifact.is_redacted_by_trusted(delegates),
             metadata: artifact.metadata().clone(),
         }
     }

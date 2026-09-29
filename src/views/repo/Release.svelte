@@ -15,6 +15,7 @@
     authorForNodeId,
     basename,
     didFromPublicKey,
+    formatBytes,
     shortenCids,
   } from "@app/lib/utils";
 
@@ -66,14 +67,6 @@
   // An artifact redacted by its own author or a delegate is hidden by default.
   let showRedacted = $state(false);
 
-  // Whether the artifact was redacted by a trusted party (its author or a
-  // delegate), mirroring the backend's default-hidden rule.
-  function redactedByTrusted(artifact: Artifact, delegates: Set<string>) {
-    return artifact.redactions.some(
-      r => r.user.did === artifact.author.did || delegates.has(r.user.did),
-    );
-  }
-
   // Label for the redacted badge. Delegate takes precedence over author,
   // since the author may also be a delegate.
   function redactedByLabel(artifact: Artifact, delegates: Set<string>): string {
@@ -82,12 +75,8 @@
   }
 
   // Artifacts visible under the given redaction toggle.
-  function visible(
-    list: Artifact[],
-    show: boolean,
-    delegates: Set<string>,
-  ): Artifact[] {
-    return show ? list : list.filter(a => !redactedByTrusted(a, delegates));
+  function visible(list: Artifact[], show: boolean): Artifact[] {
+    return show ? list : list.filter(a => !a.redacted);
   }
 
   const delegateArtifacts = $derived(
@@ -101,40 +90,24 @@
       ? release.artifacts
       : delegateArtifacts,
   );
-  const shownArtifacts = $derived(
-    visible(authorArtifacts, showRedacted, delegateIds),
-  );
+  const shownArtifacts = $derived(visible(authorArtifacts, showRedacted));
   // The redacted count is the hidden set within the current author scope.
   const redactedCount = $derived(
-    authorArtifacts.filter(a => redactedByTrusted(a, delegateIds)).length,
+    authorArtifacts.filter(a => a.redacted).length,
   );
 
   // Segment counts reflect what each choice would actually show, so an
   // artifact hidden as redacted never counts towards a scope.
   const delegateCount = $derived(
-    visible(delegateArtifacts, showRedacted, delegateIds).length,
+    visible(delegateArtifacts, showRedacted).length,
   );
-  const allCount = $derived(
-    visible(release.artifacts, showRedacted, delegateIds).length,
-  );
+  const allCount = $derived(visible(release.artifacts, showRedacted).length);
 
   // Filter only when both scopes hold something.
   const showFilters = $derived(
     delegateArtifacts.length > 0 &&
       delegateArtifacts.length !== release.artifacts.length,
   );
-
-  // Format a byte count as a human-readable size (mirrors the CLI display).
-  function formatBytes(bytes: number): string {
-    const units = ["B", "KiB", "MiB", "GiB", "TiB"];
-    let value = bytes;
-    let i = 0;
-    while (value >= 1024 && i < units.length - 1) {
-      value /= 1024;
-      i += 1;
-    }
-    return `${i === 0 ? value : value.toFixed(1)} ${units[i]}`;
-  }
 
   function artifactSize(artifact: Artifact): string | undefined {
     const size = artifact.metadata[SIZE_KEY];
@@ -338,7 +311,10 @@
 
   async function addFiles() {
     closeFocused();
-    await addArtifacts(await invoke<string[]>("pick_artifact_files"));
+    const paths = await invoke<string[] | null>("pick_artifact_files");
+    if (paths) {
+      await addArtifacts(paths);
+    }
   }
 
   async function addDirectory() {
@@ -1105,7 +1081,7 @@
                       {#if artifactName}
                         <span class="filename">{artifact.name}</span>
                       {/if}
-                      {#if redactedByTrusted(artifact, delegateIds)}
+                      {#if artifact.redacted}
                         <span class="redacted-badge">
                           {redactedByLabel(artifact, delegateIds)}
                         </span>

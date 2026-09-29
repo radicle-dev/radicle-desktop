@@ -8,6 +8,7 @@ import type { Review } from "@bindings/cob/patch/Review";
 import type { Revision } from "@bindings/cob/patch/Revision";
 import type { Release } from "@bindings/cob/release/Release";
 import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
+import type { ReleaseFilter } from "@bindings/cob/release/ReleaseFilter";
 import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Config } from "@bindings/config/Config";
 import type { Diff } from "@bindings/diff/Diff";
@@ -515,7 +516,10 @@ export async function loadReleases(
     }),
     invoke<PaginatedQuery<Release[]>>("list_releases", {
       rid: route.rid,
-      filter: { allAuthors: route.allAuthors },
+      filter: {
+        allAuthors: route.allAuthors,
+        showRedacted: false,
+      } satisfies ReleaseFilter,
       skip: 0,
       take: RELEASES_PER_PAGE,
     }),

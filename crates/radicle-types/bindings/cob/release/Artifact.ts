@@ -16,5 +16,9 @@ export type Artifact = {
   locations: Array<Location>;
   attestations: Array<Author>;
   redactions: Array<Redaction>;
+  /**
+   * Whether its author or a delegate redacted it, which hides it by default.
+   */
+  redacted: boolean;
   metadata: Record<string, unknown>;
 };

@@ -12,8 +12,10 @@ use crate::error::Error;
 use crate::traits::Profile;
 
 /// How far the caller widened the default, delegate-scoped release view.
-#[derive(Clone, Copy, Default, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Copy, Default, serde::Serialize, serde::Deserialize, ts_rs::TS)]
 #[serde(rename_all = "camelCase", default)]
+#[ts(export)]
+#[ts(export_to = "cob/release/")]
 pub struct ReleaseFilter {
     /// Include releases and artifacts authored by non-delegates.
     pub all_authors: bool,
@@ -41,7 +43,7 @@ pub trait Releases: Profile {
     ///
     /// Scoped to releases created by a delegate and artifacts authored by a
     /// delegate (hiding those redacted by a trusted party) unless widened with
-    /// `filter`. A release whose artifacts were all redacted is hidden with
+    /// `filter`. A release with no delegate artifact shows every author's. A release whose artifacts were all redacted is hidden with
     /// them; a release with no artifacts is shown. This is the view
     /// `rad-artifact list` gives. Without `take` the full list is returned and
     /// `skip` is ignored.
@@ -67,13 +69,29 @@ pub trait Releases: Profile {
             .filter_map(Result::ok)
             .filter(|(_, release)| filters.shows_release(release));
 
+        // With no delegate artifact left to show, fall back to every author,
+        // as the release page does, so a teaser never counts fewer artifacts
+        // than its page lists.
+        let fallback = ReleaseFilter {
+            all_authors: true,
+            ..filter
+        };
+        let fallback = fallback.filters(store.delegates());
         let summary = |(id, release): (radicle::cob::ObjectId, radicle_artifact::Release)| {
-            let artifacts = release
-                .artifacts()
-                .iter()
-                .filter(|(_, artifact)| filters.shows_artifact(artifact))
-                .map(|(cid, artifact)| cobs::release::Artifact::new(cid, artifact, &aliases))
-                .collect::<Vec<_>>();
+            let shown = |filters: &Filters| {
+                release
+                    .artifacts()
+                    .iter()
+                    .filter(|(_, artifact)| filters.shows_artifact(artifact))
+                    .map(|(cid, artifact)| {
+                        cobs::release::Artifact::new(cid, artifact, store.delegates(), &aliases)
+                    })
+                    .collect::<Vec<_>>()
+            };
+            let mut artifacts = shown(&filters);
+            if artifacts.is_empty() && !filter.all_authors {
+                artifacts = shown(&fallback);
+            }
 
             cobs::release::Release::new(ReleaseId::from(id), &release, &repo, &aliases, artifacts)
         };
@@ -121,7 +139,9 @@ pub trait Releases: Profile {
             let artifacts = release
                 .artifacts()
                 .iter()
-                .map(|(cid, artifact)| cobs::release::Artifact::new(cid, artifact, &aliases))
+                .map(|(cid, artifact)| {
+                    cobs::release::Artifact::new(cid, artifact, store.delegates(), &aliases)
+                })
                 .collect::<Vec<_>>();
 
             cobs::release::Release::new(ReleaseId::from(id), &release, &repo, &aliases, artifacts)

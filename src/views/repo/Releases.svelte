@@ -2,6 +2,7 @@
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Release } from "@bindings/cob/release/Release";
   import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
+  import type { ReleaseFilter } from "@bindings/cob/release/ReleaseFilter";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { RELEASES_PER_PAGE } from "@app/views/repo/router";
@@ -45,7 +46,7 @@
     fetchPage: (skip, take) =>
       invoke<PaginatedQuery<Release[]>>("list_releases", {
         rid: repo.rid,
-        filter: { allAuthors },
+        filter: { allAuthors, showRedacted: false } satisfies ReleaseFilter,
         skip,
         take,
       }),
