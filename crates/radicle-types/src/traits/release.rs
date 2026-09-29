@@ -4,7 +4,8 @@ use radicle::identity::Did;
 use radicle::storage::ReadStorage;
 use radicle::{git, identity};
 
-use radicle_artifact::{Artifact, ReleaseId, Releases as ArtifactStore, cache_db_path};
+use radicle_artifact::trust::Trust;
+use radicle_artifact::{Filters, ReleaseId, Releases as ArtifactStore, cache_db_path};
 
 use crate::cobs;
 use crate::error::Error;
@@ -21,24 +22,17 @@ pub struct ReleaseFilter {
 }
 
 impl ReleaseFilter {
-    /// Whether an artifact is shown under this view: authored by a delegate
-    /// (or `all_authors`), and not redacted by its author or a delegate (or
-    /// `show_redacted`).
-    fn show_artifact(&self, artifact: &Artifact, delegates: &BTreeSet<Did>) -> bool {
-        (self.all_authors || delegates.contains(artifact.author()))
-            && (self.show_redacted || !artifact.is_redacted_by_trusted(delegates))
-    }
-
-    /// Whether a release is shown under this view: created by a delegate (or
-    /// `all_authors`), and holding an artifact not redacted by a trusted party
-    /// (or `show_redacted`).
-    fn show_release(
-        &self,
-        release: &radicle_artifact::Release,
-        delegates: &BTreeSet<Did>,
-    ) -> bool {
-        (self.all_authors || delegates.contains(release.creator()))
-            && (self.show_redacted || release.has_unredacted_artifacts(delegates))
+    /// The crate's visibility rules for this view. No local user is trusted,
+    /// so the default view matches the `delegate` bucket of `counts()`.
+    fn filters(self, delegates: &BTreeSet<Did>) -> Filters<'_> {
+        Filters {
+            trust: Trust {
+                delegates,
+                local: None,
+                all_authors: self.all_authors,
+            },
+            redacted: self.show_redacted,
+        }
     }
 }
 
@@ -48,7 +42,9 @@ pub trait Releases: Profile {
     /// Scoped to releases created by a delegate and artifacts authored by a
     /// delegate (hiding those redacted by a trusted party) unless widened with
     /// `filter`. A release whose artifacts were all redacted is hidden with
-    /// them, and so is a release with no artifacts. Without `take` the full list is returned and `skip` is ignored.
+    /// them; a release with no artifacts is shown. This is the view
+    /// `rad-artifact list` gives. Without `take` the full list is returned and
+    /// `skip` is ignored.
     fn list_releases(
         &self,
         rid: identity::RepoId,
@@ -62,26 +58,20 @@ pub trait Releases: Profile {
         let filter = filter.unwrap_or_default();
 
         // Read through the SQLite cache; it self-warms on read and is shared
-        // with other release reads on this node.
+        // with other release reads on this node. `list` is sorted newest
+        // first and lazy, so a page reads only the rows up to its end.
         let store = ArtifactStore::open_cached(&repo, cache_db_path(profile.cobs()))?;
-        let delegates = store.delegates();
-        let mut releases = store
-            .all()?
-            .into_iter()
-            .filter_map(|entry| {
-                let (id, release) = entry.ok()?;
-                filter
-                    .show_release(&release, delegates)
-                    .then_some((id, release))
-            })
-            .collect::<Vec<_>>();
-        releases.sort_by_key(|(_, release)| std::cmp::Reverse(release.timestamp()));
+        let filters = filter.filters(store.delegates());
+        let releases = store
+            .list()?
+            .filter_map(Result::ok)
+            .filter(|(_, release)| filters.shows_release(release));
 
         let summary = |(id, release): (radicle::cob::ObjectId, radicle_artifact::Release)| {
             let artifacts = release
                 .artifacts()
                 .iter()
-                .filter(|(_, artifact)| filter.show_artifact(artifact, delegates))
+                .filter(|(_, artifact)| filters.shows_artifact(artifact))
                 .map(|(cid, artifact)| cobs::release::Artifact::new(cid, artifact, &aliases))
                 .collect::<Vec<_>>();
 
@@ -92,12 +82,11 @@ pub trait Releases: Profile {
             None => Ok(cobs::PaginatedQuery {
                 cursor: 0,
                 more: false,
-                content: releases.into_iter().map(summary).collect::<Vec<_>>(),
+                content: releases.map(summary).collect::<Vec<_>>(),
             }),
             Some(take) => {
                 let cursor = skip.unwrap_or(0);
                 let mut content = releases
-                    .into_iter()
                     .skip(cursor)
                     .take(take + 1)
                     .map(summary)
