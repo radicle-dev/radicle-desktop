@@ -119,12 +119,15 @@ in `docs/adr/0001-testing-strategy.md`.
 
 ### Pre-push checklist
 
-These mirror what CI runs on every PR. Run them all before shipping a feature.
+`npm run check:ci` runs everything CI runs on every PR, in order, and stops
+at the first failure. It writes the full output, with each step's duration
+and exit code, to `tests/tmp/check-ci.log`:
 
 ```sh
 npm run check                            # tsc, svelte-check, eslint, prettier,
                                          # cargo fmt, cargo clippy, cargo test
 npm run test:unit
+scripts/install-binaries                 # skipped when already installed
 npm run test:e2e
 ```
 
