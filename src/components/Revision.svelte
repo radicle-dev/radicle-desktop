@@ -35,6 +35,16 @@
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
   import {
+    buildThreads,
+    codeThreadsByReview,
+    discussionThreadsByReview as discussionThreadsByReviewOf,
+    groupThreadsByFile,
+    isCodeRoot,
+    reviewIdByComment,
+    revisionDiscussionThreads,
+    revisionIdByComment,
+  } from "@app/lib/threads";
+  import {
     authorForNodeId,
     didFromPublicKey,
     pluralize,
@@ -255,14 +265,7 @@
   const hasPublishedReview = $derived(Boolean(ownPublishedReview));
 
   const codeCommentThreads: Thread<CodeLocation>[] = $derived(
-    draftReview
-      ? (draftReview.comments
-          .filter(c => c.location && !c.replyTo)
-          .map(root => ({
-            root,
-            replies: draftReview.comments.filter(c => c.replyTo === root.id),
-          })) as Thread<CodeLocation>[])
-      : [],
+    draftReview ? buildThreads(draftReview.comments, isCodeRoot) : [],
   );
 
   async function createCodeComment(
@@ -379,72 +382,18 @@
     }
   }
 
-  // One header per file with its hunks stacked beneath, rather than a
-  // duplicate file block per comment.
-  function groupThreadsByFile(
-    list: Thread<CodeLocation>[],
-  ): { path: string; threads: Thread<CodeLocation>[] }[] {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const groups = new Map<string, Thread<CodeLocation>[]>();
-    for (const thread of list) {
-      const path = thread.root.location?.path;
-      if (!path) continue;
-      const existing = groups.get(path) ?? [];
-      existing.push(thread);
-      groups.set(path, existing);
-    }
-    return [...groups.entries()].map(([path, threads]) => ({ path, threads }));
-  }
-
   // Comments on a review itself rather than on a line. Kept apart from
   // `threadsByReview`, which feeds the diff and must only carry threads that
   // can be anchored to a line.
-  const discussionThreadsByReview = $derived.by(() => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const map = new Map<string, Thread<CodeLocation>[]>();
-    (revision.reviews ?? []).forEach(review => {
-      const comments = review.comments ?? [];
-      const threads = comments
-        .filter(c => (!c.location && !c.replyTo) || c.replyTo === review.id)
-        .map(root => ({
-          root,
-          replies: comments
-            .filter(c => c.replyTo === root.id)
-            .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
-        })) as Thread<CodeLocation>[];
-      if (threads.length > 0) {
-        map.set(review.id, threads);
-      }
-    });
-    return map;
-  });
+  const discussionThreadsByReview = $derived(
+    discussionThreadsByReviewOf(revision.reviews ?? []),
+  );
 
-  const commentToReviewId = $derived.by(() => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const map = new Map<string, string>();
-    for (const source of [threadsByReview, discussionThreadsByReview]) {
-      for (const [reviewId, threads] of source.entries()) {
-        for (const thread of threads) {
-          map.set(thread.root.id, reviewId);
-          for (const reply of thread.replies) {
-            map.set(reply.id, reviewId);
-          }
-        }
-      }
-    }
-    return map;
-  });
+  const commentToReviewId = $derived.by(() =>
+    reviewIdByComment(threadsByReview, discussionThreadsByReview),
+  );
 
-  const commentToRevisionId = $derived.by(() => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const map = new Map<string, string>();
-    for (const rev of revisions) {
-      for (const comment of rev.discussion ?? []) {
-        map.set(comment.id, rev.id);
-      }
-    }
-    return map;
-  });
+  const commentToRevisionId = $derived(revisionIdByComment(revisions));
 
   // Every code-comment mutation dispatches on the owning object; resolving it
   // once here keeps the actions shared.
@@ -473,18 +422,15 @@
   function canResolveComment(commentId: string): boolean {
     const owner = ownerOf(commentId);
     if (owner?.kind !== "review") return false;
-    if (
-      roles.isDelegate(
-        config.publicKey,
-        repoDelegates.map(d => d.did),
-      )
-    ) {
-      return true;
-    }
     const review = (revision.reviews ?? []).find(r => r.id === owner.reviewId);
-    const comment = review?.comments?.find(c => c.id === commentId);
-    return [comment?.author.did, review?.author.did, revision.author.did].some(
-      did => did !== undefined && publicKeyFromDid(did) === config.publicKey,
+    return roles.canResolveReviewComment(
+      config.publicKey,
+      repoDelegates.map(d => d.did),
+      {
+        comment: review?.comments?.find(c => c.id === commentId)?.author.did,
+        review: review?.author.did,
+        revision: revision.author.did,
+      },
     );
   }
 
@@ -538,15 +484,7 @@
   // render on the diff alongside review comments instead of vanishing.
   const revisionCodeCommentThreads: Thread<CodeLocation>[] = $derived.by(() => {
     if (hiddenCommentSources.includes(STANDALONE_COMMENTS)) return [];
-    const discussion = revision.discussion ?? [];
-    return discussion
-      .filter(c => c.location && !c.replyTo)
-      .map(root => ({
-        root,
-        replies: discussion
-          .filter(c => c.replyTo === root.id)
-          .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
-      })) as Thread<CodeLocation>[];
+    return buildThreads(revision.discussion ?? [], isCodeRoot);
   });
 
   const codeComments: CodeComments | undefined = $derived.by(() => {
@@ -643,25 +581,7 @@
     new Set(revisions.filter(r => r.id !== latestRevisionId).map(r => r.id)),
   );
 
-  const threadsByReview = $derived.by(() => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const map = new Map<string, Thread<CodeLocation>[]>();
-    (revision.reviews ?? []).forEach(review => {
-      const reviewComments = review.comments ?? [];
-      const threads = reviewComments
-        .filter(c => c.location && !c.replyTo)
-        .map(root => {
-          const replies = reviewComments
-            .filter(c => c.replyTo === root.id)
-            .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp);
-          return { root, replies } as Thread<CodeLocation>;
-        });
-      if (threads.length > 0) {
-        map.set(review.id, threads);
-      }
-    });
-    return map;
-  });
+  const threadsByReview = $derived(codeThreadsByReview(revision.reviews ?? []));
 
   const activityItems = $derived(
     patchTimeline({
@@ -673,45 +593,11 @@
       expandedRevisionRuns,
     }),
   );
-  const reviewSummaryFingerprints = $derived(
-    new Set(
-      revisions
-        .flatMap(r => r.reviews ?? [])
-        .filter(r => r.summary && r.summary.trim() !== "")
-        .map(r => `${r.author.did} ${r.summary}`),
-    ),
-  );
   // Gather discussion comments from every revision, not just the selected one,
   // so comments left on a revision stay in the timeline after a newer revision
   // is pushed. Discussion.svelte orders the merged timeline by timestamp.
   const commentThreads = $derived(
-    revisions.flatMap(rev => {
-      const discussion = rev.discussion;
-      if (!discussion) return [];
-      return (
-        discussion
-          .filter(
-            comment =>
-              (comment.id !== rev.id && !comment.replyTo) ||
-              comment.replyTo === rev.id,
-          )
-          // Code comments (those with a location) render on the diff, not as
-          // plain entries in the activity timeline.
-          .filter(comment => !comment.location)
-          .filter(comment => {
-            const body = comment.edits[comment.edits.length - 1]?.body ?? "";
-            return !reviewSummaryFingerprints.has(
-              `${comment.author.did} ${body}`,
-            );
-          })
-          .map(thread => ({
-            root: thread,
-            replies: discussion
-              .filter(comment => comment.replyTo === thread.id)
-              .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
-          }))
-      );
-    }) as Thread[],
+    revisionDiscussionThreads(revisions) as unknown as Thread[],
   );
 
   async function editRevision(
