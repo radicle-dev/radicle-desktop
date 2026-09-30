@@ -19,9 +19,13 @@ test.each([
   expect(plainText(markdown)).toBe(expected);
 });
 
-test.each(["snake_case_name", "MAX_SIZE", "_private", "a*b*c"])(
-  "leaves %j alone",
-  text => {
-    expect(plainText(text)).toBe(text);
-  },
-);
+test.each([
+  "snake_case_name",
+  "MAX_SIZE",
+  "_private",
+  "see _foo_bar",
+  "a*b*c",
+  "2 * 3 * 4",
+])("leaves %j alone", text => {
+  expect(plainText(text)).toBe(text);
+});
