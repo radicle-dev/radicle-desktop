@@ -6,9 +6,10 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { DEFAULT_TAKE } from "@app/views/repo/router";
-  import fuzzysort from "fuzzysort";
   import delay from "lodash/delay";
 
+  import { searchCobs } from "@app/lib/cobSearch";
+  import { debounced } from "@app/lib/debounced.svelte";
   import { channel, invoke } from "@app/lib/invoke";
   import {
     issueCountMismatch,
@@ -46,7 +47,7 @@
 
   let loading = $state(false);
   let searchInput = $state("");
-  let debouncedSearch = $state("");
+  const debouncedSearch = debounced(() => searchInput, 150);
   let showSearch = $state(false);
   let cacheState: CacheEvent | undefined = $state();
   // Height of the cache-warning banner above the list; fed to the virtualizer
@@ -94,14 +95,6 @@
     showSearch = false;
   });
 
-  $effect(() => {
-    const value = searchInput;
-    const timer = setTimeout(() => {
-      debouncedSearch = value;
-    }, 150);
-    return () => clearTimeout(timer);
-  });
-
   async function rebuildIssueCache() {
     try {
       await invoke("rebuild_issue_cache", {
@@ -122,29 +115,8 @@
     }
   }
 
-  const searchableIssues = $derived(
-    list.items
-      .flatMap(i => {
-        return {
-          issue: i,
-          labels: i.labels.join(" "),
-          assignees: i.assignees
-            .map(a => {
-              return a.alias ?? "";
-            })
-            .join(" "),
-          author: i.author.alias ?? "",
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== undefined),
-  );
-
   const searchResults = $derived(
-    fuzzysort.go(debouncedSearch, searchableIssues, {
-      keys: ["issue.title", "labels", "assignees", "author", "issue.id"],
-      threshold: 0.5,
-      all: true,
-    }),
+    searchCobs(debouncedSearch.current, list.items),
   );
 </script>
 
@@ -252,7 +224,7 @@
               await router.push({
                 resource: "repo.issue",
                 rid: repo.rid,
-                issue: searchResults[0].obj.issue.id,
+                issue: searchResults[0].id,
                 status,
               });
             }
@@ -311,16 +283,16 @@
           onLoadMore={() => list.loadMore()}
           startMargin={chromeHeight}
           estimatedItemSize={80}
-          getKey={result => result.obj.issue.id}
+          getKey={issue => issue.id}
           initialCache={list.initialCache}
           initialScrollOffset={list.initialScrollOffset}
           onRestored={list.consumeRestoredScroll}
           onState={list.persistScroll}>
-          {#snippet row(result)}
+          {#snippet row(issue)}
             <div class="row">
               <IssueTeaser
                 focussed={searchResults.length === 1 && searchInput !== ""}
-                issue={result.obj.issue}
+                {issue}
                 rid={repo.rid}
                 {status} />
             </div>
