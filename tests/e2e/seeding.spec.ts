@@ -23,9 +23,6 @@ test("seeds a repo from the network by its bare RID", async ({
   await waitForCommand(page, "seed", () =>
     page.getByRole("button", { name: "icon-seed Seed", exact: true }).click(),
   );
-  // The app's seed only records the policy; the node fetches the repo the
-  // next time a seed announces it. Fetch now instead of waiting for that.
-  await bob.rad(["sync", rid, "--fetch"]);
 
   await expect(page.getByRole("link", { name: /garden/ })).toBeVisible({
     timeout: 20_000,
