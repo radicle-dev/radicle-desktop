@@ -9,6 +9,7 @@
   import type { DraftReview } from "@app/lib/draftReviewStorage";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { formatAnchor } from "@app/lib/pierreComments";
+  import { isPublishableReview, verdictBadge } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -182,20 +183,9 @@
   }
 
   const verdictLabel = $derived(
-    verdict === "accept"
-      ? "Accept revision"
-      : verdict === "reject"
-        ? "Reject revision"
-        : "Comment",
+    verdictOptions.find(option => option.value === verdict)?.label,
   );
-
-  const verdictColorClass = $derived(
-    verdict === "accept"
-      ? "accept"
-      : verdict === "reject"
-        ? "reject"
-        : "comment",
-  );
+  const verdictColorClass = $derived(verdictBadge(verdict).variant);
 
   async function persistSummary() {
     draftReviewStorage.update(draftReview.id, {
@@ -233,12 +223,8 @@
     }
   }
 
-  // The protocol rejects a verdict-less review with no summary (EmptyReview),
-  // so a comment-only review requires summary text; accept/reject don't.
   const publishDisabled = $derived(
-    publishing ||
-      alreadyReviewed ||
-      (verdict === undefined && summary.trim() === ""),
+    publishing || alreadyReviewed || !isPublishableReview(verdict, summary),
   );
   const summaryRequired = $derived(verdict === undefined);
 </script>
