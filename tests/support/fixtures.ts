@@ -6,14 +6,15 @@ import * as Fs from "node:fs/promises";
 import * as Os from "node:os";
 import * as Path from "node:path";
 import type * as Stream from "node:stream";
+import { stripVTControlCharacters } from "node:util";
 
 import { expect, test as base } from "@playwright/test";
 import * as issue from "@tests/support/cobs/issue.js";
 import * as patch from "@tests/support/cobs/patch.js";
-import * as logLabel from "@tests/support/logPrefix.js";
 import { createPeerManager } from "@tests/support/peerManager.js";
 import { createRepo } from "@tests/support/repo.js";
 import { createOptions, supportDir, tmpDir } from "@tests/support/support.js";
+import chalk from "chalk";
 import { execa } from "execa";
 import waitOn from "wait-on";
 
@@ -40,7 +41,7 @@ export const test = base.extend<{
         localStorage.setItem("appFirstLaunch", "false"),
       );
 
-      const browserLabel = logLabel.logPrefix("browser");
+      const browserLabel = " ".repeat(23) + "→ " + chalk.blue("browser") + ": ";
       page.on("console", msg => {
         // Ignore common console logs that we don't care about.
         if (
@@ -71,7 +72,8 @@ export const test = base.extend<{
         });
       }
 
-      const playwrightLabel = logLabel.logPrefix("playwright");
+      const playwrightLabel =
+        " ".repeat(23) + "→ " + chalk.yellowBright("playwright") + ": ";
 
       function isLocalhost(url: URL) {
         return url.hostname === "localhost" || url.hostname === "127.0.0.1";
@@ -200,10 +202,10 @@ export async function useBackend(page: Page, peer: RadiclePeer) {
 function log(text: string, label: string, outputLog: Stream.Writable) {
   const output = text
     .split("\n")
-    .map(line => `${label}${line}`)
+    .map(line => `${label}${chalk.dim(line)}`)
     .join("\n");
 
-  outputLog.write(`${output}\n`);
+  outputLog.write(`${stripVTControlCharacters(output)}\n`);
   if (!process.env.CI) {
     console.log(output);
   }

@@ -28,7 +28,7 @@ process.env.VITE_TEST_HTTP_API_PORT = String(testHttpApiPort);
 const testBuildDir = "tests/tmp/build";
 const appServerCommand = process.env.E2E_DEV_SERVER
   ? "npm run start -- --strictPort --port 3001"
-  : `npx vite build --outDir ${testBuildDir} --emptyOutDir && npx vite preview --outDir ${testBuildDir} --strictPort --port 3001`;
+  : `npx vite build --logLevel error --outDir ${testBuildDir} --emptyOutDir && npx vite preview --outDir ${testBuildDir} --strictPort --port 3001`;
 
 const config: PlaywrightTestConfig = {
   outputDir: "./tests/artifacts",
