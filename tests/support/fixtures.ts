@@ -173,9 +173,9 @@ const reloading = new WeakSet<Page>();
 const tearingDown = new WeakSet<Page>();
 
 // WebKit reports a fetch that was cancelled because the page went away as an
-// access control failure.
+// access control failure, or as a failed load.
 function isCancelledFetch(error: Error) {
-  return /Fetch API cannot load .* due to access control checks/.test(
+  return /Fetch API cannot load .* due to access control checks|Load failed/.test(
     error.message + error.stack,
   );
 }
@@ -190,6 +190,20 @@ export async function reload(page: Page) {
   } finally {
     reloading.delete(page);
   }
+}
+
+// Runs `action` and waits for the backend command it sends to finish. The UI
+// often updates before the write lands, and a reload would cancel it.
+export async function waitForCommand(
+  page: Page,
+  command: string,
+  action: () => Promise<void>,
+) {
+  const response = page.waitForResponse(
+    response => new URL(response.url()).pathname === `/${command}`,
+  );
+  await action();
+  await response;
 }
 
 // Call before the first `page.goto`.
