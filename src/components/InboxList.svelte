@@ -1,11 +1,8 @@
 <script lang="ts">
   import type { NotificationsByRepo } from "@bindings/cob/inbox/NotificationsByRepo";
 
-  import {
-    type FilteredRepo,
-    filterNotifications,
-    rowIdsOf,
-  } from "@app/lib/inboxFilter";
+  import { filterNotifications, rowIdsOf } from "@app/lib/inboxFilter";
+  import { inboxRepoOrder, togglePinned } from "@app/lib/repoOrdering";
   import { modifierKey, preserveFocus } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
@@ -108,12 +105,7 @@
   }
 
   function togglePin(rid: string) {
-    const repos = loadPinnedRepos();
-    if (repos.includes(rid)) {
-      updatePinnedRepos(repos.filter(r => r !== rid));
-    } else {
-      updatePinnedRepos([rid, ...repos]);
-    }
+    updatePinnedRepos(togglePinned(loadPinnedRepos(), rid));
   }
 
   function loadHiddenRepos(): string[] {
@@ -134,37 +126,18 @@
   }
 
   function toggleHide(rid: string) {
-    const repos = loadHiddenRepos();
-    if (repos.includes(rid)) {
-      updateHiddenRepos(repos.filter(r => r !== rid));
-    } else {
-      updateHiddenRepos([rid, ...repos]);
-    }
+    updateHiddenRepos(togglePinned(loadHiddenRepos(), rid));
   }
 
   const displayRepos = $derived(
-    sortedRepos(filteredRepos, pinnedRepos, hiddenRepos),
+    inboxRepoOrder(
+      filteredRepos,
+      pinnedRepos,
+      hiddenRepos,
+      r => r.repo.rid,
+      r => r.repo.name,
+    ),
   );
-
-  function sortedRepos(
-    allRepos: FilteredRepo[],
-    pinned: string[],
-    hidden: string[],
-  ) {
-    // Preserve pinning order.
-    const pinnedRepos = pinned
-      .map(p => allRepos.find(r => r.repo.rid === p))
-      .filter((r): r is FilteredRepo => r !== undefined);
-
-    const sortedRepos = allRepos
-      .filter(r => !pinned.includes(r.repo.rid) && !hidden.includes(r.repo.rid))
-      .sort((a, b) => a.repo.name.localeCompare(b.repo.name));
-    const hiddenRepos = allRepos
-      .filter(r => hidden.includes(r.repo.rid))
-      .sort((a, b) => a.repo.name.localeCompare(b.repo.name));
-
-    return [...pinnedRepos, ...sortedRepos, ...hiddenRepos];
-  }
 
   function loadedNotificationCount() {
     return notificationsByRepo.reduce((acc, repo) => {
