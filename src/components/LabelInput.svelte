@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { labelError } from "@app/lib/inputValidation";
+
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Label from "@app/components/Label.svelte";
@@ -23,10 +25,9 @@
   let updatedLabels: string[] = $state([]);
   let showInput: boolean = $state(false);
   let inputValue = $state("");
-  let validationMessage: string | undefined = $state();
-  let valid: boolean = $state(false);
-
   const sanitizedValue = $derived(inputValue.trim());
+  const validationMessage = $derived(labelError(inputValue, updatedLabels));
+  const valid = $derived(validationMessage === undefined);
 
   let removeToggles: Record<string, boolean> = $state({});
 
@@ -37,26 +38,7 @@
     updatedLabels = labels;
 
     showInput = false;
-    validationMessage = undefined;
-    valid = true;
     removeToggles = {};
-  });
-
-  $effect(() => {
-    if (inputValue !== "") {
-      if (sanitizedValue.length > 0) {
-        if (updatedLabels.includes(sanitizedValue)) {
-          valid = false;
-          validationMessage = "This label is already assigned";
-        } else {
-          valid = true;
-          validationMessage = undefined;
-        }
-      }
-    } else {
-      valid = true;
-      validationMessage = "";
-    }
   });
 
   function addLabel() {
