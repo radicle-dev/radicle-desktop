@@ -951,6 +951,12 @@ pub trait Repo: Profile {
 
         profile.seed(rid, node::policy::Scope::All, &mut node)?;
 
+        // The policy alone only fetches once a seed next announces the repo,
+        // which a quiet one may not do for a long time. Fetch now, like
+        // `rad seed`, without holding up the caller.
+        let local = profile.public_key;
+        std::thread::spawn(move || fetch_from_seeds(node, rid, local));
+
         Ok(())
     }
 
@@ -966,5 +972,35 @@ pub trait Repo: Profile {
             .collect::<Vec<_>>();
 
         Ok(entries)
+    }
+}
+
+const SEED_FETCH_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(9);
+
+// Fetches `rid` from the first connected seed that has it.
+fn fetch_from_seeds(
+    mut node: radicle::Node,
+    rid: identity::RepoId,
+    local: radicle::crypto::PublicKey,
+) {
+    use radicle::node::Handle as _;
+
+    if !node.is_running() {
+        return;
+    }
+    let seeds = match node.seeds_for(rid, [local]) {
+        Ok(seeds) => seeds,
+        Err(err) => {
+            log::warn!("Looking up seeds for {rid} failed: {err}");
+            return;
+        }
+    };
+    let connected = seeds.connected().map(|seed| seed.nid).collect::<Vec<_>>();
+    for nid in connected {
+        match node.fetch(rid, nid, SEED_FETCH_TIMEOUT, None) {
+            Ok(result) if result.is_success() => return,
+            Ok(result) => log::warn!("Fetching {rid} from {nid} failed: {result:?}"),
+            Err(err) => log::warn!("Fetching {rid} from {nid} failed: {err}"),
+        }
     }
 }
