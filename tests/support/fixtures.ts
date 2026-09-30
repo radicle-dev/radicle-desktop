@@ -34,6 +34,12 @@ export const test = base.extend<{
 }>({
   forAllTests: [
     async ({ outputLog, page }, use) => {
+      // Otherwise the app opens the guide on its first launch, depending on
+      // how fast startup is.
+      await page.addInitScript(() =>
+        localStorage.setItem("appFirstLaunch", "false"),
+      );
+
       const browserLabel = logLabel.logPrefix("browser");
       page.on("console", msg => {
         // Ignore common console logs that we don't care about.
