@@ -192,6 +192,7 @@ pub fn router(shared: Shared) -> Router {
         .route("/list_notifications", post(list_notifications_handler))
         .route("/notification_count", post(notification_count_handler))
         .merge(writes)
+        .layer(middleware::from_fn(read_body))
         .layer(
             CorsLayer::new()
                 .allow_origin(cors::AllowOrigin::list(
@@ -201,6 +202,19 @@ pub fn router(shared: Shared) -> Router {
                 .allow_headers([CONTENT_TYPE]),
         )
         .with_state(shared)
+}
+
+/// Hyper closes the keep-alive connection when a handler leaves the body
+/// unread, and browsers don't retry the next POST on it.
+async fn read_body(request: Request, next: Next) -> Response {
+    let (parts, body) = request.into_parts();
+    match axum::body::to_bytes(body, usize::MAX).await {
+        Ok(bytes) => {
+            next.run(Request::from_parts(parts, axum::body::Body::from(bytes)))
+                .await
+        }
+        Err(e) => (hyper::StatusCode::BAD_REQUEST, e.to_string()).into_response(),
+    }
 }
 
 async fn serialize_writes(
