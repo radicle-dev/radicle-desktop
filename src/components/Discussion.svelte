@@ -14,6 +14,7 @@
   import partial from "lodash/partial";
 
   import * as roles from "@app/lib/roles";
+  import { mergeTimeline, timelineRuns } from "@app/lib/timelineRuns";
   import { authorForNodeId } from "@app/lib/utils";
 
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
@@ -77,115 +78,9 @@
   let focusReply: boolean = $state(false);
   let commentFormKey = $state(0);
 
-  type TimelineEntry =
-    | { kind: "thread"; key: string; timestamp: number; thread: Thread }
-    | {
-        kind: "activity";
-        key: string;
-        timestamp: number;
-        data: A;
-        standalone: boolean;
-      };
-
-  const timeline: TimelineEntry[] = $derived(
-    [
-      ...commentThreads.map(
-        thread =>
-          ({
-            kind: "thread",
-            key: thread.root.id,
-            timestamp: thread.root.edits[0].timestamp,
-            thread,
-          }) satisfies TimelineEntry,
-      ),
-      ...(activityItems ?? []).map(
-        item =>
-          ({
-            kind: "activity",
-            key: item.key,
-            timestamp: item.timestamp,
-            data: item.data,
-            standalone: item.standalone === true,
-          }) satisfies TimelineEntry,
-      ),
-    ].sort((a, b) => a.timestamp - b.timestamp),
+  const runs = $derived(
+    timelineRuns(mergeTimeline(commentThreads, activityItems ?? []), authorOf),
   );
-
-  function entryAuthor(entry: TimelineEntry): Author | undefined {
-    if (entry.kind === "thread") {
-      return entry.thread.root.author;
-    }
-    return authorOf?.(entry.data);
-  }
-
-  type Run =
-    | { kind: "thread"; entry: Extract<TimelineEntry, { kind: "thread" }> }
-    | {
-        kind: "single";
-        entry: Extract<TimelineEntry, { kind: "activity" }>;
-        repeatsAuthor: boolean;
-      }
-    | {
-        kind: "group";
-        author: Author;
-        entries: Extract<TimelineEntry, { kind: "activity" }>[];
-        repeatsAuthor: boolean;
-      };
-
-  function runAuthor(run: Run): Author | undefined {
-    if (run.kind === "thread") return run.entry.thread.root.author;
-    if (run.kind === "single") return entryAuthor(run.entry);
-    return run.author;
-  }
-
-  const runs: Run[] = $derived.by(() => {
-    const result: Run[] = [];
-    for (const entry of timeline) {
-      if (entry.kind === "thread") {
-        result.push({ kind: "thread", entry });
-        continue;
-      }
-      const author = entryAuthor(entry);
-      const last = result[result.length - 1];
-      const groupable =
-        !entry.standalone &&
-        !(last?.kind === "single" && last.entry.standalone);
-      if (
-        groupable &&
-        author &&
-        last &&
-        ((last.kind === "single" &&
-          entryAuthor(last.entry)?.did === author.did) ||
-          (last.kind === "group" && last.author.did === author.did))
-      ) {
-        if (last.kind === "single") {
-          result[result.length - 1] = {
-            kind: "group",
-            author,
-            entries: [last.entry, entry],
-            repeatsAuthor: last.repeatsAuthor,
-          };
-        } else {
-          last.entries.push(entry);
-        }
-      } else {
-        result.push({ kind: "single", entry, repeatsAuthor: false });
-      }
-    }
-    // A run only names its author when the run before it was someone else's.
-    // A comment breaks a run, so without this the same person's actions are
-    // re-attributed on the other side of their own comment.
-    for (let i = 1; i < result.length; i++) {
-      const run = result[i];
-      if (run.kind === "thread") continue;
-      const previous = runAuthor(result[i - 1]);
-      const current = runAuthor(run);
-      run.repeatsAuthor = Boolean(
-        previous && current && previous.did === current.did,
-      );
-    }
-    return result;
-  });
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
