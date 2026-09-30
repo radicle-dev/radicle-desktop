@@ -32,8 +32,13 @@
   } from "@app/lib/pierreComments";
   import {
     anchorOf,
+    annotationSignature,
+    commentedLines,
+    composerLines,
+    entryStatus,
     fileAnnotations,
     isCommentableStatus,
+    itemIds,
   } from "@app/lib/pierreComments";
   import { parsePatch } from "@app/lib/pierreParse";
   import {
@@ -504,7 +509,7 @@
     if (!instance) {
       return;
     }
-    for (const id of itemIds(parsedFiles)) {
+    for (const id of itemIds(parsedFiles.map(file => file.name))) {
       const item = instance.getItem(id);
       if (item) {
         instance.updateItem({
@@ -558,18 +563,8 @@
     mountedHeaders.clear();
   }
 
-  // How this entry changed. `fileStatuses` is keyed by path, so the two entries
-  // of a type change would both read as whichever half the structured diff
-  // recorded last; Pierre parsed each entry on its own and knows which this is.
   function statusOf(fileDiff: FileDiffMetadata): FileStatus | undefined {
-    const status = fileStatuses?.get(fileDiff.name);
-    if (status === "added" && fileDiff.type === "deleted") {
-      return "deleted";
-    }
-    if (status === "deleted" && fileDiff.type === "new") {
-      return "added";
-    }
-    return status;
+    return entryStatus(fileStatuses?.get(fileDiff.name), fileDiff.type);
   }
 
   // Collapse or expand a single file, by CodeView item. Bumps `version`:
@@ -986,25 +981,10 @@
     };
   }
 
-  // The item id for each file, in the order they were given. A type change, a
-  // symlink replaced by a regular file for instance, is one path arriving as two
-  // entries, and CodeView throws on a duplicate id, so the repeats are numbered.
-  // The first keeps the bare path, which is what scroll targets and collapsed
-  // paths resolve by. NUL is the separator because a path cannot contain one.
-  function itemIds(files: FileDiffMetadata[]): string[] {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- transient local map, never reactive
-    const occurrences = new Map<string, number>();
-    return files.map(file => {
-      const seen = occurrences.get(file.name) ?? 0;
-      occurrences.set(file.name, seen + 1);
-      return seen === 0 ? file.name : `${file.name}\u0000${seen + 1}`;
-    });
-  }
-
   function buildItems(
     files: FileDiffMetadata[],
   ): CodeViewItem<LineAnnotation>[] {
-    const ids = itemIds(files);
+    const ids = itemIds(files.map(file => file.name));
     return files.map((fileDiff, index) => ({
       id: ids[index],
       type: "diff",
@@ -1044,17 +1024,6 @@
   function clearTint(): void {
     tintStyle?.remove();
     tintStyle = undefined;
-  }
-
-  function commentedLines(location: CodeLocation): number[] {
-    const range = location.new ?? location.old;
-    if (!range) return [];
-    if (range.type === "chars") return [range.line];
-    const lines: number[] = [];
-    for (let line = range.range.start; line < range.range.end; line++) {
-      lines.push(line);
-    }
-    return lines;
   }
 
   function tintSelectors(
@@ -1109,23 +1078,6 @@
     tintStyle = style;
   }
 
-  // Which slots a file's annotations occupy — and only that. Replacing a file's
-  // annotation array makes Pierre drop every measured annotation height in that
-  // file and lay it out as if the comments had no height at all, which yanks the
-  // scroll position; so it is only told when the set of slots really changes.
-  // What goes *in* a slot is pushed straight into the mounted component instead
-  // (see `syncAnnotationSlots`), which is all a reply, an edit or a resolve
-  // touches.
-  function annotationSignature(
-    annotations: DiffLineAnnotation<LineAnnotation>[] | undefined,
-  ): string {
-    if (!annotations || annotations.length === 0) return "";
-    return annotations
-      .map(({ side, lineNumber }) => `${side}:${lineNumber}`)
-      .sort()
-      .join("|");
-  }
-
   // Open the new-comment composer on what the gutter marker covers. Pierre
   // reports the line range it was dragged over, on the side it started from.
   function openComposer(
@@ -1140,18 +1092,7 @@
     if (!isCommentableStatus(fileStatuses?.get(path))) {
       return;
     }
-    const side = range.side ?? "additions";
-    // A drag in a split diff can end on the other side, where the end line
-    // counts a different file. There is no range that means both, so keep the
-    // line it started from.
-    const crossSide = range.endSide !== undefined && range.endSide !== side;
-    const end = crossSide ? range.start : range.end;
-    composer = {
-      path,
-      side,
-      firstLine: Math.min(range.start, end),
-      lastLine: Math.max(range.start, end),
-    };
+    composer = { path, ...composerLines(range) };
     composerBody = "";
   }
 
@@ -1172,7 +1113,7 @@
     }
     untrack(() => {
       let changed = false;
-      for (const id of itemIds(parsedFiles)) {
+      for (const id of itemIds(parsedFiles.map(file => file.name))) {
         const item = instance.getItem(id);
         if (item?.type !== "diff") {
           continue;

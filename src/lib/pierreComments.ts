@@ -103,13 +103,13 @@ export function locationOf(
 /// The lines a comment covers, as text: `R12` for one line on the new side,
 /// `L3-L9` for a range on the old one.
 export function formatAnchorLines(location: CodeLocation): string | undefined {
-  const range = location.new ?? location.old;
+  const range = lineRangeOf(location);
   if (!range) return undefined;
-  const marker = location.new ? "R" : "L";
-  if (range.type === "chars") return `${marker}${range.line}`;
-  const start = range.range.start;
-  const end = range.range.end - 1;
-  return start >= end ? `${marker}${end}` : `${marker}${start}-${marker}${end}`;
+  const marker = range.side === "new" ? "R" : "L";
+  const end = range.end - 1;
+  return range.start >= end
+    ? `${marker}${end}`
+    : `${marker}${range.start}-${marker}${end}`;
 }
 
 /// A comment's anchor with the file it is in, e.g. `foo.ts:R12` or
@@ -200,4 +200,87 @@ export function commentCountsByPath(
     counts.set(anchor.path, entry);
   }
   return counts;
+}
+
+// Which lines of which side a comment is about, end exclusive.
+export function lineRangeOf(
+  location: CodeLocation,
+): { side: "old" | "new"; start: number; end: number } | undefined {
+  const range = location.new ?? location.old;
+  if (!range) return undefined;
+  const side = location.new ? "new" : "old";
+  if (range.type === "chars") {
+    return { side, start: range.line, end: range.line + 1 };
+  }
+  return { side, start: range.range.start, end: range.range.end };
+}
+
+export function commentedLines(location: CodeLocation): number[] {
+  const range = lineRangeOf(location);
+  if (!range) return [];
+  const lines: number[] = [];
+  for (let line = range.start; line < range.end; line++) {
+    lines.push(line);
+  }
+  return lines;
+}
+
+// Which slots a file's annotations occupy, and only that. Replacing a file's
+// annotation array makes Pierre drop every measured annotation height in that
+// file and lay it out as if the comments had no height at all, which yanks the
+// scroll position; so it is only told when the set of slots really changes.
+// What goes *in* a slot is pushed straight into the mounted component instead
+// (see `syncAnnotationSlots` in PierreDiff), which is all a reply, an edit or a
+// resolve touches.
+export function annotationSignature(
+  annotations: DiffLineAnnotation<LineAnnotation>[] | undefined,
+): string {
+  return (annotations ?? [])
+    .map(({ side, lineNumber }) => `${side}:${lineNumber}`)
+    .sort()
+    .join("|");
+}
+
+// The lines a gutter drag covers. A drag in a split diff can end on the other
+// side, where the end line counts a different file. There is no range that
+// means both, so keep the line it started from.
+export function composerLines(range: {
+  start: number;
+  end: number;
+  side?: AnnotationSide;
+  endSide?: AnnotationSide;
+}): { side: AnnotationSide; firstLine: number; lastLine: number } {
+  const side = range.side ?? "additions";
+  const crossSide = range.endSide !== undefined && range.endSide !== side;
+  const end = crossSide ? range.start : range.end;
+  return {
+    side,
+    firstLine: Math.min(range.start, end),
+    lastLine: Math.max(range.start, end),
+  };
+}
+
+// How a diff entry changed. `fileStatuses` is keyed by path, so the two entries
+// of a type change would both read as whichever half the structured diff
+// recorded last; Pierre parsed each entry on its own and knows which this is.
+export function entryStatus(
+  status: FileStatus | undefined,
+  entryType: string,
+): FileStatus | undefined {
+  if (status === "added" && entryType === "deleted") return "deleted";
+  if (status === "deleted" && entryType === "new") return "added";
+  return status;
+}
+
+// An id per file, in order. A type change is one path arriving as two entries,
+// and CodeView throws on a duplicate id, so the repeats are numbered. The
+// first keeps the bare path, which is what scroll targets and collapsed paths
+// resolve by. NUL is the separator because a path cannot contain one.
+export function itemIds(names: string[]): string[] {
+  const occurrences = new Map<string, number>();
+  return names.map(name => {
+    const seen = occurrences.get(name) ?? 0;
+    occurrences.set(name, seen + 1);
+    return seen === 0 ? name : `${name}\u0000${seen + 1}`;
+  });
 }
