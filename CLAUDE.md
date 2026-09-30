@@ -44,6 +44,11 @@ npm run format          # auto-fix prettier issues
 npm run test:unit
 ```
 
+DOMPurify does not sanitize under happy-dom (the unit-test environment):
+`<script>` and `onerror=` pass through, and `setConfig` allowlists are
+ignored. Don't assert sanitization in `tests/unit/`; verify it in the real
+app or in an E2E test.
+
 ### E2E tests
 
 ```sh
@@ -51,13 +56,31 @@ npm run test:e2e
 npm run test:e2e -- tests/e2e/<file>.spec.ts
 ```
 
-`SKIP_SETUP=true` skips fixture creation for faster iteration.
+Peer keys have no passphrase, so the app authenticates without an
+ssh-agent. Tests that need a running node use the `peer` fixture; tests that
+need an ssh-agent use the `sshAuthSock` fixture and create a peer with a
+`passphrase`. When a fixture depends on one peer seeing another's changes,
+wait for the node event with `waitForEvent` instead of sleeping.
+Reload pages with `reload(page)` from `@tests/support/fixtures.js`, not
+`page.reload()`: the app polls the backend, and the harness would otherwise
+fail the test on the request the reload cancels.
+
+Tests run against a production build in `tests/tmp/build`, served by
+`vite preview`; the build takes a few seconds at startup. Set
+`E2E_DEV_SERVER=1` to run against the Vite dev server instead, e.g. for hot
+reload while writing tests.
+
+Each run writes `tests/artifacts/results.json` (Playwright's JSON report)
+and per-test logs in `tests/artifacts/<test>/`. Read those to see what
+failed in a run someone else started.
+
+`SKIP_FIXTURE_CREATION=true` skips fixture creation for faster iteration.
 Only use it when you are solely editing `.spec.ts` files and fixtures
 already exist from a previous full run. Any change to app code, the Rust
 backend, or test fixtures requires a full run.
 
 ```sh
-SKIP_SETUP=true npm run test:e2e -- --project webkit
+SKIP_FIXTURE_CREATION=true npm run test:e2e
 ```
 
 ### Rust backend (`crates/`)
@@ -87,6 +110,12 @@ Adding or changing a Tauri command touches these layers in order:
 4. `crates/test-http-api/src/` — mirror the same route so E2E tests keep working;
    `cargo test -p test-http-api --test parity` fails until you do
 5. `src/` — call via `invoke<T>("command_name", args)`, import types from `@bindings`
+
+### Tests for a feature
+
+When adding tests for a feature, go through `docs/testing-checklist.md` and
+report which items are covered and which don't apply. The testing strategy is
+in `docs/adr/0001-testing-strategy.md`.
 
 ### Pre-push checklist
 
@@ -270,6 +299,9 @@ Read these when you need domain context for UI work:
   `#[ts(export)]`, and `#[ts(export_to = "<dir>/")]`
 - Optional fields: `#[serde(skip_serializing_if = "Option::is_none")]`
 - Error type: `radicle_types::error::Error`
+- `rust-toolchain.toml` tracks heartwood's. When bumping the `radicle` crate,
+  check heartwood's toolchain too: an older rustc fails inside the dependency
+  with a confusing error (e.g. E0382 in `cob/identity.rs` for radicle 0.25)
 
 ## Commit messages
 
