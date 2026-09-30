@@ -12,7 +12,12 @@ export function parseFrontmatter(input: string): ParsedFrontmatter {
   if (!match) {
     return { data: {}, content: input };
   }
-  const parsed = load(match[1]);
+  let parsed: unknown;
+  try {
+    parsed = load(match[1]);
+  } catch {
+    parsed = undefined;
+  }
   const data =
     parsed && typeof parsed === "object" && !Array.isArray(parsed)
       ? (parsed as Record<string, unknown>)
