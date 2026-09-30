@@ -531,6 +531,7 @@
           {@const changed = itemDiff<Author>(
             op.previous?.assignees ?? [],
             op.assignees,
+            assignee => assignee.did,
           )}
           {#if changed.added.length}
             <span class="summary-secondary">assigned</span>

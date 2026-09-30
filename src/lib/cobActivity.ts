@@ -21,11 +21,18 @@ export type FlattenedAction<A> = A & {
   previous?: A;
 };
 
-/// What was added and removed between two lists.
-export function itemDiff<T>(previous: T[], next: T[]) {
+/// What was added and removed between two lists. Items are compared by `key`,
+/// since objects such as assignees are never the same instance twice.
+export function itemDiff<T>(
+  previous: T[],
+  next: T[],
+  key: (item: T) => unknown = item => item,
+) {
+  const previousKeys = new Set(previous.map(key));
+  const nextKeys = new Set(next.map(key));
   return {
-    removed: previous.filter(x => !next.includes(x)),
-    added: next.filter(x => !previous.includes(x)),
+    removed: previous.filter(x => !nextKeys.has(key(x))),
+    added: next.filter(x => !previousKeys.has(key(x))),
   };
 }
 
