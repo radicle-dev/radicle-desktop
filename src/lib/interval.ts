@@ -20,5 +20,6 @@ export function dynamicInterval(
 }
 
 export function resetDynamicInterval(key: string) {
+  clearTimeout(dynamicIntervals.get(key));
   dynamicIntervals.delete(key);
 }
