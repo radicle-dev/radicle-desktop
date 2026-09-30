@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { DiffFileHeaderState } from "./diffFileHeaderState.svelte";
 
+  import { fileStatusLabel } from "@app/lib/diffText";
+
   import Button from "@app/components/Button.svelte";
   import DiffActions from "@app/components/DiffActions.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -31,17 +33,7 @@
   const fileName = $derived(`${name.split("/").pop() || "file"}.diff`);
   const text = $derived(state.text);
 
-  const statusLabel = $derived(
-    state.status === "added"
-      ? "Added"
-      : state.status === "deleted"
-        ? "Deleted"
-        : state.status === "moved"
-          ? "Moved"
-          : state.status === "copied"
-            ? "Copied"
-            : undefined,
-  );
+  const statusLabel = $derived(state.status && fileStatusLabel(state.status));
 </script>
 
 <style>
