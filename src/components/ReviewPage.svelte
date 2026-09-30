@@ -40,12 +40,17 @@
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
   import {
+    buildThreads,
+    groupThreadsByFile,
+    isCodeRoot,
+    reviewDiscussionThreads,
+  } from "@app/lib/threads";
+  import {
     absoluteTimestamp,
     authorForNodeId,
     didFromPublicKey,
     formatTimestamp,
     pluralize,
-    publicKeyFromDid,
     revisionPosition,
     verdictAction,
     verdictBadge,
@@ -247,20 +252,9 @@
     }
   }
 
-  // Comments on the review itself rather than on a line. The summary is a
-  // field, not the root of this thread, so a comment replying to the review id
-  // starts a root thread of its own.
-  const commentThreads: Thread[] = $derived.by(() => {
-    const comments = (review.comments ?? []) as Comment<CodeLocation>[];
-    return comments
-      .filter(c => (!c.location && !c.replyTo) || c.replyTo === review.id)
-      .map(root => ({
-        root,
-        replies: comments
-          .filter(c => c.replyTo === root.id)
-          .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp),
-      })) as unknown as Thread[];
-  });
+  const commentThreads = $derived(
+    reviewDiscussionThreads(review) as unknown as Thread[],
+  );
 
   async function createDiscussionComment(
     body: string,
@@ -328,21 +322,15 @@
   // revision comments have no resolve action at all.
   function canResolveComment(commentId: string): boolean {
     if (ownerOf(commentId)?.kind !== "review") return false;
-    if (
-      roles.isDelegate(
-        config.publicKey,
-        repoDelegates.map(d => d.did),
-      )
-    ) {
-      return true;
-    }
-    const comment = (review.comments ?? []).find(c => c.id === commentId);
-    return [
-      comment?.author.did,
-      review.author.did,
-      reviewedRevision?.author.did,
-    ].some(
-      did => did !== undefined && publicKeyFromDid(did) === config.publicKey,
+    return roles.canResolveReviewComment(
+      config.publicKey,
+      repoDelegates.map(d => d.did),
+      {
+        comment: (review.comments ?? []).find(c => c.id === commentId)?.author
+          .did,
+        review: review.author.did,
+        revision: reviewedRevision?.author.did,
+      },
     );
   }
 
@@ -357,35 +345,22 @@
     }),
   );
 
-  const fileGroups: FileGroup[] = $derived.by(() => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const groups = new Map<string, Thread<CodeLocation>[]>();
-    const addThreads = (
-      comments: Comment<CodeLocation>[],
-      excludeId: string,
-    ) => {
-      const roots = comments.filter(
-        c => c.location && !c.replyTo && c.id !== excludeId,
-      );
-      for (const root of roots) {
-        const replies = comments
-          .filter(c => c.replyTo === root.id)
-          .sort((a, b) => a.edits[0].timestamp - b.edits[0].timestamp);
-        const thread = { root, replies } as Thread<CodeLocation>;
-        const path = root.location!.path;
-        const list = groups.get(path) ?? [];
-        list.push(thread);
-        groups.set(path, list);
-      }
-    };
-    addThreads(review.comments as Comment<CodeLocation>[], review.id);
-    // Standalone code comments left directly on the reviewed revision (not part
-    // of the review itself) also belong on this page.
-    if (reviewedRevision?.discussion) {
-      addThreads(reviewedRevision.discussion, reviewedRevision.id);
-    }
-    return [...groups.entries()].map(([path, threads]) => ({ path, threads }));
-  });
+  // Standalone code comments left directly on the reviewed revision (not part
+  // of the review itself) also belong on this page.
+  const fileGroups: FileGroup[] = $derived(
+    groupThreadsByFile([
+      ...buildThreads(
+        review.comments as Comment<CodeLocation>[],
+        c => isCodeRoot(c) && c.id !== review.id,
+      ),
+      ...(reviewedRevision
+        ? buildThreads(
+            reviewedRevision.discussion ?? [],
+            c => isCodeRoot(c) && c.id !== reviewedRevision.id,
+          )
+        : []),
+    ]),
+  );
 
   // Standalone comments render next to the review's own and look identical,
   // but nothing can resolve them and their edits target the revision, so they
