@@ -16,10 +16,10 @@
   let notMatchingPassphrases = $state<boolean>();
   let passphraseRepeat = $state("");
   let alias = $state("");
-  const errors: { alias: ErrorWrapper[]; passphrase: ErrorWrapper[] } = {
+  const errors = $state<{ alias: ErrorWrapper[]; passphrase: ErrorWrapper[] }>({
     alias: [],
     passphrase: [],
-  };
+  });
 
   const validatePassphraseRepeat = debounce(() => {
     if (passphrase !== passphraseRepeat && passphraseRepeat.length !== 0) {
