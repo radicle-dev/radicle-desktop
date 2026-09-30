@@ -4,7 +4,11 @@ import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 import { describe, expect, test } from "vitest";
 
 import type { Action as NotificationAction } from "@app/lib/notification";
-import { compressActions, createSummary } from "@app/lib/notification";
+import {
+  compressActions,
+  createSummary,
+  notificationActions,
+} from "@app/lib/notification";
 import { formatOid } from "@app/lib/utils";
 
 const oid = "e8f95f5082a8e99c290ab3908a926e1de5c97d6c";
@@ -203,4 +207,42 @@ describe("Action summaries", () => {
       expect(createSummary(input, type, oid, input.length)).toEqual(output);
     },
   );
+});
+
+describe("notificationActions", () => {
+  const comment = (body: string, at = timestamp) => ({
+    ...createAction({ type: "review.comment", body, review: oid }),
+    timestamp: at,
+  });
+
+  test("keeps an action once when two notifications include it", () => {
+    const shared = comment("A review comment");
+
+    expect(
+      notificationActions([
+        { actions: [shared] },
+        { actions: [{ ...shared }] },
+      ]),
+    ).toEqual([shared]);
+  });
+
+  test("keeps same-type actions from one operation", () => {
+    const actions = notificationActions([
+      { actions: [comment("First"), comment("Second"), comment("Third")] },
+    ]);
+
+    expect(actions).toHaveLength(3);
+    expect(compressActions(actions, "patch", oid)[0].summary).toBe(
+      "left 3 review comments",
+    );
+  });
+
+  test("orders actions newest first", () => {
+    expect(
+      notificationActions([
+        { actions: [comment("old", 1)] },
+        { actions: [comment("new", 3), comment("middle", 2)] },
+      ]).map(a => a.timestamp),
+    ).toEqual([3, 2, 1]);
+  });
 });
