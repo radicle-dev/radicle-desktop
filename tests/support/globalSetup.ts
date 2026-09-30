@@ -50,6 +50,8 @@ export default async function globalSetup(): Promise<() => void> {
     "--manifest-path",
     "./crates/test-http-api/Cargo.toml",
   ]);
+  // The job COB CLI, at the version of radicle-job the app is built with.
+  await execa("cargo", ["build", "-p", "radicle-job", "--bin", "rad-job"]);
 
   // Keeps test keys out of the developer's ssh-agent.
   delete process.env.SSH_AUTH_SOCK;
