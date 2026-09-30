@@ -65,6 +65,10 @@ export const test = base.extend<{
           if (reloading.has(page) && isCancelledFetch(msg)) {
             return;
           }
+          // Only says some resize notifications waited for the next frame.
+          if (msg.message.startsWith("ResizeObserver loop")) {
+            return;
+          }
           expect(
             false,
             `Test failed because there was a console error in the app: ${msg}`,
