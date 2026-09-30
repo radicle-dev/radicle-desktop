@@ -5,6 +5,7 @@
   import type { Thread } from "@bindings/cob/thread/Thread";
 
   import type { Resolution } from "@app/lib/commentResolutions";
+  import { plainText } from "@app/lib/markdownPlain";
   import type { CommentAnchor } from "@app/lib/pierreComments";
   import { anchorOf, formatAnchorLines } from "@app/lib/pierreComments";
   import {
@@ -51,30 +52,9 @@
     return author.alias ?? truncateId(authorKey(author));
   }
 
-  /// Inline markdown, dropped down to the words it decorates. A row is a couple
-  /// of truncated lines, and on a narrow column the punctuation crowds out the
-  /// text that says what the comment is about. Deliberately shallow — this is a
-  /// preview, not a parser; the comment itself is one click away in the diff.
-  function plain(body: string): string {
-    return (
-      body
-        .replace(/!?\[([^\]]*)\]\([^)]*\)/gu, "$1")
-        .replace(/`/gu, "")
-        .replace(/~~(.+?)~~/gu, "$1")
-        // Emphasis only where a marker sits on a word boundary, so `snake_case`,
-        // `MAX_SIZE` and `_private` survive being read as italics.
-        .replace(/(^|[^\w])[*_]{1,2}([^*_]+?)[*_]{1,2}(?=[^\w]|$)/gu, "$1$2")
-        .replace(/^\s{0,3}#{1,6}\s+/gmu, "")
-        .replace(/^\s{0,3}>\s?/gmu, "")
-        .replace(/^\s{0,3}(?:[-+*]|\d+\.)\s+/gmu, "")
-        .replace(/\s+/gu, " ")
-        .trim()
-    );
-  }
-
   /// The last edit is the current text.
   function preview(comment: Comment<CodeLocation>): string {
-    return plain(comment.edits.at(-1)?.body ?? "");
+    return plainText(comment.edits.at(-1)?.body ?? "");
   }
 </script>
 
