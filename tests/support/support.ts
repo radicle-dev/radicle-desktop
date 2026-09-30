@@ -31,6 +31,14 @@ export const testHttpApiBinary = Path.resolve(
   "debug",
   "test-http-api",
 );
+
+export const radJobBinary = Path.resolve(
+  supportDir,
+  "../..",
+  process.env.CARGO_TARGET_DIR ?? "target",
+  "debug",
+  "rad-job",
+);
 const workspacePaths = [Path.join(tmpDir, "peers"), Path.join(tmpDir, "repos")];
 
 export const heartwoodRelease = (
