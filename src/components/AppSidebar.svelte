@@ -22,7 +22,6 @@
   import {
     commitSidebarWidth,
     discardSidebarWidthPreview,
-    MIN_SIDEBAR_WIDTH,
     previewSidebarWidth,
     RAIL_WIDTH_REM,
     renderedSidebarWidth,
@@ -33,6 +32,7 @@
     sidebarWidth,
     toggleSidebar,
   } from "@app/lib/sidebar.svelte";
+  import { doublePressDetector, dragResult } from "@app/lib/sidebarResize";
   import { updateChecker } from "@app/lib/updateChecker.svelte";
   import useLocalStorage from "@app/lib/useLocalStorage.svelte";
   import { isMac } from "@app/lib/utils";
@@ -92,14 +92,6 @@
 
   const mini = $derived(collapsed.value);
 
-  // How far below the minimum width the drag has to go before it collapses,
-  // rather than the edge just sticking at the minimum.
-  const COLLAPSE_DRAG_SLACK_REM = 2;
-
-  // While collapsed, the rail follows the drag at a fraction of its distance so
-  // it feels attached to the pointer, instead of sitting still until the
-  // threshold and then jumping open.
-  const RAIL_STRETCH_FACTOR = 0.35;
   let railStretch = $state(0);
 
   // What `.slot` is animating towards.
@@ -176,29 +168,14 @@
   // A second press in quick succession fits the sidebar. Detected here rather
   // than with `dblclick`, because the pointerdown below is cancelled to stop a
   // Tauri window drag, which suppresses the mouse events `dblclick` comes from.
-  const DOUBLE_PRESS_MS = 500;
-  const DOUBLE_PRESS_SLOP_PX = 6;
-  let lastPressAt = 0;
-  let lastPressX = 0;
-
-  function isDoublePress(e: PointerEvent): boolean {
-    const paired =
-      // A press that ended in a resize isn't half of a pair.
-      !lastPressResized &&
-      e.timeStamp - lastPressAt < DOUBLE_PRESS_MS &&
-      Math.abs(e.clientX - lastPressX) <= DOUBLE_PRESS_SLOP_PX;
-    // Cleared so a third press starts a new pair instead of fitting again.
-    lastPressAt = paired ? 0 : e.timeStamp;
-    lastPressX = e.clientX;
-    return paired;
-  }
+  const isDoublePress = doublePressDetector();
 
   function onEdgePointerDown(e: PointerEvent) {
     // Primary button only; a right-click here would otherwise start a drag.
     if (e.button !== 0) return;
     e.preventDefault();
 
-    if (isDoublePress(e)) {
+    if (isDoublePress(e, lastPressResized)) {
       void fitSidebarToContent();
       return;
     }
@@ -223,26 +200,19 @@
         if (Math.abs(ev.clientX - startX) <= DRAG_SLOP_PX) return;
         dragged = true;
       }
-      const width = startWidth + (ev.clientX - startX) / pxPerRem;
-      // One boundary serves both directions: below it the sidebar is collapsed,
-      // above it expanded, so a single drag can cross either way.
-      const collapse = width < MIN_SIDEBAR_WIDTH - COLLAPSE_DRAG_SLACK_REM;
-      if (collapsed.value !== collapse) {
-        collapsed.value = collapse;
+      const drag = dragResult(startWidth, ev.clientX - startX, pxPerRem);
+      if (collapsed.value !== drag.collapse) {
+        collapsed.value = drag.collapse;
         snapWidth();
       }
-      if (collapse) {
-        railStretch = Math.max(
-          0,
-          (width - RAIL_WIDTH_REM) * RAIL_STRETCH_FACTOR,
-        );
+      railStretch = drag.railStretch;
+      if (drag.collapse) {
         // Anything previewed before the threshold was crossed is on the way to
         // collapsing, not a width to remember.
         discardSidebarWidthPreview();
       } else {
-        railStretch = 0;
         // Off storage; persisted once when the drag ends.
-        previewSidebarWidth(width);
+        previewSidebarWidth(drag.width);
       }
     };
 
