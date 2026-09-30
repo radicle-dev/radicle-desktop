@@ -1,13 +1,13 @@
 import { expect, reload, test } from "@tests/support/fixtures.js";
 
 test("default theme", async ({ page }) => {
-  await page.goto("/repos");
+  await page.goto("/inbox");
 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
 test("theme persistence", async ({ page }) => {
-  await page.goto("/repos");
+  await page.goto("/inbox");
   await expect(page.getByRole("link", { name: "markdown" })).toBeVisible();
   await page.getByRole("button", { name: "Settings" }).click();
 
@@ -20,7 +20,7 @@ test("theme persistence", async ({ page }) => {
 });
 
 test("change theme", async ({ page }) => {
-  await page.goto("/repos");
+  await page.goto("/inbox");
   await expect(page.getByRole("link", { name: "markdown" })).toBeVisible();
   await page.getByRole("button", { name: "Settings" }).click();
 
