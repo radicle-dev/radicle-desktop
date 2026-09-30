@@ -15,7 +15,12 @@
     stepIndex,
   } from "@app/lib/commentNavigation";
   import { diffOptions } from "@app/lib/diffOptions.svelte";
-  import { fileDiffPath, fileMetaOf, fullFileLoader } from "@app/lib/diffText";
+  import {
+    checkedPaths,
+    fileDiffPath,
+    fileMetaOf,
+    fullFileLoader,
+  } from "@app/lib/diffText";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import {
     cachedDiffStats,
@@ -207,28 +212,18 @@
   const fileMeta = $derived(fileMetaOf(diffFiles));
 
   const reviewedPaths = $derived.by(() => {
-    if (!draftReviewId) return undefined;
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- rebuilt fresh each derivation
-    const paths = new Set<string>();
-    for (const file of diffFiles) {
-      const path = fileDiffPath(file);
-      if (draftReviewStorage.isFileChecked(draftReviewId, path)) {
-        paths.add(path);
-      }
-    }
-    return paths;
+    const id = draftReviewId;
+    if (!id) return undefined;
+    return checkedPaths(diffFiles, path =>
+      draftReviewStorage.isFileChecked(id, path),
+    );
   });
 
   // Lockfiles and generated manifests are noise in a review, and a file already
   // marked reviewed has been dealt with, so both start collapsed.
-  const collapsedPaths = $derived.by(() => {
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity -- rebuilt fresh each derivation
-    const paths = new Set(fileMeta.ignored);
-    for (const path of reviewedPaths ?? []) {
-      paths.add(path);
-    }
-    return paths;
-  });
+  const collapsedPaths = $derived(
+    new Set([...fileMeta.ignored, ...(reviewedPaths ?? [])]),
+  );
 
   const commentCounts = $derived.by(() => {
     const comments = diffCodeComments;
