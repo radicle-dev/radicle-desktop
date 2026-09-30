@@ -28,6 +28,9 @@ npm run tauri dev       # full Tauri dev build with hot reload
 npm run start:http      # Vite dev server backed by test-http-api (no Tauri runtime)
 ```
 
+Set `VITE_LOG_INVOKE_TIMINGS=true` to log each command's duration
+(`[invoke] <command> <ms>ms`) to the browser console. It is off by default.
+
 ### Checks and linting (tsc, svelte-check, eslint, prettier)
 
 ```sh
