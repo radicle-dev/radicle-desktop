@@ -31,3 +31,5 @@ tests/artifacts/**/*
 
 # direnv cache
 /.direnv/
+
+.claude
