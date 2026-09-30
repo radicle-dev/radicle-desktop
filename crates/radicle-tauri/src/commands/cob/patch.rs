@@ -1,5 +1,3 @@
-use std::ops::ControlFlow;
-
 use radicle::patch::{ReviewId, TYPENAME};
 use radicle::storage::{ReadRepository as _, ReadStorage};
 use radicle::{git, identity};
@@ -97,30 +95,5 @@ pub async fn rebuild_patch_cache(
     rid: identity::RepoId,
     on_event: tauri::ipc::Channel<cobs::CacheEvent>,
 ) -> Result<(), Error> {
-    let repo = ctx.profile.storage.repository(rid)?;
-    let signer = ctx.profile.signer()?;
-    let mut patches = ctx.profile.patches_mut(&repo, &signer)?;
-    on_event.send(types::cobs::CacheEvent::Started { rid })?;
-    patches.write_all(|result, progress| {
-        match result {
-            Ok((id, _)) => {
-                if on_event
-                    .send(cobs::CacheEvent::Progress {
-                        rid,
-                        oid: **id,
-                        current: progress.current(),
-                        total: progress.total(),
-                    })
-                    .is_err()
-                {
-                    log::error!("Failed to send progress");
-                }
-            }
-            Err(err) => log::warn!("Failed to retrieve patch: {err}"),
-        };
-        ControlFlow::Continue(())
-    })?;
-    on_event.send(types::cobs::CacheEvent::Finished { rid })?;
-
-    Ok(())
+    ctx.rebuild_patch_cache(rid, |event| on_event.send(event).map_err(Error::from))
 }

@@ -68,6 +68,39 @@ pub trait Issues: Profile {
 }
 
 pub trait IssuesMut: Profile {
+    fn rebuild_issue_cache(
+        &self,
+        rid: identity::RepoId,
+        on_event: impl Fn(cobs::CacheEvent) -> Result<(), Error>,
+    ) -> Result<(), Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+        let signer = profile.signer()?;
+        let mut issues = profile.issues_mut(&repo, &signer)?;
+        on_event(cobs::CacheEvent::Started { rid })?;
+        issues.write_all(|result, progress| {
+            match result {
+                Ok((id, _)) => {
+                    if on_event(cobs::CacheEvent::Progress {
+                        rid,
+                        oid: **id,
+                        current: progress.current(),
+                        total: progress.total(),
+                    })
+                    .is_err()
+                    {
+                        log::error!("Failed to send progress");
+                    }
+                }
+                Err(err) => log::warn!("Failed to retrieve issue: {err}"),
+            };
+            std::ops::ControlFlow::Continue(())
+        })?;
+        on_event(cobs::CacheEvent::Finished { rid })?;
+
+        Ok(())
+    }
+
     fn create_issue(
         &self,
         rid: identity::RepoId,

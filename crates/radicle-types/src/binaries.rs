@@ -104,6 +104,14 @@ pub fn git_command() -> Option<std::process::Command> {
     Some(command)
 }
 
+pub fn check_radicle_cli(profile: &radicle::Profile) -> Result<(), crate::error::Error> {
+    if profile.home().path().join("bin").join("rad").exists() || rad().is_some() {
+        return Ok(());
+    }
+
+    Err(crate::error::Error::RadicleNotInstalled)
+}
+
 /// The `rad` CLI, if it is installed.
 ///
 /// Uncached: the app polls for it so that installing the CLI while the app is

@@ -51,6 +51,39 @@ pub trait Patches: Profile {
 }
 
 pub trait PatchesMut: Profile {
+    fn rebuild_patch_cache(
+        &self,
+        rid: identity::RepoId,
+        on_event: impl Fn(cobs::CacheEvent) -> Result<(), Error>,
+    ) -> Result<(), Error> {
+        let profile = self.profile();
+        let repo = profile.storage.repository(rid)?;
+        let signer = profile.signer()?;
+        let mut patches = profile.patches_mut(&repo, &signer)?;
+        on_event(cobs::CacheEvent::Started { rid })?;
+        patches.write_all(|result, progress| {
+            match result {
+                Ok((id, _)) => {
+                    if on_event(cobs::CacheEvent::Progress {
+                        rid,
+                        oid: **id,
+                        current: progress.current(),
+                        total: progress.total(),
+                    })
+                    .is_err()
+                    {
+                        log::error!("Failed to send progress");
+                    }
+                }
+                Err(err) => log::warn!("Failed to retrieve patch: {err}"),
+            };
+            std::ops::ControlFlow::Continue(())
+        })?;
+        on_event(cobs::CacheEvent::Finished { rid })?;
+
+        Ok(())
+    }
+
     /// Publish a review of a revision, together with its code comments.
     fn create_patch_review(
         &self,
