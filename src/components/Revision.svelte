@@ -11,6 +11,7 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { Snippet } from "svelte";
 
+  import mapValues from "lodash/mapValues";
   import partial from "lodash/partial";
   import { slide } from "svelte/transition";
 
@@ -38,6 +39,7 @@
     splitDescription,
     visibleCommitsOf,
   } from "@app/lib/revisionDescription";
+  import { newCommitsByRevision } from "@app/lib/revisionList";
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
   import {
@@ -539,16 +541,12 @@
         }
       }),
     ).then(entries => {
-      const next: Record<string, Commit[]> = {};
-      // eslint-disable-next-line svelte/prefer-svelte-reactivity
-      const seen = new Set<string>();
-      revisions.forEach((rev, i) => {
-        const [, commits] = entries[i];
-        const novel = commits.filter(c => !seen.has(c.id));
-        novel.forEach(c => seen.add(c.id));
-        next[rev.id] = [...novel].reverse();
-      });
-      commitsByRevision = next;
+      const commits = Object.fromEntries(entries);
+      // Newest first, as the timeline lists them.
+      commitsByRevision = mapValues(
+        newCommitsByRevision(revisions, id => commits[id] ?? []),
+        added => [...added].reverse(),
+      );
     });
   });
   const olderRevisionIds = $derived(
