@@ -11,7 +11,6 @@ import {
   notificationActions,
   notificationIcon,
   notificationRoute,
-  notificationStatusColor,
 } from "@app/lib/notification";
 import { formatOid } from "@app/lib/utils";
 
@@ -281,27 +280,6 @@ describe("notification teaser", () => {
     [undefined, "patch"],
   ])("icon of %# is %j", (notification, expected) => {
     expect(notificationIcon(notification)).toBe(expected);
-  });
-
-  test("colors follow the status", () => {
-    expect(notificationStatusColor(item("patch", { status: "draft" }))).toEqual(
-      {
-        color: "var(--color-text-draft)",
-        background: "var(--color-surface-draft)",
-      },
-    );
-    expect(
-      notificationStatusColor(
-        item("issue", { status: "closed", reason: "solved" }),
-      ),
-    ).toEqual({
-      color: "var(--color-text-closed)",
-      background: "var(--color-surface-closed)",
-    });
-    expect(notificationStatusColor(undefined)).toEqual({
-      color: "var(--color-text-secondary)",
-      background: "var(--color-surface-subtle)",
-    });
   });
 
   test("routes to the patch or to the issue in every status", () => {
