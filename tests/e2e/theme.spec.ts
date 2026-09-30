@@ -1,4 +1,4 @@
-import { expect, test } from "@tests/support/fixtures.js";
+import { expect, reload, test } from "@tests/support/fixtures.js";
 
 test("default theme", async ({ page }) => {
   await page.goto("/repos");
@@ -14,7 +14,7 @@ test("theme persistence", async ({ page }) => {
   await page.getByRole("button", { name: "Light", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 
-  await page.reload();
+  await reload(page);
 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
 });

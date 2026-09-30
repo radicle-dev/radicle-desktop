@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-import { expect, test } from "@tests/support/fixtures.js";
+import { expect, reload, test } from "@tests/support/fixtures.js";
 
 function backButton(page: Page) {
   return page.getByRole("button", { name: "Back", exact: true });
@@ -88,7 +88,7 @@ test("history position survives a reload", async ({ page }) => {
   await openRepo(page);
   await page.waitForLoadState("networkidle");
 
-  await page.reload();
+  await reload(page);
   await expectRepo(page);
   await expect(backButton(page)).toBeEnabled();
 
