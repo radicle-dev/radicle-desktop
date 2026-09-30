@@ -1,8 +1,11 @@
 <script lang="ts">
   import type { NotificationsByRepo } from "@bindings/cob/inbox/NotificationsByRepo";
 
+  import { array, string } from "zod";
+
   import { filterNotifications, rowIdsOf } from "@app/lib/inboxFilter";
   import { inboxRepoOrder, togglePinned } from "@app/lib/repoOrdering";
+  import useLocalStorage from "@app/lib/useLocalStorage.svelte";
   import { modifierKey, preserveFocus } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
@@ -48,7 +51,7 @@
 
   const searchableRepos = $derived(
     isFiltering
-      ? notificationsByRepo.filter(r => !hiddenRepos.includes(r.rid))
+      ? notificationsByRepo.filter(r => !hiddenRepos.value.includes(r.rid))
       : notificationsByRepo,
   );
 
@@ -84,56 +87,32 @@
       : clearByRepo(rid);
   }
 
-  let pinnedRepos: string[] = $state(loadPinnedRepos());
-  let hiddenRepos: string[] = $state(loadHiddenRepos());
-
-  function loadPinnedRepos(): string[] {
-    const storedPinnedRepos = localStorage
-      ? localStorage.getItem("pinnedInboxRepos")
-      : null;
-
-    if (storedPinnedRepos === null) {
-      return [];
-    } else {
-      return JSON.parse(storedPinnedRepos);
-    }
-  }
-
-  function updatePinnedRepos(newRepos: string[]) {
-    pinnedRepos = newRepos;
-    localStorage.setItem("pinnedInboxRepos", JSON.stringify(newRepos));
-  }
+  const pinnedRepos = useLocalStorage(
+    "pinnedInboxRepos",
+    array(string()),
+    [],
+    !window.localStorage,
+  );
+  const hiddenRepos = useLocalStorage(
+    "hiddenInboxRepos",
+    array(string()),
+    [],
+    !window.localStorage,
+  );
 
   function togglePin(rid: string) {
-    updatePinnedRepos(togglePinned(loadPinnedRepos(), rid));
-  }
-
-  function loadHiddenRepos(): string[] {
-    const storedHiddenRepos = localStorage
-      ? localStorage.getItem("hiddenInboxRepos")
-      : null;
-
-    if (storedHiddenRepos === null) {
-      return [];
-    } else {
-      return JSON.parse(storedHiddenRepos);
-    }
-  }
-
-  function updateHiddenRepos(newRepos: string[]) {
-    hiddenRepos = newRepos;
-    localStorage.setItem("hiddenInboxRepos", JSON.stringify(newRepos));
+    pinnedRepos.value = togglePinned(pinnedRepos.value, rid);
   }
 
   function toggleHide(rid: string) {
-    updateHiddenRepos(togglePinned(loadHiddenRepos(), rid));
+    hiddenRepos.value = togglePinned(hiddenRepos.value, rid);
   }
 
   const displayRepos = $derived(
     inboxRepoOrder(
       filteredRepos,
-      pinnedRepos,
-      hiddenRepos,
+      pinnedRepos.value,
+      hiddenRepos.value,
       r => r.repo.rid,
       r => r.repo.name,
     ),
@@ -249,9 +228,9 @@
           excludeGroup={isFiltering ? excludeGroup : undefined}
           {isFiltering}
           groupedNotifications={r.groups}
-          hidden={hiddenRepos.includes(r.repo.rid)}
+          hidden={hiddenRepos.value.includes(r.repo.rid)}
           name={r.repo.name}
-          pinned={pinnedRepos.includes(r.repo.rid)}
+          pinned={pinnedRepos.value.includes(r.repo.rid)}
           rid={r.repo.rid}
           {clearByIds}
           clearByRepo={effectiveClearByRepo}
