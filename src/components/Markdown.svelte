@@ -155,7 +155,7 @@
 
       // Replaces code blocks in the background with highlighted code.
       const prefix = "language-";
-      const nodes = Array.from(document.body.querySelectorAll("pre code"));
+      const nodes = Array.from(container.querySelectorAll("pre code"));
 
       const treeChanges: Promise<void>[] = [];
 
