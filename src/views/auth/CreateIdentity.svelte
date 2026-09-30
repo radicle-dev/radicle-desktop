@@ -3,6 +3,7 @@
 
   import debounce from "lodash/debounce";
 
+  import { aliasErrors } from "@app/lib/inputValidation";
   import { invoke } from "@app/lib/invoke";
   import * as router from "@app/lib/router";
   import { createEventEmittersOnce } from "@app/lib/startup.svelte";
@@ -28,23 +29,15 @@
   }, 400);
 
   function validateInput(field: "alias" | "passphrase") {
-    if (field === "alias" && alias.length === 0) {
-      errors.alias.push({ code: "AliasError.EmptyAlias" });
-    }
-    if (field === "alias" && alias.length > 32) {
-      errors.alias.push({ code: "AliasError.TooLongAlias" });
-    }
-    if (field === "alias" && alias.includes(" ")) {
-      errors.alias.push({ code: "AliasError.InvalidAlias" });
+    if (field === "alias") {
+      errors.alias = aliasErrors(alias).map(code => ({ code }));
     }
     if (field === "passphrase" && passphrase.length === 0) {
       errors.passphrase.push({ code: "PassphraseError.InvalidPassphrase" });
     }
   }
 
-  const validAlias = $derived(
-    alias.length > 0 && alias.length <= 32 && !alias.includes(" "),
-  );
+  const validAlias = $derived(aliasErrors(alias).length === 0);
   const validPassphrase = $derived(
     passphrase.length > 0 && passphrase === passphraseRepeat,
   );
