@@ -46,3 +46,13 @@ jobs:
 
       - name: Run e2e tests
         run: npm run test:e2e
+
+      # Kept for passing runs too: a test that passed on retry still leaves
+      # the failed attempt's logs and trace behind.
+      - name: Upload test artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-artifacts
+          path: tests/artifacts
+          retention-days: 7
