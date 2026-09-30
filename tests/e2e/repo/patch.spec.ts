@@ -126,6 +126,10 @@ test("a draft review is published with its comments and verdict", async ({
 
   await expect(summary).toBeHidden();
   await expect(page.getByText("Looks good to me").first()).toBeVisible();
+  await expect(
+    page.getByText("Accepted", { exact: true }).first(),
+  ).toBeVisible();
+  await expect(page.getByText("Rejected", { exact: true })).toHaveCount(0);
   await expect(page.getByText("Shouting is fine here").first()).toBeVisible();
 
   await reload(page);
