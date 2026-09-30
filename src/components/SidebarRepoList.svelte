@@ -3,6 +3,7 @@
 
   import { array, boolean, string } from "zod";
 
+  import { pinnedFirst, pinnedIn, togglePinned } from "@app/lib/repoOrdering";
   import useLocalStorage from "@app/lib/useLocalStorage.svelte";
 
   let filterOpen = $state(false);
@@ -23,10 +24,7 @@
   );
 
   function pinnedFrom(repos: RepoSummary[]): RepoSummary[] {
-    const byRid = new Map(repos.map(r => [r.rid, r]));
-    return pinnedRepoIds.value
-      .map(rid => byRid.get(rid))
-      .filter((r): r is RepoSummary => r !== undefined);
+    return pinnedIn(repos, pinnedRepoIds.value, r => r.rid);
   }
 
   // The sidebar's top-to-bottom order: pinned repos first, in the order they
@@ -34,9 +32,7 @@
   // filter query, which is transient, so the numbering stays put while typing
   // in it.
   function orderRepos(repos: RepoSummary[]): RepoSummary[] {
-    return pinnedFrom(repos).concat(
-      repos.filter(r => !pinnedRepoIds.value.includes(r.rid)),
-    );
+    return pinnedFirst(repos, pinnedRepoIds.value, r => r.rid);
   }
 
   export function revealRepoInSidebar(rid: string) {
@@ -343,11 +339,7 @@
 
   function togglePin(rid: string) {
     withPinAnimation(() => {
-      if (pinnedRepoIds.value.includes(rid)) {
-        pinnedRepoIds.value = pinnedRepoIds.value.filter(r => r !== rid);
-      } else {
-        pinnedRepoIds.value = [rid, ...pinnedRepoIds.value];
-      }
+      pinnedRepoIds.value = togglePinned(pinnedRepoIds.value, rid);
     });
   }
 

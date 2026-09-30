@@ -3,11 +3,9 @@
 
   import { array, string } from "zod";
 
-  import {
-    type FilteredRepo,
-    filterNotifications,
-    rowIdsOf,
-  } from "@app/lib/inboxFilter";
+  import { filterNotifications, rowIdsOf } from "@app/lib/inboxFilter";
+  import { inboxRepoOrder, togglePinned } from "@app/lib/repoOrdering";
+  import useLocalStorage from "@app/lib/useLocalStorage.svelte";
   import { modifierKey, preserveFocus } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
@@ -53,7 +51,7 @@
 
   const searchableRepos = $derived(
     isFiltering
-      ? notificationsByRepo.filter(r => !hiddenRepos.includes(r.rid))
+      ? notificationsByRepo.filter(r => !hiddenRepos.value.includes(r.rid))
       : notificationsByRepo,
   );
 
@@ -89,81 +87,36 @@
       : clearByRepo(rid);
   }
 
-  // Stored data can be anything, so an invalid list reads as empty instead of
-  // breaking the inbox.
-  function loadStoredRepos(key: string): string[] {
-    try {
-      const parsed = array(string()).safeParse(
-        JSON.parse(localStorage?.getItem(key) ?? "[]"),
-      );
-      return parsed.success ? parsed.data : [];
-    } catch {
-      return [];
-    }
-  }
-
-  let pinnedRepos: string[] = $state(loadPinnedRepos());
-  let hiddenRepos: string[] = $state(loadHiddenRepos());
-
-  function loadPinnedRepos(): string[] {
-    return loadStoredRepos("pinnedInboxRepos");
-  }
-
-  function updatePinnedRepos(newRepos: string[]) {
-    pinnedRepos = newRepos;
-    localStorage.setItem("pinnedInboxRepos", JSON.stringify(newRepos));
-  }
+  const pinnedRepos = useLocalStorage(
+    "pinnedInboxRepos",
+    array(string()),
+    [],
+    !window.localStorage,
+  );
+  const hiddenRepos = useLocalStorage(
+    "hiddenInboxRepos",
+    array(string()),
+    [],
+    !window.localStorage,
+  );
 
   function togglePin(rid: string) {
-    const repos = loadPinnedRepos();
-    if (repos.includes(rid)) {
-      updatePinnedRepos(repos.filter(r => r !== rid));
-    } else {
-      updatePinnedRepos([rid, ...repos]);
-    }
-  }
-
-  function loadHiddenRepos(): string[] {
-    return loadStoredRepos("hiddenInboxRepos");
-  }
-
-  function updateHiddenRepos(newRepos: string[]) {
-    hiddenRepos = newRepos;
-    localStorage.setItem("hiddenInboxRepos", JSON.stringify(newRepos));
+    pinnedRepos.value = togglePinned(pinnedRepos.value, rid);
   }
 
   function toggleHide(rid: string) {
-    const repos = loadHiddenRepos();
-    if (repos.includes(rid)) {
-      updateHiddenRepos(repos.filter(r => r !== rid));
-    } else {
-      updateHiddenRepos([rid, ...repos]);
-    }
+    hiddenRepos.value = togglePinned(hiddenRepos.value, rid);
   }
 
   const displayRepos = $derived(
-    sortedRepos(filteredRepos, pinnedRepos, hiddenRepos),
+    inboxRepoOrder(
+      filteredRepos,
+      pinnedRepos.value,
+      hiddenRepos.value,
+      r => r.repo.rid,
+      r => r.repo.name,
+    ),
   );
-
-  function sortedRepos(
-    allRepos: FilteredRepo[],
-    pinned: string[],
-    hidden: string[],
-  ) {
-    // Preserve pinning order.
-    const pinnedRepos = pinned
-      .map(p => allRepos.find(r => r.repo.rid === p))
-      .filter((r): r is FilteredRepo => r !== undefined);
-
-    const sortedRepos = allRepos
-      .filter(r => !pinned.includes(r.repo.rid) && !hidden.includes(r.repo.rid))
-      .sort((a, b) => a.repo.name.localeCompare(b.repo.name));
-    const hiddenRepos = allRepos
-      .filter(r => hidden.includes(r.repo.rid))
-      .sort((a, b) => a.repo.name.localeCompare(b.repo.name));
-
-    return [...pinnedRepos, ...sortedRepos, ...hiddenRepos];
-  }
 
   function loadedNotificationCount() {
     return notificationsByRepo.reduce((acc, repo) => {
@@ -275,9 +228,9 @@
           excludeGroup={isFiltering ? excludeGroup : undefined}
           {isFiltering}
           groupedNotifications={r.groups}
-          hidden={hiddenRepos.includes(r.repo.rid)}
+          hidden={hiddenRepos.value.includes(r.repo.rid)}
           name={r.repo.name}
-          pinned={pinnedRepos.includes(r.repo.rid)}
+          pinned={pinnedRepos.value.includes(r.repo.rid)}
           rid={r.repo.rid}
           {clearByIds}
           clearByRepo={effectiveClearByRepo}
