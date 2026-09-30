@@ -10,7 +10,10 @@
   import type { CodeComments } from "@app/lib/codeComments";
   import { forwardPatchActivityContext } from "@app/lib/patchActivityContext";
   import type { LineAnnotation } from "@app/lib/pierreComments";
-  import { fileAnnotations } from "@app/lib/pierreComments";
+  import {
+    annotationSignature,
+    fileAnnotations,
+  } from "@app/lib/pierreComments";
   import {
     codeLineHeight,
     getWorkerPool,
@@ -90,11 +93,7 @@
   const annotationList = $derived.by(() =>
     fileAnnotations(path, threads, undefined),
   );
-  const annotationKey = $derived(
-    annotationList
-      .map(({ side, lineNumber }) => `${side}:${lineNumber}`)
-      .join("|"),
-  );
+  const annotationKey = $derived(annotationSignature(annotationList));
   let stableAnnotations = $state.raw<DiffLineAnnotation<LineAnnotation>[]>([]);
   let stableKey: string | undefined;
   $effect(() => {

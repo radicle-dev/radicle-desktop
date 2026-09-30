@@ -6,11 +6,17 @@ import { describe, expect, test } from "vitest";
 import type { ComposerTarget } from "@app/lib/pierreComments";
 import {
   anchorOf,
+  annotationSignature,
   commentCountsByPath,
+  commentedLines,
+  composerLines,
+  entryStatus,
   fileAnnotations,
   formatAnchor,
   formatAnchorLines,
   isCommentableStatus,
+  itemIds,
+  lineRangeOf,
   locationOf,
 } from "@app/lib/pierreComments";
 
@@ -257,4 +263,94 @@ describe("commentCountsByPath", () => {
 
     expect(counts.get("a.ts")).toEqual({ resolved: 0, unresolved: 1 });
   });
+});
+
+describe("line ranges", () => {
+  test("lineRangeOf prefers the new side and ends after the last line", () => {
+    expect(
+      lineRangeOf(at("a.ts", { old: lines(1, 2), new: lines(3, 5) })),
+    ).toEqual({ side: "new", start: 3, end: 5 });
+    expect(lineRangeOf(at("a.ts", { old: lines(1, 2) }))).toEqual({
+      side: "old",
+      start: 1,
+      end: 2,
+    });
+    expect(
+      lineRangeOf(
+        at("a.ts", {
+          new: { type: "chars", line: 7, range: { start: 0, end: 3 } },
+        }),
+      ),
+    ).toEqual({ side: "new", start: 7, end: 8 });
+    expect(lineRangeOf(at("a.ts", {}))).toBeUndefined();
+  });
+
+  test("commentedLines lists each line of the range", () => {
+    expect(commentedLines(at("a.ts", { new: lines(3, 6) }))).toEqual([3, 4, 5]);
+    expect(commentedLines(at("a.ts", {}))).toEqual([]);
+  });
+});
+
+test("annotationSignature only depends on which slots are taken", () => {
+  const a = { side: "additions" as const, lineNumber: 1, metadata: {} };
+  const b = { side: "deletions" as const, lineNumber: 2, metadata: {} };
+
+  expect(annotationSignature([b, a] as never)).toBe(
+    annotationSignature([a, b] as never),
+  );
+  expect(annotationSignature([a] as never)).not.toBe(
+    annotationSignature([b] as never),
+  );
+  expect(annotationSignature(undefined)).toBe("");
+});
+
+describe("composerLines", () => {
+  test("orders a range dragged upwards", () => {
+    expect(composerLines({ start: 9, end: 4, side: "deletions" })).toEqual({
+      side: "deletions",
+      firstLine: 4,
+      lastLine: 9,
+    });
+  });
+
+  test("keeps the starting line of a drag that ends on the other side", () => {
+    expect(
+      composerLines({
+        start: 3,
+        end: 8,
+        side: "additions",
+        endSide: "deletions",
+      }),
+    ).toEqual({ side: "additions", firstLine: 3, lastLine: 3 });
+  });
+
+  test("defaults to the new side", () => {
+    expect(composerLines({ start: 2, end: 5, endSide: "additions" })).toEqual({
+      side: "additions",
+      firstLine: 2,
+      lastLine: 5,
+    });
+  });
+});
+
+test.each([
+  ["added", "deleted", "deleted"],
+  ["deleted", "new", "added"],
+  ["added", "new", "added"],
+  ["modified", "change", "modified"],
+  [undefined, "new", undefined],
+] as const)(
+  "entryStatus of a %j path's %j entry is %j",
+  (status, type, expected) => {
+    expect(entryStatus(status, type)).toBe(expected);
+  },
+);
+
+test("itemIds numbers repeated paths, keeping the first bare", () => {
+  expect(itemIds(["a", "b", "a", "a"])).toEqual([
+    "a",
+    "b",
+    "a\u00002",
+    "a\u00003",
+  ]);
 });
