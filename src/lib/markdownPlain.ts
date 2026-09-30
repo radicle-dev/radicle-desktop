@@ -9,8 +9,12 @@ export function plainText(body: string): string {
       .replace(/`/gu, "")
       .replace(/~~(.+?)~~/gu, "$1")
       // Emphasis only where a marker sits on a word boundary, so `snake_case`,
-      // `MAX_SIZE` and `_private` survive being read as italics.
-      .replace(/(^|[^\w])[*_]{1,2}([^*_]+?)[*_]{1,2}(?=[^\w]|$)/gu, "$1$2")
+      // `MAX_SIZE` and `_private` survive being read as italics, and with no
+      // space just inside it, so `2 * 3 * 4` does too.
+      .replace(
+        /(^|[^\w])[*_]{1,2}(?=\S)([^*_]+?)(?<=\S)[*_]{1,2}(?=[^\w]|$)/gu,
+        "$1$2",
+      )
       .replace(/^\s{0,3}#{1,6}\s+/gmu, "")
       .replace(/^\s{0,3}>\s?/gmu, "")
       .replace(/^\s{0,3}(?:[-+*]|\d+\.)\s+/gmu, "")
