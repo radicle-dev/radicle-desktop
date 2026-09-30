@@ -130,3 +130,23 @@ export function fullFileLoader(
     return { oldContents, newContents };
   };
 }
+
+/// How many of the diff's files a reviewer has checked off. Checks left over
+/// from files the diff no longer has don't count.
+export function checkedFileProgress(
+  files: FileDiff[],
+  checkedFiles: string[],
+): { filesChecked: number; filesTotal: number } {
+  const paths = new Set(files.map(fileDiffPath));
+  return {
+    filesChecked: checkedFiles.filter(path => paths.has(path)).length,
+    filesTotal: files.length,
+  };
+}
+
+export function checkedPaths(
+  files: FileDiff[],
+  isChecked: (path: string) => boolean,
+): Set<string> {
+  return new Set(files.map(fileDiffPath).filter(isChecked));
+}

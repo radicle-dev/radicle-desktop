@@ -12,10 +12,12 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import countBy from "lodash/countBy";
   import mapValues from "lodash/mapValues";
   import { SvelteSet } from "svelte/reactivity";
 
   import { commentSourcesOf } from "@app/lib/commentSources";
+  import { checkedFileProgress } from "@app/lib/diffText";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
   import { nodeRunning } from "@app/lib/events";
   import {
@@ -329,16 +331,8 @@
           status: undefined,
         }),
       ]);
-      const patchCounts: Record<string, number> = {};
-      for (const p of patches.content) {
-        patchCounts[p.author.did] = (patchCounts[p.author.did] ?? 0) + 1;
-      }
-      const issueCounts: Record<string, number> = {};
-      for (const i of issues) {
-        issueCounts[i.author.did] = (issueCounts[i.author.did] ?? 0) + 1;
-      }
-      patchesAuthoredByDid = patchCounts;
-      issuesAuthoredByDid = issueCounts;
+      patchesAuthoredByDid = countBy(patches.content, p => p.author.did);
+      issuesAuthoredByDid = countBy(issues, i => i.author.did);
       lastActivityRid = targetRid;
       activityLoaded = true;
     } catch (error) {
@@ -554,18 +548,7 @@
       head: rev.head,
     }).then(diff => {
       if (cancelled) return;
-      const filePaths = new Set(
-        diff.files.map(f =>
-          f.status === "moved" || f.status === "copied" ? f.newPath : f.path,
-        ),
-      );
-      const filesChecked = draft.checkedFiles.filter(p =>
-        filePaths.has(p),
-      ).length;
-      fileProgress = {
-        filesChecked,
-        filesTotal: diff.files.length,
-      };
+      fileProgress = checkedFileProgress(diff.files, draft.checkedFiles);
     });
     return () => {
       cancelled = true;
