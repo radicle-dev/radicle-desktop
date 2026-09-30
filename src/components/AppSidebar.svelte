@@ -10,9 +10,12 @@
   import { checkRadicleCLI } from "@app/lib/checkRadicleCLI.svelte";
   import { hints } from "@app/lib/hints";
   import { dynamicInterval } from "@app/lib/interval";
-  import { invoke } from "@app/lib/invoke";
   import { modalStore, show } from "@app/lib/modal";
-  import { notificationCount } from "@app/lib/notificationCount.svelte";
+  import {
+    badgeCount,
+    notificationCount,
+    refreshNotificationCount,
+  } from "@app/lib/notificationCount.svelte";
   import * as router from "@app/lib/router";
   import type { SidebarData } from "@app/lib/router/definitions";
   import { ariaKeyShortcuts, useShortcuts } from "@app/lib/shortcuts.svelte";
@@ -290,27 +293,14 @@
       firstLaunchStorage.value = false;
     }
 
-    await updateNotificationCount();
-    dynamicInterval("notificationCount", updateNotificationCount, 3_000);
+    await refreshNotificationCount();
+    dynamicInterval("notificationCount", refreshNotificationCount, 3_000);
   });
-
-  async function updateNotificationCount() {
-    notificationCount.value = await invoke<number>("notification_count");
-    if (window.__TAURI_INTERNALS__ && $badgeCounter) {
-      await getCurrentWindow().setBadgeCount(
-        notificationCount.value === 0 ? undefined : notificationCount.value,
-      );
-    } else if (window.__TAURI_INTERNALS__) {
-      await getCurrentWindow().setBadgeCount(undefined);
-    }
-  }
 
   $effect(() => {
     if (window.__TAURI_INTERNALS__) {
       void getCurrentWindow().setBadgeCount(
-        $badgeCounter && notificationCount.value > 0
-          ? notificationCount.value
-          : undefined,
+        badgeCount(notificationCount.value, $badgeCounter),
       );
     }
   });
