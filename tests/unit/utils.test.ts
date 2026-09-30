@@ -113,12 +113,17 @@ describe("parseRepositoryId", () => {
     });
   });
 
-  test.each(["", "rad:", "rad:z3fpY7ntt", `${rid} `, "rad:x3fpY7nttPPa6MBn"])(
-    "rejects %j",
-    input => {
-      expect(parseRepositoryId(input)).toBeUndefined();
-    },
-  );
+  test.each([
+    "",
+    "rad:",
+    "rad:z3fpY7ntt",
+    `${rid} `,
+    "rad:x3fpY7nttPPa6MBn",
+    // Base58 has no 0, O, I or l.
+    "rad:z0OIl",
+  ])("rejects %j", input => {
+    expect(parseRepositoryId(input)).toBeUndefined();
+  });
 });
 
 describe("formatRepositoryId", () => {
