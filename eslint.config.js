@@ -161,6 +161,7 @@ export default [
   {
     ignores: [
       "build/*",
+      "tests/tmp/**/*",
       "isolation/*",
       "node_modules/**/*",
       "target/*",
