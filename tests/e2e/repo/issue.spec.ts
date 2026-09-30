@@ -8,7 +8,7 @@ test("navigate single issue", async ({ page }) => {
 });
 
 test("correct order of threads", async ({ page }) => {
-  await page.goto("/repos");
+  await page.goto("/inbox");
   await page.getByRole("link", { name: "cobs" }).click();
   await page.getByRole("link", { name: "Issues" }).click();
   await page.getByText("This title has **markdown**").click();
@@ -29,7 +29,7 @@ test("correct order of threads", async ({ page }) => {
 });
 
 test("creation of top level comments", async ({ page }) => {
-  await page.goto("/repos");
+  await page.goto("/inbox");
   await page.getByRole("link", { name: "cobs" }).click();
   await page.getByRole("link", { name: "Issues" }).click();
   await page.getByRole("button", { name: "New" }).click();

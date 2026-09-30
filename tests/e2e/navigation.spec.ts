@@ -36,9 +36,6 @@ async function openIssues(page: Page) {
 }
 
 async function launch(page: Page) {
-  await page.addInitScript(() =>
-    localStorage.setItem("appFirstLaunch", "false"),
-  );
   await page.goto("/inbox");
   await expect(page.getByRole("link", { name: "cobs" })).toBeVisible();
 }

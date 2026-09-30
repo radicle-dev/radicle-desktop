@@ -10,7 +10,7 @@ test("copy to clipboard", async () => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const page = await context.newPage();
 
-  await page.goto("/repos");
+  await page.goto("/inbox");
 
   // Reset system clipboard to a known state.
   await page.evaluate<string>("navigator.clipboard.writeText('')");

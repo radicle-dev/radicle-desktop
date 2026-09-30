@@ -87,7 +87,7 @@ async function navigateToUrl(
   if (route) {
     await navigate(action, route);
   } else {
-    console.error("Could not resolve route for URL: ", url);
+    console.error(`Could not resolve route for URL: ${url.href}`);
     await navigate(action, { resource: "inbox" });
   }
 }
