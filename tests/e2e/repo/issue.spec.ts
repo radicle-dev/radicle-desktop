@@ -149,3 +149,28 @@ test("shortcut does not submit an empty comment", async ({ page }) => {
   await expect(input).toHaveValue("   ");
   await expect(comments).toHaveCount(2);
 });
+
+test("each code block gets one copy button", async ({ page }) => {
+  await page.goto(`/repos/${cobRid}/issues`);
+  await page.getByRole("button", { name: "New" }).click();
+  await page.getByPlaceholder("Title").fill("Code blocks in two places");
+  await page
+    .getByPlaceholder("Description")
+    .fill("First:\n\n```js\nconsole.log('one')\n```");
+  await page.getByRole("button", { name: /^Save/ }).click();
+  await expect(
+    page.getByRole("button", { name: "Code blocks in two places" }),
+  ).toBeVisible();
+
+  // A second Markdown block on the page used to wrap the first one's code
+  // again.
+  await page
+    .getByPlaceholder("Leave a comment")
+    .fill("Second:\n\n```js\nconsole.log('two')\n```");
+  await page.getByRole("button", { name: /^Comment/ }).click();
+
+  await expect(page.locator("pre")).toHaveCount(2);
+  await expect(page.locator(".pre-wrapper")).toHaveCount(2);
+  await expect(page.locator(".pre-wrapper radicle-clipboard")).toHaveCount(2);
+  await expect(page.locator(".pre-wrapper .pre-wrapper")).toHaveCount(0);
+});
