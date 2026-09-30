@@ -9,7 +9,7 @@ import * as Util from "node:util";
 
 import { type Config, defaultConfig } from "@tests/support/fixtures.js";
 import { logPrefix } from "@tests/support/logPrefix.js";
-import { randomTag } from "@tests/support/support.js";
+import { randomTag, testHttpApiBinary } from "@tests/support/support.js";
 import { execa } from "execa";
 import getPort from "get-port";
 import matches from "lodash/matches.js";
@@ -251,30 +251,20 @@ export class RadiclePeer {
     await this.spawn("rad", ["auth"]);
   }
 
+  // Without a port the OS picks a free one, which the server reports back.
+  // Choosing one up front raced between workers: the second server failed to
+  // bind, and its page talked to the other worker's server instead.
   public async startHttpd(port?: number): Promise<void> {
-    if (!port) {
-      port = await getPort();
-    }
-    this.#httpdBaseUrl = {
-      hostname: "127.0.0.1",
-      port,
-      scheme: "http",
-    };
-    void this.spawn("cargo", [
-      "run",
-      "--manifest-path",
-      "./crates/test-http-api/Cargo.toml",
-      "--",
+    const httpd = this.spawn(testHttpApiBinary, [
       "--listen",
-      `${this.#httpdBaseUrl.hostname}:${this.#httpdBaseUrl.port}`,
+      `127.0.0.1:${port ?? 0}`,
     ]);
-
-    await waitOn({
-      resources: [
-        `tcp:${this.#httpdBaseUrl.hostname}:${this.#httpdBaseUrl.port}`,
-      ],
-      timeout: 120_000,
-    });
+    if (port) {
+      await waitOn({ resources: [`tcp:127.0.0.1:${port}`], timeout: 10_000 });
+    } else {
+      port = await reportedPort(httpd);
+    }
+    this.#httpdBaseUrl = { hostname: "127.0.0.1", port, scheme: "http" };
   }
 
   public async startNode(config: Partial<Config> = defaultConfig) {
@@ -443,4 +433,30 @@ async function updateConfig(radHome: string, configParams: Partial<Config>) {
     network: "test",
   };
   await Fs.writeFile(configPath, JSON.stringify(config), "utf-8");
+}
+
+async function reportedPort(httpd: SpawnResult): Promise<number> {
+  if (!httpd.stdout) {
+    throw new Error("test-http-api has no stdout to read its port from");
+  }
+  const lines = readline.createInterface({ input: httpd.stdout });
+  const exited = httpd.then(
+    () => {
+      throw new Error("test-http-api exited before it was listening");
+    },
+    (error: unknown) => {
+      throw error;
+    },
+  );
+  const listening = (async () => {
+    for await (const line of lines) {
+      const match = /^listening on .*:(\d+)$/.exec(line);
+      if (match) {
+        lines.close();
+        return Number(match[1]);
+      }
+    }
+    throw new Error("test-http-api closed its output before it was listening");
+  })();
+  return Promise.race([listening, exited]);
 }
