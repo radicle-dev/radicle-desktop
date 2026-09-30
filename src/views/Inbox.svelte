@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { NotificationsByRepo } from "@bindings/cob/inbox/NotificationsByRepo";
 
-  import { getCurrentWindow } from "@tauri-apps/api/window";
-
   import { invoke } from "@app/lib/invoke";
-  import { notificationCount } from "@app/lib/notificationCount.svelte";
+  import {
+    notificationCount,
+    refreshNotificationCount,
+  } from "@app/lib/notificationCount.svelte";
   import type { SidebarData } from "@app/lib/router/definitions";
 
-  import { badgeCounter } from "@app/components/BadgeCounterSwitch.svelte";
   import InboxList from "@app/components/InboxList.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Layout from "@app/views/repo/Layout.svelte";
@@ -25,21 +25,11 @@
     notificationCount.value = sidebarData.notificationCount;
   });
 
-  async function updateCount() {
-    const count = await invoke<number>("notification_count");
-    notificationCount.value = count;
-    if (window.__TAURI_INTERNALS__ && $badgeCounter) {
-      await getCurrentWindow().setBadgeCount(count === 0 ? undefined : count);
-    } else if (window.__TAURI_INTERNALS__) {
-      await getCurrentWindow().setBadgeCount(undefined);
-    }
-  }
-
   async function clearAll() {
     try {
       await invoke("clear_notifications", { params: { type: "all" } });
     } finally {
-      await updateCount();
+      await refreshNotificationCount();
       await loadNotifications();
     }
   }
@@ -50,7 +40,7 @@
         params: { type: "repo", content: rid },
       });
     } finally {
-      await updateCount();
+      await refreshNotificationCount();
       await loadNotifications();
     }
   }
@@ -61,7 +51,7 @@
         params: { type: "ids", content: ids },
       });
     } finally {
-      await updateCount();
+      await refreshNotificationCount();
       await loadNotifications();
     }
   }
