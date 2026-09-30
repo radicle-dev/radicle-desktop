@@ -9,6 +9,7 @@
   import { onDestroy, onMount } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
+  import { basename } from "@app/lib/embeds";
   import { hints } from "@app/lib/hints";
   import { invoke } from "@app/lib/invoke";
   import { matchesShortcut } from "@app/lib/shortcuts.svelte";
@@ -125,15 +126,42 @@
     embedUploadError = undefined;
   }, 5000);
 
-  function updateBodyAndSelection(input: string[], pre: string, after: string) {
-    const allEmbeds = input.join("");
-    body = pre.concat(allEmbeds, after);
-    selectionStart = pre.length + allEmbeds.length;
-    selectionEnd = pre.length + allEmbeds.length;
-  }
-
   function splitBody() {
     return [body.substring(0, selectionStart), body.substring(selectionStart)];
+  }
+
+  async function uploadEmbeds<T>(
+    items: T[],
+    nameOf: (item: T) => string,
+    save: (item: T) => Promise<string>,
+  ) {
+    const [preBody, afterBody] = splitBody();
+    body =
+      preBody +
+      items.map(item => `[Uploading ${nameOf(item)}...]()\n`).join("") +
+      afterBody;
+    const links = await Promise.all(
+      items.map(async item => {
+        const name = nameOf(item);
+        try {
+          const oid = await save(item);
+          embeds.set(oid, { name, content: `git:${oid}` });
+          return `[${name}](${oid})\n`;
+        } catch {
+          embedUploadError = "Upload failed, embed exceeded 10Mb.";
+          restoreDragDropText();
+          return "";
+        }
+      }),
+    );
+    const inserted = links.join("");
+    body = preBody + inserted + afterBody;
+    selectionStart = preBody.length + inserted.length;
+    selectionEnd = selectionStart;
+  }
+
+  function saveByPath(path: string) {
+    return invoke<string>("save_embed_by_path", { rid, path });
   }
 
   onMount(async () => {
@@ -152,29 +180,7 @@
           position: { x: number; y: number };
         }>("tauri://drag-drop", async event => {
           draggingOver = false;
-          const [preBody, afterBody] = splitBody();
-
-          return Promise.all(
-            event.payload.paths.map(async path => {
-              const pathSegments = path.split("/");
-              const name = pathSegments[pathSegments.length - 1];
-              const uploadLabel = `[Uploading ${name}...]()\n`;
-
-              body = preBody.concat(uploadLabel, afterBody);
-              try {
-                const oid = await invoke<string>("save_embed_by_path", {
-                  rid,
-                  path,
-                });
-                embeds.set(oid, { name, content: `git:${oid}` });
-                return `[${name}](${oid})\n`;
-              } catch {
-                embedUploadError = "Upload failed, embed exceeded 10Mb.";
-                restoreDragDropText();
-                return "";
-              }
-            }),
-          ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
+          await uploadEmbeds(event.payload.paths, basename, saveByPath);
         });
       }
     }
@@ -187,28 +193,7 @@
   });
 
   async function attachEmbedsByPaths(paths: string[]) {
-    const [preBody, afterBody] = splitBody();
-
-    return Promise.all(
-      paths.map(async path => {
-        const pathSegments = path.split("/");
-        const name = pathSegments[pathSegments.length - 1];
-        const uploadLabel = `[Uploading ${name}...]()\n`;
-        body = preBody.concat(uploadLabel, afterBody);
-        try {
-          const oid = await invoke<string>("save_embed_by_path", {
-            rid,
-            path,
-          });
-          embeds.set(oid, { name: name ?? path, content: `git:${oid}` });
-          return `[${name}](${oid})\n`;
-        } catch {
-          embedUploadError = "Upload failed, embed exceeded 10Mb.";
-          restoreDragDropText();
-          return "";
-        }
-      }),
-    ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
+    await uploadEmbeds(paths, basename, saveByPath);
   }
 
   async function handlePaste(e: ClipboardEvent) {
@@ -218,51 +203,28 @@
 
     if (e.clipboardData?.files && e.clipboardData.files.length > 0) {
       e.preventDefault();
-      const [preBody, afterBody] = splitBody();
-      // We read the buffer on the backend, if it's a image buffer.
+      const files = Array.from(e.clipboardData.files);
+      // A single item may be an image the webview can't hand over, so the
+      // backend reads it from the clipboard itself.
       if (e.clipboardData.items.length === 1) {
-        const file = e.clipboardData.files[0];
-        const uploadLabel = `[Uploading...]()\n`;
-        body = preBody.concat(uploadLabel, afterBody);
-        try {
-          const oid = await invoke<string>("save_embed_by_clipboard", {
-            name: file.name,
-            rid,
-          });
-
-          embeds.set(oid, { name: file.name, content: `git:${oid}` });
-          body = preBody.concat(`[${file.name}](${oid})\n`, afterBody);
-        } catch {
-          body = preBody.concat(``, afterBody);
-          embedUploadError = "Upload failed, embed exceeded 10Mb.";
-          restoreDragDropText();
-        }
+        await uploadEmbeds(
+          files.slice(0, 1),
+          file => file.name,
+          file =>
+            invoke<string>("save_embed_by_clipboard", { name: file.name, rid }),
+        );
       } else {
-        return Promise.all(
-          Array.from(e.clipboardData.files).map(async file => {
-            const arrayBuffer = await file.arrayBuffer();
-            const bytes = new Uint8Array(arrayBuffer);
-            const uploadLabel = `[Uploading ${file.name}...]()\n`;
-            body = preBody.concat(uploadLabel, afterBody);
-            try {
-              const oid = await invoke<string>("save_embed_by_bytes", {
-                rid,
-                name: file.name,
-                bytes,
-              });
-              embeds.set(oid, { name: file.name, content: `git:${oid}` });
-              return `[${file.name}](${oid})\n`;
-            } catch {
-              embedUploadError = "Upload failed, embed exceeded 10Mb.";
-              restoreDragDropText();
-              return "";
-            }
-          }),
-        ).then(texts => updateBodyAndSelection(texts, preBody, afterBody));
+        await uploadEmbeds(
+          files,
+          file => file.name,
+          async file =>
+            invoke<string>("save_embed_by_bytes", {
+              rid,
+              name: file.name,
+              bytes: new Uint8Array(await file.arrayBuffer()),
+            }),
+        );
       }
-    } else {
-      // In case that the clipboard data isn't an array of files,
-      // we want to make use of the default behavior and insert the clipboard content.
     }
   }
 
