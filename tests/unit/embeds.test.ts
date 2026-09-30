@@ -5,6 +5,7 @@ import { basename, embedPreviewKind } from "@app/lib/embeds";
 describe("basename", () => {
   test.each([
     ["/home/alice/cat.png", "cat.png"],
+    ["C:\\Users\\alice\\cat.png", "cat.png"],
     ["cat.png", "cat.png"],
   ])("of %j is %j", (path, expected) => {
     expect(basename(path)).toBe(expected);
