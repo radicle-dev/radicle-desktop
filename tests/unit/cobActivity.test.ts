@@ -20,6 +20,18 @@ test("itemDiff lists added and removed items", () => {
   expect(itemDiff([], [])).toEqual({ removed: [], added: [] });
 });
 
+test("itemDiff compares objects by key", () => {
+  // Each action carries its own copies, so the same person is never the same
+  // object twice.
+  const previous = [author("alice"), author("bob")];
+  const next = [author("bob"), author("carol")];
+
+  expect(itemDiff(previous, next, a => a.did)).toEqual({
+    removed: [author("alice")],
+    added: [author("carol")],
+  });
+});
+
 describe("flattenActivity", () => {
   const none = new Set<Action["type"]>();
 
