@@ -6,7 +6,12 @@ import {
   createCollaborators,
   createProject,
 } from "@tests/support/collaboration.js";
-import { expect, test, useBackend } from "@tests/support/fixtures.js";
+import {
+  expect,
+  test,
+  useBackend,
+  waitForCommand,
+} from "@tests/support/fixtures.js";
 
 // Opens bob's project as eve, who cloned it but isn't a delegate.
 async function asContributor(page: Page, peerManager: PeerManager) {
@@ -85,4 +90,43 @@ test("a contributor can't change a patch's state or delete it", async ({
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Add labels" })).toBeDisabled();
   await expect(page.getByTitle("Delete patch from your node")).toBeHidden();
+});
+
+test("a contributor can't resolve someone else's review comment", async ({
+  page,
+  peerManager,
+}) => {
+  const { bob, eve } = await createCollaborators(peerManager);
+  const { rid, patchId } = await createProject(bob);
+  await clone(eve, rid);
+  await bob.startHttpd();
+  await useBackend(page, bob);
+
+  // Bob reviews his own patch with a comment on the changed line.
+  await page.goto(`/repos/${rid}/patches/${patchId}?view=changes`);
+  await page
+    .locator(
+      '[data-unified] [data-column-number="3"]:not([data-line-type="change-deletion"])',
+    )
+    .hover();
+  await page.locator("[data-utility-button]").click();
+  await page.getByPlaceholder("Leave a comment").fill("Keep it loud");
+  await page
+    .getByLabel("extended-textarea")
+    .filter({ has: page.getByPlaceholder("Leave a comment") })
+    .getByRole("button", { name: /^Start review/ })
+    .click();
+  await waitForCommand(page, "create_patch_review", () =>
+    page.getByRole("button", { name: "Accept revision", exact: true }).click(),
+  );
+  await eve.rad(["sync", rid, "--fetch"]);
+
+  // Now as eve.
+  await eve.startHttpd();
+  await useBackend(page, eve);
+  await page.goto(`/repos/${rid}/patches/${patchId}?view=changes`);
+  const thread = page.getByRole("group").filter({ hasText: "Keep it loud" });
+  await thread.hover();
+  await expect(thread.getByTitle("Reply")).toBeVisible();
+  await expect(thread.getByTitle("Mark as resolved")).toHaveCount(0);
 });

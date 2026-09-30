@@ -46,7 +46,7 @@ export async function createProject(peer: RadiclePeer, name = "project") {
     ["Shout the third line"],
     "feature/shout",
     () => Fs.writeFile(file, "one\ntwo\nTHREE\nfour\nfive\n"),
-    [],
+    ["Shout the third line", "Readers skim, so the key line should stand out."],
     { cwd: repoFolder },
   );
   return { rid, repoFolder, issueId, patchId };
