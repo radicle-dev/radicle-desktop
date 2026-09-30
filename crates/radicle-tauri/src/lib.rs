@@ -61,7 +61,6 @@ pub fn run() {
             cob::patch::create_patch_review,
             cob::patch::rebuild_patch_cache,
             cob::patch::revisions_by_patch,
-            cob::patch::revisions_by_patch,
             cob::save_embed_by_bytes,
             cob::save_embed_by_clipboard,
             cob::save_embed_by_path,

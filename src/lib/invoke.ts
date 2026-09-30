@@ -63,17 +63,18 @@ async function withTestBackend<T>(
       }
     });
   } else {
-    return fetch(
-      `http://127.0.0.1:${import.meta.env.VITE_TEST_HTTP_API_PORT ?? 8081}/${cmd}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(args),
-      },
-    ).then(async response => {
+    return fetch(`http://127.0.0.1:${testHttpApiPort()}/${cmd}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(args ?? {}, (_key, value: unknown) =>
+        value instanceof Uint8Array ? Array.from(value) : value,
+      ),
+    }).then(async response => {
       if (response.status === 404) {
-        console.log("Got a 404 response:", response);
-        return null;
+        throw new InvokeError(
+          `test-http-api has no route for \`${cmd}\``,
+          "TestHttpApi.MissingRoute",
+        );
       }
       const json = await response.json();
       if (!response.ok) {
@@ -87,6 +88,23 @@ async function withTestBackend<T>(
       return json;
     });
   }
+}
+
+function testHttpApiPort(): number | string {
+  return (
+    window.__TEST_HTTP_API_PORT__ ??
+    import.meta.env.VITE_TEST_HTTP_API_PORT ??
+    8081
+  );
+}
+
+// The test backend can't stream, so outside Tauri events are dropped.
+export function channel<T>(
+  onMessage: (message: T) => void,
+): tauri.Channel<T> | undefined {
+  return window.__TAURI_INTERNALS__
+    ? new tauri.Channel<T>(onMessage)
+    : undefined;
 }
 
 async function getDiff(rid: string, options: DiffOptions): Promise<Diff> {

@@ -1,14 +1,6 @@
 use std::net::SocketAddr;
-use std::sync::Arc;
 
-use axum::Router;
 use tokio::net::TcpListener;
-
-use radicle::Profile;
-use radicle::cob::cache::COBS_DB_FILE;
-
-use radicle_types::domain::issue::service::Service as IssueService;
-use radicle_types::domain::patch::service::Service as PatchService;
 
 mod api;
 
@@ -18,24 +10,13 @@ pub struct Options {
 }
 
 pub async fn run(options: Options) -> anyhow::Result<()> {
-    let profile = Profile::load()?;
     let listener = TcpListener::bind(options.listen).await?;
-    let app = router(profile)?.into_make_service_with_connect_info::<SocketAddr>();
+    // Read by the e2e harness to learn the port when it asked for port 0.
+    println!("listening on {}", listener.local_addr()?);
+    let app =
+        api::router(api::Shared::default()).into_make_service_with_connect_info::<SocketAddr>();
 
     axum::serve(listener, app)
         .await
         .map_err(anyhow::Error::from)
-}
-
-fn router(profile: Profile) -> anyhow::Result<Router> {
-    let profile = Arc::new(profile);
-
-    let cobs_db =
-        radicle_types::outbound::sqlite::Sqlite::reader(profile.cobs().join(COBS_DB_FILE))?;
-    let patch_service = PatchService::new(cobs_db.clone());
-    let issue_service = IssueService::new(cobs_db);
-
-    let ctx = api::Context::new(profile, Arc::new(patch_service), Arc::new(issue_service));
-
-    Ok(api::router(ctx))
 }
