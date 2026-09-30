@@ -47,7 +47,12 @@ export function parseRepositoryId(
 ): { prefix: string; pubkey: string } | undefined {
   const match = /^(rad:)?(z[a-zA-Z0-9]+)$/.exec(rid);
   if (match) {
-    const hex = bs58.decode(match[2].substring(1));
+    let hex: Uint8Array;
+    try {
+      hex = bs58.decode(match[2].substring(1));
+    } catch {
+      return undefined;
+    }
     if (hex.byteLength !== 20) {
       return undefined;
     }
