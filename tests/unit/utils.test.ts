@@ -4,8 +4,10 @@ import { describe, expect, test, vi } from "vitest";
 
 import {
   coAuthors,
+  creditedCoAuthors,
   explorerHost,
   explorerUrl,
+  formatGitIdentity,
   formatRepositoryId,
   formatTimestamp,
   identityKey,
@@ -300,4 +302,30 @@ describe("verdicts", () => {
       expect(isPublishableReview(verdict, summary)).toBe(expected);
     },
   );
+});
+
+describe("commit credits", () => {
+  const alice = { name: "Alice", email: "alice@example.com" };
+  const bob = { name: "Bob", email: "bob@example.com" };
+  const carol = { name: "Carol", email: "carol@example.com" };
+
+  test("formatGitIdentity writes a trailer identity", () => {
+    expect(formatGitIdentity(alice)).toBe("Alice <alice@example.com>");
+    expect(formatGitIdentity({ name: "", email: "a@b.c" })).toBe("a@b.c");
+  });
+
+  test("creditedCoAuthors skips the author, the committer and repeats", () => {
+    const message = [
+      "Squashed",
+      "",
+      "Co-authored-by: Alice <ALICE@example.com>",
+      "Co-authored-by: Bob <bob@example.com>",
+      "Co-authored-by: Carol <carol@example.com>",
+      "Co-authored-by: Carol C. <Carol@example.com>",
+    ].join("\n");
+
+    expect(
+      creditedCoAuthors({ author: alice, committer: bob, message }),
+    ).toEqual([carol]);
+  });
 });

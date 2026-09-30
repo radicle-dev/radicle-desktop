@@ -19,31 +19,7 @@
   // Which identity was last copied, so the rows keep independent feedback.
   let copied: string | undefined = $state();
 
-  // The identity as it appears in a commit trailer, so that a copied result can
-  // be pasted straight into `Co-authored-by:` and the like.
-  function identity(who: GitIdentity): string {
-    return who.name ? `${who.name} <${who.email}>` : who.email;
-  }
-
-  // Co-authors are not part of the commit's git identity fields; they are a
-  // convention carried in the message trailers. The same person can be
-  // trailered more than once, and squashing gathers several messages' trailers
-  // into one, so only the first mention of each is kept.
-  const coAuthors = $derived.by(() => {
-    const credited = new Set([
-      utils.identityKey(commit.author),
-      utils.identityKey(commit.committer),
-    ]);
-
-    return utils.coAuthors(commit.message).filter((who, index, all) => {
-      const key = utils.identityKey(who);
-
-      return (
-        !credited.has(key) &&
-        all.findIndex(other => utils.identityKey(other) === key) === index
-      );
-    });
-  });
+  const coAuthors = $derived(utils.creditedCoAuthors(commit));
 
   const authorIsCommitter = $derived(
     utils.identityKey(commit.author) === utils.identityKey(commit.committer),
@@ -66,7 +42,7 @@
   }, 1000);
 
   async function copyIdentity(who: GitIdentity) {
-    await writeToClipboard(identity(who));
+    await writeToClipboard(utils.formatGitIdentity(who));
     copied = utils.identityKey(who);
     restoreIcon();
   }
@@ -223,7 +199,7 @@
               type="button"
               class="email-row"
               class:nameless={!who.name}
-              title={`Copy "${identity(who)}"`}
+              title={`Copy "${utils.formatGitIdentity(who)}"`}
               onclick={event => {
                 event.stopPropagation();
                 void copyIdentity(who);
