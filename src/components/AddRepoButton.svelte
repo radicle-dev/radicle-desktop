@@ -9,8 +9,9 @@
 
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
+  import { seedTarget } from "@app/lib/seedRepo";
   import useLocalStorage from "@app/lib/useLocalStorage.svelte";
-  import { parseRepositoryId, twemoji } from "@app/lib/utils";
+  import { twemoji } from "@app/lib/utils";
 
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Button from "@app/components/Button.svelte";
@@ -56,20 +57,25 @@
   );
 
   async function submit() {
-    const trimmedRid = rid.trim();
-
-    if (trimmedRid === "") {
+    if (rid.trim() === "") {
       return;
     }
 
-    validationMessage = validate(trimmedRid);
-
-    if (validationMessage === undefined) {
-      await seed(trimmedRid);
-      await reload();
-      rid = "";
-      closeFocused();
+    const target = seedTarget(
+      rid,
+      seededNotReplicated,
+      repos.map(r => r.rid),
+    );
+    if ("error" in target) {
+      validationMessage = target.error;
+      return;
     }
+
+    validationMessage = undefined;
+    await seed(target.rid);
+    await reload();
+    rid = "";
+    closeFocused();
   }
 
   async function seed(rid: string) {
@@ -80,20 +86,6 @@
       });
     } catch (error) {
       console.error("Seeding failed", error);
-    }
-  }
-
-  function validate(rid: string): string | undefined {
-    const parsedRid = parseRepositoryId(rid);
-    if (parsedRid === undefined) {
-      return "RID is not valid";
-    }
-
-    if (seededNotReplicated.includes(rid)) {
-      return "This repo is already queued for fetching";
-    }
-    if (repos.map(r => r.rid).includes(rid)) {
-      return "This repo is already seeded";
     }
   }
 </script>
