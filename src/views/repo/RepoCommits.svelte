@@ -6,6 +6,7 @@
   import { COMMITS_PAGE_SIZE } from "@app/views/repo/router";
   import fuzzysort from "fuzzysort";
 
+  import { commitRowsOf, groupCommitsByDay } from "@app/lib/commitGroups";
   import { invoke } from "@app/lib/invoke";
   import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import * as router from "@app/lib/router";
@@ -41,12 +42,6 @@
     revision,
   });
 
-  type CommitGroup = {
-    key: string;
-    label: string;
-    commits: Commit[];
-  };
-
   function listKey(): string {
     return `repo.commits:${repo.rid}:${peer ?? ""}:${revision ?? ""}`;
   }
@@ -79,38 +74,6 @@
     return () => clearTimeout(timer);
   });
 
-  function dayKey(timestamp: number) {
-    const date = new Date(timestamp);
-    const month = `${date.getMonth() + 1}`.padStart(2, "0");
-    const day = `${date.getDate()}`.padStart(2, "0");
-
-    return `${date.getFullYear()}-${month}-${day}`;
-  }
-
-  function dayLabel(timestamp: number) {
-    const date = new Date(timestamp);
-    const today = new Date();
-    const yesterday = new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate() - 1,
-    );
-
-    if (dayKey(date.getTime()) === dayKey(today.getTime())) {
-      return "Today";
-    }
-    if (dayKey(date.getTime()) === dayKey(yesterday.getTime())) {
-      return "Yesterday";
-    }
-
-    return new Intl.DateTimeFormat("en", {
-      weekday: "long",
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    }).format(date);
-  }
-
   const searchableCommits = $derived(
     list.items.map(c => ({
       commit: c,
@@ -130,50 +93,7 @@
 
   const filteredCommits = $derived(searchResults.map(r => r.obj.commit));
 
-  const groupedCommits = $derived.by<CommitGroup[]>(() => {
-    const groups: Record<string, CommitGroup> = {};
-
-    for (const commit of filteredCommits) {
-      const timestamp = commit.committer.time * 1000;
-      const key = dayKey(timestamp);
-      const current = groups[key];
-
-      if (current) {
-        current.commits.push(commit);
-      } else {
-        groups[key] = {
-          key,
-          label: dayLabel(timestamp),
-          commits: [commit],
-        };
-      }
-    }
-
-    return Object.values(groups);
-  });
-
-  type CommitRow =
-    | { type: "header"; key: string; label: string }
-    | { type: "commit"; commit: Commit; first: boolean; last: boolean };
-
-  // Flatten the day groups into a single row stream so the list can be
-  // virtualized; the row snippet renders headers and commits differently.
-  // `first`/`last` mark a group's boundaries so its commits form a bordered card.
-  const commitRows = $derived.by<CommitRow[]>(() => {
-    const rows: CommitRow[] = [];
-    for (const group of groupedCommits) {
-      rows.push({ type: "header", key: group.key, label: group.label });
-      group.commits.forEach((commit, i) => {
-        rows.push({
-          type: "commit",
-          commit,
-          first: i === 0,
-          last: i === group.commits.length - 1,
-        });
-      });
-    }
-    return rows;
-  });
+  const commitRows = $derived(commitRowsOf(groupCommitsByDay(filteredCommits)));
 </script>
 
 <style>
