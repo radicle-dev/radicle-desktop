@@ -1,3 +1,4 @@
+import type { NotificationItem } from "@bindings/cob/inbox/NotificationItem";
 import type { Action as IssueAction } from "@bindings/cob/issue/Action";
 import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 
@@ -8,6 +9,9 @@ import {
   compressActions,
   createSummary,
   notificationActions,
+  notificationIcon,
+  notificationRoute,
+  notificationStatusColor,
 } from "@app/lib/notification";
 import { formatOid } from "@app/lib/utils";
 
@@ -244,5 +248,80 @@ describe("notificationActions", () => {
         { actions: [comment("new", 3), comment("middle", 2)] },
       ]).map(a => a.timestamp),
     ).toEqual([3, 2, 1]);
+  });
+});
+
+function item(
+  type: "issue" | "patch",
+  status: NotificationItem["status"],
+): NotificationItem {
+  return {
+    type,
+    rowId: "1",
+    id: oid,
+    update: { type: "created", name: "refs/cobs/x", oid },
+    title: "Title",
+    timestamp,
+    status,
+    actions: [],
+    repoId: "rad:z",
+  } as NotificationItem;
+}
+
+describe("notification teaser", () => {
+  test.each([
+    [item("issue", { status: "open" }), "issue"],
+    [item("issue", { status: "closed", reason: "solved" }), "issue-closed"],
+    [item("patch", { status: "open" }), "patch"],
+    [item("patch", { status: "draft" }), "patch-draft"],
+    [
+      item("patch", { status: "merged", revision, commit: oid }),
+      "patch-merged",
+    ],
+    [undefined, "patch"],
+  ])("icon of %# is %j", (notification, expected) => {
+    expect(notificationIcon(notification)).toBe(expected);
+  });
+
+  test("colors follow the status", () => {
+    expect(notificationStatusColor(item("patch", { status: "draft" }))).toEqual(
+      {
+        color: "var(--color-text-draft)",
+        background: "var(--color-surface-draft)",
+      },
+    );
+    expect(
+      notificationStatusColor(
+        item("issue", { status: "closed", reason: "solved" }),
+      ),
+    ).toEqual({
+      color: "var(--color-text-closed)",
+      background: "var(--color-surface-closed)",
+    });
+    expect(notificationStatusColor(undefined)).toEqual({
+      color: "var(--color-text-secondary)",
+      background: "var(--color-surface-subtle)",
+    });
+  });
+
+  test("routes to the patch or to the issue in every status", () => {
+    expect(
+      notificationRoute("rad:z", item("patch", { status: "open" })),
+    ).toEqual({
+      resource: "repo.patch",
+      rid: "rad:z",
+      patch: oid,
+      status: undefined,
+      reviewId: undefined,
+    });
+    expect(
+      notificationRoute("rad:z", item("issue", { status: "open" })),
+    ).toEqual({
+      resource: "repo.issue",
+      rid: "rad:z",
+      issue: oid,
+      status: "all",
+    });
+    expect(notificationRoute("rad:z", undefined)).toBeUndefined();
   });
 });
