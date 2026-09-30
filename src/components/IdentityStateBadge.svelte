@@ -1,36 +1,8 @@
-<script lang="ts" module>
+<script lang="ts">
   import type { State } from "@bindings/identity/State";
 
-  import { formatOid } from "@app/lib/utils";
+  import { stateCaption, stateIcon, stateLabel } from "@app/lib/identityState";
 
-  const icons = {
-    active: "hourglass",
-    accepted: "checkmark",
-    rejected: "close",
-  } as const;
-
-  const labels = {
-    active: "Active",
-    accepted: "Accepted",
-    rejected: "Rejected",
-  };
-
-  export function stateIcon(state: State): (typeof icons)[State["status"]] {
-    return icons[state.status];
-  }
-
-  export function stateCaption(state: State): string | undefined {
-    if (state.status === "rejected") {
-      if (state.reason.type === "vote") return "Rejected by delegate votes";
-      if (state.reason.type === "parent")
-        return "Rejected because its parent revision was rejected";
-      return `Rejected because sibling ${formatOid(state.reason.revision)} was accepted`;
-    }
-    return undefined;
-  }
-</script>
-
-<script lang="ts">
   import Icon from "@app/components/Icon.svelte";
 
   interface Props {
@@ -68,5 +40,5 @@
   class:rejected={state.status === "rejected"}
   title={stateCaption(state)}>
   <Icon name={stateIcon(state)} />
-  {labels[state.status]}
+  {stateLabel(state)}
 </span>
