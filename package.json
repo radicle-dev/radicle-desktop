@@ -15,6 +15,7 @@
     "check": "scripts/check-js && scripts/check-rs",
     "check-js": "scripts/check-js",
     "check-rs": "scripts/check-rs",
+    "check:ci": "scripts/check-ci",
     "test:unit": "TZ='UTC' vitest run",
     "test:e2e": "TZ='UTC' playwright test",
     "format": "npx prettier . --write && npx eslint --fix .",
