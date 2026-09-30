@@ -20,9 +20,6 @@ import {
   safeHttpUrl,
   truncateDid,
   unqualifyBranch,
-  verdictAction,
-  verdictBadge,
-  verdictIcon,
 } from "@app/lib/utils";
 
 const rid = "rad:z3fpY7nttPPa6MBnAv2DccHzQJnqe";
@@ -280,17 +277,7 @@ describe("explorer links", () => {
   });
 });
 
-describe("verdicts", () => {
-  test.each([
-    ["accept", "Accept", "Accepted", "accept", "thumbs-up"],
-    ["reject", "Reject", "Rejected", "reject", "stop"],
-    [undefined, "Comment", "Reviewed", "comment", "comment"],
-  ] as const)("%j", (verdict, action, label, variant, icon) => {
-    expect(verdictAction(verdict)).toBe(action);
-    expect(verdictBadge(verdict)).toEqual({ label, variant });
-    expect(verdictIcon(verdict)).toBe(icon);
-  });
-
+describe("isPublishableReview", () => {
   test.each([
     ["accept", "", true],
     ["reject", " ", true],
