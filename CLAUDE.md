@@ -44,8 +44,8 @@ npm run test:unit
 ### E2E tests
 
 ```sh
-npm run test:e2e -- --project webkit
-npm run test:e2e -- tests/e2e/<file>.spec.ts --project webkit
+npm run test:e2e
+npm run test:e2e -- tests/e2e/<file>.spec.ts
 ```
 
 `SKIP_SETUP=true` skips fixture creation for faster iteration.
@@ -93,7 +93,7 @@ These mirror what CI runs on every PR. Run them all before shipping a feature.
 npm run check                            # tsc, svelte-check, eslint, prettier,
                                          # cargo fmt, cargo clippy, cargo test
 npm run test:unit
-npm run test:e2e -- --project webkit
+npm run test:e2e
 ```
 
 If backend types changed, regenerate and commit the bindings first:

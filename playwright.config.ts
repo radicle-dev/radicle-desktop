@@ -24,6 +24,12 @@ const userAgent =
 const testHttpApiPort = await getFreePort();
 process.env.VITE_TEST_HTTP_API_PORT = String(testHttpApiPort);
 
+// A separate build directory keeps test settings out of the app bundle.
+const testBuildDir = "tests/tmp/build";
+const appServerCommand = process.env.E2E_DEV_SERVER
+  ? "npm run start -- --strictPort --port 3001"
+  : `npx vite build --outDir ${testBuildDir} --emptyOutDir && npx vite preview --outDir ${testBuildDir} --strictPort --port 3001`;
+
 const config: PlaywrightTestConfig = {
   outputDir: "./tests/artifacts",
   testDir: "./tests/e2e",
@@ -33,10 +39,13 @@ const config: PlaywrightTestConfig = {
     timeout: 8000,
   },
   fullyParallel: true,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 2 : undefined,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: "list",
+  reporter: [
+    ["list"],
+    ["json", { outputFile: "tests/artifacts/results.json" }],
+  ],
   use: {
     colorScheme: "dark",
     actionTimeout: 5000,
@@ -56,7 +65,7 @@ const config: PlaywrightTestConfig = {
 
   webServer: [
     {
-      command: `VITE_AUTH_LONG_DELAY=1000 VITE_TEST_HTTP_API_PORT=${testHttpApiPort} npm run start -- --strictPort --port 3001`,
+      command: `VITE_AUTH_LONG_DELAY=1000 VITE_TEST_HTTP_API_PORT=${testHttpApiPort} ${appServerCommand}`,
       port: 3001,
     },
   ],
