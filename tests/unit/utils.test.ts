@@ -1,6 +1,26 @@
-import { describe, expect, test } from "vitest";
+import type { Config } from "@bindings/config/Config";
 
-import { coAuthors, safeHttpUrl } from "@app/lib/utils";
+import { describe, expect, test, vi } from "vitest";
+
+import {
+  coAuthors,
+  explorerHost,
+  explorerUrl,
+  formatRepositoryId,
+  formatTimestamp,
+  identityKey,
+  isCommit,
+  parseNodeId,
+  parseRepositoryId,
+  pluralize,
+  revisionPosition,
+  safeHttpUrl,
+  truncateDid,
+  unqualifyBranch,
+} from "@app/lib/utils";
+
+const rid = "rad:z3fpY7nttPPa6MBnAv2DccHzQJnqe";
+const nid = "z6MkqGC3nWZhYieEVTVDKW5v588CiGfsDSmRVG9ZwwWTvLSK";
 
 describe("safeHttpUrl", () => {
   test.each([
@@ -8,7 +28,7 @@ describe("safeHttpUrl", () => {
     ["https://example.com/path?a=1&b=2", "https://example.com/path?a=1&b=2"],
     ["HTTP://EXAMPLE.com/Path", "http://example.com/Path"],
     ["http://example.com/<script>", "http://example.com/%3Cscript%3E"],
-  ])("accepts %p", (input, expected) => {
+  ])("accepts %j", (input, expected) => {
     expect(safeHttpUrl(input)).toBe(expected);
   });
 
@@ -23,7 +43,7 @@ describe("safeHttpUrl", () => {
     "relative",
     "",
     "not a url",
-  ])("rejects %p", input => {
+  ])("rejects %j", input => {
     expect(safeHttpUrl(input)).toBeUndefined();
   });
 });
@@ -78,5 +98,173 @@ describe("coAuthors", () => {
 
   test("returns nothing when there are no trailers", () => {
     expect(coAuthors("Subject\n\nJust a body.")).toEqual([]);
+  });
+});
+
+describe("parseRepositoryId", () => {
+  test("parses a RID with and without the rad: prefix", () => {
+    expect(parseRepositoryId(rid)).toEqual({
+      prefix: "rad:",
+      pubkey: "z3fpY7nttPPa6MBnAv2DccHzQJnqe",
+    });
+    expect(parseRepositoryId("z3fpY7nttPPa6MBnAv2DccHzQJnqe")).toEqual({
+      prefix: "rad:",
+      pubkey: "z3fpY7nttPPa6MBnAv2DccHzQJnqe",
+    });
+  });
+
+  test.each(["", "rad:", "rad:z3fpY7ntt", `${rid} `, "rad:x3fpY7nttPPa6MBn"])(
+    "rejects %j",
+    input => {
+      expect(parseRepositoryId(input)).toBeUndefined();
+    },
+  );
+});
+
+describe("formatRepositoryId", () => {
+  test("truncates a valid RID", () => {
+    expect(formatRepositoryId(rid)).toBe("rad:z3fpY7…zQJnqe");
+  });
+
+  test("returns an invalid RID unchanged", () => {
+    expect(formatRepositoryId("not-a-rid")).toBe("not-a-rid");
+  });
+});
+
+describe("parseNodeId", () => {
+  test("parses a NID with and without the did:key: prefix", () => {
+    expect(parseNodeId(nid)).toEqual({ prefix: "did:key:", pubkey: nid });
+    expect(parseNodeId(`did:key:${nid}`)).toEqual({
+      prefix: "did:key:",
+      pubkey: nid,
+    });
+  });
+
+  test("rejects a RID", () => {
+    expect(parseNodeId("z3fpY7nttPPa6MBnAv2DccHzQJnqe")).toBeUndefined();
+  });
+
+  test("rejects input that is not base58", () => {
+    vi.spyOn(console, "error").mockReturnValue(undefined);
+    expect(parseNodeId("z0OIl")).toBeUndefined();
+  });
+});
+
+test("truncateDid", () => {
+  expect(truncateDid(`did:key:${nid}`)).toBe("did:key:z6MkqG…WTvLSK");
+});
+
+test.each([
+  ["a".repeat(40), true],
+  ["A".repeat(40), false],
+  ["a".repeat(39), false],
+  ["g".repeat(40), false],
+])("isCommit(%j) is %j", (input, expected) => {
+  expect(isCommit(input)).toBe(expected);
+});
+
+test.each([
+  ["refs/heads/main", "main"],
+  ["refs/heads/feature/x", "feature/x"],
+  ["main", "main"],
+  ["refs/tags/v1", "refs/tags/v1"],
+])("unqualifyBranch(%j) is %j", (input, expected) => {
+  expect(unqualifyBranch(input)).toBe(expected);
+});
+
+describe("formatTimestamp", () => {
+  const now = Date.UTC(2026, 0, 1);
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+
+  test.each([
+    [0, "now"],
+    [59 * 1000, "now"],
+    [minute, "1m"],
+    [59 * minute, "59m"],
+    [hour, "1h"],
+    [23 * hour, "23h"],
+    [day, "1d"],
+    [30 * day, "30d"],
+    [31 * day, "1mo"],
+    [364 * day, "11mo"],
+    [365 * day, "1y"],
+    [3 * 365 * day, "3y"],
+  ])("%j ms ago is %j", (elapsed, expected) => {
+    expect(formatTimestamp(now - elapsed, now)).toBe(expected);
+  });
+});
+
+test.each([
+  ["issue", 0, "issues"],
+  ["issue", 1, "issue"],
+  ["issue", 2, "issues"],
+  ["patch", 2, "patches"],
+  ["box", 2, "boxes"],
+  ["class", 2, "classes"],
+])("pluralize(%j, %j) is %j", (singular, count, expected) => {
+  expect(pluralize(singular, count)).toBe(expected);
+});
+
+test("revisionPosition", () => {
+  const revisions = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  expect(revisionPosition(revisions, "a")).toBe(1);
+  expect(revisionPosition(revisions, "c")).toBe(3);
+  expect(revisionPosition(revisions, "x")).toBeUndefined();
+});
+
+describe("identityKey", () => {
+  test("matches identities by email case-insensitively", () => {
+    expect(identityKey({ name: "Alice", email: " Alice@Example.com " })).toBe(
+      identityKey({ name: "A. Lidell", email: "alice@example.com" }),
+    );
+  });
+
+  test("falls back to the name when there is no email", () => {
+    expect(identityKey({ name: "Alice", email: "" })).toBe("name:alice");
+    expect(identityKey({ name: "Alice", email: "" })).not.toBe(
+      identityKey({ name: "Bob", email: "" }),
+    );
+  });
+});
+
+describe("explorer links", () => {
+  function config(overrides: Partial<Config>): Config {
+    return {
+      publicExplorer: "https://radicle.network/nodes/$host/$rid$path",
+      preferredSeeds: [],
+      ...overrides,
+    } as Config;
+  }
+
+  test("uses the first preferred seed host", () => {
+    expect(
+      explorerUrl(
+        `${rid}/issues/abc`,
+        config({
+          preferredSeeds: [
+            `${nid}@seed.example.com:8776`,
+            `${nid}@other.example.com:8776`,
+          ],
+        }),
+      ),
+    ).toBe(`https://radicle.network/nodes/seed.example.com/${rid}/issues/abc`);
+  });
+
+  test("falls back to the default seed", () => {
+    expect(explorerUrl(rid, config({}))).toBe(
+      `https://radicle.network/nodes/rosa.radicle.network/${rid}`,
+    );
+  });
+
+  test("explorerHost returns the host of the template", () => {
+    expect(explorerHost(config({}))).toBe("radicle.network");
+  });
+
+  test("explorerHost returns an unparseable template unchanged", () => {
+    expect(explorerHost(config({ publicExplorer: "not a url" }))).toBe(
+      "not a url",
+    );
   });
 });

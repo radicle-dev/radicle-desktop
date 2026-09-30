@@ -32,7 +32,7 @@ describe("bold", () => {
     ["a **|word|** here", "a |word| here"],
     ["a |**word**| here", "a |word| here"],
     ["a **||** here", "a || here"],
-  ])("%p => %p", (input, expected) => {
+  ])("%j => %j", (input, expected) => {
     expect(format(input, "bold")).toBe(expected);
   });
 });
@@ -43,7 +43,7 @@ describe("italic", () => {
     ["a _|word|_ here", "a |word| here"],
     ["a |_word_| here", "a |word| here"],
     ["**|word|**", "**_|word|_**"],
-  ])("%p => %p", (input, expected) => {
+  ])("%j => %j", (input, expected) => {
     expect(format(input, "italic")).toBe(expected);
   });
 });
@@ -56,7 +56,7 @@ describe("code", () => {
     ["```\n|one\ntwo|\n```", "|one\ntwo|"],
     ["a |one\ntwo| b", "a \n```\n|one\ntwo|\n```\n b"],
     ["a\n|one\ntwo|\nb", "a\n```\n|one\ntwo|\n```\nb"],
-  ])("%p => %p", (input, expected) => {
+  ])("%j => %j", (input, expected) => {
     expect(format(input, "code")).toBe(expected);
   });
 });
@@ -66,7 +66,7 @@ describe("link", () => {
     ["see |docs| now", "see [docs](||) now"],
     ["see || now", "see [](||) now"],
     ["see |https://radicle.xyz| now", "see [||](https://radicle.xyz) now"],
-  ])("%p => %p", (input, expected) => {
+  ])("%j => %j", (input, expected) => {
     expect(format(input, "link")).toBe(expected);
   });
 });
@@ -95,7 +95,7 @@ describe("pasteLinkEdit", () => {
       "https://app.radicle.xyz/nodes/iris.radicle.xyz/rad:z4D5U/issues/7bdaa5a",
       "https://app.radicle.xyz/nodes/iris.radicle.xyz/rad:z4D5U/issues/7bdaa5a",
     ],
-  ])("links %p", (pasted, url) => {
+  ])("links %j", (pasted, url) => {
     expect(pasteLinkEdit("docs", 0, 4, pasted)?.text).toBe(`[docs](${url})`);
   });
 
@@ -109,7 +109,7 @@ describe("pasteLinkEdit", () => {
     "just some words",
     "  ",
     "",
-  ])("falls through for %p", pasted => {
+  ])("falls through for %j", pasted => {
     expect(pasteLinkEdit("docs", 0, 4, pasted)).toBeUndefined();
   });
 });
