@@ -1,18 +1,13 @@
 <script lang="ts" module>
   import type { Author } from "@bindings/cob/Author";
-  import type { Action } from "@bindings/cob/issue/Action";
 
-  export type FlattenedIssueOperation =
-    | (Action & {
-        id: string;
-        author: Author;
-        timestamp: number;
-        previous?: Action;
-      })
-    | { type: "opened"; id: string; author: Author; timestamp: number };
+  import type { FlattenedIssueOperation } from "@app/lib/issueTimeline";
+
+  export type { FlattenedIssueOperation };
 </script>
 
 <script lang="ts">
+  import { itemDiff } from "@app/lib/cobActivity";
   import {
     absoluteTimestamp,
     authorForNodeId,
@@ -33,12 +28,6 @@
   }
 
   const { op, hideAuthor }: Props = $props();
-
-  function itemDiff<A>(previousState: A[], newState: A[]) {
-    const removed = previousState.filter(x => !newState.includes(x));
-    const added = newState.filter(x => !previousState.includes(x));
-    return { removed, added };
-  }
 </script>
 
 <style>
