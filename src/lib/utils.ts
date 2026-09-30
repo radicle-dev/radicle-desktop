@@ -445,3 +445,30 @@ export function coAuthors(message: string): GitIdentity[] {
 
   return authors;
 }
+
+// The identity as it appears in a commit trailer, so that a copied result can
+// be pasted straight into `Co-authored-by:` and the like.
+export function formatGitIdentity(who: GitIdentity): string {
+  return who.name ? `${who.name} <${who.email}>` : who.email;
+}
+
+// Co-authors are not part of the commit's git identity fields; they are a
+// convention carried in the message trailers. The same person can be
+// trailered more than once, and squashing gathers several messages' trailers
+// into one, so only the first mention of each is kept.
+export function creditedCoAuthors(commit: {
+  author: GitIdentity;
+  committer: GitIdentity;
+  message: string;
+}): GitIdentity[] {
+  const credited = new Set([
+    identityKey(commit.author),
+    identityKey(commit.committer),
+  ]);
+  return coAuthors(commit.message).filter(who => {
+    const key = identityKey(who);
+    if (credited.has(key)) return false;
+    credited.add(key);
+    return true;
+  });
+}
