@@ -4,10 +4,10 @@
   import type { RepoRefs } from "@bindings/repo/RepoRefs";
 
   import fuzzysort from "fuzzysort";
-  import orderBy from "lodash/orderBy";
 
+  import { selectedRefType, sortedTags, sortRemotes } from "@app/lib/refs";
   import * as router from "@app/lib/router";
-  import { truncateId } from "@app/lib/utils";
+  import { formatOid, truncateId } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -39,14 +39,7 @@
   const canonicalBranchNames = $derived(
     Object.keys(refs?.canonical.branches ?? {}).sort(),
   );
-  const canonicalTagsSorted = $derived(
-    Object.entries(refs?.canonical.tags ?? {}).sort(
-      ([nameA, a], [nameB, b]) => {
-        if (a.timestamp !== b.timestamp) return b.timestamp - a.timestamp;
-        return nameB.localeCompare(nameA);
-      },
-    ),
-  );
+  const canonicalTagsSorted = $derived(sortedTags(refs?.canonical.tags ?? {}));
 
   const selectedPeer = $derived(refs?.remotes.find(r => r.id === peer));
   // Until refs load, fall back to the bare NID from the route so the trigger
@@ -62,36 +55,9 @@
       (revision === undefined || revision === defaultBranch),
   );
 
-  const selectedRefType = $derived.by<"branch" | "tag" | undefined>(() => {
-    if (revision === undefined) return "branch";
-    if (selectedPeer) {
-      if (revision in selectedPeer.branches) return "branch";
-      if (revision in selectedPeer.tags) return "tag";
-    } else {
-      if (revision in (refs?.canonical.branches ?? {})) return "branch";
-      if (revision in (refs?.canonical.tags ?? {})) return "tag";
-      if (revision === defaultBranch) return "branch";
-    }
-    return undefined;
-  });
-
-  // Delegates first; within each (delegate / non-delegate) group, peers with
-  // an alias come before those without, alphabetically. No-alias peers fall
-  // to the bottom and sort by NID.
-  function sortRemotes<
-    T extends { id: string; alias?: string; delegate: boolean },
-  >(list: T[]): T[] {
-    return orderBy(
-      list,
-      [
-        r => !r.delegate,
-        r => r.alias === undefined,
-        r => (r.alias ?? "").toLowerCase(),
-        r => r.id,
-      ],
-      ["asc", "asc", "asc", "asc"],
-    );
-  }
+  const refType = $derived(
+    selectedRefType(revision, selectedPeer, refs?.canonical, defaultBranch),
+  );
 
   const peersWithBranches = $derived(
     sortRemotes(
@@ -112,7 +78,7 @@
   // freely after that.
   // svelte-ignore state_referenced_locally
   let activeTab: "branches" | "tags" = $state(
-    selectedRefType === "tag" ? "tags" : "branches",
+    refType === "tag" ? "tags" : "branches",
   );
 
   $effect(() => {
@@ -213,10 +179,6 @@
   function displayLabel(): string {
     if (revision !== undefined) return revision;
     return defaultBranch;
-  }
-
-  function shortOid(oid: string): string {
-    return oid.slice(0, 7);
   }
 </script>
 
@@ -442,7 +404,7 @@
           <span class="trigger-separator">/</span>
         {/if}
         <div class="trigger-ref">
-          <Icon name={selectedRefType === "tag" ? "label" : "branch"} />
+          <Icon name={refType === "tag" ? "label" : "branch"} />
           <span class="trigger-name">{displayLabel()}</span>
         </div>
         {#if peer === undefined}
@@ -535,7 +497,7 @@
                       <span class="canonical-badge">Canonical</span>
                     {/if}
                   </div>
-                  <span class="txt-id">{shortOid(el.oid)}</span>
+                  <span class="txt-id">{formatOid(el.oid)}</span>
                 </a>
               {/each}
             {:else}
@@ -563,7 +525,7 @@
                   <span class="canonical-badge">Canonical</span>
                 </div>
                 <span class="txt-id">
-                  {shortOid(
+                  {formatOid(
                     refs?.canonical.branches[name] ?? project.meta.head,
                   )}
                 </span>
@@ -585,7 +547,7 @@
                   <span class="result-name-text">{name}</span>
                   <span class="canonical-badge">Canonical</span>
                 </div>
-                <span class="txt-id">{shortOid(tag.oid)}</span>
+                <span class="txt-id">{formatOid(tag.oid)}</span>
               </a>
             {/each}
           {/if}

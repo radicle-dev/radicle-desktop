@@ -3,8 +3,9 @@
   import type { Remote } from "@bindings/repo/Remote";
   import type { Tag } from "@bindings/repo/Tag";
 
+  import { sortedTags } from "@app/lib/refs";
   import * as router from "@app/lib/router";
-  import { truncateId } from "@app/lib/utils";
+  import { formatOid, truncateId } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
   import TagIcon from "@app/components/PeerSelector/TagIcon.svelte";
@@ -34,12 +35,11 @@
           .sort(([a], [b]) => a.localeCompare(b))
           .map(([name, oid]) => ({ name, oid }));
       }
-      return Object.entries(remote.tags)
-        .sort(([nameA, a], [nameB, b]) => {
-          if (a.timestamp !== b.timestamp) return b.timestamp - a.timestamp;
-          return nameB.localeCompare(nameA);
-        })
-        .map(([name, tag]) => ({ name, oid: tag.oid, tag }));
+      return sortedTags(remote.tags).map(([name, tag]) => ({
+        name,
+        oid: tag.oid,
+        tag,
+      }));
     },
   );
 
@@ -49,10 +49,6 @@
       peer: remote.id,
       revision: name,
     });
-  }
-
-  function shortOid(oid: string): string {
-    return oid.slice(0, 7);
   }
 </script>
 
@@ -170,7 +166,7 @@
           <Icon name="branch" />
         {/if}
         <span class="ref-name">{name}</span>
-        <span class="txt-id">{shortOid(oid)}</span>
+        <span class="txt-id">{formatOid(oid)}</span>
       </a>
     {/each}
   {:else}
