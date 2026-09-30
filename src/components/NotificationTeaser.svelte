@@ -1,14 +1,9 @@
 <script lang="ts">
   import type { RepoRoute } from "@app/views/repo/router";
-  import type { ActionWithAuthor } from "@bindings/cob/inbox/ActionWithAuthor";
   import type { NotificationItem } from "@bindings/cob/inbox/NotificationItem";
-  import type { Action as IssueAction } from "@bindings/cob/issue/Action";
-  import type { Action as PatchAction } from "@bindings/cob/patch/Action";
   import type { ComponentProps } from "svelte";
 
-  import uniqWith from "lodash/uniqWith";
-
-  import { compressActions } from "@app/lib/notification";
+  import { compressActions, notificationActions } from "@app/lib/notification";
   import { push } from "@app/lib/router";
   import {
     absoluteTimestamp,
@@ -47,24 +42,9 @@
     selected = false,
   }: Props = $props();
 
-  type Action = ActionWithAuthor<IssueAction> | ActionWithAuthor<PatchAction>;
-
-  const uniqueActions = $derived.by(() => {
-    return compressActions(
-      uniqWith(
-        notificationItems.flatMap<Action>(n => n.actions),
-        (a, b) =>
-          Boolean(
-            a.oid === b.oid &&
-            a.type === b.type &&
-            a.author.did &&
-            b.author.did,
-          ),
-      ).sort((a, b) => b.timestamp - a.timestamp),
-      kind,
-      oid,
-    );
-  });
+  const uniqueActions = $derived(
+    compressActions(notificationActions(notificationItems), kind, oid),
+  );
 
   const title = $derived.by(() => {
     const lastDetail = notificationItems.at(-1);
