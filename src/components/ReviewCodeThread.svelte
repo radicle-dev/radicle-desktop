@@ -10,6 +10,7 @@
   import { diffOptions } from "@app/lib/diffOptions.svelte";
   import { cachedGetDiffText } from "@app/lib/invoke";
   import { sliceForRange } from "@app/lib/patchSlice";
+  import { lineRangeOf } from "@app/lib/pierreComments";
 
   import PierreSnippet from "@app/components/PierreSnippet.svelte";
 
@@ -86,20 +87,6 @@
       resolvedBy,
     };
   }
-
-  /// Which lines of which side a comment is about, in the numbering
-  /// `sliceForRange` matches on.
-  function rangeOf(
-    location: CodeLocation,
-  ): { side: "old" | "new"; start: number; end: number } | undefined {
-    const range = location.new ?? location.old;
-    if (!range) return undefined;
-    const side = location.new ? "new" : "old";
-    if (range.type === "chars") {
-      return { side, start: range.line, end: range.line + 1 };
-    }
-    return { side, start: range.range.start, end: range.range.end };
-  }
 </script>
 
 <style>
@@ -154,7 +141,7 @@
       {#each threads as thread (thread.root.id)}
         {@const location = thread.root.location}
         {#if location}
-          {@const range = rangeOf(location)}
+          {@const range = lineRangeOf(location)}
           {@const slice =
             range &&
             sliceForRange(filePatch, range.side, range.start, range.end)}
