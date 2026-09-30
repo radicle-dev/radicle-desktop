@@ -25,6 +25,7 @@
     getDiffText,
   } from "@app/lib/invoke";
   import { anchorOf, commentCountsByPath } from "@app/lib/pierreComments";
+  import { isCommitListDescription } from "@app/lib/revisionDescription";
   import { useShortcuts } from "@app/lib/shortcuts.svelte";
   import { pluralize } from "@app/lib/utils";
 
@@ -329,16 +330,6 @@
     }
   });
 
-  function isCommitListDescription(description: string, commits: Commit[]) {
-    if (commits.length === 0) return false;
-    const chunks = description
-      .split("\n")
-      .map(l => l.trim())
-      .filter(l => l.length > 0);
-    if (chunks.length !== commits.length) return false;
-    const summaries = new Set(commits.map(c => c.summary.trim()));
-    return chunks.every(line => summaries.has(line));
-  }
   const revisionDescription = $derived(
     revision.description.slice(-1)[0]?.body?.trim() ?? "",
   );

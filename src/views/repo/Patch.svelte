@@ -27,6 +27,7 @@
   import { setPatchActivitySource } from "@app/lib/patchActivityContext";
   import { patchContributions } from "@app/lib/patchContributions";
   import type { ReviewEntry } from "@app/lib/reviewSummary";
+  import { revisionTitle } from "@app/lib/revisionDescription";
   import { orderRevisions, revisionNumbers } from "@app/lib/revisionList";
   import { revisionListSettings } from "@app/lib/revisionListSettings";
   import * as roles from "@app/lib/roles";
@@ -416,13 +417,6 @@
   const selectedRevisionIndex = $derived(
     orderedRevisions.findIndex(r => r.id === selectedRevisionId),
   );
-
-  function revisionTitle(rev: Revision): string | undefined {
-    const body = rev.description.at(-1)?.body?.trim();
-    if (!body) return undefined;
-    const line = body.split("\n")[0].trim();
-    return line.length > 0 ? line : undefined;
-  }
 
   $effect(() => {
     const rev = latestRevision;
