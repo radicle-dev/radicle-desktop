@@ -1,13 +1,9 @@
 <script lang="ts" module>
   import type { Author } from "@bindings/cob/Author";
-  import type { Action } from "@bindings/cob/patch/Action";
 
-  export type FlattenedPatchOperation = Action & {
-    id: string;
-    author: Author;
-    timestamp: number;
-    previous?: Action;
-  };
+  import type { FlattenedPatchOperation } from "@app/lib/patchTimeline";
+
+  export type { FlattenedPatchOperation };
 
   export function splitDescription(text: string): {
     subject?: string;
@@ -29,6 +25,7 @@
 <script lang="ts">
   import { slide } from "svelte/transition";
 
+  import { itemDiff } from "@app/lib/cobActivity";
   import { cachedConfig, writeToClipboard } from "@app/lib/invoke";
   import {
     absoluteTimestamp,
@@ -80,12 +77,6 @@
     bodyExternal = false,
     openedAsDraft = false,
   }: Props = $props();
-
-  function itemDiff<A>(previousState: A[], newState: A[]) {
-    const removed = previousState.filter(x => !newState.includes(x));
-    const added = newState.filter(x => !previousState.includes(x));
-    return { removed, added };
-  }
 
   let copyLinkIcon: "link" | "checkmark" = $state("link");
   async function copyRevisionLink() {

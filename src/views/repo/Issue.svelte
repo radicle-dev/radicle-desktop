@@ -10,6 +10,7 @@
 
   import { nodeRunning } from "@app/lib/events";
   import { invoke } from "@app/lib/invoke";
+  import { issueTimeline } from "@app/lib/issueTimeline";
   import { show } from "@app/lib/modal";
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
@@ -22,9 +23,7 @@
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Button from "@app/components/Button.svelte";
   import ConfirmDeleteButton from "@app/components/ConfirmDeleteButton.svelte";
-  import Discussion, {
-    type ActivityItem,
-  } from "@app/components/Discussion.svelte";
+  import Discussion from "@app/components/Discussion.svelte";
   import EditableTitle from "@app/components/EditableTitle.svelte";
   import Icon from "@app/components/Icon.svelte";
   import IssueActivityItem, {
@@ -64,73 +63,7 @@
     publicKeyFromDid(issue.author.did) === config.publicKey,
   );
 
-  const activityItems: ActivityItem<FlattenedIssueOperation>[] = $derived.by(
-    () => {
-      // Actions `IssueActivityItem` has no branch for. Left in, they still
-      // group under an author, so the timeline grows a heading with nothing
-      // beneath it.
-      const skipped = new Set<Action["type"]>([
-        "comment",
-        "comment.edit",
-        "comment.react",
-        "comment.redact",
-      ]);
-      const tracker: Partial<Record<Action["type"], Action>> = {};
-      const items: ActivityItem<FlattenedIssueOperation>[] = [];
-      const openedTimestamp =
-        issue.body?.edits[0]?.timestamp ?? issue.timestamp;
-      items.push({
-        key: `${issue.id}:opened`,
-        timestamp: openedTimestamp,
-        data: {
-          type: "opened",
-          id: issue.id,
-          author: issue.author,
-          timestamp: openedTimestamp,
-        },
-      });
-      activity.forEach(operation => {
-        operation.actions.forEach((action, actionIndex) => {
-          if (skipped.has(action.type)) {
-            tracker[action.type] = action;
-            return;
-          }
-          const previous = tracker[action.type];
-          // The first `edit` action has nothing to diff against, so the
-          // renderer skips it. Skip it here too so we don't leave a gap.
-          if (action.type === "edit" && !previous) {
-            tracker[action.type] = action;
-            return;
-          }
-          // A label action that neither adds nor removes renders nothing.
-          if (action.type === "label") {
-            const prev =
-              previous && previous.type === "label" ? previous.labels : [];
-            const added = action.labels.filter(l => !prev.includes(l));
-            const removed = prev.filter(l => !action.labels.includes(l));
-            if (added.length === 0 && removed.length === 0) {
-              tracker[action.type] = action;
-              return;
-            }
-          }
-          const op: FlattenedIssueOperation = {
-            ...action,
-            id: operation.id,
-            author: operation.author,
-            timestamp: operation.timestamp,
-            previous,
-          };
-          tracker[action.type] = action;
-          items.push({
-            key: `${operation.id}:${actionIndex}`,
-            timestamp: operation.timestamp,
-            data: op,
-          });
-        });
-      });
-      return items;
-    },
-  );
+  const activityItems = $derived(issueTimeline(issue, activity));
 
   async function reload() {
     [issue, activity, threads] = await Promise.all([

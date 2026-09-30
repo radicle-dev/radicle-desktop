@@ -1,14 +1,7 @@
 <script lang="ts" module>
-  export interface ActivityItem<T = unknown> {
-    key: string;
-    timestamp: number;
-    data: T;
-    /// Renders as a card or a filled band rather than a bare row of text.
-    /// Grouped rows are packed tight against each other, which reads as one
-    /// element when the things being packed have their own edges, so these are
-    /// never folded into a run.
-    standalone?: boolean;
-  }
+  import type { ActivityItem } from "@app/lib/cobActivity";
+
+  export type { ActivityItem };
 </script>
 
 <script lang="ts" generics="A">

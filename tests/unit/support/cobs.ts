@@ -72,10 +72,10 @@ export function revision(props: Partial<Revision> = {}): Revision {
   };
 }
 
-export function operation(
+export function operation<A = Action>(
   by: Author,
   timestamp: number,
-  actions: Action[],
-): Operation<Action> {
+  actions: A[],
+): Operation<A> {
   return { id: `op-${timestamp}`, author: by, timestamp, actions };
 }
