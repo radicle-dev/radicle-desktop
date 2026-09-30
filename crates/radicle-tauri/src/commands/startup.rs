@@ -19,17 +19,7 @@ pub(crate) fn version(app: AppHandle) -> Result<Version, Error> {
 
 #[tauri::command]
 pub(crate) fn check_radicle_cli(ctx: tauri::State<AppState>) -> Result<(), Error> {
-    // Where the official installer puts it, even if it never reached `PATH`.
-    let rad = ctx.profile().home().path().join("bin").join("rad");
-    if rad.exists() {
-        return Ok(());
-    }
-
-    if radicle_types::binaries::rad().is_some() {
-        return Ok(());
-    }
-
-    Err(Error::RadicleNotInstalled)
+    radicle_types::binaries::check_radicle_cli(&ctx.profile())
 }
 
 #[tauri::command]
@@ -40,10 +30,9 @@ pub(crate) fn git_info() -> GitInfo {
 #[tauri::command]
 pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     let profile = radicle::Profile::load()?;
-    let home = profile.home();
-
-    let cobs_cache = radicle::cob::cache::Store::open(home.cobs().join(COBS_DB_FILE))?;
-    cobs_cache.check_version()?;
+    let state = AppState { profile };
+    state.check_cobs_cache()?;
+    let profile = &state.profile;
 
     let inbox_db = radicle_types::outbound::sqlite::Sqlite::reader(
         profile.node().join(NOTIFICATIONS_DB_FILE),
@@ -70,7 +59,6 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
         }
     });
 
-    let state = AppState { profile };
     app.manage(state.clone());
 
     Ok(state.config())

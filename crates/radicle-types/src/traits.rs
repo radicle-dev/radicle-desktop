@@ -1,9 +1,11 @@
 use radicle::node::{AliasStore, NodeId};
 
 use crate::config::Config;
+use crate::error::Error;
 
 pub mod cobs;
 pub mod identity;
+pub mod inbox;
 pub mod issue;
 pub mod job;
 pub mod patch;
@@ -23,6 +25,22 @@ pub trait Profile {
             public_explorer: p.config.public_explorer.clone(),
             preferred_seeds: p.config.preferred_seeds.clone(),
         }
+    }
+
+    fn check_cobs_cache(&self) -> Result<(), Error> {
+        let p = self.profile();
+        let cache = radicle::cob::cache::Store::open(
+            p.home().cobs().join(radicle::cob::cache::COBS_DB_FILE),
+        )?;
+        cache.check_version()?;
+
+        Ok(())
+    }
+
+    fn node_running(&self) -> bool {
+        let p = self.profile();
+
+        radicle::node::Handle::is_running(&radicle::Node::new(p.home().socket_from_env()))
     }
 
     fn alias(&self, nid: NodeId) -> Option<radicle::node::Alias> {

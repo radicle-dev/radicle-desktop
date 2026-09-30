@@ -1,12 +1,14 @@
 use traits::Profile;
 use traits::cobs::Cobs;
 use traits::identity::Identity;
+use traits::inbox::Inbox;
 use traits::issue::{Issues, IssuesMut};
 use traits::job::Jobs;
 use traits::patch::{Patches, PatchesMut};
 use traits::repo::Repo;
 use traits::thread::Thread;
 
+pub mod auth;
 pub mod binaries;
 pub mod cobs;
 pub mod config;
@@ -29,6 +31,7 @@ impl Repo for AppState {}
 impl Thread for AppState {}
 impl Cobs for AppState {}
 impl Identity for AppState {}
+impl Inbox for AppState {}
 impl Issues for AppState {}
 impl IssuesMut for AppState {}
 impl Jobs for AppState {}
