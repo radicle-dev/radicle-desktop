@@ -242,19 +242,11 @@
 
     if (e.clipboardData?.files && e.clipboardData.files.length > 0) {
       e.preventDefault();
-      const files = Array.from(e.clipboardData.files);
-      // A single item may be an image the webview can't hand over, so the
-      // backend reads it from the clipboard itself.
-      if (e.clipboardData.items.length === 1) {
-        await uploadEmbeds(
-          files.slice(0, 1),
-          file => file.name,
-          file =>
-            invoke<string>("save_embed_by_clipboard", { name: file.name, rid }),
-        );
-      } else {
-        await uploadEmbeds(files, file => file.name, saveFileBytes);
-      }
+      await uploadEmbeds(
+        Array.from(e.clipboardData.files),
+        file => file.name,
+        saveFileBytes,
+      );
     }
   }
 

@@ -5,7 +5,6 @@ use radicle::identity;
 use radicle_types as types;
 use radicle_types::error::Error;
 use radicle_types::traits::thread::Thread;
-use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_dialog::DialogExt;
 
 use crate::AppState;
@@ -31,21 +30,6 @@ pub async fn save_embed_by_path(
     path: PathBuf,
 ) -> Result<git::Oid, Error> {
     ctx.save_embed_by_path(rid, path)
-}
-
-#[tauri::command]
-pub async fn save_embed_by_clipboard(
-    app_handle: tauri::AppHandle,
-    ctx: tauri::State<'_, AppState>,
-    rid: identity::RepoId,
-    name: String,
-) -> Result<git::Oid, Error> {
-    let content = app_handle
-        .clipboard()
-        .read_image()
-        .map(|i| i.rgba().to_vec())?;
-
-    ctx.save_embed_by_bytes(rid, name, content)
 }
 
 #[tauri::command]

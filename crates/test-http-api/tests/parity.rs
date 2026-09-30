@@ -6,10 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Tauri commands with no HTTP route, and why.
-const TAURI_ONLY: &[(&str, &str)] = &[(
-    "save_embed_by_clipboard",
-    "reads the native clipboard, which the HTTP server has no access to",
-)];
+const TAURI_ONLY: &[(&str, &str)] = &[];
 
 /// HTTP routes with no Tauri command, and why.
 const HTTP_ONLY: &[(&str, &str)] = &[(

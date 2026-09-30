@@ -4374,7 +4374,6 @@ dependencies = [
  "sqlite",
  "ssh-key",
  "tauri",
- "tauri-plugin-clipboard-manager",
  "tauri-plugin-fs",
  "tempfile",
  "thiserror 2.0.19",

@@ -54,10 +54,6 @@ pub enum Error {
     #[error(transparent)]
     AliasError(#[from] radicle::node::AliasError),
 
-    /// Tauri Plugin Clipboard error.
-    #[error(transparent)]
-    TauriPluginClipboard(#[from] tauri_plugin_clipboard_manager::Error),
-
     /// Tauri Plugin Fs error.
     #[error(transparent)]
     TauriPluginFs(#[from] tauri_plugin_fs::Error),

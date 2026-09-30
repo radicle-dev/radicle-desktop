@@ -1,13 +1,18 @@
+import type { EmbedWithMimeType } from "@bindings/cob/EmbedWithMimeType";
 import type { JSHandle, Locator, Page } from "@playwright/test";
 import type { RadiclePeer } from "@tests/support/peerManager.js";
 
 import { createProject } from "@tests/support/collaboration.js";
 import { expect, test, waitForCommand } from "@tests/support/fixtures.js";
 
+const onePixelPng =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
 async function openIssue(page: Page, peer: RadiclePeer) {
   const { rid, issueId } = await createProject(peer);
   await page.goto(`/repos/${rid}/issues/${issueId}`);
   await expect(page.getByText("Nobody reads them.")).toBeVisible();
+  return rid;
 }
 
 function fileTransfer(
@@ -85,4 +90,38 @@ test("the drop highlight clears once the file leaves", async ({
 
   await highlight.dispatchEvent("dragleave", { dataTransfer: transfer });
   await expect(highlight).toBeHidden();
+});
+
+test("a pasted image is stored as the image itself", async ({ page, peer }) => {
+  const rid = await openIssue(page, peer);
+  const composer = page.getByPlaceholder("Leave a comment");
+
+  await waitForCommand(page, "save_embed_by_bytes", () =>
+    composer.evaluate((textarea, png) => {
+      const clipboardData = new DataTransfer();
+      const bytes = Uint8Array.from(atob(png), c => c.charCodeAt(0));
+      clipboardData.items.add(
+        new File([bytes], "image.png", { type: "image/png" }),
+      );
+      textarea.dispatchEvent(
+        new ClipboardEvent("paste", {
+          clipboardData,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    }, onePixelPng),
+  );
+  await expect(composer).toHaveValue(/\[image\.png\]\(\w+\)/);
+
+  const oid = /\[image\.png\]\((\w+)\)/.exec(await composer.inputValue())?.[1];
+  const response = await page.request.post(
+    `http://127.0.0.1:${peer.httpdBaseUrl.port}/get_embed`,
+    { data: { rid, oid, name: "image.png" } },
+  );
+  const embed = (await response.json()) as EmbedWithMimeType;
+  expect(embed.mimeType).toBe("image/png");
+  expect(Buffer.from(embed.content)).toEqual(
+    Buffer.from(onePixelPng, "base64"),
+  );
 });
