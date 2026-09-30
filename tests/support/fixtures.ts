@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import type { PeerManager, RadiclePeer } from "./peerManager.js";
+import type { Page } from "@playwright/test";
 
 import * as Fs from "node:fs/promises";
+import * as Os from "node:os";
 import * as Path from "node:path";
 import type * as Stream from "node:stream";
 
@@ -13,6 +15,7 @@ import { createPeerManager } from "@tests/support/peerManager.js";
 import { createRepo } from "@tests/support/repo.js";
 import { createOptions, supportDir, tmpDir } from "@tests/support/support.js";
 import { execa } from "execa";
+import waitOn from "wait-on";
 
 import { formatOid } from "@app/lib/utils.js";
 
@@ -26,6 +29,7 @@ export const test = base.extend<{
   stateDir: string;
   peerManager: PeerManager;
   peer: RadiclePeer;
+  sshAuthSock: string;
   outputLog: Stream.Writable;
 }>({
   forAllTests: [
@@ -48,6 +52,12 @@ export const test = base.extend<{
 
       if (!process.env.CONTINUE_ON_ERRORS) {
         page.on("pageerror", msg => {
+          if (tearingDown.has(page)) {
+            return;
+          }
+          if (reloading.has(page) && isCancelledFetch(msg)) {
+            return;
+          }
           expect(
             false,
             `Test failed because there was a console error in the app: ${msg}`,
@@ -96,16 +106,19 @@ export const test = base.extend<{
     await logFile.close();
   },
 
-  peerManager: async ({ stateDir, outputLog }, use) => {
+  peerManager: async ({ stateDir, outputLog, page }, use) => {
     const peerManager = await createPeerManager({
       dataDir: Path.resolve(Path.join(stateDir, "peers")),
       outputLog,
     });
     await use(peerManager);
+    // The page outlives the peers and keeps polling them, so its requests
+    // fail once they shut down. The test is already over by then.
+    tearingDown.add(page);
     await peerManager.shutdown();
   },
 
-  peer: async ({ peerManager }, use) => {
+  peer: async ({ page, peerManager }, use) => {
     const peer = await peerManager.createPeer({
       name: "httpd",
       gitOptions: gitOptions["bob"],
@@ -113,8 +126,23 @@ export const test = base.extend<{
 
     await peer.startNode();
     await peer.startHttpd();
+    await useBackend(page, peer);
 
     await use(peer);
+  },
+
+  // eslint-disable-next-line no-empty-pattern
+  sshAuthSock: async ({}, use) => {
+    const dir = await Fs.mkdtemp(Path.join(Os.tmpdir(), "radicle-ssh-agent-"));
+    const socket = Path.join(dir, "agent.sock");
+    const agent = execa("ssh-agent", ["-D", "-a", socket]);
+    agent.catch(() => undefined);
+    await waitOn({ resources: [`socket:${socket}`], timeout: 5000 });
+
+    await use(socket);
+
+    agent.kill();
+    await Fs.rm(dir, { recursive: true, force: true });
   },
 
   // eslint-disable-next-line no-empty-pattern
@@ -132,6 +160,36 @@ export const test = base.extend<{
     }
   },
 });
+
+const reloading = new WeakSet<Page>();
+const tearingDown = new WeakSet<Page>();
+
+// WebKit reports a fetch that was cancelled because the page went away as an
+// access control failure.
+function isCancelledFetch(error: Error) {
+  return /Fetch API cannot load .* due to access control checks/.test(
+    error.message + error.stack,
+  );
+}
+
+export async function reload(page: Page) {
+  reloading.add(page);
+  try {
+    await page.reload();
+    // WebKit reports fetches the old page had in flight after the new one
+    // has loaded, so keep ignoring them until the network settles.
+    await page.waitForLoadState("networkidle");
+  } finally {
+    reloading.delete(page);
+  }
+}
+
+// Call before the first `page.goto`.
+export async function useBackend(page: Page, peer: RadiclePeer) {
+  await page.addInitScript(port => {
+    window.__TEST_HTTP_API_PORT__ = port;
+  }, peer.httpdBaseUrl.port);
+}
 
 function log(text: string, label: string, outputLog: Stream.Writable) {
   const output = text
@@ -389,6 +447,19 @@ export async function createCobsFixture(
   await eve.rad(
     ["patch", "review", patchThree, "-m", "This looks better", "--accept"],
     createOptions(repoFolder, 2),
+  );
+  // Don't let palm act on the patch before it has eve's review.
+  await peer.waitForEvent(
+    event =>
+      event.type === "refsFetched" &&
+      event.rid === rid &&
+      event.remote === eve.nodeId &&
+      event.updated.some(update =>
+        Object.values(update).some(ref =>
+          ref.name.endsWith(`/xyz.radicle.patch/${patchThree}`),
+        ),
+      ),
+    10_000,
   );
   await Fs.appendFile(
     Path.join(repoFolder, "README.md"),

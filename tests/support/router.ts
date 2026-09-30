@@ -1,11 +1,11 @@
 import type { Page } from "@playwright/test";
 
-import { expect } from "@tests/support/fixtures.js";
+import { expect, reload } from "@tests/support/fixtures.js";
 
 // Reloads the current page and verifies that the URL stays correct
 export const expectUrlPersistsReload = async (page: Page) => {
   const url = page.url();
-  await page.reload();
+  await reload(page);
   await expect(page).toHaveURL(url);
 };
 

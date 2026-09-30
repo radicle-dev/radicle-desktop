@@ -60,20 +60,23 @@ export interface RoutingEntry {
   rid: string;
 }
 
-interface PeerManagerParams {
-  dataPath: string;
-  radSeed: string;
+interface PeerOptions {
   // Name for easy identification. Used on file system and in logs.
   name: string;
   gitOptions?: Record<string, string>;
+  // Without one the keys are unencrypted and need no ssh-agent.
+  passphrase?: string;
+  sshAuthSock?: string;
+}
+
+interface PeerManagerParams extends PeerOptions {
+  dataPath: string;
+  radSeed: string;
   outputLog: Stream.Writable;
 }
 
 export interface PeerManager {
-  createPeer(params: {
-    name: string;
-    gitOptions?: Record<string, string>;
-  }): Promise<RadiclePeer>;
+  createPeer(params: PeerOptions): Promise<RadiclePeer>;
   /**
    * Kill all processes spawned by any of the peers
    */
@@ -101,8 +104,7 @@ export async function createPeerManager(createParams: {
     async createPeer(params) {
       const peer = await RadiclePeer.create({
         dataPath: createParams.dataDir,
-        name: params.name,
-        gitOptions: params.gitOptions,
+        ...params,
         radSeed: Array(64)
           .fill((peers.length + 1).toString())
           .join(""),
@@ -152,6 +154,8 @@ export class RadiclePeer {
   #eventRecords: NodeEvent[] = [];
   #outputLog: Stream.Writable;
   #gitOptions?: Record<string, string>;
+  #passphrase: string;
+  #sshAuthSock?: string;
   #listenSocketAddr?: string;
   #httpdBaseUrl?: BaseUrl;
   #nodeProcess?: SpawnResult;
@@ -168,6 +172,8 @@ export class RadiclePeer {
     radHome: string;
     logFile: Stream.Writable;
     name: string;
+    passphrase: string;
+    sshAuthSock?: string;
   }) {
     this.checkoutPath = props.checkoutPath;
     this.nodeId = props.nodeId;
@@ -177,13 +183,20 @@ export class RadiclePeer {
     this.#radHome = props.radHome;
     this.#outputLog = props.logFile;
     this.#name = props.name;
+    this.#passphrase = props.passphrase;
+    this.#sshAuthSock = props.sshAuthSock;
   }
 
-  public async waitForEvent(searchEvent: NodeEvent, timeoutInMs: number) {
+  public async waitForEvent(
+    searchEvent: NodeEvent | ((event: NodeEvent) => boolean),
+    timeoutInMs: number,
+  ) {
     const start = new Date().getTime();
+    const predicate =
+      typeof searchEvent === "function" ? searchEvent : matches(searchEvent);
 
     while (true) {
-      if (this.#eventRecords.find(matches(searchEvent))) {
+      if (this.#eventRecords.find(predicate)) {
         return;
       }
       if (new Date().getTime() - start > timeoutInMs) {
@@ -204,6 +217,8 @@ export class RadiclePeer {
     gitOptions,
     radSeed: node,
     outputLog: logFile,
+    passphrase = "",
+    sshAuthSock,
   }: PeerManagerParams): Promise<RadiclePeer> {
     const checkoutPath = Path.join(dataPath, name, "copy");
     await Fs.mkdir(checkoutPath, { recursive: true });
@@ -219,9 +234,10 @@ export class RadiclePeer {
     const env = {
       ...gitOptions,
       RAD_HOME: radHome,
-      RAD_PASSPHRASE: "asdf",
+      RAD_PASSPHRASE: passphrase,
       RAD_KEYGEN_SEED: node,
       RAD_SOCKET: socket,
+      SSH_AUTH_SOCK: sshAuthSock,
     };
     /* eslint-enable @typescript-eslint/naming-convention */
 
@@ -237,6 +253,8 @@ export class RadiclePeer {
       radHome,
       logFile,
       name,
+      passphrase,
+      sshAuthSock,
     });
   }
 
@@ -399,7 +417,8 @@ export class RadiclePeer {
         GIT_CONFIG_GLOBAL: "/dev/null",
         GIT_CONFIG_NOSYSTEM: "1",
         RAD_HOME: this.#radHome,
-        RAD_PASSPHRASE: "asdf",
+        RAD_PASSPHRASE: this.#passphrase,
+        SSH_AUTH_SOCK: this.#sshAuthSock,
         RAD_LOCAL_TIME: "1671125284",
         RAD_KEYGEN_SEED: this.#radSeed,
         RAD_SOCKET: this.#socket,

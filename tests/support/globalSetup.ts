@@ -51,6 +51,10 @@ export default async function globalSetup(): Promise<() => void> {
     "./crates/test-http-api/Cargo.toml",
   ]);
 
+  // Keeps test keys out of the developer's ssh-agent.
+  delete process.env.SSH_AUTH_SOCK;
+  delete process.env.SSH_AGENT_PID;
+
   const peerManager = await createPeerManager({
     dataDir: Path.resolve(tmpDir, "peers"),
     outputLog: Fs.createWriteStream(
