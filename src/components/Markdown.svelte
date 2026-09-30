@@ -5,6 +5,7 @@
   import { toDom } from "hast-util-to-dom";
   import { mount, tick, unmount } from "svelte";
 
+  import { embedPreviewKind } from "@app/lib/embeds";
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
   import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
@@ -111,34 +112,33 @@
               const buffer = Buffer.from(content);
               const blob = new Blob([buffer]);
               const url = URL.createObjectURL(blob);
-              // Embed an img element below the link
-              if (mimeType?.startsWith("image")) {
+              const kind = embedPreviewKind(mimeType);
+              if (kind === "image") {
                 const element = document.createElement("img");
                 element.setAttribute("src", url);
                 element.style.display = "block";
                 e.style.display = "block";
                 e.insertAdjacentElement("afterend", element);
-                // Embed an iframe to display pdf correctly element below the link
-              } else if (mimeType?.startsWith("application")) {
+              } else if (kind === "document") {
                 const element = document.createElement("embed");
                 element.setAttribute("src", url);
-                element.type = mimeType;
+                element.type = mimeType ?? "";
                 element.style.overflow = "scroll";
                 element.style.height = "40rem";
                 element.style.overscrollBehavior = "contain";
                 e.style.display = "block";
                 e.insertAdjacentElement("afterend", element);
-              } else if (mimeType?.startsWith("video")) {
+              } else if (kind === "video") {
                 const element = document.createElement("video");
                 const node = document.createElement("source");
                 node.src = url;
                 element.controls = true;
-                node.type = mimeType;
+                node.type = mimeType ?? "";
                 element.style.width = "100%";
                 e.style.display = "block";
                 element.appendChild(node);
                 e.insertAdjacentElement("afterend", element);
-              } else if (mimeType?.startsWith("audio")) {
+              } else if (kind === "audio") {
                 const element = document.createElement("audio");
                 element.style.display = "block";
                 element.src = url;
