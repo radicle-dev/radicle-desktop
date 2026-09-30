@@ -4,6 +4,7 @@
   import { autoUpdate, computePosition, flip, shift } from "@floating-ui/dom";
   import { onMount } from "svelte";
 
+  import { menuFocusIndex } from "@app/lib/menuNavigation";
   import { portal } from "@app/lib/portal";
 
   import { getScrollViewport } from "@app/components/ScrollArea.svelte";
@@ -46,35 +47,14 @@
     );
   }
 
-  function focusItem(index: number) {
-    const items = menuItems();
-    if (items.length === 0) return;
-    const wrapped = ((index % items.length) + items.length) % items.length;
-    items[wrapped].focus();
-  }
-
   function onMenuKeydown(ev: KeyboardEvent) {
     const items = menuItems();
     if (items.length === 0) return;
     const current = items.findIndex(el => el === document.activeElement);
-    switch (ev.key) {
-      case "ArrowDown":
-        ev.preventDefault();
-        focusItem(current + 1);
-        break;
-      case "ArrowUp":
-        ev.preventDefault();
-        focusItem(current - 1);
-        break;
-      case "Home":
-        ev.preventDefault();
-        focusItem(0);
-        break;
-      case "End":
-        ev.preventDefault();
-        focusItem(items.length - 1);
-        break;
-    }
+    const next = menuFocusIndex(ev.key, current, items.length);
+    if (next === undefined) return;
+    ev.preventDefault();
+    items[next].focus();
   }
 
   function onMenuClick(ev: MouseEvent) {
