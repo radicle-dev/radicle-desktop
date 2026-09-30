@@ -186,6 +186,15 @@
           nodeRunning.set(event.payload);
         }),
       );
+    } else {
+      // The test backend can't emit events.
+      const pollNodeRunning = () =>
+        invoke<boolean>("node_running")
+          .then(running => nodeRunning.set(running))
+          .catch(console.error);
+      void pollNodeRunning();
+      const interval = setInterval(pollNodeRunning, 2_000);
+      setUnlistenNodeEvents(() => clearInterval(interval));
     }
 
     try {
