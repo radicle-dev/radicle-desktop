@@ -9,6 +9,11 @@
   import { tick, untrack } from "svelte";
 
   import type { CodeComments } from "@app/lib/codeComments";
+  import {
+    orderComments,
+    stepCommitIndex,
+    stepIndex,
+  } from "@app/lib/commentNavigation";
   import { diffOptions } from "@app/lib/diffOptions.svelte";
   import { fileDiffPath, fileMetaOf, fullFileLoader } from "@app/lib/diffText";
   import { draftReviewStorage } from "@app/lib/draftReviewStorage";
@@ -19,11 +24,7 @@
     cachedListCommits,
     getDiffText,
   } from "@app/lib/invoke";
-  import {
-    anchorOf,
-    commentCountsByPath,
-    isCommentableStatus,
-  } from "@app/lib/pierreComments";
+  import { anchorOf, commentCountsByPath } from "@app/lib/pierreComments";
   import { useShortcuts } from "@app/lib/shortcuts.svelte";
   import { pluralize } from "@app/lib/utils";
 
@@ -237,46 +238,16 @@
     );
   });
 
-  // Every comment on the diff in the order it is rendered — by file, in the
-  // order the files appear, then down the lines of each. What the tab bar's
-  // stepper walks.
-  const orderedComments = $derived.by(() => {
-    const comments = diffCodeComments;
-    if (!comments) return [];
-    const fileOrder = new Map(
-      diffFiles.map((file, index) => [fileDiffPath(file), index] as const),
-    );
-    return comments.threads
-      .flatMap(thread => {
-        const anchor = anchorOf(thread.root.location);
-        // Dropped for the same two reasons the diff itself drops them: the file
-        // is not in this diff, or its content moved and an anchor in it is
-        // ambiguous. Either way there is nothing on screen to step to.
-        if (!anchor) return [];
-        const order = fileOrder.get(anchor.path);
-        if (order === undefined) return [];
-        if (!isCommentableStatus(fileMeta.statuses.get(anchor.path))) return [];
-        return [
-          {
-            id: thread.root.id,
-            anchor,
-            order,
-            // A deletion is rendered above an addition on the same line, and
-            // two comments on one line are ordered oldest first — the same rule
-            // the annotations themselves are built with.
-            side: anchor.side === "deletions" ? 0 : 1,
-            timestamp: thread.root.edits[0].timestamp,
-          },
-        ];
-      })
-      .sort(
-        (a, b) =>
-          a.order - b.order ||
-          a.anchor.line - b.anchor.line ||
-          a.side - b.side ||
-          a.timestamp - b.timestamp,
-      );
-  });
+  // What the tab bar's stepper walks.
+  const orderedComments = $derived(
+    diffCodeComments
+      ? orderComments(
+          diffCodeComments.threads,
+          diffFiles.map(fileDiffPath),
+          path => fileMeta.statuses.get(path),
+        )
+      : [],
+  );
 
   // Which comment the stepper is on, held by id rather than by position: the
   // list shifts as comments are written, deleted or filtered out, and a position
@@ -305,13 +276,9 @@
   /// Walk to the next (`1`) or previous (`-1`) comment on the diff. Called from
   /// the tab bar, which sits outside this component.
   export function stepComment(delta: number) {
-    const total = orderedComments.length;
-    if (total === 0) return;
-    // From nothing, a step down starts at the first comment and a step up at the
-    // last. From somewhere, both wrap, so a walk never dead-ends at either end
-    // of a long diff.
-    const from = commentIndex >= 0 ? commentIndex : delta > 0 ? -1 : 0;
-    const target = orderedComments[(from + delta + total) % total];
+    const index = stepIndex(commentIndex, orderedComments.length, delta);
+    if (index === undefined) return;
+    const target = orderedComments[index];
     activeCommentId = target.id;
     clearTimeout(highlightTimer);
     highlightedCommentId = target.id;
@@ -457,8 +424,7 @@
 
   function selectCommitAt(index: number) {
     if (commitList.length <= 1) return;
-    const clamped = Math.max(0, Math.min(index, commitList.length - 1));
-    const commit = commitList[clamped];
+    const commit = commitList[index];
     selectRevision({
       headId: commit.id,
       baseId: commit.parents[0],
@@ -475,7 +441,7 @@
       enabled: () => commitList.length > 1,
       run: () => {
         const current = commitList.findIndex(c => c.id === selectedCommit);
-        selectCommitAt(current === -1 ? commitList.length - 1 : current - 1);
+        selectCommitAt(stepCommitIndex(current, commitList.length, -1));
       },
     },
     {
@@ -483,7 +449,7 @@
       enabled: () => commitList.length > 1,
       run: () => {
         const current = commitList.findIndex(c => c.id === selectedCommit);
-        selectCommitAt(current === -1 ? 0 : current + 1);
+        selectCommitAt(stepCommitIndex(current, commitList.length, 1));
       },
     },
     {
