@@ -32,6 +32,12 @@
   } from "@app/lib/invoke";
   import type { PatchActivityData } from "@app/lib/patchTimeline";
   import { patchTimeline } from "@app/lib/patchTimeline";
+  import {
+    groupCommitsByAuthor,
+    isCommitListDescription,
+    splitDescription,
+    visibleCommitsOf,
+  } from "@app/lib/revisionDescription";
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
   import {
@@ -61,9 +67,7 @@
   import Icon from "@app/components/Icon.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
-  import PatchActivityItem, {
-    splitDescription,
-  } from "@app/components/PatchActivityItem.svelte";
+  import PatchActivityItem from "@app/components/PatchActivityItem.svelte";
   import Path from "@app/components/Path.svelte";
   import PierreSnippet from "@app/components/PierreSnippet.svelte";
   import { closeFocused } from "@app/components/Popover.svelte";
@@ -185,8 +189,6 @@
       revisionDescriptionEdits = {};
     }
   });
-  const MAX_COMMITS_VISIBLE = 3;
-  const COMMIT_COLLAPSE_THRESHOLD = 5;
   function isRevisionExpanded(revId: string): boolean {
     if (revId in revisionToggles) {
       return revisionToggles[revId];
@@ -227,34 +229,6 @@
       revisionToggles = next;
     }
   }
-  // A description that is exactly the list of commit summaries is the default
-  // Radicle produces, and is noise next to the commits themselves.
-  function isCommitListDescription(
-    description: string,
-    commits: Commit[] | undefined,
-  ): boolean {
-    if (!commits || commits.length === 0) return false;
-    const chunks = description
-      .split("\n")
-      .map(l => l.trim())
-      .filter(l => l.length > 0);
-    if (chunks.length !== commits.length) return false;
-    const summaries = new Set(commits.map(c => c.summary.trim()));
-    return chunks.every(line => summaries.has(line));
-  }
-  function groupCommitsByAuthor(commits: Commit[]): Commit[][] {
-    const groups: Commit[][] = [];
-    for (const commit of commits) {
-      const last = groups[groups.length - 1];
-      if (last && last[0].author.name === commit.author.name) {
-        last.push(commit);
-      } else {
-        groups.push([commit]);
-      }
-    }
-    return groups;
-  }
-
   const draftReview = $derived(
     draftReviewStorage.getForRevision(revision.id, currentUserAuthor),
   );
@@ -1202,15 +1176,11 @@
                     {#if group.length > 1}
                       {@const groupKey = group[0].id}
                       {@const groupExpanded = isCommitGroupExpanded(groupKey)}
-                      {@const collapsed =
-                        !groupExpanded &&
-                        group.length > COMMIT_COLLAPSE_THRESHOLD}
-                      {@const visibleCommits = collapsed
-                        ? group.slice(0, MAX_COMMITS_VISIBLE)
-                        : group}
-                      {@const hiddenCount = collapsed
-                        ? group.length - MAX_COMMITS_VISIBLE
-                        : 0}
+                      {@const {
+                        collapsed,
+                        visible: visibleCommits,
+                        hiddenCount,
+                      } = visibleCommitsOf(group, groupExpanded)}
                       <div class="commit-group">
                         <div class="commit-group-author txt-body-m-regular">
                           {group[0].author.name} &lt;{group[0].author.email}&gt;

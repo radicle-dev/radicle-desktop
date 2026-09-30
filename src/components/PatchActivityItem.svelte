@@ -4,22 +4,6 @@
   import type { FlattenedPatchOperation } from "@app/lib/patchTimeline";
 
   export type { FlattenedPatchOperation };
-
-  export function splitDescription(text: string): {
-    subject?: string;
-    body?: string;
-  } {
-    const trimmed = text.trim();
-    if (!trimmed) return {};
-    const idx = trimmed.indexOf("\n");
-    if (idx === -1) return { subject: trimmed };
-    const subject = trimmed.slice(0, idx).trim();
-    const body = trimmed.slice(idx + 1).trim();
-    return {
-      subject: subject || undefined,
-      body: body || undefined,
-    };
-  }
 </script>
 
 <script lang="ts">
@@ -27,6 +11,7 @@
 
   import { itemDiff } from "@app/lib/cobActivity";
   import { cachedConfig, writeToClipboard } from "@app/lib/invoke";
+  import { splitDescription } from "@app/lib/revisionDescription";
   import {
     absoluteTimestamp,
     authorForNodeId,
