@@ -4,6 +4,7 @@
 
   import { slide } from "svelte/transition";
 
+  import { stateCaption, stateIcon } from "@app/lib/identityState";
   import type { SidebarData } from "@app/lib/router/definitions";
   import {
     absoluteTimestamp,
@@ -17,10 +18,7 @@
   import IdentityChanges from "@app/components/IdentityChanges.svelte";
   import IdentityDocument from "@app/components/IdentityDocument.svelte";
   import IdentityJsonButton from "@app/components/IdentityJsonButton.svelte";
-  import IdentityStateBadge, {
-    stateCaption,
-    stateIcon,
-  } from "@app/components/IdentityStateBadge.svelte";
+  import IdentityStateBadge from "@app/components/IdentityStateBadge.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import RepoHeader from "@app/components/RepoHeader.svelte";
