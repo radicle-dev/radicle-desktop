@@ -30,6 +30,8 @@
     cachedListCommits,
     invoke,
   } from "@app/lib/invoke";
+  import type { PatchActivityData } from "@app/lib/patchTimeline";
+  import { patchTimeline } from "@app/lib/patchTimeline";
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
   import {
@@ -43,16 +45,13 @@
   import { announce } from "@app/components/AnnounceSwitch.svelte";
   import Changes from "@app/components/Changes.svelte";
   import CommitActivityItem from "@app/components/CommitActivityItem.svelte";
-  import Discussion, {
-    type ActivityItem,
-  } from "@app/components/Discussion.svelte";
+  import Discussion from "@app/components/Discussion.svelte";
   import ExtendedTextarea from "@app/components/ExtendedTextarea.svelte";
   import FileBlock from "@app/components/FileBlock.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Markdown from "@app/components/Markdown.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import PatchActivityItem, {
-    type FlattenedPatchOperation,
     splitDescription,
   } from "@app/components/PatchActivityItem.svelte";
   import Path from "@app/components/Path.svelte";
@@ -64,27 +63,7 @@
   import ReviewItem from "@app/components/ReviewItem.svelte";
   import ThreadComponent from "@app/components/Thread.svelte";
 
-  type ActivityData =
-    | {
-        kind: "op";
-        op: FlattenedPatchOperation;
-        commits?: Commit[];
-        reviewThreads?: Thread<CodeLocation>[];
-        reviewComments?: Thread<CodeLocation>[];
-      }
-    | {
-        kind: "opened";
-        op: FlattenedPatchOperation & { type: "revision" };
-        openedAsDraft: boolean;
-      }
-    | {
-        kind: "olderRevisions";
-        groupKey: string;
-        revisionIds: string[];
-        count: number;
-        author?: Author;
-        expanded: boolean;
-      };
+  type ActivityData = PatchActivityData;
 
   interface Props {
     rid: string;
@@ -172,21 +151,6 @@
   // Timeline order, as delivered — see `revisionPosition`.
   const latestRevisionId = $derived(revisions.at(-1)?.id);
   const firstRevisionId = $derived(revisions[0]?.id);
-  // The patch was opened as a draft when its first lifecycle change is a draft
-  // happening right at creation (the first or second operation), as opposed to
-  // being converted to draft later in its life.
-  const openingDraftOpId = $derived.by(() => {
-    const ops = [...activity].sort((a, b) => a.timestamp - b.timestamp);
-    const firstLifecycleIdx = ops.findIndex(op =>
-      op.actions.some(a => a.type === "lifecycle"),
-    );
-    if (firstLifecycleIdx === -1 || firstLifecycleIdx > 1) return undefined;
-    const op = ops[firstLifecycleIdx];
-    const lifecycle = op.actions.find(a => a.type === "lifecycle");
-    return lifecycle?.type === "lifecycle" && lifecycle.state.status === "draft"
-      ? op.id
-      : undefined;
-  });
   const targetBranch = $derived(
     patchTargetBranch === undefined
       ? undefined
@@ -675,25 +639,6 @@
       commitsByRevision = next;
     });
   });
-  const skippedActivityTypes = new Set<Action["type"]>([
-    "revision.comment",
-    "revision.comment.edit",
-    "revision.comment.redact",
-    "revision.comment.react",
-    "revision.react",
-    "revision.edit",
-    "revision.redact",
-    "review.comment",
-    "review.comment.edit",
-    "review.comment.redact",
-    "review.comment.react",
-    "review.comment.resolve",
-    "review.comment.unresolve",
-    "review.edit",
-    "review.redact",
-    "review.react",
-  ]);
-
   const olderRevisionIds = $derived(
     new Set(revisions.filter(r => r.id !== latestRevisionId).map(r => r.id)),
   );
@@ -718,268 +663,16 @@
     return map;
   });
 
-  const activityItems: ActivityItem<ActivityData>[] = $derived.by(() => {
-    const tracker: Partial<Record<Action["type"], Action>> = {};
-    const items: ActivityItem<ActivityData>[] = [];
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const reviewOpsByReviewId = new Map<
-      string,
-      FlattenedPatchOperation & { type: "review" }
-    >();
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const revisionOpsByRevisionId = new Map<
-      string,
-      FlattenedPatchOperation & { type: "revision" }
-    >();
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const redactedRevisionIds = new Set<string>();
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const redactedReviewIds = new Set<string>();
-    activity.forEach(operation => {
-      operation.actions.forEach((action, actionIndex) => {
-        if (skippedActivityTypes.has(action.type)) {
-          if (action.type === "review.edit") {
-            const reviewOp = reviewOpsByReviewId.get(action.review);
-            if (reviewOp) {
-              if ("verdict" in action) reviewOp.verdict = action.verdict;
-              if ("summary" in action) reviewOp.summary = action.summary;
-              if ("labels" in action) reviewOp.labels = action.labels;
-            }
-          } else if (action.type === "revision.edit") {
-            const revisionOp = revisionOpsByRevisionId.get(action.revision);
-            if (revisionOp) {
-              revisionOp.description = action.description;
-            }
-          } else if (action.type === "revision.redact") {
-            redactedRevisionIds.add(action.revision);
-          } else if (action.type === "review.redact") {
-            redactedReviewIds.add(action.review);
-          }
-          tracker[action.type] = action;
-          return;
-        }
-        const previous = tracker[action.type];
-        // The first `edit` action has nothing to diff against, so the
-        // renderer skips it. Skip it here too so we don't leave a gap.
-        if (action.type === "edit" && !previous) {
-          tracker[action.type] = action;
-          return;
-        }
-        if (action.type === "label") {
-          const prev =
-            previous && previous.type === "label" ? previous.labels : [];
-          const added = action.labels.filter(l => !prev.includes(l));
-          const removed = prev.filter(l => !action.labels.includes(l));
-          if (added.length === 0 && removed.length === 0) {
-            tracker[action.type] = action;
-            return;
-          }
-        }
-        const op: FlattenedPatchOperation = {
-          ...action,
-          id: operation.id,
-          author: operation.author,
-          timestamp: operation.timestamp,
-          previous,
-        };
-        tracker[action.type] = action;
-        const commits =
-          action.type === "revision"
-            ? commitsByRevision[operation.id]
-            : undefined;
-        const reviewThreads =
-          action.type === "review"
-            ? threadsByReview.get(operation.id)
-            : undefined;
-        const reviewComments =
-          action.type === "review"
-            ? discussionThreadsByReview.get(operation.id)
-            : undefined;
-        if (action.type === "review") {
-          reviewOpsByReviewId.set(
-            operation.id,
-            op as FlattenedPatchOperation & { type: "review" },
-          );
-        }
-        if (action.type === "revision") {
-          revisionOpsByRevisionId.set(
-            operation.id,
-            op as FlattenedPatchOperation & { type: "revision" },
-          );
-        }
-        items.push({
-          key: `${operation.id}:${actionIndex}`,
-          timestamp: operation.timestamp,
-          data: { kind: "op", op, commits, reviewThreads, reviewComments },
-          // A merge draws a filled band and a review draws a card; both need
-          // the space around them that a run of bare rows deliberately drops.
-          standalone: op.type === "merge" || op.type === "review",
-        });
-      });
-    });
-
-    const filtered = items.filter(item => {
-      if (item.data.kind !== "op") return true;
-      if (
-        item.data.op.type === "revision" &&
-        redactedRevisionIds.has(item.data.op.id)
-      ) {
-        return false;
-      }
-      if (
-        item.data.op.type === "review" &&
-        redactedReviewIds.has(item.data.op.id)
-      ) {
-        return false;
-      }
-      // The opening-draft lifecycle is folded into the "opened a draft patch"
-      // label on the first revision, so drop the standalone item.
-      if (
-        item.data.op.type === "lifecycle" &&
-        item.data.op.state.status === "draft" &&
-        item.data.op.id === openingDraftOpId
-      ) {
-        return false;
-      }
-      return true;
-    });
-    filtered.sort((a, b) => a.timestamp - b.timestamp);
-
-    // Place each review immediately after the revision it belongs to, so it
-    // reads as the next timeline item under that revision rather than floating
-    // wherever its own timestamp lands.
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const reviewsByRevision = new Map<string, ActivityItem<ActivityData>[]>();
-    for (const item of filtered) {
-      if (item.data.kind === "op" && item.data.op.type === "review") {
-        const revId = item.data.op.revision;
-        const list = reviewsByRevision.get(revId) ?? [];
-        list.push(item);
-        reviewsByRevision.set(revId, list);
-      }
-    }
-    const reordered: ActivityItem<ActivityData>[] = [];
-    // eslint-disable-next-line svelte/prefer-svelte-reactivity
-    const placedReviews = new Set<string>();
-    for (const item of filtered) {
-      if (item.data.kind === "op" && item.data.op.type === "review") continue;
-      reordered.push(item);
-      if (item.data.kind === "op" && item.data.op.type === "revision") {
-        const reviews = reviewsByRevision.get(item.data.op.id);
-        if (reviews) {
-          reordered.push(...reviews);
-          reviews.forEach(r => placedReviews.add(r.key));
-        }
-      }
-    }
-    // Reviews whose revision is gone (e.g. redacted) keep their original order.
-    for (const item of filtered) {
-      if (
-        item.data.kind === "op" &&
-        item.data.op.type === "review" &&
-        !placedReviews.has(item.key)
-      ) {
-        reordered.push(item);
-      }
-    }
-    items.length = 0;
-    items.push(...reordered);
-
-    // The patch creation is shown as a standalone "opened patch" marker; the
-    // first revision itself stays in the timeline below (and folds with other
-    // revisions). Synthesize the marker from the first revision operation.
-    const firstRevisionOp = revisionOpsByRevisionId.get(firstRevisionId);
-    const opened: ActivityItem<ActivityData>[] = firstRevisionOp
-      ? [
-          {
-            key: `opened:${firstRevisionId}`,
-            timestamp: firstRevisionOp.timestamp,
-            data: {
-              kind: "opened",
-              op: firstRevisionOp,
-              openedAsDraft: openingDraftOpId !== undefined,
-            },
-          },
-        ]
-      : [];
-
-    const isOlderRevisionItem = (item: ActivityItem<ActivityData>) =>
-      item.data.kind === "op" &&
-      item.data.op.type === "revision" &&
-      olderRevisionIds.has(item.data.op.id);
-    // A review belonging to an older revision folds together with that revision.
-    const isFoldableReview = (item: ActivityItem<ActivityData>) =>
-      item.data.kind === "op" &&
-      item.data.op.type === "review" &&
-      olderRevisionIds.has(item.data.op.revision);
-    const isFoldable = (item: ActivityItem<ActivityData>) =>
-      isOlderRevisionItem(item) || isFoldableReview(item);
-    const itemOpAuthorDid = (item: ActivityItem<ActivityData>) =>
-      item.data.kind === "op" ? item.data.op.author.did : undefined;
-
-    // Fold each maximal run of *consecutive* older revisions by the *same
-    // author* (and the reviews nested under them) into one "<author> created N
-    // revisions" toggle. A lifecycle change, comment, or a switch to another
-    // author breaks the run, so a fold is always attributed to one person.
-    const folded: ActivityItem<ActivityData>[] = [];
-    let i = 0;
-    while (i < items.length) {
-      if (!isFoldable(items[i])) {
-        folded.push(items[i]);
-        i += 1;
-        continue;
-      }
-      let j = i;
-      const runAuthorDid = itemOpAuthorDid(items[i]);
-      while (
-        j < items.length &&
-        isFoldable(items[j]) &&
-        itemOpAuthorDid(items[j]) === runAuthorDid
-      ) {
-        j += 1;
-      }
-      const run = items.slice(i, j);
-      const revisionItems = run.filter(isOlderRevisionItem);
-      if (revisionItems.length < 2) {
-        // A lone older revision (with its reviews) isn't worth folding.
-        folded.push(...run);
-      } else {
-        const head = run[0];
-        const groupKey = `older:${head.data.kind === "op" ? head.data.op.id : head.key}`;
-        const runExpanded = expandedRevisionRuns[groupKey] ?? false;
-        const revisionIds = revisionItems
-          .map(item => (item.data.kind === "op" ? item.data.op.id : undefined))
-          .filter((id): id is string => id !== undefined);
-        // Only attribute the fold to an author when every folded revision is by
-        // the same person; a mixed-author run stays unattributed so it isn't
-        // wrongly labelled "<first author> created N revisions".
-        const runAuthors = revisionItems
-          .map(item =>
-            item.data.kind === "op" ? item.data.op.author : undefined,
-          )
-          .filter((a): a is Author => a !== undefined);
-        const uniqueDids = new Set(runAuthors.map(a => a.did));
-        const commonAuthor = uniqueDids.size === 1 ? runAuthors[0] : undefined;
-        folded.push({
-          key: groupKey,
-          timestamp: head.timestamp,
-          data: {
-            kind: "olderRevisions",
-            groupKey,
-            revisionIds,
-            count: revisionItems.length,
-            author: commonAuthor,
-            expanded: runExpanded,
-          },
-        });
-        if (runExpanded) {
-          folded.push(...run);
-        }
-      }
-      i = j;
-    }
-    return [...opened, ...folded];
-  });
+  const activityItems = $derived(
+    patchTimeline({
+      activity,
+      revisions,
+      commitsByRevision,
+      threadsByReview,
+      discussionThreadsByReview,
+      expandedRevisionRuns,
+    }),
+  );
   const reviewSummaryFingerprints = $derived(
     new Set(
       revisions
