@@ -1,18 +1,18 @@
 <script lang="ts">
-  import type { RepoRoute } from "@app/views/repo/router";
   import type { NotificationItem } from "@bindings/cob/inbox/NotificationItem";
-  import type { ComponentProps } from "svelte";
 
-  import { compressActions, notificationActions } from "@app/lib/notification";
+  import {
+    compressActions,
+    notificationActions,
+    notificationIcon,
+    notificationRoute,
+    notificationStatusColor,
+  } from "@app/lib/notification";
   import { push } from "@app/lib/router";
   import {
     absoluteTimestamp,
     authorForNodeId,
     formatTimestamp,
-    issueStatusBackgroundColor,
-    issueStatusColor,
-    patchStatusBackgroundColor,
-    patchStatusColor,
   } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
@@ -53,63 +53,10 @@
     }
   });
 
-  const icon: ComponentProps<typeof Icon>["name"] = $derived.by(() => {
-    const lastDetail = notificationItems.at(-1);
-    if (lastDetail?.type === "issue" && lastDetail.status.status !== "open") {
-      return `issue-${lastDetail.status.status}` as const;
-    } else if (lastDetail?.type === "issue") {
-      return "issue" as const;
-    } else if (
-      lastDetail?.type === "patch" &&
-      lastDetail.status.status !== "open"
-    ) {
-      return `patch-${lastDetail.status.status}` as const;
-    } else {
-      return "patch" as const;
-    }
-  });
-
-  const statusColor = $derived.by(() => {
-    const lastDetail = notificationItems.at(-1);
-    if (lastDetail?.type === "patch") {
-      return {
-        color: patchStatusColor[lastDetail.status.status],
-        background: patchStatusBackgroundColor[lastDetail.status.status],
-      };
-    } else if (lastDetail?.type === "issue") {
-      return {
-        color: issueStatusColor[lastDetail.status.status],
-        background: issueStatusBackgroundColor[lastDetail.status.status],
-      };
-    } else {
-      return {
-        color: "var(--color-text-secondary)",
-        background: "var(--color-surface-subtle)",
-      };
-    }
-  });
-
-  const route = $derived.by(() => {
-    const lastDetail = notificationItems.at(-1);
-    switch (lastDetail?.type) {
-      case "patch":
-        return {
-          resource: "repo.patch",
-          rid,
-          patch: lastDetail.id,
-          status: undefined,
-        } as RepoRoute;
-      case "issue":
-        return {
-          resource: "repo.issue",
-          rid,
-          issue: lastDetail.id,
-          status: "all",
-        } as RepoRoute;
-    }
-
-    return undefined;
-  });
+  const lastItem = $derived(notificationItems.at(-1));
+  const icon = $derived(notificationIcon(lastItem));
+  const statusColor = $derived(notificationStatusColor(lastItem));
+  const route = $derived(notificationRoute(rid, lastItem));
 </script>
 
 <style>

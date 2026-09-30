@@ -1,11 +1,21 @@
+import type { RepoRoute } from "@app/views/repo/router";
 import type { ActionWithAuthor } from "@bindings/cob/inbox/ActionWithAuthor";
+import type { NotificationItem } from "@bindings/cob/inbox/NotificationItem";
 import type { Action as IssueAction } from "@bindings/cob/issue/Action";
 import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 
 import isEqual from "lodash/isEqual";
 import uniqWith from "lodash/uniqWith";
 
-import { emojiToTwemoji, formatOid, pluralize } from "@app/lib/utils";
+import {
+  emojiToTwemoji,
+  formatOid,
+  issueStatusBackgroundColor,
+  issueStatusColor,
+  patchStatusBackgroundColor,
+  patchStatusColor,
+  pluralize,
+} from "@app/lib/utils";
 
 export type Action =
   ActionWithAuthor<IssueAction> | ActionWithAuthor<PatchAction>;
@@ -195,4 +205,67 @@ export function notificationActions(items: { actions: Action[] }[]): Action[] {
     items.flatMap(item => item.actions),
     isEqual,
   ).sort((a, b) => b.timestamp - a.timestamp);
+}
+
+export function notificationIcon(
+  item: NotificationItem | undefined,
+):
+  | "issue"
+  | "issue-closed"
+  | "patch"
+  | "patch-draft"
+  | "patch-archived"
+  | "patch-merged" {
+  if (item?.type === "issue") {
+    return item.status.status === "open"
+      ? "issue"
+      : `issue-${item.status.status}`;
+  }
+  if (item?.type === "patch" && item.status.status !== "open") {
+    return `patch-${item.status.status}`;
+  }
+  return "patch";
+}
+
+export function notificationStatusColor(item: NotificationItem | undefined): {
+  color: string;
+  background: string;
+} {
+  switch (item?.type) {
+    case "patch":
+      return {
+        color: patchStatusColor[item.status.status],
+        background: patchStatusBackgroundColor[item.status.status],
+      };
+    case "issue":
+      return {
+        color: issueStatusColor[item.status.status],
+        background: issueStatusBackgroundColor[item.status.status],
+      };
+    default:
+      return {
+        color: "var(--color-text-secondary)",
+        background: "var(--color-surface-subtle)",
+      };
+  }
+}
+
+export function notificationRoute(
+  rid: string,
+  item: NotificationItem | undefined,
+): RepoRoute | undefined {
+  switch (item?.type) {
+    case "patch":
+      return {
+        resource: "repo.patch",
+        rid,
+        patch: item.id,
+        status: undefined,
+        reviewId: undefined,
+      };
+    case "issue":
+      return { resource: "repo.issue", rid, issue: item.id, status: "all" };
+    default:
+      return undefined;
+  }
 }
