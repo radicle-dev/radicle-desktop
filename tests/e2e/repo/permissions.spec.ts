@@ -1,0 +1,88 @@
+import type { Page } from "@playwright/test";
+import type { PeerManager } from "@tests/support/peerManager.js";
+
+import {
+  clone,
+  createCollaborators,
+  createProject,
+} from "@tests/support/collaboration.js";
+import { expect, test, useBackend } from "@tests/support/fixtures.js";
+
+// Opens bob's project as eve, who cloned it but isn't a delegate.
+async function asContributor(page: Page, peerManager: PeerManager) {
+  const { bob, eve } = await createCollaborators(peerManager);
+  const project = await createProject(bob);
+  await bob.rad(
+    [
+      "issue",
+      "comment",
+      project.issueId,
+      "--message",
+      "Bob's own comment",
+      "--quiet",
+    ],
+    { cwd: project.repoFolder },
+  );
+  await clone(eve, project.rid);
+  await eve.startHttpd();
+  await useBackend(page, eve);
+  return project;
+}
+
+test("a contributor can't edit an issue's metadata or delete it", async ({
+  page,
+  peerManager,
+}) => {
+  const { rid, issueId } = await asContributor(page, peerManager);
+  await page.goto(`/repos/${rid}/issues/${issueId}`);
+  await expect(page.getByText("Nobody reads them.")).toBeVisible();
+
+  await expect(page.getByRole("button", { name: "Add labels" })).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "Add assignees" }),
+  ).toBeDisabled();
+  await expect(
+    page.getByTitle(
+      "Only the issue author and delegates can change the issue state",
+    ),
+  ).toBeVisible();
+  await expect(page.getByTitle("Delete issue from your node")).toBeHidden();
+});
+
+test("a contributor can't edit or delete someone else's comment", async ({
+  page,
+  peerManager,
+}) => {
+  const { rid, issueId } = await asContributor(page, peerManager);
+  await page.goto(`/repos/${rid}/issues/${issueId}`);
+
+  await page.getByText("Bob's own comment").hover();
+  const toggle = page.getByTitle("Comment actions").last();
+  await toggle.click();
+  const menuItem = (action: string) =>
+    toggle.locator(
+      `xpath=following::*[@role="button"][normalize-space()="${action}"][1]`,
+    );
+  await expect(menuItem("Copy ID")).toBeVisible();
+  await expect(menuItem("Edit")).toHaveCount(0);
+  await expect(menuItem("Delete")).toHaveCount(0);
+});
+
+test("a contributor can't change a patch's state or delete it", async ({
+  page,
+  peerManager,
+}) => {
+  const { rid, patchId } = await asContributor(page, peerManager);
+  await page.goto(`/repos/${rid}/patches/${patchId}`);
+  await expect(
+    page.getByRole("button", { name: "Shout the third line" }),
+  ).toBeVisible();
+
+  await expect(
+    page.getByTitle(
+      "Only delegates and the patch author can change the patch state",
+    ),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add labels" })).toBeDisabled();
+  await expect(page.getByTitle("Delete patch from your node")).toBeHidden();
+});
