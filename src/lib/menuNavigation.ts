@@ -8,7 +8,7 @@ export function menuFocusIndex(
     case "ArrowDown":
       return wrap(current + 1);
     case "ArrowUp":
-      return wrap(current - 1);
+      return current === -1 ? count - 1 : wrap(current - 1);
     case "Home":
       return 0;
     case "End":
