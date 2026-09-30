@@ -40,6 +40,14 @@ To start the app in development mode with hot reload:
 npm run dev
 ```
 
+To log how long every backend command takes, for performance work, set
+`VITE_LOG_INVOKE_TIMINGS=true`. Each call then prints `[invoke] <command> <ms>ms`
+to the browser console (visible at debug level):
+
+```
+VITE_LOG_INVOKE_TIMINGS=true npm run dev
+```
+
 ## Releasing
 
 Releases are driven by an interactive, phased script. Start one with:

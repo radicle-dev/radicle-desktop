@@ -16,7 +16,7 @@ export async function invoke<T = null>(
   args?: tauri.InvokeArgs,
   options?: tauri.InvokeOptions,
 ): Promise<T> {
-  if (import.meta.env.DEV) {
+  if (import.meta.env.VITE_LOG_INVOKE_TIMINGS === "true") {
     const start = performance.now();
     try {
       return await withTestBackend<T>(tauri.invoke, cmd, args, options);
