@@ -12,6 +12,7 @@
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
+  import mapValues from "lodash/mapValues";
   import { SvelteSet } from "svelte/reactivity";
 
   import { commentSourcesOf } from "@app/lib/commentSources";
@@ -28,7 +29,11 @@
   import { patchContributions } from "@app/lib/patchContributions";
   import type { ReviewEntry } from "@app/lib/reviewSummary";
   import { revisionTitle } from "@app/lib/revisionDescription";
-  import { orderRevisions, revisionNumbers } from "@app/lib/revisionList";
+  import {
+    newCommitsByRevision,
+    orderRevisions,
+    revisionNumbers,
+  } from "@app/lib/revisionList";
   import { revisionListSettings } from "@app/lib/revisionListSettings";
   import * as roles from "@app/lib/roles";
   import * as router from "@app/lib/router";
@@ -378,16 +383,11 @@
         }
       }),
     ).then(entries => {
-      const next: Record<string, number> = {};
-      // eslint-disable-next-line svelte/prefer-svelte-reactivity
-      const seen = new Set<string>();
-      ordered.forEach((rev, i) => {
-        const [, commits] = entries[i];
-        const novel = commits.filter(c => !seen.has(c.id));
-        novel.forEach(c => seen.add(c.id));
-        next[rev.id] = novel.length;
-      });
-      commitCountsByRevisionId = next;
+      const commits = Object.fromEntries(entries);
+      commitCountsByRevisionId = mapValues(
+        newCommitsByRevision(ordered, id => commits[id] ?? []),
+        added => added.length,
+      );
     });
   });
   // Per-revision diff stats for the dropdown: one request each, so they are

@@ -1,6 +1,12 @@
+import type { Commit } from "@bindings/repo/Commit";
+
 import { describe, expect, test } from "vitest";
 
-import { orderRevisions, revisionNumbers } from "@app/lib/revisionList";
+import {
+  newCommitsByRevision,
+  orderRevisions,
+  revisionNumbers,
+} from "@app/lib/revisionList";
 import type { RevisionListSettings } from "@app/lib/revisionListSettings";
 
 import { author, revision } from "./support/cobs";
@@ -92,4 +98,24 @@ describe("orderRevisions", () => {
 
     expect(ids(input)).toEqual(ids(revisions));
   });
+});
+
+test("newCommitsByRevision keeps only commits not in an earlier revision", () => {
+  const c = (id: string) => ({ id }) as Commit;
+  const commits: Record<string, Commit[]> = {
+    a1: [c("1"), c("2")],
+    b1: [c("1"), c("2"), c("3")],
+    c1: [c("2"), c("4"), c("3"), c("5")],
+  };
+
+  const added = newCommitsByRevision(
+    [{ id: "a1" }, { id: "b1" }, { id: "c1" }],
+    id => commits[id],
+  );
+
+  expect(
+    Object.fromEntries(
+      Object.entries(added).map(([id, list]) => [id, list.map(x => x.id)]),
+    ),
+  ).toEqual({ a1: ["1", "2"], b1: ["3"], c1: ["4", "5"] });
 });
