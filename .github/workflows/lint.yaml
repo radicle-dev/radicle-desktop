@@ -8,7 +8,7 @@ env:
 
 jobs:
   lint-typescript:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v6
@@ -20,7 +20,7 @@ jobs:
       - run: npm run check-js
 
   lint-rust:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v6
