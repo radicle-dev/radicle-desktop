@@ -20,6 +20,7 @@
   import type { CommentOwner } from "@app/lib/codeCommentActions";
   import { commentActions } from "@app/lib/codeCommentActions";
   import type { CodeComments } from "@app/lib/codeComments";
+  import { orderFileGroups } from "@app/lib/commentNavigation";
   import { resolutionsByComment } from "@app/lib/commentResolutions";
   import { diffOptions } from "@app/lib/diffOptions.svelte";
   import {
@@ -36,7 +37,6 @@
     invoke,
   } from "@app/lib/invoke";
   import type { CommentAnchor } from "@app/lib/pierreComments";
-  import { anchorOf } from "@app/lib/pierreComments";
   import * as roles from "@app/lib/roles";
   import { push } from "@app/lib/router";
   import {
@@ -522,22 +522,9 @@
   // The sidebar reads top to bottom alongside the file column, so the files come
   // in diff order and each file's threads in line order. `fileGroups` is built
   // from the review's comments, which are in neither.
-  const orderedGroups = $derived.by(() => {
-    const order = new Map(
-      diffFiles.map((file, index) => [fileDiffPath(file), index]),
-    );
-    return fileGroups
-      .filter(group => order.has(group.path))
-      .sort((a, b) => (order.get(a.path) ?? 0) - (order.get(b.path) ?? 0))
-      .map(group => ({
-        path: group.path,
-        threads: [...group.threads].sort(
-          (a, b) =>
-            (anchorOf(a.root.location)?.line ?? 0) -
-            (anchorOf(b.root.location)?.line ?? 0),
-        ),
-      }));
-  });
+  const orderedGroups = $derived(
+    orderFileGroups(fileGroups, diffFiles.map(fileDiffPath)),
+  );
 
   const verdict = $derived(review.verdict);
   const timestamp = $derived(review.timestamp);
