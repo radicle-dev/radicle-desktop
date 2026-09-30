@@ -5,6 +5,7 @@
 
   import fuzzysort from "fuzzysort";
 
+  import { debounced } from "@app/lib/debounced.svelte";
   import { selectedRefType, sortedTags, sortRemotes } from "@app/lib/refs";
   import * as router from "@app/lib/router";
   import { formatOid, truncateId } from "@app/lib/utils";
@@ -92,15 +93,7 @@
   );
 
   let searchInput = $state("");
-  let debouncedSearch = $state("");
-
-  $effect(() => {
-    const value = searchInput;
-    const timer = setTimeout(() => {
-      debouncedSearch = value;
-    }, 100);
-    return () => clearTimeout(timer);
-  });
+  const debouncedSearch = debounced(() => searchInput, 100);
 
   type SearchPeer = { id: string; alias?: string; delegate: boolean };
   type SearchElement = {
@@ -147,7 +140,7 @@
   );
 
   const searchResults = $derived(
-    fuzzysort.go(debouncedSearch, searchElements, {
+    fuzzysort.go(debouncedSearch.current, searchElements, {
       keys: ["peer.alias", "revision"],
       threshold: 0.5,
     }),
@@ -461,7 +454,7 @@
         </div>
 
         <ScrollArea style="max-height: calc(60vh - 3rem);">
-          {#if debouncedSearch !== ""}
+          {#if debouncedSearch.current !== ""}
             {#if searchResults.total > 0}
               {#each searchResults as result (result.obj)}
                 {@const el = result.obj}
@@ -552,7 +545,7 @@
             {/each}
           {/if}
 
-          {#if debouncedSearch === "" && peersForActiveTab.length > 0}
+          {#if debouncedSearch.current === "" && peersForActiveTab.length > 0}
             {#if activeTab === "tags" && canonicalTagsSorted.length === 0}
               <div class="section-header">
                 <span></span>

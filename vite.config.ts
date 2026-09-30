@@ -33,6 +33,8 @@ export default defineConfig({
     },
   },
   resolve: {
+    // Svelte's server build never runs effects, which rune tests need.
+    conditions: process.env.VITEST ? ["browser"] : undefined,
     alias: {
       "@app": path.resolve("./src"),
       "@bindings": path.resolve("./crates/radicle-types/bindings/"),
