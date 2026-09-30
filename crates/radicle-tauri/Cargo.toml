@@ -9,6 +9,7 @@ publish = false
 [lib]
 name = "app_lib"
 crate-type = ["staticlib", "cdylib", "lib"]
+doctest = false
 
 [build-dependencies]
 tauri-build = { version = "2.6.1", features = ["isolation"] }
