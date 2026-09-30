@@ -153,3 +153,15 @@ test("an issue can be deleted", async ({ page, peer }) => {
   await expect(page.getByRole("link", { name: /Closed/ })).toBeVisible();
   await expect(page.getByText("The notes are too quiet")).toBeHidden();
 });
+
+test("a reaction can be added to the description", async ({ page, peer }) => {
+  await openIssue(page, peer);
+
+  await page.getByText("Nobody reads them.").hover();
+  await page.getByTitle("React").first().click();
+  await waitForCommand(page, "edit_issue", () =>
+    page.getByRole("button", { name: "👍" }).click(),
+  );
+  await reload(page);
+  await expect(page.getByTitle("Remove reaction")).toBeVisible();
+});
