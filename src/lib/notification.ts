@@ -2,6 +2,9 @@ import type { ActionWithAuthor } from "@bindings/cob/inbox/ActionWithAuthor";
 import type { Action as IssueAction } from "@bindings/cob/issue/Action";
 import type { Action as PatchAction } from "@bindings/cob/patch/Action";
 
+import isEqual from "lodash/isEqual";
+import uniqWith from "lodash/uniqWith";
+
 import { emojiToTwemoji, formatOid, pluralize } from "@app/lib/utils";
 
 export type Action =
@@ -181,4 +184,15 @@ export function compressActions(
   }
 
   return result;
+}
+
+// Actions of a notified COB, newest first. Notifications for the same COB can
+// cover overlapping ranges, so an action may appear in several of them. Only
+// identical actions are duplicates: one operation can carry several actions of
+// the same type, such as the code comments of a published review.
+export function notificationActions(items: { actions: Action[] }[]): Action[] {
+  return uniqWith(
+    items.flatMap(item => item.actions),
+    isEqual,
+  ).sort((a, b) => b.timestamp - a.timestamp);
 }
