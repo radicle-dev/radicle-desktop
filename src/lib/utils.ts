@@ -326,6 +326,15 @@ export function verdictAction(verdict: Review["verdict"]): string {
   }
 }
 
+// The protocol rejects a verdict-less review with no summary (EmptyReview),
+// so a comment-only review requires summary text; accept/reject don't.
+export function isPublishableReview(
+  verdict: Review["verdict"],
+  summary: string,
+): boolean {
+  return verdict !== undefined || summary.trim() !== "";
+}
+
 export function verdictBadge(verdict: Review["verdict"]): {
   label: string;
   variant: "accept" | "reject" | "comment";

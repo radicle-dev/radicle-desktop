@@ -10,6 +10,7 @@ import {
   formatTimestamp,
   identityKey,
   isCommit,
+  isPublishableReview,
   parseNodeId,
   parseRepositoryId,
   pluralize,
@@ -17,6 +18,9 @@ import {
   safeHttpUrl,
   truncateDid,
   unqualifyBranch,
+  verdictAction,
+  verdictBadge,
+  verdictIcon,
 } from "@app/lib/utils";
 
 const rid = "rad:z3fpY7nttPPa6MBnAv2DccHzQJnqe";
@@ -272,4 +276,28 @@ describe("explorer links", () => {
       "not a url",
     );
   });
+});
+
+describe("verdicts", () => {
+  test.each([
+    ["accept", "Accept", "Accepted", "accept", "thumbs-up"],
+    ["reject", "Reject", "Rejected", "reject", "stop"],
+    [undefined, "Comment", "Reviewed", "comment", "comment"],
+  ] as const)("%j", (verdict, action, label, variant, icon) => {
+    expect(verdictAction(verdict)).toBe(action);
+    expect(verdictBadge(verdict)).toEqual({ label, variant });
+    expect(verdictIcon(verdict)).toBe(icon);
+  });
+
+  test.each([
+    ["accept", "", true],
+    ["reject", " ", true],
+    [undefined, "Looks fine", true],
+    [undefined, " \n", false],
+  ] as const)(
+    "a %j review with summary %j can be published: %j",
+    (verdict, summary, expected) => {
+      expect(isPublishableReview(verdict, summary)).toBe(expected);
+    },
+  );
 });
