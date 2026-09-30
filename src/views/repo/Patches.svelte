@@ -6,11 +6,10 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { DEFAULT_TAKE } from "@app/views/repo/router";
-  import { Channel } from "@tauri-apps/api/core";
   import fuzzysort from "fuzzysort";
   import delay from "lodash/delay";
 
-  import { invoke } from "@app/lib/invoke";
+  import { channel, invoke } from "@app/lib/invoke";
   import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import {
     patchCountMismatch,
@@ -98,7 +97,7 @@
     try {
       await invoke("rebuild_patch_cache", {
         rid: repo.rid,
-        onEvent: new Channel<CacheEvent>(message => {
+        onEvent: channel<CacheEvent>(message => {
           cacheState = message;
         }),
       });

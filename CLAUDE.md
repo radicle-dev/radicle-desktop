@@ -81,7 +81,8 @@ Adding or changing a Tauri command touches these layers in order:
    default implementation goes here, not in the command handler
 3. `crates/radicle-tauri/src/commands/` — add the `#[tauri::command]` handler
    (thin wrapper: `ctx.method()`), register in `crates/radicle-tauri/src/lib.rs`
-4. `crates/test-http-api/src/` — mirror the same route so E2E tests keep working
+4. `crates/test-http-api/src/` — mirror the same route so E2E tests keep working;
+   `cargo test -p test-http-api --test parity` fails until you do
 5. `src/` — call via `invoke<T>("command_name", args)`, import types from `@bindings`
 
 ### Pre-push checklist
@@ -259,7 +260,9 @@ Read these when you need domain context for UI work:
   not in command handlers
 - Tauri command signature: `pub fn cmd(ctx: tauri::State<AppState>, ...) -> Result<T, Error>`
 - Commands are registered in `crates/radicle-tauri/src/lib.rs` via `tauri::generate_handler![...]`
-- Mirror every new command in `crates/test-http-api/src/` so E2E tests continue to work
+- Mirror every new command in `crates/test-http-api/src/` so E2E tests continue to work.
+  A command that can't work over HTTP goes in `TAURI_ONLY` in
+  `crates/test-http-api/tests/parity.rs`, with the reason
 - All serialized types live in `crates/radicle-types/src/`; annotate new types
   with `#[derive(Serialize, TS)]`, `#[serde(rename_all = "camelCase")]`,
   `#[ts(export)]`, and `#[ts(export_to = "<dir>/")]`
