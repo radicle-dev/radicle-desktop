@@ -1,12 +1,9 @@
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
 
+  import { parseAssignee } from "@app/lib/inputValidation";
   import { invoke } from "@app/lib/invoke";
-  import {
-    authorForNodeId,
-    parseNodeId,
-    publicKeyFromDid,
-  } from "@app/lib/utils";
+  import { authorForNodeId, publicKeyFromDid } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -32,9 +29,9 @@
   let updatedAssignees: Author[] = $state([]);
   let showInput: boolean = $state(false);
   let inputValue = $state("");
-  let validationMessage: string | undefined = $state(undefined);
-  let valid: boolean = $state(false);
-  let assignee: string | undefined = undefined;
+  const parsed = $derived(parseAssignee(inputValue, updatedAssignees));
+  const validationMessage = $derived(parsed.error);
+  const valid = $derived(parsed.error === undefined);
 
   let removeToggles: Record<string, boolean> = $state({});
 
@@ -45,35 +42,12 @@
     updatedAssignees = assignees;
 
     showInput = false;
-    validationMessage = undefined;
-    valid = true;
     removeToggles = {};
   });
 
-  $effect(() => {
-    if (inputValue === "") {
-      validationMessage = "";
-      valid = true;
-    } else {
-      const parsedNodeId = parseNodeId(inputValue);
-      if (parsedNodeId) {
-        assignee = `${parsedNodeId.prefix}${parsedNodeId.pubkey}`;
-        if (updatedAssignees.find(({ did }) => did === assignee)) {
-          validationMessage = "This assignee is already added";
-          valid = false;
-        } else {
-          validationMessage = undefined;
-          valid = true;
-        }
-      } else {
-        validationMessage = "This is not a valid DID";
-        valid = false;
-      }
-    }
-  });
-
   async function addAssignee() {
-    if (valid && assignee) {
+    const assignee = parsed.did;
+    if (assignee) {
       const alias = await invoke<string | null>("alias", {
         nid: publicKeyFromDid(assignee),
       });
