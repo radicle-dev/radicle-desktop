@@ -31,7 +31,7 @@ npm run start:http      # Vite dev server backed by test-http-api (no Tauri runt
 Set `VITE_LOG_INVOKE_TIMINGS=true` to log each command's duration
 (`[invoke] <command> <ms>ms`) to the browser console. It is off by default.
 
-### Checks and linting (tsc, svelte-check, eslint, prettier)
+### Checks and linting (svelte-check, eslint, prettier)
 
 ```sh
 npm run check
@@ -86,7 +86,7 @@ SKIP_FIXTURE_CREATION=true npm run test:e2e
 ### Rust backend (`crates/`)
 
 ```sh
-scripts/check-rs    # cargo fmt --check, clippy --workspace, check, test
+scripts/check-rs    # cargo fmt --check, clippy on all targets, test
 ```
 
 ### Regenerate TypeScript bindings
@@ -124,7 +124,7 @@ at the first failure. It writes the full output, with each step's duration
 and exit code, to `tests/tmp/check-ci.log`:
 
 ```sh
-npm run check                            # tsc, svelte-check, eslint, prettier,
+npm run check                            # svelte-check, eslint, prettier,
                                          # cargo fmt, cargo clippy, cargo test
 npm run test:unit
 scripts/install-binaries                 # skipped when already installed

@@ -4,6 +4,5 @@ set -e
 mkdir -p "$(dirname "$0")/../build"
 
 cargo fmt --check
-cargo clippy --workspace -- -Dwarnings
-cargo check --workspace
+cargo clippy --workspace --all-targets -- -Dwarnings
 cargo test --workspace
