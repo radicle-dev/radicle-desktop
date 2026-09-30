@@ -106,7 +106,6 @@ npm run generate-types
 
 ```sh
 ./scripts/install-binaries
-npm run build:http
 ```
 
 ## Backend architecture

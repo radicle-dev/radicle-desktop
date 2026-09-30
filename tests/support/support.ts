@@ -24,6 +24,13 @@ const filename = fileURLToPath(import.meta.url);
 export const supportDir = Path.dirname(filename);
 export const tmpDir = Path.resolve(supportDir, "..", "./tmp");
 export const fixturesDir = Path.resolve(supportDir, "..", "./fixtures");
+export const testHttpApiBinary = Path.resolve(
+  supportDir,
+  "../..",
+  process.env.CARGO_TARGET_DIR ?? "target",
+  "debug",
+  "test-http-api",
+);
 const workspacePaths = [Path.join(tmpDir, "peers"), Path.join(tmpDir, "repos")];
 
 export const heartwoodRelease = (

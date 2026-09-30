@@ -14,6 +14,7 @@ import {
   removeWorkspace,
   tmpDir,
 } from "@tests/support/support.js";
+import { execa } from "execa";
 
 const heartwoodBinaryPath = Path.join(
   tmpDir,
@@ -43,6 +44,13 @@ export default async function globalSetup(): Promise<() => void> {
     await removeWorkspace();
   }
 
+  console.log("Building test-http-api");
+  await execa("cargo", [
+    "build",
+    "--manifest-path",
+    "./crates/test-http-api/Cargo.toml",
+  ]);
+
   const peerManager = await createPeerManager({
     dataDir: Path.resolve(tmpDir, "peers"),
     outputLog: Fs.createWriteStream(
@@ -67,7 +75,6 @@ export default async function globalSetup(): Promise<() => void> {
         alias: "palm",
       },
     });
-    await palm.startHttpd(parseInt(process.env.VITE_TEST_HTTP_API_PORT ?? "0"));
 
     try {
       console.log("Creating markdown fixture");
@@ -85,9 +92,8 @@ export default async function globalSetup(): Promise<() => void> {
       process.exit(1);
     }
     await palm.stopNode();
-  } else {
-    await palm.startHttpd(parseInt(process.env.VITE_TEST_HTTP_API_PORT ?? "0"));
   }
+  await palm.startHttpd(parseInt(process.env.VITE_TEST_HTTP_API_PORT ?? "0"));
 
   return async () => {
     await peerManager.shutdown();
