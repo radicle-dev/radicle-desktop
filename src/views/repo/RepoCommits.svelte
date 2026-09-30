@@ -7,6 +7,7 @@
   import fuzzysort from "fuzzysort";
 
   import { commitRowsOf, groupCommitsByDay } from "@app/lib/commitGroups";
+  import { debounced } from "@app/lib/debounced.svelte";
   import { invoke } from "@app/lib/invoke";
   import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import * as router from "@app/lib/router";
@@ -48,7 +49,7 @@
 
   let loading = $state(false);
   let searchInput = $state("");
-  let debouncedSearch = $state("");
+  const debouncedSearch = debounced(() => searchInput, 150);
   let showSearch = $state(false);
 
   const list = createPaginatedList<Commit>({
@@ -66,14 +67,6 @@
     skipPersist: () => searchInput !== "",
   });
 
-  $effect(() => {
-    const value = searchInput;
-    const timer = setTimeout(() => {
-      debouncedSearch = value;
-    }, 150);
-    return () => clearTimeout(timer);
-  });
-
   const searchableCommits = $derived(
     list.items.map(c => ({
       commit: c,
@@ -84,7 +77,7 @@
   );
 
   const searchResults = $derived(
-    fuzzysort.go(debouncedSearch, searchableCommits, {
+    fuzzysort.go(debouncedSearch.current, searchableCommits, {
       keys: ["summary", "id", "author"],
       threshold: 0.5,
       all: true,

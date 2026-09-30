@@ -6,9 +6,10 @@
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { DEFAULT_TAKE } from "@app/views/repo/router";
-  import fuzzysort from "fuzzysort";
   import delay from "lodash/delay";
 
+  import { searchCobs } from "@app/lib/cobSearch";
+  import { debounced } from "@app/lib/debounced.svelte";
   import { channel, invoke } from "@app/lib/invoke";
   import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import {
@@ -44,7 +45,7 @@
 
   let loading = $state(false);
   let searchInput = $state("");
-  let debouncedSearch = $state("");
+  const debouncedSearch = debounced(() => searchInput, 150);
   let showSearch = $state(false);
   let cacheState: CacheEvent | undefined = $state();
   // Height of the cache-warning banner above the list; fed to the virtualizer
@@ -85,14 +86,6 @@
     showSearch = false;
   });
 
-  $effect(() => {
-    const value = searchInput;
-    const timer = setTimeout(() => {
-      debouncedSearch = value;
-    }, 150);
-    return () => clearTimeout(timer);
-  });
-
   async function rebuildPatchCache() {
     try {
       await invoke("rebuild_patch_cache", {
@@ -113,29 +106,8 @@
     }
   }
 
-  const searchablePatches = $derived(
-    list.items
-      .flatMap(i => {
-        return {
-          patch: i,
-          labels: i.labels.join(" "),
-          assignees: i.assignees
-            .map(a => {
-              return a.alias ?? "";
-            })
-            .join(" "),
-          author: i.author.alias ?? "",
-        };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== undefined),
-  );
-
   const searchResults = $derived(
-    fuzzysort.go(debouncedSearch, searchablePatches, {
-      keys: ["patch.title", "labels", "assignees", "author", "patch.id"],
-      threshold: 0.5,
-      all: true,
-    }),
+    searchCobs(debouncedSearch.current, list.items),
   );
 </script>
 
@@ -286,7 +258,7 @@
           onSubmit={async () => {
             if (searchResults.length === 1) {
               await router.push({
-                patch: searchResults[0].obj.patch.id,
+                patch: searchResults[0].id,
                 resource: "repo.patch",
                 reviewId: undefined,
                 rid: repo.rid,
@@ -339,16 +311,16 @@
           onLoadMore={() => list.loadMore()}
           startMargin={chromeHeight}
           estimatedItemSize={80}
-          getKey={result => result.obj.patch.id}
+          getKey={patch => patch.id}
           initialCache={list.initialCache}
           initialScrollOffset={list.initialScrollOffset}
           onRestored={list.consumeRestoredScroll}
           onState={list.persistScroll}>
-          {#snippet row(result)}
+          {#snippet row(patch)}
             <div class="row">
               <PatchTeaser
                 focussed={searchResults.length === 1 && searchInput !== ""}
-                patch={result.obj.patch}
+                {patch}
                 rid={repo.rid}
                 {status} />
             </div>
