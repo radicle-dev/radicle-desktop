@@ -482,7 +482,7 @@
         reseedError = {
           cid,
           message:
-            "This copy has a different content id, so it was not seeded.",
+            "This file has a different CID, so it was not seeded.",
         };
         return;
       }
@@ -1234,14 +1234,11 @@
               </div>
 
               <div class="artifact-meta">
-                <!-- Shown in full: unlike a git oid, the leading characters of a
-                   content id are a multihash prefix shared by every artifact,
-                   so a truncated one identifies nothing. -->
                 <span class="cid">
                   <Id
                     id={cidLabels.get(artifact.cid) ?? artifact.cid}
                     clipboard={artifact.cid}
-                    label="content ID"
+                    label="CID"
                     shorten={false} />
                 </span>
                 {#if trust}

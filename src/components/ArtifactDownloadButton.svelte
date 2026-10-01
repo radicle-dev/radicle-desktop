@@ -312,7 +312,7 @@
             verified here. The CLI and browser tabs still work.
           {:else}
             Download through your artifact node, which checks what arrives
-            against the content id.
+            against the CID.
           {/if}
         </label>
         <Button
