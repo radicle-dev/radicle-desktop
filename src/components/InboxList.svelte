@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { NotificationsByRepo } from "@bindings/cob/inbox/NotificationsByRepo";
 
+  import { array, string } from "zod";
+
   import {
     type FilteredRepo,
     filterNotifications,
@@ -87,19 +89,24 @@
       : clearByRepo(rid);
   }
 
+  // Stored data can be anything, so an invalid list reads as empty instead of
+  // breaking the inbox.
+  function loadStoredRepos(key: string): string[] {
+    try {
+      const parsed = array(string()).safeParse(
+        JSON.parse(localStorage?.getItem(key) ?? "[]"),
+      );
+      return parsed.success ? parsed.data : [];
+    } catch {
+      return [];
+    }
+  }
+
   let pinnedRepos: string[] = $state(loadPinnedRepos());
   let hiddenRepos: string[] = $state(loadHiddenRepos());
 
   function loadPinnedRepos(): string[] {
-    const storedPinnedRepos = localStorage
-      ? localStorage.getItem("pinnedInboxRepos")
-      : null;
-
-    if (storedPinnedRepos === null) {
-      return [];
-    } else {
-      return JSON.parse(storedPinnedRepos);
-    }
+    return loadStoredRepos("pinnedInboxRepos");
   }
 
   function updatePinnedRepos(newRepos: string[]) {
@@ -117,15 +124,7 @@
   }
 
   function loadHiddenRepos(): string[] {
-    const storedHiddenRepos = localStorage
-      ? localStorage.getItem("hiddenInboxRepos")
-      : null;
-
-    if (storedHiddenRepos === null) {
-      return [];
-    } else {
-      return JSON.parse(storedHiddenRepos);
-    }
+    return loadStoredRepos("hiddenInboxRepos");
   }
 
   function updateHiddenRepos(newRepos: string[]) {
