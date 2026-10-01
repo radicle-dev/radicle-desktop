@@ -457,6 +457,58 @@
     }
   }
 
+  // Reseeding brings back an artifact nobody serves: the local copy is hashed
+  // first, so picking the wrong file says so instead of failing in the node.
+  let reseeding: string | undefined = $state();
+  let reseedError: { cid: string; message: string } | undefined = $state();
+
+  async function reseed(cid: string, kind: "file" | "directory") {
+    closeFocused();
+    const path =
+      kind === "file"
+        ? (await invoke<string[] | null>("pick_artifact_files"))?.[0]
+        : await invoke<string | null>("pick_artifact_directory");
+    if (!path) {
+      return;
+    }
+
+    reseeding = cid;
+    reseedError = undefined;
+    try {
+      const digest = await invoke<ArtifactDigest>("compute_artifact_cid", {
+        path,
+      });
+      if (digest.cid !== cid) {
+        reseedError = {
+          cid,
+          message:
+            "This copy has a different content id, so it was not seeded.",
+        };
+        return;
+      }
+      await invoke("seed_artifact", {
+        rid: repo.rid,
+        releaseId: release.id,
+        cid,
+        sourcePath: path,
+      });
+    } catch (error) {
+      console.error("Seeding failed", error);
+      reseedError = {
+        cid,
+        message: (await invoke<boolean>("artifact_node_running").catch(
+          () => false,
+        ))
+          ? "Seeding failed."
+          : "Your artifact node is not running.",
+      };
+    } finally {
+      reseeding = undefined;
+      await refreshSeeded();
+      await reload();
+    }
+  }
+
   // Content ids with a stop request in flight, and the last one that failed.
   let unseeding = $state<Set<string>>(new Set());
   let unseedFailed: string | undefined = $state();
@@ -1213,6 +1265,41 @@
                     onclick={() => stopSeeding(artifact.cid)}>
                     {unseeding.has(artifact.cid) ? "Stopping…" : "Stop seeding"}
                   </Button>
+                {:else if locationCount === 0 && !artifact.redacted}
+                  <Popover placement="bottom-start" popoverPadding="0">
+                    {#snippet toggle(onclick)}
+                      <Button
+                        variant="naked"
+                        styleHeight="1.5rem"
+                        disabled={reseeding === artifact.cid}
+                        title="Serve your own copy so others can download it"
+                        {onclick}>
+                        <Icon name="parcel" />
+                        {reseeding === artifact.cid ? "Seeding…" : "Seed"}
+                      </Button>
+                    {/snippet}
+                    {#snippet popover()}
+                      <div class="add-menu">
+                        <Button
+                          variant="naked"
+                          styleWidth="100%"
+                          styleJustifyContent="flex-start"
+                          onclick={() => reseed(artifact.cid, "file")}>
+                          <Icon name="attach" />Choose your copy…
+                        </Button>
+                        <Button
+                          variant="naked"
+                          styleWidth="100%"
+                          styleJustifyContent="flex-start"
+                          onclick={() => reseed(artifact.cid, "directory")}>
+                          <Icon name="folder" />Choose a directory…
+                        </Button>
+                      </div>
+                    {/snippet}
+                  </Popover>
+                {/if}
+                {#if reseedError?.cid === artifact.cid}
+                  <span class="unseed-error">{reseedError.message}</span>
                 {/if}
                 {#if unseedFailed === artifact.cid}
                   <span class="unseed-error">Could not stop seeding.</span>
