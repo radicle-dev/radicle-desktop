@@ -8,6 +8,7 @@ import {
 } from "@tests/support/collaboration.js";
 import {
   expect,
+  goto,
   test,
   useBackend,
   waitForCommand,
@@ -124,7 +125,7 @@ test("a contributor can't resolve someone else's review comment", async ({
   // Now as eve.
   await eve.startHttpd();
   await useBackend(page, eve);
-  await page.goto(`/repos/${rid}/patches/${patchId}?view=changes`);
+  await goto(page, `/repos/${rid}/patches/${patchId}?view=changes`);
   const thread = page.getByRole("group").filter({ hasText: "Keep it loud" });
   await thread.hover();
   await expect(thread.getByTitle("Reply")).toBeVisible();

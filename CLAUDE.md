@@ -57,8 +57,9 @@ need an ssh-agent use the `sshAuthSock` fixture and create a peer with a
 `passphrase`. When a fixture depends on one peer seeing another's changes,
 wait for the node event with `waitForEvent` instead of sleeping.
 Reload pages with `reload(page)` from `@tests/support/fixtures.js`, not
-`page.reload()`: the app polls the backend, and the harness would otherwise
-fail the test on the request the reload cancels.
+`page.reload()`, and navigate a page that already shows the app with
+`goto(page, url)`: the app polls the backend, and the harness would otherwise
+fail the test on the request the navigation cancels.
 
 Tests run against a production build in `tests/tmp/build`, served by
 `vite preview`; the build takes a few seconds at startup. Set

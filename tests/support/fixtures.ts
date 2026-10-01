@@ -62,7 +62,7 @@ export const test = base.extend<{
           if (tearingDown.has(page)) {
             return;
           }
-          if (reloading.has(page) && isCancelledFetch(msg)) {
+          if (navigating.has(page) && isCancelledFetch(msg)) {
             return;
           }
           // Only says some resize notifications waited for the next frame.
@@ -173,7 +173,7 @@ export const test = base.extend<{
   },
 });
 
-const reloading = new WeakSet<Page>();
+const navigating = new WeakSet<Page>();
 const tearingDown = new WeakSet<Page>();
 
 // WebKit reports a fetch that was cancelled because the page went away as an
@@ -184,16 +184,25 @@ function isCancelledFetch(error: Error) {
   );
 }
 
-export async function reload(page: Page) {
-  reloading.add(page);
+async function navigate(page: Page, action: () => Promise<unknown>) {
+  navigating.add(page);
   try {
-    await page.reload();
+    await action();
     // WebKit reports fetches the old page had in flight after the new one
     // has loaded, so keep ignoring them until the network settles.
     await page.waitForLoadState("networkidle");
   } finally {
-    reloading.delete(page);
+    navigating.delete(page);
   }
+}
+
+export async function reload(page: Page) {
+  await navigate(page, () => page.reload());
+}
+
+// Use instead of `page.goto` when the page already shows the app.
+export async function goto(page: Page, url: string) {
+  await navigate(page, () => page.goto(url));
 }
 
 // Runs `action` and waits for the backend command it sends to finish. The UI
