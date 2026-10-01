@@ -30,6 +30,6 @@ fn parse_options() -> Result<api::Options, lexopt::Error> {
         }
     }
     Ok(api::Options {
-        listen: listen.unwrap_or_else(|| ([0, 0, 0, 0], 8081).into()),
+        listen: listen.unwrap_or_else(|| ([127, 0, 0, 1], 8081).into()),
     })
 }

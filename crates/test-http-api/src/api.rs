@@ -8,7 +8,7 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Json, Response};
 use axum::routing::post;
 use hyper::Method;
-use hyper::header::CONTENT_TYPE;
+use hyper::header::{CONTENT_TYPE, HeaderValue};
 use hyper::http::request::Parts;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, RwLock};
@@ -108,6 +108,15 @@ impl FromRequestParts<Shared> for Ctx {
     }
 }
 
+// The API acts on a real profile, so only the app's own dev servers may call
+// it: Vite on 1420 (`npm run start`) and the e2e preview on 3001.
+const ALLOWED_ORIGINS: [&str; 4] = [
+    "http://localhost:1420",
+    "http://127.0.0.1:1420",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+];
+
 pub fn router(shared: Shared) -> Router {
     let writes = Router::new()
         .route("/seed", post(seed_handler))
@@ -186,7 +195,9 @@ pub fn router(shared: Shared) -> Router {
         .layer(middleware::from_fn(read_body))
         .layer(
             CorsLayer::new()
-                .allow_origin(cors::Any)
+                .allow_origin(cors::AllowOrigin::list(
+                    ALLOWED_ORIGINS.map(HeaderValue::from_static),
+                ))
                 .allow_methods([Method::POST, Method::GET])
                 .allow_headers([CONTENT_TYPE]),
         )
