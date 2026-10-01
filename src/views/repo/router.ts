@@ -187,6 +187,7 @@ export interface LoadedRepoReleasesRoute {
     allAuthors: boolean;
     showFilters: boolean;
     sidebarData: SidebarData;
+    config: Config;
   };
 }
 
@@ -540,6 +541,7 @@ export async function loadReleases(
       releaseCounts,
       allAuthors: route.allAuthors,
       showFilters,
+      config: sidebarData.config,
     },
   };
 }

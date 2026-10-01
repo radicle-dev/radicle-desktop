@@ -3,6 +3,7 @@
   import type { Release } from "@bindings/cob/release/Release";
   import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
   import type { ReleaseFilter } from "@bindings/cob/release/ReleaseFilter";
+  import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
   import { RELEASES_PER_PAGE } from "@app/views/repo/router";
@@ -11,7 +12,7 @@
   import { modalStore, show } from "@app/lib/modal";
   import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import * as router from "@app/lib/router";
-  import { isMac } from "@app/lib/utils";
+  import { didFromPublicKey, isMac } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -29,12 +30,20 @@
     releaseCounts: ReleaseCounts;
     allAuthors: boolean;
     showFilters: boolean;
+    config: Config;
   }
 
-  const { repo, releases, releaseCounts, allAuthors, showFilters }: Props =
-    $props();
+  const {
+    repo,
+    releases,
+    releaseCounts,
+    allAuthors,
+    showFilters,
+    config,
+  }: Props = $props();
 
   const delegateIds = $derived(new Set(repo.delegates.map(d => d.did)));
+  const ownDid = $derived(didFromPublicKey(config.publicKey));
 
   function openCreateRelease() {
     show({ component: CreateReleaseModal, props: { repo } });
@@ -182,6 +191,7 @@
                 {release}
                 {allAuthors}
                 {delegateIds}
+                {ownDid}
                 rid={repo.rid} />
             </div>
           {/snippet}

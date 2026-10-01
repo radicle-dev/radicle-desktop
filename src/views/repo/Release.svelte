@@ -32,6 +32,7 @@
   import ShareButton from "@app/components/ShareButton.svelte";
   import TextInput from "@app/components/TextInput.svelte";
   import Topbar from "@app/components/Topbar.svelte";
+  import YouBadge from "@app/components/YouBadge.svelte";
   import ConfirmAddArtifacts from "@app/modals/ConfirmAddArtifacts.svelte";
   import ConfirmRedact from "@app/modals/ConfirmRedact.svelte";
 
@@ -1041,7 +1042,7 @@
         </div>
 
         <div class="metadata-row">
-          <ReleaseMetadata {release} {repo} {delegateIds} />
+          <ReleaseMetadata {release} {repo} {delegateIds} {ownDid} />
         </div>
 
         {#if showFilters || redactedCount > 0}
@@ -1214,6 +1215,8 @@
                     <NodeId {...authorForNodeId(artifact.author)} />
                     {#if delegateIds.has(artifact.author.did)}
                       <DelegateBadge />
+                    {:else if artifact.author.did === ownDid}
+                      <YouBadge />
                     {/if}
                   </span>
                 {/if}

@@ -16,14 +16,16 @@
   import DelegateBadge from "@app/components/DelegateBadge.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import YouBadge from "@app/components/YouBadge.svelte";
 
   interface Props {
     release: Release;
     repo: RepoInfo;
     delegateIds: Set<string>;
+    ownDid: string;
   }
 
-  const { release, repo, delegateIds }: Props = $props();
+  const { release, repo, delegateIds, ownDid }: Props = $props();
 
   let releaseIdCopied = $state(false);
   const resetReleaseIdCopied = debounce(() => {
@@ -107,6 +109,8 @@
     <NodeId {...authorForNodeId(release.creator)} />
     {#if delegateIds.has(release.creator.did)}
       <DelegateBadge />
+    {:else if release.creator.did === ownDid}
+      <YouBadge />
     {/if}
   </div>
 

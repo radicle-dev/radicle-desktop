@@ -13,15 +13,17 @@
   import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
   import NodeId from "@app/components/NodeId.svelte";
+  import YouBadge from "@app/components/YouBadge.svelte";
 
   interface Props {
     allAuthors: boolean;
     delegateIds: Set<string>;
+    ownDid: string;
     release: Release;
     rid: string;
   }
 
-  const { allAuthors, delegateIds, release, rid }: Props = $props();
+  const { allAuthors, delegateIds, ownDid, release, rid }: Props = $props();
 
   // The COB has no name of its own; the backend resolves one from the tag
   // message or commit subject. Fall back to the tag name, then the release id.
@@ -100,6 +102,8 @@
       <NodeId {...authorForNodeId(release.creator)} />
       {#if delegateIds.has(release.creator.did)}
         <DelegateBadge />
+      {:else if release.creator.did === ownDid}
+        <YouBadge />
       {/if}
       released
       <Id id={release.id} clipboard={release.id} label="release ID" />
