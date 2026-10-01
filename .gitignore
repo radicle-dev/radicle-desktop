@@ -32,4 +32,5 @@ tests/artifacts/**/*
 # direnv cache
 /.direnv/
 
-.claude
+.claude/settings.local.json
+.claude/worktrees/
