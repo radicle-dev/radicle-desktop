@@ -228,7 +228,6 @@
       resource: "repo.release",
       rid: repo.rid,
       release: releaseId,
-      allAuthors: false,
     });
   }
 </script>

@@ -2,13 +2,12 @@
   import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
   import type { Release } from "@bindings/cob/release/Release";
   import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
-  import type { ReleaseFilter } from "@bindings/cob/release/ReleaseFilter";
+  import type { ReleaseScope } from "@bindings/cob/release/ReleaseScope";
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
-  import { RELEASES_PER_PAGE } from "@app/views/repo/router";
+  import { listReleases, RELEASES_PER_PAGE } from "@app/views/repo/router";
 
-  import { invoke } from "@app/lib/invoke";
   import { modalStore, show } from "@app/lib/modal";
   import { createPaginatedList } from "@app/lib/paginatedList.svelte";
   import * as router from "@app/lib/router";
@@ -28,19 +27,13 @@
     repo: RepoInfo;
     releases: PaginatedQuery<Release[]>;
     releaseCounts: ReleaseCounts;
-    allAuthors: boolean;
+    scope: ReleaseScope;
     showFilters: boolean;
     config: Config;
   }
 
-  const {
-    repo,
-    releases,
-    releaseCounts,
-    allAuthors,
-    showFilters,
-    config,
-  }: Props = $props();
+  const { repo, releases, releaseCounts, scope, showFilters, config }: Props =
+    $props();
 
   const delegateIds = $derived(new Set(repo.delegates.map(d => d.did)));
   const ownDid = $derived(didFromPublicKey(config.publicKey));
@@ -50,15 +43,9 @@
   }
 
   const list = createPaginatedList<Release>({
-    key: () => `repo.releases:${repo.rid}:${allAuthors}`,
+    key: () => `repo.releases:${repo.rid}:${scope}`,
     page: () => releases,
-    fetchPage: (skip, take) =>
-      invoke<PaginatedQuery<Release[]>>("list_releases", {
-        rid: repo.rid,
-        filter: { allAuthors, showRedacted: false } satisfies ReleaseFilter,
-        skip,
-        take,
-      }),
+    fetchPage: (skip, take) => listReleases(repo.rid, scope, skip, take),
     pageSize: RELEASES_PER_PAGE,
     id: release => release.id,
   });
@@ -124,11 +111,10 @@
         <div class="filters">
           <a
             class="filter"
-            class:active={!allAuthors}
+            class:active={scope === "trusted"}
             href={router.routeToPath({
               resource: "repo.releases",
               rid: repo.rid,
-              allAuthors: false,
             })}>
             <Icon name="badge" />Delegates
             <span class="global-counter-badge">
@@ -137,15 +123,16 @@
           </a>
           <a
             class="filter"
-            class:active={allAuthors}
+            class:active={scope === "untrusted"}
+            title="Non-delegates"
             href={router.routeToPath({
               resource: "repo.releases",
               rid: repo.rid,
-              allAuthors: true,
+              scope: "untrusted",
             })}>
-            <Icon name="avatar-incognito" />All
+            <Icon name="avatar-incognito" />Others
             <span class="global-counter-badge">
-              {releaseCounts.delegate + releaseCounts.other}
+              {releaseCounts.other}
             </span>
           </a>
         </div>
@@ -167,9 +154,11 @@
         style:justify-content="center"
         style:align-items="center">
         <div class="txt-missing txt-body-m-regular">
-          {showFilters && !allAuthors
-            ? "No releases by delegates"
-            : "No releases"}
+          {!showFilters
+            ? "No releases"
+            : scope === "trusted"
+              ? "No releases by delegates"
+              : "No releases by others"}
         </div>
       </div>
     {:else}
@@ -189,7 +178,7 @@
             <div class="row">
               <ReleaseTeaser
                 {release}
-                {allAuthors}
+                {scope}
                 {delegateIds}
                 {ownDid}
                 rid={repo.rid} />

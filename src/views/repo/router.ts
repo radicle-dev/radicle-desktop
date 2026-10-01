@@ -9,6 +9,7 @@ import type { Revision } from "@bindings/cob/patch/Revision";
 import type { Release } from "@bindings/cob/release/Release";
 import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
 import type { ReleaseFilter } from "@bindings/cob/release/ReleaseFilter";
+import type { ReleaseScope } from "@bindings/cob/release/ReleaseScope";
 import type { Thread } from "@bindings/cob/thread/Thread";
 import type { Config } from "@bindings/config/Config";
 import type { Diff } from "@bindings/diff/Diff";
@@ -175,7 +176,7 @@ export interface LoadedRepoPatchesRoute {
 export interface RepoReleasesRoute {
   resource: "repo.releases";
   rid: string;
-  allAuthors: boolean;
+  scope?: ReleaseScope;
 }
 
 export interface LoadedRepoReleasesRoute {
@@ -184,7 +185,7 @@ export interface LoadedRepoReleasesRoute {
     repo: RepoInfo;
     releases: PaginatedQuery<Release[]>;
     releaseCounts: ReleaseCounts;
-    allAuthors: boolean;
+    scope: ReleaseScope;
     showFilters: boolean;
     sidebarData: SidebarData;
     config: Config;
@@ -195,7 +196,7 @@ export interface RepoReleaseRoute {
   resource: "repo.release";
   rid: string;
   release: string;
-  allAuthors: boolean;
+  scope?: ReleaseScope;
 }
 
 export interface LoadedRepoReleaseRoute {
@@ -204,7 +205,7 @@ export interface LoadedRepoReleaseRoute {
     repo: RepoInfo;
     config: Config;
     release: Release;
-    allAuthors: boolean;
+    scope?: ReleaseScope;
     sidebarData: SidebarData;
   };
 }
@@ -507,30 +508,50 @@ export async function loadIssues(
   };
 }
 
+export function listReleases(
+  rid: string,
+  scope: ReleaseScope,
+  skip: number,
+  // Undefined lists every release.
+  take: number | undefined,
+) {
+  return invoke<PaginatedQuery<Release[]>>("list_releases", {
+    rid,
+    filter: { scope, showRedacted: false } satisfies ReleaseFilter,
+    skip,
+    take,
+  });
+}
+
 export async function loadReleases(
   route: RepoReleasesRoute,
 ): Promise<LoadedRepoReleasesRoute> {
-  const [sidebarData, repo, releases, releaseCounts] = await Promise.all([
+  let scope = route.scope ?? "trusted";
+  const [sidebarData, repo, firstPage, releaseCounts] = await Promise.all([
     loadSidebarData(),
     invoke<RepoInfo>("repo_by_id", {
       rid: route.rid,
     }),
-    invoke<PaginatedQuery<Release[]>>("list_releases", {
-      rid: route.rid,
-      filter: {
-        allAuthors: route.allAuthors,
-        showRedacted: false,
-      } satisfies ReleaseFilter,
-      skip: 0,
-      take: RELEASES_PER_PAGE,
-    }),
+    listReleases(route.rid, scope, 0, RELEASES_PER_PAGE),
     invoke<ReleaseCounts>("release_counts", {
       rid: route.rid,
     }),
   ]);
+  let releases = firstPage;
 
-  // Offer the author filter only where the two scopes hold different releases.
-  const showFilters = releaseCounts.other > 0;
+  // With no scope asked for and no delegate releases, open on the untrusted
+  // scope rather than on an empty list.
+  if (
+    route.scope === undefined &&
+    releaseCounts.delegate === 0 &&
+    releaseCounts.other > 0
+  ) {
+    scope = "untrusted";
+    releases = await listReleases(route.rid, scope, 0, RELEASES_PER_PAGE);
+  }
+
+  // Offer the author filter only where both scopes hold releases.
+  const showFilters = releaseCounts.delegate > 0 && releaseCounts.other > 0;
 
   return {
     resource: "repo.releases",
@@ -539,7 +560,7 @@ export async function loadReleases(
       repo,
       releases,
       releaseCounts,
-      allAuthors: route.allAuthors,
+      scope,
       showFilters,
       config: sidebarData.config,
     },
@@ -566,7 +587,7 @@ export async function loadRelease(
     return loadReleases({
       resource: "repo.releases",
       rid: route.rid,
-      allAuthors: route.allAuthors,
+      scope: route.scope,
     });
   }
 
@@ -577,7 +598,7 @@ export async function loadRelease(
       repo,
       config: sidebarData.config,
       release,
-      allAuthors: route.allAuthors,
+      scope: route.scope,
     },
   };
 }
@@ -640,15 +661,15 @@ export function repoRouteToPath(route: RepoRoute): string {
     return url;
   } else if (route.resource === "repo.release") {
     let url = [...pathSegments, "releases", route.release].join("/");
-    if (route.allAuthors) {
-      searchParams.set("allAuthors", "true");
+    if (route.scope === "untrusted") {
+      searchParams.set("scope", "untrusted");
       url += `?${searchParams}`;
     }
     return url;
   } else if (route.resource === "repo.releases") {
     let url = [...pathSegments, "releases"].join("/");
-    if (route.allAuthors) {
-      searchParams.set("allAuthors", "true");
+    if (route.scope === "untrusted") {
+      searchParams.set("scope", "untrusted");
       url += `?${searchParams}`;
     }
     return url;
@@ -740,11 +761,12 @@ export function repoUrlToRoute(
       }
     } else if (resource === "releases") {
       const id = segments.shift();
-      const allAuthors = searchParams.get("allAuthors") === "true";
+      const scope =
+        searchParams.get("scope") === "untrusted" ? "untrusted" : undefined;
       if (id) {
-        return { resource: "repo.release", rid, release: id, allAuthors };
+        return { resource: "repo.release", rid, release: id, scope };
       } else {
-        return { resource: "repo.releases", rid, allAuthors };
+        return { resource: "repo.releases", rid, scope };
       }
     } else {
       return null;

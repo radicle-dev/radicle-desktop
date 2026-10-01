@@ -1171,7 +1171,6 @@
         router.routeToPath({
           resource: "repo.releases",
           rid: repo.rid,
-          allAuthors: false,
         }),
         "parcel",
         "Releases",

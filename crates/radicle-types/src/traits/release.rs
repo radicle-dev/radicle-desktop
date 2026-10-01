@@ -11,14 +11,26 @@ use crate::cobs;
 use crate::error::Error;
 use crate::traits::Profile;
 
-/// How far the caller widened the default, delegate-scoped release view.
+/// The two disjoint author scopes of the release view. No local user is
+/// trusted, so trusted means delegates.
+#[derive(Clone, Copy, Default, serde::Serialize, serde::Deserialize, ts_rs::TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "cob/release/")]
+pub enum ReleaseScope {
+    #[default]
+    Trusted,
+    Untrusted,
+}
+
+/// Which side of the release view the caller asks for.
 #[derive(Clone, Copy, Default, serde::Serialize, serde::Deserialize, ts_rs::TS)]
 #[serde(rename_all = "camelCase", default)]
 #[ts(export)]
 #[ts(export_to = "cob/release/")]
 pub struct ReleaseFilter {
-    /// Include releases and artifacts authored by non-delegates.
-    pub all_authors: bool,
+    /// Show releases and artifacts by delegates, or by everyone else.
+    pub scope: ReleaseScope,
     /// Include artifacts redacted by their author or a delegate.
     pub show_redacted: bool,
 }
@@ -29,10 +41,9 @@ impl ReleaseFilter {
     fn filters(self, delegates: &BTreeSet<Did>) -> Filters<'_> {
         Filters {
             trust: Trust::new(delegates, None),
-            scope: if self.all_authors {
-                Scope::All
-            } else {
-                Scope::Trusted
+            scope: match self.scope {
+                ReleaseScope::Trusted => Scope::Trusted,
+                ReleaseScope::Untrusted => Scope::Untrusted,
             },
             include_redacted: self.show_redacted,
         }
@@ -43,9 +54,11 @@ pub trait Releases: Profile {
     /// List a repository's releases, newest first.
     ///
     /// Scoped to releases created by a delegate and artifacts authored by a
-    /// delegate (hiding those redacted by a trusted party) unless widened with
-    /// `filter`. A release with no delegate artifact shows every author's. A release whose artifacts were all redacted is hidden with
-    /// them; a release with no artifacts is shown. This is the view
+    /// delegate, or with an untrusted `filter` to those by non-delegates, so
+    /// the two scopes never overlap. Artifacts redacted by a trusted party are
+    /// hidden unless `filter` shows them. A release with no artifact in scope
+    /// shows every author's. A release whose artifacts were all redacted is
+    /// hidden with them; a release with no artifacts is shown. This is the view
     /// `rad-artifact list` gives. Without `take` the full list is returned and
     /// `skip` is ignored.
     fn list_releases(
@@ -70,9 +83,9 @@ pub trait Releases: Profile {
             .filter_map(Result::ok)
             .filter(|(_, release)| filters.shows_release(release));
 
-        // With no artifact by a trusted author, fall back to every author, as
+        // With no artifact by an author in scope, fall back to every author, as
         // the release page does, so a teaser never counts fewer artifacts than
-        // its page lists. A redacted delegate artifact keeps the delegate scope.
+        // its page lists. A redacted artifact in scope keeps the scope.
         let fallback = Filters {
             scope: Scope::All,
             ..filters

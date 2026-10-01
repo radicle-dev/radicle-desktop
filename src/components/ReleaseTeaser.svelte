@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Release } from "@bindings/cob/release/Release";
+  import type { ReleaseScope } from "@bindings/cob/release/ReleaseScope";
 
   import { push } from "@app/lib/router";
   import {
@@ -16,14 +17,14 @@
   import YouBadge from "@app/components/YouBadge.svelte";
 
   interface Props {
-    allAuthors: boolean;
+    scope: ReleaseScope;
     delegateIds: Set<string>;
     ownDid: string;
     release: Release;
     rid: string;
   }
 
-  const { allAuthors, delegateIds, ownDid, release, rid }: Props = $props();
+  const { scope, delegateIds, ownDid, release, rid }: Props = $props();
 
   // The COB has no name of its own; the backend resolves one from the tag
   // message or commit subject. Fall back to the tag name, then the release id.
@@ -82,7 +83,7 @@
       resource: "repo.release",
       rid,
       release: release.id,
-      allAuthors,
+      scope,
     });
   }}>
   <div class="global-chip icon">

@@ -3,6 +3,7 @@
   import type { Artifact } from "@bindings/cob/release/Artifact";
   import type { ArtifactDigest } from "@bindings/cob/release/ArtifactDigest";
   import type { Release } from "@bindings/cob/release/Release";
+  import type { ReleaseScope } from "@bindings/cob/release/ReleaseScope";
   import type { Config } from "@bindings/config/Config";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
 
@@ -42,11 +43,11 @@
     repo: RepoInfo;
     config: Config;
     release: Release;
-    allAuthors: boolean;
+    scope?: ReleaseScope;
   }
 
   /* eslint-disable prefer-const */
-  let { repo, config, release, allAuthors }: Props = $props();
+  let { repo, config, release, scope }: Props = $props();
   /* eslint-enable prefer-const */
 
   const SIZE_KEY = "sizeBytes";
@@ -80,16 +81,25 @@
     return show ? list : list.filter(a => !a.redacted);
   }
 
+  // Artifacts split into two disjoint scopes by author; the command returns
+  // all of them, so filtering happens here.
   const delegateArtifacts = $derived(
     release.artifacts.filter(a => delegateIds.has(a.author.did)),
   );
-  // Artifacts are scoped to delegate authors by default; the command returns
-  // all of them, so filtering happens here. With no delegate artifact at all,
-  // fall back to every author.
+  const otherArtifacts = $derived(
+    release.artifacts.filter(a => !delegateIds.has(a.author.did)),
+  );
+  // Show the scope asked for, delegates by default, unless it is empty.
+  const wanted = $derived(scope ?? "trusted");
+  const activeScope = $derived(
+    (wanted === "trusted" ? delegateArtifacts : otherArtifacts).length > 0
+      ? wanted
+      : wanted === "trusted"
+        ? "untrusted"
+        : "trusted",
+  );
   const authorArtifacts = $derived(
-    allAuthors || delegateArtifacts.length === 0
-      ? release.artifacts
-      : delegateArtifacts,
+    activeScope === "trusted" ? delegateArtifacts : otherArtifacts,
   );
   const shownArtifacts = $derived(visible(authorArtifacts, showRedacted));
   // The redacted count is the hidden set within the current author scope.
@@ -102,12 +112,11 @@
   const delegateCount = $derived(
     visible(delegateArtifacts, showRedacted).length,
   );
-  const allCount = $derived(visible(release.artifacts, showRedacted).length);
+  const otherCount = $derived(visible(otherArtifacts, showRedacted).length);
 
   // Filter only when both scopes hold something.
   const showFilters = $derived(
-    delegateArtifacts.length > 0 &&
-      delegateArtifacts.length !== release.artifacts.length,
+    delegateArtifacts.length > 0 && otherArtifacts.length > 0,
   );
 
   function artifactSize(artifact: Artifact): string | undefined {
@@ -985,7 +994,7 @@
             router.push({
               resource: "repo.releases",
               rid: repo.rid,
-              allAuthors,
+              scope,
             })}>
           Releases
         </button>
@@ -1052,13 +1061,12 @@
                 styleHeight="1.75rem"
                 bordered
                 flatRight
-                active={!allAuthors}
+                active={activeScope === "trusted"}
                 onclick={() =>
                   router.push({
                     resource: "repo.release",
                     rid: repo.rid,
                     release: release.id,
-                    allAuthors: false,
                   })}>
                 <Icon name="badge" />Delegates
                 <span class="global-counter-badge">{delegateCount}</span>
@@ -1067,16 +1075,17 @@
                 styleHeight="1.75rem"
                 bordered
                 flatLeft
-                active={allAuthors}
+                active={activeScope === "untrusted"}
+                title="Non-delegates"
                 onclick={() =>
                   router.push({
                     resource: "repo.release",
                     rid: repo.rid,
                     release: release.id,
-                    allAuthors: true,
+                    scope: "untrusted",
                   })}>
-                <Icon name="avatar-incognito" />All
-                <span class="global-counter-badge">{allCount}</span>
+                <Icon name="avatar-incognito" />Others
+                <span class="global-counter-badge">{otherCount}</span>
               </Button>
             {/if}
             {#if redactedCount > 0}
