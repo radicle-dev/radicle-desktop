@@ -105,7 +105,7 @@ impl Artifact {
                 })
                 .collect(),
             redacted: artifact.is_redacted_by_trusted(delegates),
-            metadata: artifact.metadata().clone(),
+            metadata: artifact.trusted_metadata(delegates),
         }
     }
 }

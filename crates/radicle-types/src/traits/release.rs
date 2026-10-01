@@ -29,11 +29,11 @@ impl ReleaseFilter {
     fn filters(self, delegates: &BTreeSet<Did>) -> Filters<'_> {
         Filters {
             trust: Trust {
-                delegates,
-                local: None,
                 all_authors: self.all_authors,
+                delegates: delegates,
+                local: None
             },
-            redacted: self.show_redacted,
+            include_redacted: self.show_redacted,
         }
     }
 }
@@ -69,29 +69,25 @@ pub trait Releases: Profile {
             .filter_map(Result::ok)
             .filter(|(_, release)| filters.shows_release(release));
 
-        // With no delegate artifact left to show, fall back to every author,
-        // as the release page does, so a teaser never counts fewer artifacts
-        // than its page lists.
+        // With no artifact by a trusted author, fall back to every author, as
+        // the release page does, so a teaser never counts fewer artifacts than
+        // its page lists. A redacted delegate artifact keeps the delegate scope.
         let fallback = ReleaseFilter {
             all_authors: true,
             ..filter
-        };
-        let fallback = fallback.filters(store.delegates());
+        }
+        .filters(store.delegates());
         let summary = |(id, release): (radicle::cob::ObjectId, radicle_artifact::Release)| {
-            let shown = |filters: &Filters| {
-                release
-                    .artifacts()
-                    .iter()
-                    .filter(|(_, artifact)| filters.shows_artifact(artifact))
-                    .map(|(cid, artifact)| {
-                        cobs::release::Artifact::new(cid, artifact, store.delegates(), &aliases)
-                    })
-                    .collect::<Vec<_>>()
-            };
-            let mut artifacts = shown(&filters);
-            if artifacts.is_empty() && !filter.all_authors {
-                artifacts = shown(&fallback);
-            }
+            let has_trusted = release
+                .artifacts()
+                .values()
+                .any(|artifact| filters.trust.trusts(artifact.author()));
+            let artifacts = if has_trusted { filters } else { fallback }
+                .artifacts(&release)
+                .map(|(cid, artifact)| {
+                    cobs::release::Artifact::new(cid, artifact, store.delegates(), &aliases)
+                })
+                .collect::<Vec<_>>();
 
             cobs::release::Release::new(ReleaseId::from(id), &release, &repo, &aliases, artifacts)
         };
@@ -156,5 +152,71 @@ pub trait Releases: Profile {
         let store = ArtifactStore::open_cached(&repo, cache_db_path(profile.cobs()))?;
 
         Ok(store.counts()?.into())
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod test {
+    use std::str::FromStr;
+
+    use radicle::crypto::{Seed, SigningKey};
+    use radicle::storage::ReadStorage;
+    use radicle::test::fixtures;
+
+    use radicle_artifact::{Cid, Releases as ArtifactStore};
+
+    use super::Releases;
+    use crate::{AppState, test};
+
+    const CID: &str = "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi";
+    const OTHER_CID: &str = "bafkr4ihjtgc6jaulcccny3jhc3ezxfjdgnp4vvt23nf6qqlrhpk764ufbu";
+
+    /// Count the artifacts the default list shows for a delegate release
+    /// holding one non-delegate artifact, after `setup` adds to it.
+    fn listed_artifacts(
+        setup: impl FnOnce(
+            &mut radicle_artifact::ReleaseMut<'_, '_, radicle::storage::git::Repository>,
+            &SigningKey,
+        ),
+    ) -> usize {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(&tmp.path().join("home"), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+        let other = SigningKey::from_seed(Seed::new([0xee; 32]));
+        let (rid, _, _, head) =
+            fixtures::project(tmp.path().join("project"), &profile.storage, &signer).unwrap();
+        {
+            let repo = profile.storage.repository(rid).unwrap();
+            let mut releases = ArtifactStore::open(&repo).unwrap();
+            let mut release = releases
+                .create(radicle::git::Oid::from(head), None, &signer)
+                .unwrap();
+            release
+                .register_artifact(Cid::from_str(OTHER_CID).unwrap(), "eve".into(), &other)
+                .unwrap();
+            setup(&mut release, &signer);
+        }
+
+        let state = AppState { profile };
+        let list = state.list_releases(rid, None, None, None).unwrap();
+        list.content[0].artifacts.len()
+    }
+
+    #[test]
+    fn list_falls_back_to_every_author_without_delegate_artifact() {
+        assert_eq!(listed_artifacts(|_, _| {}), 1);
+    }
+
+    #[test]
+    fn list_keeps_delegate_scope_with_redacted_delegate_artifact() {
+        let count = listed_artifacts(|release, signer| {
+            let cid = Cid::from_str(CID).unwrap();
+            release
+                .register_artifact(cid, "bin".into(), signer)
+                .unwrap();
+            release.redact(cid, "bad build".into(), signer).unwrap();
+        });
+        assert_eq!(count, 0);
     }
 }
