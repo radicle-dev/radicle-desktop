@@ -1,6 +1,5 @@
 use base64::{Engine, prelude::BASE64_STANDARD};
 use radicle::git::Oid;
-use radicle_surf as surf;
 use serde::Serialize;
 use ts_rs::TS;
 
@@ -48,16 +47,5 @@ impl Blob {
             content,
             mime_type,
         }
-    }
-}
-
-impl<T: AsRef<[u8]>> From<surf::blob::Blob<T>> for Blob {
-    fn from(blob: surf::blob::Blob<T>) -> Self {
-        Blob::new(
-            blob.object_id(),
-            blob.is_binary(),
-            blob.commit().clone().into(),
-            blob.content(),
-        )
     }
 }
