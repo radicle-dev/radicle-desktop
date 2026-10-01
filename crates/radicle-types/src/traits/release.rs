@@ -4,7 +4,7 @@ use radicle::identity::Did;
 use radicle::storage::ReadStorage;
 use radicle::{git, identity};
 
-use radicle_artifact::trust::Trust;
+use radicle_artifact::trust::{Scope, Trust};
 use radicle_artifact::{Filters, ReleaseId, Releases as ArtifactStore, cache_db_path};
 
 use crate::cobs;
@@ -28,10 +28,11 @@ impl ReleaseFilter {
     /// so the default view matches the `delegate` bucket of `counts()`.
     fn filters(self, delegates: &BTreeSet<Did>) -> Filters<'_> {
         Filters {
-            trust: Trust {
-                all_authors: self.all_authors,
-                delegates: delegates,
-                local: None
+            trust: Trust::new(delegates, None),
+            scope: if self.all_authors {
+                Scope::All
+            } else {
+                Scope::Trusted
             },
             include_redacted: self.show_redacted,
         }
@@ -72,16 +73,15 @@ pub trait Releases: Profile {
         // With no artifact by a trusted author, fall back to every author, as
         // the release page does, so a teaser never counts fewer artifacts than
         // its page lists. A redacted delegate artifact keeps the delegate scope.
-        let fallback = ReleaseFilter {
-            all_authors: true,
-            ..filter
-        }
-        .filters(store.delegates());
+        let fallback = Filters {
+            scope: Scope::All,
+            ..filters
+        };
         let summary = |(id, release): (radicle::cob::ObjectId, radicle_artifact::Release)| {
             let has_trusted = release
                 .artifacts()
                 .values()
-                .any(|artifact| filters.trust.trusts(artifact.author()));
+                .any(|artifact| filters.trust.admits(filters.scope, artifact.author()));
             let artifacts = if has_trusted { filters } else { fallback }
                 .artifacts(&release)
                 .map(|(cid, artifact)| {
