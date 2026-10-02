@@ -1,14 +1,15 @@
 import type { MentionTarget } from "@app/lib/mentions";
-import { parseBareIdentifier, parseMentionHref } from "@app/lib/mentions";
+import {
+  describeLink,
+  parseBareIdentifier,
+  parseMentionHref,
+} from "@app/lib/mentions";
 import type { RadReference } from "@app/lib/radUri";
 import {
-  cobListType,
-  isFileReference,
   isOid,
   parseExplorerTreeUrl,
   parseExplorerUrl,
   parseReference,
-  releaseType,
 } from "@app/lib/radUri";
 
 /**
@@ -137,6 +138,9 @@ function findBareTrigger(
   }
   const token = text.slice(start, caret);
   if (token === "") return undefined;
+  // Only a whole word counts: the tail of a URL or a `rad:` path, such as
+  // the node id in `…/remotes/z6Mk…`, is part of something else.
+  if (start > 0 && !openingCharacters.has(text[start - 1])) return undefined;
 
   if (isOid(token)) {
     return { kind: "oid", start, end: caret, oid: token.toLowerCase() };
@@ -246,17 +250,7 @@ function findIdentifierTrigger(
  * link: a file, a list of COBs, or a release.
  */
 function isLinkable(reference: RadReference): boolean {
-  if (isFileReference(reference) || cobListType(reference) !== undefined) {
-    return true;
-  }
-  const resource =
-    reference.type === "uri" ? reference.uri.resource : undefined;
-
-  return (
-    resource?.type === "cob" &&
-    resource.typeName === releaseType &&
-    resource.oid !== undefined
-  );
+  return describeLink(reference, "") !== undefined;
 }
 
 function findLinkTrigger(

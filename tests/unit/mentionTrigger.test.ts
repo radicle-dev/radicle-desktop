@@ -104,8 +104,29 @@ describe("rad: file links", () => {
     });
   });
 
-  test("ignores other URIs without a chip", () => {
-    expect(trigger(`${rid}/tag/v1.0`)).toBeUndefined();
+  test.each([
+    ["a tag", `${rid}/tag/v1.0`],
+    ["a branch", `${rid}/commit/main`],
+    ["a remote", `${rid}/${nid}`],
+    [
+      "a remote's explorer page",
+      `https://radicle.network/nodes/seed/${rid}/remotes/${nid}`,
+    ],
+  ])("offers %s as a link", (_, text) => {
+    expect(trigger(text)).toMatchObject({ kind: "link", start: 0 });
+  });
+
+  test.each([
+    ["a tree by oid", `${rid}/tree/${oid}`],
+    ["a blob by oid", `${rid}/blob/${oid}`],
+    ["an unknown cob type", `${rid}/cob/org.example/${oid}`],
+  ])("offers nothing for %s, which has no page", (_, text) => {
+    expect(trigger(text)).toBeUndefined();
+  });
+
+  test("does not take the tail of a path as a bare id", () => {
+    expect(trigger(`/some/path/${nid}`)).toBeUndefined();
+    expect(trigger(`see:${oid}`)).toBeUndefined();
   });
 });
 

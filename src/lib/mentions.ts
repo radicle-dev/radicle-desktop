@@ -1,5 +1,7 @@
+import type Icon from "@app/components/Icon.svelte";
 import type { RepoRoute } from "@app/views/repo/router";
 import type { Config } from "@bindings/config/Config";
+import type { ComponentProps } from "svelte";
 
 import type { RadReference } from "@app/lib/radUri";
 import {
@@ -13,8 +15,9 @@ import {
   parseExplorerUrl,
   parseReference,
   patchType,
+  releaseType,
 } from "@app/lib/radUri";
-import { explorerLink } from "@app/lib/utils";
+import { explorerLink, formatOid, truncateId } from "@app/lib/utils";
 
 /**
  * A Radicle entity that can be referenced from a comment or description.
@@ -195,6 +198,109 @@ export function referenceRoute(reference: RadReference): RepoRoute | undefined {
   }
   if (typeName === patchType) {
     return { resource: "repo.patches", rid, status: undefined };
+  }
+
+  return undefined;
+}
+
+export interface LinkDescription {
+  /** Written into the markdown link's label, e.g. `heartwood: src/lib.rs`. */
+  label: string;
+  primary: string;
+  secondary: string;
+  icon: ComponentProps<typeof Icon>["name"];
+}
+
+const cobLists: Record<
+  string,
+  { label: string; icon: LinkDescription["icon"] }
+> = {
+  [issueType]: { label: "Issues", icon: "issue" },
+  [patchType]: { label: "Patches", icon: "patch" },
+  [releaseType]: { label: "Releases", icon: "archive" },
+};
+
+/**
+ * How a reference without a chip is labelled and drawn, or `undefined` for
+ * one that is not offered as a link. `repoName` names the repo it is in, and
+ * `peerName` the remote, when it is one.
+ */
+export function describeLink(
+  reference: RadReference,
+  repoName: string,
+  peerName?: string,
+): LinkDescription | undefined {
+  if (reference.type !== "uri") return undefined;
+  const { resource, namespace, fragment } = reference.uri;
+
+  const file = filePath(reference);
+  if (file) {
+    const revision = shortRevision(file.revision);
+    const shown = isOid(revision) ? formatOid(revision) : revision;
+    if (!file.path) {
+      return {
+        label: `${repoName}: ${shown}`,
+        primary: shown,
+        secondary: repoName,
+        icon: "folder",
+      };
+    }
+    // A line is named the way the explorer anchors it, e.g. `#L10`.
+    const line = fragment ? `#${fragment}` : "";
+    return {
+      label: `${repoName}: ${file.path}${line}`,
+      primary: `${file.path}${line}`,
+      secondary: shown,
+      icon: "document",
+    };
+  }
+
+  const typeName = cobListType(reference);
+  const list = typeName ? cobLists[typeName] : undefined;
+  if (list) {
+    return {
+      label: `${repoName}: ${list.label.toLowerCase()}`,
+      primary: list.label,
+      secondary: repoName,
+      icon: list.icon,
+    };
+  }
+
+  if (
+    resource?.type === "cob" &&
+    resource.typeName === releaseType &&
+    resource.oid !== undefined
+  ) {
+    const release = `release ${formatOid(resource.oid)}`;
+    return {
+      label: `${repoName}: ${release}`,
+      primary: `Release ${formatOid(resource.oid)}`,
+      secondary: repoName,
+      icon: "archive",
+    };
+  }
+
+  if (
+    (resource?.type === "commit" && !isOid(resource.ref)) ||
+    resource?.type === "tag"
+  ) {
+    const revision = shortRevision(resource.ref);
+    return {
+      label: `${repoName}: ${revision}`,
+      primary: revision,
+      secondary: repoName,
+      icon: resource.type === "tag" ? "label" : "branch",
+    };
+  }
+
+  if (!resource && namespace) {
+    const peer = peerName ?? truncateId(namespace);
+    return {
+      label: `${repoName}: ${peer}`,
+      primary: peer,
+      secondary: repoName,
+      icon: "repository",
+    };
   }
 
   return undefined;

@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 import { markdownWithExtensions } from "@app/lib/markdown";
 import {
   bareReferenceStart,
+  describeLink,
   matchBareReference,
   mentionHref,
   mentionMarkdown,
@@ -228,5 +229,50 @@ describe("referenceRoute", () => {
     `did:key:${nid}`,
   ])("has no page for %s", href => {
     expect(referenceRoute(parseReference(href)!)).toBeUndefined();
+  });
+});
+
+describe("describeLink", () => {
+  test.each([
+    [`${rid}/commit/main?path=src/lib.rs`, "heartwood: src/lib.rs", "document"],
+    [
+      `${rid}/commit/main?path=src/lib.rs#L10`,
+      "heartwood: src/lib.rs#L10",
+      "document",
+    ],
+    [`${rid}/commit/main?path=`, "heartwood: main", "folder"],
+    [`${rid}/commit/${oid}?path=`, "heartwood: 5e46830", "folder"],
+    [`${rid}/commit/refs/heads/main`, "heartwood: main", "branch"],
+    [`${rid}/tag/v1.0`, "heartwood: v1.0", "label"],
+    [`${rid}/cob/xyz.radicle.issue`, "heartwood: issues", "issue"],
+    [`${rid}/cob/xyz.radicle.patch`, "heartwood: patches", "patch"],
+    [`${rid}/cob/dev.radicle.artifact`, "heartwood: releases", "archive"],
+    [
+      `${rid}/cob/dev.radicle.artifact/${oid}`,
+      "heartwood: release 5e46830",
+      "archive",
+    ],
+    [`${rid}/${nid}`, "heartwood: z6MknS…tBU8Vi", "repository"],
+  ])("%s", (href, label, icon) => {
+    expect(describeLink(parseReference(href)!, "heartwood")).toMatchObject({
+      label,
+      icon,
+    });
+  });
+
+  test("names a remote by its alias", () => {
+    expect(
+      describeLink(parseReference(`${rid}/${nid}`)!, "heartwood", "cloudhead"),
+    ).toMatchObject({ label: "heartwood: cloudhead" });
+  });
+
+  test.each([
+    rid,
+    `${rid}/commit/${oid}`,
+    `${rid}/cob/xyz.radicle.issue/${oid}`,
+    `${rid}/tree/${oid}`,
+    `did:key:${nid}`,
+  ])("is not a link for %s", href => {
+    expect(describeLink(parseReference(href)!, "heartwood")).toBeUndefined();
   });
 });

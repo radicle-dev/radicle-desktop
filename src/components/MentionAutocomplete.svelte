@@ -41,6 +41,7 @@
   } from "@app/lib/invoke";
   import type { MentionTarget } from "@app/lib/mentions";
   import {
+    describeLink,
     mentionHref,
     mentionMarkdown,
     referenceMarkdown,
@@ -49,16 +50,7 @@
   import { findMentionTrigger } from "@app/lib/mentionTrigger";
   import { portal } from "@app/lib/portal";
   import type { RadReference } from "@app/lib/radUri";
-  import {
-    cobListType,
-    filePath,
-    fileReference,
-    formatReference,
-    isOid,
-    issueType,
-    patchType,
-    releaseType,
-  } from "@app/lib/radUri";
+  import { fileReference, formatReference, isOid } from "@app/lib/radUri";
   import { repoListScope } from "@app/lib/repoListScope";
   import { caretCoordinates } from "@app/lib/textareaCaret";
   import { formatOid, publicKeyFromDid, truncateId } from "@app/lib/utils";
@@ -487,7 +479,7 @@
     );
     if (!link) return [];
 
-    return [fileRow(tree.rid, repo, link, split)];
+    return linkRows(tree.rid, repo, link);
   }
 
   /**
@@ -497,77 +489,36 @@
   async function resolveLink(link: RadReference): Promise<Suggestion[]> {
     if (link.type !== "uri") return [];
     const linkRid = `rad:${link.uri.repo}`;
-    const repo = await cachedRepoById(linkRid).catch(() => undefined);
+    const { namespace } = link.uri;
+    const [repo, peerAlias] = await Promise.all([
+      cachedRepoById(linkRid).catch(() => undefined),
+      namespace ? cachedAlias(namespace).catch(() => undefined) : undefined,
+    ]);
+    return linkRows(linkRid, repo, link, peerAlias ?? undefined);
+  }
 
-    const file = filePath(link);
-    if (file) return [fileRow(linkRid, repo, link, file)];
-
+  function linkRows(
+    linkRid: string,
+    repo: RepoInfo | null | undefined,
+    link: RadReference,
+    peerName?: string,
+  ): Suggestion[] {
     const name = repo?.payloads["xyz.radicle.project"]?.data.name ?? linkRid;
-    const { resource } = link.uri;
-    if (resource?.type === "cob" && resource.oid !== undefined) {
-      const label = `${name}: release ${formatOid(resource.oid)}`;
-      return [
-        {
-          key: `link:${formatReference(link)}`,
-          target: { type: "repo", rid: linkRid },
-          link,
-          label,
-          primary: `Release ${formatOid(resource.oid)}`,
-          secondary: name,
-          icon: "archive",
-          haystack: label,
-        },
-      ];
-    }
-
-    const typeName = cobListType(link);
-    const list = typeName ? cobLists[typeName] : undefined;
-    if (!list) return [];
-
-    const label = `${name}: ${list.label.toLowerCase()}`;
+    const description = describeLink(link, name, peerName);
+    if (!description) return [];
 
     return [
       {
         key: `link:${formatReference(link)}`,
         target: { type: "repo", rid: linkRid },
         link,
-        label,
-        primary: list.label,
-        secondary: name,
-        icon: list.icon,
-        haystack: label,
+        label: description.label,
+        primary: description.primary,
+        secondary: description.secondary,
+        icon: description.icon,
+        haystack: description.label,
       },
     ];
-  }
-
-  const cobLists: Record<string, { label: string; icon: IconName }> = {
-    [issueType]: { label: "Issues", icon: "issue" },
-    [patchType]: { label: "Patches", icon: "patch" },
-    [releaseType]: { label: "Releases", icon: "archive" },
-  };
-
-  function fileRow(
-    fileRid: string,
-    repo: RepoInfo | null | undefined,
-    link: RadReference,
-    file: { revision: string; path: string },
-  ): Suggestion {
-    const name = repo?.payloads["xyz.radicle.project"]?.data.name ?? fileRid;
-    // A line is named the way the explorer anchors it, e.g. `#L10`.
-    const line =
-      link.type === "uri" && link.uri.fragment ? `#${link.uri.fragment}` : "";
-    const label = file.path ? `${name}: ${file.path}${line}` : name;
-
-    return {
-      key: `link:${formatReference(link)}`,
-      target: { type: "repo", rid: fileRid },
-      link,
-      label,
-      primary: file.path || name,
-      secondary: file.revision,
-      icon: file.path ? "document" : "folder",
-      haystack: label,
-    };
   }
 
   /**

@@ -2,8 +2,8 @@
   import type { Config } from "@bindings/config/Config";
 
   import { cachedConfig, cachedRepoById } from "@app/lib/invoke";
-  import { referenceRoute } from "@app/lib/mentions";
-  import { filePath, formatReference, parseReference } from "@app/lib/radUri";
+  import { describeLink, referenceRoute } from "@app/lib/mentions";
+  import { formatReference, parseReference } from "@app/lib/radUri";
   import { push, routeToPath } from "@app/lib/router";
   import { explorerLink } from "@app/lib/utils";
 
@@ -19,7 +19,7 @@
   const { href, label }: Props = $props();
 
   const reference = $derived(parseReference(href));
-  const file = $derived(reference && filePath(reference));
+  const icon = $derived(reference && describeLink(reference, "")?.icon);
   let config: Config | undefined = $state(undefined);
   // Neither scheme has a handler outside the app, so this links to the
   // explorer when there is a page for it, and is inert otherwise.
@@ -106,10 +106,8 @@
   onclick={handleClick}
   onmousedown={keepSelection}
   oncontextmenu={openMenu}>
-  {#if file}
-    <span class="icon">
-      <Icon name={file.path ? "document" : "folder"} />
-    </span>
+  {#if icon}
+    <span class="icon"><Icon name={icon} /></span>
   {/if}{label}
 </a>
 
