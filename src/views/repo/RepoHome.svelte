@@ -33,12 +33,22 @@
     oid: string;
     commit: Commit;
     readme: Readme | null;
+    path?: string;
     sidebarData: SidebarData;
   }
 
   /* eslint-disable prefer-const */
-  let { tree, readme, repo, peer, revision, oid, commit, sidebarData }: Props =
-    $props();
+  let {
+    tree,
+    readme,
+    repo,
+    peer,
+    revision,
+    oid,
+    commit,
+    path,
+    sidebarData,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 
   const baseRoute = $derived({
@@ -53,8 +63,12 @@
   let error: InvokeError | undefined = $state();
 
   $effect(() => {
-    blob = readme;
-    currentPath = readme?.path || "";
+    if (path) {
+      void openPath(path);
+    } else {
+      blob = readme;
+      currentPath = readme?.path || "";
+    }
   });
 
   function isMarkdownPath(path: string): boolean {
@@ -81,6 +95,19 @@
       currentPath = path;
     }
     return;
+  }
+
+  async function openPath(path: string) {
+    await fetchBlob(path);
+    if (!error) return;
+    const directory = await fetchTree(path).then(
+      () => true,
+      () => false,
+    );
+    if (directory) {
+      blob = readme;
+      error = undefined;
+    }
   }
 
   $effect(() => {

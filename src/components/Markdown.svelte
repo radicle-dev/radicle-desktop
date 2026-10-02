@@ -8,11 +8,19 @@
   import { embedPreviewKind } from "@app/lib/embeds";
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
-  import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
+  import {
+    markdownWithExtensions,
+    maximumReferences,
+    Renderer,
+  } from "@app/lib/markdown";
+  import { parseEntityHref } from "@app/lib/mentions";
+  import { isOid } from "@app/lib/radUri";
   import { highlight } from "@app/lib/syntax";
-  import { isCommit, scrollIntoView, twemoji } from "@app/lib/utils";
+  import { scrollIntoView, twemoji } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
+  import Mention from "@app/components/Mention.svelte";
+  import ReferenceLink from "@app/components/ReferenceLink.svelte";
 
   interface Props {
     rid?: string;
@@ -24,6 +32,17 @@
   const { rid = "", content, breaks = false }: Props = $props();
 
   let container: HTMLElement;
+
+  let mountedMentions: ReturnType<typeof mount>[] = [];
+
+  function unmountMentions() {
+    for (const instance of mountedMentions) {
+      void unmount(instance);
+    }
+    mountedMentions = [];
+  }
+
+  $effect(() => unmountMentions);
 
   const doc = $derived(parseFrontmatter(content));
   const frontMatter = $derived.by(() => {
@@ -57,6 +76,8 @@
         return;
       }
 
+      unmountMentions();
+
       // Replace native task-list checkboxes with read-only styled boxes.
       for (const i of container.querySelectorAll('input[type="checkbox"]')) {
         i.parentElement?.classList.add("task-item");
@@ -71,7 +92,46 @@
         i.replaceWith(box);
       }
 
+      let references = 0;
       for (const e of container.querySelectorAll("a")) {
+        const rawHref = e.getAttribute("href") ?? "";
+        const isReference = /^(?:rad|did):/i.test(rawHref);
+        // Each reference looks itself up, so a comment from another peer
+        // cannot make the app issue an unbounded number of lookups.
+        if (isReference && references >= maximumReferences) {
+          e.replaceWith(document.createTextNode(e.textContent ?? ""));
+          continue;
+        }
+        if (isReference) references++;
+        const entity = parseEntityHref(rawHref);
+        if (entity) {
+          const host = document.createElement("span");
+          host.style.display = "inline";
+          const fallback = e.textContent || rawHref;
+          e.replaceWith(host);
+          mountedMentions.push(
+            mount(Mention, {
+              target: host,
+              props: { target: entity, fallback },
+            }),
+          );
+          continue;
+        }
+
+        if (isReference) {
+          const host = document.createElement("span");
+          host.style.display = "inline";
+          const label = e.textContent || rawHref;
+          e.replaceWith(host);
+          mountedMentions.push(
+            mount(ReferenceLink, {
+              target: host,
+              props: { href: rawHref, label },
+            }),
+          );
+          continue;
+        }
+
         try {
           const url = new URL(e.href);
           if (url.origin !== window.origin) {
@@ -94,7 +154,7 @@
         const href = e.getAttribute("href");
 
         // If the markdown link is an oid embed
-        if (href && isCommit(href)) {
+        if (href && isOid(href)) {
           e.onclick = event => {
             event.preventDefault();
             invoke("save_embed_to_disk", {

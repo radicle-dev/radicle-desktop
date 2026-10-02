@@ -273,18 +273,45 @@ function queryPath(uri: RadUri): string | undefined {
   return uri.query?.find(
     ({ param, value }) =>
       (param === "path" || param === "tree" || param === "blob") &&
-      value !== undefined &&
-      value !== "",
+      value !== undefined,
   )?.value;
 }
 
 function explorerRevision(ref: string): string | undefined {
+  if (!isSafeRef(ref)) return undefined;
   if (!ref.startsWith("refs/")) return ref;
   for (const prefix of ["refs/heads/", "refs/tags/"]) {
     if (ref.startsWith(prefix)) return ref.slice(prefix.length);
   }
 
   return undefined;
+}
+
+// A `.` or `..` segment would walk the explorer URL to a page the reference
+// does not name, so such a path or ref has no explorer page.
+// The rules of `git check-ref-format` that the URI grammar does not already
+// enforce; a `..` segment would otherwise walk a link to another page.
+export function isSafeRef(ref: string): boolean {
+  return ref
+    .split("/")
+    .every(
+      segment =>
+        !segment.startsWith(".") &&
+        !segment.endsWith(".") &&
+        !segment.endsWith(".lock") &&
+        !segment.includes(".."),
+    );
+}
+
+function hasDotSegment(path: string): boolean {
+  return path.split("/").some(segment => segment === "." || segment === "..");
+}
+
+function explorerFilePath(path: string): string | undefined {
+  const segments = path.split("/").map(decodeSegment);
+  if (hasDotSegment(segments.join("/"))) return undefined;
+
+  return segments.map(encodeURIComponent).join("/");
 }
 
 function explorerResourcePath(uri: RadUri): string | undefined {
@@ -297,8 +324,12 @@ function explorerResourcePath(uri: RadUri): string | undefined {
     case "tag": {
       const revision = explorerRevision(resource.ref);
       if (revision === undefined) return undefined;
-      const path = queryPath(uri);
-      if (path !== undefined) return `${remote}/tree/${revision}/${path}`;
+      const raw = queryPath(uri);
+      if (raw !== undefined) {
+        const path = explorerFilePath(raw);
+        if (path === undefined) return undefined;
+        return `${remote}/tree/${revision}${path ? `/${path}` : ""}`;
+      }
       if (resource.type === "commit" && isOid(revision)) {
         return `/commits/${revision}`;
       }
@@ -330,7 +361,12 @@ export function explorerUrl(
   const path = explorerResourcePath(reference.uri);
   if (path === undefined) return undefined;
 
-  return `${node}/rad:${reference.uri.repo}${path}`;
+  const fragment =
+    isFileReference(reference) && reference.uri.fragment
+      ? `#${reference.uri.fragment}`
+      : "";
+
+  return `${node}/rad:${reference.uri.repo}${path}${fragment}`;
 }
 
 function decodeSegment(segment: string): string {
@@ -341,7 +377,9 @@ function decodeSegment(segment: string): string {
   }
 }
 
-export function parseExplorerUrl(href: string): RadReference | undefined {
+function explorerUrlParts(
+  href: string,
+): { segments: string[]; fragment?: string } | undefined {
   let url: URL;
   try {
     url = new URL(href);
@@ -350,10 +388,46 @@ export function parseExplorerUrl(href: string): RadReference | undefined {
   }
   if (url.protocol !== "https:" && url.protocol !== "http:") return undefined;
 
-  const segments = url.pathname
-    .split("/")
-    .filter(segment => segment !== "")
-    .map(decodeSegment);
+  const fragment = url.hash.slice(1);
+
+  return {
+    segments: url.pathname
+      .split("/")
+      .filter(segment => segment !== "")
+      .map(decodeSegment),
+    fragment:
+      fragment && queryOrFragmentPattern.test(fragment) ? fragment : undefined,
+  };
+}
+
+function explorerRepoPage(
+  segments: string[],
+): { repo: string; namespace?: string; tail: string[] } | undefined {
+  const nodes = segments.findIndex(
+    segment => segment === "nodes" || segment === "seeds",
+  );
+  const index =
+    nodes !== -1 && segments.length > nodes + 2
+      ? nodes + 2
+      : segments.findIndex(segment => segment.startsWith("rad:"));
+  if (index === -1) return undefined;
+
+  const repo = segments[index].replace(/^rad:/, "");
+  if (!isRepoId(repo)) return undefined;
+
+  const tail = segments.slice(index + 1);
+  if (tail[0] !== "remotes") return { repo, tail };
+
+  const namespace = tail[1];
+  if (namespace === undefined || !isNodeId(namespace)) return undefined;
+
+  return { repo, namespace, tail: tail.slice(2) };
+}
+
+export function parseExplorerUrl(href: string): RadReference | undefined {
+  const parts = explorerUrlParts(href);
+  if (!parts) return undefined;
+  const { segments } = parts;
 
   const users = segments.indexOf("users");
   if (users !== -1 && users === segments.length - 2) {
@@ -361,19 +435,9 @@ export function parseExplorerUrl(href: string): RadReference | undefined {
     return node ? { type: "did", node } : undefined;
   }
 
-  const index = segments.findIndex(segment => segment.startsWith("rad:"));
-  if (index === -1) return undefined;
-
-  const repo = segments[index].slice(4);
-  if (!isRepoId(repo)) return undefined;
-
-  let tail = segments.slice(index + 1);
-  let namespace: string | undefined;
-  if (tail[0] === "remotes") {
-    namespace = tail[1];
-    if (namespace === undefined || !isNodeId(namespace)) return undefined;
-    tail = tail.slice(2);
-  }
+  const page = explorerRepoPage(segments);
+  if (!page) return undefined;
+  const { repo, namespace, tail } = page;
 
   const [kind, ...rest] = tail;
   if (kind === undefined || (kind === "tree" && rest.length === 0)) {
@@ -382,25 +446,20 @@ export function parseExplorerUrl(href: string): RadReference | undefined {
 
   if (kind === "tree") {
     const [revision, ...path] = rest;
-    if (isOid(revision)) {
-      return {
-        type: "uri",
-        uri: {
-          repo,
-          namespace,
-          resource: { type: "commit", ref: revision.toLowerCase() },
-          query:
-            path.length > 0
-              ? [{ param: "path", value: path.join("/") }]
-              : undefined,
-        },
-      };
-    }
-    if (path.length > 0 || !gitRefPattern.test(revision)) return undefined;
-    return {
-      type: "uri",
-      uri: { repo, namespace, resource: { type: "commit", ref: revision } },
-    };
+    if (!isOid(revision)) return undefined;
+    return fileReference(
+      { repo, namespace },
+      revision.toLowerCase(),
+      path.join("/"),
+      parts.fragment,
+    );
+  }
+
+  const typeName = Object.keys(explorerCobPaths).find(
+    key => explorerCobPaths[key] === kind,
+  );
+  if (typeName && rest.length === 0) {
+    return { type: "uri", uri: { repo, resource: { type: "cob", typeName } } };
   }
 
   const [raw, ...extra] = rest;
@@ -416,13 +475,90 @@ export function parseExplorerUrl(href: string): RadReference | undefined {
     };
   }
 
-  const typeName = Object.keys(explorerCobPaths).find(
-    key => explorerCobPaths[key] === kind,
-  );
   if (!typeName) return undefined;
 
   return {
     type: "uri",
     uri: { repo, resource: { type: "cob", typeName, oid } },
+  };
+}
+
+export function parseExplorerTreeUrl(
+  href: string,
+):
+  | { repo: string; namespace?: string; path: string; fragment?: string }
+  | undefined {
+  const parts = explorerUrlParts(href);
+  const page = parts && explorerRepoPage(parts.segments);
+  if (!page) return undefined;
+
+  const [kind, revision, ...path] = page.tail;
+  if (kind !== "tree" || revision === undefined || isOid(revision)) {
+    return undefined;
+  }
+
+  return {
+    repo: page.repo,
+    namespace: page.namespace,
+    path: [revision, ...path].join("/"),
+    fragment: parts.fragment,
+  };
+}
+
+export function cobListType(reference: RadReference): string | undefined {
+  if (reference.type !== "uri") return undefined;
+  const { resource } = reference.uri;
+
+  return resource?.type === "cob" && resource.oid === undefined
+    ? resource.typeName
+    : undefined;
+}
+
+export function isFileReference(reference: RadReference): boolean {
+  return (
+    reference.type === "uri" &&
+    (reference.uri.resource?.type === "commit" ||
+      reference.uri.resource?.type === "tag") &&
+    queryPath(reference.uri) !== undefined
+  );
+}
+
+export function filePath(
+  reference: RadReference,
+): { revision: string; path: string } | undefined {
+  if (reference.type !== "uri" || !isFileReference(reference)) return undefined;
+  const { resource } = reference.uri;
+  const raw = queryPath(reference.uri);
+  if (!resource || !("ref" in resource) || raw === undefined) return undefined;
+
+  return { revision: resource.ref, path: decodeSegment(raw) };
+}
+
+export function fileReference(
+  location: { repo: string; namespace?: string },
+  revision: string,
+  path: string,
+  fragment?: string,
+): RadReference | undefined {
+  if (!gitRefPattern.test(revision) || !isSafeRef(revision)) return undefined;
+
+  return {
+    type: "uri",
+    uri: {
+      repo: location.repo,
+      namespace: location.namespace,
+      resource: { type: "commit", ref: revision },
+      query: [
+        {
+          param: "path",
+          value: path
+            .split("/")
+            .filter(segment => segment !== "")
+            .map(encodeURIComponent)
+            .join("/"),
+        },
+      ],
+      fragment,
+    },
   };
 }

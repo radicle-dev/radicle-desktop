@@ -3,13 +3,9 @@
   import type { ComponentProps } from "svelte";
 
   import { cachedAlias, cachedConfig, writeToClipboard } from "@app/lib/invoke";
+  import { entityUrl } from "@app/lib/mentions";
   import { getPatchActivitySource } from "@app/lib/patchActivityContext";
-  import {
-    didFromPublicKey,
-    explorerUrl,
-    pluralize,
-    truncateId,
-  } from "@app/lib/utils";
+  import { didFromPublicKey, pluralize, truncateId } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
@@ -457,7 +453,7 @@
         <a
           class="node-id-card-action txt-body-s-medium"
           href={fetchedConfig
-            ? explorerUrl(`users/${did}`, fetchedConfig)
+            ? entityUrl({ type: "node", nid: publicKey }, fetchedConfig)
             : undefined}
           title="View profile on radicle.network"
           target="_blank"

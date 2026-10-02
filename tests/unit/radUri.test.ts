@@ -2,9 +2,15 @@ import { describe, expect, test } from "vitest";
 
 import type { RadUri } from "@app/lib/radUri";
 import {
+  cobListType,
   explorerUrl,
+  filePath,
+  fileReference,
   formatRadUri,
+  isFileReference,
+  isSafeRef,
   issueType,
+  parseExplorerTreeUrl,
   parseExplorerUrl,
   parseRadUri,
   parseReference,
@@ -419,7 +425,6 @@ describe("explorer URL edge cases", () => {
     ["users before the end", `${node}/users/did:key:${node01}/x`],
     ["a branch followed by a path", `${node}/rad:${repo00}/tree/feature/x`],
     ["a history page", `${node}/rad:${repo00}/history/main`],
-    ["an issue with extra segments", `${node}/rad:${repo00}/issues/${oid}/x`],
     [
       "an invalid remote",
       `${node}/rad:${repo00}/remotes/z6Mk11111111111111111111111111111111111111111111`,
@@ -454,18 +459,42 @@ describe("explorer URL edge cases", () => {
       { repo: repo00, namespace: node01 },
     ],
     [
-      "a branch",
-      `${node}/rad:${repo00}/tree/main`,
-      { repo: repo00, resource: { type: "commit", ref: "main" } },
-    ],
-    [
-      "a remote's branch",
-      `${node}/rad:${repo00}/remotes/${node01}/tree/main`,
+      "a tree at an oid",
+      `${node}/rad:${repo00}/tree/${oid}`,
       {
         repo: repo00,
-        namespace: node01,
-        resource: { type: "commit", ref: "main" },
+        resource: { type: "commit", ref: oid },
+        query: [{ param: "path", value: "" }],
       },
+    ],
+    [
+      "an encoded path at an oid",
+      `${node}/rad:${repo00}/tree/${oid}/My%20File.md`,
+      {
+        repo: repo00,
+        resource: { type: "commit", ref: oid },
+        query: [{ param: "path", value: "My%20File.md" }],
+      },
+    ],
+    [
+      "an issue list",
+      `${node}/rad:${repo00}/issues?status=open`,
+      { repo: repo00, resource: { type: "cob", typeName: issueType } },
+    ],
+    [
+      "a patch list",
+      `${node}/rad:${repo00}/patches`,
+      { repo: repo00, resource: { type: "cob", typeName: patchType } },
+    ],
+    [
+      "a release list",
+      `${node}/rad:${repo00}/releases`,
+      { repo: repo00, resource: { type: "cob", typeName: releaseType } },
+    ],
+    [
+      "a bare repo id",
+      `${node}/${repo00}/issues/${oid}`,
+      { repo: repo00, resource: { type: "cob", typeName: issueType, oid } },
     ],
     [
       "a path at a commit",
@@ -486,4 +515,195 @@ describe("explorer URL edge cases", () => {
       url,
     );
   });
+});
+
+describe("file links", () => {
+  const base = "https://radicle.network";
+  const node = `${base}/nodes/seed.example.com`;
+
+  test.each([
+    [
+      `${node}/rad:${repo00}/tree/0004-general-uri-scheme/general-uri-scheme.adoc`,
+      { repo: repo00, path: "0004-general-uri-scheme/general-uri-scheme.adoc" },
+    ],
+    [
+      `${node}/rad:${repo00}/remotes/${node01}/tree/feature/x/src`,
+      { repo: repo00, namespace: node01, path: "feature/x/src" },
+    ],
+    [
+      `${node}/rad:${repo00}/tree/main/My%20File.md`,
+      { repo: repo00, path: "main/My File.md" },
+    ],
+  ])("parseExplorerTreeUrl reads %s", (url, expected) => {
+    expect(parseExplorerTreeUrl(url)).toEqual(expected);
+  });
+
+  test.each([
+    [
+      "a branch",
+      `${node}/rad:${repo00}/tree/main`,
+      { repo: repo00, path: "main" },
+    ],
+    [
+      "a remote's branch",
+      `${node}/rad:${repo00}/remotes/${node01}/tree/main`,
+      { repo: repo00, namespace: node01, path: "main" },
+    ],
+  ])("parseExplorerTreeUrl reads %s on its own", (_, url, expected) => {
+    expect(parseExplorerTreeUrl(url)).toEqual(expected);
+  });
+
+  test.each([
+    ["a tree at an oid", `${node}/rad:${repo00}/tree/${oid}/src`],
+    ["another page", `${node}/rad:${repo00}/history/main/src`],
+  ])("parseExplorerTreeUrl leaves %s to parseExplorerUrl", (_, url) => {
+    expect(parseExplorerTreeUrl(url)).toBeUndefined();
+  });
+
+  test("fileReference writes a path query that maps back to the file", () => {
+    const reference = fileReference(
+      { repo: repo00 },
+      "main",
+      "docs/My File.md",
+    )!;
+    expect(
+      formatRadUri(reference.type === "uri" ? reference.uri : { repo: "" }),
+    ).toBe(`rad:${repo00}/commit/main?path=docs/My%20File.md`);
+    expect(explorerUrl(reference, base, "seed.example.com")).toBe(
+      `${node}/rad:${repo00}/tree/main/docs/My%20File.md`,
+    );
+  });
+
+  test("fileReference keeps the remote", () => {
+    expect(
+      explorerUrl(
+        fileReference({ repo: repo00, namespace: node01 }, "main", "src")!,
+        base,
+        "seed.example.com",
+      ),
+    ).toBe(`${node}/rad:${repo00}/remotes/${node01}/tree/main/src`);
+  });
+
+  test.each([
+    [`rad:${repo00}/commit/main?path=src`, true],
+    [`rad:${repo00}/tag/v1.0?blob=README.md`, true],
+    [`rad:${repo00}/commit/main`, false],
+    [`rad:${repo00}/commit/main?path=`, true],
+    [`rad:${repo00}?path=src`, false],
+    [`did:key:${node01}`, false],
+  ])("isFileReference(%s) is %s", (input, expected) => {
+    expect(isFileReference(parseReference(input)!)).toBe(expected);
+  });
+
+  test("filePath decodes the path", () => {
+    expect(
+      filePath(
+        parseReference(`rad:${repo00}/commit/main?path=docs/My%20File.md`)!,
+      ),
+    ).toEqual({ revision: "main", path: "docs/My File.md" });
+    expect(
+      filePath(parseReference(`rad:${repo00}/commit/main`)!),
+    ).toBeUndefined();
+  });
+
+  test("fileReference rejects a revision a URI cannot hold", () => {
+    expect(fileReference({ repo: repo00 }, "a b", "src")).toBeUndefined();
+  });
+});
+
+describe("tree roots and lists", () => {
+  const base = "https://radicle.network";
+  const node = `${base}/nodes/seed`;
+
+  test.each([
+    `${node}/rad:${repo00}/tree/${oid}`,
+    `${node}/rad:${repo00}/issues`,
+    `${node}/rad:${repo00}/patches`,
+    `${node}/rad:${repo00}/releases`,
+  ])("maps %s both ways", url => {
+    expect(explorerUrl(parseExplorerUrl(url)!, base, "seed")).toBe(url);
+  });
+
+  test("fileReference with an empty path names the root", () => {
+    expect(
+      explorerUrl(fileReference({ repo: repo00 }, "main", "")!, base, "seed"),
+    ).toBe(`${node}/rad:${repo00}/tree/main`);
+  });
+
+  test.each([
+    [`rad:${repo00}/cob/${issueType}`, issueType],
+    [`rad:${repo00}/cob/${issueType}/${oid}`, undefined],
+    [`rad:${repo00}`, undefined],
+  ])("cobListType(%s) is %s", (input, expected) => {
+    expect(cobListType(parseReference(input)!)).toBe(expected);
+  });
+});
+
+describe("line fragments", () => {
+  const base = "https://radicle.network";
+  const node = `${base}/nodes/seed`;
+
+  test("a line of a file maps both ways", () => {
+    const url = `${node}/rad:${repo00}/tree/${oid}/src/lib.rs#L10`;
+    const reference = parseExplorerUrl(url)!;
+    expect(reference).toMatchObject({ uri: { fragment: "L10" } });
+    expect(explorerUrl(reference, base, "seed")).toBe(url);
+  });
+
+  test("parseExplorerTreeUrl keeps the line", () => {
+    expect(
+      parseExplorerTreeUrl(`${node}/rad:${repo00}/tree/main/src/lib.rs#L10`),
+    ).toEqual({ repo: repo00, path: "main/src/lib.rs", fragment: "L10" });
+  });
+
+  test("drops a fragment a URI cannot hold", () => {
+    expect(
+      parseExplorerUrl(`${node}/rad:${repo00}/tree/${oid}/src#a{b}`),
+    ).toMatchObject({ uri: { fragment: undefined } });
+  });
+
+  test("only files carry a fragment onto the explorer", () => {
+    expect(
+      explorerUrl(
+        parseReference(`rad:${repo00}/commit/${oid}#L10`)!,
+        base,
+        "seed",
+      ),
+    ).toBe(`${node}/rad:${repo00}/commits/${oid}`);
+  });
+});
+
+describe("explorer paths stay on the page they name", () => {
+  const base = "https://radicle.network";
+  const link = (input: string) =>
+    explorerUrl(parseReference(input)!, base, "seed");
+
+  test.each([
+    `rad:${repo00}/commit/../..`,
+    `rad:${repo00}/commit/main?path=../../users`,
+    `rad:${repo00}/commit/main?path=src/./lib`,
+  ])("has no page for %s", input => {
+    expect(link(input)).toBeUndefined();
+  });
+
+  test("encodes characters a path segment cannot hold", () => {
+    expect(link(`rad:${repo00}/commit/main?path=a?b`)).toBe(
+      `${base}/nodes/seed/rad:${repo00}/tree/main/a%3Fb`,
+    );
+  });
+});
+
+test.each([
+  ["main", true],
+  ["feature/x", true],
+  ["v1.0", true],
+  [oid, true],
+  ["..", false],
+  ["a/../b", false],
+  ["a..b", false],
+  [".hidden", false],
+  ["main.lock", false],
+  ["v1.", false],
+])("isSafeRef(%j) is %j", (ref, expected) => {
+  expect(isSafeRef(ref)).toBe(expected);
 });

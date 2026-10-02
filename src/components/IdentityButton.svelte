@@ -4,12 +4,8 @@
   import debounce from "lodash/debounce";
 
   import { writeToClipboard } from "@app/lib/invoke";
-  import {
-    didFromPublicKey,
-    explorerHost,
-    explorerUrl,
-    truncateDid,
-  } from "@app/lib/utils";
+  import { entityUrl } from "@app/lib/mentions";
+  import { didFromPublicKey, explorerHost, truncateDid } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
@@ -70,10 +66,7 @@
         style:text-decoration="none"
         style:width="100%"
         onclick={closeFocused}
-        href={explorerUrl(
-          `users/${didFromPublicKey(config.publicKey)}`,
-          config,
-        )}
+        href={entityUrl({ type: "node", nid: config.publicKey }, config)}
         target="_blank">
         <DropdownListItem styleGap="0.5rem" styleWidth="100%" selected={false}>
           <Icon name="seed" />

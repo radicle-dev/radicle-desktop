@@ -34,6 +34,7 @@ export interface RepoHomeRoute {
   rid: string;
   peer?: string;
   revision?: string;
+  path?: string;
 }
 
 export interface RepoCommitsRoute {
@@ -82,6 +83,7 @@ export interface LoadedRepoHomeRoute {
     commit: Commit;
     tree: Tree;
     readme: Readme | null;
+    path?: string;
     sidebarData: SidebarData;
   };
 }
@@ -369,6 +371,7 @@ export async function loadRepoHome(
       ...context,
       readme,
       tree,
+      path: route.path,
     },
   };
 }
@@ -510,6 +513,10 @@ export function repoRouteToPath(route: RepoRoute): string {
     if (route.revision !== undefined) {
       segments.push(route.revision);
     }
+    if (route.path) {
+      searchParams.set("path", route.path);
+      return `${segments.join("/")}?${searchParams}`;
+    }
     return segments.join("/");
   } else if (route.resource === "repo.commits") {
     const segments = [...pathSegments, "commits"];
@@ -576,7 +583,8 @@ export function repoUrlToRoute(
         peer = segments.shift();
       }
       const revision = segments.length > 0 ? segments.join("/") : undefined;
-      return { resource: "repo.home", rid, peer, revision };
+      const path = searchParams.get("path") ?? undefined;
+      return { resource: "repo.home", rid, peer, revision, path };
     } else if (resource === "commits") {
       let peer: string | undefined;
       if (segments[0] === "remotes") {

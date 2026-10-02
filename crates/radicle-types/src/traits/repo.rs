@@ -21,6 +21,8 @@ use crate::repo;
 use crate::source;
 use crate::traits::Profile;
 
+const COMMIT_PREFIX_LIMIT: usize = 10;
+
 pub const MAX_BLOB_SIZE: usize = 10_485_760;
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -47,8 +49,8 @@ fn is_contributor(refs: &storage::SignedRefsInfo) -> bool {
 /// looked up under the peer's namespaced `refs/heads` and `refs/tags` when a
 /// peer is given, otherwise under the canonical top-level refs. With no
 /// revision, a peer resolves to its head of the project's default branch, and
-/// no peer resolves to the canonical head. Raw commit OIDs are passed through
-/// the handlers' `sha`/`head` argument instead of this function.
+/// no peer resolves to the canonical head. A full commit OID resolves to itself,
+/// unless it is Radicle's own bookkeeping rather than a commit of the project.
 fn resolve_revision(
     repo: &storage::git::Repository,
     peer: Option<node::NodeId>,
@@ -59,6 +61,16 @@ fn resolve_revision(
         let commit = r.peel_to_commit().ok()?;
         Some(commit.id().into())
     };
+
+    if let Some(oid) = revision
+        .as_deref()
+        .filter(|name| name.len() == 40)
+        .and_then(|name| name.parse::<git::Oid>().ok())
+        .filter(|oid| repo.backend.find_commit((*oid).into()).is_ok())
+        .filter(|oid| !is_radicle_metadata(&repo.backend, *oid))
+    {
+        return Ok(oid);
+    }
 
     match peer {
         Some(peer) => {
@@ -905,6 +917,9 @@ pub trait Repo: Profile {
         let storage_repo = profile.storage.repository(rid)?;
 
         let oid = match sha {
+            Some(sha) if is_radicle_metadata(&storage_repo.backend, sha) => {
+                return Err(Error::RevisionNotFound(sha.to_string()));
+            }
             Some(sha) => sha,
             None => resolve_revision(&storage_repo, peer, revision)?,
         };
@@ -913,6 +928,98 @@ pub trait Repo: Profile {
         let commit = repo.commit(oid)?;
 
         Ok(commit.into())
+    }
+
+    fn repo_commits_by_prefix(
+        &self,
+        rid: identity::RepoId,
+        prefix: String,
+    ) -> Result<Vec<repo::Commit>, Error> {
+        if !(4..=40).contains(&prefix.len()) || !prefix.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return Ok(Vec::new());
+        }
+
+        let profile = self.profile();
+        let storage_repo = profile.storage.repository(rid)?;
+
+        // `git rev-parse --disambiguate` lists every object with the prefix,
+        // which libgit2 cannot do: it only resolves a unique prefix. Falls back
+        // to that when the git binary is unavailable.
+        let oids = crate::binaries::git_command()
+            .and_then(|mut command| {
+                // An explicit `--git-dir` wins over a `GIT_DIR` the app may
+                // have inherited, which would otherwise pick the repository.
+                let mut git_dir = std::ffi::OsString::from("--git-dir=");
+                git_dir.push(storage_repo.path());
+                command
+                    .arg(git_dir)
+                    .arg("rev-parse")
+                    .arg(format!("--disambiguate={prefix}"));
+
+                command
+                    .output()
+                    .ok()
+                    .filter(|output| output.status.success())
+                    .map(|output| {
+                        String::from_utf8_lossy(&output.stdout)
+                            .lines()
+                            .filter_map(|line| line.trim().parse::<git::Oid>().ok())
+                            .collect::<Vec<_>>()
+                    })
+            })
+            .unwrap_or_else(|| {
+                storage_repo
+                    .backend
+                    .find_commit_by_prefix(&prefix)
+                    .map(|commit| vec![commit.id().into()])
+                    .unwrap_or_default()
+            });
+
+        let repo = surf::Repository::open(storage_repo.path())?;
+
+        Ok(oids
+            .into_iter()
+            .filter(|oid| !is_radicle_metadata(&storage_repo.backend, *oid))
+            .filter_map(|oid| repo.commit(oid).ok())
+            .take(COMMIT_PREFIX_LIMIT)
+            .map(Into::into)
+            .collect())
+    }
+
+    fn repo_split_tree_path(
+        &self,
+        rid: identity::RepoId,
+        peer: Option<node::NodeId>,
+        path: String,
+    ) -> Result<repo::TreePath, Error> {
+        let profile = self.profile();
+        let storage_repo = profile.storage.repository(rid)?;
+        let segments = path
+            .split('/')
+            .filter(|segment| !segment.is_empty())
+            .collect::<Vec<_>>();
+
+        for end in (1..=segments.len()).rev() {
+            let revision = segments[..end].join("/");
+            if resolve_revision(&storage_repo, peer, Some(revision.clone())).is_ok() {
+                return Ok(repo::TreePath {
+                    revision,
+                    path: segments[end..].join("/"),
+                });
+            }
+        }
+
+        let DocAt { doc, .. } = storage_repo.identity_doc()?;
+        let revision = doc
+            .project()
+            .map_err(|e| Error::RevisionNotFound(e.to_string()))?
+            .default_branch()
+            .to_string();
+
+        Ok(repo::TreePath {
+            revision,
+            path: segments.join("/"),
+        })
     }
 
     fn unseed(&self, rid: identity::RepoId) -> Result<(), Error> {
@@ -1002,5 +1109,157 @@ fn fetch_from_seeds(
             Ok(result) => log::warn!("Fetching {rid} from {nid} failed: {result:?}"),
             Err(err) => log::warn!("Fetching {rid} from {nid} failed: {err}"),
         }
+    }
+}
+
+fn is_radicle_metadata(repo: &git2::Repository, oid: git::Oid) -> bool {
+    repo.find_commit(oid.into())
+        .and_then(|commit| commit.tree())
+        .map(|tree| tree.get_name("manifest").is_some() || tree.get_name("signature").is_some())
+        .unwrap_or(false)
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod test {
+    use radicle::crypto::{Seed, SigningKey};
+    use radicle::storage::{ReadRepository, ReadStorage};
+    use radicle::test::fixtures;
+
+    use crate::traits::repo::Repo;
+    use crate::{AppState, test};
+
+    #[test]
+    fn repo_commits_by_prefix() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(&tmp.path().join("home"), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+        let (rid, _, _, head) =
+            fixtures::project(tmp.path().join("working"), &profile.storage, &signer).unwrap();
+        let identity = profile
+            .storage
+            .repository(rid)
+            .unwrap()
+            .identity_head()
+            .unwrap();
+        let state = AppState { profile };
+        let head = head.to_string();
+
+        let found = state
+            .repo_commits_by_prefix(rid, head[..7].to_string())
+            .unwrap();
+        assert_eq!(
+            found
+                .iter()
+                .map(|commit| commit.id.to_string())
+                .collect::<Vec<_>>(),
+            vec![head.clone()]
+        );
+        assert_eq!(
+            state
+                .repo_commits_by_prefix(rid, head.to_uppercase())
+                .unwrap()
+                .len(),
+            1
+        );
+
+        assert!(
+            state
+                .repo_commits_by_prefix(rid, identity.to_string()[..7].to_string())
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            state
+                .repo_commits_by_prefix(rid, head[..3].to_string())
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            state
+                .repo_commits_by_prefix(rid, format!("{}z", &head[..6]))
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            state
+                .repo_commits_by_prefix(rid, format!("--{}", &head[..6]))
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn repo_split_tree_path() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(&tmp.path().join("home"), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+        let (rid, _, _, head) =
+            fixtures::project(tmp.path().join("working"), &profile.storage, &signer).unwrap();
+        let backend = &profile.storage.repository(rid).unwrap().backend;
+        for name in [
+            "refs/heads/feature/x",
+            "refs/tags/feature",
+            "refs/tags/v1.0",
+        ] {
+            backend.reference(name, head, false, "test").unwrap();
+        }
+        let state = AppState { profile };
+        let split = |path: &str| {
+            let split = state
+                .repo_split_tree_path(rid, None, path.to_string())
+                .unwrap();
+            (split.revision, split.path)
+        };
+
+        assert_eq!(
+            split("feature/x/src/lib.rs"),
+            ("feature/x".into(), "src/lib.rs".into())
+        );
+        assert_eq!(split("feature/y/src"), ("feature".into(), "y/src".into()));
+        assert_eq!(split("v1.0/README"), ("v1.0".into(), "README".into()));
+        assert_eq!(
+            split("docs/guide.md"),
+            ("master".into(), "docs/guide.md".into())
+        );
+        assert_eq!(split("master"), ("master".into(), "".into()));
+    }
+
+    #[test]
+    fn repo_commit_accepts_an_oid_revision() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(&tmp.path().join("home"), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+        let (rid, _, _, head) =
+            fixtures::project(tmp.path().join("working"), &profile.storage, &signer).unwrap();
+        let state = AppState { profile };
+
+        let commit = state
+            .repo_commit(rid, None, None, Some(head.to_string()))
+            .unwrap();
+        assert_eq!(commit.id.to_string(), head.to_string());
+        assert!(
+            state
+                .repo_commit(rid, None, None, Some("f".repeat(40)))
+                .is_err()
+        );
+        let identity = state
+            .profile
+            .storage
+            .repository(rid)
+            .unwrap()
+            .identity_head()
+            .unwrap();
+        assert!(
+            state
+                .repo_commit(rid, None, None, Some(identity.to_string()))
+                .is_err()
+        );
+        assert!(state.repo_commit(rid, Some(identity), None, None).is_err());
+        assert!(
+            state
+                .repo_commit(rid, Some(head.into()), None, None)
+                .is_ok()
+        );
     }
 }

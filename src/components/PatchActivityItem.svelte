@@ -11,11 +11,11 @@
 
   import { itemDiff } from "@app/lib/cobActivity";
   import { cachedConfig, writeToClipboard } from "@app/lib/invoke";
+  import { entityUrl } from "@app/lib/mentions";
   import { splitDescription } from "@app/lib/revisionDescription";
   import {
     absoluteTimestamp,
     authorForNodeId,
-    explorerUrl,
     formatTimestamp,
     patchStatusColor,
     pluralize,
@@ -70,9 +70,12 @@
     // Deep-link to the Changes tab with this revision pre-selected. The
     // revision id goes in the path (`/patches/<patch>/<revision>`), which is
     // the form the explorer resolves; `?revision=` does not navigate there.
-    await writeToClipboard(
-      explorerUrl(`${rid}/patches/${patchId}/${op.id}?tab=changes`, config),
+    const url = entityUrl(
+      { type: "cob", kind: "patch", rid, oid: patchId },
+      config,
     );
+    if (!url) return;
+    await writeToClipboard(`${url}/${op.id}?tab=changes`);
     copyLinkIcon = "checkmark";
     setTimeout(() => (copyLinkIcon = "link"), 1000);
   }

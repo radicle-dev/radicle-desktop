@@ -7,10 +7,12 @@ import type { Commit } from "@bindings/repo/Commit";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { ComponentProps } from "svelte";
 
-import bs58 from "bs58";
 import escape from "lodash/escape.js";
 import md5 from "md5";
 import twemojiModule from "twemoji";
+
+import type { RadReference } from "@app/lib/radUri";
+import { explorerUrl, isNodeId, isRepoId } from "@app/lib/radUri";
 
 import NodeId from "@app/components/NodeId.svelte";
 
@@ -45,22 +47,10 @@ export function formatRepositoryId(id: string): string {
 export function parseRepositoryId(
   rid: string,
 ): { prefix: string; pubkey: string } | undefined {
-  const match = /^(rad:)?(z[a-zA-Z0-9]+)$/.exec(rid);
-  if (match) {
-    let hex: Uint8Array;
-    try {
-      hex = bs58.decode(match[2].substring(1));
-    } catch {
-      return undefined;
-    }
-    if (hex.byteLength !== 20) {
-      return undefined;
-    }
+  const pubkey = rid.replace(/^rad:/, "");
+  if (!isRepoId(pubkey)) return undefined;
 
-    return { prefix: match[1] || "rad:", pubkey: match[2] };
-  }
-
-  return undefined;
+  return { prefix: "rad:", pubkey };
 }
 
 export function truncateId(pubkey: string): string {
@@ -77,10 +67,6 @@ export function didFromPublicKey(publicKey: string) {
 
 export function publicKeyFromDid(did: string) {
   return did.replace("did:key:", "");
-}
-
-export function isCommit(input: string): boolean {
-  return /^[a-f0-9]{40}$/.test(input);
 }
 
 export function formatOid(id: string): string {
@@ -260,25 +246,10 @@ export function modifierKey() {
 export function parseNodeId(
   nid: string,
 ): { prefix: string; pubkey: string } | undefined {
-  const match = /^(did:key:)?(z[a-zA-Z0-9]+)$/.exec(nid);
-  if (match) {
-    let hex: Uint8Array;
-    try {
-      hex = bs58.decode(match[2].substring(1));
-    } catch (error) {
-      console.error("utils.parseNodId: Not able to decode received NID", error);
-      return undefined;
-    }
-    // This checks also that the first 2 bytes are equal
-    // to the ed25519 public key type used.
-    if (hex && !(hex.byteLength === 34 && hex[0] === 0xed && hex[1] === 1)) {
-      return undefined;
-    }
+  const pubkey = nid.replace(/^did:key:/, "");
+  if (!isNodeId(pubkey)) return undefined;
 
-    return { prefix: match[1] || "did:key:", pubkey: match[2] };
-  }
-
-  return undefined;
+  return { prefix: "did:key:", pubkey };
 }
 
 // Get the gravatar URL of an email.
@@ -384,15 +355,25 @@ export function explorerHost(config: Config): string {
   }
 }
 
-// Build an explorer URL, honouring the user's configured `publicExplorer`
-// template and preferred seed. The template mirrors radicle's `Explorer`
-// type: "<base>/nodes/$host/$rid$path". `path` is everything after the seed
-// host, e.g. `<rid>/issues/<id>` or `users/<did>`.
-export function explorerUrl(path: string, config: Config): string {
-  const seed = preferredSeedHost(config) ?? DEFAULT_SEED;
-  return config.publicExplorer
-    .replace("$host", seed)
-    .replace("$rid$path", path);
+export function explorerLink(
+  reference: RadReference,
+  config: Config,
+): string | undefined {
+  return explorerUrl(reference, explorerBase(config), explorerSeed(config));
+}
+
+function explorerBase(config: Config): string {
+  const nodes = config.publicExplorer.indexOf("/nodes/$host");
+  if (nodes !== -1) return config.publicExplorer.slice(0, nodes);
+  try {
+    return new URL(config.publicExplorer).origin;
+  } catch {
+    return config.publicExplorer;
+  }
+}
+
+function explorerSeed(config: Config): string {
+  return preferredSeedHost(config) ?? DEFAULT_SEED;
 }
 
 export interface GitIdentity {

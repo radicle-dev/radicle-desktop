@@ -5,12 +5,14 @@
   import debounce from "lodash/debounce";
 
   import { writeToClipboard } from "@app/lib/invoke";
+  import type { Entity } from "@app/lib/mentions";
+  import { entityUrl } from "@app/lib/mentions";
   import {
     defaultShareAction,
     type ShareAction,
     shareAction,
   } from "@app/lib/shareAction.svelte";
-  import { explorerHost, explorerUrl } from "@app/lib/utils";
+  import { explorerHost } from "@app/lib/utils";
 
   import Button from "@app/components/Button.svelte";
   import DropdownList from "@app/components/DropdownList.svelte";
@@ -21,7 +23,7 @@
   type IconName = ComponentProps<typeof Icon>["name"];
 
   interface Props {
-    explorerPath: string;
+    target: Entity;
     id: string;
     // The noun the id represents, e.g. "issue", so "copy id" reads "Copy issue ID".
     idLabel: string;
@@ -31,7 +33,7 @@
   }
 
   const {
-    explorerPath,
+    target,
     id,
     idLabel,
     config,
@@ -39,7 +41,7 @@
     variant = "ghost",
   }: Props = $props();
 
-  const url = $derived(explorerUrl(explorerPath, config));
+  const url = $derived(entityUrl(target, config) ?? "");
   const host = $derived(explorerHost(config));
 
   const actions = $derived<

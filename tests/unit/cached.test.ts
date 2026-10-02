@@ -32,6 +32,28 @@ describe("cached", () => {
     expect(f).toHaveBeenCalledTimes(1);
   });
 
+  test("keeps a miss only for missTtl", async () => {
+    const f = vi.fn(async () => null);
+    const c = cached(f, () => "key", { max: 10, ttl: 60_000 }, 1);
+
+    await c();
+    await c();
+    expect(f).toHaveBeenCalledTimes(1);
+    await new Promise(resolve => setTimeout(resolve, 10));
+    await c();
+    expect(f).toHaveBeenCalledTimes(2);
+  });
+
+  test("keeps a hit for the full ttl", async () => {
+    const f = vi.fn(async () => "hit");
+    const c = cached(f, () => "key", { max: 10, ttl: 60_000 }, 1);
+
+    await c();
+    await new Promise(resolve => setTimeout(resolve, 10));
+    await c();
+    expect(f).toHaveBeenCalledTimes(1);
+  });
+
   test("retries after a rejection", async () => {
     const f = vi
       .fn<() => Promise<string>>()

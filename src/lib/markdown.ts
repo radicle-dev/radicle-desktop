@@ -1,4 +1,9 @@
-import type { MarkedExtension, Tokens } from "marked";
+import type {
+  MarkedExtension,
+  RendererExtension,
+  TokenizerExtension,
+  Tokens,
+} from "marked";
 
 import dompurify from "dompurify";
 import escape from "lodash/escape.js";
@@ -9,9 +14,20 @@ import katexMarkedExtension from "marked-katex-extension";
 import markedLinkifyIt from "marked-linkify-it";
 
 import emojis from "@app/lib/emojis";
+import { bareReferenceStart, matchBareReference } from "@app/lib/mentions";
+
+// DOMPurify only keeps hrefs whose scheme it recognises, and drops `rad:` and
+// `did:key:` links along with the rest. Neither can execute the way
+// `javascript:` can, and the app replaces every such anchor with a component
+// after sanitization, so none is ever followed as a raw href.
+// This is DOMPurify's own default as of 3.4, with those two schemes added, so
+// it needs revisiting when DOMPurify changes its default.
+const allowedUriSchemes =
+  /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|matrix|rad|did):|[^a-z]|[a-z+.-]+(?:[^a-z+.:-]|$))/i;
 
 dompurify.setConfig({
   /* eslint-disable @typescript-eslint/naming-convention */
+  ALLOWED_URI_REGEXP: allowedUriSchemes,
   ALLOWED_ATTR: [
     "align",
     "checked",
@@ -81,6 +97,38 @@ const anchorMarkedExtension = {
   renderer: (token: Tokens.Generic): string => `<a name="${token.text}"></a>`,
 };
 
+// Past this many references in one document the rest stay text, matching
+// the number of chips `Markdown` mounts.
+export const maximumReferences = 200;
+const referenceCounts = new WeakMap<object, number>();
+
+const radicleReferenceMarkedExtension: TokenizerExtension & RendererExtension =
+  {
+    name: "radicleReference",
+    level: "inline",
+    start(src: string) {
+      if ((referenceCounts.get(this.lexer) ?? 0) >= maximumReferences) return;
+      return bareReferenceStart(src);
+    },
+    tokenizer(src: string) {
+      if (this.lexer.state.inLink) return;
+      const match = matchBareReference(src);
+      if (!match) return;
+      referenceCounts.set(
+        this.lexer,
+        (referenceCounts.get(this.lexer) ?? 0) + 1,
+      );
+
+      return {
+        type: "radicleReference",
+        raw: match.raw,
+        text: match.raw,
+      };
+    },
+    renderer: (token: Tokens.Generic): string =>
+      `<a href="${escape(token.text)}">${escape(token.text)}</a>`,
+  };
+
 export class Renderer extends BaseRenderer {
   /**
    * If `baseUrl` is provided, all hrefs attributes in anchor tags, except those
@@ -125,6 +173,6 @@ export const markdownWithExtensions = new Marked(
   markedFootnote({ refMarkers: true }),
   markedEmoji({ emojis }),
   ((): MarkedExtension => ({
-    extensions: [anchorMarkedExtension],
+    extensions: [anchorMarkedExtension, radicleReferenceMarkedExtension],
   }))(),
 );
