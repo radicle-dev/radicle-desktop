@@ -26,6 +26,10 @@ describe("repoRouteToPath and repoUrlToRoute round trip", () => {
       "/repos/RID/home/remotes/PEER/feature/branch",
       { resource: "repo.home", rid, peer, revision: "feature/branch" },
     ],
+    [
+      "/repos/RID/home/main?path=src%2Flib.rs",
+      { resource: "repo.home", rid, revision: "main", path: "src/lib.rs" },
+    ],
     ["/repos/RID/commits", { resource: "repo.commits", rid }],
     [
       "/repos/RID/commits/main",

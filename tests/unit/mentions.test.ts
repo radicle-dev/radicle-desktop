@@ -12,7 +12,9 @@ import {
   parseBareIdentifier,
   parseMentionHref,
   referenceMarkdown,
+  referenceRoute,
 } from "@app/lib/mentions";
+import { parseReference } from "@app/lib/radUri";
 
 const repo = "z3gqcJUoA1n9HaHKufZs5FCSGazv5";
 const rid = `rad:${repo}`;
@@ -180,5 +182,51 @@ describe("serialising", () => {
     expect(mentionUrl({ type: "repo", rid }, config)).toBe(
       `https://example.com/explorer/nodes/rosa.radicle.network/${rid}`,
     );
+  });
+});
+
+describe("referenceRoute", () => {
+  test.each([
+    [
+      `${rid}/commit/master?path=.github/README.md`,
+      {
+        resource: "repo.home",
+        rid,
+        revision: "master",
+        path: ".github/README.md",
+      },
+    ],
+    [
+      `${rid}/commit/main?path=My%20File.md`,
+      { resource: "repo.home", rid, revision: "main", path: "My File.md" },
+    ],
+    [
+      `${rid}/commit/refs/heads/main?path=`,
+      { resource: "repo.home", rid, revision: "main" },
+    ],
+    [
+      `${rid}/${nid}/commit/main?path=src`,
+      { resource: "repo.home", rid, peer: nid, revision: "main", path: "src" },
+    ],
+    [`${rid}/tag/v1.0`, { resource: "repo.home", rid, revision: "v1.0" }],
+    [`${rid}/${nid}`, { resource: "repo.home", rid, peer: nid }],
+    [
+      `${rid}/cob/xyz.radicle.issue`,
+      { resource: "repo.issues", rid, status: "all" },
+    ],
+    [
+      `${rid}/cob/xyz.radicle.patch`,
+      { resource: "repo.patches", rid, status: undefined },
+    ],
+  ])("%s", (href, expected) => {
+    expect(referenceRoute(parseReference(href)!)).toEqual(expected);
+  });
+
+  test.each([
+    `${rid}/cob/dev.radicle.artifact`,
+    `${rid}/tree/${oid}`,
+    `did:key:${nid}`,
+  ])("has no page for %s", href => {
+    expect(referenceRoute(parseReference(href)!)).toBeUndefined();
   });
 });

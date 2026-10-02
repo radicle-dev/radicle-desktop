@@ -33,12 +33,22 @@
     oid: string;
     commit: Commit;
     readme: Readme | null;
+    path?: string;
     sidebarData: SidebarData;
   }
 
   /* eslint-disable prefer-const */
-  let { tree, readme, repo, peer, revision, oid, commit, sidebarData }: Props =
-    $props();
+  let {
+    tree,
+    readme,
+    repo,
+    peer,
+    revision,
+    oid,
+    commit,
+    path,
+    sidebarData,
+  }: Props = $props();
   /* eslint-enable prefer-const */
 
   const baseRoute = $derived({
@@ -53,8 +63,13 @@
   let error: InvokeError | undefined = $state();
 
   $effect(() => {
-    blob = readme;
-    currentPath = readme?.path || "";
+    // A link can open a file directly; otherwise the README is shown.
+    if (path) {
+      void fetchBlob(path);
+    } else {
+      blob = readme;
+      currentPath = readme?.path || "";
+    }
   });
 
   function isMarkdownPath(path: string): boolean {

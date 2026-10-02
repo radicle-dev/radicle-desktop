@@ -7,15 +7,16 @@
 
   import { embedPreviewKind } from "@app/lib/embeds";
   import { parseFrontmatter } from "@app/lib/frontmatter";
-  import { cachedConfig, invoke } from "@app/lib/invoke";
+  import { invoke } from "@app/lib/invoke";
   import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
   import { parseMentionHref } from "@app/lib/mentions";
-  import { isOid, parseReference } from "@app/lib/radUri";
+  import { isOid } from "@app/lib/radUri";
   import { highlight } from "@app/lib/syntax";
-  import { explorerLink, scrollIntoView, twemoji } from "@app/lib/utils";
+  import { scrollIntoView, twemoji } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
   import Mention from "@app/components/Mention.svelte";
+  import ReferenceLink from "@app/components/ReferenceLink.svelte";
 
   interface Props {
     rid?: string;
@@ -112,24 +113,18 @@
         }
 
         // Any other `rad:` or `did:` href has no handler outside the app, so
-        // it links to the explorer when there is a page for it, and is inert
-        // otherwise.
+        // it is replaced too, by a link to the explorer where there is one.
         if (/^(?:rad|did):/i.test(mentionHref)) {
-          e.removeAttribute("href");
-          e.title = mentionHref;
-          const reference = parseReference(mentionHref);
-          if (reference) {
-            void cachedConfig()
-              .then(config => {
-                const url = explorerLink(reference, config);
-                if (url) {
-                  e.href = url;
-                  e.target = "_blank";
-                  e.rel = "noopener noreferrer";
-                }
-              })
-              .catch(console.error);
-          }
+          const host = document.createElement("span");
+          host.style.display = "inline";
+          const label = e.textContent || mentionHref;
+          e.replaceWith(host);
+          mountedMentions.push(
+            mount(ReferenceLink, {
+              target: host,
+              props: { href: mentionHref, label },
+            }),
+          );
           continue;
         }
 

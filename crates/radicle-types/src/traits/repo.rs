@@ -64,6 +64,17 @@ fn resolve_revision(
         Some(commit.id().into())
     };
 
+    // A full commit id is a revision too, as links to a file at a commit
+    // name one; it is the same commit whichever peer it is read from.
+    if let Some(oid) = revision
+        .as_deref()
+        .filter(|name| name.len() == 40)
+        .and_then(|name| name.parse::<git::Oid>().ok())
+        .filter(|oid| repo.backend.find_commit((*oid).into()).is_ok())
+    {
+        return Ok(oid);
+    }
+
     match peer {
         Some(peer) => {
             let name = match revision {
@@ -1223,5 +1234,25 @@ mod test {
             ("master".into(), "docs/guide.md".into())
         );
         assert_eq!(split("master"), ("master".into(), "".into()));
+    }
+
+    #[test]
+    fn repo_commit_accepts_an_oid_revision() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(&tmp.path().join("home"), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+        let (rid, _, _, head) =
+            fixtures::project(tmp.path().join("working"), &profile.storage, &signer).unwrap();
+        let state = AppState { profile };
+
+        let commit = state
+            .repo_commit(rid, None, None, Some(head.to_string()))
+            .unwrap();
+        assert_eq!(commit.id.to_string(), head.to_string());
+        assert!(
+            state
+                .repo_commit(rid, None, None, Some("f".repeat(40)))
+                .is_err()
+        );
     }
 }

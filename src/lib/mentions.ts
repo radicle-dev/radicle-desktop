@@ -1,7 +1,10 @@
+import type { RepoRoute } from "@app/views/repo/router";
 import type { Config } from "@bindings/config/Config";
 
 import type { RadReference } from "@app/lib/radUri";
 import {
+  cobListType,
+  filePath,
   formatReference,
   isNodeId,
   isOid,
@@ -154,6 +157,52 @@ export function matchBareReference(
     while (end > 0 && !prosePunctuation.has(raw[end]));
     if (end <= 0) return undefined;
   }
+}
+
+/**
+ * The in-app page for a reference that has no chip, such as a file, a branch
+ * or a list of issues, or `undefined` when the app has no page for it.
+ */
+export function referenceRoute(reference: RadReference): RepoRoute | undefined {
+  if (reference.type !== "uri") return undefined;
+  const { repo, namespace, resource } = reference.uri;
+  const rid = `rad:${repo}`;
+
+  const file = filePath(reference);
+  if (file) {
+    return {
+      resource: "repo.home",
+      rid,
+      peer: namespace,
+      revision: shortRevision(file.revision),
+      path: file.path || undefined,
+    };
+  }
+
+  if (!resource) return { resource: "repo.home", rid, peer: namespace };
+  if (resource.type === "commit" || resource.type === "tag") {
+    return {
+      resource: "repo.home",
+      rid,
+      peer: namespace,
+      revision: shortRevision(resource.ref),
+    };
+  }
+
+  const typeName = cobListType(reference);
+  if (typeName === issueType) {
+    return { resource: "repo.issues", rid, status: "all" };
+  }
+  if (typeName === patchType) {
+    return { resource: "repo.patches", rid, status: undefined };
+  }
+
+  return undefined;
+}
+
+/** A branch or tag as the app's routes name it, without `refs/heads/`. */
+function shortRevision(ref: string): string {
+  return ref.replace(/^refs\/(?:heads|tags)\//, "");
 }
 
 /** The canonical identifier of a reference, used to address and cache it. */
