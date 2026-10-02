@@ -10,6 +10,16 @@ use radicle::{git, identity, issue, node, patch};
 use crate::cobs::Author;
 use crate::error;
 
+/// A revision and a path within it, as split out of an explorer tree URL.
+#[derive(Debug, PartialEq, Eq, Serialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+#[ts(export_to = "repo/")]
+pub struct TreePath {
+    pub revision: String,
+    pub path: String,
+}
+
 #[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]

@@ -11,6 +11,7 @@
 <script lang="ts">
   import type { AliasSuggestion } from "@bindings/cob/AliasSuggestion";
   import type { Author } from "@bindings/cob/Author";
+  import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { ComponentProps } from "svelte";
 
   import {
@@ -35,14 +36,29 @@
     cachedRepoById,
     cachedRepoCommit,
     cachedRepoCommitsByPrefix,
+    cachedRepoSplitTreePath,
     cachedSearchAliases,
   } from "@app/lib/invoke";
   import type { MentionTarget } from "@app/lib/mentions";
-  import { mentionHref, mentionMarkdown } from "@app/lib/mentions";
+  import {
+    mentionHref,
+    mentionMarkdown,
+    referenceMarkdown,
+  } from "@app/lib/mentions";
   import type { MentionTrigger } from "@app/lib/mentionTrigger";
   import { findMentionTrigger } from "@app/lib/mentionTrigger";
   import { portal } from "@app/lib/portal";
-  import { isOid } from "@app/lib/radUri";
+  import type { RadReference } from "@app/lib/radUri";
+  import {
+    cobListType,
+    filePath,
+    fileReference,
+    formatReference,
+    isOid,
+    issueType,
+    patchType,
+    releaseType,
+  } from "@app/lib/radUri";
   import { repoListScope } from "@app/lib/repoListScope";
   import { caretCoordinates } from "@app/lib/textareaCaret";
   import { formatOid, publicKeyFromDid, truncateId } from "@app/lib/utils";
@@ -55,6 +71,11 @@
   interface Suggestion {
     key: string;
     target: MentionTarget;
+    /**
+     * Inserted instead of `target` when the row links to something that has
+     * no chip of its own, such as a file.
+     */
+    link?: RadReference;
     /** Written into the markdown link's label. */
     label: string;
     /** Shown as the row's title. */
@@ -183,6 +204,10 @@
         return `identifier:${mentionHref(value.target)}`;
       case "oid":
         return `oid:${value.oid}`;
+      case "tree":
+        return `tree:${value.rid}:${value.namespace}:${value.path}#${value.fragment}`;
+      case "link":
+        return `link:${formatReference(value.reference)}`;
     }
   }
 
@@ -264,6 +289,14 @@
     // oid belonging to some other repo.
     if (requested.kind === "oid") {
       return await resolveOid(requested.oid);
+    }
+
+    if (requested.kind === "tree") {
+      return await resolveTree(requested);
+    }
+
+    if (requested.kind === "link") {
+      return await resolveLink(requested.reference);
     }
 
     // An oid typed after a trigger character names something in this repo
@@ -425,6 +458,116 @@
           haystack: commit.summary,
         })),
     ];
+  }
+
+  /**
+   * Offer a pasted explorer link to a file as a link labelled with the repo
+   * name and path, once the repo's refs have said where its branch ends.
+   */
+  async function resolveTree(
+    tree: Extract<MentionTrigger, { kind: "tree" }>,
+  ): Promise<Suggestion[]> {
+    const [split, repo] = await Promise.all([
+      cachedRepoSplitTreePath(tree.rid, tree.namespace, tree.path).catch(
+        () => undefined,
+      ),
+      cachedRepoById(tree.rid).catch(() => undefined),
+    ]);
+    if (!split) return [];
+
+    const location = {
+      repo: tree.rid.replace(/^rad:/, ""),
+      namespace: tree.namespace,
+    };
+    const link = fileReference(
+      location,
+      split.revision,
+      split.path,
+      tree.fragment,
+    );
+    if (!link) return [];
+
+    return [fileRow(tree.rid, repo, link, split)];
+  }
+
+  /**
+   * Offer a pasted reference with no chip of its own, a file or a list of
+   * COBs, as a link labelled with the repo name.
+   */
+  async function resolveLink(link: RadReference): Promise<Suggestion[]> {
+    if (link.type !== "uri") return [];
+    const linkRid = `rad:${link.uri.repo}`;
+    const repo = await cachedRepoById(linkRid).catch(() => undefined);
+
+    const file = filePath(link);
+    if (file) return [fileRow(linkRid, repo, link, file)];
+
+    const name = repo?.payloads["xyz.radicle.project"]?.data.name ?? linkRid;
+    const { resource } = link.uri;
+    if (resource?.type === "cob" && resource.oid !== undefined) {
+      const label = `${name}: release ${formatOid(resource.oid)}`;
+      return [
+        {
+          key: `link:${formatReference(link)}`,
+          target: { type: "repo", rid: linkRid },
+          link,
+          label,
+          primary: `Release ${formatOid(resource.oid)}`,
+          secondary: name,
+          icon: "archive",
+          haystack: label,
+        },
+      ];
+    }
+
+    const typeName = cobListType(link);
+    const list = typeName ? cobLists[typeName] : undefined;
+    if (!list) return [];
+
+    const label = `${name}: ${list.label.toLowerCase()}`;
+
+    return [
+      {
+        key: `link:${formatReference(link)}`,
+        target: { type: "repo", rid: linkRid },
+        link,
+        label,
+        primary: list.label,
+        secondary: name,
+        icon: list.icon,
+        haystack: label,
+      },
+    ];
+  }
+
+  const cobLists: Record<string, { label: string; icon: IconName }> = {
+    [issueType]: { label: "Issues", icon: "issue" },
+    [patchType]: { label: "Patches", icon: "patch" },
+    [releaseType]: { label: "Releases", icon: "archive" },
+  };
+
+  function fileRow(
+    fileRid: string,
+    repo: RepoInfo | null | undefined,
+    link: RadReference,
+    file: { revision: string; path: string },
+  ): Suggestion {
+    const name = repo?.payloads["xyz.radicle.project"]?.data.name ?? fileRid;
+    // A line is named the way the explorer anchors it, e.g. `#L10`.
+    const line =
+      link.type === "uri" && link.uri.fragment ? `#${link.uri.fragment}` : "";
+    const label = file.path ? `${name}: ${file.path}${line}` : name;
+
+    return {
+      key: `link:${formatReference(link)}`,
+      target: { type: "repo", rid: fileRid },
+      link,
+      label,
+      primary: file.path || name,
+      secondary: file.revision,
+      icon: file.path ? "document" : "folder",
+      haystack: label,
+    };
   }
 
   /**
@@ -677,7 +820,11 @@
     onselect({
       start: trigger.start,
       end: trigger.end,
-      markdown: `${mentionMarkdown(suggestion.target, suggestion.label)} `,
+      markdown: `${
+        suggestion.link
+          ? referenceMarkdown(suggestion.link, suggestion.label)
+          : mentionMarkdown(suggestion.target, suggestion.label)
+      } `,
     });
     suggestions = [];
   }

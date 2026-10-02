@@ -185,6 +185,7 @@ pub fn router(shared: Shared) -> Router {
             "/repo_commits_by_prefix",
             post(repo_commits_by_prefix_handler),
         )
+        .route("/repo_split_tree_path", post(repo_split_tree_path_handler))
         .route("/list_issues", post(issues_handler))
         .route("/issue_by_id", post(issue_handler))
         .route("/comment_threads_by_issue_id", post(issue_threads_handler))
@@ -706,6 +707,24 @@ async fn repo_commits_by_prefix_handler(
     let commits = ctx.repo_commits_by_prefix(rid, prefix)?;
 
     Ok::<_, Error>(Json(commits))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RepoSplitTreePathBody {
+    pub rid: identity::RepoId,
+    #[serde(default)]
+    pub peer: Option<NodeId>,
+    pub path: String,
+}
+
+async fn repo_split_tree_path_handler(
+    Ctx(ctx): Ctx,
+    Json(RepoSplitTreePathBody { rid, peer, path }): Json<RepoSplitTreePathBody>,
+) -> impl IntoResponse {
+    let split = ctx.repo_split_tree_path(rid, peer, path)?;
+
+    Ok::<_, Error>(Json(split))
 }
 
 #[derive(Serialize, Deserialize)]

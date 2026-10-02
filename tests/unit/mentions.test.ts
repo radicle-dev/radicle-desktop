@@ -11,6 +11,7 @@ import {
   mentionUrl,
   parseBareIdentifier,
   parseMentionHref,
+  referenceMarkdown,
 } from "@app/lib/mentions";
 
 const repo = "z3gqcJUoA1n9HaHKufZs5FCSGazv5";
@@ -136,6 +137,18 @@ describe("serialising", () => {
     expect(mentionHref({ type: "commit", rid, oid })).toBe(
       `${rid}/commit/${oid}`,
     );
+  });
+
+  test("referenceMarkdown links any reference", () => {
+    expect(
+      referenceMarkdown(
+        {
+          type: "uri",
+          uri: { repo, resource: { type: "commit", ref: "main" } },
+        },
+        "heartwood: README",
+      ),
+    ).toBe(`[heartwood: README](${rid}/commit/main)`);
   });
 
   test("mentionMarkdown escapes the label", () => {

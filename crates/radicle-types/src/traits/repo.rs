@@ -978,6 +978,46 @@ pub trait Repo: Profile {
             .collect())
     }
 
+    /// Split a tree path as the explorer writes it, `<revision>/<path>`, where
+    /// a branch or tag name may itself contain slashes. The longest leading
+    /// run of segments that names a branch or tag wins, as on the explorer;
+    /// failing that, the whole path is read against the default branch.
+    fn repo_split_tree_path(
+        &self,
+        rid: identity::RepoId,
+        peer: Option<node::NodeId>,
+        path: String,
+    ) -> Result<repo::TreePath, Error> {
+        let profile = self.profile();
+        let storage_repo = profile.storage.repository(rid)?;
+        let segments = path
+            .split('/')
+            .filter(|segment| !segment.is_empty())
+            .collect::<Vec<_>>();
+
+        for end in (1..=segments.len()).rev() {
+            let revision = segments[..end].join("/");
+            if resolve_revision(&storage_repo, peer, Some(revision.clone())).is_ok() {
+                return Ok(repo::TreePath {
+                    revision,
+                    path: segments[end..].join("/"),
+                });
+            }
+        }
+
+        let DocAt { doc, .. } = storage_repo.identity_doc()?;
+        let revision = doc
+            .project()
+            .map_err(|e| Error::RevisionNotFound(e.to_string()))?
+            .default_branch()
+            .to_string();
+
+        Ok(repo::TreePath {
+            revision,
+            path: segments.join("/"),
+        })
+    }
+
     fn unseed(&self, rid: identity::RepoId) -> Result<(), Error> {
         let profile = self.profile();
         let mut node = radicle::Node::new(profile.home().socket_from_env());
@@ -1146,5 +1186,42 @@ mod test {
                 .unwrap()
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn repo_split_tree_path() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(&tmp.path().join("home"), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+        let (rid, _, _, head) =
+            fixtures::project(tmp.path().join("working"), &profile.storage, &signer).unwrap();
+        let backend = &profile.storage.repository(rid).unwrap().backend;
+        // A tag may share a prefix with a branch, so the longest match matters.
+        for name in [
+            "refs/heads/feature/x",
+            "refs/tags/feature",
+            "refs/tags/v1.0",
+        ] {
+            backend.reference(name, head, false, "test").unwrap();
+        }
+        let state = AppState { profile };
+        let split = |path: &str| {
+            let split = state
+                .repo_split_tree_path(rid, None, path.to_string())
+                .unwrap();
+            (split.revision, split.path)
+        };
+
+        assert_eq!(
+            split("feature/x/src/lib.rs"),
+            ("feature/x".into(), "src/lib.rs".into())
+        );
+        assert_eq!(split("feature/y/src"), ("feature".into(), "y/src".into()));
+        assert_eq!(split("v1.0/README"), ("v1.0".into(), "README".into()));
+        assert_eq!(
+            split("docs/guide.md"),
+            ("master".into(), "docs/guide.md".into())
+        );
+        assert_eq!(split("master"), ("master".into(), "".into()));
     }
 }

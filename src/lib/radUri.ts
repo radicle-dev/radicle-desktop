@@ -278,12 +278,12 @@ export function formatReference(reference: RadReference): string {
     : formatRadUri(reference.uri);
 }
 
+/** The path a `path`, `tree` or `blob` query digs out, `""` being the root. */
 function queryPath(uri: RadUri): string | undefined {
   return uri.query?.find(
     ({ param, value }) =>
       (param === "path" || param === "tree" || param === "blob") &&
-      value !== undefined &&
-      value !== "",
+      value !== undefined,
   )?.value;
 }
 
@@ -311,7 +311,9 @@ function explorerResourcePath(uri: RadUri): string | undefined {
       const revision = explorerRevision(resource.ref);
       if (revision === undefined) return undefined;
       const path = queryPath(uri);
-      if (path !== undefined) return `${remote}/tree/${revision}/${path}`;
+      if (path !== undefined) {
+        return `${remote}/tree/${revision}${path ? `/${path}` : ""}`;
+      }
       if (resource.type === "commit" && isOid(revision)) {
         return `/commits/${revision}`;
       }
@@ -348,7 +350,13 @@ export function explorerUrl(
   const path = explorerResourcePath(reference.uri);
   if (path === undefined) return undefined;
 
-  return `${node}/rad:${reference.uri.repo}${path}`;
+  // A fragment only means something on a file, where it names a line.
+  const fragment =
+    isFileReference(reference) && reference.uri.fragment
+      ? `#${reference.uri.fragment}`
+      : "";
+
+  return `${node}/rad:${reference.uri.repo}${path}${fragment}`;
 }
 
 function decodeSegment(segment: string): string {
@@ -359,11 +367,9 @@ function decodeSegment(segment: string): string {
   }
 }
 
-/**
- * Recognise a radicle-explorer URL for a repo, remote, issue, patch, release,
- * commit, tree or user, on any instance and seed.
- */
-export function parseExplorerUrl(href: string): RadReference | undefined {
+function explorerUrlParts(
+  href: string,
+): { segments: string[]; fragment?: string } | undefined {
   let url: URL;
   try {
     url = new URL(href);
@@ -372,10 +378,55 @@ export function parseExplorerUrl(href: string): RadReference | undefined {
   }
   if (url.protocol !== "https:" && url.protocol !== "http:") return undefined;
 
-  const segments = url.pathname
-    .split("/")
-    .filter(segment => segment !== "")
-    .map(decodeSegment);
+  // The explorer anchors a line of a file as `#L<n>`; any fragment a URI
+  // could not hold is dropped.
+  const fragment = url.hash.slice(1);
+
+  return {
+    segments: url.pathname
+      .split("/")
+      .filter(segment => segment !== "")
+      .map(decodeSegment),
+    fragment:
+      fragment && queryOrFragmentPattern.test(fragment) ? fragment : undefined,
+  };
+}
+
+/** The repo, the remote if any, and the page within it in explorer `segments`. */
+function explorerRepoPage(
+  segments: string[],
+): { repo: string; namespace?: string; tail: string[] } | undefined {
+  // The repo follows `/nodes/<host>`, as `rad:<RID>` or a bare RID. An alias
+  // configured on the explorer's own server cannot be resolved here.
+  const nodes = segments.findIndex(
+    segment => segment === "nodes" || segment === "seeds",
+  );
+  const index =
+    nodes !== -1 && segments.length > nodes + 2
+      ? nodes + 2
+      : segments.findIndex(segment => segment.startsWith("rad:"));
+  if (index === -1) return undefined;
+
+  const repo = segments[index].replace(/^rad:/, "");
+  if (!isRepoId(repo)) return undefined;
+
+  const tail = segments.slice(index + 1);
+  if (tail[0] !== "remotes") return { repo, tail };
+
+  const namespace = tail[1];
+  if (namespace === undefined || !isNodeId(namespace)) return undefined;
+
+  return { repo, namespace, tail: tail.slice(2) };
+}
+
+/**
+ * Recognise a radicle-explorer URL for a repo, remote, issue, patch, release,
+ * commit, tree or user, on any instance and seed.
+ */
+export function parseExplorerUrl(href: string): RadReference | undefined {
+  const parts = explorerUrlParts(href);
+  if (!parts) return undefined;
+  const { segments } = parts;
 
   const users = segments.indexOf("users");
   if (users !== -1 && users === segments.length - 2) {
@@ -383,19 +434,9 @@ export function parseExplorerUrl(href: string): RadReference | undefined {
     return node ? { type: "did", node } : undefined;
   }
 
-  const index = segments.findIndex(segment => segment.startsWith("rad:"));
-  if (index === -1) return undefined;
-
-  const repo = segments[index].slice(4);
-  if (!isRepoId(repo)) return undefined;
-
-  let tail = segments.slice(index + 1);
-  let namespace: string | undefined;
-  if (tail[0] === "remotes") {
-    namespace = tail[1];
-    if (namespace === undefined || !isNodeId(namespace)) return undefined;
-    tail = tail.slice(2);
-  }
+  const page = explorerRepoPage(segments);
+  if (!page) return undefined;
+  const { repo, namespace, tail } = page;
 
   const [kind, ...rest] = tail;
   if (kind === undefined || (kind === "tree" && rest.length === 0)) {
@@ -403,28 +444,25 @@ export function parseExplorerUrl(href: string): RadReference | undefined {
   }
 
   if (kind === "tree") {
+    // A branch name may contain slashes, and a lone segment may be a branch
+    // or a file on the default branch, so only an oid can be read without
+    // asking the repo; see `parseExplorerTreeUrl`.
     const [revision, ...path] = rest;
-    if (isOid(revision)) {
-      return {
-        type: "uri",
-        uri: {
-          repo,
-          namespace,
-          resource: { type: "commit", ref: revision.toLowerCase() },
-          query:
-            path.length > 0
-              ? [{ param: "path", value: path.join("/") }]
-              : undefined,
-        },
-      };
-    }
-    // A branch name may contain slashes, so where it ends and the path begins
-    // is only known for a branch given on its own.
-    if (path.length > 0 || !gitRefPattern.test(revision)) return undefined;
-    return {
-      type: "uri",
-      uri: { repo, namespace, resource: { type: "commit", ref: revision } },
-    };
+    if (!isOid(revision)) return undefined;
+    return fileReference(
+      { repo, namespace },
+      revision.toLowerCase(),
+      path.join("/"),
+      parts.fragment,
+    );
+  }
+
+  const typeName = Object.keys(explorerCobPaths).find(
+    key => explorerCobPaths[key] === kind,
+  );
+  // A list's filters, such as `?status=open`, have no form in a URI.
+  if (typeName && rest.length === 0) {
+    return { type: "uri", uri: { repo, resource: { type: "cob", typeName } } };
   }
 
   // Patch pages go on to a revision and a tab, which a URI has no form for.
@@ -441,13 +479,102 @@ export function parseExplorerUrl(href: string): RadReference | undefined {
     };
   }
 
-  const typeName = Object.keys(explorerCobPaths).find(
-    key => explorerCobPaths[key] === kind,
-  );
   if (!typeName) return undefined;
 
   return {
     type: "uri",
     uri: { repo, resource: { type: "cob", typeName, oid } },
+  };
+}
+
+/**
+ * Recognise an explorer tree URL that starts with a branch rather than an oid,
+ * such as `…/rad:z…/tree/feature/x/src/lib.rs`. Where the branch ends depends
+ * on the repo's refs, so the path is returned whole for the caller to split.
+ */
+export function parseExplorerTreeUrl(
+  href: string,
+):
+  | { repo: string; namespace?: string; path: string; fragment?: string }
+  | undefined {
+  const parts = explorerUrlParts(href);
+  const page = parts && explorerRepoPage(parts.segments);
+  if (!page) return undefined;
+
+  const [kind, revision, ...path] = page.tail;
+  if (kind !== "tree" || revision === undefined || isOid(revision)) {
+    return undefined;
+  }
+
+  return {
+    repo: page.repo,
+    namespace: page.namespace,
+    path: [revision, ...path].join("/"),
+    fragment: parts.fragment,
+  };
+}
+
+/** The type name of a reference to a list of COBs, such as all issues. */
+export function cobListType(reference: RadReference): string | undefined {
+  if (reference.type !== "uri") return undefined;
+  const { resource } = reference.uri;
+
+  return resource?.type === "cob" && resource.oid === undefined
+    ? resource.typeName
+    : undefined;
+}
+
+/** Whether a reference names a file or directory within a revision. */
+export function isFileReference(reference: RadReference): boolean {
+  return (
+    reference.type === "uri" &&
+    (reference.uri.resource?.type === "commit" ||
+      reference.uri.resource?.type === "tag") &&
+    queryPath(reference.uri) !== undefined
+  );
+}
+
+/** The revision and decoded path of a file reference. */
+export function filePath(
+  reference: RadReference,
+): { revision: string; path: string } | undefined {
+  if (reference.type !== "uri" || !isFileReference(reference)) return undefined;
+  const { resource } = reference.uri;
+  const raw = queryPath(reference.uri);
+  if (!resource || !("ref" in resource) || raw === undefined) return undefined;
+
+  return { revision: resource.ref, path: decodeSegment(raw) };
+}
+
+/**
+ * A reference to `path` at `revision`, written as a `path` query, where an
+ * empty path is the root of the tree.
+ */
+export function fileReference(
+  location: { repo: string; namespace?: string },
+  revision: string,
+  path: string,
+  fragment?: string,
+): RadReference | undefined {
+  if (!gitRefPattern.test(revision)) return undefined;
+
+  return {
+    type: "uri",
+    uri: {
+      repo: location.repo,
+      namespace: location.namespace,
+      resource: { type: "commit", ref: revision },
+      query: [
+        {
+          param: "path",
+          value: path
+            .split("/")
+            .filter(segment => segment !== "")
+            .map(encodeURIComponent)
+            .join("/"),
+        },
+      ],
+      fragment,
+    },
   };
 }

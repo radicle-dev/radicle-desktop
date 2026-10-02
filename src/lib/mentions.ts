@@ -175,7 +175,14 @@ export function mentionUrl(
  * title. Characters that would end a markdown link label are escaped.
  */
 export function mentionMarkdown(target: MentionTarget, label: string): string {
+  return referenceMarkdown(toRadReference(target), label);
+}
+
+export function referenceMarkdown(
+  reference: RadReference,
+  label: string,
+): string {
   const escaped = label.replace(/[[\]\\]/g, character => `\\${character}`);
 
-  return `[${escaped}](${mentionHref(target)})`;
+  return `[${escaped}](${formatReference(reference)})`;
 }

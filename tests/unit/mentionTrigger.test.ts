@@ -79,3 +79,81 @@ describe("identifiers", () => {
     expect(trigger(oid.slice(0, 39))).toBeUndefined();
   });
 });
+
+describe("explorer file links", () => {
+  test("defers the branch and path split to the repo", () => {
+    const url = `https://radicle.network/nodes/seed/${rid}/tree/0004-general-uri-scheme/general-uri-scheme.adoc`;
+    expect(trigger(`see ${url}`)).toEqual({
+      kind: "tree",
+      start: 4,
+      end: 4 + url.length,
+      rid,
+      namespace: undefined,
+      path: "0004-general-uri-scheme/general-uri-scheme.adoc",
+    });
+  });
+});
+
+describe("rad: file links", () => {
+  test("offers a file URI as a file", () => {
+    const uri = `${rid}/commit/master?path=.github/README.md`;
+    expect(trigger(`see ${uri}`)).toMatchObject({
+      kind: "link",
+      start: 4,
+      end: 4 + uri.length,
+    });
+  });
+
+  test("ignores other URIs without a chip", () => {
+    expect(trigger(`${rid}/tag/v1.0`)).toBeUndefined();
+  });
+});
+
+describe("explorer links without a chip", () => {
+  const node = "https://radicle.network/nodes/seed";
+
+  test.each([
+    ["an issue list", `${node}/${rid}/issues`],
+    ["a path at an oid", `${node}/${rid}/tree/${oid}/src`],
+    ["a tree at an oid", `${node}/${rid}/tree/${oid}`],
+  ])("offers %s as a link", (_, url) => {
+    expect(trigger(url)).toMatchObject({ kind: "link", start: 0 });
+  });
+
+  test("leaves a lone branch for the repo to resolve", () => {
+    expect(trigger(`${node}/${rid}/tree/main`)).toMatchObject({
+      kind: "tree",
+      path: "main",
+    });
+  });
+});
+
+describe("releases and lines", () => {
+  const node = "https://radicle.network/nodes/seed";
+
+  test("offers a release as a link", () => {
+    expect(trigger(`${node}/${rid}/releases/${oid}`)).toMatchObject({
+      kind: "link",
+      reference: {
+        uri: {
+          resource: { type: "cob", typeName: "dev.radicle.artifact", oid },
+        },
+      },
+    });
+  });
+
+  test("keeps the line of a file on a branch", () => {
+    expect(trigger(`${node}/${rid}/tree/main/src/lib.rs#L10`)).toMatchObject({
+      kind: "tree",
+      path: "main/src/lib.rs",
+      fragment: "L10",
+    });
+  });
+
+  test("offers a rad: file URI with a line as a link", () => {
+    expect(trigger(`${rid}/commit/main?path=src/lib.rs#L10`)).toMatchObject({
+      kind: "link",
+      reference: { uri: { fragment: "L10" } },
+    });
+  });
+});

@@ -1,6 +1,15 @@
 import type { MentionTarget } from "@app/lib/mentions";
 import { parseBareIdentifier, parseMentionHref } from "@app/lib/mentions";
-import { isOid } from "@app/lib/radUri";
+import type { RadReference } from "@app/lib/radUri";
+import {
+  cobListType,
+  isFileReference,
+  isOid,
+  parseExplorerTreeUrl,
+  parseExplorerUrl,
+  parseReference,
+  releaseType,
+} from "@app/lib/radUri";
 
 /**
  * The kinds of entity a trigger character offers.
@@ -43,6 +52,30 @@ export type MentionTrigger =
        * issue, a patch or a commit.
        */
       oid: string;
+    }
+  | {
+      kind: "link";
+      start: number;
+      end: number;
+      /**
+       * A reference with no chip of its own that is still worth a labelled
+       * link, such as a file or the list of a repo's issues.
+       */
+      reference: RadReference;
+    }
+  | {
+      kind: "tree";
+      start: number;
+      end: number;
+      /**
+       * An explorer link to a file, whose branch can only be told apart from
+       * the path by asking the repo which refs it has.
+       */
+      rid: string;
+      namespace?: string;
+      path: string;
+      /** A line, as the explorer anchors it, e.g. `L10`. */
+      fragment?: string;
     };
 
 /**
@@ -193,12 +226,82 @@ function findIdentifierTrigger(
       best = { offset, target };
     }
   }
-  if (!best) return undefined;
+  if (!best) {
+    return (
+      findLinkTrigger(word, wordStart, caret) ??
+      findTreeTrigger(word, wordStart, caret)
+    );
+  }
 
   return {
     kind: "identifier",
     start: wordStart + best.offset,
     end: caret,
     target: best.target,
+  };
+}
+
+/**
+ * Whether a reference without a chip is still worth offering as a labelled
+ * link: a file, a list of COBs, or a release.
+ */
+function isLinkable(reference: RadReference): boolean {
+  if (isFileReference(reference) || cobListType(reference) !== undefined) {
+    return true;
+  }
+  const resource =
+    reference.type === "uri" ? reference.uri.resource : undefined;
+
+  return (
+    resource?.type === "cob" &&
+    resource.typeName === releaseType &&
+    resource.oid !== undefined
+  );
+}
+
+function findLinkTrigger(
+  word: string,
+  wordStart: number,
+  caret: number,
+): MentionTrigger | undefined {
+  // An explorer URL contains a `rad:` segment of its own, so the earliest
+  // match is the one that spans the whole link.
+  const candidates = identifierPrefixes
+    .filter(prefix => prefix !== "did:key:")
+    .map(prefix => ({ prefix, offset: word.indexOf(prefix) }))
+    .filter(({ offset }) => offset !== -1)
+    .sort((a, b) => a.offset - b.offset);
+
+  for (const { prefix, offset } of candidates) {
+    const text = word.slice(offset);
+    const reference =
+      prefix === "rad:" ? parseReference(text) : parseExplorerUrl(text);
+    if (reference && isLinkable(reference)) {
+      return { kind: "link", start: wordStart + offset, end: caret, reference };
+    }
+  }
+
+  return undefined;
+}
+
+function findTreeTrigger(
+  word: string,
+  wordStart: number,
+  caret: number,
+): MentionTrigger | undefined {
+  const offset = word.search(/https?:\/\//);
+  if (offset === -1) return undefined;
+
+  const tree = parseExplorerTreeUrl(word.slice(offset));
+  if (!tree) return undefined;
+
+  return {
+    kind: "tree",
+    start: wordStart + offset,
+    end: caret,
+    rid: `rad:${tree.repo}`,
+    namespace: tree.namespace,
+    path: tree.path,
+    fragment: tree.fragment,
   };
 }

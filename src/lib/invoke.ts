@@ -10,6 +10,7 @@ import type { Commit } from "@bindings/repo/Commit";
 import type { Job } from "@bindings/repo/Job";
 import type { RepoInfo } from "@bindings/repo/RepoInfo";
 import type { RepoSummary } from "@bindings/repo/RepoSummary";
+import type { TreePath } from "@bindings/repo/TreePath";
 
 import * as tauri from "@tauri-apps/api/core";
 
@@ -294,6 +295,24 @@ export const cachedRepoCommitsByPrefix = cached(
   repoCommitsByPrefix,
   (...[rid, prefix]) => `repo_commits_by_prefix:${rid}:${prefix}`,
   { max: 200, ttl: 60_000 },
+);
+
+async function repoSplitTreePath(
+  rid: string,
+  peer: string | undefined,
+  path: string,
+): Promise<TreePath> {
+  return withTestBackend(tauri.invoke, "repo_split_tree_path", {
+    rid,
+    peer,
+    path,
+  });
+}
+
+export const cachedRepoSplitTreePath = cached(
+  repoSplitTreePath,
+  (...[rid, peer, path]) => `repo_split_tree_path:${rid}:${peer}:${path}`,
+  { max: 50, ttl: 60_000 },
 );
 
 async function config(): Promise<Config> {
