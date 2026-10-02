@@ -1492,7 +1492,7 @@
                     <div class="section-title">
                       Attestations
                       <span class="section-count">{attestations.length}</span>
-                      {#if !attestations.some(a => a.did === ownDid)}
+                      {#if !artifact.redacted && !attestations.some(a => a.did === ownDid)}
                         <Popover placement="bottom-end" popoverPadding="0">
                           {#snippet toggle(onclick)}
                             <Button
