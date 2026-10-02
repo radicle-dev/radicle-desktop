@@ -1253,6 +1253,38 @@
                         ? "Stopping…"
                         : "Stop seeding"}
                     </Button>
+                  {:else if locationCount === 0 && !artifact.redacted}
+                    <Popover placement="bottom-end" popoverPadding="0">
+                      {#snippet toggle(onclick)}
+                        <Button
+                          variant="naked"
+                          styleHeight="1.5rem"
+                          disabled={reseeding === artifact.cid}
+                          title="Serve your own copy so others can download it"
+                          {onclick}>
+                          <Icon name="parcel" />
+                          {reseeding === artifact.cid ? "Seeding…" : "Seed"}
+                        </Button>
+                      {/snippet}
+                      {#snippet popover()}
+                        <div class="add-menu">
+                          <Button
+                            variant="naked"
+                            styleWidth="100%"
+                            styleJustifyContent="flex-start"
+                            onclick={() => reseed(artifact.cid, "file")}>
+                            <Icon name="attach" />Choose your copy…
+                          </Button>
+                          <Button
+                            variant="naked"
+                            styleWidth="100%"
+                            styleJustifyContent="flex-start"
+                            onclick={() => reseed(artifact.cid, "directory")}>
+                            <Icon name="folder" />Choose a directory…
+                          </Button>
+                        </div>
+                      {/snippet}
+                    </Popover>
                   {/if}
                   <ArtifactDownloadButton
                     {artifact}
@@ -1285,39 +1317,6 @@
                     <Icon name="checkmark" />
                     {trust}
                   </span>
-                {/if}
-                {#if !seededCids.has(artifact.cid) && locationCount === 0 && !artifact.redacted}
-                  <Popover placement="bottom-start" popoverPadding="0">
-                    {#snippet toggle(onclick)}
-                      <Button
-                        variant="naked"
-                        styleHeight="1.5rem"
-                        disabled={reseeding === artifact.cid}
-                        title="Serve your own copy so others can download it"
-                        {onclick}>
-                        <Icon name="parcel" />
-                        {reseeding === artifact.cid ? "Seeding…" : "Seed"}
-                      </Button>
-                    {/snippet}
-                    {#snippet popover()}
-                      <div class="add-menu">
-                        <Button
-                          variant="naked"
-                          styleWidth="100%"
-                          styleJustifyContent="flex-start"
-                          onclick={() => reseed(artifact.cid, "file")}>
-                          <Icon name="attach" />Choose your copy…
-                        </Button>
-                        <Button
-                          variant="naked"
-                          styleWidth="100%"
-                          styleJustifyContent="flex-start"
-                          onclick={() => reseed(artifact.cid, "directory")}>
-                          <Icon name="folder" />Choose a directory…
-                        </Button>
-                      </div>
-                    {/snippet}
-                  </Popover>
                 {/if}
                 {#if reseedError?.cid === artifact.cid}
                   <span class="unseed-error">{reseedError.message}</span>
