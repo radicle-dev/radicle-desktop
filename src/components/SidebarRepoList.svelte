@@ -909,38 +909,6 @@
     opacity: 1;
     transform: rotate(0);
   }
-
-  .menu-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    width: 100%;
-    min-height: 2rem;
-    padding: 0 0.75rem;
-    background: transparent;
-    border: 0;
-    border-radius: var(--border-radius-sm);
-    color: var(--color-text-primary);
-    font: var(--txt-body-m-regular);
-    text-align: left;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-  .menu-item :global(svg) {
-    color: var(--color-text-tertiary);
-    flex-shrink: 0;
-  }
-  .menu-item:hover {
-    background-color: var(--color-surface-subtle);
-  }
-  .menu-item:hover :global(svg) {
-    color: var(--color-text-primary);
-  }
-  .menu-separator {
-    height: 1px;
-    margin: 0.25rem 0;
-    background-color: var(--color-border-subtle);
-  }
 </style>
 
 {#if seededNotReplicated.length > 0 && !sidebarCollapsed.value}

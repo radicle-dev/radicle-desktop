@@ -12,7 +12,7 @@
     cachedRepoCommit,
   } from "@app/lib/invoke";
   import type { MentionTarget } from "@app/lib/mentions";
-  import { mentionUrl } from "@app/lib/mentions";
+  import { mentionHref, mentionUrl } from "@app/lib/mentions";
   import type { Route } from "@app/lib/router";
   import { push, routeToPath } from "@app/lib/router";
   import {
@@ -21,6 +21,7 @@
     patchStatusColor,
   } from "@app/lib/utils";
 
+  import ExplorerMenu from "@app/components/ExplorerMenu.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
@@ -186,6 +187,29 @@
   // one.
   const href = $derived(missing ? explorerHref : route && routeToPath(route));
 
+  // A left click opens the target in-app when it is here, so the explorer is
+  // offered on right click instead.
+  let menu: { x: number; y: number; target: HTMLElement } | undefined =
+    $state(undefined);
+
+  // WebKit selects the word under a right click, which would highlight the
+  // chip's label behind the menu.
+  function keepSelection(event: MouseEvent) {
+    if (event.button === 2) event.preventDefault();
+  }
+
+  function openMenu(event: MouseEvent) {
+    if (!explorerHref) return;
+    event.preventDefault();
+    event.stopPropagation();
+    window.getSelection()?.removeAllRanges();
+    menu = {
+      x: event.clientX,
+      y: event.clientY,
+      target: event.currentTarget as HTMLElement,
+    };
+  }
+
   function handleClick(event: MouseEvent) {
     // Nothing to open in-app, so let the webview follow the link out to the
     // explorer rather than swallowing the click and appearing to do nothing.
@@ -341,6 +365,8 @@
     target={missing ? "_blank" : undefined}
     rel={missing ? "noreferrer" : undefined}
     onclick={handleClick}
+    onmousedown={keepSelection}
+    oncontextmenu={openMenu}
     title={missing ? `${target.rid} — not replicated locally` : target.rid}>
     <span class="mention-status">
       {#if resolvedRepoName}
@@ -361,6 +387,8 @@
     target={missing ? "_blank" : undefined}
     rel={missing ? "noreferrer" : undefined}
     onclick={handleClick}
+    onmousedown={keepSelection}
+    oncontextmenu={openMenu}
     title={missing
       ? `${target.oid} — not replicated locally`
       : (commitSummary ?? target.oid)}>
@@ -381,6 +409,8 @@
     target={missing ? "_blank" : undefined}
     rel={missing ? "noreferrer" : undefined}
     onclick={handleClick}
+    onmousedown={keepSelection}
+    oncontextmenu={openMenu}
     title={missing
       ? `${fallback} · ${target.oid} — not replicated locally`
       : `${issue?.title ?? fallback} · ${target.oid}`}>
@@ -398,6 +428,8 @@
     target={missing ? "_blank" : undefined}
     rel={missing ? "noreferrer" : undefined}
     onclick={handleClick}
+    onmousedown={keepSelection}
+    oncontextmenu={openMenu}
     title={missing
       ? `${fallback} · ${target.oid} — not replicated locally`
       : `${patch?.title ?? fallback} · ${target.oid}`}>
@@ -408,4 +440,15 @@
     </span>
     <span class="mention-label">{patch?.title ?? fallback}</span>
   </a>
+{/if}
+
+{#if menu && explorerHref && config}
+  <ExplorerMenu
+    x={menu.x}
+    y={menu.y}
+    target={menu.target}
+    url={explorerHref}
+    uri={mentionHref(target)}
+    {config}
+    onclose={() => (menu = undefined)} />
 {/if}
