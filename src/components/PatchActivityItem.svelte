@@ -70,9 +70,12 @@
     // Deep-link to the Changes tab with this revision pre-selected. The
     // revision id goes in the path (`/patches/<patch>/<revision>`), which is
     // the form the explorer resolves; `?revision=` does not navigate there.
-    await writeToClipboard(
-      `${mentionUrl({ type: "cob", kind: "patch", rid, oid: patchId }, config)}/${op.id}?tab=changes`,
+    const url = mentionUrl(
+      { type: "cob", kind: "patch", rid, oid: patchId },
+      config,
     );
+    if (!url) return;
+    await writeToClipboard(`${url}/${op.id}?tab=changes`);
     copyLinkIcon = "checkmark";
     setTimeout(() => (copyLinkIcon = "link"), 1000);
   }

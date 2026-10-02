@@ -106,13 +106,13 @@ const radicleReferenceMarkedExtension: TokenizerExtension & RendererExtension =
     name: "radicleReference",
     level: "inline",
     start: (src: string) => bareReferenceStart(src),
-    tokenizer(src: string, tokens: Tokens.Generic[]) {
+    tokenizer(src: string) {
       // Inside a link's label an extra anchor would nest, which browsers undo by
       // splitting the surrounding link apart. `marked` guards its own autolinks
       // with the same flag.
       if (this.lexer.state.inLink) return;
 
-      const match = matchBareReference(src, tokens.at(-1)?.raw.slice(-1));
+      const match = matchBareReference(src);
       if (!match) return;
 
       return {

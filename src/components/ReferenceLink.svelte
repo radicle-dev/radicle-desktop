@@ -7,7 +7,11 @@
   import { push, routeToPath } from "@app/lib/router";
   import { explorerLink } from "@app/lib/utils";
 
-  import ExplorerMenu from "@app/components/ExplorerMenu.svelte";
+  import ExplorerMenu, {
+    keepSelection,
+    type MenuPosition,
+    menuPosition,
+  } from "@app/components/ExplorerMenu.svelte";
   import Icon from "@app/components/Icon.svelte";
 
   interface Props {
@@ -67,25 +71,10 @@
     void push(route);
   }
 
-  let menu: { x: number; y: number; target: HTMLElement } | undefined =
-    $state(undefined);
-
-  // WebKit selects the word under a right click, which would highlight the
-  // label behind the menu.
-  function keepSelection(event: MouseEvent) {
-    if (event.button === 2) event.preventDefault();
-  }
+  let menu: MenuPosition | undefined = $state(undefined);
 
   function openMenu(event: MouseEvent) {
-    if (!url) return;
-    event.preventDefault();
-    event.stopPropagation();
-    window.getSelection()?.removeAllRanges();
-    menu = {
-      x: event.clientX,
-      y: event.clientY,
-      target: event.currentTarget as HTMLElement,
-    };
+    if (url) menu = menuPosition(event);
   }
 </script>
 

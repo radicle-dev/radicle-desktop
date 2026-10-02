@@ -292,12 +292,27 @@ function queryPath(uri: RadUri): string | undefined {
  * short name, or an oid. Other refs, such as notes, have no page.
  */
 function explorerRevision(ref: string): string | undefined {
+  if (hasDotSegment(ref)) return undefined;
   if (!ref.startsWith("refs/")) return ref;
   for (const prefix of ["refs/heads/", "refs/tags/"]) {
     if (ref.startsWith(prefix)) return ref.slice(prefix.length);
   }
 
   return undefined;
+}
+
+// A `.` or `..` segment would walk the explorer URL to a page the reference
+// does not name, so such a path or ref has no explorer page.
+function hasDotSegment(path: string): boolean {
+  return path.split("/").some(segment => segment === "." || segment === "..");
+}
+
+/** A path as explorer URL segments, each encoded on its own. */
+function explorerFilePath(path: string): string | undefined {
+  const segments = path.split("/").map(decodeSegment);
+  if (hasDotSegment(segments.join("/"))) return undefined;
+
+  return segments.map(encodeURIComponent).join("/");
 }
 
 function explorerResourcePath(uri: RadUri): string | undefined {
@@ -310,8 +325,10 @@ function explorerResourcePath(uri: RadUri): string | undefined {
     case "tag": {
       const revision = explorerRevision(resource.ref);
       if (revision === undefined) return undefined;
-      const path = queryPath(uri);
-      if (path !== undefined) {
+      const raw = queryPath(uri);
+      if (raw !== undefined) {
+        const path = explorerFilePath(raw);
+        if (path === undefined) return undefined;
         return `${remote}/tree/${revision}${path ? `/${path}` : ""}`;
       }
       if (resource.type === "commit" && isOid(revision)) {

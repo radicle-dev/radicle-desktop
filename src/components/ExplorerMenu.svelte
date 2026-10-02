@@ -1,3 +1,29 @@
+<script module lang="ts">
+  export interface MenuPosition {
+    x: number;
+    y: number;
+    target: HTMLElement;
+  }
+
+  // WebKit selects the word under a right click, which would highlight the
+  // label behind the menu.
+  export function keepSelection(event: MouseEvent) {
+    if (event.button === 2) event.preventDefault();
+  }
+
+  export function menuPosition(event: MouseEvent): MenuPosition {
+    event.preventDefault();
+    event.stopPropagation();
+    window.getSelection()?.removeAllRanges();
+
+    return {
+      x: event.clientX,
+      y: event.clientY,
+      target: event.currentTarget as HTMLElement,
+    };
+  }
+</script>
+
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
 

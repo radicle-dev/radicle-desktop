@@ -114,6 +114,9 @@ export function parseBareIdentifier(token: string): MentionTarget | undefined {
   return undefined;
 }
 
+/** Longest bare reference linked in prose, generous for a file path. */
+const maximumReferenceLength = 512;
+
 const bareReferencePattern =
   /^(?:did:key:|rad:)[A-Za-z0-9._~!$&'()*+,;=:@/?#%-]+/;
 
@@ -135,19 +138,17 @@ export function bareReferenceStart(src: string): number | undefined {
 }
 
 /**
- * Match a bare `rad:` URI or DID at the start of `src`, unless `previous`, the
- * character before it, makes it the tail of a word. Characters that cannot end
- * an identifier are left to the surrounding prose, so a reference at the end
- * of a sentence keeps its full stop outside the link.
+ * Match a bare `rad:` URI or DID at the start of `src`. Characters that cannot
+ * end an identifier are left to the surrounding prose, so a reference at the
+ * end of a sentence keeps its full stop outside the link.
  */
 export function matchBareReference(
   src: string,
-  previous?: string,
 ): { raw: string; reference: RadReference } | undefined {
-  if (previous && isAlphanumeric(previous)) return undefined;
-
   const raw = bareReferencePattern.exec(src)?.[0];
-  if (!raw) return undefined;
+  // Each retry below parses again, so an unbounded run of punctuation in a
+  // comment would take quadratic time to render.
+  if (!raw || raw.length > maximumReferenceLength) return undefined;
 
   let end = raw.length;
   for (;;) {
@@ -162,10 +163,7 @@ export function matchBareReference(
   }
 }
 
-/**
- * The in-app page for a reference that has no chip, such as a file, a branch
- * or a list of issues, or `undefined` when the app has no page for it.
- */
+/** The in-app page for a reference, or `undefined` when the app has none. */
 export function referenceRoute(reference: RadReference): RepoRoute | undefined {
   if (reference.type !== "uri") return undefined;
   const { repo, namespace, resource } = reference.uri;
@@ -183,6 +181,28 @@ export function referenceRoute(reference: RadReference): RepoRoute | undefined {
   }
 
   if (!resource) return { resource: "repo.home", rid, peer: namespace };
+  if (resource.type === "commit" && isOid(resource.ref)) {
+    return { resource: "repo.commit", rid, commit: resource.ref };
+  }
+  if (resource.type === "cob" && resource.oid !== undefined) {
+    if (resource.typeName === issueType) {
+      return {
+        resource: "repo.issue",
+        rid,
+        issue: resource.oid,
+        status: "all",
+      };
+    }
+    if (resource.typeName === patchType) {
+      return {
+        resource: "repo.patch",
+        rid,
+        patch: resource.oid,
+        status: undefined,
+        reviewId: undefined,
+      };
+    }
+  }
   if (resource.type === "commit" || resource.type === "tag") {
     return {
       resource: "repo.home",

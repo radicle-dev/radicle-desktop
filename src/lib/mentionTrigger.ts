@@ -218,84 +218,50 @@ function findIdentifierTrigger(
   if (word === "") return undefined;
 
   // An identifier can be preceded by punctuation with no space, as in
-  // "(did:key:z…", so try each prefix and prefer the earliest that parses.
-  let best: { offset: number; target: MentionTarget } | undefined;
-  for (const prefix of identifierPrefixes) {
-    const offset = word.indexOf(prefix);
-    if (offset === -1) continue;
-
-    const target = parseMentionHref(word.slice(offset));
-    if (!target) continue;
-    if (best === undefined || offset < best.offset) {
-      best = { offset, target };
-    }
-  }
-  if (!best) {
-    return (
-      findLinkTrigger(word, wordStart, caret) ??
-      findTreeTrigger(word, wordStart, caret)
-    );
-  }
-
-  return {
-    kind: "identifier",
-    start: wordStart + best.offset,
-    end: caret,
-    target: best.target,
-  };
-}
-
-/**
- * Whether a reference without a chip is still worth offering as a labelled
- * link: a file, a list of COBs, or a release.
- */
-function isLinkable(reference: RadReference): boolean {
-  return describeLink(reference, "") !== undefined;
-}
-
-function findLinkTrigger(
-  word: string,
-  wordStart: number,
-  caret: number,
-): MentionTrigger | undefined {
-  // An explorer URL contains a `rad:` segment of its own, so the earliest
-  // match is the one that spans the whole link.
+  // "(did:key:z…", and an explorer URL contains a `rad:` segment of its own,
+  // so the earliest prefix is tried first: it spans the whole identifier.
   const candidates = identifierPrefixes
-    .filter(prefix => prefix !== "did:key:")
     .map(prefix => ({ prefix, offset: word.indexOf(prefix) }))
     .filter(({ offset }) => offset !== -1)
     .sort((a, b) => a.offset - b.offset);
 
   for (const { prefix, offset } of candidates) {
-    const text = word.slice(offset);
-    const reference =
-      prefix === "rad:" ? parseReference(text) : parseExplorerUrl(text);
-    if (reference && isLinkable(reference)) {
-      return { kind: "link", start: wordStart + offset, end: caret, reference };
-    }
+    const trigger = triggerFor(prefix, word.slice(offset));
+    if (trigger) return { ...trigger, start: wordStart + offset, end: caret };
   }
 
   return undefined;
 }
 
-function findTreeTrigger(
-  word: string,
-  wordStart: number,
-  caret: number,
-): MentionTrigger | undefined {
-  const offset = word.search(/https?:\/\//);
-  if (offset === -1) return undefined;
+type Found = DistributiveOmit<MentionTrigger, "start" | "end">;
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+  ? Omit<T, K>
+  : never;
 
-  const tree = parseExplorerTreeUrl(word.slice(offset));
-  if (!tree) return undefined;
+/**
+ * What `text`, starting with `prefix`, is offered as: a chip, a labelled link
+ * for a reference without one, or an explorer tree URL whose branch the repo
+ * has to resolve.
+ */
+function triggerFor(prefix: string, text: string): Found | undefined {
+  const target = parseMentionHref(text);
+  if (target) return { kind: "identifier", target };
 
-  return {
-    kind: "tree",
-    start: wordStart + offset,
-    end: caret,
-    rid: `rad:${tree.repo}`,
-    namespace: tree.namespace,
-    path: tree.path,
-    fragment: tree.fragment,
-  };
+  const reference =
+    prefix === "rad:" ? parseReference(text) : parseExplorerUrl(text);
+  if (reference && describeLink(reference, "") !== undefined) {
+    return { kind: "link", reference };
+  }
+  if (prefix === "rad:") return undefined;
+
+  const tree = parseExplorerTreeUrl(text);
+  return (
+    tree && {
+      kind: "tree",
+      rid: `rad:${tree.repo}`,
+      namespace: tree.namespace,
+      path: tree.path,
+      fragment: tree.fragment,
+    }
+  );
 }

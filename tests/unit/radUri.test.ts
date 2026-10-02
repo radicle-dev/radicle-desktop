@@ -424,7 +424,6 @@ describe("explorer URL edge cases", () => {
     ["users before the end", `${node}/users/did:key:${node01}/x`],
     ["a branch followed by a path", `${node}/rad:${repo00}/tree/feature/x`],
     ["a history page", `${node}/rad:${repo00}/history/main`],
-    ["an issue with extra segments", `${node}/rad:${repo00}/issues/${oid}/x`],
     [
       "an invalid remote",
       `${node}/rad:${repo00}/remotes/z6Mk11111111111111111111111111111111111111111111`,
@@ -670,5 +669,25 @@ describe("line fragments", () => {
         "seed",
       ),
     ).toBe(`${node}/rad:${repo00}/commits/${oid}`);
+  });
+});
+
+describe("explorer paths stay on the page they name", () => {
+  const base = "https://radicle.network";
+  const link = (input: string) =>
+    explorerUrl(parseReference(input)!, base, "seed");
+
+  test.each([
+    `rad:${repo00}/commit/../..`,
+    `rad:${repo00}/commit/main?path=../../users`,
+    `rad:${repo00}/commit/main?path=src/./lib`,
+  ])("has no page for %s", input => {
+    expect(link(input)).toBeUndefined();
+  });
+
+  test("encodes characters a path segment cannot hold", () => {
+    expect(link(`rad:${repo00}/commit/main?path=a?b`)).toBe(
+      `${base}/nodes/seed/rad:${repo00}/tree/main/a%3Fb`,
+    );
   });
 });

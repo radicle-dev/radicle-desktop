@@ -65,7 +65,7 @@
   $effect(() => {
     // A link can open a file directly; otherwise the README is shown.
     if (path) {
-      void fetchBlob(path);
+      void openPath(path);
     } else {
       blob = readme;
       currentPath = readme?.path || "";
@@ -96,6 +96,21 @@
       currentPath = path;
     }
     return;
+  }
+
+  // A directory has no blob, so it shows the README with the directory
+  // expanded in the tree instead of an error.
+  async function openPath(path: string) {
+    await fetchBlob(path);
+    if (!error) return;
+    const directory = await fetchTree(path).then(
+      () => true,
+      () => false,
+    );
+    if (directory) {
+      blob = readme;
+      error = undefined;
+    }
   }
 
   $effect(() => {

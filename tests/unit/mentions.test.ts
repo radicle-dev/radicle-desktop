@@ -94,13 +94,14 @@ describe("matchBareReference", () => {
     expect(matchBareReference(src)?.raw).toBe(raw);
   });
 
-  test("leaves an invalid reference as prose", () => {
-    expect(matchBareReference(`${rid}/bogus here`)).toBeUndefined();
+  test("gives up on a run too long to be a reference", () => {
+    const start = performance.now();
+    expect(matchBareReference(`rad:z${"'a".repeat(50_000)}`)).toBeUndefined();
+    expect(performance.now() - start).toBeLessThan(50);
   });
 
-  test("skips the tail of a word", () => {
-    expect(matchBareReference(rid, "n")).toBeUndefined();
-    expect(matchBareReference(rid, "(")?.raw).toBe(rid);
+  test("leaves an invalid reference as prose", () => {
+    expect(matchBareReference(`${rid}/bogus here`)).toBeUndefined();
   });
 });
 
@@ -210,6 +211,21 @@ describe("referenceRoute", () => {
       { resource: "repo.home", rid, peer: nid, revision: "main", path: "src" },
     ],
     [`${rid}/tag/v1.0`, { resource: "repo.home", rid, revision: "v1.0" }],
+    [`${rid}/commit/${oid}`, { resource: "repo.commit", rid, commit: oid }],
+    [
+      `${rid}/cob/xyz.radicle.issue/${oid}`,
+      { resource: "repo.issue", rid, issue: oid, status: "all" },
+    ],
+    [
+      `${rid}/cob/xyz.radicle.patch/${oid}`,
+      {
+        resource: "repo.patch",
+        rid,
+        patch: oid,
+        status: undefined,
+        reviewId: undefined,
+      },
+    ],
     [`${rid}/${nid}`, { resource: "repo.home", rid, peer: nid }],
     [
       `${rid}/cob/xyz.radicle.issue`,
@@ -271,6 +287,7 @@ describe("describeLink", () => {
     `${rid}/commit/${oid}`,
     `${rid}/cob/xyz.radicle.issue/${oid}`,
     `${rid}/tree/${oid}`,
+    `${rid}/${nid}/cob/xyz.radicle.issue/${oid}`,
     `did:key:${nid}`,
   ])("is not a link for %s", href => {
     expect(describeLink(parseReference(href)!, "heartwood")).toBeUndefined();

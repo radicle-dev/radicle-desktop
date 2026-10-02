@@ -12,7 +12,12 @@
     cachedRepoCommit,
   } from "@app/lib/invoke";
   import type { MentionTarget } from "@app/lib/mentions";
-  import { mentionHref, mentionUrl } from "@app/lib/mentions";
+  import {
+    mentionHref,
+    mentionUrl,
+    referenceRoute,
+    toRadReference,
+  } from "@app/lib/mentions";
   import type { Route } from "@app/lib/router";
   import { push, routeToPath } from "@app/lib/router";
   import {
@@ -21,7 +26,11 @@
     patchStatusColor,
   } from "@app/lib/utils";
 
-  import ExplorerMenu from "@app/components/ExplorerMenu.svelte";
+  import ExplorerMenu, {
+    keepSelection,
+    type MenuPosition,
+    menuPosition,
+  } from "@app/components/ExplorerMenu.svelte";
   import Icon from "@app/components/Icon.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import RepoAvatar from "@app/components/RepoAvatar.svelte";
@@ -153,33 +162,10 @@
     merged: "patch-merged",
   };
 
-  const route: Route | undefined = $derived.by(() => {
-    // A person is rendered by `NodeId`, which brings its own hover card and
-    // does not use any of this.
-    if (target.type === "node") return undefined;
-    if (target.type === "repo") {
-      return { resource: "repo.home", rid: target.rid };
-    }
-    if (target.type === "commit") {
-      return { resource: "repo.commit", rid: target.rid, commit: target.oid };
-    }
-    if (target.kind === "issue") {
-      return {
-        resource: "repo.issue",
-        rid: target.rid,
-        issue: target.oid,
-        status: "all",
-      };
-    }
-
-    return {
-      resource: "repo.patch",
-      rid: target.rid,
-      patch: target.oid,
-      status: undefined,
-      reviewId: undefined,
-    };
-  });
+  // A person is rendered by `NodeId`, which brings its own hover card.
+  const route: Route | undefined = $derived(
+    target.type === "node" ? undefined : referenceRoute(toRadReference(target)),
+  );
 
   // An in-app path while the target is here, the explorer only once a lookup
   // has come back empty. The webview opens an external href itself, ahead of
@@ -187,27 +173,10 @@
   // one.
   const href = $derived(missing ? explorerHref : route && routeToPath(route));
 
-  // A left click opens the target in-app when it is here, so the explorer is
-  // offered on right click instead.
-  let menu: { x: number; y: number; target: HTMLElement } | undefined =
-    $state(undefined);
-
-  // WebKit selects the word under a right click, which would highlight the
-  // chip's label behind the menu.
-  function keepSelection(event: MouseEvent) {
-    if (event.button === 2) event.preventDefault();
-  }
+  let menu: MenuPosition | undefined = $state(undefined);
 
   function openMenu(event: MouseEvent) {
-    if (!explorerHref) return;
-    event.preventDefault();
-    event.stopPropagation();
-    window.getSelection()?.removeAllRanges();
-    menu = {
-      x: event.clientX,
-      y: event.clientY,
-      target: event.currentTarget as HTMLElement,
-    };
+    if (explorerHref) menu = menuPosition(event);
   }
 
   function handleClick(event: MouseEvent) {
@@ -363,7 +332,7 @@
     class="mention"
     {href}
     target={missing ? "_blank" : undefined}
-    rel={missing ? "noreferrer" : undefined}
+    rel={missing ? "noopener noreferrer" : undefined}
     onclick={handleClick}
     onmousedown={keepSelection}
     oncontextmenu={openMenu}
@@ -385,7 +354,7 @@
     class="mention"
     {href}
     target={missing ? "_blank" : undefined}
-    rel={missing ? "noreferrer" : undefined}
+    rel={missing ? "noopener noreferrer" : undefined}
     onclick={handleClick}
     onmousedown={keepSelection}
     oncontextmenu={openMenu}
@@ -407,7 +376,7 @@
     class="mention"
     {href}
     target={missing ? "_blank" : undefined}
-    rel={missing ? "noreferrer" : undefined}
+    rel={missing ? "noopener noreferrer" : undefined}
     onclick={handleClick}
     onmousedown={keepSelection}
     oncontextmenu={openMenu}
@@ -426,7 +395,7 @@
     class="mention"
     {href}
     target={missing ? "_blank" : undefined}
-    rel={missing ? "noreferrer" : undefined}
+    rel={missing ? "noopener noreferrer" : undefined}
     onclick={handleClick}
     onmousedown={keepSelection}
     oncontextmenu={openMenu}
