@@ -767,6 +767,7 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-tertiary);
     white-space: nowrap;
+    flex-shrink: 0;
   }
   /* Repeating the words "More info" down the whole list reads as noise, and
      hiding the control until hover leaves no sign it exists. A chevron that
@@ -824,6 +825,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+    font: var(--txt-body-m-regular);
     color: var(--color-text-tertiary);
     white-space: nowrap;
   }
@@ -1230,9 +1232,27 @@
                     </span>
                   </span>
                 </button>
+                {#if size}
+                  <span class="size">{size}</span>
+                {/if}
                 <div class="artifact-actions">
-                  {#if size}
-                    <span class="size">{size}</span>
+                  {#if seededCids.has(artifact.cid)}
+                    <span
+                      class="seeding"
+                      title="Your node is seeding this artifact">
+                      <Icon name="parcel" />
+                      Seeding
+                    </span>
+                    <Button
+                      variant="naked"
+                      styleHeight="1.5rem"
+                      disabled={unseeding.has(artifact.cid)}
+                      title="Stop serving this artifact from your node"
+                      onclick={() => stopSeeding(artifact.cid)}>
+                      {unseeding.has(artifact.cid)
+                        ? "Stopping…"
+                        : "Stop seeding"}
+                    </Button>
                   {/if}
                   <ArtifactDownloadButton
                     {artifact}
@@ -1266,22 +1286,7 @@
                     {trust}
                   </span>
                 {/if}
-                {#if seededCids.has(artifact.cid)}
-                  <span
-                    class="seeding"
-                    title="Your node is seeding this artifact">
-                    <Icon name="parcel" />
-                    Seeding
-                  </span>
-                  <Button
-                    variant="naked"
-                    styleHeight="1.5rem"
-                    disabled={unseeding.has(artifact.cid)}
-                    title="Stop serving this artifact from your node"
-                    onclick={() => stopSeeding(artifact.cid)}>
-                    {unseeding.has(artifact.cid) ? "Stopping…" : "Stop seeding"}
-                  </Button>
-                {:else if locationCount === 0 && !artifact.redacted}
+                {#if !seededCids.has(artifact.cid) && locationCount === 0 && !artifact.redacted}
                   <Popover placement="bottom-start" popoverPadding="0">
                     {#snippet toggle(onclick)}
                       <Button
