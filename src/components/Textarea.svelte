@@ -17,9 +17,14 @@
   interface Props {
     draggingOver?: boolean;
     borderVariant?: "float" | "ghost";
+    // Exposed so a parent can measure the caret, e.g. to position a dropdown.
+    element?: HTMLTextAreaElement;
     onpaste?: ClipboardEventHandler<HTMLTextAreaElement>;
     focus?: boolean;
     oninput?: FormEventHandler<HTMLTextAreaElement>;
+    // Gets first refusal on every key. Returning true consumes the event, so
+    // an open dropdown can take over the arrow keys, Enter and Tab.
+    interceptKeydown?: (event: KeyboardEvent) => boolean;
     onkeypress?: FormEventHandler<HTMLTextAreaElement>;
     placeholder?: string;
     selectionEnd?: number;
@@ -36,9 +41,11 @@
   let {
     draggingOver,
     borderVariant = "float",
+    element = $bindable(undefined),
     focus = false,
     onpaste,
     oninput,
+    interceptKeydown,
     onkeypress,
     placeholder = undefined,
     // Defaulting selectionStart and selectionEnd to 0, since no full support yet.
@@ -58,19 +65,12 @@
     float: "var(--color-border-subtle)",
   };
 
-  let textareaElement: HTMLTextAreaElement | undefined = $state(undefined);
   let focussed = $state(false);
 
   onMount(() => {
-    if (textareaElement) {
-      // The selectionchange event listener doesn't modify the selection on Enter.
-      textareaElement.addEventListener("keydown", (event: KeyboardEvent) => {
-        if (event.key === "Enter") {
-          selectionStart += 1;
-          selectionEnd += 1;
-        }
-      });
-      textareaElement.addEventListener("selectionchange", (event: Event) => {
+    if (element) {
+      element.addEventListener("keydown", handleKeydown);
+      element.addEventListener("selectionchange", (event: Event) => {
         if (
           event.target &&
           "selectionStart" in event.target &&
@@ -87,30 +87,30 @@
   // options are mutually exclusive because a user resized textarea would
   // automatically shrink upon text input otherwise.
   $effect(() => {
-    if (textareaElement && size === "grow") {
+    if (element && size === "grow") {
       // React to changes to the textarea content.
       // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       value;
 
       // Reset height to 0px on every value change so that the textarea
       // immediately shrinks when all text is deleted.
-      textareaElement.style.height = `0px`;
-      textareaElement.style.height = `${textareaElement.scrollHeight}px`;
+      element.style.height = `0px`;
+      element.style.height = `${element.scrollHeight}px`;
     }
   });
 
   $effect(() => {
-    if (textareaElement && focus) {
-      textareaElement.focus();
+    if (element && focus) {
+      element.focus();
       focus = false;
     }
   });
 
   $effect(() => {
     void tick().then(() => {
-      if (textareaElement && focus) {
-        textareaElement.setSelectionRange(selectionStart, selectionEnd);
-        textareaElement.focus();
+      if (element && focus) {
+        element.setSelectionRange(selectionStart, selectionEnd);
+        element.focus();
       }
     });
   });
@@ -158,23 +158,36 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
+    // A consumer that handles the key owns it entirely: it must neither reach
+    // the submit shortcut below nor move the caret.
+    if (interceptKeydown?.(event)) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (matchesShortcut(event, "submit")) {
       void submit();
     }
     if (event.key === "Escape") {
-      textareaElement?.blur();
+      element?.blur();
+    }
+    // The selectionchange event doesn't fire for the newline Enter inserts.
+    if (event.key === "Enter") {
+      selectionStart += 1;
+      selectionEnd += 1;
     }
 
     const format = formats.find(f => matchesShortcut(event, f));
-    if (format && textareaElement) {
+    if (format && element) {
       event.preventDefault();
       applyEdit(
-        textareaElement,
+        element,
         applyMarkdownFormat(
           format,
-          textareaElement.value,
-          textareaElement.selectionStart,
-          textareaElement.selectionEnd,
+          element.value,
+          element.selectionStart,
+          element.selectionEnd,
         ),
       );
     }
@@ -251,7 +264,7 @@
     style:min-height={styleMinHeight}
     style:padding={stylePadding}
     tabindex="0"
-    bind:this={textareaElement}
+    bind:this={element}
     bind:value
     aria-label="textarea-comment"
     class="txt-body-m-regular"
@@ -264,8 +277,7 @@
     {oninput}
     {onkeypress}
     onfocus={() => (focussed = true)}
-    onblur={() => (focussed = false)}
-    onkeydown={handleKeydown}>
+    onblur={() => (focussed = false)}>
   </textarea>
   {#if draggingOver}
     <div class="txt-body-m-regular dragover">

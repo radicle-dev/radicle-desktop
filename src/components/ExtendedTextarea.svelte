@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { MentionInsertion } from "@app/components/MentionAutocomplete.svelte";
   import type { Embed } from "@bindings/cob/thread/Embed";
   import type { UnlistenFn } from "@tauri-apps/api/event";
   import type { ComponentProps, Snippet } from "svelte";
@@ -18,6 +19,7 @@
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Markdown from "@app/components/Markdown.svelte";
+  import MentionAutocomplete from "@app/components/MentionAutocomplete.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
   import Textarea from "@app/components/Textarea.svelte";
 
@@ -116,6 +118,9 @@
 
   let selectionStart = $state(body.length);
   let selectionEnd = $state(body.length);
+  let textareaElement: HTMLTextAreaElement | undefined = $state(undefined);
+  let interceptMentionKeydown: ((event: KeyboardEvent) => boolean) | undefined =
+    $state(undefined);
   let draggingOver = $state(false);
   let embedUploadError: string | undefined = $state();
   let dragEnterUnlistenFn: UnlistenFn | undefined = undefined;
@@ -162,6 +167,17 @@
 
   function saveByPath(path: string) {
     return invoke<string>("save_embed_by_path", { rid, path });
+  }
+
+  // Replace the `@`/`#` query the caret sits in with the chosen reference, and
+  // leave the caret after it so typing continues naturally.
+  function insertMention(insertion: MentionInsertion) {
+    const before = body.substring(0, insertion.start);
+    const after = body.substring(insertion.end);
+    body = before + insertion.markdown + after;
+    selectionStart = before.length + insertion.markdown.length;
+    selectionEnd = selectionStart;
+    textareaElement?.setSelectionRange(selectionStart, selectionEnd);
   }
 
   onMount(async () => {
@@ -421,13 +437,22 @@
         {borderVariant}
         {stylePadding}
         {styleMinHeight}
+        bind:element={textareaElement}
         bind:selectionEnd
         bind:selectionStart
         onpaste={handlePaste}
+        interceptKeydown={event => interceptMentionKeydown?.(event) ?? false}
         {focus}
         submit={async () => triggerSubmit()}
         bind:value={body}
         {placeholder} />
+      <MentionAutocomplete
+        {rid}
+        textarea={textareaElement}
+        value={body}
+        caret={selectionStart}
+        onselect={insertMention}
+        registerKeydown={handler => (interceptMentionKeydown = handler)} />
       {#if !hints.isDismissed("markdown")}
         <div class="markdown-hint txt-body-s-regular">
           <Icon
