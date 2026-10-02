@@ -389,10 +389,25 @@ export function explorerHost(config: Config): string {
 // type: "<base>/nodes/$host/$rid$path". `path` is everything after the seed
 // host, e.g. `<rid>/issues/<id>` or `users/<did>`.
 export function explorerUrl(path: string, config: Config): string {
-  const seed = preferredSeedHost(config) ?? DEFAULT_SEED;
   return config.publicExplorer
-    .replace("$host", seed)
+    .replace("$host", explorerSeed(config))
     .replace("$rid$path", path);
+}
+
+// The explorer's base URL, e.g. "https://app.radicle.xyz": `publicExplorer`
+// up to its `/nodes/$host` part, or its origin when it has none.
+export function explorerBase(config: Config): string {
+  const nodes = config.publicExplorer.indexOf("/nodes/$host");
+  if (nodes !== -1) return config.publicExplorer.slice(0, nodes);
+  try {
+    return new URL(config.publicExplorer).origin;
+  } catch {
+    return config.publicExplorer;
+  }
+}
+
+export function explorerSeed(config: Config): string {
+  return preferredSeedHost(config) ?? DEFAULT_SEED;
 }
 
 export interface GitIdentity {

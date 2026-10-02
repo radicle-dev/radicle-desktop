@@ -7,12 +7,15 @@
 
   import { embedPreviewKind } from "@app/lib/embeds";
   import { parseFrontmatter } from "@app/lib/frontmatter";
-  import { invoke } from "@app/lib/invoke";
+  import { cachedConfig, invoke } from "@app/lib/invoke";
   import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
+  import { parseMentionHref, referenceUrl } from "@app/lib/mentions";
+  import { parseReference } from "@app/lib/radUri";
   import { highlight } from "@app/lib/syntax";
   import { isCommit, scrollIntoView, twemoji } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
+  import Mention from "@app/components/Mention.svelte";
 
   interface Props {
     rid?: string;
@@ -24,6 +27,21 @@
   const { rid = "", content, breaks = false }: Props = $props();
 
   let container: HTMLElement;
+
+  // Rendered markdown is injected with `{@html}`, so a reference chip cannot
+  // be part of this component's template. Each one is mounted over the anchor
+  // the renderer emitted, and tracked so a re-render does not leak instances
+  // whose DOM has already been thrown away.
+  let mountedMentions: ReturnType<typeof mount>[] = [];
+
+  function unmountMentions() {
+    for (const instance of mountedMentions) {
+      void unmount(instance);
+    }
+    mountedMentions = [];
+  }
+
+  $effect(() => unmountMentions);
 
   const doc = $derived(parseFrontmatter(content));
   const frontMatter = $derived.by(() => {
@@ -57,6 +75,8 @@
         return;
       }
 
+      unmountMentions();
+
       // Replace native task-list checkboxes with read-only styled boxes.
       for (const i of container.querySelectorAll('input[type="checkbox"]')) {
         i.parentElement?.classList.add("task-item");
@@ -72,6 +92,47 @@
       }
 
       for (const e of container.querySelectorAll("a")) {
+        // A Radicle identifier becomes a chip that resolves its own label and
+        // navigates in-app, so it is handled before the generic link handling
+        // below, which would treat it as an external URL.
+        const mentionHref = e.getAttribute("href") ?? "";
+        const mentionTarget = parseMentionHref(mentionHref);
+        if (mentionTarget) {
+          const host = document.createElement("span");
+          host.style.display = "inline";
+          const fallback = e.textContent || mentionHref;
+          e.replaceWith(host);
+          mountedMentions.push(
+            mount(Mention, {
+              target: host,
+              props: { target: mentionTarget, fallback },
+            }),
+          );
+          continue;
+        }
+
+        // Any other `rad:` or `did:` href has no handler outside the app, so
+        // it links to the explorer when there is a page for it, and is inert
+        // otherwise.
+        if (/^(?:rad|did):/i.test(mentionHref)) {
+          e.removeAttribute("href");
+          e.title = mentionHref;
+          const reference = parseReference(mentionHref);
+          if (reference) {
+            void cachedConfig()
+              .then(config => {
+                const url = referenceUrl(reference, config);
+                if (url) {
+                  e.href = url;
+                  e.target = "_blank";
+                  e.rel = "noopener noreferrer";
+                }
+              })
+              .catch(console.error);
+          }
+          continue;
+        }
+
         try {
           const url = new URL(e.href);
           if (url.origin !== window.origin) {

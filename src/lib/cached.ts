@@ -10,6 +10,12 @@ export function cached<Args extends unknown[], V>(
   f: (...args: Args) => Promise<V>,
   makeKey: (...args: Args) => string,
   options?: LRUCache.Options<string, { promise: Promise<V> }, unknown>,
+  /**
+   * How long a result of `null` or `undefined` is kept, in milliseconds, when
+   * a miss should be retried sooner than a hit, e.g. a lookup of something
+   * that may be fetched in the meantime.
+   */
+  missTtl?: number,
 ): Cached<Args, V> {
   const cache = new LRUCache(options || { max: 500 });
   const fn = function (...args: Args): Promise<V> {
@@ -19,10 +25,20 @@ export function cached<Args extends unknown[], V>(
 
     const promise = f(...args);
     // Evict on rejection so the next caller can retry with a fresh request.
-    promise.catch(() => {
-      cache.delete(key);
-    });
-    cache.set(key, { promise });
+    promise.then(
+      value => {
+        if (missTtl !== undefined && (value === null || value === undefined)) {
+          const entry = cache.get(key);
+          if (entry?.promise === promise)
+            cache.set(key, entry, { ttl: missTtl });
+        }
+      },
+      () => {
+        cache.delete(key);
+      },
+    );
+    const entry = { promise };
+    cache.set(key, entry);
     return promise;
   } as Cached<Args, V>;
   fn.clear = () => cache.clear();
