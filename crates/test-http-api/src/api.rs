@@ -159,6 +159,7 @@ pub fn router(ctx: Context) -> Router {
         .route("/seed_artifact", post(seed_artifact_handler))
         .route("/unseed_artifact", post(unseed_artifact_handler))
         .route("/download_artifact", post(download_artifact_handler))
+        .route("/fetch_artifact", post(fetch_artifact_handler))
         .route("/list_jobs", post(jobs_handler))
         .route("/list_notifications", post(list_notifications_handler))
         .route("/notification_count", post(notification_count_handler))
@@ -993,6 +994,29 @@ async fn download_artifact_handler(
     }): Json<DownloadArtifactBody>,
 ) -> impl IntoResponse {
     ctx.download_artifact(rid, release_id, cid, &dest, seed, |_| {})?;
+
+    Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct FetchArtifactBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub seed: bool,
+}
+
+async fn fetch_artifact_handler(
+    State(ctx): State<Context>,
+    Json(FetchArtifactBody {
+        rid,
+        release_id,
+        cid,
+        seed,
+    }): Json<FetchArtifactBody>,
+) -> impl IntoResponse {
+    ctx.fetch_artifact(rid, release_id, cid, seed, |_| {})?;
 
     Ok::<_, Error>(Json(()))
 }

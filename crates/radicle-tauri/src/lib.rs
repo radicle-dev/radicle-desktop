@@ -81,6 +81,7 @@ pub fn run() {
             cob::release::seed_artifact,
             cob::release::unseed_artifact,
             cob::release::download_artifact,
+            cob::release::fetch_artifact,
             cob::save_embed_by_bytes,
             cob::save_embed_by_clipboard,
             cob::save_embed_by_path,

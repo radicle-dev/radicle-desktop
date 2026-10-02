@@ -9,7 +9,7 @@ use url::Url;
 
 use radicle_artifact::{Cid, Releases as ArtifactStore, cache_db_path};
 use radicle_artifact_client::sync::Client;
-use radicle_artifact_client::{DownloadArgs, default_socket};
+use radicle_artifact_client::{DownloadArgs, FetchArgs, default_socket};
 use radicle_artifact_core::cid as cid_utils;
 use radicle_artifact_core::keys::EndpointId;
 use radicle_artifact_core::protocol::{FetchLocation, FetchProgress, ImportMode};
@@ -227,6 +227,39 @@ pub trait ArtifactNode: ReleasesMut {
                 cid: parsed,
                 locations: resolve_fetch_locations(&locations),
                 dest: dest.to_path_buf(),
+                seed,
+            },
+            FETCH_IDLE,
+            on_progress,
+        )?;
+
+        Ok(())
+    }
+
+    /// Fetch an artifact from the locations on its COB into the node's store,
+    /// without writing it to disk. With `seed` set, the node tags the bytes
+    /// under the release as it goes.
+    fn fetch_artifact(
+        &self,
+        rid: RepoId,
+        release_id: String,
+        cid: String,
+        seed: bool,
+        on_progress: impl FnMut(&FetchProgress),
+    ) -> Result<(), Error> {
+        let parsed = parse_cid(&cid)?;
+        let seed = seed
+            .then(|| radicle::cob::ObjectId::from_str(&release_id))
+            .transpose()?
+            .map(|id| *id);
+
+        let locations = self.artifact_locations(rid, &parsed)?;
+
+        self.artifact_client().fetch(
+            FetchArgs {
+                rid,
+                cid: parsed,
+                locations: resolve_fetch_locations(&locations),
                 seed,
             },
             FETCH_IDLE,

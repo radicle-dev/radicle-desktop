@@ -241,6 +241,28 @@ pub async fn download_artifact(
     .await
 }
 
+/// Fetch an artifact into the node's store, forwarding the node's progress
+/// frames to the frontend as `artifact_progress` events keyed by content id.
+#[tauri::command]
+pub async fn fetch_artifact(
+    app: tauri::AppHandle,
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    release_id: String,
+    cid: String,
+    seed: bool,
+) -> Result<(), Error> {
+    blocking(ctx, move |ctx| {
+        ctx.fetch_artifact(rid, release_id, cid.clone(), seed, |progress| {
+            let _ = app.emit(
+                "artifact_progress",
+                types::artifact::ArtifactProgress::new(&cid, progress),
+            );
+        })
+    })
+    .await
+}
+
 /// Open the OS save dialog seeded with `suggested_name`, returning the chosen
 /// path or `None` when the user cancels.
 #[tauri::command]
