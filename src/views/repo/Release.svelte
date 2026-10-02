@@ -833,7 +833,7 @@
   .contributor {
     display: inline-flex;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
     color: var(--color-text-secondary);
   }
   /* A short fixed label, so it keeps its own width and never wraps: the title
@@ -1252,6 +1252,14 @@
                     label="CID"
                     shorten={false} />
                 </span>
+                <span class="contributor">
+                  <NodeId {...authorForNodeId(artifact.author)} />
+                  {#if delegateIds.has(artifact.author.did)}
+                    <DelegateBadge />
+                  {:else if artifact.author.did === ownDid}
+                    <YouBadge />
+                  {/if}
+                </span>
                 {#if trust}
                   <span class="trust">
                     <Icon name="checkmark" />
@@ -1311,18 +1319,6 @@
                 {/if}
                 {#if unseedFailed === artifact.cid}
                   <span class="unseed-error">Could not stop seeding.</span>
-                {/if}
-                <!-- The release creator is named in the header, so an artifact
-                   only names its own author when somebody else contributed it. -->
-                {#if artifact.author.did !== release.creator.did}
-                  <span class="contributor">
-                    <NodeId {...authorForNodeId(artifact.author)} />
-                    {#if delegateIds.has(artifact.author.did)}
-                      <DelegateBadge />
-                    {:else if artifact.author.did === ownDid}
-                      <YouBadge />
-                    {/if}
-                  </span>
                 {/if}
               </div>
 
