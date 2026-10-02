@@ -175,7 +175,7 @@
     if (byDelegates > 0) {
       return `Verified by ${byDelegates} delegate${byDelegates === 1 ? "" : "s"}`;
     }
-    return `Attested by ${attestations.length} node${
+    return `Attested by ${attestations.length} users${
       attestations.length === 1 ? "" : "s"
     }`;
   }
