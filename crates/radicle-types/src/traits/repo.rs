@@ -21,6 +21,10 @@ use crate::repo;
 use crate::source;
 use crate::traits::Profile;
 
+/// Upper bound on the number of commits returned by
+/// [`Repo::repo_commits_by_prefix`].
+const COMMIT_PREFIX_LIMIT: usize = 10;
+
 pub const MAX_BLOB_SIZE: usize = 10_485_760;
 
 #[derive(Serialize, Deserialize, PartialEq)]
@@ -915,6 +919,65 @@ pub trait Repo: Profile {
         Ok(commit.into())
     }
 
+    /// Find the commits whose id starts with `prefix`, for expanding an
+    /// abbreviated oid. Every match is returned, up to a limit, so a caller can
+    /// offer all of them when the prefix is ambiguous.
+    fn repo_commits_by_prefix(
+        &self,
+        rid: identity::RepoId,
+        prefix: String,
+    ) -> Result<Vec<repo::Commit>, Error> {
+        if !(4..=40).contains(&prefix.len()) || !prefix.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return Ok(Vec::new());
+        }
+
+        let profile = self.profile();
+        let storage_repo = profile.storage.repository(rid)?;
+
+        // `git rev-parse --disambiguate` lists every object with the prefix,
+        // which libgit2 cannot do: it only resolves a unique prefix. Falls back
+        // to that when the git binary is unavailable.
+        let oids = crate::binaries::git_command()
+            .and_then(|mut command| {
+                // An explicit `--git-dir` wins over a `GIT_DIR` the app may
+                // have inherited, which would otherwise pick the repository.
+                let mut git_dir = std::ffi::OsString::from("--git-dir=");
+                git_dir.push(storage_repo.path());
+                command
+                    .arg(git_dir)
+                    .arg("rev-parse")
+                    .arg(format!("--disambiguate={prefix}"));
+
+                command
+                    .output()
+                    .ok()
+                    .filter(|output| output.status.success())
+                    .map(|output| {
+                        String::from_utf8_lossy(&output.stdout)
+                            .lines()
+                            .filter_map(|line| line.trim().parse::<git::Oid>().ok())
+                            .collect::<Vec<_>>()
+                    })
+            })
+            .unwrap_or_else(|| {
+                storage_repo
+                    .backend
+                    .find_commit_by_prefix(&prefix)
+                    .map(|commit| vec![commit.id().into()])
+                    .unwrap_or_default()
+            });
+
+        let repo = surf::Repository::open(storage_repo.path())?;
+
+        Ok(oids
+            .into_iter()
+            .filter(|oid| !is_radicle_metadata(&storage_repo.backend, *oid))
+            .filter_map(|oid| repo.commit(oid).ok())
+            .take(COMMIT_PREFIX_LIMIT)
+            .map(Into::into)
+            .collect())
+    }
+
     fn unseed(&self, rid: identity::RepoId) -> Result<(), Error> {
         let profile = self.profile();
         let mut node = radicle::Node::new(profile.home().socket_from_env());
@@ -1002,5 +1065,86 @@ fn fetch_from_seeds(
             Ok(result) => log::warn!("Fetching {rid} from {nid} failed: {result:?}"),
             Err(err) => log::warn!("Fetching {rid} from {nid} failed: {err}"),
         }
+    }
+}
+
+/// Whether `oid` is a commit Radicle writes for its own bookkeeping: a COB
+/// change, which carries a `manifest`, or a signed refs commit, which carries
+/// a `signature`. Neither is something a reference to a commit means.
+fn is_radicle_metadata(repo: &git2::Repository, oid: git::Oid) -> bool {
+    repo.find_commit(oid.into())
+        .and_then(|commit| commit.tree())
+        .map(|tree| tree.get_name("manifest").is_some() || tree.get_name("signature").is_some())
+        .unwrap_or(false)
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod test {
+    use radicle::crypto::{Seed, SigningKey};
+    use radicle::storage::{ReadRepository, ReadStorage};
+    use radicle::test::fixtures;
+
+    use crate::traits::repo::Repo;
+    use crate::{AppState, test};
+
+    #[test]
+    fn repo_commits_by_prefix() {
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(&tmp.path().join("home"), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+        let (rid, _, _, head) =
+            fixtures::project(tmp.path().join("working"), &profile.storage, &signer).unwrap();
+        let identity = profile
+            .storage
+            .repository(rid)
+            .unwrap()
+            .identity_head()
+            .unwrap();
+        let state = AppState { profile };
+        let head = head.to_string();
+
+        let found = state
+            .repo_commits_by_prefix(rid, head[..7].to_string())
+            .unwrap();
+        assert_eq!(
+            found
+                .iter()
+                .map(|commit| commit.id.to_string())
+                .collect::<Vec<_>>(),
+            vec![head.clone()]
+        );
+        assert_eq!(
+            state
+                .repo_commits_by_prefix(rid, head.to_uppercase())
+                .unwrap()
+                .len(),
+            1
+        );
+
+        assert!(
+            state
+                .repo_commits_by_prefix(rid, identity.to_string()[..7].to_string())
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            state
+                .repo_commits_by_prefix(rid, head[..3].to_string())
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            state
+                .repo_commits_by_prefix(rid, format!("{}z", &head[..6]))
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            state
+                .repo_commits_by_prefix(rid, format!("--{}", &head[..6]))
+                .unwrap()
+                .is_empty()
+        );
     }
 }

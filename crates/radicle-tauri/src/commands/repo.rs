@@ -147,6 +147,15 @@ pub async fn repo_commit(
 }
 
 #[tauri::command]
+pub async fn repo_commits_by_prefix(
+    ctx: tauri::State<'_, AppState>,
+    rid: RepoId,
+    prefix: String,
+) -> Result<Vec<types::repo::Commit>, Error> {
+    blocking(ctx, move |ctx| ctx.repo_commits_by_prefix(rid, prefix)).await
+}
+
+#[tauri::command]
 pub fn seed(ctx: tauri::State<'_, AppState>, rid: RepoId) -> Result<(), Error> {
     ctx.seed(rid)
 }

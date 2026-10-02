@@ -86,6 +86,7 @@ pub fn run() {
             repo::repo_by_id,
             repo::repo_commit_count,
             repo::repo_commit,
+            repo::repo_commits_by_prefix,
             repo::repo_count,
             repo::repo_readme,
             repo::repo_tree,

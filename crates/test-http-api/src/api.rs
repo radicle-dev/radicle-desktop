@@ -181,6 +181,10 @@ pub fn router(shared: Shared) -> Router {
         .route("/list_repo_commits", post(list_repo_commits_handler))
         .route("/repo_commit_count", post(repo_commit_count_handler))
         .route("/repo_commit", post(repo_commit_handler))
+        .route(
+            "/repo_commits_by_prefix",
+            post(repo_commits_by_prefix_handler),
+        )
         .route("/list_issues", post(issues_handler))
         .route("/issue_by_id", post(issue_handler))
         .route("/comment_threads_by_issue_id", post(issue_threads_handler))
@@ -686,6 +690,22 @@ async fn repo_commit_handler(
     let commit = ctx.repo_commit(rid, sha, peer, revision)?;
 
     Ok::<_, Error>(Json(commit))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RepoCommitsByPrefixBody {
+    pub rid: identity::RepoId,
+    pub prefix: String,
+}
+
+async fn repo_commits_by_prefix_handler(
+    Ctx(ctx): Ctx,
+    Json(RepoCommitsByPrefixBody { rid, prefix }): Json<RepoCommitsByPrefixBody>,
+) -> impl IntoResponse {
+    let commits = ctx.repo_commits_by_prefix(rid, prefix)?;
+
+    Ok::<_, Error>(Json(commits))
 }
 
 #[derive(Serialize, Deserialize)]

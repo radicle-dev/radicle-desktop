@@ -278,6 +278,24 @@ export const cachedRepoCommit = cached(
   missTtl,
 );
 
+async function repoCommitsByPrefix(
+  rid: string,
+  prefix: string,
+): Promise<Commit[]> {
+  return withTestBackend(tauri.invoke, "repo_commits_by_prefix", {
+    rid,
+    prefix,
+  });
+}
+
+// Typing an abbreviated oid re-queries on every keystroke, and each keystroke
+// narrows the prefix, so earlier lookups are reused when backspacing.
+export const cachedRepoCommitsByPrefix = cached(
+  repoCommitsByPrefix,
+  (...[rid, prefix]) => `repo_commits_by_prefix:${rid}:${prefix}`,
+  { max: 200, ttl: 60_000 },
+);
+
 async function config(): Promise<Config> {
   return withTestBackend(tauri.invoke, "config", {});
 }

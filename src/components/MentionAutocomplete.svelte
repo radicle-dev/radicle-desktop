@@ -34,6 +34,7 @@
     cachedPatchById,
     cachedRepoById,
     cachedRepoCommit,
+    cachedRepoCommitsByPrefix,
     cachedSearchAliases,
   } from "@app/lib/invoke";
   import type { MentionTarget } from "@app/lib/mentions";
@@ -95,6 +96,13 @@
    * stay small enough that ranking still means something.
    */
   const maxSuggestions = 50;
+
+  /**
+   * An abbreviated oid typed after a trigger character. Seven characters is
+   * git's own default abbreviation, and anything shorter is too easily an
+   * ordinary word made of hex letters.
+   */
+  const oidPrefixPattern = /^[0-9a-fA-F]{7,39}$/;
 
   /**
    * How many nodes with no trust signal are offered. Anyone can adopt any
@@ -266,6 +274,9 @@
     if (isOid(requested.query)) {
       const resolved = await resolveOid(requested.query.toLowerCase());
       if (resolved.length > 0) return resolved;
+    } else if (oidPrefixPattern.test(requested.query)) {
+      const resolved = await resolvePrefix(requested.query.toLowerCase());
+      if (resolved.length > 0) return resolved;
     }
 
     // Section order with nothing typed, most-likely target first: the people
@@ -377,6 +388,43 @@
       icon: patch ? patchIcon[patch.state.status] : "patch",
       haystack: label,
     };
+  }
+
+  /**
+   * Every issue, patch and commit in this repo whose id starts with `prefix`,
+   * so an abbreviated oid can be expanded to the one that was meant.
+   */
+  async function resolvePrefix(prefix: string): Promise<Suggestion[]> {
+    const [cobs, commits] = await Promise.all([
+      collectCobs(),
+      cachedRepoCommitsByPrefix(rid, prefix).catch(() => []),
+    ]);
+    const matched = cobs.filter(
+      row => row.target.type === "cob" && row.target.oid.startsWith(prefix),
+    );
+    // A COB's id is also the oid of the commit that created it.
+    const cobIds = new Set(
+      matched.map(row => (row.target.type === "cob" ? row.target.oid : "")),
+    );
+
+    return [
+      ...matched,
+      ...commits
+        .filter(commit => !cobIds.has(commit.id))
+        .map(commit => ({
+          key: `commit:${commit.id}`,
+          target: {
+            type: "commit",
+            rid,
+            oid: commit.id,
+          } satisfies MentionTarget,
+          label: commit.summary,
+          primary: commit.summary,
+          secondary: formatOid(commit.id),
+          icon: "commit" as IconName,
+          haystack: commit.summary,
+        })),
+    ];
   }
 
   /**
