@@ -310,7 +310,7 @@
           <ConfirmDeleteButton noun="issue" onDelete={deleteIssue} />
         {/if}
         <ShareButton
-          explorerPath={`${repo.rid}/issues/${issue.id}`}
+          target={{ type: "cob", kind: "issue", rid: repo.rid, oid: issue.id }}
           id={issue.id}
           idLabel="issue"
           variant="naked"

@@ -2,7 +2,6 @@ import type { Config } from "@bindings/config/Config";
 
 import type { RadReference } from "@app/lib/radUri";
 import {
-  explorerUrl,
   formatReference,
   isNodeId,
   isOid,
@@ -12,7 +11,7 @@ import {
   parseReference,
   patchType,
 } from "@app/lib/radUri";
-import { explorerBase, explorerSeed } from "@app/lib/utils";
+import { explorerLink } from "@app/lib/utils";
 
 /**
  * A Radicle entity that can be referenced from a comment or description.
@@ -162,22 +161,12 @@ export function mentionHref(target: MentionTarget): string {
   return formatReference(toRadReference(target));
 }
 
-/**
- * The web explorer URL a reference points at, or `undefined` when the
- * explorer has no page for it.
- */
-export function referenceUrl(
-  reference: RadReference,
-  config: Config,
-): string | undefined {
-  return explorerUrl(reference, explorerBase(config), explorerSeed(config));
-}
-
+/** The web explorer URL an entity points at. */
 export function mentionUrl(
   target: MentionTarget,
   config: Config,
 ): string | undefined {
-  return referenceUrl(toRadReference(target), config);
+  return explorerLink(toRadReference(target), config);
 }
 
 /**

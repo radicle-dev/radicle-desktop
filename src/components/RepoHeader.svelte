@@ -154,7 +154,7 @@
 
   <div class="actions">
     <ShareButton
-      explorerPath={repo.rid}
+      target={{ type: "repo", rid: repo.rid }}
       id={repo.rid}
       idLabel="repository"
       variant="naked"

@@ -9,10 +9,10 @@
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { cachedConfig, invoke } from "@app/lib/invoke";
   import { markdownWithExtensions, Renderer } from "@app/lib/markdown";
-  import { parseMentionHref, referenceUrl } from "@app/lib/mentions";
-  import { parseReference } from "@app/lib/radUri";
+  import { parseMentionHref } from "@app/lib/mentions";
+  import { isOid, parseReference } from "@app/lib/radUri";
   import { highlight } from "@app/lib/syntax";
-  import { isCommit, scrollIntoView, twemoji } from "@app/lib/utils";
+  import { explorerLink, scrollIntoView, twemoji } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
   import Mention from "@app/components/Mention.svelte";
@@ -121,7 +121,7 @@
           if (reference) {
             void cachedConfig()
               .then(config => {
-                const url = referenceUrl(reference, config);
+                const url = explorerLink(reference, config);
                 if (url) {
                   e.href = url;
                   e.target = "_blank";
@@ -155,7 +155,7 @@
         const href = e.getAttribute("href");
 
         // If the markdown link is an oid embed
-        if (href && isCommit(href)) {
+        if (href && isOid(href)) {
           e.onclick = event => {
             event.preventDefault();
             invoke("save_embed_to_disk", {

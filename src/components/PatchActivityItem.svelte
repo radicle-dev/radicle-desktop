@@ -11,11 +11,11 @@
 
   import { itemDiff } from "@app/lib/cobActivity";
   import { cachedConfig, writeToClipboard } from "@app/lib/invoke";
+  import { mentionUrl } from "@app/lib/mentions";
   import { splitDescription } from "@app/lib/revisionDescription";
   import {
     absoluteTimestamp,
     authorForNodeId,
-    explorerUrl,
     formatTimestamp,
     patchStatusColor,
     pluralize,
@@ -71,7 +71,7 @@
     // revision id goes in the path (`/patches/<patch>/<revision>`), which is
     // the form the explorer resolves; `?revision=` does not navigate there.
     await writeToClipboard(
-      explorerUrl(`${rid}/patches/${patchId}/${op.id}?tab=changes`, config),
+      `${mentionUrl({ type: "cob", kind: "patch", rid, oid: patchId }, config)}/${op.id}?tab=changes`,
     );
     copyLinkIcon = "checkmark";
     setTimeout(() => (copyLinkIcon = "link"), 1000);

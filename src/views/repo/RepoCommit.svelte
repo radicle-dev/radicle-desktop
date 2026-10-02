@@ -289,7 +289,7 @@
       <div class="topbar-right">
         <span style:display="inline-flex" style:margin-right="0.5rem">
           <ShareButton
-            explorerPath={`${repo.rid}/commits/${commit.id}`}
+            target={{ type: "commit", rid: repo.rid, oid: commit.id }}
             id={commit.id}
             idLabel="commit"
             config={sidebarData.config} />

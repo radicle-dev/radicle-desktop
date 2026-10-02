@@ -6,12 +6,11 @@ import {
   coAuthors,
   creditedCoAuthors,
   explorerHost,
-  explorerUrl,
+  explorerLink,
   formatGitIdentity,
   formatRepositoryId,
   formatTimestamp,
   identityKey,
-  isCommit,
   isPublishableReview,
   parseNodeId,
   parseRepositoryId,
@@ -163,15 +162,6 @@ test("truncateDid", () => {
 });
 
 test.each([
-  ["a".repeat(40), true],
-  ["A".repeat(40), false],
-  ["a".repeat(39), false],
-  ["g".repeat(40), false],
-])("isCommit(%j) is %j", (input, expected) => {
-  expect(isCommit(input)).toBe(expected);
-});
-
-test.each([
   ["refs/heads/main", "main"],
   ["refs/heads/feature/x", "feature/x"],
   ["main", "main"],
@@ -246,10 +236,12 @@ describe("explorer links", () => {
     } as Config;
   }
 
+  const repo = { type: "uri", uri: { repo: rid.slice(4) } } as const;
+
   test("uses the first preferred seed host", () => {
     expect(
-      explorerUrl(
-        `${rid}/issues/abc`,
+      explorerLink(
+        repo,
         config({
           preferredSeeds: [
             `${nid}@seed.example.com:8776`,
@@ -257,11 +249,11 @@ describe("explorer links", () => {
           ],
         }),
       ),
-    ).toBe(`https://radicle.network/nodes/seed.example.com/${rid}/issues/abc`);
+    ).toBe(`https://radicle.network/nodes/seed.example.com/${rid}`);
   });
 
   test("falls back to the default seed", () => {
-    expect(explorerUrl(rid, config({}))).toBe(
+    expect(explorerLink(repo, config({}))).toBe(
       `https://radicle.network/nodes/rosa.radicle.network/${rid}`,
     );
   });

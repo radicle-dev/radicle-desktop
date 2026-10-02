@@ -72,6 +72,7 @@
     invoke,
     writeToClipboard,
   } from "@app/lib/invoke";
+  import { mentionUrl } from "@app/lib/mentions";
   import { show } from "@app/lib/modal";
   import { repoListScope } from "@app/lib/repoListScope";
   import * as router from "@app/lib/router";
@@ -81,11 +82,7 @@
     useShortcuts,
   } from "@app/lib/shortcuts.svelte";
   import { sidebarCollapsed } from "@app/lib/sidebar.svelte";
-  import {
-    explorerHost,
-    explorerUrl,
-    formatRepositoryId,
-  } from "@app/lib/utils";
+  import { explorerHost, formatRepositoryId } from "@app/lib/utils";
 
   import AddRepoButton from "@app/components/AddRepoButton.svelte";
   import ContextMenu from "@app/components/ContextMenu.svelte";
@@ -1263,7 +1260,7 @@
 
 {#if contextMenu}
   {@const repo = contextMenu.repo}
-  {@const url = explorerUrl(repo.rid, config)}
+  {@const url = mentionUrl({ type: "repo", rid: repo.rid }, config) ?? ""}
   <ContextMenu
     x={contextMenu.x}
     y={contextMenu.y}
