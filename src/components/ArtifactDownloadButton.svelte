@@ -5,7 +5,6 @@
 
   import { listen } from "@tauri-apps/api/event";
 
-  import { autoSeed, storeAutoSeed } from "@app/lib/autoSeed";
   import { poll } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
   import { formatBytes } from "@app/lib/utils";
@@ -44,6 +43,7 @@
   let progress: ArtifactProgress | undefined = $state();
   let downloadError: string | undefined = $state();
   let downloaded = $state(false);
+  let seed = $state(true);
 
   // Clear the outcome of a finished download once the popover closes, so a
   // later visit starts fresh.
@@ -121,7 +121,7 @@
         releaseId,
         cid: artifact.cid,
         dest,
-        seed: $autoSeed,
+        seed,
       });
       downloaded = true;
       // Seeding is the node's state, not ours; ask what actually happened.
@@ -353,7 +353,7 @@
         {/if}
 
         <div class="seed-option">
-          <Checkbox bind:checked={() => $autoSeed, storeAutoSeed}>
+          <Checkbox bind:checked={seed}>
             Seed after downloading
           </Checkbox>
         </div>
