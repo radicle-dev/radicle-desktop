@@ -6,12 +6,6 @@ resolver = "2"
 git = "https://seed.radicle.dev/z2UcCU1LgMshWvXj6hXSDDrwB8q8M/z6MkwPUeUS2fJMfc2HZN1RQTQcTTuhw4HhPySB8JeUg2mVvx"
 branch = "patches/da55667860741ee221483fc42fa7cbbb58e0cfc2"
 
-# Unreleased radicle-artifact from a sibling checkout. Remove once it is published.
-[patch.crates-io]
-radicle-artifact = { path = "../radicle-artifact/crates/radicle-artifact" }
-radicle-artifact-client = { path = "../radicle-artifact/crates/radicle-artifact-client" }
-radicle-artifact-core = { path = "../radicle-artifact/crates/radicle-artifact-core" }
-
 [workspace.package]
 edition = "2024"
 
