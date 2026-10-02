@@ -481,8 +481,7 @@
       if (digest.cid !== cid) {
         reseedError = {
           cid,
-          message:
-            "This file has a different CID, so it was not seeded.",
+          message: "This file has a different CID, so it was not seeded.",
         };
         return;
       }
@@ -1046,11 +1045,23 @@
             router.push({
               resource: "repo.releases",
               rid: repo.rid,
-              scope,
             })}>
           Releases
         </button>
         <Icon name="chevron-right" />
+        {#if scope}
+          <button
+            class="breadcrumb-link"
+            onclick={() =>
+              router.push({
+                resource: "repo.releases",
+                rid: repo.rid,
+                scope,
+              })}>
+            {scope === "trusted" ? "Delegates" : "Others"}
+          </button>
+          <Icon name="chevron-right" />
+        {/if}
         <Id id={release.id} clipboard={release.id} label="release ID" />
       </div>
       <div style:margin-left="auto" style:display="flex" style:gap="0.5rem">
