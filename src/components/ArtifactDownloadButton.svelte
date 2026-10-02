@@ -39,17 +39,19 @@
 
   let activeTab: "app" | "cli" | "browser" = $state("app");
   let expanded = $state(false);
-  let downloading = $state(false);
+  // Which transfer is running: a download writes to disk, a fetch only fills
+  // the node's store.
+  let running: "download" | "fetch" | undefined = $state();
   let progress: ArtifactProgress | undefined = $state();
   let downloadError: string | undefined = $state();
-  let downloaded = $state(false);
+  let finished: "download" | "fetch" | undefined = $state();
   let seed = $state(true);
 
   // Clear the outcome of a finished download once the popover closes, so a
   // later visit starts fresh.
   $effect(() => {
-    if (!expanded && !downloading) {
-      downloaded = false;
+    if (!expanded && !running) {
+      finished = undefined;
       downloadError = undefined;
     }
   });
@@ -102,35 +104,36 @@
     }
   });
 
-  async function download() {
+  async function transfer(kind: "download" | "fetch") {
     downloadError = undefined;
-    downloaded = false;
+    finished = undefined;
 
-    const dest = await invoke<string | null>("pick_artifact_save_path", {
-      suggestedName: artifact.name,
-    });
-    if (!dest) {
-      return;
+    let dest: string | null = null;
+    if (kind === "download") {
+      dest = await invoke<string | null>("pick_artifact_save_path", {
+        suggestedName: artifact.name,
+      });
+      if (!dest) {
+        return;
+      }
     }
 
-    downloading = true;
+    running = kind;
     progress = undefined;
     try {
-      await invoke("download_artifact", {
-        rid,
-        releaseId,
-        cid: artifact.cid,
-        dest,
-        seed,
-      });
-      downloaded = true;
+      const args = { rid, releaseId, cid: artifact.cid, seed };
+      if (kind === "download") {
+        await invoke("download_artifact", { ...args, dest });
+      } else {
+        await invoke("fetch_artifact", args);
+      }
+      finished = kind;
       // Seeding is the node's state, not ours; ask what actually happened.
       onDownloaded();
     } catch {
-      downloadError =
-        "Download failed. The artifact node may be offline, or no source is reachable.";
+      downloadError = `${kind === "download" ? "Download" : "Fetch"} failed. The artifact node may be offline, or no source is reachable.`;
     } finally {
-      downloading = false;
+      running = undefined;
       progress = undefined;
     }
   }
@@ -157,14 +160,14 @@
   let nodeRunning: boolean | undefined = $state();
   $effect(() =>
     poll(async active => {
-      let running: boolean;
+      let up: boolean;
       try {
-        running = await invoke<boolean>("artifact_node_running");
+        up = await invoke<boolean>("artifact_node_running");
       } catch {
-        running = false;
+        up = false;
       }
       if (active()) {
-        nodeRunning = running;
+        nodeRunning = up;
       }
     }, 5000),
   );
@@ -252,6 +255,10 @@
     color: var(--color-foreground-success);
     font: var(--txt-body-s-regular);
   }
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+  }
   .seed-option {
     margin-top: 0.75rem;
   }
@@ -312,22 +319,35 @@
             verified here. The CLI and browser tabs still work.
           {:else}
             Download through your artifact node, which checks what arrives
-            against the CID.
+            against the CID. Fetch only adds it to the node's store.
           {/if}
         </label>
-        <Button
-          variant="secondary"
-          styleWidth="100%"
-          disabled={downloading || nodeRunning === false}
-          title={nodeRunning === false
-            ? "Your artifact node is not running"
-            : undefined}
-          onclick={download}>
-          <Icon name="download" />
-          {downloading ? "Downloading…" : "Download"}
-        </Button>
+        <div class="actions">
+          <Button
+            variant="secondary"
+            styleWidth="100%"
+            disabled={running !== undefined || nodeRunning === false}
+            title={nodeRunning === false
+              ? "Your artifact node is not running"
+              : undefined}
+            onclick={() => transfer("download")}>
+            <Icon name="download" />
+            {running === "download" ? "Downloading…" : "Download"}
+          </Button>
+          <Button
+            variant="secondary"
+            styleWidth="100%"
+            disabled={running !== undefined || nodeRunning === false}
+            title={nodeRunning === false
+              ? "Your artifact node is not running"
+              : "Fetch into your artifact node's store without saving a file"}
+            onclick={() => transfer("fetch")}>
+            <Icon name="arrow-down" />
+            {running === "fetch" ? "Fetching…" : "Fetch"}
+          </Button>
+        </div>
 
-        {#if downloading}
+        {#if running}
           <div class="progress-track">
             <div class="progress-bar" style:width="{percent ?? 0}%"></div>
           </div>
@@ -341,10 +361,12 @@
               </span>
             {/if}
           </div>
-        {:else if downloaded}
+        {:else if finished}
           <div class="success">
             <Icon name="checkmark" />
-            Saved{seeding ? " and seeding" : ""}.
+            {finished === "download" ? "Saved" : "Fetched"}{seeding
+              ? " and seeding"
+              : ""}.
           </div>
         {/if}
 
@@ -353,9 +375,7 @@
         {/if}
 
         <div class="seed-option">
-          <Checkbox bind:checked={seed}>
-            Seed after downloading
-          </Checkbox>
+          <Checkbox bind:checked={seed}>Seed after fetching</Checkbox>
         </div>
       {:else if activeTab === "cli"}
         <label for="download-command">
