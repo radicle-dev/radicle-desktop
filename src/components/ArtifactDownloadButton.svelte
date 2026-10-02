@@ -319,7 +319,9 @@
             verified here. The CLI and browser tabs still work.
           {:else}
             Download through your artifact node, which checks what arrives
-            against the CID. Fetch only adds it to the node's store.
+            against the CID.{seeding
+              ? ""
+              : " Fetch only adds it to the node's store."}
           {/if}
         </label>
         <div class="actions">
@@ -334,17 +336,19 @@
             <Icon name="download" />
             {running === "download" ? "Downloading…" : "Download"}
           </Button>
-          <Button
-            variant="secondary"
-            styleWidth="100%"
-            disabled={running !== undefined || nodeRunning === false}
-            title={nodeRunning === false
-              ? "Your artifact node is not running"
-              : "Fetch into your artifact node's store without saving a file"}
-            onclick={() => transfer("fetch")}>
-            <Icon name="arrow-down" />
-            {running === "fetch" ? "Fetching…" : "Fetch"}
-          </Button>
+          {#if !seeding}
+            <Button
+              variant="secondary"
+              styleWidth="100%"
+              disabled={running !== undefined || nodeRunning === false}
+              title={nodeRunning === false
+                ? "Your artifact node is not running"
+                : "Fetch into your artifact node's store without saving a file"}
+              onclick={() => transfer("fetch")}>
+              <Icon name="arrow-down" />
+              {running === "fetch" ? "Fetching…" : "Fetch"}
+            </Button>
+          {/if}
         </div>
 
         {#if running}
