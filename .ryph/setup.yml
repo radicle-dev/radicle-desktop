@@ -1,0 +1,13 @@
+steps:
+  - name: install npm dependencies
+    run: npm install --prefer-offline
+  - name: install Playwright WebKit
+    run: npx playwright install webkit
+  - name: install the pinned Radicle binaries for e2e tests
+    run: scripts/install-binaries
+  - name: warm clippy (scripts/check-rs)
+    run: mkdir -p build && cargo clippy --workspace --all-targets --locked
+  - name: warm cargo test (scripts/check-rs)
+    run: cargo test --workspace --no-run --locked
+  - name: warm the e2e backend (tests/support/globalSetup.ts)
+    run: cargo build --manifest-path ./crates/test-http-api/Cargo.toml --locked && cargo build -p radicle-job --bin rad-job --locked
