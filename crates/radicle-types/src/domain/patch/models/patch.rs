@@ -86,6 +86,10 @@ impl Patch {
         doc: &radicle::identity::Doc,
         aliases: &impl AliasStore,
     ) -> Self {
+        let (_, latest) = patch
+            .revisions()
+            .next_back()
+            .expect("there is always at least one revision");
         // Every review on every revision, so the patch list can render the same
         // summary the patch page does. `revision_number` is what lets the UI
         // tell a review of the current head from one left behind by a later
@@ -118,8 +122,8 @@ impl Patch {
                 .merge_target_branch(doc)
                 .map(|branch| branch.to_string())
                 .ok(),
-            base: *patch.base(),
-            head: *patch.head(),
+            base: *latest.base(),
+            head: latest.head(),
             assignees: patch
                 .assignees()
                 .map(|did| cobs::Author::new(&did, aliases))
@@ -824,4 +828,60 @@ pub enum CountsError {
     #[error(transparent)]
     Unknown(#[from] anyhow::Error),
     // to be extended as new error scenarios are introduced
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod test {
+    use std::collections::HashMap;
+
+    use radicle::cob::cache::NoCache;
+    use radicle::cob::store::access::WriteAs;
+    use radicle::crypto::SigningKey;
+    use radicle::patch::{MergeTarget, Patches};
+    use radicle::storage::ReadRepository;
+    use radicle::test::setup::NodeWithRepo;
+
+    use super::Patch;
+
+    #[test]
+    fn head_follows_latest_revision_by_any_author() {
+        let alice = NodeWithRepo::default();
+        let bob = SigningKey::mock(23);
+        let checkout = alice.repo.checkout();
+        let first = checkout.branch_with([("README", b"Hello World!")]);
+        let second = checkout.branch_with([("README", b"Hello Radicle!")]);
+
+        let id = Patches::open(&*alice.repo, WriteAs::new(&alice.signer))
+            .unwrap()
+            .create(
+                radicle::cob::Title::new("My patch").unwrap(),
+                "",
+                MergeTarget::Delegates,
+                first.base,
+                first.oid,
+                &[],
+                &mut NoCache,
+            )
+            .unwrap()
+            .id;
+        Patches::open(&*alice.repo, WriteAs::new(&bob))
+            .unwrap()
+            .get_mut(&id, &mut NoCache)
+            .unwrap()
+            .update("Bob's revision", first.oid, second.oid)
+            .unwrap();
+
+        let patch = Patches::open(&*alice.repo, WriteAs::new(&alice.signer))
+            .unwrap()
+            .get(&id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(*patch.head(), first.oid);
+
+        let doc = alice.repo.identity_doc().unwrap().doc;
+        let patch = Patch::new(id, &patch, &doc, &HashMap::new());
+        assert_eq!(patch.base, first.oid);
+        assert_eq!(patch.head, second.oid);
+    }
 }
