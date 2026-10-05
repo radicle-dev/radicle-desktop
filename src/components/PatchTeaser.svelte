@@ -18,6 +18,7 @@
   import Icon from "@app/components/Icon.svelte";
   import Id from "@app/components/Id.svelte";
   import InlineTitle from "@app/components/InlineTitle.svelte";
+  import JobCob from "@app/components/JobCob.svelte";
   import Label from "@app/components/Label.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import ReviewSummary from "@app/components/ReviewSummary.svelte";
@@ -144,6 +145,13 @@
           Review in progress
         </div>
       {/if}
+
+      <JobCob
+        {rid}
+        commit={patch.head}
+        styleHeight="1.5rem"
+        variant="outline"
+        showEmpty />
 
       {#await cachedDiffStats(rid, patch.base, patch.head) then stats}
         <DiffStatBadge {stats} />

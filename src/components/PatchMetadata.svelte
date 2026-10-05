@@ -34,6 +34,7 @@
   import DropdownListItem from "@app/components/DropdownListItem.svelte";
   import Icon from "@app/components/Icon.svelte";
   import IdChip from "@app/components/IdChip.svelte";
+  import JobCob from "@app/components/JobCob.svelte";
   import LabelInput from "@app/components/LabelInput.svelte";
   import NodeId from "@app/components/NodeId.svelte";
   import Popover, { closeFocused } from "@app/components/Popover.svelte";
@@ -381,6 +382,7 @@
       </div>
     {/if}
   {/if}
+  <JobCob rid={repo.rid} commit={patch.head} variant="outline" showEmpty />
   {#if reviews.length > 0}
     {@const hasReject = summary.hasReject}
     {@const allAccept = summary.allAccept}

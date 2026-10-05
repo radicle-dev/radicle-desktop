@@ -20,10 +20,18 @@
   interface Props {
     commit: string;
     rid: string;
-    styleHeight?: "1.75rem" | "2rem" | "2.5rem";
+    styleHeight?: "1.5rem" | "1.75rem" | "2rem" | "2.5rem";
+    variant?: "naked" | "outline";
+    showEmpty?: boolean;
   }
 
-  const { commit, rid, styleHeight = "2rem" }: Props = $props();
+  const {
+    commit,
+    rid,
+    styleHeight = "2rem",
+    variant = "naked",
+    showEmpty = false,
+  }: Props = $props();
 
   const collapsed = new SvelteSet<string>();
   let popoverExpanded: boolean = $state(false);
@@ -61,6 +69,31 @@
   .chip.started {
     color: var(--color-text-quaternary);
     background-color: var(--color-surface-mid);
+  }
+  .skeleton {
+    display: inline-block;
+    flex-shrink: 0;
+    width: 7rem;
+    border-radius: var(--border-radius-sm);
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--color-surface-subtle) 50%,
+        transparent 100%
+      )
+      0 0 / 200% 100% no-repeat;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+  .skeleton.outline {
+    border: 1px solid var(--color-border-subtle);
+  }
+  @keyframes shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
   }
   .popover-body {
     display: flex;
@@ -145,7 +178,14 @@
   }
 </style>
 
-{#await jobsPromise then jobs}
+{#await jobsPromise}
+  <span
+    class="skeleton"
+    class:outline={variant === "outline"}
+    style:height={styleHeight}
+    title="Loading CI status…">
+  </span>
+{:then jobs}
   {#if jobs.length > 0}
     {@const groups = groupJobs(jobs)}
     {@const overallCounts = totalCounts(groups)}
@@ -189,7 +229,7 @@
     <Popover placement="bottom-end" bind:expanded={popoverExpanded}>
       {#snippet toggle(onclick)}
         <Button
-          variant="naked"
+          {variant}
           {styleHeight}
           onclick={e => {
             e.stopPropagation();
@@ -261,5 +301,7 @@
         </div>
       {/snippet}
     </Popover>
+  {:else if showEmpty}
+    <Button {variant} {styleHeight} disabled>No CI jobs</Button>
   {/if}
 {/await}
