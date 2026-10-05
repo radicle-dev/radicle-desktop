@@ -92,17 +92,29 @@ impl PatchStorage for Sqlite {
         rid: identity::RepoId,
         status: Status,
     ) -> Result<impl Iterator<Item = (PatchId, Patch)>, ListPatchesError> {
-        let mut stmt = self.db.prepare(
-            "SELECT id, patch, (
-                 SELECT MIN(JSON_EXTRACT(revision.value, '$.timestamp'))
-                 FROM JSON_EACH(JSON_EXTRACT(p.patch, '$.revisions')) AS revision
-             ) AS last_revision_timestamp
+        // Merged patches sort by the earliest merge of the merged revision.
+        // `merges` also keeps delegates' merges of other revisions, so those
+        // are skipped. With a delegate threshold of 1 this is when the patch
+        // became merged. With a higher threshold the patch only became merged
+        // at the threshold-th merge, which we don't compute, so it sorts at
+        // the first delegate's merge, however long the others took.
+        let sort_key = if status == Status::Merged {
+            "SELECT MIN(JSON_EXTRACT(merge.value, '$.timestamp'))
+             FROM JSON_EACH(JSON_EXTRACT(p.patch, '$.merges')) AS merge
+             WHERE JSON_EXTRACT(merge.value, '$.revision') = p.patch->>'$.state.revision'
+             AND JSON_EXTRACT(merge.value, '$.commit') = p.patch->>'$.state.commit'"
+        } else {
+            "SELECT MIN(JSON_EXTRACT(revision.value, '$.timestamp'))
+             FROM JSON_EACH(JSON_EXTRACT(p.patch, '$.revisions')) AS revision"
+        };
+        let mut stmt = self.db.prepare(format!(
+            "SELECT id, patch, ({sort_key}) AS sort_timestamp
              FROM patches AS p
              WHERE repo = ?1
              AND patch->>'$.state.status' = ?2
-             ORDER BY last_revision_timestamp DESC, id DESC;
-             ",
-        )?;
+             ORDER BY sort_timestamp DESC, id DESC;
+             "
+        ))?;
         stmt.bind((1, &rid))?;
         stmt.bind((2, sql::Value::String(status.to_string())))?;
         Ok(stmt.into_iter().filter_map(|row| {
@@ -288,5 +300,143 @@ impl InboxStorage for Sqlite {
         }
 
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod test {
+    use std::str::FromStr;
+    use std::sync::Arc;
+
+    use radicle::identity::RepoId;
+    use radicle::patch::{PatchId, Status};
+    use serde_json::json;
+    use sqlite as sql;
+
+    use crate::domain::patch::traits::PatchStorage;
+
+    use super::Sqlite;
+
+    const RID: &str = "rad:z3fpY7nttPPa6MBnAv2DccHzQJnqe";
+    const NID: &str = "z6MktULudTtAsAhRegYPiZ6631RV3viv12qd4GQF8z1xB22S";
+    const COMMIT: &str = "52b0a6dfb600be4e8fe61d70ca40cead71fb03a8";
+    const FIRST: &str = "1111111111111111111111111111111111111111";
+    const SECOND: &str = "2222222222222222222222222222222222222222";
+    const THIRD: &str = "3333333333333333333333333333333333333333";
+    const OTHER_NID: &str = "z6MkpaATbhkGbSMysNomYTFVvKG5bnNKYZ2cCamfoHzX9SnL";
+
+    fn patch(id: &str, status: &str, created: u64, merged: u64) -> serde_json::Value {
+        let state = if status == "merged" {
+            json!({ "status": "merged", "revision": id, "commit": COMMIT })
+        } else {
+            json!({ "status": status, "conflicts": [] })
+        };
+        json!({
+            "title": "Patch",
+            "author": { "id": format!("did:key:{NID}") },
+            "state": state,
+            "target": "delegates",
+            "labels": [],
+            "merges": {
+                NID: { "revision": id, "commit": COMMIT, "timestamp": merged }
+            },
+            "revisions": {
+                id: {
+                    "id": id,
+                    "author": { "id": format!("did:key:{NID}") },
+                    "description": [
+                        { "author": NID, "timestamp": created, "body": "", "embeds": [] }
+                    ],
+                    "base": COMMIT,
+                    "oid": COMMIT,
+                    "discussion": { "comments": {}, "timeline": [] },
+                    "reviews": {},
+                    "timestamp": created,
+                    "resolves": [],
+                    "reactions": []
+                }
+            },
+            "assignees": [],
+            "timeline": [id],
+            "reviews": {}
+        })
+    }
+
+    fn db(patches: &[(&str, serde_json::Value)]) -> Sqlite {
+        let db = sql::Connection::open_thread_safe(":memory:").unwrap();
+        db.execute("CREATE TABLE patches (id TEXT PRIMARY KEY, repo TEXT, patch TEXT)")
+            .unwrap();
+        for (id, patch) in patches {
+            let mut stmt = db
+                .prepare("INSERT INTO patches (id, repo, patch) VALUES (?1, ?2, ?3)")
+                .unwrap();
+            stmt.bind((1, *id)).unwrap();
+            stmt.bind((2, RID)).unwrap();
+            stmt.bind((3, patch.to_string().as_str())).unwrap();
+            stmt.next().unwrap();
+        }
+        Sqlite { db: Arc::new(db) }
+    }
+
+    fn ids(db: &Sqlite, status: Status) -> Vec<PatchId> {
+        db.list_by_status(RepoId::from_str(RID).unwrap(), status)
+            .unwrap()
+            .map(|(id, _)| id)
+            .collect()
+    }
+
+    #[test]
+    fn merged_patches_sort_by_merge_time() {
+        let db = db(&[
+            (FIRST, patch(FIRST, "merged", 1000, 4000)),
+            (SECOND, patch(SECOND, "merged", 2000, 3000)),
+        ]);
+
+        assert_eq!(
+            ids(&db, Status::Merged),
+            [
+                PatchId::from_str(FIRST).unwrap(),
+                PatchId::from_str(SECOND).unwrap()
+            ]
+        );
+    }
+
+    #[test]
+    fn merged_patches_ignore_merges_of_other_revisions() {
+        let mut first = patch(FIRST, "merged", 1000, 4000);
+        first["merges"][OTHER_NID] = json!({
+            "revision": THIRD,
+            "commit": COMMIT,
+            "timestamp": 500
+        });
+        let db = db(&[
+            (FIRST, first),
+            (SECOND, patch(SECOND, "merged", 2000, 3000)),
+        ]);
+
+        assert_eq!(
+            ids(&db, Status::Merged),
+            [
+                PatchId::from_str(FIRST).unwrap(),
+                PatchId::from_str(SECOND).unwrap()
+            ]
+        );
+    }
+
+    #[test]
+    fn open_patches_sort_by_creation_time() {
+        let db = db(&[
+            (FIRST, patch(FIRST, "open", 1000, 4000)),
+            (SECOND, patch(SECOND, "open", 2000, 3000)),
+        ]);
+
+        assert_eq!(
+            ids(&db, Status::Open),
+            [
+                PatchId::from_str(SECOND).unwrap(),
+                PatchId::from_str(FIRST).unwrap()
+            ]
+        );
     }
 }
