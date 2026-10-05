@@ -10,6 +10,9 @@ workspace. On top of the universal image it adds:
 - `golangci-lint` v2.14.0 in `/usr/local/bin`, for garden-broker;
 - `MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=node,python,deno,bun`, so mise
   does not read a `go.mod` `go` line as a pin: Go is the image's own.
+- `CARGO_PROFILE_DEV_DEBUG=line-tables-only`: dev and test builds carry
+  line tables, not full debug info. Backtraces keep file and line. Do not
+  override it, or every crate rebuilds.
 
 `.ryph/setup.yml` installs the npm dependencies, Playwright's WebKit and the
 pinned Radicle binaries (`tests/tmp/bin`), and warms clippy, the test build

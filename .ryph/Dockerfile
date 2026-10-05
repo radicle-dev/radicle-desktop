@@ -32,3 +32,8 @@ USER runner
 # Without this, mise reads that line as a pin and tries to download Go 1.25.0
 # instead of using the image's newer Go.
 ENV MISE_IDIOMATIC_VERSION_FILE_ENABLE_TOOLS=node,python,deno,bun
+
+# Debug info is most of a warm target/ (8 GB of radicle-desktop's 13). Line
+# tables keep file:line in panics and backtraces. Set for the whole machine,
+# so the image's warm build and every run's builds use the same profile.
+ENV CARGO_PROFILE_DEV_DEBUG=line-tables-only

@@ -1,4 +1,11 @@
 steps:
+  # An image layer keeps whole-second mtimes, but cargo fingerprints the
+  # nanoseconds it saw at build time, so every crate with a build script
+  # rebuilt on every run. Building from whole-second mtimes keeps the warm
+  # target/ fresh. Image builds only: at run time this would hide the files
+  # the run's checkout changed.
+  - name: pin source mtimes to the commit time (image builds only)
+    run: '[ "$RYPH_SETUP_PHASE" != image ] || git ls-files -z | xargs -0 touch -d "@$(git log -1 --format=%ct)"'
   - name: install npm dependencies
     run: npm install --prefer-offline
   - name: install Playwright WebKit
@@ -11,3 +18,7 @@ steps:
     run: cargo test --workspace --no-run --locked
   - name: warm the e2e backend (tests/support/globalSetup.ts)
     run: cargo build --manifest-path ./crates/test-http-api/Cargo.toml --locked && cargo build -p radicle-job --bin rad-job --locked
+  # rustc's incremental cache only speeds up rebuilding this repo's own
+  # crates after an edit, and it is gigabytes. Image builds only.
+  - name: drop the incremental cache (image builds only)
+    run: '[ "$RYPH_SETUP_PHASE" != image ] || rm -rf target/debug/incremental'
