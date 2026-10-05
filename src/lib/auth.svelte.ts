@@ -2,6 +2,7 @@ import type { ErrorWrapper } from "@bindings/error/ErrorWrapper";
 
 import { get } from "svelte/store";
 
+import { deepLinksReady } from "@app/lib/deepLink";
 import { dynamicInterval } from "@app/lib/interval";
 import { invoke } from "@app/lib/invoke";
 import * as router from "@app/lib/router";
@@ -23,7 +24,9 @@ export async function checkAuth() {
       import.meta.env.VITE_AUTH_LONG_DELAY || 30_000,
     );
     if (get(router.activeRouteStore).resource === "booting") {
-      void router.push({ resource: "inbox" });
+      void router.push({ resource: "inbox" }).then(deepLinksReady);
+    } else {
+      deepLinksReady();
     }
   } catch (err) {
     const error = err as ErrorWrapper;

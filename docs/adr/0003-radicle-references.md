@@ -59,7 +59,8 @@ labelled with the repo name, such as `heartwood: src/lib.rs`. Either
 navigates in-app when the repo is local and falls back to the configured
 `publicExplorer`, which a right click also offers. A resource a client does
 not support renders as a plain link. Sanitizers allow `rad:` and `did:`
-hrefs, which are inert without a registered handler.
+hrefs, which cannot execute; this app also registers as the OS `rad:`
+handler, so a link clicked elsewhere opens in it.
 
 ## Consequences
 

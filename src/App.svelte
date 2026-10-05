@@ -14,6 +14,7 @@
     resetFontSize,
   } from "@app/lib/appearance.svelte";
   import { checkAuth, startup } from "@app/lib/auth.svelte";
+  import { deepLinksReady, listenForDeepLinks } from "@app/lib/deepLink";
   import { nodeRunning } from "@app/lib/events";
   import { dynamicInterval } from "@app/lib/interval";
   import { invoke } from "@app/lib/invoke";
@@ -197,9 +198,10 @@
       setUnlistenNodeEvents(() => clearInterval(interval));
     }
 
+    void listenForDeepLinks();
     try {
       await invoke("authenticate");
-      void router.loadFromLocation();
+      void router.loadFromLocation().then(deepLinksReady);
       dynamicInterval(
         "auth",
         checkAuth,

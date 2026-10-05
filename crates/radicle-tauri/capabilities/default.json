@@ -17,6 +17,7 @@
     "core:window:allow-set-badge-count",
     "core:window:allow-start-dragging",
     "core:window:default",
+    "deep-link:default",
     "dialog:default",
     "log:default",
     "shell:allow-open"

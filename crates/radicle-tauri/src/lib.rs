@@ -1,6 +1,8 @@
 mod commands;
 
 use radicle_types::AppState;
+use tauri::Manager;
+use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{auth, cob, diff, identity, inbox, profile, repo, startup, thread};
@@ -22,24 +24,48 @@ pub fn run() {
     // survives the pipes that `npm run tauri dev` puts between the app and the
     // terminal, which `std::io::IsTerminal` on our own stdout would not.
     let terminal = std::env::var_os("TERM").is_some();
-    let builder = tauri::Builder::default().plugin(
-        tauri_plugin_log::Builder::new()
-            .level(log::LevelFilter::Info)
-            .max_file_size(5_000_000)
-            .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
-            .target(Target::new(if terminal {
-                TargetKind::Stdout
-            } else {
-                TargetKind::LogDir { file_name: None }
-            }))
-            .build(),
-    );
+    // A `rad:` link opened while the app runs starts a second instance, which
+    // hands the link to this one and exits; the deep-link plugin delivers it.
+    let builder = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+            }
+        }))
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .level(log::LevelFilter::Info)
+                .max_file_size(5_000_000)
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
+                .target(Target::new(if terminal {
+                    TargetKind::Stdout
+                } else {
+                    TargetKind::LogDir { file_name: None }
+                }))
+                .build(),
+        );
 
     builder
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_deep_link::init())
+        .setup(|app| {
+            // Installers register the scheme; an AppImage or a dev build has to
+            // do it at runtime. It must never keep the app from starting, nor
+            // take the scheme back from a handler the user chose.
+            let unpackaged = cfg!(debug_assertions) || is_appimage(app);
+            if cfg!(any(target_os = "linux", windows))
+                && unpackaged
+                && !app.deep_link().is_registered("rad").unwrap_or(false)
+                && let Err(e) = app.deep_link().register_all()
+            {
+                log::warn!("Unable to register the rad: scheme: {e}");
+            }
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             auth::authenticate,
             auth::init,
@@ -104,4 +130,14 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(target_os = "linux")]
+fn is_appimage(app: &tauri::App) -> bool {
+    app.env().appimage.is_some()
+}
+
+#[cfg(not(target_os = "linux"))]
+fn is_appimage(_app: &tauri::App) -> bool {
+    false
 }
