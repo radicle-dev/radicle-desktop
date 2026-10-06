@@ -2,6 +2,8 @@ import type { Component, ComponentProps } from "svelte";
 
 import { derived, get, writable } from "svelte/store";
 
+import { closeFocused } from "@app/components/Popover.svelte";
+
 type HideCallback = () => void;
 
 type Modal = {
@@ -66,6 +68,7 @@ export function show<T extends Component<any>>(args: ShowArgs<T>): void {
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
+  closeFocused();
   store.set({ ...args, disableScrimClose: args.disableScrimClose ?? false });
 }
 

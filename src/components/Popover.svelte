@@ -101,7 +101,7 @@
     top: 0;
     left: 0;
     visibility: hidden;
-    z-index: 10;
+    z-index: 400;
   }
 </style>
 

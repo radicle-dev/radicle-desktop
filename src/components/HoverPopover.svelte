@@ -133,7 +133,7 @@
     left: 0;
     visibility: hidden;
     border-radius: var(--border-radius-md);
-    z-index: 10;
+    z-index: 400;
   }
 </style>
 
