@@ -4,7 +4,7 @@
   import { toDom } from "hast-util-to-dom";
   import { mount, tick, unmount } from "svelte";
 
-  import { embedPreviewKind } from "@app/lib/embeds";
+  import { embedPreviewKind, retinaWidth } from "@app/lib/embeds";
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
   import {
@@ -73,10 +73,15 @@
   function createEmbedPreview(
     mimeType: string | null,
     url: string,
+    content: Uint8Array,
   ): HTMLElement | undefined {
     const kind = embedPreviewKind(mimeType);
     if (kind === "image") {
       const element = document.createElement("img");
+      const width = retinaWidth(content);
+      if (width) {
+        element.style.width = `${width}px`;
+      }
       element.setAttribute("src", url);
       element.style.display = "block";
       return element;
@@ -308,10 +313,9 @@
                 }
                 let preview = embedPreviews.get(href);
                 if (!preview) {
-                  const url = URL.createObjectURL(
-                    new Blob([Buffer.from(content)]),
-                  );
-                  const element = createEmbedPreview(mimeType, url);
+                  const bytes = Buffer.from(content);
+                  const url = URL.createObjectURL(new Blob([bytes]));
+                  const element = createEmbedPreview(mimeType, url, bytes);
                   if (!element) {
                     URL.revokeObjectURL(url);
                     console.warn(
