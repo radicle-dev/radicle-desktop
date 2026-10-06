@@ -1062,7 +1062,8 @@ pub trait Repo: Profile {
         // which a quiet one may not do for a long time. Fetch now, like
         // `rad seed`, without holding up the caller.
         let local = profile.public_key;
-        std::thread::spawn(move || fetch_from_seeds(node, rid, local));
+        let preferred = profile.config.preferred_seeds.clone();
+        std::thread::spawn(move || fetch_from_seeds(node, rid, local, preferred));
 
         Ok(())
     }
@@ -1084,32 +1085,88 @@ pub trait Repo: Profile {
 
 const SEED_FETCH_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(9);
 
-// Fetches `rid` from the first connected seed that has it.
+// Fetches `rid` from the first seed that has it, connecting to it if needed.
 fn fetch_from_seeds(
     mut node: radicle::Node,
     rid: identity::RepoId,
     local: radicle::crypto::PublicKey,
+    preferred: Vec<node::config::ConnectAddress>,
 ) {
     use radicle::node::Handle as _;
 
     if !node.is_running() {
         return;
     }
-    let seeds = match node.seeds_for(rid, [local]) {
-        Ok(seeds) => seeds,
+    let (connected, disconnected) = match node.seeds_for(rid, [local]) {
+        Ok(seeds) => seeds.partition(),
         Err(err) => {
             log::warn!("Looking up seeds for {rid} failed: {err}");
-            return;
+            Default::default()
         }
     };
-    let connected = seeds.connected().map(|seed| seed.nid).collect::<Vec<_>>();
-    for nid in connected {
+    let connected = connected
+        .into_iter()
+        .map(|seed| seed.nid)
+        .collect::<Vec<_>>();
+    let disconnected = disconnected
+        .into_iter()
+        .filter_map(|seed| Some((seed.nid, seed.addrs.into_iter().next()?.addr)))
+        .collect();
+    let candidates = seed_candidates(&connected, preferred, disconnected, local);
+
+    for (nid, addr) in candidates {
+        if let Some(addr) = addr
+            && !connected.contains(&nid)
+        {
+            let opts = node::ConnectOptions {
+                persistent: false,
+                timeout: SEED_FETCH_TIMEOUT,
+            };
+            match node.connect(nid, addr, opts) {
+                Ok(node::ConnectResult::Connected) => {}
+                Ok(node::ConnectResult::Disconnected { reason }) => {
+                    log::warn!("Connecting to {nid} failed: {reason}");
+                    continue;
+                }
+                Err(err) => {
+                    log::warn!("Connecting to {nid} failed: {err}");
+                    continue;
+                }
+            }
+        }
         match node.fetch(rid, nid, SEED_FETCH_TIMEOUT, None) {
             Ok(result) if result.is_success() => return,
             Ok(result) => log::warn!("Fetching {rid} from {nid} failed: {result:?}"),
             Err(err) => log::warn!("Fetching {rid} from {nid} failed: {err}"),
         }
     }
+    log::warn!("No seed had {rid} to fetch");
+}
+
+// Connected seeds come first, as they answer fastest. A repo nobody has
+// announced to us yet has no known seeds, so the preferred seeds are tried
+// before the other known ones.
+fn seed_candidates(
+    connected: &[node::NodeId],
+    preferred: Vec<node::config::ConnectAddress>,
+    disconnected: Vec<(node::NodeId, node::Address)>,
+    local: node::NodeId,
+) -> Vec<(node::NodeId, Option<node::Address>)> {
+    let mut seen = std::collections::BTreeSet::from([local]);
+    connected
+        .iter()
+        .map(|nid| (*nid, None))
+        .chain(preferred.into_iter().map(|seed| {
+            let (nid, addr) = seed.into();
+            (nid, Some(addr))
+        }))
+        .chain(
+            disconnected
+                .into_iter()
+                .map(|(nid, addr)| (nid, Some(addr))),
+        )
+        .filter(|(nid, _)| seen.insert(*nid))
+        .collect()
 }
 
 fn is_radicle_metadata(repo: &git2::Repository, oid: git::Oid) -> bool {
@@ -1128,6 +1185,40 @@ mod test {
 
     use crate::traits::repo::Repo;
     use crate::{AppState, test};
+
+    #[test]
+    fn seed_candidates_order() {
+        use radicle::node::{Address, NodeId};
+
+        let nid = |id: &str| id.parse::<NodeId>().unwrap();
+        let addr = |host: &str| host.parse::<Address>().unwrap();
+        let local = nid("z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi");
+        let connected = nid("z6MkrLMMsiPWUcNPHcRajuMi9mDfYckSoJyPwwnknocNYPm7");
+        let preferred = nid("z6MkvUJtYD9dHDJfpevWRT98mzDDpdAtmUjwyDSkyqksUr7C");
+        let known = nid("z6Mkvky2mnSYCTUMKRdAUoZXBXLLKtnWEkWeYQcGjjnmobAU");
+
+        let candidates = super::seed_candidates(
+            &[connected],
+            vec![
+                (preferred, addr("preferred.example:8776")).into(),
+                (connected, addr("connected.example:8776")).into(),
+                (local, addr("local.example:8776")).into(),
+            ],
+            vec![
+                (known, addr("known.example:8776")),
+                (preferred, addr("other.example:8776")),
+            ],
+            local,
+        );
+        assert_eq!(
+            candidates,
+            vec![
+                (connected, None),
+                (preferred, Some(addr("preferred.example:8776"))),
+                (known, Some(addr("known.example:8776"))),
+            ]
+        );
+    }
 
     #[test]
     fn repo_commits_by_prefix() {
