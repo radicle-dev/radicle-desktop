@@ -34,7 +34,6 @@ tauri-plugin-shell = { version = "2.3.5" }
 tauri-plugin-single-instance = { version = "2.4.5", features = ["deep-link"] }
 tauri-plugin-window-state = { version = "2.4.1" }
 thiserror = { version = "2.0.12" }
-tokio = { version = "1.45.0", features = ["time"] }
 ts-rs = { version = "12.0.1", features = ["serde-json-impl", "no-serde-warnings"] }
 ssh-key = { version = "0.6.3" }
 zeroize = { version = "1.8.1", features = ["serde"] }

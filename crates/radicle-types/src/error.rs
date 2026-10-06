@@ -221,6 +221,10 @@ pub enum Error {
     /// URL parse error.
     #[error(transparent)]
     UrlParse(#[from] url::ParseError),
+
+    /// Artifact node client error.
+    #[error(transparent)]
+    ArtifactClient(#[from] radicle_artifact_client::ClientError),
 }
 
 impl Error {

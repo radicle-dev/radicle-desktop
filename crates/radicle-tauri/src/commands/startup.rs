@@ -7,6 +7,7 @@ use radicle_types::binaries::GitInfo;
 use radicle_types::config::{Config, Version};
 use radicle_types::error::Error;
 use radicle_types::traits::Profile;
+use radicle_types::traits::artifact_node::ArtifactNode;
 use radicle_types::{AppState, domain};
 
 #[tauri::command]
@@ -52,10 +53,15 @@ pub(crate) fn startup(app: AppHandle) -> Result<Config, Error> {
     app.manage(patch_service);
     app.manage(issue_service);
 
-    tauri::async_runtime::spawn(async move {
+    // Both probes are blocking socket calls, so they get their own thread. The
+    // radicle node's event goes out first, so a slow artifact node can't
+    // delay it.
+    let probe_state = state.clone();
+    std::thread::spawn(move || {
         loop {
             let _ = node_handle.emit("node_running", node.is_running());
-            tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+            let _ = node_handle.emit("artifact_node_running", probe_state.artifact_node_running());
+            std::thread::sleep(std::time::Duration::from_secs(2));
         }
     });
 

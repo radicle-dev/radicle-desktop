@@ -3,9 +3,11 @@ use radicle::identity;
 
 use radicle_types as types;
 use radicle_types::error::Error;
+use radicle_types::traits::artifact_node::ArtifactNode;
 use radicle_types::traits::release::{ReleaseFilter, Releases};
 use radicle_types::traits::release_mut::ReleasesMut;
 
+use tauri::Emitter;
 use tauri_plugin_dialog::DialogExt;
 
 use crate::AppState;
@@ -150,7 +152,7 @@ pub async fn redact_artifact(
     reason: String,
 ) -> Result<(), Error> {
     blocking(ctx, move |ctx| {
-        ctx.redact_artifact(rid, release_id, cid, reason)
+        ctx.redact_and_unseed_artifact(rid, release_id, cid, reason)
     })
     .await
 }
@@ -186,11 +188,126 @@ pub async fn pick_artifact_directory(
     Ok(path.and_then(|path| path.into_path().ok()))
 }
 
+/// Whether the local artifact node is running. A node that is down is not an
+/// error here: the UI shows setup guidance instead of stats.
+#[tauri::command]
+pub async fn artifact_node_running(ctx: tauri::State<'_, AppState>) -> Result<bool, Error> {
+    blocking(ctx, |ctx| Ok(ctx.artifact_node_running())).await
+}
+
+/// Which artifact binaries are installed, so a node that is down can be told
+/// apart from one that was never installed.
+#[tauri::command]
+pub fn artifact_binaries() -> radicle_types::binaries::ArtifactBinaries {
+    radicle_types::binaries::artifact_binaries()
+}
+
+#[tauri::command]
+pub async fn artifact_node_status(
+    ctx: tauri::State<'_, AppState>,
+) -> Result<types::artifact::ArtifactNodeStatus, Error> {
+    blocking(ctx, |ctx| ctx.artifact_node_status()).await
+}
+
+/// Content ids the node seeds under this release. The release view asks once
+/// and matches its rows against the result.
+#[tauri::command]
+pub async fn seeded_artifacts(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    release_id: String,
+) -> Result<Vec<String>, Error> {
+    blocking(ctx, move |ctx| ctx.seeded_artifacts(rid, release_id)).await
+}
+
+#[tauri::command]
+pub async fn seed_artifact(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    release_id: String,
+    cid: String,
+    source_path: std::path::PathBuf,
+) -> Result<String, Error> {
+    blocking(ctx, move |ctx| {
+        ctx.seed_artifact(rid, release_id, cid, source_path)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn unseed_artifact(
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    release_id: String,
+    cid: String,
+) -> Result<(), Error> {
+    blocking(ctx, move |ctx| ctx.unseed_artifact(rid, release_id, cid)).await
+}
+
+/// Download an artifact, forwarding the node's progress frames to the
+/// frontend as `artifact_progress` events keyed by content id.
+///
+/// With `save_as`, the user picks where to save it in the OS save dialog,
+/// seeded with that name, and the path never reaches the webview. Without it,
+/// the artifact is only fetched into the node's store. Returns `false` when
+/// the user cancels the dialog.
+#[tauri::command]
+pub async fn download_artifact(
+    app: tauri::AppHandle,
+    ctx: tauri::State<'_, AppState>,
+    rid: identity::RepoId,
+    release_id: String,
+    cid: String,
+    save_as: Option<String>,
+    seed: bool,
+) -> Result<bool, Error> {
+    let dest = match save_as {
+        Some(name) => {
+            let dialog = app.clone();
+            let Some(dest) = tauri::async_runtime::spawn_blocking(move || {
+                dialog
+                    .dialog()
+                    .file()
+                    .set_file_name(name)
+                    .blocking_save_file()
+            })
+            .await?
+            else {
+                return Ok(false);
+            };
+            Some(dest.into_path()?)
+        }
+        None => None,
+    };
+
+    blocking(ctx, move |ctx| {
+        ctx.download_artifact(
+            rid,
+            release_id,
+            cid.clone(),
+            dest.as_deref(),
+            seed,
+            |progress| {
+                let _ = app.emit(
+                    "artifact_progress",
+                    types::artifact::ArtifactProgress::new(&cid, progress),
+                );
+            },
+        )
+    })
+    .await?;
+
+    Ok(true)
+}
+
 #[tauri::command]
 pub async fn delete_release(
     ctx: tauri::State<'_, AppState>,
     rid: identity::RepoId,
     release_id: String,
 ) -> Result<(), Error> {
-    blocking(ctx, move |ctx| ctx.delete_release(rid, release_id)).await
+    blocking(ctx, move |ctx| {
+        ctx.delete_and_unseed_release(rid, release_id)
+    })
+    .await
 }

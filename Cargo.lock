@@ -3120,7 +3120,7 @@ dependencies = [
  "ed25519-dalek 3.0.0",
  "getrandom 0.4.3",
  "n0-error",
- "rand 0.10.3",
+ "rand 0.10.2",
  "serde",
  "url",
  "zeroize",
@@ -4798,7 +4798,6 @@ dependencies = [
  "tauri-plugin-single-instance",
  "tauri-plugin-window-state",
  "thiserror 2.0.19",
- "tokio",
  "ts-rs",
  "zeroize",
 ]
@@ -4816,6 +4815,7 @@ dependencies = [
  "mime-infer",
  "radicle",
  "radicle-artifact",
+ "radicle-artifact-client",
  "radicle-artifact-core",
  "radicle-job",
  "radicle-localtime",
@@ -4846,9 +4846,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.10.3"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65c9fb96cbc91e3478eaae79a69fcd3f1ae4ad052e471fe6732fff548984b4af"
+checksum = "c7f5fa3a058cd35567ef9bfa5e75732bee0f9e4c55fa90477bef2dfcdbc4be80"
 dependencies = [
  "chacha20 0.10.2",
  "getrandom 0.4.3",

@@ -1,4 +1,5 @@
 use traits::Profile;
+use traits::artifact_node::ArtifactNode;
 use traits::cobs::Cobs;
 use traits::identity::Identity;
 use traits::inbox::Inbox;
@@ -10,6 +11,7 @@ use traits::release_mut::ReleasesMut;
 use traits::repo::Repo;
 use traits::thread::Thread;
 
+pub mod artifact;
 pub mod auth;
 pub mod binaries;
 pub mod cobs;
@@ -41,6 +43,7 @@ impl Patches for AppState {}
 impl PatchesMut for AppState {}
 impl Releases for AppState {}
 impl ReleasesMut for AppState {}
+impl ArtifactNode for AppState {}
 impl Profile for AppState {
     fn profile(&self) -> radicle::Profile {
         self.profile.clone()

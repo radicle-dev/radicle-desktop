@@ -37,6 +37,7 @@ use radicle_types::domain::patch::traits::PatchService;
 use radicle_types::error::Error;
 use radicle_types::outbound::sqlite::Sqlite;
 use radicle_types::traits::Profile;
+use radicle_types::traits::artifact_node::ArtifactNode;
 use radicle_types::traits::cobs::Cobs;
 use radicle_types::traits::identity::Identity;
 use radicle_types::traits::inbox::Inbox;
@@ -68,6 +69,7 @@ impl Patches for Context {}
 impl PatchesMut for Context {}
 impl Releases for Context {}
 impl ReleasesMut for Context {}
+impl ArtifactNode for Context {}
 impl Profile for Context {
     fn profile(&self) -> radicle::Profile {
         self.profile.deref().clone()
@@ -166,6 +168,9 @@ pub fn router(shared: Shared) -> Router {
         )
         .route("/redact_artifact", post(redact_artifact_handler))
         .route("/delete_release", post(delete_release_handler))
+        .route("/seed_artifact", post(seed_artifact_handler))
+        .route("/unseed_artifact", post(unseed_artifact_handler))
+        .route("/download_artifact", post(download_artifact_handler))
         .route_layer(middleware::from_fn_with_state(
             Arc::new(Mutex::new(())),
             serialize_writes,
@@ -229,6 +234,13 @@ pub fn router(shared: Shared) -> Router {
         .route("/release_by_id", post(release_handler))
         .route("/release_counts", post(release_counts_handler))
         .route("/compute_artifact_cid", post(compute_artifact_cid_handler))
+        .route(
+            "/artifact_node_running",
+            post(artifact_node_running_handler),
+        )
+        .route("/artifact_binaries", post(artifact_binaries_handler))
+        .route("/artifact_node_status", post(artifact_node_status_handler))
+        .route("/seeded_artifacts", post(seeded_artifacts_handler))
         .route("/list_jobs", post(jobs_handler))
         .route("/list_notifications", post(list_notifications_handler))
         .route("/notification_count", post(notification_count_handler))
@@ -1252,7 +1264,7 @@ async fn redact_artifact_handler(
         reason,
     }): Json<RedactArtifactBody>,
 ) -> impl IntoResponse {
-    ctx.redact_artifact(rid, release_id, cid, reason)?;
+    ctx.redact_and_unseed_artifact(rid, release_id, cid, reason)?;
 
     Ok::<_, Error>(Json(()))
 }
@@ -1268,9 +1280,113 @@ async fn delete_release_handler(
     Ctx(ctx): Ctx,
     Json(DeleteReleaseBody { rid, release_id }): Json<DeleteReleaseBody>,
 ) -> impl IntoResponse {
-    ctx.delete_release(rid, release_id)?;
+    ctx.delete_and_unseed_release(rid, release_id)?;
 
     Ok::<_, Error>(Json(()))
+}
+
+async fn artifact_node_running_handler(Ctx(ctx): Ctx) -> impl IntoResponse {
+    Ok::<_, Error>(Json(ctx.artifact_node_running()))
+}
+
+async fn artifact_binaries_handler() -> impl IntoResponse {
+    Ok::<_, Error>(Json(radicle_types::binaries::artifact_binaries()))
+}
+
+async fn artifact_node_status_handler(Ctx(ctx): Ctx) -> impl IntoResponse {
+    let status = ctx.artifact_node_status()?;
+
+    Ok::<_, Error>(Json(status))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SeededArtifactsBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+}
+
+async fn seeded_artifacts_handler(
+    Ctx(ctx): Ctx,
+    Json(SeededArtifactsBody { rid, release_id }): Json<SeededArtifactsBody>,
+) -> impl IntoResponse {
+    let seeded = ctx.seeded_artifacts(rid, release_id)?;
+
+    Ok::<_, Error>(Json(seeded))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SeedArtifactBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub source_path: std::path::PathBuf,
+}
+
+async fn seed_artifact_handler(
+    Ctx(ctx): Ctx,
+    Json(SeedArtifactBody {
+        rid,
+        release_id,
+        cid,
+        source_path,
+    }): Json<SeedArtifactBody>,
+) -> impl IntoResponse {
+    let url = ctx.seed_artifact(rid, release_id, cid, source_path)?;
+
+    Ok::<_, Error>(Json(url))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct UnseedArtifactBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+}
+
+async fn unseed_artifact_handler(
+    Ctx(ctx): Ctx,
+    Json(UnseedArtifactBody {
+        rid,
+        release_id,
+        cid,
+    }): Json<UnseedArtifactBody>,
+) -> impl IntoResponse {
+    ctx.unseed_artifact(rid, release_id, cid)?;
+
+    Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DownloadArtifactBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub save_as: Option<String>,
+    pub seed: bool,
+}
+
+/// Mirrors the Tauri command minus its progress events, which have no HTTP
+/// equivalent; the call simply returns once the download finishes. There is
+/// no native save dialog on this driver, so a saved artifact lands in the OS
+/// temp directory under its name, as with `save_embed_to_disk`.
+async fn download_artifact_handler(
+    Ctx(ctx): Ctx,
+    Json(DownloadArtifactBody {
+        rid,
+        release_id,
+        cid,
+        save_as,
+        seed,
+    }): Json<DownloadArtifactBody>,
+) -> impl IntoResponse {
+    let dest = save_as.as_deref().map(temp_file_path).transpose()?;
+    ctx.download_artifact(rid, release_id, cid, dest.as_deref(), seed, |_| {})?;
+
+    Ok::<_, Error>(Json(true))
 }
 
 #[derive(Serialize, Deserialize)]
