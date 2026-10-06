@@ -502,6 +502,10 @@
     return $activeRoute.resource === "repo.home" && activeRid() === rid;
   }
 
+  function isBoard(rid: string): boolean {
+    return $activeRoute.resource === "repo.board" && activeRid() === rid;
+  }
+
   function isIssues(rid: string): boolean {
     return (
       ($activeRoute.resource === "repo.issues" ||
@@ -1140,6 +1144,18 @@
       {@render subItem(
         repo.name,
         router.routeToPath({
+          resource: "repo.board",
+          rid: repo.rid,
+          view: "board",
+        }),
+        "dashboard",
+        "Board",
+        isBoard(repo.rid),
+        undefined,
+      )}
+      {@render subItem(
+        repo.name,
+        router.routeToPath({
           resource: "repo.issues",
           rid: repo.rid,
           status: "open",
@@ -1168,7 +1184,7 @@
 {#snippet subItem(
   repoName: string,
   href: string,
-  icon: "branch" | "issue" | "patch",
+  icon: "branch" | "dashboard" | "issue" | "patch",
   label: string,
   active: boolean,
   count: number | undefined,
