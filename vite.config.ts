@@ -29,7 +29,11 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     watch: {
-      ignored: ["**/crates/radicle-tauri/**"],
+      ignored: [
+        "**/crates/radicle-tauri/**",
+        "**/tests/artifacts/**",
+        "**/tests/tmp/**",
+      ],
     },
   },
   resolve: {
