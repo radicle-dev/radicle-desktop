@@ -17,6 +17,7 @@
   import ReleaseTeaser from "@app/components/ReleaseTeaser.svelte";
   import ScrollArea from "@app/components/ScrollArea.svelte";
   import Topbar from "@app/components/Topbar.svelte";
+  import UntrustedWarning from "@app/components/UntrustedWarning.svelte";
   import VirtualList from "@app/components/VirtualList.svelte";
   import CreateReleaseModal from "@app/modals/CreateRelease.svelte";
 
@@ -84,6 +85,10 @@
   }
   .filter .global-counter-badge {
     margin-left: 0.25rem;
+  }
+  .warning {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border-subtle);
   }
   .row {
     border-bottom: 1px solid var(--color-border-subtle);
@@ -158,6 +163,12 @@
         </div>
       </div>
     {:else}
+      {#if scope === "untrusted"}
+        <div class="warning">
+          <UntrustedWarning
+            text="Not from delegates. Only download from authors you trust." />
+        </div>
+      {/if}
       <ScrollArea style="height: 100%; min-width: 0;">
         <VirtualList
           items={list.items}

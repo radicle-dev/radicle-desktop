@@ -19,6 +19,7 @@ import {
   parseMetadataValue,
   redactedByDelegate,
   releaseListScope,
+  releaseWarning,
   webLocations,
 } from "@app/lib/releases";
 
@@ -305,5 +306,20 @@ describe("canonicalTags", () => {
     expect(
       canonicalTags(refs({ v1: canonical }, { v1: tag(2, "evil") }))[0].tag,
     ).toBe(canonical);
+  });
+});
+
+describe("releaseWarning", () => {
+  test("warns about a whole release by a non-delegate", () => {
+    expect(releaseWarning(them, delegates, "trusted")).toBe("release");
+    expect(releaseWarning(them, delegates, "untrusted")).toBe("release");
+  });
+
+  test("warns about others' artifacts on a delegate's release", () => {
+    expect(releaseWarning(delegate, delegates, "untrusted")).toBe("artifacts");
+  });
+
+  test("does not warn about a delegate's release and artifacts", () => {
+    expect(releaseWarning(delegate, delegates, "trusted")).toBeUndefined();
   });
 });

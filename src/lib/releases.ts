@@ -22,18 +22,12 @@ export function releaseListScope(
 export interface ArtifactView {
   scope: ReleaseScope;
   shown: Artifact[];
-  // Redacted artifacts within the current author scope.
   redactedCount: number;
-  // What each scope would show, so an artifact hidden as redacted never
-  // counts towards a scope.
   counts: Record<ReleaseScope, number>;
-  // Filter only when both scopes hold something.
   showFilters: boolean;
 }
 
-// Split a release's artifacts into two disjoint scopes by author. Show the
-// scope asked for unless it is empty, and hide artifacts redacted by their
-// author or a delegate unless asked to show them.
+// Falls back to the other scope when the one asked for is empty.
 export function artifactView(
   artifacts: Artifact[],
   delegates: Set<string>,
@@ -70,7 +64,6 @@ export function redactedByDelegate(
   return artifact.redactions.some(r => delegates.has(r.user.did));
 }
 
-// Group locations by the contributing node, preserving order.
 export function locationsByNode(
   locations: Location[],
 ): { user: Author; urls: string[] }[] {
@@ -83,9 +76,7 @@ export function locationsByNode(
   return [...groups.values()];
 }
 
-// Order a node-keyed list so delegates come first. The backend returns these
-// sorted by DID (arbitrary to a reader); sort is stable, so the original
-// order is preserved within each group.
+// The backend sorts by DID, which means nothing to a reader.
 export function delegatesFirst<T>(
   items: T[],
   did: (item: T) => string,
@@ -96,9 +87,6 @@ export function delegatesFirst<T>(
   );
 }
 
-// Locations a browser can open, as opposed to ones fetched from a seeder
-// over the radicle-artifact protocol. Delegate locations come first: they
-// are the ones a reader can trust most.
 export function webLocations(
   locations: Location[],
   delegates: Set<string>,
@@ -119,8 +107,6 @@ export function attestedBy(
   return attestations.filter(a => delegates.has(a.did)).length;
 }
 
-// Only metadata by the author or a delegate is shown, so only they get an
-// editor.
 export function canEditMetadata(
   artifact: Artifact,
   ownDid: string,
@@ -140,9 +126,7 @@ export function canAttest(artifact: Artifact, ownDid: string): boolean {
   );
 }
 
-// The COB stores values as free-form JSON. Text that parses as JSON is sent
-// as that value, so numbers and booleans round-trip; anything else is sent
-// as a plain string.
+// Text that parses as JSON is sent as that value, so numbers round-trip.
 export function parseMetadataValue(input: string): unknown {
   try {
     return JSON.parse(input);
@@ -155,8 +139,6 @@ export function displayMetadataValue(value: unknown): string {
   return typeof value === "string" ? value : JSON.stringify(value);
 }
 
-// Commits whose SHA starts with, or whose summary contains, the query. A
-// pasted commit outside the loaded history still shows as a choice.
 export function matchCommits(
   commits: Commit[],
   query: string,
@@ -178,4 +160,17 @@ export function canonicalTags(refs: RepoRefs): { name: string; tag: Tag }[] {
   return Object.entries(refs.canonical.tags)
     .map(([name, tag]) => ({ name, tag }))
     .sort((a, b) => b.tag.timestamp - a.tag.timestamp);
+}
+
+// A release by a non-delegate is untrusted as a whole. On a delegate's
+// release, only the artifacts registered by others are.
+export function releaseWarning(
+  creatorDid: string,
+  delegates: Set<string>,
+  artifactScope: ReleaseScope,
+): "release" | "artifacts" | undefined {
+  if (!delegates.has(creatorDid)) {
+    return "release";
+  }
+  return artifactScope === "untrusted" ? "artifacts" : undefined;
 }

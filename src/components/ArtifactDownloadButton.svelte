@@ -17,14 +17,13 @@
   import ExternalLink from "@app/components/ExternalLink.svelte";
   import Icon from "@app/components/Icon.svelte";
   import Popover from "@app/components/Popover.svelte";
+  import UntrustedWarning from "@app/components/UntrustedWarning.svelte";
 
   interface Props {
     artifact: Artifact;
     delegateIds: Set<string>;
     releaseId: string;
     rid: string;
-    /// Whether the node already seeds this artifact, asked of the node rather
-    /// than assumed from what this component did.
     seeding: boolean;
     onDownloaded: () => void;
   }
@@ -40,8 +39,6 @@
 
   let activeTab: "app" | "cli" | "browser" = $state("app");
   let expanded = $state(false);
-  // Which transfer is running: a download writes to disk, a fetch only fills
-  // the node's store.
   let running: "download" | "fetch" | undefined = $state();
   let progress: ArtifactProgress | undefined = $state();
   let downloadError: string | undefined = $state();
@@ -54,8 +51,6 @@
     }
   });
 
-  // Clear the outcome of a finished download once the popover closes, so a
-  // later visit starts fresh.
   $effect(() => {
     if (!expanded && !running) {
       finished = undefined;
@@ -63,8 +58,6 @@
     }
   });
 
-  // The node reports byte movement per CID, so a shared event channel
-  // is filtered down to this artifact.
   $effect(() => {
     // Events only exist under Tauri, not against the test HTTP API.
     if (!window.__TAURI_INTERNALS__) {
@@ -146,12 +139,13 @@
   const webLocations = $derived(
     releases.webLocations(artifact.locations, delegateIds),
   );
-  // Any location at all can be fetched with the CLI, web locations included.
+  const authorTrusted = $derived(delegateIds.has(artifact.author.did));
+  const linksByOthers = $derived(
+    webLocations.some(l => !delegateIds.has(l.user.did)),
+  );
   const downloadable = $derived(seeding || artifact.locations.length > 0);
   const downloadLabel = $derived(seeding ? "Save" : "Download");
 
-  // The app and CLI tabs fetch through the artifact node, so they are only
-  // usable while it answers. The browser tab does not need it.
   const nodeRunning = $derived($artifactNodeRunning);
   const START_COMMAND = "rad-artifact node start";
   const command = $derived(
@@ -169,6 +163,9 @@
     font: var(--txt-body-m-regular);
   }
   .start-command {
+    margin-bottom: 0.75rem;
+  }
+  .untrusted {
     margin-bottom: 0.75rem;
   }
   .tabs {
@@ -265,6 +262,12 @@
 
   {#snippet popover()}
     <div class="popover">
+      {#if !authorTrusted}
+        <div class="untrusted">
+          <UntrustedWarning
+            text="Not from a delegate. Only download if you trust the author." />
+        </div>
+      {/if}
       <div class="tabs">
         <Button
           styleWidth="100%"
@@ -393,6 +396,12 @@
           <Icon name="warning" />
           These downloads are not checked against the CID.
         </div>
+        {#if authorTrusted && linksByOthers}
+          <div class="untrusted">
+            <UntrustedWarning
+              text="Links without a delegate badge are not from a delegate. Only use them if you trust who added them." />
+          </div>
+        {/if}
         <div class="locations">
           {#each webLocations as location (`${location.user.did}:${location.url}`)}
             <div class="location">

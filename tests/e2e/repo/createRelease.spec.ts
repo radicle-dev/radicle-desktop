@@ -17,6 +17,8 @@ import {
   useBackend,
 } from "@tests/support/fixtures.js";
 
+const OTHER_DID = "did:key:z6MkkfM3tPXNPrPevKr3uSiQtHPuwnNhu2yUVjgd2jXVsVz5";
+
 test("the commit picker lists commits and rejects unknown SHAs", async ({
   page,
   peer,
@@ -222,9 +224,7 @@ test("a location added by someone else cannot be removed", async ({
     const release = await (await route.fetch()).json();
     for (const artifact of release.artifacts) {
       artifact.locations.push({
-        user: {
-          did: "did:key:z6MkkfM3tPXNPrPevKr3uSiQtHPuwnNhu2yUVjgd2jXVsVz5",
-        },
+        user: { did: OTHER_DID },
         url,
       });
     }
@@ -268,6 +268,83 @@ test("removing your node's location while seeding stops seeding", async ({
   await expect(page.getByText("Unseed this artifact?")).toBeVisible();
   await page.getByRole("button", { name: "icon-trash Unseed" }).click();
   expect((await unseed).postDataJSON()).toMatchObject({ releaseId, cid });
+});
+
+test("a release by a non-delegate shows a warning", async ({ page, peer }) => {
+  const rid = await fillRelease(page, peer);
+  await page.getByRole("button", { name: "Create release" }).click();
+  await expect(page).toHaveURL(new RegExp(`/repos/${rid}/releases/\\w+`));
+  await expect(page.getByRole("note")).toBeHidden();
+
+  await page.route(/\/release_by_id$/, async route => {
+    const release = await (await route.fetch()).json();
+    release.creator.did = OTHER_DID;
+    await route.fulfill({ json: release });
+  });
+  await reload(page);
+
+  await expect(
+    page.getByRole("note").getByText("Not from a delegate."),
+  ).toBeVisible();
+});
+
+test("an artifact by a non-delegate shows a warning", async ({
+  page,
+  peer,
+}) => {
+  const rid = await fillRelease(page, peer);
+  await page.getByRole("button", { name: "Create release" }).click();
+  await expect(page).toHaveURL(new RegExp(`/repos/${rid}/releases/\\w+`));
+
+  // A location makes the download button usable.
+  await page.route(/\/release_by_id$/, async route => {
+    const release = await (await route.fetch()).json();
+    for (const artifact of release.artifacts) {
+      artifact.author.did = OTHER_DID;
+      artifact.locations.push({
+        user: { did: OTHER_DID },
+        url: "https://example.com/theirs.tar",
+      });
+    }
+    await route.fulfill({ json: release });
+  });
+  await reload(page);
+
+  await expect(
+    page.getByRole("note").getByText("Not from delegates."),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "icon-download Download" }).click();
+  await expect(page.getByText("Not from a delegate.")).toBeVisible();
+});
+
+test("a link by a non-delegate on a delegate's artifact shows a warning", async ({
+  page,
+  peer,
+}) => {
+  const rid = await fillRelease(page, peer);
+  await page.getByRole("button", { name: "Create release" }).click();
+  await expect(page).toHaveURL(new RegExp(`/repos/${rid}/releases/\\w+`));
+
+  await page.route(/\/release_by_id$/, async route => {
+    const release = await (await route.fetch()).json();
+    for (const artifact of release.artifacts) {
+      artifact.locations.push({
+        user: { did: OTHER_DID },
+        url: "https://example.com/theirs.tar",
+      });
+    }
+    await route.fulfill({ json: release });
+  });
+  await reload(page);
+
+  await page.getByRole("button", { name: "icon-download Download" }).click();
+  await expect(page.getByText("Not from a delegate.")).toBeHidden();
+  await page
+    .getByRole("button", { name: "icon-open-external Browser" })
+    .click();
+  await expect(
+    page.getByRole("note").getByText("Links without a delegate badge"),
+  ).toBeVisible();
 });
 
 test("metadata can be added, edited and removed", async ({ page, peer }) => {
