@@ -18,22 +18,44 @@ export default defineConfig({
     {
       name: "asciidoctor-drop-node-paths",
       enforce: "pre" as const,
-      transform(code: string, id: string) {
-        if (!id.includes("@asciidoctor/core")) return;
+      transform: {
+        filter: { id: /@asciidoctor\/core/ },
+        handler(code: string, id: string) {
+          const pattern = /new URL\((.*?), import\.meta\.url\)/g;
+          const patched = code.replaceAll(pattern, "new URL($1, `file:///`)");
+          const expected = code.includes("DATA_DIR") ? 3 : 0;
+          const found = code.match(pattern)?.length ?? 0;
 
-        const pattern = /new URL\((.*?), import\.meta\.url\)/g;
-        const patched = code.replaceAll(pattern, "new URL($1, `file:///`)");
-        const expected = code.includes("DATA_DIR") ? 3 : 0;
-        const found = code.match(pattern)?.length ?? 0;
+          if (found !== expected) {
+            throw new Error(
+              `Expected ${expected} import.meta.url uses in ${id}, found ${found}. ` +
+                `Asciidoctor may now rely on them at runtime; re-check before patching.`,
+            );
+          }
 
-        if (found !== expected) {
-          throw new Error(
-            `Expected ${expected} import.meta.url uses in ${id}, found ${found}. ` +
-              `Asciidoctor may now rely on them at runtime; re-check before patching.`,
-          );
-        }
-
-        return found > 0 ? { code: patched } : undefined;
+          return found > 0 ? { code: patched } : undefined;
+        },
+      },
+    },
+    // Asciidoctor's browser build lazily imports Node built-ins for file input
+    // and output, behind guards that tolerate them being absent. Resolve them
+    // to an empty module, as Vite would, without its externalization warning.
+    {
+      name: "asciidoctor-stub-node-builtins",
+      enforce: "pre" as const,
+      resolveId: {
+        filter: { id: /^node:/ },
+        handler(source: string, importer: string | undefined) {
+          if (importer?.includes("@asciidoctor/core")) {
+            return `\0asciidoctor-node-stub:${source}`;
+          }
+        },
+      },
+      load: {
+        filter: { id: /^\0asciidoctor-node-stub:/ },
+        handler() {
+          return "export default {};";
+        },
       },
     },
     svelte({
