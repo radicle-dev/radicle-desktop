@@ -7,7 +7,7 @@
   import debounce from "lodash/debounce";
   import { SvelteMap } from "svelte/reactivity";
 
-  import { basename } from "@app/lib/embeds";
+  import { basename, encodeEmbedUpload } from "@app/lib/embeds";
   import { hints } from "@app/lib/hints";
   import { invoke } from "@app/lib/invoke";
   import { matchesShortcut } from "@app/lib/shortcuts.svelte";
@@ -180,11 +180,11 @@
     if (file.size > MAX_EMBED_SIZE) {
       throw new Error(`${file.name} exceeds the embed size limit`);
     }
-    return invoke<string>("save_embed_by_bytes", {
-      rid,
-      name: file.name,
-      bytes: new Uint8Array(await file.arrayBuffer()),
-    });
+    return invoke<string>(
+      "save_embed_by_bytes",
+      encodeEmbedUpload(file.name, new Uint8Array(await file.arrayBuffer())),
+      { headers: { rid } },
+    );
   }
 
   function hasFiles(event: DragEvent): boolean {

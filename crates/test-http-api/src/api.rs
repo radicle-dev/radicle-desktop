@@ -3,12 +3,14 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::Router;
+use axum::body::Bytes;
 use axum::extract::{FromRequestParts, Request, State};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Json, Response};
 use axum::routing::post;
+use hyper::HeaderMap;
 use hyper::Method;
-use hyper::header::{CONTENT_TYPE, HeaderValue};
+use hyper::header::{CONTENT_TYPE, HeaderName, HeaderValue};
 use hyper::http::request::Parts;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{Mutex, RwLock};
@@ -205,7 +207,7 @@ pub fn router(shared: Shared) -> Router {
                     ALLOWED_ORIGINS.map(HeaderValue::from_static),
                 ))
                 .allow_methods([Method::POST, Method::GET])
-                .allow_headers([CONTENT_TYPE]),
+                .allow_headers([CONTENT_TYPE, HeaderName::from_static("rid")]),
         )
         .with_state(shared)
 }
@@ -886,7 +888,10 @@ async fn get_embeds_handler(
 ) -> impl IntoResponse {
     let embed = ctx.get_embed(rid, name, oid)?;
 
-    Ok::<_, Error>(Json(embed))
+    Ok::<_, Error>((
+        [(CONTENT_TYPE, "application/octet-stream")],
+        embed.into_bytes(),
+    ))
 }
 
 #[derive(Deserialize)]
@@ -904,17 +909,17 @@ async fn save_embed_by_path_handler(
     Ok::<_, Error>(Json(oid))
 }
 
-#[derive(Deserialize)]
-struct SaveEmbedByBytesBody {
-    pub rid: identity::RepoId,
-    pub name: String,
-    pub bytes: Vec<u8>,
-}
-
 async fn save_embed_by_bytes_handler(
     Ctx(ctx): Ctx,
-    Json(SaveEmbedByBytesBody { rid, name, bytes }): Json<SaveEmbedByBytesBody>,
+    headers: HeaderMap,
+    body: Bytes,
 ) -> impl IntoResponse {
+    let rid = headers
+        .get("rid")
+        .and_then(|rid| rid.to_str().ok())
+        .and_then(|rid| rid.parse().ok())
+        .ok_or(Error::SaveEmbedError)?;
+    let (name, bytes) = types::cobs::split_embed_upload(&body).ok_or(Error::SaveEmbedError)?;
     let oid = ctx.save_embed_by_bytes(rid, name, bytes)?;
 
     Ok::<_, Error>(Json(oid))

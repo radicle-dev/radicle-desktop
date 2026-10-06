@@ -1,4 +1,3 @@
-import type { EmbedWithMimeType } from "@bindings/cob/EmbedWithMimeType";
 import type { JSHandle, Locator, Page } from "@playwright/test";
 import type { RadiclePeer } from "@tests/support/peerManager.js";
 
@@ -119,9 +118,8 @@ test("a pasted image is stored as the image itself", async ({ page, peer }) => {
     `http://127.0.0.1:${peer.httpdBaseUrl.port}/get_embed`,
     { data: { rid, oid, name: "image.png" } },
   );
-  const embed = (await response.json()) as EmbedWithMimeType;
-  expect(embed.mimeType).toBe("image/png");
-  expect(Buffer.from(embed.content)).toEqual(
-    Buffer.from(onePixelPng, "base64"),
-  );
+  const body = await response.body();
+  const end = body.indexOf(0);
+  expect(body.subarray(0, end).toString()).toBe("image/png");
+  expect(body.subarray(end + 1)).toEqual(Buffer.from(onePixelPng, "base64"));
 });

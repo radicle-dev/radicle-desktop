@@ -101,13 +101,27 @@ pub struct Operation<A> {
     pub timestamp: cob::Timestamp,
 }
 
-#[derive(Serialize, TS)]
-#[serde(rename_all = "camelCase")]
-#[ts(export)]
-#[ts(export_to = "cob/")]
 pub struct EmbedWithMimeType {
     pub content: Vec<u8>,
     pub mime_type: Option<String>,
+}
+
+impl EmbedWithMimeType {
+    pub fn into_bytes(self) -> Vec<u8> {
+        let mime_type = self.mime_type.unwrap_or_default();
+        let mut bytes = Vec::with_capacity(mime_type.len() + 1 + self.content.len());
+        bytes.extend_from_slice(mime_type.as_bytes());
+        bytes.push(0);
+        bytes.extend_from_slice(&self.content);
+        bytes
+    }
+}
+
+pub fn split_embed_upload(body: &[u8]) -> Option<(&str, &[u8])> {
+    let end = body.iter().position(|&byte| byte == 0)?;
+    let name = std::str::from_utf8(&body[..end]).ok()?;
+
+    Some((name, &body[end + 1..]))
 }
 
 #[derive(TS, Serialize)]
@@ -195,5 +209,44 @@ pub mod query {
                 PatchStatus::Open => Self::Open,
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn embed_into_bytes() {
+        let embed = EmbedWithMimeType {
+            content: vec![1, 0, 2],
+            mime_type: Some("image/png".to_string()),
+        };
+        assert_eq!(embed.into_bytes(), b"image/png\0\x01\0\x02");
+
+        let embed = EmbedWithMimeType {
+            content: vec![1],
+            mime_type: None,
+        };
+        assert_eq!(embed.into_bytes(), b"\0\x01");
+    }
+
+    #[test]
+    fn split_embed_upload_at_first_nul() {
+        let body = "a\u{202f}b.png\0"
+            .bytes()
+            .chain([1, 0, 2])
+            .collect::<Vec<_>>();
+        assert_eq!(
+            split_embed_upload(&body),
+            Some(("a\u{202f}b.png", &[1, 0, 2][..]))
+        );
+        assert_eq!(split_embed_upload(b"name\0"), Some(("name", &[][..])));
+    }
+
+    #[test]
+    fn split_embed_upload_rejects_malformed_bodies() {
+        assert_eq!(split_embed_upload(b"no separator"), None);
+        assert_eq!(split_embed_upload(b"\xff\0content"), None);
     }
 }

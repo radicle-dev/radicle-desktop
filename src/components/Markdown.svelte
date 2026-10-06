@@ -1,10 +1,8 @@
 <script lang="ts">
-  import type { Embed } from "@bindings/cob/Embed";
-
   import { toDom } from "hast-util-to-dom";
   import { mount, tick, unmount } from "svelte";
 
-  import { embedPreviewKind, retinaWidth } from "@app/lib/embeds";
+  import { decodeEmbed, embedPreviewKind, retinaWidth } from "@app/lib/embeds";
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
   import {
@@ -71,7 +69,7 @@
   });
 
   function createEmbedPreview(
-    mimeType: string | null,
+    mimeType: string | undefined,
     url: string,
     content: Uint8Array,
   ): HTMLElement | undefined {
@@ -302,20 +300,20 @@
           if (cached) {
             placeEmbedPreview(e, cached.element);
           } else {
-            void invoke<Embed>("get_embed", {
+            void invoke<ArrayBuffer>("get_embed", {
               rid,
               name: e.innerText,
               oid: href,
             })
-              .then(({ mimeType, content }) => {
+              .then(buffer => {
                 if (destroyed) {
                   return;
                 }
                 let preview = embedPreviews.get(href);
                 if (!preview) {
-                  const bytes = Buffer.from(content);
-                  const url = URL.createObjectURL(new Blob([bytes]));
-                  const element = createEmbedPreview(mimeType, url, bytes);
+                  const { mimeType, content } = decodeEmbed(buffer);
+                  const url = URL.createObjectURL(new Blob([content]));
+                  const element = createEmbedPreview(mimeType, url, content);
                   if (!element) {
                     URL.revokeObjectURL(url);
                     console.warn(

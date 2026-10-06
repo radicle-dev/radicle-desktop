@@ -19,8 +19,10 @@ pub async fn get_embed(
     rid: identity::RepoId,
     name: Option<String>,
     oid: git::Oid,
-) -> Result<types::cobs::EmbedWithMimeType, Error> {
-    ctx.get_embed(rid, name, oid)
+) -> Result<tauri::ipc::Response, Error> {
+    let embed = ctx.get_embed(rid, name, oid)?;
+
+    Ok(tauri::ipc::Response::new(embed.into_bytes()))
 }
 
 #[tauri::command]
@@ -35,10 +37,19 @@ pub async fn save_embed_by_path(
 #[tauri::command]
 pub async fn save_embed_by_bytes(
     ctx: tauri::State<'_, AppState>,
-    rid: identity::RepoId,
-    name: String,
-    bytes: Vec<u8>,
+    request: tauri::ipc::Request<'_>,
 ) -> Result<git::Oid, Error> {
+    let tauri::ipc::InvokeBody::Raw(body) = request.body() else {
+        return Err(Error::SaveEmbedError);
+    };
+    let rid = request
+        .headers()
+        .get("rid")
+        .and_then(|rid| rid.to_str().ok())
+        .and_then(|rid| rid.parse().ok())
+        .ok_or(Error::SaveEmbedError)?;
+    let (name, bytes) = types::cobs::split_embed_upload(body).ok_or(Error::SaveEmbedError)?;
+
     ctx.save_embed_by_bytes(rid, name, bytes)
 }
 

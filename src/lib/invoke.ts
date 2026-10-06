@@ -69,18 +69,28 @@ async function withTestBackend<T>(
       }
     });
   } else {
+    const raw = args instanceof Uint8Array;
+    const headers = new Headers(options?.headers);
+    headers.set(
+      "Content-Type",
+      raw ? "application/octet-stream" : "application/json",
+    );
     return fetch(`http://127.0.0.1:${testHttpApiPort()}/${cmd}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(args ?? {}, (_key, value: unknown) =>
-        value instanceof Uint8Array ? Array.from(value) : value,
-      ),
+      headers,
+      body: raw ? args.slice() : JSON.stringify(args ?? {}),
     }).then(async response => {
       if (response.status === 404) {
         throw new InvokeError(
           `test-http-api has no route for \`${cmd}\``,
           "TestHttpApi.MissingRoute",
         );
+      }
+      if (
+        response.ok &&
+        response.headers.get("Content-Type") === "application/octet-stream"
+      ) {
+        return response.arrayBuffer();
       }
       const json = await response.json();
       if (!response.ok) {

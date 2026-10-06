@@ -43,11 +43,14 @@ async function saveEmbed(
   name: string,
   bytes: Uint8Array,
 ) {
-  return (await api(page, peer, "save_embed_by_bytes", {
-    rid,
-    name,
-    bytes: Array.from(bytes),
-  })) as string;
+  const response = await page.request.post(
+    `http://127.0.0.1:${peer.httpdBaseUrl.port}/save_embed_by_bytes`,
+    {
+      headers: { rid, "Content-Type": "application/octet-stream" },
+      data: Buffer.concat([Buffer.from(`${name}\0`), bytes]),
+    },
+  );
+  return (await response.json()) as string;
 }
 
 async function createComment(

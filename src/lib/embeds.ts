@@ -3,7 +3,7 @@ export function basename(path: string): string {
 }
 
 export function embedPreviewKind(
-  mimeType: string | null,
+  mimeType: string | undefined,
 ): "image" | "document" | "video" | "audio" | undefined {
   if (mimeType?.startsWith("image")) return "image";
   if (mimeType?.startsWith("application")) return "document";
@@ -45,4 +45,25 @@ export function retinaWidth(bytes: Uint8Array): number | undefined {
     offset += 12 + length;
   }
   return undefined;
+}
+
+export function encodeEmbedUpload(name: string, bytes: Uint8Array): Uint8Array {
+  const encodedName = new TextEncoder().encode(name);
+  const body = new Uint8Array(encodedName.length + 1 + bytes.length);
+  body.set(encodedName);
+  body.set(bytes, encodedName.length + 1);
+  return body;
+}
+
+export function decodeEmbed(buffer: ArrayBuffer): {
+  mimeType: string | undefined;
+  content: Uint8Array<ArrayBuffer>;
+} {
+  const bytes = new Uint8Array(buffer);
+  const end = bytes.indexOf(0);
+  const mimeType = new TextDecoder().decode(bytes.subarray(0, end));
+  return {
+    mimeType: mimeType === "" ? undefined : mimeType,
+    content: bytes.subarray(end + 1),
+  };
 }

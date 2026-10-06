@@ -78,8 +78,8 @@ pub trait Thread: Profile {
     fn save_embed_by_bytes(
         &self,
         rid: identity::RepoId,
-        name: String,
-        bytes: Vec<u8>,
+        name: &str,
+        bytes: &[u8],
     ) -> Result<git::Oid, Error> {
         let file_size = bytes.len();
         if file_size > MAX_EMBED_SIZE {
@@ -87,7 +87,7 @@ pub trait Thread: Profile {
         }
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
-        let embed = radicle::cob::Embed::<git::Oid>::store(&name, &bytes, &repo.backend)?;
+        let embed = radicle::cob::Embed::<git::Oid>::store(name, bytes, &repo.backend)?;
 
         Ok(embed.oid())
     }

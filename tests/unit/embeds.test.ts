@@ -1,6 +1,12 @@
 import { describe, expect, test } from "vitest";
 
-import { basename, embedPreviewKind, retinaWidth } from "@app/lib/embeds";
+import {
+  basename,
+  decodeEmbed,
+  embedPreviewKind,
+  encodeEmbedUpload,
+  retinaWidth,
+} from "@app/lib/embeds";
 
 describe("basename", () => {
   test.each([
@@ -18,7 +24,7 @@ test.each([
   ["video/mp4", "video"],
   ["audio/ogg", "audio"],
   ["text/plain", undefined],
-  [null, undefined],
+  [undefined, undefined],
 ])("a %j embed previews as %j", (mimeType, expected) => {
   expect(embedPreviewKind(mimeType)).toBe(expected);
 });
@@ -109,4 +115,28 @@ describe("retinaWidth", () => {
   ])("ignores %s input", (_, bytes) => {
     expect(retinaWidth(bytes)).toBeUndefined();
   });
+});
+
+describe("decodeEmbed", () => {
+  test("splits the MIME type from the content at the first NUL", () => {
+    const bytes = new Uint8Array([...bytesOf("image/png\0"), 1, 0, 2]);
+    const { mimeType, content } = decodeEmbed(bytes.buffer);
+    expect(mimeType).toBe("image/png");
+    expect(content).toEqual(new Uint8Array([1, 0, 2]));
+  });
+
+  test("reads an empty MIME type as unknown", () => {
+    const bytes = new Uint8Array([0, 1, 2]);
+    const { mimeType, content } = decodeEmbed(bytes.buffer);
+    expect(mimeType).toBeUndefined();
+    expect(content).toEqual(new Uint8Array([1, 2]));
+  });
+});
+
+test("encodeEmbedUpload puts the UTF-8 name before a NUL and the content", () => {
+  const name = "Screenshot at 3.07.58\u202fPM.png";
+  const encodedName = new TextEncoder().encode(name);
+  expect(encodeEmbedUpload(name, new Uint8Array([1, 0, 2]))).toEqual(
+    new Uint8Array([...encodedName, 0, 1, 0, 2]),
+  );
 });
