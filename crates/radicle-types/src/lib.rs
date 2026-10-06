@@ -1,4 +1,5 @@
 use traits::Profile;
+use traits::board::Boards;
 use traits::cobs::Cobs;
 use traits::identity::Identity;
 use traits::inbox::Inbox;
@@ -27,6 +28,7 @@ pub struct AppState {
     pub profile: radicle::Profile,
 }
 
+impl Boards for AppState {}
 impl Repo for AppState {}
 impl Thread for AppState {}
 impl Cobs for AppState {}

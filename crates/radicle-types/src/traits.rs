@@ -10,6 +10,7 @@ use crate::error::Error;
 
 const ALIAS_SEARCH_LIMIT: usize = 50;
 
+pub mod board;
 pub mod cobs;
 pub mod identity;
 pub mod inbox;

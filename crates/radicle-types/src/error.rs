@@ -189,6 +189,10 @@ pub enum Error {
     /// Serde JSON error.
     #[error(transparent)]
     SerdeJSON(#[from] serde_json::error::Error),
+
+    /// Board error.
+    #[error("{0}")]
+    Board(&'static str),
 }
 
 impl Error {
@@ -217,6 +221,7 @@ impl Error {
             }
             Error::FileTooLarge(_) => "PayloadError.TooLarge",
             Error::ReviewExists => "PatchError.ReviewExists",
+            Error::Board(_) => "BoardError",
             _ => "UnknownError",
         }
     }
