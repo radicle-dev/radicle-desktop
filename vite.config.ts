@@ -69,6 +69,7 @@ export default defineConfig({
   ],
   build: {
     outDir: "build",
+    chunkSizeWarningLimit: 5000,
   },
   // prevent vite from obscuring rust errors
   clearScreen: false,
