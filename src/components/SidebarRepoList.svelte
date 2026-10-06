@@ -76,6 +76,7 @@
   import { show } from "@app/lib/modal";
   import { repoListScope } from "@app/lib/repoListScope";
   import * as router from "@app/lib/router";
+  import { seededRepos, seedRepo, setFetchingRepos } from "@app/lib/seedRepo";
   import {
     ariaKeyShortcuts,
     modifierHeld,
@@ -346,6 +347,13 @@
     setOrder: rids => withPinAnimation(() => (pinnedRepoIds.value = rids)),
   });
 
+  $effect(() => setFetchingRepos(seededNotReplicated));
+
+  $effect(() => {
+    if ($seededRepos === 0) return;
+    untrack(() => void reloadRepos());
+  });
+
   async function reloadRepos() {
     invalidateReposSummary();
     [repos, seededNotReplicated] = await Promise.all([
@@ -393,15 +401,11 @@
   // network. Nothing is destroyed, so it runs straight off the menu item.
   async function startSeeding(rid: string) {
     try {
-      await invoke<null>("seed", { rid });
+      await seedRepo(rid);
     } catch (error) {
       console.error("Seed failed", error);
-    } finally {
-      await reloadRepos().catch(error =>
-        console.error("Reloading repos failed", error),
-      );
-      await refreshActiveRepo(rid);
     }
+    await refreshActiveRepo(rid);
   }
 
   // The pending-fetch list's trash button, which stays quiet on failure. The

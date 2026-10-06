@@ -23,7 +23,14 @@ function target(link: string, local = true) {
 }
 
 describe("parseDeepLink", () => {
-  test.each([rid, `rad:///${repo}`, `  ${rid}\n`])("accepts %j", link => {
+  test.each([
+    rid,
+    `rad:///${repo}`,
+    `  ${rid}\n`,
+    `rad:///${rid}`,
+    `rad://${rid}`,
+    `rad:${rid}`,
+  ])("accepts %j", link => {
     expect(parseDeepLink(link)).toEqual({ type: "uri", uri: { repo } });
   });
 
@@ -59,10 +66,19 @@ describe("deepLinkTarget", () => {
     expect(target(link)).toEqual({ type: "route", route });
   });
 
-  test("opens the explorer when the repo is not here", () => {
+  test("offers to seed a repo that is not here", () => {
     expect(target(`${rid}/cob/xyz.radicle.issue/${oid}`, false)).toEqual({
-      type: "external",
+      type: "missing",
+      rid,
       url: `${explorer}/issues/${oid}`,
+    });
+  });
+
+  test("offers to seed a repo that is not here when nothing has a page", () => {
+    expect(target(`${rid}/tree/${oid}`, false)).toEqual({
+      type: "missing",
+      rid,
+      url: undefined,
     });
   });
 

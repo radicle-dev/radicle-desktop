@@ -9,15 +9,21 @@ import { parseRadUri } from "@app/lib/radUri";
 import * as router from "@app/lib/router";
 import { explorerHost, explorerLink } from "@app/lib/utils";
 
-import OpenInBrowser from "@app/modals/OpenInBrowser.svelte";
+import NotOnThisNode from "@app/modals/NotOnThisNode.svelte";
+import UnopenableLink from "@app/modals/UnopenableLink.svelte";
 
 export type DeepLinkTarget =
-  { type: "route"; route: RepoRoute } | { type: "external"; url: string };
+  | { type: "route"; route: RepoRoute }
+  | { type: "external"; url: string }
+  | { type: "missing"; rid: string; url?: string };
 
 export function parseDeepLink(
   link: string,
 ): { type: "uri"; uri: RadUri } | undefined {
-  const uri = parseRadUri(link.trim());
+  // A RID copied as `rad:z…` is easily pasted after `rad:///`.
+  const uri = parseRadUri(
+    link.trim().replace(/^rad:(?:\/\/\/?)?rad:/i, "rad:"),
+  );
 
   return uri && { type: "uri", uri };
 }
@@ -27,10 +33,13 @@ export function deepLinkTarget(
   local: boolean,
   config: Config,
 ): DeepLinkTarget | undefined {
-  const route = local ? referenceRoute(reference) : undefined;
-  if (route) return { type: "route", route };
-
   const url = explorerLink(reference, config);
+  if (!local && reference.type === "uri") {
+    return { type: "missing", rid: `rad:${reference.uri.repo}`, url };
+  }
+
+  const route = referenceRoute(reference);
+  if (route) return { type: "route", route };
 
   return url ? { type: "external", url } : undefined;
 }
@@ -66,24 +75,36 @@ export function createLinkQueue(open: (link: string) => Promise<void>) {
   };
 }
 
-// An untrusted link only ever navigates; it never fetches or seeds, and
-// leaving the app for the browser needs the user's confirmation.
+// An untrusted link only ever navigates; seeding a repo or leaving the app
+// for the browser needs the user's confirmation.
 async function openDeepLink(link: string) {
   const reference = parseDeepLink(link);
-  if (!reference) return;
+  if (!reference) {
+    show({ component: UnopenableLink, props: { link, reason: "invalid" } });
+    return;
+  }
 
-  const [config, repo] = await Promise.all([
+  const [config, local] = await Promise.all([
     cachedConfig(),
-    cachedRepoById(`rad:${reference.uri.repo}`).catch(() => undefined),
+    cachedRepoById(`rad:${reference.uri.repo}`).then(
+      repo => repo !== null,
+      () => false,
+    ),
   ]);
-  const target = deepLinkTarget(reference, Boolean(repo), config);
+  const target = deepLinkTarget(reference, local, config);
   if (target?.type === "route") {
     await router.push(target.route);
-  } else if (target?.type === "external") {
+  } else if (target) {
     show({
-      component: OpenInBrowser,
-      props: { url: target.url, host: explorerHost(config) },
+      component: NotOnThisNode,
+      props: {
+        url: target.url,
+        host: explorerHost(config),
+        rid: target.type === "missing" ? target.rid : undefined,
+      },
     });
+  } else {
+    show({ component: UnopenableLink, props: { link, reason: "no-page" } });
   }
 }
 

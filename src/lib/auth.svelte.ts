@@ -24,7 +24,7 @@ export async function checkAuth() {
       import.meta.env.VITE_AUTH_LONG_DELAY || 30_000,
     );
     if (get(router.activeRouteStore).resource === "booting") {
-      void router.push({ resource: "inbox" }).then(deepLinksReady);
+      void router.push({ resource: "inbox" }).finally(deepLinksReady);
     } else {
       deepLinksReady();
     }

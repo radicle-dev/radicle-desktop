@@ -2,20 +2,13 @@
   import { hide } from "@app/lib/modal";
 
   import Button from "@app/components/Button.svelte";
-  import Icon from "@app/components/Icon.svelte";
 
   interface Props {
-    url: string;
-    host: string;
+    link: string;
+    reason: "invalid" | "no-page";
   }
 
-  const { url, host }: Props = $props();
-
-  async function open() {
-    const { open } = await import("@tauri-apps/plugin-shell");
-    await open(url);
-    hide();
-  }
+  const { link, reason }: Props = $props();
 </script>
 
 <style>
@@ -31,7 +24,6 @@
   .header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 0 1.5rem;
     height: 3.25rem;
     flex-shrink: 0;
@@ -49,7 +41,7 @@
     font: var(--txt-body-m-regular);
     color: var(--color-text-secondary);
   }
-  .url {
+  .link {
     font: var(--txt-code-regular);
     color: var(--color-text-tertiary);
     word-break: break-all;
@@ -57,41 +49,27 @@
   .actions {
     display: flex;
     justify-content: flex-end;
-    gap: 0.5rem;
     padding: 0 1.5rem 1.5rem;
-  }
-  .confirm-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
   }
 </style>
 
 <div class="modal">
   <div class="header">
-    <span class="title">Open in browser</span>
-    <Button variant="naked" onclick={hide}>
-      <span style:color="var(--color-text-tertiary)">
-        <Icon name="close" />
-      </span>
-    </Button>
+    <span class="title">Can't open link</span>
   </div>
 
   <div class="body">
     <span>
-      A link was opened for something that isn't on this node. It can be viewed
-      on {host} instead.
+      {#if reason === "invalid"}
+        This isn't a valid rad: link.
+      {:else}
+        Neither this app nor the explorer has a page for this link.
+      {/if}
     </span>
-    <span class="url">{url}</span>
+    <span class="link">{link}</span>
   </div>
 
   <div class="actions">
-    <Button variant="outline" onclick={hide}>Cancel</Button>
-    <Button variant="ghost" onclick={() => void open()}>
-      <span class="confirm-label">
-        <Icon name="open-external" />
-        Open in {host}
-      </span>
-    </Button>
+    <Button variant="outline" onclick={hide}>Close</Button>
   </div>
 </div>

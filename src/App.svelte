@@ -201,7 +201,7 @@
     void listenForDeepLinks();
     try {
       await invoke("authenticate");
-      void router.loadFromLocation().then(deepLinksReady);
+      void router.loadFromLocation().finally(deepLinksReady);
       dynamicInterval(
         "auth",
         checkAuth,

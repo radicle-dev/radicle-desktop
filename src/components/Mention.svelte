@@ -20,6 +20,7 @@
   } from "@app/lib/mentions";
   import type { Route } from "@app/lib/router";
   import { push, routeToPath } from "@app/lib/router";
+  import { fetchingRepos } from "@app/lib/seedRepo";
   import {
     formatOid,
     issueStatusColor,
@@ -69,20 +70,32 @@
 
   const repoName = $derived(resolvedRepoName ?? fallback);
 
+  const fetching = $derived(
+    target.type !== "node" && $fetchingRepos.includes(target.rid),
+  );
+  let repoLocal: boolean | undefined = $state(undefined);
+  const seedRid = $derived(
+    repoLocal === false && !fetching && target.type !== "node"
+      ? target.rid
+      : undefined,
+  );
+
   $effect(() => {
-    if (target.type !== "repo") return;
+    if (target.type === "node" || fetching) return;
+    const isRepo = target.type === "repo";
     let cancelled = false;
     void cachedRepoById(target.rid)
       .then(result => {
         if (cancelled) return;
-        if (!result) {
-          missing = true;
-          return;
-        }
-        resolvedRepoName = result.payloads["xyz.radicle.project"]?.data.name;
+        repoLocal = result !== null;
+        if (!isRepo) return;
+        missing = !result;
+        resolvedRepoName = result?.payloads["xyz.radicle.project"]?.data.name;
       })
       .catch(() => {
-        if (!cancelled) missing = true;
+        if (cancelled) return;
+        repoLocal = false;
+        if (isRepo) missing = true;
       });
     return () => {
       cancelled = true;
@@ -164,7 +177,7 @@
   let menu: MenuPosition | undefined = $state(undefined);
 
   function openMenu(event: MouseEvent) {
-    if (explorerHref) menu = menuPosition(event);
+    if (explorerHref || seedRid) menu = menuPosition(event);
   }
 
   function handleClick(event: MouseEvent) {
@@ -377,13 +390,14 @@
   </a>
 {/if}
 
-{#if menu && explorerHref && config}
+{#if menu && config}
   <ExplorerMenu
     x={menu.x}
     y={menu.y}
     target={menu.target}
     url={explorerHref}
     uri={entityUri(target)}
+    {seedRid}
     {config}
     onclose={() => (menu = undefined)} />
 {/if}

@@ -5,6 +5,7 @@
   import { describeLink, referenceRoute } from "@app/lib/mentions";
   import { formatReference, parseReference } from "@app/lib/radUri";
   import { push, routeToPath } from "@app/lib/router";
+  import { fetchingRepos } from "@app/lib/seedRepo";
   import { explorerLink } from "@app/lib/utils";
 
   import ExplorerMenu, {
@@ -42,11 +43,15 @@
   });
 
   const route = $derived(reference && referenceRoute(reference));
-  let local = $state(false);
+  const rid = $derived(
+    reference?.type === "uri" ? `rad:${reference.uri.repo}` : undefined,
+  );
+  const fetching = $derived(rid !== undefined && $fetchingRepos.includes(rid));
+  let local: boolean | undefined = $state(undefined);
   $effect(() => {
-    if (!route) return;
+    if (!rid || fetching) return;
     let cancelled = false;
-    void cachedRepoById(route.rid)
+    void cachedRepoById(rid)
       .then(repo => {
         if (!cancelled) local = repo !== null;
       })
@@ -57,8 +62,9 @@
       cancelled = true;
     };
   });
-  const inApp = $derived(local && route !== undefined);
+  const inApp = $derived(local === true && route !== undefined);
   const linkHref = $derived(inApp && route ? routeToPath(route) : url);
+  const seedRid = $derived(local === false && !fetching ? rid : undefined);
 
   function handleClick(event: MouseEvent) {
     if (!inApp || !route) return;
@@ -69,7 +75,7 @@
   let menu: MenuPosition | undefined = $state(undefined);
 
   function openMenu(event: MouseEvent) {
-    if (url) menu = menuPosition(event);
+    if (url || seedRid) menu = menuPosition(event);
   }
 </script>
 
@@ -95,13 +101,14 @@
   {/if}{label}
 </a>
 
-{#if menu && url && config}
+{#if menu && config}
   <ExplorerMenu
     x={menu.x}
     y={menu.y}
     target={menu.target}
     {url}
     uri={reference ? formatReference(reference) : href}
+    {seedRid}
     {config}
     onclose={() => (menu = undefined)} />
 {/if}

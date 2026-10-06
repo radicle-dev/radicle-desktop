@@ -1,13 +1,18 @@
 import type { Page } from "@playwright/test";
 import type { RadiclePeer } from "@tests/support/peerManager.js";
 
-import { createProject } from "@tests/support/collaboration.js";
+import {
+  createCollaborators,
+  createProject,
+} from "@tests/support/collaboration.js";
 import {
   expect,
   reload,
   test,
+  useBackend,
   waitForCommand,
 } from "@tests/support/fixtures.js";
+import { createRepo } from "@tests/support/repo.js";
 
 async function openIssue(page: Page, peer: RadiclePeer) {
   const project = await createProject(peer);
@@ -235,4 +240,61 @@ test("every reference type renders and links where it should", async ({
 
   await link(`${repo}/issues?status=all`).click();
   await expect(page).toHaveURL(/\/issues\?status=all$/);
+});
+
+test("a repo that isn't here can be seeded from its chip", async ({
+  page,
+  peerManager,
+}) => {
+  const { bob, eve } = await createCollaborators(peerManager);
+  const { rid: garden } = await createRepo(eve, { name: "garden" });
+  await bob.startHttpd();
+  await useBackend(page, bob);
+  await openIssue(page, bob);
+
+  await commentBox(page).fill(`[garden](${garden})`);
+  await comment(page);
+  await reload(page);
+  const chip = rendered(page).last().locator("a.mention.unresolved");
+  await expect(chip).toContainText("garden");
+
+  await chip.click({ button: "right" });
+  await waitForCommand(page, "seed", () =>
+    page.getByRole("menuitem", { name: "Seed repository" }).click(),
+  );
+  await expect(
+    page.getByRole("navigation").getByRole("link", { name: /garden/ }),
+  ).toBeVisible({ timeout: 20_000 });
+});
+
+test("a link to a repo that isn't here can be seeded without an explorer page", async ({
+  page,
+  peerManager,
+}) => {
+  const { bob, eve } = await createCollaborators(peerManager);
+  const { rid: garden } = await createRepo(eve, { name: "garden" });
+  await bob.startHttpd();
+  await useBackend(page, bob);
+  await openIssue(page, bob);
+
+  await commentBox(page).fill(
+    `[garden tree](${garden}/tree/${"f".repeat(40)})`,
+  );
+  await comment(page);
+  await reload(page);
+
+  await rendered(page)
+    .last()
+    .locator("a", { hasText: "garden tree" })
+    .click({ button: "right" });
+  await expect(page.getByRole("menuitem")).toHaveText([
+    "Copy rad: URI",
+    "Seed repository",
+  ]);
+  await waitForCommand(page, "seed", () =>
+    page.getByRole("menuitem", { name: "Seed repository" }).click(),
+  );
+  await expect(
+    page.getByRole("navigation").getByRole("link", { name: /garden/ }),
+  ).toBeVisible({ timeout: 20_000 });
 });
