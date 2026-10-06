@@ -62,7 +62,8 @@
     hideDiscard?: boolean;
     // If true, the whole actions row stays hidden until the body has content.
     collapseActions?: boolean;
-    belowTextarea?: Snippet;
+    // Rendered at the start of the actions row, opposite the buttons.
+    leadingActions?: Snippet;
   }
 
   /* eslint-disable prefer-const */
@@ -93,7 +94,7 @@
     disableAttachments: attachDisabled = false,
     hideDiscard = false,
     collapseActions = false,
-    belowTextarea,
+    leadingActions,
   }: Props = $props();
   /* eslint-enable prefer-const */
 
@@ -309,6 +310,7 @@
   }
   .buttons {
     display: flex;
+    align-self: flex-start;
     margin-left: auto;
     gap: 0.5rem;
   }
@@ -481,9 +483,9 @@
       {/if}
     {/if}
   </div>
-  {@render belowTextarea?.()}
   {#if !collapseActions || body.trim() !== ""}
     <div class="actions">
+      {@render leadingActions?.()}
       {#if !hideDiscard}
         <Button
           variant="outline"

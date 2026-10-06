@@ -113,13 +113,13 @@
     color: var(--color-text-primary);
     padding: 0.5rem 0;
   }
-  .metadata-section {
-    padding: 0.5rem;
-    font: var(--txt-body-m-regular);
+  .metadata {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    height: 100%;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-width: 0;
+    font: var(--txt-body-m-regular);
   }
 </style>
 
@@ -191,33 +191,26 @@
       bind:body
       borderVariant="ghost"
       placeholder="Description">
-      {#snippet belowTextarea()}
+      {#snippet leadingActions()}
         {#await configPromise then config}
           {#if !!roles.isDelegate( config.publicKey, repo.delegates.map(d => d.did) )}
-            <div
-              style:display="flex"
-              style:align-items="center"
-              style:width="100%">
-              <div class="metadata-section" style:flex="1">
-                <LabelInput
-                  allowedToEdit={true}
-                  {preview}
-                  {labels}
-                  submitInProgress={false}
-                  save={newLabels => {
-                    labels = newLabels;
-                  }} />
-              </div>
-              <div class="metadata-section" style:flex="1">
-                <AssigneeInput
-                  allowedToEdit={true}
-                  {preview}
-                  bind:assignees
-                  submitInProgress={false}
-                  save={newAssignees => {
-                    assignees = newAssignees;
-                  }} />
-              </div>
+            <div class="metadata">
+              <LabelInput
+                allowedToEdit={true}
+                {preview}
+                {labels}
+                submitInProgress={false}
+                save={newLabels => {
+                  labels = newLabels;
+                }} />
+              <AssigneeInput
+                allowedToEdit={true}
+                {preview}
+                bind:assignees
+                submitInProgress={false}
+                save={newAssignees => {
+                  assignees = newAssignees;
+                }} />
             </div>
           {/if}
         {/await}
