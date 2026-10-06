@@ -43,6 +43,8 @@ use radicle_types::traits::inbox::Inbox;
 use radicle_types::traits::issue::{Issues, IssuesMut};
 use radicle_types::traits::job::Jobs;
 use radicle_types::traits::patch::{Patches, PatchesMut};
+use radicle_types::traits::release::{ReleaseFilter, Releases};
+use radicle_types::traits::release_mut::ReleasesMut;
 use radicle_types::traits::repo::{Repo, Show};
 use radicle_types::traits::thread::Thread;
 
@@ -64,6 +66,8 @@ impl IssuesMut for Context {}
 impl Jobs for Context {}
 impl Patches for Context {}
 impl PatchesMut for Context {}
+impl Releases for Context {}
+impl ReleasesMut for Context {}
 impl Profile for Context {
     fn profile(&self) -> radicle::Profile {
         self.profile.deref().clone()
@@ -138,6 +142,30 @@ pub fn router(shared: Shared) -> Router {
         .route("/edit_patch", post(edit_patch_handler))
         .route("/create_patch_review", post(create_patch_review_handler))
         .route("/delete_patch", post(delete_patch_handler))
+        .route(
+            "/create_or_open_release",
+            post(create_or_open_release_handler),
+        )
+        .route("/register_artifact", post(register_artifact_handler))
+        .route("/attest_artifact", post(attest_artifact_handler))
+        .route(
+            "/set_artifact_metadata",
+            post(set_artifact_metadata_handler),
+        )
+        .route(
+            "/remove_artifact_metadata",
+            post(remove_artifact_metadata_handler),
+        )
+        .route(
+            "/add_artifact_location",
+            post(add_artifact_location_handler),
+        )
+        .route(
+            "/remove_artifact_location",
+            post(remove_artifact_location_handler),
+        )
+        .route("/redact_artifact", post(redact_artifact_handler))
+        .route("/delete_release", post(delete_release_handler))
         .route_layer(middleware::from_fn_with_state(
             Arc::new(Mutex::new(())),
             serialize_writes,
@@ -197,6 +225,10 @@ pub fn router(shared: Shared) -> Router {
         .route("/revisions_by_patch", post(revision_handler))
         .route("/get_embed", post(get_embeds_handler))
         .route("/save_embed_to_disk", post(save_embed_to_disk_handler))
+        .route("/list_releases", post(releases_handler))
+        .route("/release_by_id", post(release_handler))
+        .route("/release_counts", post(release_counts_handler))
+        .route("/compute_artifact_cid", post(compute_artifact_cid_handler))
         .route("/list_jobs", post(jobs_handler))
         .route("/list_notifications", post(list_notifications_handler))
         .route("/notification_count", post(notification_count_handler))
@@ -981,6 +1013,264 @@ async fn issue_threads_handler(
     let issue_threads = ctx.comment_threads_by_issue_id(rid, id)?;
 
     Ok::<_, Error>(Json(issue_threads))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReleasesBody {
+    pub rid: identity::RepoId,
+    pub filter: Option<ReleaseFilter>,
+    pub skip: Option<usize>,
+    pub take: Option<usize>,
+}
+
+async fn releases_handler(
+    Ctx(ctx): Ctx,
+    Json(ReleasesBody {
+        rid,
+        filter,
+        skip,
+        take,
+    }): Json<ReleasesBody>,
+) -> impl IntoResponse {
+    let releases = ctx.list_releases(rid, filter, skip, take)?;
+
+    Ok::<_, Error>(Json(releases))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReleaseBody {
+    pub rid: identity::RepoId,
+    pub id: git::Oid,
+}
+
+async fn release_handler(
+    Ctx(ctx): Ctx,
+    Json(ReleaseBody { rid, id }): Json<ReleaseBody>,
+) -> impl IntoResponse {
+    let release = ctx.release_by_id(rid, id)?;
+
+    Ok::<_, Error>(Json(release))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ReleaseCountsBody {
+    pub rid: identity::RepoId,
+}
+
+async fn release_counts_handler(
+    Ctx(ctx): Ctx,
+    Json(ReleaseCountsBody { rid }): Json<ReleaseCountsBody>,
+) -> impl IntoResponse {
+    let counts = ctx.release_counts(rid)?;
+
+    Ok::<_, Error>(Json(counts))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ComputeArtifactCidBody {
+    pub path: std::path::PathBuf,
+}
+
+async fn compute_artifact_cid_handler(
+    Ctx(ctx): Ctx,
+    Json(ComputeArtifactCidBody { path }): Json<ComputeArtifactCidBody>,
+) -> impl IntoResponse {
+    let digest = ctx.compute_artifact_cid(path)?;
+
+    Ok::<_, Error>(Json(digest))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateOrOpenReleaseBody {
+    pub rid: identity::RepoId,
+    pub oid: git::Oid,
+    pub tag: Option<git::Oid>,
+}
+
+async fn create_or_open_release_handler(
+    Ctx(ctx): Ctx,
+    Json(CreateOrOpenReleaseBody { rid, oid, tag }): Json<CreateOrOpenReleaseBody>,
+) -> impl IntoResponse {
+    let id = ctx.create_or_open_release(rid, oid, tag)?;
+
+    Ok::<_, Error>(Json(id))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RegisterArtifactBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub name: String,
+    pub size_bytes: u64,
+}
+
+async fn register_artifact_handler(
+    Ctx(ctx): Ctx,
+    Json(RegisterArtifactBody {
+        rid,
+        release_id,
+        cid,
+        name,
+        size_bytes,
+    }): Json<RegisterArtifactBody>,
+) -> impl IntoResponse {
+    ctx.register_artifact(rid, release_id, cid, name, size_bytes)?;
+
+    Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AttestArtifactBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub path: std::path::PathBuf,
+}
+
+async fn attest_artifact_handler(
+    Ctx(ctx): Ctx,
+    Json(AttestArtifactBody {
+        rid,
+        release_id,
+        cid,
+        path,
+    }): Json<AttestArtifactBody>,
+) -> impl IntoResponse {
+    ctx.attest_artifact(rid, release_id, cid, path)?;
+
+    Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SetArtifactMetadataBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub key: String,
+    pub value: serde_json::Value,
+}
+
+async fn set_artifact_metadata_handler(
+    Ctx(ctx): Ctx,
+    Json(SetArtifactMetadataBody {
+        rid,
+        release_id,
+        cid,
+        key,
+        value,
+    }): Json<SetArtifactMetadataBody>,
+) -> impl IntoResponse {
+    ctx.set_artifact_metadata(rid, release_id, cid, key, value)?;
+
+    Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RemoveArtifactMetadataBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub key: String,
+}
+
+async fn remove_artifact_metadata_handler(
+    Ctx(ctx): Ctx,
+    Json(RemoveArtifactMetadataBody {
+        rid,
+        release_id,
+        cid,
+        key,
+    }): Json<RemoveArtifactMetadataBody>,
+) -> impl IntoResponse {
+    ctx.remove_artifact_metadata(rid, release_id, cid, key)?;
+
+    Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ArtifactLocationBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub url: String,
+}
+
+async fn add_artifact_location_handler(
+    Ctx(ctx): Ctx,
+    Json(ArtifactLocationBody {
+        rid,
+        release_id,
+        cid,
+        url,
+    }): Json<ArtifactLocationBody>,
+) -> impl IntoResponse {
+    ctx.add_location(rid, release_id, cid, url)?;
+
+    Ok::<_, Error>(Json(()))
+}
+
+async fn remove_artifact_location_handler(
+    Ctx(ctx): Ctx,
+    Json(ArtifactLocationBody {
+        rid,
+        release_id,
+        cid,
+        url,
+    }): Json<ArtifactLocationBody>,
+) -> impl IntoResponse {
+    ctx.remove_location(rid, release_id, cid, url)?;
+
+    Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RedactArtifactBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+    pub cid: String,
+    pub reason: String,
+}
+
+async fn redact_artifact_handler(
+    Ctx(ctx): Ctx,
+    Json(RedactArtifactBody {
+        rid,
+        release_id,
+        cid,
+        reason,
+    }): Json<RedactArtifactBody>,
+) -> impl IntoResponse {
+    ctx.redact_artifact(rid, release_id, cid, reason)?;
+
+    Ok::<_, Error>(Json(()))
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DeleteReleaseBody {
+    pub rid: identity::RepoId,
+    pub release_id: String,
+}
+
+async fn delete_release_handler(
+    Ctx(ctx): Ctx,
+    Json(DeleteReleaseBody { rid, release_id }): Json<DeleteReleaseBody>,
+) -> impl IntoResponse {
+    ctx.delete_release(rid, release_id)?;
+
+    Ok::<_, Error>(Json(()))
 }
 
 #[derive(Serialize, Deserialize)]

@@ -154,6 +154,14 @@ pub enum Error {
     #[error("revision not found: {0}")]
     RevisionNotFound(String),
 
+    /// Commit not found in the repository.
+    #[error("commit not found: {0}")]
+    CommitNotFound(radicle::git::Oid),
+
+    /// A location URL that peers could not fetch an artifact from.
+    #[error("invalid location: {0}")]
+    InvalidLocation(String),
+
     /// Surf error.
     #[error(transparent)]
     Surf(#[from] radicle_surf::Error),
@@ -189,6 +197,30 @@ pub enum Error {
     /// Serde JSON error.
     #[error(transparent)]
     SerdeJSON(#[from] serde_json::error::Error),
+
+    /// Release creation error.
+    #[error(transparent)]
+    ReleaseCreate(#[from] radicle_artifact::error::Create),
+
+    /// Artifact metadata error.
+    #[error(transparent)]
+    ArtifactMetadata(#[from] radicle_artifact::error::Metadata),
+
+    /// Artifact redaction error.
+    #[error(transparent)]
+    ArtifactRedact(#[from] radicle_artifact::error::Redact),
+
+    /// Artifact content id, key or I/O error.
+    #[error(transparent)]
+    ArtifactCore(#[from] radicle_artifact_core::Error),
+
+    /// Object id parse error.
+    #[error(transparent)]
+    ParseObjectId(#[from] radicle::cob::object::ParseObjectId),
+
+    /// URL parse error.
+    #[error(transparent)]
+    UrlParse(#[from] url::ParseError),
 }
 
 impl Error {
@@ -217,6 +249,11 @@ impl Error {
             }
             Error::FileTooLarge(_) => "PayloadError.TooLarge",
             Error::ReviewExists => "PatchError.ReviewExists",
+            Error::CommitNotFound(_) => "RepoError.CommitNotFound",
+            Error::InvalidLocation(_) => "ArtifactError.InvalidLocation",
+            Error::ArtifactCore(radicle_artifact_core::Error::CidMismatch { .. }) => {
+                "ArtifactError.CidMismatch"
+            }
             _ => "UnknownError",
         }
     }

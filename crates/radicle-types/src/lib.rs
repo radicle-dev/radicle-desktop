@@ -5,6 +5,8 @@ use traits::inbox::Inbox;
 use traits::issue::{Issues, IssuesMut};
 use traits::job::Jobs;
 use traits::patch::{Patches, PatchesMut};
+use traits::release::Releases;
+use traits::release_mut::ReleasesMut;
 use traits::repo::Repo;
 use traits::thread::Thread;
 
@@ -37,6 +39,8 @@ impl IssuesMut for AppState {}
 impl Jobs for AppState {}
 impl Patches for AppState {}
 impl PatchesMut for AppState {}
+impl Releases for AppState {}
+impl ReleasesMut for AppState {}
 impl Profile for AppState {
     fn profile(&self) -> radicle::Profile {
         self.profile.clone()

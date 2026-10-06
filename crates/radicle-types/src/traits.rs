@@ -16,6 +16,8 @@ pub mod inbox;
 pub mod issue;
 pub mod job;
 pub mod patch;
+pub mod release;
+pub mod release_mut;
 pub mod repo;
 pub mod thread;
 

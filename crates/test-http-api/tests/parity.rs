@@ -6,7 +6,16 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 /// Tauri commands with no HTTP route, and why.
-const TAURI_ONLY: &[(&str, &str)] = &[];
+const TAURI_ONLY: &[(&str, &str)] = &[
+    (
+        "pick_artifact_files",
+        "opens a native file dialog, which the HTTP server has no access to",
+    ),
+    (
+        "pick_artifact_directory",
+        "opens a native file dialog, which the HTTP server has no access to",
+    ),
+];
 
 /// HTTP routes with no Tauri command, and why.
 const HTTP_ONLY: &[(&str, &str)] = &[(

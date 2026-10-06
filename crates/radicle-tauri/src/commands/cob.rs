@@ -12,6 +12,7 @@ use crate::AppState;
 pub mod issue;
 pub mod job;
 pub mod patch;
+pub mod release;
 
 #[tauri::command]
 pub async fn get_embed(

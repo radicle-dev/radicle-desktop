@@ -47,7 +47,9 @@ and a generic `Service` over it. The `Sqlite` adapter in `src/outbound/`
 implements those ports by querying Radicle's COB cache and notifications
 database directly (read-only). Both drivers construct the services at
 startup and use them for the matching list endpoints; everything else
-keeps going through the ports.
+keeps going through the ports. Releases are the exception: `radicle-artifact`
+keeps its own SQLite cache of release COBs, so `list_releases` reads through
+that instead of a domain service.
 
 **Parity is enforced.** Every Tauri command has a matching HTTP route.
 `cargo test -p test-http-api --test parity` fails when a command, route or

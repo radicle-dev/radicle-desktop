@@ -4,6 +4,12 @@ import type { Tagger } from "./Tagger";
 export type Tag = {
   oid: string;
   /**
+   * Oid of the annotated tag object itself, as opposed to the commit it
+   * peels to. Absent for lightweight tags. A release records this so it can
+   * resolve its own title and tag name.
+   */
+  tagOid?: string;
+  /**
    * Tagger time for annotated tags, otherwise the commit time of the
    * tagged commit. Seconds since epoch.
    */
