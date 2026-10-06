@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Issue } from "@bindings/cob/issue/Issue";
   import type { Patch } from "@bindings/cob/patch/Patch";
+  import type { Release } from "@bindings/cob/release/Release";
   import type { Config } from "@bindings/config/Config";
   import type { ComponentProps } from "svelte";
 
@@ -8,6 +9,7 @@
     cachedConfig,
     cachedIssueById,
     cachedPatchById,
+    cachedReleaseById,
     cachedRepoById,
     cachedRepoCommit,
   } from "@app/lib/invoke";
@@ -49,6 +51,7 @@
   let resolvedRepoName: string | undefined = $state(undefined);
   let issue: Issue | undefined = $state(undefined);
   let patch: Patch | undefined = $state(undefined);
+  let release = $state<Release | undefined>(undefined);
   let commitSummary: string | undefined = $state(undefined);
   let missing = $state(false);
   let config: Config | undefined = $state(undefined);
@@ -135,6 +138,27 @@
       cancelled = true;
     };
   });
+
+  $effect(() => {
+    if (target.type !== "cob" || target.kind !== "release") return;
+    let cancelled = false;
+    void cachedReleaseById(target.rid, target.oid)
+      .then(result => {
+        if (cancelled) return;
+        if (result) release = result;
+        else missing = true;
+      })
+      .catch(() => {
+        if (!cancelled) missing = true;
+      });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  const releaseTitle = $derived(
+    release ? release.title || release.tagName : undefined,
+  );
 
   $effect(() => {
     if (target.type !== "commit") return;
@@ -362,6 +386,27 @@
     </span>
     <span class="mention-label">{issue?.title ?? fallback}</span>
     {#if missing}
+      <span class="mention-oid">{formatOid(target.oid)}</span>
+    {/if}
+  </a>
+{:else if target.kind === "release"}
+  <a
+    class="mention"
+    class:unresolved={missing}
+    {href}
+    target={missing ? "_blank" : undefined}
+    rel={missing ? "noopener noreferrer" : undefined}
+    onclick={handleClick}
+    onmousedown={keepSelection}
+    oncontextmenu={openMenu}
+    title={missing
+      ? `${fallback} · ${target.oid} — not replicated locally`
+      : `${releaseTitle ?? fallback} · ${target.oid}`}>
+    <span class="mention-status">
+      <Icon name="parcel" />
+    </span>
+    <span class="mention-label">{releaseTitle ?? fallback}</span>
+    {#if missing || (release && !releaseTitle)}
       <span class="mention-oid">{formatOid(target.oid)}</span>
     {/if}
   </a>

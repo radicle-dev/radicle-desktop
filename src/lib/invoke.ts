@@ -3,6 +3,8 @@ import type { DiffOptions } from "@bindings/cob/DiffOptions";
 import type { Issue } from "@bindings/cob/issue/Issue";
 import type { PaginatedQuery } from "@bindings/cob/PaginatedQuery";
 import type { Patch } from "@bindings/cob/patch/Patch";
+import type { Release } from "@bindings/cob/release/Release";
+import type { ReleaseFilter } from "@bindings/cob/release/ReleaseFilter";
 import type { Config } from "@bindings/config/Config";
 import type { Diff } from "@bindings/diff/Diff";
 import type { Stats } from "@bindings/diff/Stats";
@@ -231,6 +233,23 @@ export const cachedListPatchCandidates = cached(
   { max: 10, ttl: 30_000 },
 );
 
+async function listReleaseCandidates(rid: string): Promise<Release[]> {
+  const releases = await invoke<PaginatedQuery<Release[]>>("list_releases", {
+    rid,
+    filter: { scope: "trusted", showRedacted: false } satisfies ReleaseFilter,
+    skip: 0,
+    take: MENTION_CANDIDATE_TAKE,
+  });
+
+  return releases.content;
+}
+
+export const cachedListReleaseCandidates = cached(
+  listReleaseCandidates,
+  (...[rid]) => `release_candidates:${rid}`,
+  { max: 10, ttl: 30_000 },
+);
+
 const missTtl = 5_000;
 
 async function repoById(rid: string): Promise<RepoInfo | null> {
@@ -262,6 +281,17 @@ async function patchById(rid: string, id: string): Promise<Patch | null> {
 export const cachedPatchById = cached(
   patchById,
   (...[rid, id]) => `patch_by_id:${rid}:${id}`,
+  { max: 200, ttl: 60_000 },
+  missTtl,
+);
+
+async function releaseById(rid: string, id: string): Promise<Release | null> {
+  return withTestBackend(tauri.invoke, "release_by_id", { rid, id });
+}
+
+export const cachedReleaseById = cached(
+  releaseById,
+  (...[rid, id]) => `release_by_id:${rid}:${id}`,
   { max: 200, ttl: 60_000 },
   missTtl,
 );

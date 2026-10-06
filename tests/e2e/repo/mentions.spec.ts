@@ -1,12 +1,16 @@
 import type { Page } from "@playwright/test";
 import type { RadiclePeer } from "@tests/support/peerManager.js";
 
+import * as Fs from "node:fs/promises";
+import * as Path from "node:path";
+
 import {
   createCollaborators,
   createProject,
 } from "@tests/support/collaboration.js";
 import {
   expect,
+  goto,
   reload,
   test,
   useBackend,
@@ -83,6 +87,45 @@ test("a pasted patch URI becomes a chip that opens the patch", async ({
   await expect(chip).toBeVisible();
   await chip.click();
   await expect(page).toHaveURL(new RegExp(`/patches/${patchId}`));
+});
+
+test("a pasted release ID becomes a chip that opens the release", async ({
+  page,
+  peer,
+}) => {
+  const { rid, issueId, repoFolder } = await openIssue(page, peer);
+  const file = Path.join(repoFolder, "build.tar");
+  await Fs.writeFile(file, "artifact bytes");
+  // The native file dialog only exists under Tauri.
+  await page.route(/\/pick_artifact_files$/, route =>
+    route.fulfill({ json: [file] }),
+  );
+  await goto(page, `/repos/${rid}/releases`);
+  await page.getByRole("button", { name: "New release" }).click();
+  await page.getByPlaceholder("Pick a commit or paste a SHA").click();
+  await page.getByText("Add notes").click();
+  await page.getByRole("button", { name: "Choose files" }).click();
+  await page.getByRole("button", { name: "Create release" }).click();
+  await expect(page).toHaveURL(new RegExp(`/repos/${rid}/releases/\\w+`));
+  const releaseId = new URL(page.url()).pathname.split("/").pop()!;
+  const uri = `${rid}/cob/dev.radicle.artifact/${releaseId}`;
+
+  await goto(page, `/repos/${rid}/issues/${issueId}`);
+  await type(page, "#Add");
+  await expect(suggestion(page, "Add notes")).toBeVisible();
+  await commentBox(page).fill("");
+
+  await type(page, releaseId);
+  await expect(suggestion(page, "Add notes")).toBeVisible();
+  await page.keyboard.press("Enter");
+  await expect(commentBox(page)).toHaveValue(`[Add notes](${uri}) `);
+
+  await comment(page);
+  await reload(page);
+  const chip = rendered(page).locator("a.mention", { hasText: "Add notes" });
+  await expect(chip).toBeVisible();
+  await chip.click();
+  await expect(page).toHaveURL(new RegExp(`/releases/${releaseId}`));
 });
 
 test("unsafe and invalid references stay inert", async ({ page, peer }) => {
@@ -214,10 +257,10 @@ test("every reference type renders and links where it should", async ({
   await expect(link(`${repo}/home/remotes/${nid}`)).toHaveText("remote");
   await expect(link(`${repo}/issues?status=all`)).toHaveText("issues");
   await expect(link(`${repo}/patches`)).toHaveText("patches");
-  await expect(
-    link(`${explorer}/${rid}/releases/${missingOid}`),
-  ).toHaveAttribute("target", "_blank");
-  await expect(link(`${explorer}/${rid}/releases`)).toHaveText("releases");
+  const missingRelease = link(`${explorer}/${rid}/releases/${missingOid}`);
+  await expect(missingRelease).toHaveClass(/unresolved/);
+  await expect(missingRelease).toHaveAttribute("target", "_blank");
+  await expect(link(`${repo}/releases`)).toHaveText("releases");
   await expect(
     body.locator("a:not([href])", { hasText: "tree" }),
   ).toBeVisible();

@@ -57,6 +57,10 @@ describe("deepLinkTarget", () => {
         reviewId: undefined,
       },
     ],
+    [
+      `${rid}/cob/dev.radicle.artifact/${oid}`,
+      { resource: "repo.release", rid, release: oid },
+    ],
     [`${rid}/commit/${oid}`, { resource: "repo.commit", rid, commit: oid }],
     [
       `${rid}/commit/main?path=src/lib.rs#L10`,
@@ -79,13 +83,6 @@ describe("deepLinkTarget", () => {
       type: "missing",
       rid,
       url: undefined,
-    });
-  });
-
-  test("opens the explorer for a page the app lacks", () => {
-    expect(target(`${rid}/cob/dev.radicle.artifact/${oid}`)).toEqual({
-      type: "external",
-      url: `${explorer}/releases/${oid}`,
     });
   });
 

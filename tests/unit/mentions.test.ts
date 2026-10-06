@@ -36,6 +36,14 @@ describe("parseEntityHref", () => {
       { type: "cob", kind: "patch", rid, oid },
     ],
     [
+      `${rid}/cob/dev.radicle.artifact/${oid}`,
+      { type: "cob", kind: "release", rid, oid },
+    ],
+    [
+      `https://app.radicle.xyz/nodes/seed/${rid}/releases/${oid}`,
+      { type: "cob", kind: "release", rid, oid },
+    ],
+    [
       `https://app.radicle.xyz/nodes/seed/${rid}/patches/${oid}`,
       { type: "cob", kind: "patch", rid, oid },
     ],
@@ -235,17 +243,21 @@ describe("referenceRoute", () => {
       `${rid}/cob/xyz.radicle.patch`,
       { resource: "repo.patches", rid, status: undefined },
     ],
+    [
+      `${rid}/cob/dev.radicle.artifact/${oid}`,
+      { resource: "repo.release", rid, release: oid },
+    ],
+    [`${rid}/cob/dev.radicle.artifact`, { resource: "repo.releases", rid }],
   ])("%s", (href, expected) => {
     expect(referenceRoute(parseReference(href)!)).toEqual(expected);
   });
 
-  test.each([
-    `${rid}/cob/dev.radicle.artifact`,
-    `${rid}/tree/${oid}`,
-    `did:key:${nid}`,
-  ])("has no page for %s", href => {
-    expect(referenceRoute(parseReference(href)!)).toBeUndefined();
-  });
+  test.each([`${rid}/tree/${oid}`, `did:key:${nid}`])(
+    "has no page for %s",
+    href => {
+      expect(referenceRoute(parseReference(href)!)).toBeUndefined();
+    },
+  );
 });
 
 describe("describeLink", () => {
@@ -262,11 +274,11 @@ describe("describeLink", () => {
     [`${rid}/tag/v1.0`, "heartwood: v1.0", "label"],
     [`${rid}/cob/xyz.radicle.issue`, "heartwood: issues", "issue"],
     [`${rid}/cob/xyz.radicle.patch`, "heartwood: patches", "patch"],
-    [`${rid}/cob/dev.radicle.artifact`, "heartwood: releases", "archive"],
+    [`${rid}/cob/dev.radicle.artifact`, "heartwood: releases", "parcel"],
     [
       `${rid}/cob/dev.radicle.artifact/${oid}`,
       "heartwood: release 5e46830",
-      "archive",
+      "parcel",
     ],
     [`${rid}/${nid}`, "heartwood: z6MknS…tBU8Vi", "repository"],
   ])("%s", (href, label, icon) => {

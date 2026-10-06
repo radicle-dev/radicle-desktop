@@ -9,6 +9,7 @@
 <script lang="ts">
   import type { AliasSuggestion } from "@bindings/cob/AliasSuggestion";
   import type { Author } from "@bindings/cob/Author";
+  import type { Release } from "@bindings/cob/release/Release";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
   import type { ComponentProps } from "svelte";
 
@@ -29,8 +30,10 @@
     cachedIssueById,
     cachedListIssueCandidates,
     cachedListPatchCandidates,
+    cachedListReleaseCandidates,
     cachedListReposSummary,
     cachedPatchById,
+    cachedReleaseById,
     cachedRepoById,
     cachedRepoCommit,
     cachedRepoCommitsByPrefix,
@@ -321,6 +324,25 @@
       };
     }
 
+    if (target.kind === "release") {
+      const release = await cachedReleaseById(target.rid, target.oid).catch(
+        () => undefined,
+      );
+      const label = release
+        ? releaseTitle(release)
+        : `release ${formatOid(target.oid)}`;
+
+      return {
+        key,
+        target,
+        label,
+        primary: label,
+        secondary: formatOid(target.oid),
+        icon: "parcel",
+        haystack: label,
+      };
+    }
+
     const patch = await cachedPatchById(target.rid, target.oid).catch(
       () => undefined,
     );
@@ -431,9 +453,10 @@
   }
 
   async function resolveOid(oid: string): Promise<Suggestion[]> {
-    const [issue, patch, commit] = await Promise.all([
+    const [issue, patch, release, commit] = await Promise.all([
       cachedIssueById(rid, oid).catch(() => undefined),
       cachedPatchById(rid, oid).catch(() => undefined),
+      cachedReleaseById(rid, oid).catch(() => undefined),
       cachedRepoCommit(rid, oid).catch(() => undefined),
     ]);
     const rows: Suggestion[] = [];
@@ -459,6 +482,9 @@
         icon: patchIcon[patch.state.status],
         haystack: patch.title,
       });
+    }
+    if (release) {
+      rows.push(releaseRow(release));
     }
     if (commit && rows.length === 0) {
       rows.push({
@@ -564,9 +590,10 @@
   }
 
   async function collectCobs(): Promise<Suggestion[]> {
-    const [allIssues, allPatches] = await Promise.all([
+    const [allIssues, allPatches, allReleases] = await Promise.all([
       cachedListIssueCandidates(rid).catch(() => []),
       cachedListPatchCandidates(rid).catch(() => []),
+      cachedListReleaseCandidates(rid).catch(() => []),
     ]);
     const rows = [
       ...allIssues.map(issue => ({
@@ -601,11 +628,35 @@
         icon: patchIcon[patch.state.status],
         haystack: `${patch.title} ${patch.id}`,
       })),
+      ...allReleases.map(release => ({
+        timestamp: release.createdAt,
+        ...releaseRow(release),
+      })),
     ];
 
     return rows
       .sort((a, b) => b.timestamp - a.timestamp)
       .map(({ timestamp: _timestamp, ...row }) => row);
+  }
+
+  function releaseTitle(release: Release): string {
+    return (
+      release.title || release.tagName || `release ${formatOid(release.id)}`
+    );
+  }
+
+  function releaseRow(release: Release): Suggestion {
+    const label = releaseTitle(release);
+
+    return {
+      key: `release:${release.id}`,
+      target: { type: "cob", kind: "release", rid, oid: release.id },
+      label,
+      primary: label,
+      secondary: formatOid(release.id),
+      icon: "parcel",
+      haystack: `${label} ${release.tagName ?? ""} ${release.id}`,
+    };
   }
 
   const patchIcon: Record<string, IconName> = {

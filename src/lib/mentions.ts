@@ -23,8 +23,19 @@ import { explorerLink, formatOid, truncateId } from "@app/lib/utils";
 export type Entity =
   | { type: "node"; nid: string }
   | { type: "repo"; rid: string }
-  | { type: "cob"; kind: "issue" | "patch"; rid: string; oid: string }
+  | {
+      type: "cob";
+      kind: "issue" | "patch" | "release";
+      rid: string;
+      oid: string;
+    }
   | { type: "commit"; rid: string; oid: string };
+
+const cobTypes = {
+  issue: issueType,
+  patch: patchType,
+  release: releaseType,
+};
 
 export function toEntity(reference: RadReference): Entity | undefined {
   if (reference.type === "did") return { type: "node", nid: reference.node };
@@ -43,6 +54,9 @@ export function toEntity(reference: RadReference): Entity | undefined {
     }
     if (resource.typeName === patchType) {
       return { type: "cob", kind: "patch", rid, oid: resource.oid };
+    }
+    if (resource.typeName === releaseType) {
+      return { type: "cob", kind: "release", rid, oid: resource.oid };
     }
   }
 
@@ -68,7 +82,7 @@ export function toRadReference(target: Entity): RadReference {
           repo,
           resource: {
             type: "cob",
-            typeName: target.kind === "issue" ? issueType : patchType,
+            typeName: cobTypes[target.kind],
             oid: target.oid,
           },
         },
@@ -179,6 +193,9 @@ export function referenceRoute(reference: RadReference): RepoRoute | undefined {
         reviewId: undefined,
       };
     }
+    if (resource.typeName === releaseType) {
+      return { resource: "repo.release", rid, release: resource.oid };
+    }
   }
   if (resource.type === "commit" || resource.type === "tag") {
     return {
@@ -195,6 +212,9 @@ export function referenceRoute(reference: RadReference): RepoRoute | undefined {
   }
   if (typeName === patchType) {
     return { resource: "repo.patches", rid, status: undefined };
+  }
+  if (typeName === releaseType) {
+    return { resource: "repo.releases", rid };
   }
 
   return undefined;
@@ -213,7 +233,7 @@ const cobLists: Record<
 > = {
   [issueType]: { label: "Issues", icon: "issue" },
   [patchType]: { label: "Patches", icon: "patch" },
-  [releaseType]: { label: "Releases", icon: "archive" },
+  [releaseType]: { label: "Releases", icon: "parcel" },
 };
 
 export function describeLink(
@@ -269,7 +289,7 @@ export function describeLink(
       label: `${repoName}: ${release}`,
       primary: `Release ${formatOid(resource.oid)}`,
       secondary: repoName,
-      icon: "archive",
+      icon: "parcel",
     };
   }
 

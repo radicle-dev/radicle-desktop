@@ -152,13 +152,21 @@ describe("explorer links without a chip", () => {
 describe("releases and lines", () => {
   const node = "https://radicle.network/nodes/seed";
 
-  test("offers a release as a link", () => {
-    expect(trigger(`${node}/${rid}/releases/${oid}`)).toMatchObject({
+  test.each([
+    `${node}/${rid}/releases/${oid}`,
+    `${rid}/cob/dev.radicle.artifact/${oid}`,
+  ])("offers %s as a release", link => {
+    expect(trigger(link)).toMatchObject({
+      kind: "identifier",
+      target: { type: "cob", kind: "release", rid, oid },
+    });
+  });
+
+  test("offers a release list as a link", () => {
+    expect(trigger(`${node}/${rid}/releases`)).toMatchObject({
       kind: "link",
       reference: {
-        uri: {
-          resource: { type: "cob", typeName: "dev.radicle.artifact", oid },
-        },
+        uri: { resource: { type: "cob", typeName: "dev.radicle.artifact" } },
       },
     });
   });

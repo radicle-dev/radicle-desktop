@@ -38,7 +38,8 @@ text as an absolute identifier:
 | Person            | `did:key:<NID>`                                    |
 
 - Object ids are always full. The composer expands a prefix and offers every
-  match when several objects share it.
+  match when several objects share it. It searches only delegate releases;
+  a full release id or link resolves any release.
 - Identifiers are never relative to the current repo.
 - Explorer URLs are accepted as input and normalised on insert. Where a URL
   is ambiguous, as in `/tree/<branch>/<path>` with a branch containing
@@ -54,7 +55,7 @@ from explorer routes. It is tested against the RIP 4 vectors and
 `radicle-uri`'s cases.
 
 **Clients decide presentation.** This app shows repos, issues, patches,
-commits and people as chips, and every other entity above as a link
+releases, commits and people as chips, and every other entity above as a link
 labelled with the repo name, such as `heartwood: src/lib.rs`. Either
 navigates in-app when the repo is local and falls back to the configured
 `publicExplorer`, which a right click also offers. A resource a client does
