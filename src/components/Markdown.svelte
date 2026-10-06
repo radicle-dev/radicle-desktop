@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { toDom } from "hast-util-to-dom";
   import { mount, tick, unmount } from "svelte";
 
+  import { enhanceCodeBlocks } from "@app/lib/codeBlocks";
   import { decodeEmbed, embedPreviewKind, retinaWidth } from "@app/lib/embeds";
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
@@ -13,7 +13,6 @@
   } from "@app/lib/markdown";
   import { parseEntityHref } from "@app/lib/mentions";
   import { isOid } from "@app/lib/radUri";
-  import { highlight } from "@app/lib/syntax";
   import { scrollIntoView, twemoji } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
@@ -333,39 +332,7 @@
         }
       }
 
-      // Replaces code blocks in the background with highlighted code.
-      const prefix = "language-";
-      const nodes = Array.from(container.querySelectorAll("pre code"));
-
-      const treeChanges: Promise<void>[] = [];
-
-      for (const node of nodes) {
-        const preElement = node.parentElement as HTMLElement;
-        const copyButton = document.createElement("radicle-clipboard");
-        copyButton.setAttribute("text", node.textContent || "");
-        const preWrapper = document.createElement("div");
-        preWrapper.classList.add("pre-wrapper");
-        preElement.parentNode?.insertBefore(preWrapper, preElement);
-        preWrapper.appendChild(preElement);
-        preWrapper.appendChild(copyButton);
-
-        const className = Array.from(node.classList).find(name =>
-          name.startsWith(prefix),
-        );
-        if (!className) continue;
-
-        treeChanges.push(
-          highlight(node.textContent ?? "", className.slice(prefix.length))
-            .then(tree => {
-              if (tree) {
-                node.replaceChildren(toDom(tree, { fragment: true }));
-              }
-            })
-            .catch(e => console.warn("Not able to highlight code block", e)),
-        );
-      }
-
-      void Promise.allSettled(treeChanges);
+      enhanceCodeBlocks(container);
 
       if (!scrolledToHash && window.location.hash) {
         scrollIntoView(window.location.hash.substring(1));
