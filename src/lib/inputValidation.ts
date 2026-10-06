@@ -26,9 +26,12 @@ export function parseAssignee(
   input: string,
   assignees: { did: string }[],
 ): { did?: string; error?: string } {
+  input = input.trim();
   if (input === "") return {};
   const nodeId = parseNodeId(input);
-  if (!nodeId) return { error: "This is not a valid DID" };
+  if (!nodeId) {
+    return input.startsWith("did:") ? { error: "This is not a valid DID" } : {};
+  }
   const did = `${nodeId.prefix}${nodeId.pubkey}`;
   if (assignees.some(assignee => assignee.did === did)) {
     return { error: "This assignee is already added" };

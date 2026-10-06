@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Config } from "@bindings/config/Config";
+  import type { Placement } from "@floating-ui/dom";
   import type { ComponentProps } from "svelte";
 
   import { cachedAlias, cachedConfig, writeToClipboard } from "@app/lib/invoke";
@@ -21,6 +22,8 @@
     // Hides the alias; the card still shows it.
     avatarOnly?: boolean;
     avatarSize?: string;
+    cardPlacement?: Placement;
+    cardOffset?: number;
     oncardtoggle?: (expanded: boolean) => void;
   }
 
@@ -31,6 +34,8 @@
     styleFont = undefined,
     avatarOnly = false,
     avatarSize = "1rem",
+    cardPlacement = "bottom-start",
+    cardOffset = undefined,
     oncardtoggle,
   }: Props = $props();
 
@@ -287,7 +292,8 @@
 
 <Popover
   popoverPadding="0"
-  placement="bottom-start"
+  placement={cardPlacement}
+  offset={cardOffset}
   styleDisplay={inline ? "inline-flex" : undefined}
   bind:expanded={cardExpanded}>
   {#snippet toggle(_onclick)}

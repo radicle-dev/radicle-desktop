@@ -204,6 +204,7 @@
                   labels = newLabels;
                 }} />
               <AssigneeInput
+                delegates={repo.delegates}
                 allowedToEdit={true}
                 {preview}
                 bind:assignees

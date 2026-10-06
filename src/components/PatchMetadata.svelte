@@ -496,6 +496,7 @@
     submitInProgress={labelSaveInProgress}
     save={saveLabels} />
   <AssigneeInput
+    delegates={repo.delegates}
     allowedToEdit={!!roles.isDelegate(
       config.publicKey,
       repo.delegates.map(delegate => delegate.did),

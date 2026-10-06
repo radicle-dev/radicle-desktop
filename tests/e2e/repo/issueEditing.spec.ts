@@ -62,8 +62,8 @@ test("an assignee can be added by DID", async ({ page, peer }) => {
   await openIssue(page, peer);
 
   await page.getByRole("button", { name: "Add assignees" }).click();
-  const input = page.getByPlaceholder(/^Assignee DID/);
-  await input.fill("alice");
+  const input = page.getByPlaceholder(/^Alias or DID/);
+  await input.fill("did:key:alice");
   await expect(page.getByText("This is not a valid DID")).toBeVisible();
 
   await input.fill(`did:key:${peer.nodeId}`);
@@ -77,7 +77,30 @@ test("an assignee can be added by DID", async ({ page, peer }) => {
   await expect(assignees).toBeVisible();
   await reload(page);
   await assignees.click();
-  await page.getByPlaceholder(/^Assignee DID/).fill(peer.nodeId);
+  await page.getByPlaceholder(/^Alias or DID/).fill(peer.nodeId);
+  await expect(page.getByText("This assignee is already added")).toBeVisible();
+});
+
+test("an assignee can be picked by alias", async ({ page, peer }) => {
+  await openIssue(page, peer);
+
+  await page.getByRole("button", { name: "Add assignees" }).click();
+  const input = page.getByPlaceholder(/^Alias or DID/);
+  await input.fill("zzz");
+  await expect(page.getByText("No one matches “zzz”")).toBeVisible();
+  await input.fill("ali");
+  const suggestion = page.locator(".suggestion", { hasText: "alice" });
+  await expect(suggestion).toContainText("you");
+  await waitForCommand(page, "edit_issue", () => input.press("Enter"));
+  await expect(input).toBeHidden();
+
+  const assignees = page.getByRole("button", {
+    name: "icon-avatar-incognito Assignees",
+    exact: true,
+  });
+  await reload(page);
+  await assignees.click();
+  await page.getByPlaceholder(/^Alias or DID/).fill("alice");
   await expect(page.getByText("This assignee is already added")).toBeVisible();
 });
 

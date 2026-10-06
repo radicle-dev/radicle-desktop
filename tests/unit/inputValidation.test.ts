@@ -36,16 +36,28 @@ describe("parseAssignee", () => {
     });
   });
 
+  test("ignores surrounding whitespace", () => {
+    expect(parseAssignee(` ${nid} `, [])).toEqual({ did: `did:key:${nid}` });
+    expect(parseAssignee(` did:key:${nid}`, [])).toEqual({
+      did: `did:key:${nid}`,
+    });
+  });
+
   test("rejects an assignee that is already added", () => {
     expect(parseAssignee(nid, [{ did: `did:key:${nid}` }])).toEqual({
       error: "This assignee is already added",
     });
   });
 
-  test("rejects anything else, but not an empty input", () => {
-    expect(parseAssignee("alice", [])).toEqual({
+  test("rejects a malformed DID", () => {
+    expect(parseAssignee("did:key:alice", [])).toEqual({
       error: "This is not a valid DID",
     });
+  });
+
+  test("treats other input as a search, not an error", () => {
+    expect(parseAssignee("alice", [])).toEqual({});
+    expect(parseAssignee("z6Mkq", [])).toEqual({});
     expect(parseAssignee("", [])).toEqual({});
   });
 });

@@ -101,6 +101,7 @@
     submitInProgress={labelSaveInProgress}
     save={saveLabels} />
   <AssigneeInput
+    delegates={repo.delegates}
     allowedToEdit={isDelegate}
     assignees={issue.assignees}
     submitInProgress={assigneesSaveInProgress}

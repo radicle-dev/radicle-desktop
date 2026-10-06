@@ -19,6 +19,7 @@
     onDismiss?: () => void;
     onFocus?: () => void;
     onBlur?: () => void;
+    onKeydown?: (event: KeyboardEvent) => boolean;
     onSubmit?: () => void;
     onModifierSubmit?: () => void;
     oninput?: FormEventHandler<HTMLInputElement>;
@@ -41,6 +42,7 @@
     onDismiss,
     onFocus,
     onBlur,
+    onKeydown,
     onSubmit,
     onModifierSubmit,
     oninput,
@@ -80,6 +82,11 @@
   }
 
   function handleKeydown(event: KeyboardEvent) {
+    if (!event.isComposing && onKeydown?.(event)) {
+      event.preventDefault();
+      return;
+    }
+
     if (matchesShortcut(event, "submit") && onModifierSubmit) {
       event.preventDefault();
       onModifierSubmit();

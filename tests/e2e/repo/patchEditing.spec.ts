@@ -142,7 +142,7 @@ test("an assignee can be added to a patch", async ({ page, peer }) => {
   await openPatch(page, peer);
 
   await page.getByRole("button", { name: "Add assignees" }).click();
-  const input = page.getByPlaceholder(/^Assignee DID/);
+  const input = page.getByPlaceholder(/^Alias or DID/);
   await input.fill(peer.nodeId);
   await waitForCommand(page, "edit_patch", () => input.press("Enter"));
 
