@@ -79,7 +79,12 @@ export const test = base.extend<{
       const playwrightLabel =
         " ".repeat(23) + "→ " + chalk.yellowBright("playwright") + ": ";
 
-      function isLocalhost(url: URL) {
+      function isLocalhost(url: URL): boolean {
+        // A blob URL has no hostname of its own; it belongs to the origin
+        // that created it.
+        if (url.protocol === "blob:") {
+          return isLocalhost(new URL(url.pathname));
+        }
         return url.hostname === "localhost" || url.hostname === "127.0.0.1";
       }
 
