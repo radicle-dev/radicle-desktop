@@ -24,6 +24,13 @@ pub fn run() {
     // survives the pipes that `npm run tauri dev` puts between the app and the
     // terminal, which `std::io::IsTerminal` on our own stdout would not.
     let terminal = std::env::var_os("TERM").is_some();
+    // A dev build gets its own identifier, so it can run next to an installed
+    // release without the single-instance plugin handing over to it.
+    let mut context = tauri::generate_context!();
+    if tauri::is_dev() {
+        let config = context.config_mut();
+        config.identifier = format!("{}.dev", config.identifier);
+    }
     // A `rad:` link opened while the app runs starts a second instance, which
     // hands the link to this one and exits; the deep-link plugin delivers it.
     let builder = tauri::Builder::default()
@@ -128,7 +135,7 @@ pub fn run() {
             thread::create_issue_comment,
             thread::create_patch_comment,
         ])
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running tauri application");
 }
 
