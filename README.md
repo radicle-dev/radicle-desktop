@@ -48,6 +48,22 @@ to the browser console (visible at debug level):
 VITE_LOG_INVOKE_TIMINGS=true npm run dev
 ```
 
+A dev build uses its own identifier, so it runs next to an installed release,
+and it never registers itself as the handler for `rad:` links. On Linux and
+Windows, open a link in it by starting the dev binary a second time with the
+link as its argument, while `npm run dev` is running:
+
+```
+target/dev-without-assertions/radicle-desktop rad:z4D5UCArafTzTQpDZNQRuqswh3ury
+```
+
+On macOS links only reach app bundles. Quit the installed app, then build and
+open a debug bundle:
+
+```
+npm run tauri build -- --debug --bundles app
+```
+
 ## Releasing
 
 Releases are driven by an interactive, phased script. Start one with:

@@ -2,7 +2,6 @@ mod commands;
 
 use radicle_types::AppState;
 use tauri::Manager;
-use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_log::{Target, TargetKind};
 
 use commands::{auth, cob, diff, identity, inbox, profile, repo, startup, thread};
@@ -60,17 +59,7 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
-            // Installers register the scheme; an AppImage or a dev build has to
-            // do it at runtime. It must never keep the app from starting, nor
-            // take the scheme back from a handler the user chose.
-            let unpackaged = cfg!(debug_assertions) || is_appimage(app);
-            if cfg!(any(target_os = "linux", windows))
-                && unpackaged
-                && !app.deep_link().is_registered("rad").unwrap_or(false)
-                && let Err(e) = app.deep_link().register_all()
-            {
-                log::warn!("Unable to register the rad: scheme: {e}");
-            }
+            register_rad_scheme(app);
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -139,12 +128,41 @@ pub fn run() {
         .expect("error while running tauri application");
 }
 
+// Installers register the scheme; an AppImage has to do it at runtime. It
+// must never keep the app from starting, nor take the scheme from another
+// handler, such as an installed package or one the user chose.
 #[cfg(target_os = "linux")]
-fn is_appimage(app: &tauri::App) -> bool {
-    app.env().appimage.is_some()
+fn register_rad_scheme(app: &tauri::App) {
+    use tauri_plugin_deep_link::DeepLinkExt;
+
+    if app.env().appimage.is_none() || !rad_scheme_unclaimed() {
+        return;
+    }
+    if let Err(e) = app.deep_link().register_all() {
+        log::warn!("Unable to register the rad: scheme: {e}");
+    }
 }
 
 #[cfg(not(target_os = "linux"))]
-fn is_appimage(_app: &tauri::App) -> bool {
-    false
+fn register_rad_scheme(_app: &tauri::App) {}
+
+// The scheme is ours to claim when no handler is set, or when the handler is
+// the one an AppImage registered before, which may point to an old path.
+#[cfg(target_os = "linux")]
+fn rad_scheme_unclaimed() -> bool {
+    let Ok(exe) = tauri::utils::platform::current_exe() else {
+        return false;
+    };
+    let Some(exe) = exe.file_name() else {
+        return false;
+    };
+    let Ok(output) = std::process::Command::new("xdg-mime")
+        .args(["query", "default", "x-scheme-handler/rad"])
+        .output()
+    else {
+        return false;
+    };
+    let handler = String::from_utf8_lossy(&output.stdout);
+    let handler = handler.trim();
+    handler.is_empty() || handler == format!("{}-handler.desktop", exe.to_string_lossy())
 }
