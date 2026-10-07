@@ -4,16 +4,17 @@
   import type { AsciidocSource } from "@app/lib/asciidoc";
   import { renderAsciidoc } from "@app/lib/asciidoc";
   import { enhanceCodeBlocks } from "@app/lib/codeBlocks";
+  import type { OpenFile } from "@app/lib/documentLinks";
   import {
-    enhanceRepoImages,
-    RepoImages,
-    resolveRepoPath,
-  } from "@app/lib/repoImages";
-  import { scrollIntoView, twemoji } from "@app/lib/utils";
+    enhanceDocumentLink,
+    scrollToLocationFragment,
+  } from "@app/lib/documentLinks";
+  import { enhanceRepoImages, RepoImages } from "@app/lib/repoImages";
+  import { twemoji } from "@app/lib/utils";
 
   interface Props extends AsciidocSource {
     content: string;
-    onNavigate?: (path: string) => void;
+    onNavigate: OpenFile;
   }
 
   const { content, rid, sha, path, onNavigate }: Props = $props();
@@ -21,7 +22,7 @@
   let container: HTMLElement | undefined = $state();
   let html = $state("");
   let error: string | undefined = $state();
-  let scrolledToHash = false;
+  let scrolledAt: string | undefined;
 
   const images = new RepoImages();
 
@@ -62,33 +63,13 @@
 
   function enhance(container: HTMLElement) {
     for (const anchor of container.querySelectorAll("a")) {
-      const href = anchor.getAttribute("href");
-      if (!href || href.startsWith("#")) {
-        continue;
-      }
-
-      // A link relative to the document is a path in the repository, not in
-      // the app. Following it would navigate the window away, so open the
-      // file in the source view instead.
-      const repoPath = resolveRepoPath(href, path);
-      if (repoPath) {
-        anchor.onclick = event => {
-          event.preventDefault();
-          onNavigate?.(repoPath);
-        };
-      } else {
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
-      }
+      enhanceDocumentLink(anchor, () => ({ path, openFile: onNavigate }));
     }
 
     enhanceRepoImages(container, { rid, sha, path }, images);
     enhanceCodeBlocks(container);
 
-    if (!scrolledToHash && window.location.hash) {
-      scrollIntoView(window.location.hash.substring(1));
-    }
-    scrolledToHash = true;
+    scrolledAt = scrollToLocationFragment(scrolledAt);
   }
 </script>
 

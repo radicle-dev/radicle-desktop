@@ -86,8 +86,8 @@
     }
   });
 
-  function showPath(filePath: string) {
-    void router.push({ ...baseRoute, path: filePath });
+  function showPath(filePath: string | undefined, fragment?: string) {
+    void router.push({ ...baseRoute, path: filePath }, fragment);
   }
 
   function isMarkdownPath(path: string): boolean {
@@ -112,9 +112,10 @@
       currentPath = path;
       error = undefined;
     } catch (err) {
-      if (err instanceof InvokeError) {
-        error = err;
-      }
+      error =
+        err instanceof InvokeError
+          ? err
+          : new InvokeError(err instanceof Error ? err.message : String(err));
       currentPath = path;
     }
     return;
@@ -232,7 +233,7 @@
       <ScrollArea style="height: 100%; min-width: 0;">
         <div class="container">
           <div style:min-width="0">
-            {#if blob === null}
+            {#if blob === null && !error}
               <div
                 style:display="flex"
                 style:min-height="calc(100dvh - 7rem)"
@@ -257,7 +258,7 @@
                   <div style:margin-left="0.5rem" style:flex-shrink="0">
                     <Path fullPath={currentPath} />
                   </div>
-                  {#if blob}
+                  {#if blob && !error}
                     <div
                       style:display="flex"
                       style:gap="0.5rem"
@@ -282,14 +283,14 @@
                 {/snippet}
 
                 {#snippet rightHeader()}
-                  {#if previewable}
+                  {#if previewable && !error}
                     <PreviewSwitch bind:preview />
                   {/if}
                 {/snippet}
 
                 <div class="blob">
                   <div class="line-column">
-                    {#if showLineNumbers}
+                    {#if blob && showLineNumbers}
                       {#each blob.content
                         .trimEnd()
                         .split("\n")
@@ -301,7 +302,17 @@
                     {/if}
                   </div>
                   <div style:width="100%" bind:this={codeElement}>
-                    {#if blob.binary}
+                    {#if error || !blob}
+                      <div
+                        class="txt-body-m-regular blob-placeholder txt-missing">
+                        <Icon name="warning" size="32" />
+                        {#if error?.code === "PayloadError.TooLarge"}
+                          <span>File size exceeds limit of 10 MB.</span>
+                        {:else}
+                          <span>{capitalize(error?.message)}</span>
+                        {/if}
+                      </div>
+                    {:else if blob.binary}
                       {#if blob.mimeType.startsWith("image")}
                         <img
                           src={`data:${blob.mimeType};base64,${blob.content}`}
@@ -326,23 +337,14 @@
                             rid={repo.rid}
                             path={currentPath}
                             sha={oid}
-                            content={blob.content} />
+                            content={blob.content}
+                            onNavigate={showPath} />
                         {/if}
                       </div>
                     {:else if blob.content.trim() === ""}
                       <div
                         class="txt-body-m-regular blob-placeholder txt-missing">
                         <span>Empty file</span>
-                      </div>
-                    {:else if error}
-                      <div
-                        class="txt-body-m-regular blob-placeholder txt-missing">
-                        <Icon name="warning" size="32" />
-                        {#if error.code === "PayloadError.TooLarge"}
-                          <span>File size exceeds limit of 10 MB.</span>
-                        {:else}
-                          <span>{capitalize(error.message)}</span>
-                        {/if}
                       </div>
                     {:else}
                       <code>

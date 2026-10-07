@@ -5,6 +5,7 @@ import type { Route } from "@app/lib/router";
 import {
   activeUnloadedRouteStore,
   loadFromLocation,
+  push,
   routeToPath,
 } from "@app/lib/router";
 
@@ -99,4 +100,49 @@ test.each([
   expect(console.error).toHaveBeenCalledWith(
     expect.stringContaining("Could not resolve route"),
   );
+});
+
+describe("clicks on app links", () => {
+  function clickLink(href: string, handle?: (event: Event) => void) {
+    const anchor = document.createElement("a");
+    anchor.setAttribute("href", href);
+    if (handle) {
+      anchor.addEventListener("click", handle);
+    }
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  }
+
+  test("navigate to the route", async () => {
+    await resolve("/guide");
+
+    clickLink("/inbox");
+    await vi.waitFor(() =>
+      expect(get(activeUnloadedRouteStore)).toEqual({ resource: "inbox" }),
+    );
+  });
+
+  test("leave links that handled their own click alone", async () => {
+    await resolve("/guide");
+
+    clickLink("/inbox", event => event.preventDefault());
+    expect(get(activeUnloadedRouteStore)).toEqual({ resource: "guide" });
+    expect(window.location.pathname).toBe("/guide");
+  });
+});
+
+test("push a route with a fragment to scroll to", async () => {
+  await resolve("/guide");
+
+  await push({ resource: "repo.home", rid, path: "docs/guide.md" }, "café");
+  expect(get(activeUnloadedRouteStore)).toEqual({
+    resource: "repo.home",
+    rid,
+    path: "docs/guide.md",
+  });
+  expect(decodeURIComponent(window.location.hash)).toBe("#café");
+
+  await push({ resource: "guide" });
+  expect(window.location.hash).toBe("");
 });

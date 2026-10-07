@@ -98,6 +98,11 @@ const offPopstate = on(window, "popstate", () => {
 });
 
 const offNavigateAnchor = on(document, "click", e => {
+  // A link that handled its own click, like one in a rendered document,
+  // must not be followed as a route as well.
+  if (e.defaultPrevented) {
+    return;
+  }
   const [anchor] = e
     .composedPath()
     .flatMap(target => (target instanceof HTMLAnchorElement ? [target] : []));
@@ -122,6 +127,7 @@ const loadExecutor = mutexExecutor.create();
 async function navigate(
   action: "push" | "replace",
   newRoute: Route,
+  fragment?: string,
 ): Promise<void> {
   const historyNav = pendingHistoryNavigation;
   pendingHistoryNavigation = false;
@@ -136,7 +142,11 @@ async function navigate(
     // Pushing the route that is already active would mint a duplicate
     // history entry, making Back appear to do nothing. Booting has no path.
     const index = historyIndex() + 1;
-    window.history.pushState(stamp(newRoute, index), "", path);
+    window.history.pushState(
+      stamp(newRoute, index),
+      "",
+      fragment ? `${path}#${encodeURIComponent(fragment)}` : path,
+    );
     updateNavigationState(index, true);
   } else if (action === "replace") {
     const index = historyIndex();
@@ -168,8 +178,8 @@ async function navigate(
   });
 }
 
-export async function push(newRoute: Route): Promise<void> {
-  await navigate("push", newRoute);
+export async function push(newRoute: Route, fragment?: string): Promise<void> {
+  await navigate("push", newRoute, fragment);
 }
 
 export async function replace(newRoute: Route): Promise<void> {

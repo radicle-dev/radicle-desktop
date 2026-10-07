@@ -222,9 +222,7 @@ export class Renderer extends BaseRenderer {
 
   link({ href, title, tokens }: Tokens.Link): string {
     const text = this.parser.parseInline(tokens);
-    const normalizedHref = href.startsWith("#") ? href.toLowerCase() : href;
-
-    const attrs = [`href="${escape(normalizedHref)}"`];
+    const attrs = [`href="${escape(href)}"`];
     if (title) {
       attrs.push(`title="${escape(title)}"`);
     }

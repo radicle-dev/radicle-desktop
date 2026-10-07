@@ -12,6 +12,11 @@
   import { mount, tick, unmount } from "svelte";
 
   import { enhanceCodeBlocks } from "@app/lib/codeBlocks";
+  import type { OpenFile } from "@app/lib/documentLinks";
+  import {
+    enhanceDocumentLink,
+    scrollToLocationFragment,
+  } from "@app/lib/documentLinks";
   import { decodeEmbed, embedPreviewKind, retinaWidth } from "@app/lib/embeds";
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
@@ -26,7 +31,8 @@
   import { renderMermaidBlocks } from "@app/lib/mermaid";
   import { isOid } from "@app/lib/radUri";
   import { enhanceRepoImages, RepoImages } from "@app/lib/repoImages";
-  import { scrollIntoView, twemoji } from "@app/lib/utils";
+  import * as router from "@app/lib/router";
+  import { twemoji } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
   import Mention from "@app/components/Mention.svelte";
@@ -45,6 +51,9 @@
     // If true, add <br> on a single line break
     breaks?: boolean;
     toggleTaskItem?: (content: string) => Promise<void> | void;
+    // Opens a file linked from the document. By default it opens in the
+    // source view of the repository at its default branch.
+    onNavigate?: OpenFile;
   }
 
   const {
@@ -54,11 +63,23 @@
     sha = undefined,
     breaks = false,
     toggleTaskItem = undefined,
+    onNavigate = undefined,
   }: Props = $props();
+
+  const openFile = $derived(
+    onNavigate ??
+      (rid
+        ? (filePath: string | undefined, fragment: string | undefined) =>
+            void router.push(
+              { resource: "repo.home", rid, path: filePath },
+              fragment,
+            )
+        : undefined),
+  );
 
   let taskInFlight = $state(false);
   let refocusTask: number | undefined = undefined;
-  let scrolledToHash = false;
+  let scrolledAt: string | undefined;
 
   let container: HTMLElement;
 
@@ -337,15 +358,6 @@
           continue;
         }
 
-        try {
-          const url = new URL(e.href);
-          if (url.origin !== window.origin) {
-            e.target = "_blank";
-            e.rel = "noopener noreferrer";
-          }
-        } catch (e) {
-          console.warn("Not able to parse url", e);
-        }
         // Don't underline <a> tags that contain images.
         // Make an exception for emojis.
         if (
@@ -355,11 +367,11 @@
           e.classList.add("no-underline");
         }
 
-        // Iterate over all links, and try to add a base64 preview beneath it.
         const href = e.getAttribute("href");
 
-        // If the markdown link is an oid embed
-        if (href && isOid(href)) {
+        if (!href || !isOid(href)) {
+          enhanceDocumentLink(e, () => ({ path, openFile }));
+        } else {
           e.onclick = event => {
             event.preventDefault();
             invoke("save_embed_to_disk", {
@@ -422,10 +434,7 @@
 
       enhanceCodeBlocks(container);
 
-      if (!scrolledToHash && window.location.hash) {
-        scrollIntoView(window.location.hash.substring(1));
-      }
-      scrolledToHash = true;
+      scrolledAt = scrollToLocationFragment(scrolledAt);
     });
 
     return () => {
