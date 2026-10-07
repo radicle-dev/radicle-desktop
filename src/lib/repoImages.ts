@@ -6,15 +6,25 @@ import { invoke } from "@app/lib/invoke";
 // is never requested.
 const repoOrigin = "https://repo.radicle.invalid";
 
+function decode(component: string): string {
+  try {
+    return decodeURIComponent(component);
+  } catch {
+    // A `%` that doesn't start an escape is part of the name.
+    return component;
+  }
+}
+
 /**
  * Resolve a link written relative to the document at `from` into a repository
- * path. Returns undefined when the link points to another origin or to the
- * repository root. Targets that climb above the root stop at it.
+ * path, which is empty for the repository root, and the fragment it points
+ * to. Returns undefined when the link points to another origin. Targets that
+ * climb above the root stop at it.
  */
-export function resolveRepoPath(
+export function resolveRepoTarget(
   href: string,
   from: string,
-): string | undefined {
+): { path: string; fragment: string | undefined } | undefined {
   const dir = from.split("/").slice(0, -1).join("/");
 
   let url: URL;
@@ -30,14 +40,22 @@ export function resolveRepoPath(
     return undefined;
   }
 
-  let path = url.pathname;
-  try {
-    path = decodeURIComponent(path);
-  } catch {
-    // A `%` that doesn't start an escape is part of the file name.
-  }
+  return {
+    path: decode(url.pathname).replace(/^\//, ""),
+    fragment: url.hash ? decode(url.hash.slice(1)) : undefined,
+  };
+}
 
-  return path.replace(/^\//, "") || undefined;
+/**
+ * Resolve a link written relative to the document at `from` into a repository
+ * path. Returns undefined when the link points to another origin or to the
+ * repository root.
+ */
+export function resolveRepoPath(
+  href: string,
+  from: string,
+): string | undefined {
+  return resolveRepoTarget(href, from)?.path || undefined;
 }
 
 // Rewrite GitHub "blob" image URLs so they resolve to the raw image content. A

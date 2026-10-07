@@ -86,7 +86,7 @@
     }
   });
 
-  function showPath(filePath: string) {
+  function showPath(filePath: string | undefined) {
     void router.push({ ...baseRoute, path: filePath });
   }
 
@@ -301,7 +301,17 @@
                     {/if}
                   </div>
                   <div style:width="100%" bind:this={codeElement}>
-                    {#if blob.binary}
+                    {#if error}
+                      <div
+                        class="txt-body-m-regular blob-placeholder txt-missing">
+                        <Icon name="warning" size="32" />
+                        {#if error.code === "PayloadError.TooLarge"}
+                          <span>File size exceeds limit of 10 MB.</span>
+                        {:else}
+                          <span>{capitalize(error.message)}</span>
+                        {/if}
+                      </div>
+                    {:else if blob.binary}
                       {#if blob.mimeType.startsWith("image")}
                         <img
                           src={`data:${blob.mimeType};base64,${blob.content}`}
@@ -326,23 +336,14 @@
                             rid={repo.rid}
                             path={currentPath}
                             sha={oid}
-                            content={blob.content} />
+                            content={blob.content}
+                            onNavigate={showPath} />
                         {/if}
                       </div>
                     {:else if blob.content.trim() === ""}
                       <div
                         class="txt-body-m-regular blob-placeholder txt-missing">
                         <span>Empty file</span>
-                      </div>
-                    {:else if error}
-                      <div
-                        class="txt-body-m-regular blob-placeholder txt-missing">
-                        <Icon name="warning" size="32" />
-                        {#if error.code === "PayloadError.TooLarge"}
-                          <span>File size exceeds limit of 10 MB.</span>
-                        {:else}
-                          <span>{capitalize(error.message)}</span>
-                        {/if}
                       </div>
                     {:else}
                       <code>

@@ -98,6 +98,11 @@ const offPopstate = on(window, "popstate", () => {
 });
 
 const offNavigateAnchor = on(document, "click", e => {
+  // A link that handled its own click, like one in a rendered document,
+  // must not be followed as a route as well.
+  if (e.defaultPrevented) {
+    return;
+  }
   const [anchor] = e
     .composedPath()
     .flatMap(target => (target instanceof HTMLAnchorElement ? [target] : []));

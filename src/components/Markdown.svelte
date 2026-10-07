@@ -12,6 +12,7 @@
   import { mount, tick, unmount } from "svelte";
 
   import { enhanceCodeBlocks } from "@app/lib/codeBlocks";
+  import { enhanceDocumentLink } from "@app/lib/documentLinks";
   import { decodeEmbed, embedPreviewKind, retinaWidth } from "@app/lib/embeds";
   import { parseFrontmatter } from "@app/lib/frontmatter";
   import { invoke } from "@app/lib/invoke";
@@ -26,6 +27,7 @@
   import { renderMermaidBlocks } from "@app/lib/mermaid";
   import { isOid } from "@app/lib/radUri";
   import { enhanceRepoImages, RepoImages } from "@app/lib/repoImages";
+  import * as router from "@app/lib/router";
   import { scrollIntoView, twemoji } from "@app/lib/utils";
 
   import Icon from "@app/components/Icon.svelte";
@@ -45,6 +47,9 @@
     // If true, add <br> on a single line break
     breaks?: boolean;
     toggleTaskItem?: (content: string) => Promise<void> | void;
+    // Opens a file linked from the document. By default it opens in the
+    // source view of the repository at its default branch.
+    onNavigate?: (path: string | undefined) => void;
   }
 
   const {
@@ -54,7 +59,16 @@
     sha = undefined,
     breaks = false,
     toggleTaskItem = undefined,
+    onNavigate = undefined,
   }: Props = $props();
+
+  const openFile = $derived(
+    onNavigate ??
+      (rid
+        ? (filePath: string | undefined) =>
+            void router.push({ resource: "repo.home", rid, path: filePath })
+        : undefined),
+  );
 
   let taskInFlight = $state(false);
   let refocusTask: number | undefined = undefined;
@@ -337,15 +351,6 @@
           continue;
         }
 
-        try {
-          const url = new URL(e.href);
-          if (url.origin !== window.origin) {
-            e.target = "_blank";
-            e.rel = "noopener noreferrer";
-          }
-        } catch (e) {
-          console.warn("Not able to parse url", e);
-        }
         // Don't underline <a> tags that contain images.
         // Make an exception for emojis.
         if (
@@ -355,11 +360,13 @@
           e.classList.add("no-underline");
         }
 
-        // Iterate over all links, and try to add a base64 preview beneath it.
         const href = e.getAttribute("href");
 
-        // If the markdown link is an oid embed
-        if (href && isOid(href)) {
+        // An oid is an embed, which gets a preview beneath its link, rather
+        // than a relative path.
+        if (!href || !isOid(href)) {
+          enhanceDocumentLink(e, () => ({ path, openFile }));
+        } else {
           e.onclick = event => {
             event.preventDefault();
             invoke("save_embed_to_disk", {

@@ -4,19 +4,25 @@
   import type { AsciidocSource } from "@app/lib/asciidoc";
   import { renderAsciidoc } from "@app/lib/asciidoc";
   import { enhanceCodeBlocks } from "@app/lib/codeBlocks";
-  import {
-    enhanceRepoImages,
-    RepoImages,
-    resolveRepoPath,
-  } from "@app/lib/repoImages";
+  import { enhanceDocumentLink } from "@app/lib/documentLinks";
+  import { enhanceRepoImages, RepoImages } from "@app/lib/repoImages";
+  import * as router from "@app/lib/router";
   import { scrollIntoView, twemoji } from "@app/lib/utils";
 
   interface Props extends AsciidocSource {
     content: string;
-    onNavigate?: (path: string) => void;
+    // Opens a file linked from the document. By default it opens in the
+    // source view of the repository at its default branch.
+    onNavigate?: (path: string | undefined) => void;
   }
 
   const { content, rid, sha, path, onNavigate }: Props = $props();
+
+  const openFile = $derived(
+    onNavigate ??
+      ((filePath: string | undefined) =>
+        void router.push({ resource: "repo.home", rid, path: filePath })),
+  );
 
   let container: HTMLElement | undefined = $state();
   let html = $state("");
@@ -62,24 +68,7 @@
 
   function enhance(container: HTMLElement) {
     for (const anchor of container.querySelectorAll("a")) {
-      const href = anchor.getAttribute("href");
-      if (!href || href.startsWith("#")) {
-        continue;
-      }
-
-      // A link relative to the document is a path in the repository, not in
-      // the app. Following it would navigate the window away, so open the
-      // file in the source view instead.
-      const repoPath = resolveRepoPath(href, path);
-      if (repoPath) {
-        anchor.onclick = event => {
-          event.preventDefault();
-          onNavigate?.(repoPath);
-        };
-      } else {
-        anchor.target = "_blank";
-        anchor.rel = "noopener noreferrer";
-      }
+      enhanceDocumentLink(anchor, () => ({ path, openFile }));
     }
 
     enhanceRepoImages(container, { rid, sha, path }, images);

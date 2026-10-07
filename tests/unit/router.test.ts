@@ -100,3 +100,34 @@ test.each([
     expect.stringContaining("Could not resolve route"),
   );
 });
+
+describe("clicks on app links", () => {
+  async function clickLink(href: string, handle?: (event: Event) => void) {
+    const anchor = document.createElement("a");
+    anchor.setAttribute("href", href);
+    if (handle) {
+      anchor.addEventListener("click", handle);
+    }
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    await vi.waitFor(() => expect(get(activeUnloadedRouteStore)).toBeDefined());
+  }
+
+  test("navigate to the route", async () => {
+    await resolve("/guide");
+
+    await clickLink("/inbox");
+    await vi.waitFor(() =>
+      expect(get(activeUnloadedRouteStore)).toEqual({ resource: "inbox" }),
+    );
+  });
+
+  test("leave links that handled their own click alone", async () => {
+    await resolve("/guide");
+
+    await clickLink("/inbox", event => event.preventDefault());
+    expect(get(activeUnloadedRouteStore)).toEqual({ resource: "guide" });
+    expect(window.location.pathname).toBe("/guide");
+  });
+});

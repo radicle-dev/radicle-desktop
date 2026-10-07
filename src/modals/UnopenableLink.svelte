@@ -5,7 +5,7 @@
 
   interface Props {
     link: string;
-    reason: "invalid" | "no-page";
+    reason: "invalid" | "no-page" | "unsupported";
   }
 
   const { link, reason }: Props = $props();
@@ -62,6 +62,8 @@
     <span>
       {#if reason === "invalid"}
         This isn't a valid rad: link.
+      {:else if reason === "unsupported"}
+        The app doesn't know how to open this link.
       {:else}
         Neither this app nor the explorer has a page for this link.
       {/if}
