@@ -1,8 +1,6 @@
 import type { Artifact } from "@bindings/cob/release/Artifact";
 import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
 import type { Commit } from "@bindings/repo/Commit";
-import type { RepoRefs } from "@bindings/repo/RepoRefs";
-import type { Tag } from "@bindings/repo/Tag";
 
 import { describe, expect, test } from "vitest";
 
@@ -11,7 +9,6 @@ import {
   attestedBy,
   canAttest,
   canEditMetadata,
-  canonicalTags,
   delegatesFirst,
   displayMetadataValue,
   locationsByNode,
@@ -267,45 +264,6 @@ describe("matchCommits", () => {
 
   test("keeps the matches when the resolved commit is among them", () => {
     expect(matchCommits([first, second], "", first)).toEqual([first, second]);
-  });
-});
-
-describe("canonicalTags", () => {
-  function tag(timestamp: number, tagOid?: string): Tag {
-    return { oid: "c", timestamp, tagOid };
-  }
-  function refs(
-    canonical: Record<string, Tag>,
-    ...remotes: Record<string, Tag>[]
-  ): RepoRefs {
-    return {
-      canonical: { branches: {}, tags: canonical },
-      remotes: remotes.map((tags, i) => ({
-        id: `${i}`,
-        delegate: false,
-        branches: {},
-        tags,
-      })),
-    };
-  }
-
-  test("lists canonical tags, newest first", () => {
-    expect(
-      canonicalTags(refs({ v1: tag(1), v2: tag(2) })).map(t => t.name),
-    ).toEqual(["v2", "v1"]);
-  });
-
-  test("ignores tags only a peer has", () => {
-    expect(canonicalTags(refs({ v1: tag(1) }, { v2: tag(2) }))).toEqual([
-      { name: "v1", tag: tag(1) },
-    ]);
-  });
-
-  test("keeps the canonical tag over a peer's annotated one", () => {
-    const canonical = tag(1);
-    expect(
-      canonicalTags(refs({ v1: canonical }, { v1: tag(2, "evil") }))[0].tag,
-    ).toBe(canonical);
   });
 });
 

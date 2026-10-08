@@ -193,6 +193,7 @@ pub fn router(shared: Shared) -> Router {
         )
         .route("/repo_by_id", post(repo_handler))
         .route("/list_repo_refs", post(list_repo_refs_handler))
+        .route("/list_canonical_tags", post(list_canonical_tags_handler))
         .route("/identity_by_repo", post(identity_handler))
         .route("/version", post(version_handler))
         .route("/git_info", post(git_info_handler))
@@ -466,6 +467,15 @@ async fn list_repo_refs_handler(
     let refs = ctx.list_repo_refs(rid)?;
 
     Ok::<_, Error>(Json(refs))
+}
+
+async fn list_canonical_tags_handler(
+    Ctx(ctx): Ctx,
+    Json(RepoBody { rid }): Json<RepoBody>,
+) -> impl IntoResponse {
+    let tags = ctx.list_canonical_tags(rid)?;
+
+    Ok::<_, Error>(Json(tags))
 }
 
 async fn git_info_handler() -> impl IntoResponse {

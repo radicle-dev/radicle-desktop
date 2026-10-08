@@ -122,6 +122,7 @@ pub fn run() {
             repo::clean,
             repo::diff_stats,
             repo::list_commits,
+            repo::list_canonical_tags,
             repo::list_repo_commits,
             repo::list_repo_refs,
             repo::list_repos,

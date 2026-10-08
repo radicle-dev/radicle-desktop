@@ -4,8 +4,6 @@ import type { Location } from "@bindings/cob/release/Location";
 import type { ReleaseCounts } from "@bindings/cob/release/ReleaseCounts";
 import type { ReleaseScope } from "@bindings/cob/release/ReleaseScope";
 import type { Commit } from "@bindings/repo/Commit";
-import type { RepoRefs } from "@bindings/repo/RepoRefs";
-import type { Tag } from "@bindings/repo/Tag";
 
 // With no scope asked for and no delegate releases, open on the untrusted
 // scope rather than on an empty list.
@@ -152,14 +150,6 @@ export function matchCommits(
     return [resolved];
   }
   return matches;
-}
-
-// Only canonical tags: a peer's tag of the same name could point a release
-// at a commit the delegates never tagged.
-export function canonicalTags(refs: RepoRefs): { name: string; tag: Tag }[] {
-  return Object.entries(refs.canonical.tags)
-    .map(([name, tag]) => ({ name, tag }))
-    .sort((a, b) => b.tag.timestamp - a.tag.timestamp);
 }
 
 // A release by a non-delegate is untrusted as a whole. On a delegate's

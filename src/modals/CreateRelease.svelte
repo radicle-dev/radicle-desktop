@@ -3,7 +3,6 @@
   import type { ArtifactDigest } from "@bindings/cob/release/ArtifactDigest";
   import type { Commit } from "@bindings/repo/Commit";
   import type { RepoInfo } from "@bindings/repo/RepoInfo";
-  import type { RepoRefs } from "@bindings/repo/RepoRefs";
   import type { Tag } from "@bindings/repo/Tag";
 
   import { untrack } from "svelte";
@@ -14,7 +13,8 @@
   import { invoke, InvokeError } from "@app/lib/invoke";
   import { disableHide, enableHide, forceHide } from "@app/lib/modal";
   import { isOid } from "@app/lib/radUri";
-  import { canonicalTags, matchCommits } from "@app/lib/releases";
+  import { sortedTags } from "@app/lib/refs";
+  import { matchCommits } from "@app/lib/releases";
   import * as router from "@app/lib/router";
   import { duplicatePicks } from "@app/lib/stageArtifacts";
   import { formatBytes, formatOid } from "@app/lib/utils";
@@ -102,10 +102,12 @@
     }
   });
 
+  // Only canonical tags: a peer's tag of the same name could point a release
+  // at a commit the delegates never tagged.
   $effect(() => {
-    void invoke<RepoRefs>("list_repo_refs", { rid: repo.rid })
-      .then(refs => {
-        tags = canonicalTags(refs);
+    void invoke<Record<string, Tag>>("list_canonical_tags", { rid: repo.rid })
+      .then(result => {
+        tags = sortedTags(result).map(([name, tag]) => ({ name, tag }));
       })
       .catch((error: unknown) => {
         console.error("Could not list tags:", error);

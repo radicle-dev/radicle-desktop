@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use radicle::git;
 use radicle::identity::RepoId;
 use radicle::node::NodeId;
@@ -35,6 +37,14 @@ pub async fn list_repo_refs(
     rid: RepoId,
 ) -> Result<types::repo::RepoRefs, Error> {
     blocking(ctx, move |ctx| ctx.list_repo_refs(rid)).await
+}
+
+#[tauri::command]
+pub async fn list_canonical_tags(
+    ctx: tauri::State<'_, AppState>,
+    rid: RepoId,
+) -> Result<BTreeMap<String, types::repo::Tag>, Error> {
+    blocking(ctx, move |ctx| ctx.list_canonical_tags(rid)).await
 }
 
 #[tauri::command]

@@ -655,6 +655,17 @@ pub trait Repo: Profile {
         Ok(repo::RepoRefs { canonical, remotes })
     }
 
+    /// The canonical tags, without the per-peer refs that `list_repo_refs`
+    /// loads and verifies for every remote.
+    fn list_canonical_tags(
+        &self,
+        rid: identity::RepoId,
+    ) -> Result<BTreeMap<String, repo::Tag>, Error> {
+        let repo = self.profile().storage.repository(rid)?;
+
+        Ok(canonical_refs(&repo)?.tags)
+    }
+
     fn repo_by_id(&self, rid: identity::RepoId) -> Result<repo::RepoInfo, Error> {
         let profile = self.profile();
         let repo = profile.storage.repository(rid)?;
@@ -1307,6 +1318,59 @@ mod test {
                 .unwrap()
                 .is_empty()
         );
+    }
+
+    #[test]
+    fn canonical_tags_ignore_peer_tags() {
+        use radicle::cob::Title;
+        use radicle::identity::Identity;
+        use radicle::identity::doc::PayloadId;
+        use radicle::storage::{SignRepository, WriteRepository, WriteStorage};
+
+        let tmp = tempfile::tempdir().unwrap();
+        let profile = test::profile(&tmp.path().join("home"), [0xff; 32]);
+        let signer = SigningKey::from_seed(Seed::new([0xff; 32]));
+        let (rid, _, _, head) =
+            fixtures::project(tmp.path().join("working"), &profile.storage, &signer).unwrap();
+
+        {
+            let repo = profile.storage.repository_mut(rid).unwrap();
+            let mut identity = Identity::load_mut(&repo, &signer).unwrap();
+            let mut doc = identity.doc().clone().edit();
+            doc.payload.insert(
+                PayloadId::canonical_refs(),
+                serde_json::json!({
+                    "rules": {
+                        "refs/tags/*": { "allow": "delegates", "threshold": 1 },
+                    },
+                })
+                .into(),
+            );
+            identity
+                .update(
+                    Title::new("Make tags canonical").unwrap(),
+                    "",
+                    &doc.verified().unwrap(),
+                )
+                .unwrap();
+            repo.sign_refs(&signer).unwrap();
+            repo.set_identity_head().unwrap();
+
+            let other = repo.identity_head().unwrap().into();
+            let peer = "z6MkrLMMsiPWUcNPHcRajuMi9mDfYckSoJyPwwnknocNYPm7";
+            let peer_tags = format!("refs/namespaces/{peer}/refs/tags");
+            for (name, oid) in [
+                ("refs/tags/v1".to_owned(), head),
+                (format!("{peer_tags}/v1"), other),
+                (format!("{peer_tags}/v2"), head),
+            ] {
+                repo.backend.reference(&name, oid, false, "test").unwrap();
+            }
+        }
+
+        let tags = AppState { profile }.list_canonical_tags(rid).unwrap();
+        assert_eq!(tags.keys().collect::<Vec<_>>(), vec!["v1"]);
+        assert_eq!(tags["v1"].oid, head);
     }
 
     #[test]
