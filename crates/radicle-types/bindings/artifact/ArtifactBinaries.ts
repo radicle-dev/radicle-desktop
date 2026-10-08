@@ -17,6 +17,10 @@ export type ArtifactBinaries = {
    */
   cli: boolean;
   /**
+   * Version of the `rad-artifact` CLI, when it answers `--version`.
+   */
+  cliVersion?: string;
+  /**
    * The `rad-artifact-node` seeding daemon.
    */
   node: boolean;

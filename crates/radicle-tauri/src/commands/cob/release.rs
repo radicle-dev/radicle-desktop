@@ -196,10 +196,11 @@ pub async fn artifact_node_running(ctx: tauri::State<'_, AppState>) -> Result<bo
 }
 
 /// Which artifact binaries are installed, so a node that is down can be told
-/// apart from one that was never installed.
+/// apart from one that was never installed. Off the main thread, since the
+/// CLI's version comes from running it.
 #[tauri::command]
-pub fn artifact_binaries() -> radicle_types::binaries::ArtifactBinaries {
-    radicle_types::binaries::artifact_binaries()
+pub async fn artifact_binaries() -> Result<radicle_types::binaries::ArtifactBinaries, Error> {
+    Ok(tauri::async_runtime::spawn_blocking(radicle_types::binaries::artifact_binaries).await?)
 }
 
 #[tauri::command]

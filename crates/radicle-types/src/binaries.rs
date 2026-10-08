@@ -139,20 +139,33 @@ const RAD_ARTIFACT_NODE_BIN: &str = "rad-artifact-node";
 ///
 /// Uncached for the same reason as [`rad`]: the UI polls, so an install that
 /// happens while the app runs takes effect without a restart.
-#[derive(Clone, Copy, Debug, Serialize, TS)]
+#[derive(Clone, Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
 #[ts(export)]
 #[ts(export_to = "artifact/")]
 pub struct ArtifactBinaries {
     /// The `rad-artifact` CLI.
     pub cli: bool,
+    /// Version of the `rad-artifact` CLI, when it answers `--version`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub cli_version: Option<String>,
     /// The `rad-artifact-node` seeding daemon.
     pub node: bool,
 }
 
 pub fn artifact_binaries() -> ArtifactBinaries {
+    let cli = candidates(RAD_ARTIFACT_BIN).find(|path| path.is_file());
+    // `rad-artifact --version` prints the crate name before the version.
+    let cli_version = cli.as_deref().and_then(probe).map(|version| {
+        version
+            .rsplit_once(' ')
+            .map_or(version.clone(), |(_, v)| v.to_owned())
+    });
+
     ArtifactBinaries {
-        cli: candidates(RAD_ARTIFACT_BIN).any(|path| path.is_file()),
+        cli: cli.is_some(),
+        cli_version,
         node: candidates(RAD_ARTIFACT_NODE_BIN).any(|path| path.is_file()),
     }
 }
@@ -323,7 +336,7 @@ fn probe(path: &Path) -> Option<String> {
         }
         if std::time::Instant::now() >= deadline {
             log::warn!(
-                "{} did not answer `--version` within {}s, taking it as not being git",
+                "{} did not answer `--version` within {}s, giving up",
                 path.display(),
                 PROBE_TIMEOUT.as_secs()
             );
