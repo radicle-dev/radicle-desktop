@@ -185,6 +185,9 @@ export async function renderAsciidoc(
         showtitle: true,
         "allow-uri-read": "",
         "cache-uri": "",
+        // Cross references to other documents link to their source files,
+        // which is what the app shows, rather than to rendered `.html` pages.
+        relfilesuffix: ".adoc",
       },
       /* eslint-enable @typescript-eslint/naming-convention */
     });
