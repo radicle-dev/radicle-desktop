@@ -32,6 +32,11 @@ pub struct RelayHealth {
 pub struct ArtifactNodeStatus {
     /// Endpoint the node serves on, as a `radiroh://<base32>` URL.
     pub endpoint_id: String,
+    /// Version of the running `rad-artifact-node`. Absent when the node
+    /// predates version reporting.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub version: Option<String>,
     /// Unix timestamp, in seconds, when the node bound its socket.
     #[ts(type = "number")]
     pub started_at_unix: i64,
@@ -107,6 +112,7 @@ impl ArtifactNodeStatus {
         Self {
             store_path,
             endpoint_id: status.endpoint_id.to_string(),
+            version: status.version,
             started_at_unix: status.started_at_unix,
             seeded_count: status.seeded.count as u64,
             seeded_bytes_logical: status.seeded.bytes_logical,

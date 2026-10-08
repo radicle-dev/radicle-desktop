@@ -169,6 +169,10 @@
               label="endpoint"
               shorten={false} />
           </span>
+          {#if status.version}
+            <span class="key">Node version</span>
+            <span class="value">{status.version}</span>
+          {/if}
           <span class="key">Uptime</span>
           <span class="value">{uptime}</span>
           <span class="key">Seeding</span>

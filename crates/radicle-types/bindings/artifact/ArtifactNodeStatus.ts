@@ -14,6 +14,11 @@ export type ArtifactNodeStatus = {
    */
   endpointId: string;
   /**
+   * Version of the running `rad-artifact-node`. Absent when the node
+   * predates version reporting.
+   */
+  version?: string;
+  /**
    * Unix timestamp, in seconds, when the node bound its socket.
    */
   startedAtUnix: number;
