@@ -101,6 +101,11 @@
     "vscode-oniguruma": "^2.0.1",
     "wait-on": "^9.0.10"
   },
+  "overrides": {
+    "mermaid": {
+      "katex": "$katex"
+    }
+  },
   "allowScripts": {
     "fsevents": false
   }
