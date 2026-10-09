@@ -1,7 +1,15 @@
 <script lang="ts">
   import type { Tree } from "@bindings/source/Tree";
 
-  import { SvelteMap } from "svelte/reactivity";
+  import { untrack } from "svelte";
+  import { SvelteMap, SvelteSet } from "svelte/reactivity";
+
+  import type { FolderExpansion } from "@app/lib/fileTreeExpansion";
+  import {
+    isFolderExpanded,
+    openAncestors,
+    toggleFolder,
+  } from "@app/lib/fileTreeExpansion";
 
   import FileTreeFile from "@app/components/FileTreeFile.svelte";
   import FileTreeFolder from "@app/components/FileTreeFolder.svelte";
@@ -16,24 +24,23 @@
 
   const { currentPath, tree, fetchTree, onSelect }: Props = $props();
 
-  // Manual expand/collapse overrides, keyed by folder prefix. Held here
-  // rather than in FileTreeFolder so the state survives the virtualizer
-  // unmounting off-screen rows; without an override a folder is expanded
-  // when it contains the open file.
-  const expandedOverrides = new SvelteMap<string, boolean>();
+  // Held here rather than in FileTreeFolder so the state survives the
+  // virtualizer unmounting off-screen rows.
+  const expansion: FolderExpansion = {
+    opened: new SvelteSet(),
+    collapsedOnVisit: new SvelteMap(),
+  };
+  let visits = 0;
+  const location = $derived.by(() => ({ path: currentPath, visit: ++visits }));
   $effect(() => {
-    // Navigating to another file resets every folder to its default, the
-    // same behaviour the per-folder writable $derived had before the state
-    // was hoisted.
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    currentPath;
-    expandedOverrides.clear();
+    const path = currentPath;
+    untrack(() => openAncestors(expansion, path));
   });
   function isExpanded(prefix: string): boolean {
-    return expandedOverrides.get(prefix) ?? currentPath.indexOf(prefix) === 0;
+    return isFolderExpanded(expansion, prefix, location);
   }
   function toggleExpanded(prefix: string) {
-    expandedOverrides.set(prefix, !isExpanded(prefix));
+    toggleFolder(expansion, prefix, location);
   }
 </script>
 

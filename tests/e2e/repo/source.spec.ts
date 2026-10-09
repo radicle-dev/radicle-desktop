@@ -75,6 +75,30 @@ test("selecting a file keeps the open folder's entries rendered", async ({
   expect(await sibling?.evaluate(el => el.isConnected)).toBe(true);
 });
 
+test("folders stay open when selecting a file elsewhere", async ({
+  page,
+  peer,
+}) => {
+  const { rid } = await createNestedDocsRepo(peer);
+  await page.goto(`/repos/${rid}/home`);
+
+  await page.getByText("guides", { exact: true }).click();
+  await page.getByText("setup.md", { exact: true }).click();
+  await expect(page.getByText("Install it first.")).toBeVisible();
+
+  await page.getByText("api", { exact: true }).click();
+  await page.getByText("index.md", { exact: true }).click();
+  await expect(page.getByText("The API reference.")).toBeVisible();
+  await expect(page.getByText("usage.md", { exact: true })).toBeVisible();
+
+  await page.getByText("guides", { exact: true }).click();
+  await expect(page.getByText("usage.md", { exact: true })).toBeHidden();
+  await page.getByText("README.md", { exact: true }).click();
+  await expect(page.getByText("Welcome to the docs.")).toBeVisible();
+  await expect(page.getByText("usage.md", { exact: true })).toBeHidden();
+  await expect(page.getByText("index.md", { exact: true })).toBeVisible();
+});
+
 test("commits are listed and open with their changes", async ({
   page,
   peer,
