@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { positionInputPopover } from "@app/lib/inputPopover";
   import { labelError } from "@app/lib/inputValidation";
+  import { portal } from "@app/lib/portal";
 
   import Button from "@app/components/Button.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -30,6 +32,16 @@
   const valid = $derived(validationMessage === undefined);
 
   let removeToggles: Record<string, boolean> = $state({});
+
+  let anchorEl: HTMLDivElement | undefined = $state();
+  let floatingEl: HTMLDivElement | undefined = $state();
+
+  const panelVisible = $derived(showInput && validationMessage !== undefined);
+
+  $effect(() => {
+    if (!panelVisible || !floatingEl || !anchorEl) return;
+    return positionInputPopover(anchorEl, floatingEl);
+  });
 
   $effect(() => {
     // Reset component state whenever the labels change in the parent. This
@@ -64,13 +76,23 @@
     flex-wrap: wrap;
     gap: 0.5rem;
   }
+  .popover {
+    position: fixed;
+    top: 0;
+    left: 0;
+    visibility: hidden;
+    z-index: 400;
+    max-width: 28rem;
+    padding: 0.25rem;
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--border-radius-md);
+    background-color: var(--color-surface-canvas);
+    box-shadow: var(--elevation-low);
+  }
   .validation-message {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    color: var(--color-feedback-error-text);
-    position: relative;
-    margin-top: 0.5rem;
+    padding: 0.375rem 0.5rem;
+    color: var(--color-text-secondary);
+    font: var(--txt-body-m-regular);
   }
   .removable-label {
     display: flex;
@@ -113,15 +135,19 @@
   <div class="row">
     {#if showInput}
       <div class="input-row">
-        <div style:flex="1" style:min-width="0">
+        <div style:flex="1" style:min-width="0" bind:this={anchorEl}>
           <TextInput
             autofocus
-            {valid}
             disabled={submitInProgress}
             placeholder="Add label"
             bind:value={inputValue}
             onSubmit={addLabel} />
         </div>
+        {#if panelVisible}
+          <div class="popover" bind:this={floatingEl} use:portal>
+            <div class="validation-message">{validationMessage}</div>
+          </div>
+        {/if}
         <Button
           variant="outline"
           onclick={() => {
@@ -160,10 +186,4 @@
       {/if}
     {/each}
   </div>
-
-  {#if !valid && validationMessage}
-    <div class="validation-message">
-      <Icon name="warning" />{validationMessage}
-    </div>
-  {/if}
 {/if}

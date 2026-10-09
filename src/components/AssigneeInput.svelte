@@ -1,15 +1,6 @@
 <script lang="ts">
   import type { Author } from "@bindings/cob/Author";
 
-  import {
-    autoUpdate,
-    computePosition,
-    flip,
-    hide,
-    offset,
-    shift,
-    size,
-  } from "@floating-ui/dom";
   import debounce from "lodash/debounce";
 
   import type { AssigneeSuggestion } from "@app/lib/assigneeSuggestions";
@@ -17,6 +8,7 @@
     matchesAssignee,
     rankAssigneeSuggestions,
   } from "@app/lib/assigneeSuggestions";
+  import { positionInputPopover } from "@app/lib/inputPopover";
   import { parseAssignee } from "@app/lib/inputValidation";
   import { cachedSearchAliases, invoke } from "@app/lib/invoke";
   import { portal } from "@app/lib/portal";
@@ -131,33 +123,7 @@
 
   $effect(() => {
     if (!panelVisible || !floatingEl || !anchorEl) return;
-    const reference = anchorEl;
-    const floating = floatingEl;
-
-    return autoUpdate(reference, floating, () => {
-      void computePosition(reference, floating, {
-        placement: "bottom-start",
-        middleware: [
-          offset(8),
-          flip(),
-          shift({ padding: 8 }),
-          hide({ padding: 8 }),
-          size({
-            padding: 8,
-            apply({ availableHeight, rects, elements }) {
-              elements.floating.style.minWidth = `${rects.reference.width}px`;
-              elements.floating.style.maxHeight = `${Math.min(availableHeight, 384)}px`;
-            },
-          }),
-        ],
-      }).then(({ x, y, middlewareData }) => {
-        floating.style.left = `${x}px`;
-        floating.style.top = `${y}px`;
-        floating.style.visibility = middlewareData.hide?.referenceHidden
-          ? "hidden"
-          : "visible";
-      });
-    });
+    return positionInputPopover(anchorEl, floatingEl);
   });
 
   $effect(() => {
