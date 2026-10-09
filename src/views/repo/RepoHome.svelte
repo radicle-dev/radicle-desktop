@@ -222,11 +222,13 @@
         {#if tree.entries.length > 0}
           <ScrollArea
             style="border-right: 1px solid var(--color-border-subtle); flex: 1; min-height: 0; width: 100%; padding: 0.5rem;">
-            <TreeComponent
-              {tree}
-              {currentPath}
-              {fetchTree}
-              onSelect={showPath} />
+            {#key oid}
+              <TreeComponent
+                {tree}
+                {currentPath}
+                {fetchTree}
+                onSelect={showPath} />
+            {/key}
           </ScrollArea>
         {/if}
       </div>

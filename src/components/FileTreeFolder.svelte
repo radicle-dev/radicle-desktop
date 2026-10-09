@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Tree } from "@bindings/source/Tree";
 
+  import { untrack } from "svelte";
+
   import FileTreeFile from "@app/components/FileTreeFile.svelte";
   import FileTreeFolder from "@app/components/FileTreeFolder.svelte";
   import Icon from "@app/components/Icon.svelte";
@@ -30,9 +32,14 @@
   }: Props = $props();
   const expanded = $derived(isExpanded(prefix));
 
-  const treePromise = $derived(
-    expanded ? fetchTree(prefix) : Promise.resolve(undefined),
-  );
+  let tree: Tree | undefined = $state.raw();
+  let requested = false;
+
+  $effect(() => {
+    if (!expanded || requested) return;
+    requested = true;
+    void untrack(() => fetchTree(prefix)).then(loaded => (tree = loaded));
+  });
 </script>
 
 <style>
@@ -61,32 +68,27 @@
   </div>
 </div>
 {#if expanded}
-  {#await treePromise then tree}
-    {#if tree}
-      <div
-        style:display="flex"
-        style:flex-direction="column"
-        style:gap="0.25rem">
-        {#each tree.entries as entry (entry.path)}
-          {#if entry.kind === "tree"}
-            <FileTreeFolder
-              {fetchTree}
-              {onSelect}
-              name={entry.name}
-              {currentPath}
-              {isExpanded}
-              {toggleExpanded}
-              prefix={`${entry.path}/`}
-              indent={indent + 1.5} />
-          {:else if entry.kind === "blob"}
-            <FileTreeFile
-              name={entry.name}
-              onSelect={() => onSelect(entry.path)}
-              active={entry.path === currentPath}
-              indent={indent + 1.5} />
-          {/if}
-        {/each}
-      </div>
-    {/if}
-  {/await}
+  {#if tree}
+    <div style:display="flex" style:flex-direction="column" style:gap="0.25rem">
+      {#each tree.entries as entry (entry.path)}
+        {#if entry.kind === "tree"}
+          <FileTreeFolder
+            {fetchTree}
+            {onSelect}
+            name={entry.name}
+            {currentPath}
+            {isExpanded}
+            {toggleExpanded}
+            prefix={`${entry.path}/`}
+            indent={indent + 1.5} />
+        {:else if entry.kind === "blob"}
+          <FileTreeFile
+            name={entry.name}
+            onSelect={() => onSelect(entry.path)}
+            active={entry.path === currentPath}
+            indent={indent + 1.5} />
+        {/if}
+      {/each}
+    </div>
+  {/if}
 {/if}

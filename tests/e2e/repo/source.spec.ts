@@ -37,6 +37,44 @@ test("the repo home shows the README and browses the tree", async ({
   await expect(page.getByText("Install it first.")).toBeVisible();
 });
 
+async function createNestedDocsRepo(peer: RadiclePeer) {
+  const { rid, repoFolder } = await createRepo(peer, { name: "docs" });
+  const files = {
+    "README.md": "# Docs\n\nWelcome to the docs.\n",
+    "guides/setup.md": "Install it first.\n",
+    "guides/usage.md": "Then use it.\n",
+    "api/index.md": "The API reference.\n",
+  };
+  for (const [file, content] of Object.entries(files)) {
+    await Fs.mkdir(Path.dirname(Path.join(repoFolder, file)), {
+      recursive: true,
+    });
+    await Fs.writeFile(Path.join(repoFolder, file), content);
+  }
+  await peer.git(["add", "."], { cwd: repoFolder });
+  await peer.git(["commit", "-m", "Write the docs"], { cwd: repoFolder });
+  await peer.git(["push", "rad", "main"], { cwd: repoFolder });
+  return { rid, repoFolder };
+}
+
+test("selecting a file keeps the open folder's entries rendered", async ({
+  page,
+  peer,
+}) => {
+  const { rid } = await createNestedDocsRepo(peer);
+  await page.goto(`/repos/${rid}/home`);
+  await expect(page.getByText("Welcome to the docs.")).toBeVisible();
+
+  await page.getByText("guides", { exact: true }).click();
+  const sibling = await page
+    .getByText("usage.md", { exact: true })
+    .elementHandle();
+  await page.getByText("setup.md", { exact: true }).click();
+  await expect(page.getByText("Install it first.")).toBeVisible();
+
+  expect(await sibling?.evaluate(el => el.isConnected)).toBe(true);
+});
+
 test("commits are listed and open with their changes", async ({
   page,
   peer,
