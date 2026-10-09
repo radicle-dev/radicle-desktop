@@ -1,3 +1,56 @@
+### v0.17.0
+
+**Features**
+
+- Added Releases and Release views for browsing a repository's releases and
+  their artifacts, with links, mentions, a warning on releases and artifacts
+  published by others, and the artifact node and rad-artifact CLI versions
+  in the status popover
+- Added smart links and better mentions: `rad:` links now open in the app,
+  Radicle entities in comments are linked, and mentions search node aliases
+- Added a repository identity document view
+- Assignees are now suggested by alias as you type
+- Added keyboard shortcuts
+- Added Markdown shortcuts to textareas
+- Markdown now renders Mermaid diagrams, GitHub style alerts and repository
+  images in READMEs
+- Task list items in Markdown can now be checked and unchecked
+- AsciiDoc READMEs are now rendered in the source view, with cross
+  references linked to their source
+- Document links now stay inside the app
+- Merged patches are now sorted by merge time
+- The patch list now shows the latest revision's diffstat
+- You can seed a missing repository directly from mentions
+- Adding new repositories will immediately fetch them from the network
+- Issues can now be created with only a subject
+- The issue page now matches the patch page design, with the metadata
+  buttons in the action row
+- Collapsed sidebar items now show tooltips, and private repositories show
+  a lock on their avatar
+- Polished sidebar animations and spacing
+
+**Bug fixes**
+
+- Back and Forward are now disabled when they lead nowhere
+- Fixed file tree folders flickering and closing when selecting a file
+- The source view now keeps the browsed file when navigating
+- Fixed muddy diff colors in light mode
+- Fixed pasted images not rendering
+- Retina screenshots are now shown at their intended size
+- Dropped files now go only into the textarea under the cursor
+- Files dropped from Windows paths are now named correctly
+- Assignee changes are now shown correctly in timelines
+- A number of fixes to Markdown rendering
+- RIDs with non-base58 characters are now treated as invalid
+- Failed CI job lookups are now handled
+
+**Shout-out to our contributors 🙏✨**
+
+- [2color](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MktwkohCx8aHZ1QCjVZUiLmX92oPZFxRiFZkbq32Tk5Tkm)
+- [brandonoxendine](https://radicle.network/nodes/iris.radicle.network/users/did:key:z6MkpwnLQxFBQXyMK3Es91s8A7Ew7G11BFFyng1dqZR8QhG3)
+- [efstajas](https://radicle.network/nodes/iris.radicle.network/users/z6MkqG3Pu18RWuZ8GrqGQ9s4yoi5rfhcLq9rpo1ZZX8en994)
+
+
 ### v0.16.0
 
 **Features**
